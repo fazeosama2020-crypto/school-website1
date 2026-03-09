@@ -347,6 +347,32 @@ function HomePage({ teachers, announcements, activities, navigate }) {
           </div>
         </div>
       </div>
+      {/* المنصات المدرسية */}
+      <h3 className="font-bold text-gray-700 mb-3">🌐 المنصات المدرسية</h3>
+      <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
+        <a href="https://school-website1.vercel.app" target="_blank" rel="noopener noreferrer"
+          className="bg-gradient-to-bl from-teal-500 to-emerald-700 rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all group cursor-pointer text-white">
+          <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">🏫</div>
+          <div className="font-black text-lg mb-1">بوابة الإدارة</div>
+          <div className="text-sm opacity-80">غياب · إعلانات · أنشطة</div>
+          <div className="mt-3 text-xs bg-white bg-opacity-20 rounded-lg px-3 py-1 inline-block">فتح المنصة ←</div>
+        </a>
+        <a href="https://stupendous-youtiao-c6d666.netlify.app/" target="_blank" rel="noopener noreferrer"
+          className="bg-gradient-to-bl from-blue-500 to-indigo-700 rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all group cursor-pointer text-white">
+          <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">📝</div>
+          <div className="font-black text-lg mb-1">منصة الاختبارات</div>
+          <div className="text-sm opacity-80">الاختبارات والتقييمات</div>
+          <div className="mt-3 text-xs bg-white bg-opacity-20 rounded-lg px-3 py-1 inline-block">فتح المنصة ←</div>
+        </a>
+        <a href="https://fazeosama2020-crypto.github.io/school/" target="_blank" rel="noopener noreferrer"
+          className="bg-gradient-to-bl from-purple-500 to-violet-700 rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all group cursor-pointer text-white">
+          <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">📊</div>
+          <div className="font-black text-lg mb-1">ملف الأداء الوظيفي</div>
+          <div className="text-sm opacity-80">تقييم المعلمين والشواهد</div>
+          <div className="mt-3 text-xs bg-white bg-opacity-20 rounded-lg px-3 py-1 inline-block">فتح المنصة ←</div>
+        </a>
+      </div>
+
       <h3 className="font-bold text-gray-700 mb-3">الوصول السريع</h3>
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[{ id: "attendance", label: "غياب المعلمين", icon: "📋" }, { id: "announcements", label: "الإعلانات", icon: "📢" }, { id: "activities", label: "الأنشطة", icon: "⚡" }].map(p => (
