@@ -1123,6 +1123,19 @@ function StudentsPage({ classList, setClassList, saveClass, deleteClass }) {
 
   const activeClass = classList.find(c => c.id === activeId) || null;
 
+  // تحميل الفصل الجاهز من ملف الإكسل
+  const loadPreloadedClass = async () => {
+    const already = classList.find(c => c.id === PRELOADED_CLASS.id);
+    if (already) { setActiveId(PRELOADED_CLASS.id); return; }
+    const updated = [...classList, PRELOADED_CLASS];
+    setClassList(updated);
+    await saveClass(PRELOADED_CLASS);
+    await DB.set("school-class-list", updated.map(c => ({ id: c.id, name: c.name, level: c.level, section: c.section, teacher: c.teacher, semester: c.semester })));
+    setActiveId(PRELOADED_CLASS.id);
+  };
+
+  const activeClass = classList.find(c => c.id === activeId) || null;
+
   const addNewClass = () => {
     const exists = classList.find(c => c.level === newLevel && c.section === newSection);
     if (exists) { alert("هذا الفصل موجود بالفعل!"); return; }
@@ -1181,6 +1194,19 @@ function StudentsPage({ classList, setClassList, saveClass, deleteClass }) {
           <span>👨‍🎓 {totalStudents} طالب</span>
         </div>
       </div>
+
+      {/* زر تحميل الفصل الجاهز */}
+      {!classList.find(c => c.id === PRELOADED_CLASS.id) && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 mb-5 text-center">
+          <div className="text-3xl mb-2">📥</div>
+          <div className="font-black text-amber-800 text-lg mb-1">لديك فصل جاهز من ملف الإكسل!</div>
+          <div className="text-amber-700 text-sm mb-4">الصف الأول / أ — 25 طالباً بأسمائهم وأرقام هوياتهم</div>
+          <button onClick={loadPreloadedClass}
+            className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-xl font-black text-base shadow-md hover:shadow-lg transition-all">
+            📥 تحميل الفصل الأول / أ (25 طالب)
+          </button>
+        </div>
+      )}
 
       {/* إحصائيات المستويات */}
       {classList.length > 0 && (
