@@ -81,6 +81,28 @@ const FONTS = [
   { label: "أميري", value: "'Amiri', serif" },
 ];
 
+// ===== ثوابت سجل التقييم =====
+const SUBJECTS = [
+  { key: "math", label: "رياضيات", color: "#C00000" },
+  { key: "sci",  label: "علوم",     color: "#375623" },
+  { key: "eng",  label: "إنجليزي",  color: "#7030A0" },
+  { key: "arab", label: "لغتي",     color: "#C55A11" },
+  { key: "soc",  label: "اجتماعيات",color: "#2E75B6" },
+  { key: "isl",  label: "تربية إسلامية", color: "#833C00" },
+];
+
+const GRADE_OPTIONS = [
+  { value: "",       label: "— اختر —",  bg: "#f5f5f5",  color: "#aaa",    border: "#ddd"    },
+  { value: "weak",   label: "ضعيف",      bg: "#FF6B6B",  color: "#fff",    border: "#e05555" },
+  { value: "accept", label: "مقبول",     bg: "#FFD93D",  color: "#5a4200", border: "#e6c100" },
+  { value: "good",   label: "جيد",       bg: "#A8E6CF",  color: "#1a4a30", border: "#7dc8a0" },
+  { value: "vgood",  label: "جيد جداً", bg: "#4ECDC4",  color: "#fff",    border: "#2db8ae" },
+  { value: "excel",  label: "ممتاز",     bg: "#2ECC71",  color: "#fff",    border: "#27ae60" },
+];
+
+const DEFAULT_STUDENT_INFO = { semester: "", level: "المتوسطة", teacher: "", classname: "" };
+const DEFAULT_STUDENTS = Array.from({ length: 43 }, (_, i) => ({ id: i + 1, name: "", grades: {} }));
+
 function Badge({ children, color = "teal" }) {
   const c = { teal: "bg-teal-100 text-teal-800", red: "bg-red-100 text-red-700", amber: "bg-amber-100 text-amber-800", blue: "bg-blue-100 text-blue-800", green: "bg-green-100 text-green-800", purple: "bg-purple-100 text-purple-800", gray: "bg-gray-100 text-gray-600" };
   return <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${c[color] || c.teal}`}>{children}</span>;
@@ -105,36 +127,19 @@ function RichEditor({ value, onChange }) {
   const [showFonts, setShowFonts] = useState(false);
 
   const emojis = ["⭐","🎉","📢","📌","🔔","✅","❌","❗","⚠️","💡","📅","🏫","👨‍🏫","👨‍🎓","📖","🖋️","🎓","🏆","🥇","⚽","🔬","🎨","🎵","💪","👏","🤝","💐","🌟","✨","🔥","💯","❤️","💚","💙","🇸🇦","🌙","☀️","🌈","🎯","📝","🏅","🌺","🍀","🦁","🦅","🕌","🤲","🫶","😊","😄","👍","🙏"];
-
-  const stickers = [
-    "🏆 تهانينا!","⭐ ممتاز!","✅ تم بنجاح","📢 تنبيه مهم",
-    "🎉 مبروك!","💡 تذكير","⚠️ عاجل","📌 ملاحظة",
-    "🏫 من إدارة المدرسة","👨‍🏫 للمعلمين الكرام","👨‍🎓 للطلاب الأعزاء",
-    "🤝 بالتوفيق للجميع","🌟 إعلان هام","🎯 للاهتمام",
-  ];
-
+  const stickers = ["🏆 تهانينا!","⭐ ممتاز!","✅ تم بنجاح","📢 تنبيه مهم","🎉 مبروك!","💡 تذكير","⚠️ عاجل","📌 ملاحظة","🏫 من إدارة المدرسة","👨‍🏫 للمعلمين الكرام","👨‍🎓 للطلاب الأعزاء","🤝 بالتوفيق للجميع","🌟 إعلان هام","🎯 للاهتمام"];
   const textColors = ["#000000","#DC2626","#059669","#2563EB","#7C3AED","#D97706","#DB2777","#0D9488","#B45309","#1D4ED8","#065F46","#7F1D1D","#1E40AF","#166534"];
   const bgColors = ["transparent","#FEF3C7","#DCFCE7","#DBEAFE","#F3E8FF","#FFE4E6","#E0F2FE","#FEF9C3","#D1FAE5","#FCE7F3","#FFF7ED","#F0FDF4"];
 
   const exec = (cmd, val = null) => { document.execCommand(cmd, false, val); editorRef.current?.focus(); };
-
   const handleImage = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      exec("insertHTML", `<img src="${ev.target.result}" style="max-width:100%;border-radius:12px;margin:8px 0;display:block;" />`);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+    reader.onload = (ev) => { exec("insertHTML", `<img src="${ev.target.result}" style="max-width:100%;border-radius:12px;margin:8px 0;display:block;" />`); };
+    reader.readAsDataURL(file); e.target.value = "";
   };
-
   const handleInput = () => { if (editorRef.current) onChange(editorRef.current.innerHTML); };
-
-  useEffect(() => {
-    if (editorRef.current && !editorRef.current.innerHTML && value) editorRef.current.innerHTML = value;
-  }, []);
-
+  useEffect(() => { if (editorRef.current && !editorRef.current.innerHTML && value) editorRef.current.innerHTML = value; }, []);
   const closeAll = () => { setShowEmoji(false); setShowStickers(false); setShowColors(false); setShowBgColors(false); setShowFonts(false); };
 
   const ToolBtn = ({ onClick, title, children }) => (
@@ -147,58 +152,42 @@ function RichEditor({ value, onChange }) {
   return (
     <div className="border-2 border-gray-200 rounded-xl overflow-visible focus-within:border-teal-400 transition-all">
       <div className="bg-gray-50 p-2 flex flex-wrap gap-1 border-b border-gray-200">
-
         <ToolBtn onClick={() => exec("bold")} title="غامق"><b>غامق</b></ToolBtn>
         <ToolBtn onClick={() => exec("italic")} title="مائل"><i>مائل</i></ToolBtn>
         <ToolBtn onClick={() => exec("underline")} title="تحته خط"><u>خط</u></ToolBtn>
-
         <div className="w-px bg-gray-300 mx-1"></div>
-
         <select onChange={e => exec("fontSize", e.target.value)} defaultValue="3"
           className="h-8 px-1 rounded-lg bg-gray-50 border border-gray-200 text-xs cursor-pointer focus:outline-none">
-          <option value="1">صغير جداً</option>
-          <option value="2">صغير</option>
-          <option value="3">متوسط</option>
-          <option value="4">كبير</option>
-          <option value="5">كبير جداً</option>
-          <option value="6">ضخم</option>
-          <option value="7">ضخم جداً</option>
+          <option value="1">صغير جداً</option><option value="2">صغير</option><option value="3">متوسط</option>
+          <option value="4">كبير</option><option value="5">كبير جداً</option><option value="6">ضخم</option><option value="7">ضخم جداً</option>
         </select>
-
         <div className="relative">
           <ToolBtn onClick={() => { closeAll(); setShowFonts(!showFonts); }} title="نوع الخط">🔤 الخط</ToolBtn>
           {showFonts && (
             <div className="absolute top-10 right-0 bg-white rounded-xl shadow-xl border border-gray-200 p-2 z-50 w-44">
               {FONTS.map(f => (
                 <button key={f.value} onClick={() => { exec("fontName", f.value); setShowFonts(false); }}
-                  className="w-full text-right px-3 py-2 rounded-lg hover:bg-teal-50 text-sm"
-                  style={{ fontFamily: f.value }}>{f.label}</button>
+                  className="w-full text-right px-3 py-2 rounded-lg hover:bg-teal-50 text-sm" style={{ fontFamily: f.value }}>{f.label}</button>
               ))}
             </div>
           )}
         </div>
-
         <div className="w-px bg-gray-300 mx-1"></div>
-
         <ToolBtn onClick={() => exec("justifyRight")} title="يمين">⬅ يمين</ToolBtn>
         <ToolBtn onClick={() => exec("justifyCenter")} title="وسط">↔ وسط</ToolBtn>
         <ToolBtn onClick={() => exec("justifyLeft")} title="يسار">➡ يسار</ToolBtn>
-
         <div className="w-px bg-gray-300 mx-1"></div>
-
         <div className="relative">
           <ToolBtn onClick={() => { closeAll(); setShowColors(!showColors); }} title="لون النص">🎨 لون</ToolBtn>
           {showColors && (
             <div className="absolute top-10 right-0 bg-white rounded-xl shadow-xl border border-gray-200 p-2 z-50 flex gap-1 flex-wrap w-44">
               {textColors.map(c => (
                 <button key={c} onClick={() => { exec("foreColor", c); setShowColors(false); }}
-                  className="w-7 h-7 rounded-full border-2 border-gray-200 hover:scale-110 transition-transform"
-                  style={{ backgroundColor: c }}></button>
+                  className="w-7 h-7 rounded-full border-2 border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }}></button>
               ))}
             </div>
           )}
         </div>
-
         <div className="relative">
           <ToolBtn onClick={() => { closeAll(); setShowBgColors(!showBgColors); }} title="خلفية">🖌 خلفية</ToolBtn>
           {showBgColors && (
@@ -206,19 +195,14 @@ function RichEditor({ value, onChange }) {
               {bgColors.map(c => (
                 <button key={c} onClick={() => { exec("hiliteColor", c); setShowBgColors(false); }}
                   className="w-7 h-7 rounded-full border-2 border-gray-200 hover:scale-110 transition-transform"
-                  style={{ backgroundColor: c === "transparent" ? "#fff" : c }}>
-                  {c === "transparent" ? "✕" : ""}
-                </button>
+                  style={{ backgroundColor: c === "transparent" ? "#fff" : c }}>{c === "transparent" ? "✕" : ""}</button>
               ))}
             </div>
           )}
         </div>
-
         <div className="w-px bg-gray-300 mx-1"></div>
-
         <ToolBtn onClick={() => fileRef.current?.click()} title="إضافة صورة">📷 صورة</ToolBtn>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
-
         <div className="relative">
           <ToolBtn onClick={() => { closeAll(); setShowEmoji(!showEmoji); }} title="إيموجي">😊 إيموجي</ToolBtn>
           {showEmoji && (
@@ -230,7 +214,6 @@ function RichEditor({ value, onChange }) {
             </div>
           )}
         </div>
-
         <div className="relative">
           <ToolBtn onClick={() => { closeAll(); setShowStickers(!showStickers); }} title="ملصقات">🏷️ ملصق</ToolBtn>
           {showStickers && (
@@ -244,15 +227,12 @@ function RichEditor({ value, onChange }) {
             </div>
           )}
         </div>
-
         <ToolBtn onClick={() => exec("insertUnorderedList")} title="قائمة">• قائمة</ToolBtn>
-
       </div>
       <div ref={editorRef} contentEditable dir="rtl" onInput={handleInput}
         className="min-h-36 p-4 text-sm leading-relaxed focus:outline-none"
         style={{ direction: "rtl", fontFamily: "'Noto Naskh Arabic', serif" }}
-        data-placeholder="اكتب محتوى الإعلان هنا… يمكنك إضافة صور وإيموجي وملصقات وتغيير الخط والألوان"
-      ></div>
+        data-placeholder="اكتب محتوى الإعلان هنا…"></div>
       <style>{`[contenteditable]:empty:before { content: attr(data-placeholder); color: #9CA3AF; pointer-events: none; }`}</style>
     </div>
   );
@@ -347,7 +327,6 @@ function HomePage({ teachers, announcements, activities, navigate }) {
           </div>
         </div>
       </div>
-      {/* المنصات المدرسية */}
       <h3 className="font-bold text-gray-700 mb-3">🌐 المنصات المدرسية</h3>
       <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
         <a href="https://school-website1.vercel.app" target="_blank" rel="noopener noreferrer"
@@ -372,10 +351,14 @@ function HomePage({ teachers, announcements, activities, navigate }) {
           <div className="mt-3 text-xs bg-white bg-opacity-20 rounded-lg px-3 py-1 inline-block">فتح المنصة ←</div>
         </a>
       </div>
-
       <h3 className="font-bold text-gray-700 mb-3">الوصول السريع</h3>
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {[{ id: "attendance", label: "غياب المعلمين", icon: "📋" }, { id: "announcements", label: "الإعلانات", icon: "📢" }, { id: "activities", label: "الأنشطة", icon: "⚡" }].map(p => (
+      <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
+        {[
+          { id: "attendance", label: "غياب المعلمين", icon: "📋" },
+          { id: "students", label: "تقييم الطلاب", icon: "👨‍🎓" },
+          { id: "announcements", label: "الإعلانات", icon: "📢" },
+          { id: "activities", label: "الأنشطة", icon: "⚡" }
+        ].map(p => (
           <button key={p.id} onClick={() => navigate(p.id)} className="bg-white rounded-2xl p-5 text-center shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-teal-200 group">
             <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">{p.icon}</div>
             <div className="font-bold text-gray-800 text-sm">{p.label}</div>
@@ -535,6 +518,254 @@ function AttendancePage({ teachers, week, attendance, setAttendance, saveAttenda
   );
 }
 
+// ===== صفحة تقييم الطلاب =====
+function StudentsPage({ students, setStudents, saveStudents, studentInfo, setStudentInfo, saveStudentInfo }) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // حفظ تلقائي
+  useEffect(() => {
+    const t = setTimeout(() => saveStudents(students), 700);
+    return () => clearTimeout(t);
+  }, [students]);
+
+  useEffect(() => {
+    const t = setTimeout(() => saveStudentInfo(studentInfo), 700);
+    return () => clearTimeout(t);
+  }, [studentInfo]);
+
+  const updateGrade = (studentId, subj, value) => {
+    setStudents(prev => prev.map(s =>
+      s.id === studentId ? { ...s, grades: { ...s.grades, [subj]: value } } : s
+    ));
+  };
+
+  const updateName = (studentId, name) => {
+    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, name } : s));
+  };
+
+  const clearAll = () => {
+    if (!confirm("هل تريد مسح جميع التقييمات؟")) return;
+    setStudents(DEFAULT_STUDENTS.map(s => ({ ...s })));
+  };
+
+  // إحصائيات
+  const counts = { weak: 0, accept: 0, good: 0, vgood: 0, excel: 0 };
+  students.forEach(s => Object.values(s.grades || {}).forEach(g => { if (g && counts[g] !== undefined) counts[g]++; }));
+  const totalGrades = Object.values(counts).reduce((a,b) => a+b, 0);
+
+  const filtered = searchQuery ? students.filter(s => s.name.includes(searchQuery)) : students;
+
+  const getGradeStyle = (value) => {
+    const g = GRADE_OPTIONS.find(o => o.value === value) || GRADE_OPTIONS[0];
+    return { backgroundColor: g.bg, color: g.color, borderColor: g.border };
+  };
+
+  const handlePrint = () => {
+    const w = window.open("", "_blank");
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8">
+    <title>سجل تقييم الطلاب</title>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Tajawal',Arial,sans-serif;padding:16px;direction:rtl;font-size:11px;background:#fff}
+      h1{text-align:center;font-size:16px;color:#1B3A6B;margin-bottom:4px}
+      .sub{text-align:center;color:#666;font-size:11px;margin-bottom:12px}
+      .info-row{display:flex;gap:20px;margin-bottom:10px;font-size:11px;color:#333}
+      table{width:100%;border-collapse:collapse}
+      th,td{border:1px solid #ccc;padding:5px 6px;text-align:center;font-size:10px}
+      th{color:#fff;font-weight:700}
+      .h-name{background:#1B3A6B} .h-math{background:#C00000} .h-sci{background:#375623}
+      .h-eng{background:#7030A0} .h-arab{background:#C55A11} .h-soc{background:#2E75B6} .h-isl{background:#833C00}
+      tr:nth-child(odd) td{background:#f4f7fb} tr:nth-child(even) td{background:#fff}
+      .g-weak{background:#FF6B6B;color:#fff} .g-accept{background:#FFD93D;color:#5a4200}
+      .g-good{background:#A8E6CF;color:#1a4a30} .g-vgood{background:#4ECDC4;color:#fff} .g-excel{background:#2ECC71;color:#fff}
+      .legend{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;font-size:10px}
+      .lb{padding:2px 10px;border-radius:4px;font-weight:700}
+      @page{margin:1cm;size:A3 landscape}
+    </style></head><body>
+    <h1>🏫 سجل تقييم الطلاب في المواد الدراسية</h1>
+    <div class="sub">مدرسة عبيدة بن الحارث المتوسطة — العام الدراسي ١٤٤٧هـ</div>
+    <div class="info-row">
+      <span>📅 الفصل: <b>${studentInfo.semester || "—"}</b></span>
+      <span>🎓 المرحلة: <b>${studentInfo.level || "—"}</b></span>
+      <span>👨‍🏫 المعلم: <b>${studentInfo.teacher || "—"}</b></span>
+      <span>🏷️ الصف: <b>${studentInfo.classname || "—"}</b></span>
+    </div>
+    <table><thead><tr>
+      <th class="h-name" style="width:30px">م</th>
+      <th class="h-name" style="text-align:right;padding-right:8px">اسم الطالب</th>
+      <th class="h-math">رياضيات</th><th class="h-sci">علوم</th><th class="h-eng">إنجليزي</th>
+      <th class="h-arab">لغتي</th><th class="h-soc">اجتماعيات</th><th class="h-isl">تربية إسلامية</th>
+    </tr></thead><tbody>`);
+    students.forEach((s, i) => {
+      if (!s.name) return;
+      w.document.write(`<tr><td>${i+1}</td><td style="text-align:right;padding-right:8px">${s.name}</td>`);
+      SUBJECTS.forEach(subj => {
+        const g = GRADE_OPTIONS.find(o => o.value === (s.grades?.[subj.key] || "")) || GRADE_OPTIONS[0];
+        w.document.write(`<td class="${g.value ? `g-${g.value}` : ''}">${g.label === "— اختر —" ? "—" : g.label}</td>`);
+      });
+      w.document.write("</tr>");
+    });
+    w.document.write(`</tbody></table>
+    <div class="legend">
+      <span>🎨 دليل التقييم:</span>
+      <span class="lb" style="background:#FF6B6B;color:#fff">ضعيف — أقل من 60%</span>
+      <span class="lb" style="background:#FFD93D;color:#5a4200">مقبول — 60 إلى 69%</span>
+      <span class="lb" style="background:#A8E6CF;color:#1a4a30">جيد — 70 إلى 79%</span>
+      <span class="lb" style="background:#4ECDC4;color:#fff">جيد جدًا — 80 إلى 89%</span>
+      <span class="lb" style="background:#2ECC71;color:#fff">ممتاز — 90% فأكثر</span>
+    </div>
+    <div style="display:flex;gap:40px;margin-top:30px;font-size:11px">
+      <div>توقيع المعلم: __________________</div>
+      <div>توقيع مدير المدرسة: __________________</div>
+      <div>التاريخ: __________________</div>
+    </div>
+    </body></html>`);
+    w.document.close();
+    setTimeout(() => w.print(), 300);
+  };
+
+  return (
+    <div>
+      {/* العنوان */}
+      <div className="rounded-3xl p-6 mb-5 text-white text-center shadow-xl"
+        style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2E6DA4 60%, #1a8fe3 100%)" }}>
+        <div className="text-4xl mb-2">👨‍🎓</div>
+        <h2 className="text-2xl font-black mb-1">سجل تقييم الطلاب في المواد الدراسية</h2>
+        <p className="opacity-80 text-sm">للعام الدراسي ١٤٤٧هـ — مدرسة عبيدة بن الحارث المتوسطة</p>
+      </div>
+
+      {/* الإحصائيات */}
+      <div className="grid grid-cols-3 gap-3 mb-5 sm:grid-cols-5">
+        {[
+          { label: "ضعيف", key: "weak",   bg: "bg-red-50",    text: "text-red-700",    icon: "🔴" },
+          { label: "مقبول", key: "accept", bg: "bg-yellow-50", text: "text-yellow-700", icon: "🟡" },
+          { label: "جيد",   key: "good",   bg: "bg-green-50",  text: "text-green-700",  icon: "🟢" },
+          { label: "جيد جداً", key: "vgood", bg: "bg-teal-50", text: "text-teal-700",  icon: "🔵" },
+          { label: "ممتاز", key: "excel",  bg: "bg-emerald-50",text: "text-emerald-700",icon: "⭐" },
+        ].map(s => (
+          <div key={s.key} className={`${s.bg} rounded-2xl p-3 text-center shadow-sm`}>
+            <div className="text-2xl mb-1">{s.icon}</div>
+            <div className={`text-xl font-black ${s.text}`}>{counts[s.key]}</div>
+            <div className={`text-xs font-bold ${s.text}`}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* بيانات الصف */}
+      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 mb-5 overflow-hidden">
+        <div className="px-4 py-3 font-bold text-white text-sm" style={{ background: "#2E6DA4" }}>
+          📋 بيانات الصف والمعلم
+        </div>
+        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
+          {[
+            { key: "semester", label: "الفصل الدراسي", placeholder: "الأول / الثاني / الثالث" },
+            { key: "level",    label: "المرحلة الدراسية", placeholder: "المتوسطة" },
+            { key: "teacher",  label: "اسم المعلم", placeholder: "اكتب الاسم هنا" },
+            { key: "classname",label: "الصف والشعبة", placeholder: "الصف الأول / أ" },
+          ].map(f => (
+            <div key={f.key}>
+              <label className="text-xs font-bold text-gray-500 mb-1 block">{f.label}</label>
+              <input type="text" value={studentInfo[f.key] || ""} placeholder={f.placeholder}
+                onChange={e => setStudentInfo(p => ({ ...p, [f.key]: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* أزرار الإجراءات */}
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <input type="text" placeholder="🔍 بحث عن طالب..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          className="flex-1 min-w-48 px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm bg-white" />
+        <button onClick={handlePrint} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold">🖨️ طباعة</button>
+        <button onClick={clearAll} className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2.5 rounded-xl text-sm font-bold">🗑️ مسح الكل</button>
+        <div className="bg-green-50 text-green-700 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center">💾 حفظ تلقائي</div>
+      </div>
+
+      {/* جدول التقييم */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-5">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ minWidth: "780px" }}>
+            <thead>
+              <tr>
+                <th className="p-3 text-center text-white font-bold w-10" style={{ background: "#1B3A6B" }}>م</th>
+                <th className="p-3 text-right text-white font-bold" style={{ background: "#1B3A6B", minWidth: "160px" }}>اسم الطالب</th>
+                {SUBJECTS.map(s => (
+                  <th key={s.key} className="p-3 text-center text-white font-bold text-xs" style={{ background: s.color, minWidth: "100px" }}>{s.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((student, idx) => (
+                <tr key={student.id} className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"} style={{ transition: "background 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#eaf1fb"}
+                  onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? "#f4f7fb" : "#fff"}>
+                  <td className="p-2 text-center font-bold text-sm" style={{ color: "#1B3A6B", background: "#e8f0fb" }}>{student.id}</td>
+                  <td className="p-2">
+                    <input type="text" value={student.name} placeholder="اكتب اسم الطالب"
+                      onChange={e => updateName(student.id, e.target.value)}
+                      className="w-full border-none bg-transparent text-sm font-medium focus:outline-none"
+                      style={{ color: "#1B3A6B", fontFamily: "inherit" }} />
+                  </td>
+                  {SUBJECTS.map(subj => {
+                    const val = student.grades?.[subj.key] || "";
+                    const style = getGradeStyle(val);
+                    return (
+                      <td key={subj.key} className="p-1.5 text-center">
+                        <select value={val} onChange={e => updateGrade(student.id, subj.key, e.target.value)}
+                          className="w-full rounded-lg border-2 px-2 py-1.5 text-xs font-bold focus:outline-none cursor-pointer transition-all"
+                          style={{ ...style, borderColor: style.borderColor, appearance: "none", textAlign: "center" }}>
+                          {GRADE_OPTIONS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                        </select>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* دليل التقييم */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5">
+        <div className="font-bold text-gray-700 mb-3 text-sm">🎨 دليل التقييم:</div>
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { bg: "#FF6B6B", color: "#fff",    label: "ضعيف — أقل من 60%" },
+            { bg: "#FFD93D", color: "#5a4200", label: "مقبول — 60 إلى 69%" },
+            { bg: "#A8E6CF", color: "#1a4a30", label: "جيد — 70 إلى 79%" },
+            { bg: "#4ECDC4", color: "#fff",    label: "جيد جدًا — 80 إلى 89%" },
+            { bg: "#2ECC71", color: "#fff",    label: "ممتاز — 90% فأكثر" },
+          ].map(l => (
+            <span key={l.label} className="px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ backgroundColor: l.bg, color: l.color }}>{l.label}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* إجمالي التقييمات */}
+      {totalGrades > 0 && (
+        <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+          <div className="font-bold text-blue-800 text-sm mb-2">📊 إجمالي التقييمات: {totalGrades}</div>
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { key: "weak", label: "ضعيف", bg: "#FF6B6B", color: "#fff" },
+              { key: "accept", label: "مقبول", bg: "#FFD93D", color: "#5a4200" },
+              { key: "good", label: "جيد", bg: "#A8E6CF", color: "#1a4a30" },
+              { key: "vgood", label: "جيد جداً", bg: "#4ECDC4", color: "#fff" },
+              { key: "excel", label: "ممتاز", bg: "#2ECC71", color: "#fff" },
+            ].map(s => counts[s.key] > 0 && (
+              <span key={s.key} className="px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{ backgroundColor: s.bg, color: s.color }}>{s.label}: {counts[s.key]}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements }) {
   const [showForm, setShowForm] = useState(false);
   const [newAnn, setNewAnn] = useState({ title: "", content: "", category: "إعلانات", priority: "عادي", bgColor: "" });
@@ -682,8 +913,6 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
   return (
     <div>
       <h2 className="text-2xl font-black text-teal-900 mb-6">إعدادات النظام</h2>
-
-      {/* خط الموقع */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
         <h3 className="font-bold text-gray-800 mb-4">🔤 خط الموقع</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -697,8 +926,6 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
           ))}
         </div>
       </div>
-
-      {/* إعدادات الأسبوع */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-800">📅 إعدادات الأسبوع</h3>
@@ -726,8 +953,6 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
             <tbody>{week.days.map((d,i) => <tr key={i} className="border-t border-gray-100"><td className="p-2 font-bold">{d.name}</td><td className="p-2 text-center">{d.dateH} هـ</td><td className="p-2 text-center">{d.dateM} م</td></tr>)}</tbody></table>
         )}
       </div>
-
-      {/* إدارة المعلمين */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
         <h3 className="font-bold text-gray-800 mb-4">👨‍🏫 إدارة أسماء المعلمين ({teachers.length})</h3>
         <div className="flex gap-2 mb-4">
@@ -756,8 +981,6 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
           </div>
         ))}</div>
       </div>
-
-      {/* حسابات */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
         <h3 className="font-bold text-gray-800 mb-4">🔐 حسابات المستخدمين</h3>
         <div className="space-y-2">{users.map((u, i) => (
@@ -781,11 +1004,16 @@ export default function SchoolWebsite() {
   const [attendance, setAttendance] = useState({});
   const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
   const [activities, setActivities] = useState(DEFAULT_ACTIVITIES);
+  const [students, setStudents] = useState(DEFAULT_STUDENTS);
+  const [studentInfo, setStudentInfo] = useState(DEFAULT_STUDENT_INFO);
   const [users] = useState(DEFAULT_USERS);
   const [siteFont, setSiteFont] = useState("'Noto Naskh Arabic', serif");
 
   useEffect(() => {
-    const h = () => { const hash = window.location.hash.replace("#","") || "home"; if (["home","attendance","announcements","activities","settings"].includes(hash)) setPage(hash); };
+    const h = () => {
+      const hash = window.location.hash.replace("#","") || "home";
+      if (["home","attendance","announcements","activities","settings","students"].includes(hash)) setPage(hash);
+    };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
   }, []);
@@ -795,15 +1023,19 @@ export default function SchoolWebsite() {
   useEffect(() => {
     (async () => {
       try {
-        const [t, w, att, ann, act, font] = await Promise.all([
+        const [t, w, att, ann, act, font, studs, stuInfo] = await Promise.all([
           DB.get("school-teachers", DEFAULT_TEACHERS),
           DB.get("school-week", DEFAULT_WEEK),
           DB.get("school-attendance", {}),
           DB.get("school-announcements", DEFAULT_ANNOUNCEMENTS),
           DB.get("school-activities", DEFAULT_ACTIVITIES),
           DB.get("school-font", "'Noto Naskh Arabic', serif"),
+          DB.get("school-students", DEFAULT_STUDENTS),
+          DB.get("school-student-info", DEFAULT_STUDENT_INFO),
         ]);
-        setTeachers(t); setWeek(w); setAttendance(att); setAnnouncements(ann); setActivities(act); setSiteFont(font);
+        setTeachers(t); setWeek(w); setAttendance(att); setAnnouncements(ann);
+        setActivities(act); setSiteFont(font);
+        setStudents(studs); setStudentInfo(stuInfo);
       } catch (e) { console.error(e); }
       setLoading(false);
     })();
@@ -815,6 +1047,8 @@ export default function SchoolWebsite() {
   const saveAnnouncements = (v) => DB.set("school-announcements", v);
   const saveActivities = (v) => DB.set("school-activities", v);
   const saveSiteFont = (v) => DB.set("school-font", v);
+  const saveStudents = (v) => DB.set("school-students", v);
+  const saveStudentInfo = (v) => DB.set("school-student-info", v);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 50%, #f5f5f4 100%)" }}>
@@ -829,11 +1063,12 @@ export default function SchoolWebsite() {
   if (!user) return <LoginPage users={users} onLogin={setUser} siteFont={siteFont} />;
 
   const pages = [
-    { id: "home", label: "الرئيسية", icon: "🏠" },
-    { id: "attendance", label: "غياب المعلمين", icon: "📋" },
-    { id: "announcements", label: "الإعلانات", icon: "📢" },
-    { id: "activities", label: "الأنشطة", icon: "⚡" },
-    { id: "settings", label: "الإعدادات", icon: "⚙️" },
+    { id: "home",          label: "الرئيسية",       icon: "🏠" },
+    { id: "attendance",    label: "غياب المعلمين",  icon: "📋" },
+    { id: "students",      label: "تقييم الطلاب",  icon: "👨‍🎓" },
+    { id: "announcements", label: "الإعلانات",      icon: "📢" },
+    { id: "activities",    label: "الأنشطة",        icon: "⚡" },
+    { id: "settings",      label: "الإعدادات",      icon: "⚙️" },
   ];
 
   return (
@@ -849,7 +1084,7 @@ export default function SchoolWebsite() {
             <div className="hidden lg:flex items-center gap-1">
               {pages.map(p => (
                 <button key={p.id} onClick={() => navigate(p.id)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${page === p.id ? "bg-teal-600 text-white" : "text-gray-600 hover:bg-teal-50"}`}>
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${page === p.id ? "bg-teal-600 text-white" : "text-gray-600 hover:bg-teal-50"}`}>
                   <span className="ml-1">{p.icon}</span>{p.label}
                 </button>
               ))}
@@ -880,11 +1115,12 @@ export default function SchoolWebsite() {
         </div>
       </nav>
       <main className="max-w-6xl mx-auto px-4 py-6">
-        {page === "home" && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} />}
-        {page === "attendance" && <AttendancePage teachers={teachers} week={week} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} />}
+        {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} />}
+        {page === "attendance"    && <AttendancePage teachers={teachers} week={week} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} />}
+        {page === "students"      && <StudentsPage students={students} setStudents={setStudents} saveStudents={saveStudents} studentInfo={studentInfo} setStudentInfo={setStudentInfo} saveStudentInfo={saveStudentInfo} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
-        {page === "activities" && <ActivitiesPage activities={activities} />}
-        {page === "settings" && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} />}
+        {page === "activities"    && <ActivitiesPage activities={activities} />}
+        {page === "settings"      && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} />}
       </main>
       <footer className="text-center py-6 text-xs text-gray-400 border-t border-gray-200 bg-white mt-8">
         <p>مدرسة عبيدة بن الحارث المتوسطة — بوابة الإدارة المدرسية الإلكترونية © ١٤٤٧ هـ</p>
