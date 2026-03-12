@@ -457,6 +457,28 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, attendance,
   const countLate = (di) => countStatus(di, "متأخر");
   const countAbsent = (di) => countStatus(di, "غائب");
   const countPresent = (di) => teachers.length - countLate(di) - countAbsent(di);
+  // تأخر صباحي = متأخر بدون حصص محددة أو lateType = "صباحي"
+  const countMorningLate = (di) => teachers.filter((_, ti) => {
+    const r = attendance[ti]?.[di] || {};
+    return r.status === "متأخر" && (r.lateType === "صباحي" || !r.lateType);
+  }).length;
+  // تأخر عن حصص = متأخر وlateType = "حصص"
+  const countPeriodLate = (di) => teachers.filter((_, ti) => {
+    const r = attendance[ti]?.[di] || {};
+    return r.status === "متأخر" && r.lateType === "حصص";
+  }).length;
+  // إجمالي دقائق التأخر الصباحي
+  const totalMorningMins = (di) => teachers.reduce((sum, _, ti) => {
+    const r = attendance[ti]?.[di] || {};
+    if (r.status === "متأخر" && (r.lateType === "صباحي" || !r.lateType)) return sum + (parseInt(r.lateMinutes) || 0);
+    return sum;
+  }, 0);
+  // إجمالي دقائق التأخر عن الحصص
+  const totalPeriodMins = (di) => teachers.reduce((sum, _, ti) => {
+    const r = attendance[ti]?.[di] || {};
+    if (r.status === "متأخر" && r.lateType === "حصص") return sum + (parseInt(r.lateMinutes) || 0);
+    return sum;
+  }, 0);
   const filtered = teachers.map((t, i) => ({ name: t, idx: i })).filter(t => t.name.includes(searchQuery));
 
   // استيراد المعلمين من إكسل
@@ -544,20 +566,18 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, attendance,
   const handlePrintSummary = () => {
     const w = window.open("", "_blank");
     const rows = teachers.map((t, ti) => {
-      const lateCount = week.days.filter((_, di) => (attendance[ti]?.[di]?.status || "حاضر") === "متأخر").length;
-      const absCount = week.days.filter((_, di) => (attendance[ti]?.[di]?.status || "حاضر") === "غائب").length;
-      const totalLateMin = week.days.reduce((sum, _, di) => {
-        if ((attendance[ti]?.[di]?.status || "") === "متأخر") return sum + (parseInt(attendance[ti]?.[di]?.lateMinutes) || 0);
-        return sum;
-      }, 0);
-      const color = absCount > 0 ? "#fef2f2" : lateCount > 0 ? "#fffbeb" : "#fff";
+      const morningLate = week.days.filter((_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType); }).length;
+      const periodLate  = week.days.filter((_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&r.lateType==="حصص"; }).length;
+      const absCount    = week.days.filter((_,di)=>(attendance[ti]?.[di]?.status||"حاضر")==="غائب").length;
+      const morningMins = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType)?s+(parseInt(r.lateMinutes)||0):s; },0);
+      const periodMins  = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&r.lateType==="حصص"?s+(parseInt(r.lateMinutes)||0):s; },0);
+      const color = absCount>0?"#fef2f2":morningLate+periodLate>0?"#fffbeb":"#fff";
       return `<tr style="background:${color}"><td>${ti+1}</td><td style="text-align:right;padding:6px 10px">${t}</td>
-        ${week.days.map((_, di) => {
-          const st = attendance[ti]?.[di]?.status || "حاضر";
-          return `<td>${st === "حاضر" ? "✅" : st === "متأخر" ? `🕐${attendance[ti]?.[di]?.lateMinutes||""}د` : "❌"}</td>`;
-        }).join("")}
-        <td style="color:#d97706;font-weight:bold">${lateCount||"—"}</td>
-        <td style="color:#dc2626;font-weight:bold">${totalLateMin > 0 ? totalLateMin + " د" : "—"}</td>
+        ${week.days.map((_,di)=>{ const r=attendance[ti]?.[di]||{}; const st=r.status||"حاضر"; const lt=r.lateType||"صباحي"; const min=r.lateMinutes||""; return `<td>${st==="حاضر"?"✅":st==="متأخر"?(lt==="حصص"?`📚${min?min+"د":""}`:`🌅${min?min+"د":""}`):"❌"}</td>`; }).join("")}
+        <td style="color:#ea580c;font-weight:bold">${morningLate||"—"}</td>
+        <td style="color:#ea580c">${morningMins>0?morningMins+"د":"—"}</td>
+        <td style="color:#d97706;font-weight:bold">${periodLate||"—"}</td>
+        <td style="color:#d97706">${periodMins>0?periodMins+"د":"—"}</td>
         <td style="color:#dc2626;font-weight:bold">${absCount||"—"}</td></tr>`;
     }).join("");
 
@@ -572,8 +592,8 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, attendance,
     <div class="header"><h1>مدرسة عبيدة بن الحارث المتوسطة</h1>
     <p>ملخص الحضور والغياب الأسبوعي — ${week.days[0]?.dateH} إلى ${week.days[week.days.length-1]?.dateH} هـ</p></div>
     <table><thead><tr><th>م</th><th>اسم المعلم</th>
-    ${week.days.map(d => `<th>${d.name}</th>`).join("")}
-    <th>عدد التأخر</th><th>مجموع دقائق التأخر</th><th>عدد الغياب</th></tr></thead>
+    ${week.days.map(d=>`<th>${d.name}</th>`).join("")}
+    <th>🌅 تأخر صباحي</th><th>دقائق صباحي</th><th>📚 تأخر حصص</th><th>دقائق حصص</th><th>❌ غياب</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div style="text-align:center;margin-top:16px;font-size:10px;color:#999">تم الإصدار بتاريخ ${new Date().toLocaleDateString('ar-SA')}</div>
     </body></html>`);
@@ -612,18 +632,28 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, attendance,
 
       {/* إحصائيات اليوم */}
       {!showSummary && (
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+          <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3 text-center">
             <div className="text-3xl font-black text-emerald-700">{countPresent(selectedDay)}</div>
-            <div className="text-sm font-bold text-emerald-600 mt-1">✅ حاضر</div>
+            <div className="text-xs font-bold text-emerald-600 mt-1">✅ حاضر</div>
           </div>
-          <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-center">
-            <div className="text-3xl font-black text-amber-700">{countLate(selectedDay)}</div>
-            <div className="text-sm font-bold text-amber-600 mt-1">🕐 متأخر</div>
+          <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3 text-center">
+            <div className="text-3xl font-black text-orange-700">{countMorningLate(selectedDay)}</div>
+            <div className="text-xs font-bold text-orange-600 mt-1">🌅 تأخر صباحي</div>
+            {totalMorningMins(selectedDay) > 0 && <div className="text-xs text-orange-400 mt-0.5">{totalMorningMins(selectedDay)} دقيقة</div>}
           </div>
-          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 text-center">
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 text-center">
+            <div className="text-3xl font-black text-amber-700">{countPeriodLate(selectedDay)}</div>
+            <div className="text-xs font-bold text-amber-600 mt-1">📚 تأخر عن حصة</div>
+            {totalPeriodMins(selectedDay) > 0 && <div className="text-xs text-amber-400 mt-0.5">{totalPeriodMins(selectedDay)} دقيقة</div>}
+          </div>
+          <div className="bg-amber-50 border-2 border-amber-100 rounded-2xl p-3 text-center">
+            <div className="text-3xl font-black text-amber-600">{countLate(selectedDay)}</div>
+            <div className="text-xs font-bold text-amber-500 mt-1">🕐 إجمالي التأخر</div>
+          </div>
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-3 text-center">
             <div className="text-3xl font-black text-red-700">{countAbsent(selectedDay)}</div>
-            <div className="text-sm font-bold text-red-600 mt-1">❌ غائب</div>
+            <div className="text-xs font-bold text-red-600 mt-1">❌ غائب</div>
           </div>
         </div>
       )}
@@ -667,36 +697,45 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, attendance,
                   <th className="p-2 text-right font-bold text-gray-600 w-8">م</th>
                   <th className="p-2 text-right font-bold text-gray-600">اسم المعلم / الإداري</th>
                   {week.days.map((d, i) => <th key={i} className="p-2 text-center font-bold text-gray-600">{d.name}</th>)}
-                  <th className="p-2 text-center font-bold text-amber-700">تأخرات</th>
-                  <th className="p-2 text-center font-bold text-amber-700">دقائق</th>
-                  <th className="p-2 text-center font-bold text-red-700">غياب</th>
+                  <th className="p-2 text-center font-bold text-orange-600">🌅 صباحي</th>
+                  <th className="p-2 text-center font-bold text-orange-500">دقائق صباحي</th>
+                  <th className="p-2 text-center font-bold text-amber-600">📚 حصص</th>
+                  <th className="p-2 text-center font-bold text-amber-500">دقائق حصص</th>
+                  <th className="p-2 text-center font-bold text-red-700">❌ غياب</th>
                 </tr>
               </thead>
               <tbody>
                 {teachers.filter(t => t.includes(searchQuery)).map((teacher, ti) => {
-                  const lateCount = week.days.filter((_, di) => (attendance[ti]?.[di]?.status || "حاضر") === "متأخر").length;
-                  const absCount = week.days.filter((_, di) => (attendance[ti]?.[di]?.status || "حاضر") === "غائب").length;
-                  const totalMin = week.days.reduce((s, _, di) => {
-                    return (attendance[ti]?.[di]?.status === "متأخر") ? s + (parseInt(attendance[ti]?.[di]?.lateMinutes) || 0) : s;
-                  }, 0);
+                  const morningLate = week.days.filter((_, di) => { const r = attendance[ti]?.[di]||{}; return r.status==="متأخر" && (r.lateType==="صباحي"||!r.lateType); }).length;
+                  const periodLate = week.days.filter((_, di) => { const r = attendance[ti]?.[di]||{}; return r.status==="متأخر" && r.lateType==="حصص"; }).length;
+                  const absCount = week.days.filter((_, di) => (attendance[ti]?.[di]?.status||"حاضر")==="غائب").length;
+                  const morningMins = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType)?s+(parseInt(r.lateMinutes)||0):s; },0);
+                  const periodMins = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&r.lateType==="حصص"?s+(parseInt(r.lateMinutes)||0):s; },0);
+                  const anyLate = morningLate + periodLate;
                   return (
-                    <tr key={ti} className={`border-t border-gray-100 ${absCount > 0 ? "bg-red-50" : lateCount > 0 ? "bg-amber-50" : "hover:bg-gray-50"}`}>
-                      <td className="p-2 text-center text-gray-400 font-bold">{ti + 1}</td>
+                    <tr key={ti} className={`border-t border-gray-100 ${absCount>0?"bg-red-50":anyLate>0?"bg-amber-50":"hover:bg-gray-50"}`}>
+                      <td className="p-2 text-center text-gray-400 font-bold">{ti+1}</td>
                       <td className="p-2 font-medium text-gray-800">{teacher}</td>
                       {week.days.map((_, di) => {
-                        const st = attendance[ti]?.[di]?.status || "حاضر";
-                        const min = attendance[ti]?.[di]?.lateMinutes || "";
+                        const r = attendance[ti]?.[di] || {};
+                        const st = r.status || "حاضر";
+                        const lt = r.lateType || "صباحي";
+                        const min = r.lateMinutes || "";
                         return (
                           <td key={di} className="p-2 text-center">
-                            {st === "حاضر" ? <span className="text-green-500 font-bold">✅</span>
-                              : st === "متأخر" ? <span className="text-amber-600 font-bold">🕐{min && <span className="text-xs"> {min}د</span>}</span>
-                              : <span className="text-red-500 font-bold">❌</span>}
+                            {st==="حاضر" ? <span className="text-green-500">✅</span>
+                              : st==="متأخر" ? <span className={lt==="حصص"?"text-amber-600":"text-orange-600"} title={lt}>
+                                  {lt==="حصص"?"📚":"🌅"}{min&&<span className="text-xs"> {min}د</span>}
+                                </span>
+                              : <span className="text-red-500">❌</span>}
                           </td>
                         );
                       })}
-                      <td className="p-2 text-center font-black text-amber-700">{lateCount || "—"}</td>
-                      <td className="p-2 text-center font-black text-amber-700">{totalMin > 0 ? `${totalMin}د` : "—"}</td>
-                      <td className="p-2 text-center font-black text-red-700">{absCount || "—"}</td>
+                      <td className="p-2 text-center font-black text-orange-600">{morningLate||"—"}</td>
+                      <td className="p-2 text-center font-black text-orange-500">{morningMins>0?`${morningMins}د`:"—"}</td>
+                      <td className="p-2 text-center font-black text-amber-600">{periodLate||"—"}</td>
+                      <td className="p-2 text-center font-black text-amber-500">{periodMins>0?`${periodMins}د`:"—"}</td>
+                      <td className="p-2 text-center font-black text-red-700">{absCount||"—"}</td>
                     </tr>
                   );
                 })}
@@ -765,25 +804,39 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, attendance,
                       {/* الحصة المتأخر عنها */}
                       <td className="p-1.5 text-center">
                         {isLate ? (
-                          <div className="flex flex-wrap gap-1 justify-center">
-                            {PERIODS.map((p, pi) => {
-                              const sel = (r.latePeriods || []).includes(p);
-                              return (
-                                <button key={pi} onClick={() => {
-                                  const cur = r.latePeriods || [];
-                                  const updated = sel ? cur.filter(x => x !== p) : [...cur, p];
-                                  updateField(ti, selectedDay, "latePeriods", updated);
-                                }}
-                                  className="px-1.5 py-1 rounded-lg text-xs font-bold border-2 transition-all"
+                          <div className="space-y-1.5">
+                            {/* نوع التأخر */}
+                            <div className="flex gap-1 justify-center">
+                              {["صباحي","حصص"].map(lt => (
+                                <button key={lt} onClick={() => updateField(ti, selectedDay, "lateType", lt)}
+                                  className="px-2.5 py-1 rounded-lg text-xs font-black border-2 transition-all"
                                   style={{
-                                    background: sel ? "#fef3c7" : "#f9fafb",
-                                    borderColor: sel ? "#f59e0b" : "#e5e7eb",
-                                    color: sel ? "#92400e" : "#9ca3af"
+                                    background: (r.lateType||"صباحي") === lt ? (lt==="صباحي"?"#fff7ed":"#fefce8") : "#f9fafb",
+                                    borderColor: (r.lateType||"صباحي") === lt ? (lt==="صباحي"?"#ea580c":"#ca8a04") : "#e5e7eb",
+                                    color: (r.lateType||"صباحي") === lt ? (lt==="صباحي"?"#9a3412":"#713f12") : "#9ca3af",
                                   }}>
-                                  {pi + 1}
+                                  {lt === "صباحي" ? "🌅" : "📚"} {lt}
                                 </button>
-                              );
-                            })}
+                              ))}
+                            </div>
+                            {/* أرقام الحصص — تظهر فقط عند تأخر عن حصص */}
+                            {(r.lateType === "حصص") && (
+                              <div className="flex flex-wrap gap-1 justify-center">
+                                {PERIODS.map((p, pi) => {
+                                  const sel = (r.latePeriods || []).includes(p);
+                                  return (
+                                    <button key={pi} onClick={() => {
+                                      const cur = r.latePeriods || [];
+                                      updateField(ti, selectedDay, "latePeriods", sel ? cur.filter(x => x !== p) : [...cur, p]);
+                                    }}
+                                      className="px-1.5 py-1 rounded-lg text-xs font-bold border-2 transition-all"
+                                      style={{ background: sel?"#fef3c7":"#f9fafb", borderColor: sel?"#f59e0b":"#e5e7eb", color: sel?"#92400e":"#9ca3af" }}>
+                                      {pi+1}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         ) : <span className="text-gray-200 text-lg">—</span>}
                       </td>
