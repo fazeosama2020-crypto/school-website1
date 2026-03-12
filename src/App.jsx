@@ -1389,6 +1389,17 @@ function StudentEvalCard({ student, onUpdate, onDelete }) {
       {/* تفاصيل الطالب */}
       {expanded && (
         <div className="border-t border-gray-100">
+          {/* تعديل الاسم والهوية */}
+          <div className="flex gap-2 px-4 pt-3">
+            <input type="text" value={student.name} placeholder="اسم الطالب"
+              onChange={e => onUpdate({ ...student, name: e.target.value })}
+              className="flex-1 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm font-medium focus:border-blue-400 focus:outline-none"
+              style={{ fontFamily: "inherit", color: "#1B3A6B" }} />
+            <input type="text" value={student.nationalId || ""} placeholder="رقم الهوية"
+              onChange={e => onUpdate({ ...student, nationalId: e.target.value })}
+              className="w-36 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm text-center focus:border-blue-400 focus:outline-none"
+              style={{ fontFamily: "inherit" }} />
+          </div>
           {/* قائمة التقييمات السابقة */}
           {evals.length > 0 && (
             <div className="px-4 pt-3 space-y-3">
@@ -1677,37 +1688,6 @@ function ClassTable({ cls, onUpdateClass, onSave }) {
         </div>
       ) : (
         <div>
-          {/* تعديل الأسماء والهويات */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 text-xs font-bold text-gray-500">📝 تعديل الأسماء وأرقام الهويات</div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr style={{ background: "#1B3A6B" }}>
-                  <th className="p-2 text-center text-white w-10 text-xs">م</th>
-                  <th className="p-2 text-right text-white text-xs">اسم الطالب</th>
-                  <th className="p-2 text-center text-white text-xs w-36">رقم الهوية</th>
-                </tr></thead>
-                <tbody>
-                  {filtered.map((s, idx) => (
-                    <tr key={s.id} style={{ background: idx % 2 === 0 ? "#f4f7fb" : "#fff" }}>
-                      <td className="p-2 text-center font-black text-xs" style={{ color: "#1B3A6B" }}>{s.num}</td>
-                      <td className="p-2">
-                        <input type="text" value={s.name} placeholder="اكتب اسم الطالب"
-                          onChange={e => updateName(s.id, e.target.value)}
-                          className="w-full border-none bg-transparent text-sm font-medium focus:outline-none" style={{ color: "#1B3A6B" }} />
-                      </td>
-                      <td className="p-1.5">
-                        <input type="text" value={s.nationalId || ""} placeholder="رقم الهوية"
-                          onChange={e => updateNationalId(s.id, e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs text-center focus:outline-none focus:border-blue-400" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           {/* بطاقات التقييم الأسبوعي */}
           <div className="mb-2 flex items-center justify-between">
             <div className="font-black text-gray-700 text-sm">📊 التقييمات الأسبوعية ({filtered.length} طالب)</div>
