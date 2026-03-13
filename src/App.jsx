@@ -3742,10 +3742,10 @@ const applySize = (px) => {
 };
 
 const RichField = ({ label, value, onChange, placeholder, rows }) => {
-  const elRef = React.useRef(null);
-  const [show, setShow] = React.useState(false);
-  const initialized = React.useRef(false);
-  React.useEffect(() => {
+  const elRef = useRef(null);
+  const [show, setShow] = useState(false);
+  const initialized = useRef(false);
+  useEffect(() => {
     if (elRef.current && value && !initialized.current) {
       elRef.current.innerHTML = value;
       initialized.current = true;
