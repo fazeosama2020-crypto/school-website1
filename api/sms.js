@@ -1,32 +1,4 @@
-// /api/sms.js — Vercel Serverless (Node https — no fetch needed)
-const https = require("https");
-const http = require("http");
-
-function doRequest(urlStr, method, headers, bodyStr) {
-  return new Promise((resolve) => {
-    try {
-      const u = new URL(urlStr);
-      const mod = u.protocol === "https:" ? https : http;
-      const opts = {
-        hostname: u.hostname,
-        path: u.pathname + u.search,
-        method,
-        headers: { ...headers, "Content-Length": bodyStr ? Buffer.byteLength(bodyStr) : 0 },
-      };
-      const req = mod.request(opts, (res) => {
-        let data = "";
-        res.on("data", c => data += c);
-        res.on("end", () => resolve({ status: res.statusCode, text: data }));
-      });
-      req.on("error", (e) => resolve({ status: 0, text: "", error: e.message }));
-      if (bodyStr) req.write(bodyStr);
-      req.end();
-    } catch (e) {
-      resolve({ status: 0, text: "", error: e.message });
-    }
-  });
-}
-
+// /api/sms.js — Vercel Serverless Function
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -51,39 +23,46 @@ module.exports = async function handler(req, res) {
 
   const attempts = [
     { method:"POST", url:"https://app.mobile.net.sa/api/v1/sendSMS",
-      h:{"Content-Type":"application/json"},
-      b:JSON.stringify({ username, password, numbers:cleanNums, message, sender:s, msgType:isArabic?2:0 }) },
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ username, password, numbers:cleanNums, message, sender:s, msgType:isArabic?2:0 }) },
 
     { method:"POST", url:"https://app.mobile.net.sa/api/v1/sendSMS",
-      h:{"Content-Type":"application/json"},
-      b:JSON.stringify({ username, password, mobile:cleanNums, message, sender:s, unicode:isArabic?1:0 }) },
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ username, password, mobile:cleanNums, message, sender:s, unicode:isArabic?1:0 }) },
 
     { method:"POST", url:"https://app.mobile.net.sa/api/v1/sendSMS",
-      h:{"Content-Type":"application/x-www-form-urlencoded"},
-      b:`username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&numbers=${encodeURIComponent(cleanNums)}&message=${encodeURIComponent(message)}&sender=${encodeURIComponent(s)}` },
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:`username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&numbers=${encodeURIComponent(cleanNums)}&message=${encodeURIComponent(message)}&sender=${encodeURIComponent(s)}` },
 
     { method:"GET", url:`https://app.mobile.net.sa/api/v1/sendSMS?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&numbers=${encodeURIComponent(cleanNums)}&message=${encodeURIComponent(message)}&sender=${encodeURIComponent(s)}`,
-      h:{}, b:null },
+      headers:{}, body:null },
 
     { method:"POST", url:"https://app.mobile.net.sa/api/send",
-      h:{"Content-Type":"application/json"},
-      b:JSON.stringify({ username, password, numbers:cleanNums, message, sender:s }) },
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ username, password, numbers:cleanNums, message, sender:s }) },
   ];
 
   for (let i = 0; i < attempts.length; i++) {
     const a = attempts[i];
-    const r = await doRequest(a.url, a.method, a.h, a.b);
-    let parsed = null;
-    try { parsed = JSON.parse(r.text); } catch {}
+    try {
+      const opts = { method: a.method, headers: a.headers };
+      if (a.body) opts.body = a.body;
+      const r = await fetch(a.url, opts);
+      const text = await r.text();
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch {}
 
-    results.push({ n:i+1, url:a.url, http:r.status, raw:(r.text||r.error||"").substring(0,200) });
+      results.push({ n:i+1, url:a.url, http:r.status, raw:(text||"").substring(0,200) });
 
-    const ok = parsed?.success===true || parsed?.code===0 || parsed?.code==="0" ||
-               parsed?.status==="success" || r.text.trim()==="0" || r.text.trim()==="00" ||
-               (r.status===200 && r.text.length>0 && r.text.length<20 && /^\d+$/.test(r.text.trim()));
+      const ok = parsed?.success===true || parsed?.code===0 || parsed?.code==="0" ||
+                 parsed?.status==="success" || text.trim()==="0" || text.trim()==="00" ||
+                 (r.status===200 && text.length>0 && text.length<20 && /^\d+$/.test(text.trim()));
 
-    if (ok) {
-      return res.status(200).json({ success:true, attempt:i+1, url:a.url, raw:r.text, allAttempts:results });
+      if (ok) {
+        return res.status(200).json({ success:true, attempt:i+1, url:a.url, raw:text, allAttempts:results });
+      }
+    } catch(e) {
+      results.push({ n:i+1, url:a.url, http:0, raw:"خطأ: " + e.message });
     }
   }
 
