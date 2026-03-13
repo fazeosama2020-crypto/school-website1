@@ -3123,9 +3123,9 @@ function SMSPage({ teachers, attendance, week }) {
     { id: "bulk",     label: "رسالة للأهالي", icon: "👨‍👦" },
   ];
 
-  // ===== SEND FUNCTION — Bearer Token (MadarSMSAPI الرسمي) =====
+  // ===== SEND FUNCTION — عبر Vercel Serverless Function (api/send-sms.js) =====
   const sendSMS = async (numbers, message) => {
-    if (!apiKey?.trim()) { setResult({ ok:false, topMsg:"🔑 أدخل مفتاح API في الإعدادات أولاً" }); return; }
+    if (!apiKey?.trim()) { setResult({ ok:false, topMsg:"🔑 أدخل مفتاح API في الإعدادات" }); return; }
     if (!numbers?.trim()) { setResult({ ok:false, topMsg:"📞 أدخل رقماً واحداً على الأقل" }); return; }
     if (!message.trim()) { setResult({ ok:false, topMsg:"✏️ اكتب نص الرسالة" }); return; }
     setSending(true); setResult(null);
@@ -3134,84 +3134,39 @@ function SMSPage({ teachers, attendance, week }) {
       .map(n => n.trim()).filter(n => n.length >= 9)
       .map(n => n.startsWith("05") ? "966" + n.slice(1) : n);
 
-    const s = sender || "School1";
-    const BASE = "https://app.mobile.net.sa/api/v1";
-    const AUTH = { "Authorization": `Bearer ${apiKey}`, "Accept": "application/json", "Content-Type": "application/json" };
-    const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    try {
+      const r = await fetch("/api/send-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey,
+          numbers: cleanNums,
+          message,
+          sender: sender || "School1",
+        }),
+      });
+      const data = await r.json();
 
-    // المسارات الرسمية من توثيق MadarSMSAPI — kebab-case
-    const attempts = [
-      // إرسال فردي — send-sms (المسار الأرجح بناء على get-balance)
-      { label: "send-sms — مباشر",
-        url: `${BASE}/send-sms`, method:"POST", headers: AUTH,
-        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
-      // إرسال متعدد — send-bulk-sms
-      { label: "send-bulk-sms — مباشر",
-        url: `${BASE}/send-bulk-sms`, method:"POST", headers: AUTH,
-        body: JSON.stringify({ mobiles: cleanNums, message, sender: s }) },
-      // SendSMS بـ PascalCase
-      { label: "SendSMS — مباشر",
-        url: `${BASE}/SendSMS`, method:"POST", headers: AUTH,
-        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
-      // numbers بدل mobile
-      { label: "send-sms — numbers — مباشر",
-        url: `${BASE}/send-sms`, method:"POST", headers: AUTH,
-        body: JSON.stringify({ numbers: cleanNums.join(","), message, sender: s }) },
-      // عبر proxy — send-sms
-      { label: "send-sms — proxy",
-        url: proxy(`${BASE}/send-sms`), method:"POST", headers: AUTH,
-        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
-      // عبر proxy — send-bulk-sms
-      { label: "send-bulk-sms — proxy",
-        url: proxy(`${BASE}/send-bulk-sms`), method:"POST", headers: AUTH,
-        body: JSON.stringify({ mobiles: cleanNums, message, sender: s }) },
-      // عبر proxy — numbers
-      { label: "send-sms — numbers — proxy",
-        url: proxy(`${BASE}/send-sms`), method:"POST", headers: AUTH,
-        body: JSON.stringify({ numbers: cleanNums.join(","), message, sender: s }) },
-      // corsproxy
-      { label: "send-sms — corsproxy",
-        url: `https://corsproxy.io/?${encodeURIComponent(`${BASE}/send-sms`)}`, method:"POST", headers: AUTH,
-        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
-      // get-balance للتحقق من صحة الـ token
-      { label: "get-balance — للتحقق من الـ Token",
-        url: proxy(`${BASE}/get-balance`), method:"POST", headers: AUTH, body: "{}" },
-    ];
-
-    const allResults = [];
-    for (let i = 0; i < attempts.length; i++) {
-      const a = attempts[i];
-      try {
-        const r = await fetch(a.url, { method: a.method, headers: a.headers, body: a.body });
-        const text = await r.text();
-        let p = null; try { p = JSON.parse(text); } catch {}
-        const raw = text.substring(0, 250);
-        allResults.push({ n:i+1, label:a.label, http:r.status, raw });
-
-        // نجاح الإرسال
-        const sent = p?.status === "Success" || p?.status === "success" ||
-                     p?.success === true || p?.code === 0 || p?.code === "0" ||
-                     (p?.data && !p?.data?.error);
-        if (sent && a.label !== "get-balance — للتحقق من الـ Token") {
-          setSending(false);
-          setResult({ ok:true, msg:`✅ تم الإرسال بنجاح!\n📡 المسار: ${a.label}\n📋 الرد: ${raw}` });
-          return;
-        }
-        // نجاح get-balance يثبت أن الـ token صحيح لكن المسار خاطئ
-        if (a.label.includes("get-balance") && p?.status === "Success") {
-          allResults[allResults.length-1].raw = "✅ Token صحيح! رصيد: " + p?.data?.balance + " — لكن مسار الإرسال يحتاج تعديل";
-        }
-      } catch(e) {
-        allResults.push({ n:i+1, label:a.label, http:0, raw:"خطأ: "+e.message.substring(0,80) });
+      if (data.success) {
+        setResult({ ok:true, msg:`✅ تم إرسال الرسالة بنجاح!\n📡 المسار: ${data.usedEndpoint}\n📋 الرد: ${data.response}` });
+      } else {
+        // عرض تقرير تشخيصي
+        const attempts = (data.tried || []).map((t, i) => ({
+          n: i+1,
+          label: `${t.url?.split("/api/v1/")[1] || t.url} [${t.body || ""}]`,
+          http: t.status || 0,
+          raw: t.response || t.error || "—",
+        }));
+        setResult({ ok:false, topMsg:"❌ لم يُرسَل — تقرير التشخيص:", attempts,
+          msg:"📸 أرسل صورة من صفحة SendSMS في توثيق Postman لنرى الـ body المطلوب" });
       }
+    } catch(e) {
+      // إذا فشل /api/send-sms (مثلاً على GitHub Pages) جرب مباشرة
+      setResult({ ok:false, topMsg:"⚠️ تأكد أن ملف api/send-sms.js موجود في مشروعك على Vercel",
+        attempts: [{ n:1, label:"محلي /api/send-sms", http:0, raw:e.message }],
+        msg:"🔧 المشروع يحتاج Vercel لتشغيل الـ Serverless Functions — لا يعمل على GitHub Pages" });
     }
-
     setSending(false);
-    setResult({
-      ok: false, topMsg: "❌ لم يُرسَل — تقرير التشخيص:",
-      attempts: allResults,
-      msg: "📸 أرسل صورة من صفحة SendSMS في توثيق Postman لنرى الـ body المطلوب"
-    });
   };
 
   // Send to selected contacts
@@ -3243,16 +3198,14 @@ function SMSPage({ teachers, attendance, week }) {
             <div className="sm:col-span-2">
               <label className="text-xs font-bold text-gray-500 mb-1 block">🔑 مفتاح API (Bearer Token)</label>
               <input value={apiKey} onChange={e => setApiKey(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono focus:border-green-400 focus:outline-none" dir="ltr"
-                placeholder="API Key من لوحة تحكم المدار" />
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono focus:border-green-400 focus:outline-none" dir="ltr" />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 mb-1 block">📛 اسم المرسل (Sender)</label>
+              <label className="text-xs font-bold text-gray-500 mb-1 block">📛 اسم المرسل</label>
               <input value={sender} onChange={e => setSender(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="School1" />
             </div>
           </div>
-          <p className="text-xs text-green-600 mt-3 bg-green-50 rounded-xl px-3 py-2">✅ يستخدم Bearer Token في Authorization header — المسار الرسمي: app.mobile.net.sa/api/v1/send-sms</p>
         </div>
       )}
 
