@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/sms.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
+}
