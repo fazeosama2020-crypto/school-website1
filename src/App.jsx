@@ -2980,8 +2980,20 @@ function ActivitiesPage({ activities }) {
 }
 
 // ==================== SMS PAGE ====================
+// ---- helper: load XLSX dynamically ----
+async function loadXLSX() {
+  if (window.XLSX) return window.XLSX;
+  await new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/xlsx/dist/xlsx.full.min.js";
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  return window.XLSX;
+}
+
 function SMSPage({ teachers, attendance, week }) {
-  const [tab, setTab] = useState("manual");
+  const [tab, setTab] = useState("contacts");
   const [username, setUsername] = useState("966548454776");
   const [password, setPassword] = useState("");
   const [sender, setSender] = useState("School1");
@@ -2989,69 +3001,161 @@ function SMSPage({ teachers, attendance, week }) {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Tab 1: Manual
+  // ===== CONTACTS STATE =====
+  // Each contact: { id, name, phone, type: "student"|"teacher", class: "" }
+  const [contacts, setContacts] = useState([]);
+  const [contactsTab, setContactsTab] = useState("students"); // students | teachers
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newClass, setNewClass] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editClass, setEditClass] = useState("");
+  const [searchContact, setSearchContact] = useState("");
+  const [selectedContacts, setSelectedContacts] = useState([]);
+  const [importMsg, setImportMsg] = useState("");
+
+  // Save contacts to localStorage
+  useEffect(() => {
+    try { localStorage.setItem("sms_contacts", JSON.stringify(contacts)); } catch {}
+  }, [contacts]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sms_contacts");
+      if (saved) setContacts(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const addContact = (type) => {
+    if (!newName.trim() || !newPhone.trim()) return;
+    const phone = newPhone.trim().replace(/\s/g, "");
+    setContacts(prev => [...prev, { id: Date.now(), name: newName.trim(), phone, type, class: newClass.trim() }]);
+    setNewName(""); setNewPhone(""); setNewClass("");
+  };
+
+  const deleteContact = (id) => setContacts(prev => prev.filter(c => c.id !== id));
+
+  const startEdit = (c) => { setEditId(c.id); setEditName(c.name); setEditPhone(c.phone); setEditClass(c.class || ""); };
+  const saveEdit = () => {
+    setContacts(prev => prev.map(c => c.id === editId ? { ...c, name: editName, phone: editPhone.replace(/\s/g,""), class: editClass } : c));
+    setEditId(null);
+  };
+
+  const importExcel = async (file, type) => {
+    try {
+      const XLSX = await loadXLSX();
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      let added = 0;
+      const newContacts = [];
+      rows.forEach(row => {
+        // Try to find name and phone in the row
+        const cells = row.map(c => String(c || "").trim()).filter(Boolean);
+        if (cells.length < 1) return;
+        // Phone: cell containing 10+ digits starting with 05 or 9665
+        const phoneCell = cells.find(c => /^(05|9665|966)\d{7,}/.test(c.replace(/\s/g,"")));
+        // Name: longest non-numeric cell
+        const nameCell = cells.filter(c => !/^\d+$/.test(c) && c !== phoneCell).sort((a,b) => b.length - a.length)[0];
+        const classCell = cells.find(c => /فصل|صف|شعب|class/i.test(c) && c !== nameCell);
+        if (nameCell && phoneCell) {
+          newContacts.push({ id: Date.now() + Math.random(), name: nameCell, phone: phoneCell.replace(/\s/g,""), type, class: classCell || "" });
+          added++;
+        }
+      });
+      if (added > 0) {
+        setContacts(prev => {
+          const existingPhones = new Set(prev.map(c => c.phone));
+          const unique = newContacts.filter(c => !existingPhones.has(c.phone));
+          return [...prev, ...unique];
+        });
+        setImportMsg(`✅ تم استيراد ${added} جهة اتصال`);
+      } else {
+        setImportMsg("⚠️ لم يُعثر على أرقام بالصيغة المطلوبة. تأكد أن الملف يحتوي اسم ورقم في كل صف.");
+      }
+      setTimeout(() => setImportMsg(""), 4000);
+    } catch (e) { setImportMsg("❌ خطأ في قراءة الملف: " + e.message); }
+  };
+
+  const toggleSelect = (id) => setSelectedContacts(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const selectAll = (type) => {
+    const ids = filteredContacts(type).map(c => c.id);
+    const allSelected = ids.every(id => selectedContacts.includes(id));
+    if (allSelected) setSelectedContacts(prev => prev.filter(id => !ids.includes(id)));
+    else setSelectedContacts(prev => [...new Set([...prev, ...ids])]);
+  };
+  const filteredContacts = (type) => contacts.filter(c => c.type === type && (
+    c.name.includes(searchContact) || c.phone.includes(searchContact) || (c.class||"").includes(searchContact)
+  ));
+  const selectedPhones = () => contacts.filter(c => selectedContacts.includes(c.id)).map(c => c.phone).join(",");
+
+  // Send tabs state
   const [manualNums, setManualNums] = useState("");
   const [manualMsg, setManualMsg] = useState("");
-
-  // Tab 2: Attendance notify
   const [selectedDay, setSelectedDay] = useState(0);
   const [supervisorNum, setSupervisorNum] = useState("");
   const [absentMsg, setAbsentMsg] = useState("");
-
-  // Tab 3: Bulk class
   const [bulkNums, setBulkNums] = useState("");
   const [bulkMsg, setBulkMsg] = useState("");
 
-  // Build attendance message for tab2
+  // Auto-build attendance message
   useEffect(() => {
     const di = selectedDay;
     const dayLabel = week?.[di]?.day || `اليوم ${di + 1}`;
     const dateLabel = week?.[di]?.dateH || "";
-    const absents = teachers.filter((t, ti) => (attendance?.[ti]?.[di]?.status || "حاضر") === "غائب")
-      .map((t, i) => `${i + 1}. ${t}`);
-    const lates = teachers.filter((t, ti) => (attendance?.[ti]?.[di]?.status || "حاضر") === "متأخر")
-      .map((t, i) => {
-        const r = attendance?.[teachers.indexOf(t)]?.[di] || {};
-        return `${i + 1}. ${t} (${r.lateType || "صباحي"} - ${r.lateMinutes || 0} دقيقة)`;
-      });
-    let msg = `📋 تقرير حضور ${dayLabel} ${dateLabel}\n`;
-    msg += `مدرسة عبيدة بن الحارث المتوسطة\n\n`;
+    const absents = teachers.filter((_, ti) => (attendance?.[ti]?.[di]?.status || "حاضر") === "غائب").map((t, i) => `${i + 1}. ${t}`);
+    const lates = teachers.filter((_, ti) => (attendance?.[ti]?.[di]?.status || "حاضر") === "متأخر").map((t, i) => {
+      const r = attendance?.[teachers.indexOf(t)]?.[di] || {};
+      return `${i + 1}. ${t} (${r.lateType || "صباحي"} - ${r.lateMinutes || 0} دقيقة)`;
+    });
+    let msg = `📋 تقرير حضور ${dayLabel} ${dateLabel}\nمدرسة عبيدة بن الحارث المتوسطة\n\n`;
     if (absents.length) msg += `❌ الغائبون (${absents.length}):\n${absents.join("\n")}\n\n`;
     if (lates.length) msg += `🕐 المتأخرون (${lates.length}):\n${lates.join("\n")}\n`;
     if (!absents.length && !lates.length) msg += `✅ جميع المعلمين حاضرون`;
     setAbsentMsg(msg);
   }, [selectedDay, teachers, attendance, week]);
 
+  const TABS = [
+    { id: "contacts", label: "جهات الاتصال", icon: "👥" },
+    { id: "manual",   label: "رسالة يدوية",  icon: "✍️" },
+    { id: "attendance", label: "إشعار الغياب", icon: "📋" },
+    { id: "bulk",     label: "رسالة للأهالي", icon: "👨‍👦" },
+  ];
+
+  // ===== SEND FUNCTION =====
   const sendSMS = async (numbers, message) => {
     if (!password) { setResult({ ok: false, msg: "أدخل كلمة المرور أولاً في الإعدادات ↑" }); return; }
-    if (!numbers.trim()) { setResult({ ok: false, msg: "أدخل رقماً واحداً على الأقل" }); return; }
+    if (!numbers || !numbers.trim()) { setResult({ ok: false, msg: "أدخل رقماً واحداً على الأقل" }); return; }
     if (!message.trim()) { setResult({ ok: false, msg: "اكتب نص الرسالة" }); return; }
-
-    setSending(true);
-    setResult(null);
+    setSending(true); setResult(null);
     try {
       const resp = await fetch("/api/sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, numbers: numbers.replace(/\s/g, ""), message, sender })
+        body: JSON.stringify({ username, password, numbers: numbers.replace(/\s/g,""), message, sender })
       });
       const data = await resp.json();
-      if (data.success || data.code === "0" || data.status === "success" || resp.ok) {
-        setResult({ ok: true, msg: `✅ تم الإرسال بنجاح! (${numbers.split(",").filter(Boolean).length} رسالة)` });
+
+      if (data.success === true) {
+        setResult({ ok: true, msg: `✅ تم الإرسال بنجاح لـ ${data.cleanNumbersSent?.split(",").length || "?"} رقم` });
       } else {
-        setResult({ ok: false, msg: `❌ فشل: ${data.message || data.error || JSON.stringify(data)}` });
+        // عرض الرد الخام للتشخيص
+        const rawInfo = data.rawResponse ? `\n📋 رد الخادم: ${data.rawResponse.substring(0,200)}` : "";
+        const hint = data.debugNeeded ? "\n⚠️ الخادم لم يؤكد النجاح ولم يُبلّغ عن خطأ — تحقق من الرصيد واسم المرسل" : "";
+        setResult({ ok: false, msg: `❌ لم يُرسَل${rawInfo}${hint}\n\n💡 أرسل هذه المعلومات للمطور للمساعدة.`, raw: data.rawResponse });
       }
-    } catch (e) {
-      setResult({ ok: false, msg: `❌ خطأ في الاتصال: ${e.message}` });
-    }
+    } catch (e) { setResult({ ok: false, msg: `❌ خطأ في الاتصال: ${e.message}\nتأكد أن ملف api/sms.js مرفوع في GitHub` }); }
     setSending(false);
   };
 
-  const TABS = [
-    { id: "manual", label: "رسالة يدوية", icon: "✍️" },
-    { id: "attendance", label: "إشعار الغياب", icon: "📋" },
-    { id: "bulk", label: "رسالة للأهالي", icon: "👨‍👦" },
-  ];
+  // Send to selected contacts
+  const [sendMsg, setSendMsg] = useState("");
+  const sendToSelected = () => {
+    const phones = selectedPhones();
+    sendSMS(phones, sendMsg);
+  };
 
   return (
     <div className="space-y-5">
@@ -3067,109 +3171,250 @@ function SMSPage({ teachers, attendance, week }) {
         </button>
       </div>
 
-      {/* Config panel */}
+      {/* Config */}
       {showConfig && (
         <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
           <h3 className="font-black text-gray-800 mb-4">⚙️ إعدادات حساب المدار التقني</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-xs font-bold text-gray-500 mb-1 block">اسم المستخدم</label>
-              <input value={username} onChange={e => setUsername(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="966XXXXXXXXX" />
+              <input value={username} onChange={e => setUsername(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="966XXXXXXXXX" dir="ltr" />
             </div>
             <div>
               <label className="text-xs font-bold text-gray-500 mb-1 block">كلمة المرور</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="••••••••" />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="••••••••" />
             </div>
             <div>
               <label className="text-xs font-bold text-gray-500 mb-1 block">اسم المرسل (Sender)</label>
-              <input value={sender} onChange={e => setSender(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="School1" />
+              <input value={sender} onChange={e => setSender(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="School1" />
             </div>
           </div>
-          <p className="text-xs text-amber-600 mt-3 bg-amber-50 rounded-xl px-3 py-2">
-            ⚠️ كلمة المرور تُحفظ مؤقتاً في الجلسة فقط ولا تُرسَل إلا عند إرسال رسالة
-          </p>
+          <p className="text-xs text-amber-600 mt-3 bg-amber-50 rounded-xl px-3 py-2">⚠️ كلمة المرور تُحفظ في المتصفح فقط ولا تُرسل إلا عند الضغط على إرسال</p>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-2xl">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl overflow-x-auto">
         {TABS.map(t => (
           <button key={t.id} onClick={() => { setTab(t.id); setResult(null); }}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === t.id ? "bg-white shadow text-teal-700" : "text-gray-500 hover:text-gray-700"}`}>
+            className={`flex-1 whitespace-nowrap py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${tab === t.id ? "bg-white shadow text-teal-700" : "text-gray-500 hover:text-gray-700"}`}>
             {t.icon} {t.label}
           </button>
         ))}
       </div>
 
-      {/* Result banner */}
       {result && (
-        <div className={`rounded-2xl px-5 py-3 text-sm font-bold ${result.ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+        <div className={`rounded-2xl px-5 py-3 text-sm font-bold whitespace-pre-wrap ${result.ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
           {result.msg}
         </div>
       )}
 
-      {/* ===== TAB 1: MANUAL ===== */}
-      {tab === "manual" && (
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-          <h3 className="font-black text-gray-800">✍️ رسالة يدوية</h3>
-          <div>
-            <label className="text-xs font-bold text-gray-500 mb-1 block">أرقام الهاتف (افصل بفاصلة — مثال: 0512345678,0598765432)</label>
-            <textarea value={manualNums} onChange={e => setManualNums(e.target.value)}
-              rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none"
-              placeholder="0512345678,0598765432,0566778899" dir="ltr" />
+      {/* ===== TAB: CONTACTS ===== */}
+      {tab === "contacts" && (
+        <div className="space-y-4">
+          {/* Sub-tabs: students / teachers */}
+          <div className="flex gap-2">
+            {[{ id:"students", label:"👨‍🎓 أولياء أمور الطلاب" }, { id:"teachers", label:"👨‍🏫 المعلمون" }].map(t => (
+              <button key={t.id} onClick={() => setContactsTab(t.id)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${contactsTab === t.id ? "bg-teal-600 text-white border-teal-600" : "bg-white text-gray-500 border-gray-200 hover:border-teal-300"}`}>
+                {t.label} <span className="mr-1 text-xs opacity-70">({contacts.filter(c=>c.type===t.id).length})</span>
+              </button>
+            ))}
           </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 mb-1 block">
-              نص الرسالة
-              <span className="mr-2 text-gray-400">({manualMsg.length} حرف)</span>
-            </label>
-            <textarea value={manualMsg} onChange={e => setManualMsg(e.target.value)}
-              rows={4} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none"
-              placeholder="اكتب نص رسالتك هنا..." />
+
+          {/* Import + Add */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <h3 className="font-black text-gray-800">
+                {contactsTab === "students" ? "📥 استيراد / إضافة أولياء الأمور" : "📥 استيراد / إضافة المعلمين"}
+              </h3>
+              {/* Excel import */}
+              <label className="cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-2">
+                📊 استيراد من Excel
+                <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => { if(e.target.files[0]) importExcel(e.target.files[0], contactsTab); e.target.value=""; }} />
+              </label>
+            </div>
+            {importMsg && <div className="text-sm font-bold text-center py-2 rounded-xl bg-gray-50 border">{importMsg}</div>}
+
+            {/* Excel format hint */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-xs text-blue-700">
+              💡 <strong>صيغة ملف Excel:</strong> عمود للاسم وعمود للرقم (05XXXXXXXXX) — يمكن إضافة عمود للفصل/الصف اختيارياً. الملف يُضيف الجديد فقط دون حذف الموجود.
+            </div>
+
+            {/* Manual add form */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-100">
+              <div className="sm:col-span-2">
+                <label className="text-xs font-bold text-gray-500 mb-1 block">الاسم</label>
+                <input value={newName} onChange={e => setNewName(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="اسم الشخص" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block">رقم الجوال</label>
+                <input value={newPhone} onChange={e => setNewPhone(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="05XXXXXXXX" dir="ltr" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1 block">{contactsTab === "students" ? "الفصل (اختياري)" : "التخصص (اختياري)"}</label>
+                <input value={newClass} onChange={e => setNewClass(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder={contactsTab === "students" ? "1أ، 2ب..." : "رياضيات..."} />
+              </div>
+              <div className="sm:col-span-4">
+                <button onClick={() => addContact(contactsTab)}
+                  disabled={!newName.trim() || !newPhone.trim()}
+                  className="bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-bold px-5 py-2 rounded-xl text-sm">
+                  ➕ إضافة {contactsTab === "students" ? "ولي أمر" : "معلم"}
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button onClick={() => sendSMS(manualNums, manualMsg)} disabled={sending}
-              className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2">
-              {sending ? "⏳ جاري الإرسال..." : "📤 إرسال الآن"}
-            </button>
-            <button onClick={() => { setManualNums(""); setManualMsg(""); }}
-              className="border border-gray-200 text-gray-500 font-bold px-4 py-2.5 rounded-xl text-sm">
-              مسح
-            </button>
+
+          {/* Contacts list */}
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            {/* Search + select all + send to selected */}
+            <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
+              <input value={searchContact} onChange={e => setSearchContact(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="🔍 بحث بالاسم أو الرقم أو الفصل..." />
+              <button onClick={() => selectAll(contactsTab)}
+                className="text-xs font-bold px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-50">
+                {filteredContacts(contactsTab).every(c => selectedContacts.includes(c.id)) ? "✗ إلغاء الكل" : "✓ تحديد الكل"}
+              </button>
+              {selectedContacts.length > 0 && (
+                <span className="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-2 rounded-xl border border-teal-200">
+                  {selectedContacts.length} محدد
+                </span>
+              )}
+            </div>
+
+            {filteredContacts(contactsTab).length === 0 ? (
+              <div className="p-10 text-center text-gray-400">
+                <div className="text-4xl mb-3">{contactsTab === "students" ? "👨‍🎓" : "👨‍🏫"}</div>
+                <p className="font-bold">لا توجد جهات اتصال بعد</p>
+                <p className="text-xs mt-1">أضف يدوياً أو استورد من ملف Excel</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                {filteredContacts(contactsTab).map(c => (
+                  <div key={c.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all ${selectedContacts.includes(c.id) ? "bg-teal-50" : ""}`}>
+                    {/* Checkbox */}
+                    <input type="checkbox" checked={selectedContacts.includes(c.id)} onChange={() => toggleSelect(c.id)}
+                      className="w-4 h-4 accent-teal-600 cursor-pointer flex-shrink-0" />
+                    {editId === c.id ? (
+                      // Edit mode
+                      <div className="flex-1 grid grid-cols-3 gap-2">
+                        <input value={editName} onChange={e => setEditName(e.target.value)}
+                          className="border border-teal-300 rounded-lg px-2 py-1 text-xs" placeholder="الاسم" />
+                        <input value={editPhone} onChange={e => setEditPhone(e.target.value)}
+                          className="border border-teal-300 rounded-lg px-2 py-1 text-xs" placeholder="الرقم" dir="ltr" />
+                        <input value={editClass} onChange={e => setEditClass(e.target.value)}
+                          className="border border-teal-300 rounded-lg px-2 py-1 text-xs" placeholder="الفصل" />
+                      </div>
+                    ) : (
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm text-gray-800 truncate">{c.name}</div>
+                        <div className="text-xs text-gray-400 flex items-center gap-2">
+                          <span dir="ltr">{c.phone}</span>
+                          {c.class && <span className="bg-gray-100 px-2 py-0.5 rounded-full">{c.class}</span>}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-1 flex-shrink-0">
+                      {editId === c.id ? (
+                        <>
+                          <button onClick={saveEdit} className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg font-bold">حفظ</button>
+                          <button onClick={() => setEditId(null)} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg font-bold">إلغاء</button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => startEdit(c)} className="text-xs text-blue-600 hover:bg-blue-50 px-2 py-1.5 rounded-lg">✏️</button>
+                          <button onClick={() => deleteContact(c.id)} className="text-xs text-red-500 hover:bg-red-50 px-2 py-1.5 rounded-lg">🗑️</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Send to selected footer */}
+            {selectedContacts.length > 0 && (
+              <div className="border-t border-gray-200 p-4 bg-teal-50 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-teal-700">📤 إرسال لـ {selectedContacts.length} شخص محدد</span>
+                </div>
+                <textarea value={sendMsg} onChange={e => setSendMsg(e.target.value)}
+                  rows={3} className="w-full border border-teal-200 rounded-xl px-3 py-2 text-sm resize-none bg-white"
+                  placeholder="اكتب نص الرسالة..." />
+                <div className="flex gap-2">
+                  <button onClick={sendToSelected} disabled={sending || !sendMsg.trim()}
+                    className="bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-bold px-5 py-2 rounded-xl text-sm">
+                    {sending ? "⏳ جاري الإرسال..." : `📤 إرسال الآن`}
+                  </button>
+                  <button onClick={() => setSelectedContacts([])}
+                    className="border border-gray-200 bg-white text-gray-500 font-bold px-4 py-2 rounded-xl text-sm">
+                    إلغاء التحديد
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ===== TAB 2: ATTENDANCE NOTIFY ===== */}
+      {/* ===== TAB: MANUAL ===== */}
+      {tab === "manual" && (
+        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
+          <h3 className="font-black text-gray-800">✍️ رسالة يدوية بأرقام مباشرة</h3>
+          <div>
+            <label className="text-xs font-bold text-gray-500 mb-1 block">أرقام الهاتف (مفصولة بفاصلة)</label>
+            <textarea value={manualNums} onChange={e => setManualNums(e.target.value)}
+              rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none"
+              placeholder="0512345678,0598765432" dir="ltr" />
+            {selectedContacts.length > 0 && (
+              <button onClick={() => setManualNums(selectedPhones())}
+                className="mt-2 text-xs text-teal-600 font-bold hover:underline">
+                ← تعبئة من {selectedContacts.length} جهة محددة في قسم جهات الاتصال
+              </button>
+            )}
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 mb-1 block">نص الرسالة <span className="text-gray-400 font-normal mr-1">({manualMsg.length} حرف)</span></label>
+            <textarea value={manualMsg} onChange={e => setManualMsg(e.target.value)}
+              rows={4} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none" placeholder="اكتب نص رسالتك هنا..." />
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => sendSMS(manualNums, manualMsg)} disabled={sending}
+              className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-sm">
+              {sending ? "⏳ جاري الإرسال..." : "📤 إرسال الآن"}
+            </button>
+            <button onClick={() => { setManualNums(""); setManualMsg(""); }}
+              className="border border-gray-200 text-gray-500 font-bold px-4 py-2.5 rounded-xl text-sm">مسح</button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== TAB: ATTENDANCE ===== */}
       {tab === "attendance" && (
         <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
-          <h3 className="font-black text-gray-800">📋 إشعار غياب المعلمين</h3>
+          <h3 className="font-black text-gray-800">📋 إشعار غياب وتأخر المعلمين</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-bold text-gray-500 mb-1 block">اختر اليوم</label>
+              <label className="text-xs font-bold text-gray-500 mb-1 block">اليوم</label>
               <select value={selectedDay} onChange={e => setSelectedDay(Number(e.target.value))}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white">
-                {(week || []).map((d, i) => (
-                  <option key={i} value={i}>{d.day} — {d.dateH}</option>
-                ))}
+                {(week || []).map((d, i) => <option key={i} value={i}>{d.day} — {d.dateH}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 mb-1 block">رقم المشرف / الموجه (للإشعار)</label>
+              <label className="text-xs font-bold text-gray-500 mb-1 block">رقم المشرف</label>
               <input value={supervisorNum} onChange={e => setSupervisorNum(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="05XXXXXXXX" dir="ltr" />
             </div>
           </div>
-
-          {/* Stats for selected day */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "حاضر", count: teachers.filter((_, ti) => (attendance?.[ti]?.[selectedDay]?.status || "حاضر") === "حاضر").length, color: "green" },
-              { label: "متأخر", count: teachers.filter((_, ti) => (attendance?.[ti]?.[selectedDay]?.status || "حاضر") === "متأخر").length, color: "amber" },
-              { label: "غائب", count: teachers.filter((_, ti) => (attendance?.[ti]?.[selectedDay]?.status || "حاضر") === "غائب").length, color: "red" },
+              { label:"حاضر", color:"green", count: teachers.filter((_,ti)=>(attendance?.[ti]?.[selectedDay]?.status||"حاضر")==="حاضر").length },
+              { label:"متأخر", color:"amber", count: teachers.filter((_,ti)=>(attendance?.[ti]?.[selectedDay]?.status||"حاضر")==="متأخر").length },
+              { label:"غائب", color:"red", count: teachers.filter((_,ti)=>(attendance?.[ti]?.[selectedDay]?.status||"حاضر")==="غائب").length },
             ].map(s => (
               <div key={s.label} className={`bg-${s.color}-50 border border-${s.color}-200 rounded-xl p-3 text-center`}>
                 <div className={`text-2xl font-black text-${s.color}-600`}>{s.count}</div>
@@ -3177,45 +3422,45 @@ function SMSPage({ teachers, attendance, week }) {
               </div>
             ))}
           </div>
-
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1 block">نص الرسالة (مُولَّد تلقائياً — يمكنك التعديل)</label>
+            <label className="text-xs font-bold text-gray-500 mb-1 block">نص الرسالة (مُولَّد تلقائياً — قابل للتعديل)</label>
             <textarea value={absentMsg} onChange={e => setAbsentMsg(e.target.value)}
               rows={8} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono resize-none" />
           </div>
           <button onClick={() => sendSMS(supervisorNum, absentMsg)} disabled={sending}
-            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2">
+            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-sm">
             {sending ? "⏳ جاري الإرسال..." : "📤 أرسل للمشرف"}
           </button>
         </div>
       )}
 
-      {/* ===== TAB 3: BULK CLASS ===== */}
+      {/* ===== TAB: BULK ===== */}
       {tab === "bulk" && (
         <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
           <h3 className="font-black text-gray-800">👨‍👦 رسالة جماعية لأولياء الأمور</h3>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
-            💡 أدخل أرقام أولياء الأمور مفصولة بفاصلة. يمكنك تجميعهم حسب الفصل يدوياً.
+          <div className="bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 text-sm text-teal-700 flex items-center justify-between gap-3 flex-wrap">
+            <span>💡 يمكنك تحديد الأرقام من قسم <strong>جهات الاتصال</strong> ثم العودة هنا</span>
+            {selectedContacts.length > 0 && (
+              <button onClick={() => setBulkNums(selectedPhones())}
+                className="bg-teal-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg">
+                ← تعبئة {selectedContacts.length} رقم محدد
+              </button>
+            )}
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1 block">
-              أرقام أولياء الأمور
-              <span className="mr-2 text-gray-400 font-normal">({bulkNums.split(",").filter(n => n.trim().length > 5).length} رقم)</span>
-            </label>
+            <label className="text-xs font-bold text-gray-500 mb-1 block">أرقام أولياء الأمور <span className="text-gray-400 font-normal mr-1">({bulkNums.split(",").filter(n=>n.trim().length>5).length} رقم)</span></label>
             <textarea value={bulkNums} onChange={e => setBulkNums(e.target.value)}
               rows={3} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none"
-              placeholder="0512345678,0598765432,0566778899,0544332211" dir="ltr" />
+              placeholder="0512345678,0598765432,0566778899" dir="ltr" />
           </div>
-
-          {/* Quick message templates */}
           <div>
             <label className="text-xs font-bold text-gray-500 mb-2 block">قوالب جاهزة</label>
             <div className="flex gap-2 flex-wrap">
               {[
-                { label: "دعوة اجتماع", msg: "أولياء الأمور الكرام\nيُعقد اجتماعاً بالمدرسة يوم ............\nالرجاء الحضور في الموعد المحدد\nمدرسة عبيدة بن الحارث المتوسطة" },
-                { label: "موعد الاختبارات", msg: "أولياء الأمور الكرام\nتبدأ الاختبارات يوم ............\nنتمنى لأبنائكم التوفيق\nمدرسة عبيدة بن الحارث المتوسطة" },
-                { label: "إجازة عارضة", msg: "أولياء الأمور الكرام\nتُعلم المدرسة بعدم الدراسة يوم ............\nمع التقدير\nمدرسة عبيدة بن الحارث المتوسطة" },
-                { label: "نشاط مدرسي", msg: "أولياء الأمور الكرام\nتقيم المدرسة نشاطاً بتاريخ ............\nنتشرف بحضوركم\nمدرسة عبيدة بن الحارث المتوسطة" },
+                { label:"دعوة اجتماع", msg:"أولياء الأمور الكرام\nيُعقد اجتماعاً بالمدرسة يوم ............\nالرجاء الحضور في الموعد المحدد\nمدرسة عبيدة بن الحارث المتوسطة" },
+                { label:"موعد الاختبارات", msg:"أولياء الأمور الكرام\nتبدأ الاختبارات يوم ............\nنتمنى لأبنائكم التوفيق\nمدرسة عبيدة بن الحارث المتوسطة" },
+                { label:"إجازة عارضة", msg:"أولياء الأمور الكرام\nتُعلم المدرسة بعدم الدراسة يوم ............\nمع التقدير\nمدرسة عبيدة بن الحارث المتوسطة" },
+                { label:"نشاط مدرسي", msg:"أولياء الأمور الكرام\nتقيم المدرسة نشاطاً بتاريخ ............\nنتشرف بحضوركم\nمدرسة عبيدة بن الحارث المتوسطة" },
               ].map(t => (
                 <button key={t.label} onClick={() => setBulkMsg(t.msg)}
                   className="bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 transition-all">
@@ -3224,42 +3469,37 @@ function SMSPage({ teachers, attendance, week }) {
               ))}
             </div>
           </div>
-
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1 block">
-              نص الرسالة
-              <span className="mr-2 text-gray-400 font-normal">({bulkMsg.length} حرف)</span>
-            </label>
+            <label className="text-xs font-bold text-gray-500 mb-1 block">نص الرسالة <span className="text-gray-400 font-normal mr-1">({bulkMsg.length} حرف)</span></label>
             <textarea value={bulkMsg} onChange={e => setBulkMsg(e.target.value)}
               rows={5} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none"
               placeholder="اكتب رسالتك لأولياء الأمور..." />
           </div>
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-3">
             <button onClick={() => sendSMS(bulkNums, bulkMsg)} disabled={sending}
-              className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2">
-              {sending ? "⏳ جاري الإرسال..." : `📤 إرسال لـ ${bulkNums.split(",").filter(n => n.trim().length > 5).length} رقم`}
+              className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl text-sm">
+              {sending ? "⏳ جاري الإرسال..." : `📤 إرسال لـ ${bulkNums.split(",").filter(n=>n.trim().length>5).length} رقم`}
             </button>
             <button onClick={() => { setBulkNums(""); setBulkMsg(""); }}
-              className="border border-gray-200 text-gray-500 font-bold px-4 py-2.5 rounded-xl text-sm">
-              مسح
-            </button>
+              className="border border-gray-200 text-gray-500 font-bold px-4 py-2.5 rounded-xl text-sm">مسح</button>
           </div>
         </div>
       )}
 
-      {/* Footer note */}
+      {/* Notes */}
       <div className="bg-gray-50 rounded-2xl px-5 py-4 border border-gray-200">
-        <p className="text-xs text-gray-500 font-bold mb-1">📌 ملاحظات مهمة:</p>
+        <p className="text-xs text-gray-500 font-bold mb-1">📌 ملاحظات:</p>
         <ul className="text-xs text-gray-400 space-y-1 list-disc list-inside">
-          <li>الأرقام يجب أن تكون سعودية: 05XXXXXXXX أو 9665XXXXXXXX</li>
-          <li>كل رسالة SMS تستهلك رصيداً من حسابك في المدار التقني</li>
-          <li>الرسائل العربية: 70 حرف = رسالة واحدة — ما فوق ذلك = رسالتان</li>
-          <li>يمكن إرسال لأكثر من 500 رقم في طلب واحد (مفصولة بفاصلة)</li>
+          <li>الأرقام السعودية: 05XXXXXXXX أو 9665XXXXXXXX</li>
+          <li>جهات الاتصال تُحفظ في المتصفح تلقائياً</li>
+          <li>الرسائل العربية: 70 حرف = رسالة واحدة</li>
+          <li>يمكن الإرسال لأكثر من 500 رقم في طلب واحد</li>
         </ul>
       </div>
     </div>
   );
 }
+
 
 function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, saveWeek, users, siteFont, setSiteFont, saveSiteFont }) {
   const [newT, setNewT] = useState("");
