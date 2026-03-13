@@ -5006,9 +5006,10 @@ export default function SchoolWebsite() {
   if (!user) return <LoginPage users={users} onLogin={setUser} siteFont={siteFont} onParentPortal={() => setParentPortal(true)} onTeacherPortal={() => setTeacherPortal(true)} />;
 
   const pages = [
-    { id: "home",          label: "الرئيسية",        icon: "🏠" },
-    { id: "attendance",    label: "غياب المعلمين",   icon: "📋" },
-    { id: "students",      label: "تقييم الطلاب",   icon: "👨‍🎓" },
+    { id: "home",            label: "الرئيسية",        icon: "🏠" },
+    { id: "attendance",      label: "غياب المعلمين",  icon: "📋" },
+    { id: "student-absence", label: "غياب الطلاب",   icon: "🎒" },
+    { id: "students",        label: "تقييم الطلاب",  icon: "👨‍🎓" },
     { id: "announcements", label: "الإعلانات",       icon: "📢" },
     { id: "activities",    label: "الأنشطة",         icon: "⚡" },
     { id: "messages",      label: "رسائل الأهالي",  icon: "✉️" },
@@ -5028,11 +5029,11 @@ export default function SchoolWebsite() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-bl from-teal-500 to-emerald-600 flex items-center justify-center text-white text-lg">🏫</div>
               <div className="hidden sm:block"><h1 className="font-black text-teal-900 text-sm">مدرسة عبيدة بن الحارث</h1><p className="text-xs text-gray-400">المتوسطة — ١٤٤٧ هـ</p></div>
             </div>
-            <div className="hidden lg:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-0.5 overflow-x-auto max-w-4xl scrollbar-hide" style={{scrollbarWidth:"none"}}>
               {pages.map(p => (
                 <button key={p.id} onClick={() => navigate(p.id)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${page === p.id ? "bg-teal-600 text-white" : "text-gray-600 hover:bg-teal-50"}`}>
-                  <span className="ml-1">{p.icon}</span>{p.label}
+                  className={`flex-shrink-0 px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${page === p.id ? "bg-teal-600 text-white" : "text-gray-600 hover:bg-teal-50"}`}>
+                  <span className="ml-0.5">{p.icon}</span>{p.label}
                 </button>
               ))}
             </div>
