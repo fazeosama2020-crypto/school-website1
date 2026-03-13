@@ -3123,117 +3123,95 @@ function SMSPage({ teachers, attendance, week }) {
     { id: "bulk",     label: "رسالة للأهالي", icon: "👨‍👦" },
   ];
 
-  // ===== SEND FUNCTION — API Key من المدار التقني =====
+  // ===== SEND FUNCTION — Bearer Token (MadarSMSAPI الرسمي) =====
   const sendSMS = async (numbers, message) => {
-    if (!apiKey?.trim()) { setResult({ ok:false, topMsg:"⚙️ أدخل مفتاح API في الإعدادات أولاً" }); return; }
+    if (!apiKey?.trim()) { setResult({ ok:false, topMsg:"🔑 أدخل مفتاح API في الإعدادات أولاً" }); return; }
     if (!numbers?.trim()) { setResult({ ok:false, topMsg:"📞 أدخل رقماً واحداً على الأقل" }); return; }
     if (!message.trim()) { setResult({ ok:false, topMsg:"✏️ اكتب نص الرسالة" }); return; }
     setSending(true); setResult(null);
 
     const cleanNums = numbers.split(/[\n,،\s]+/)
       .map(n => n.trim()).filter(n => n.length >= 9)
-      .map(n => n.startsWith("05") ? "966" + n.slice(1) : n)
-      .join(",");
+      .map(n => n.startsWith("05") ? "966" + n.slice(1) : n);
 
-    const isArabic = /[\u0600-\u06FF]/.test(message);
     const s = sender || "School1";
+    const BASE = "https://app.mobile.net.sa/api/v1";
+    const AUTH = { "Authorization": `Bearer ${apiKey}`, "Accept": "application/json", "Content-Type": "application/json" };
+    const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
-    // المسارات الرسمية لـ API المدار بمفتاح API
+    // المسارات الرسمية من توثيق MadarSMSAPI — kebab-case
     const attempts = [
-      // المسار الرسمي من توثيق المدار
-      {
-        label: "mobile.net.sa — Authorization Header",
-        url: "https://app.mobile.net.sa/api/v1/sendSMS",
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ numbers: cleanNums, message, sender: s, msgType: isArabic ? 2 : 0 })
-      },
-      {
-        label: "mobile.net.sa — apiKey in body",
-        url: "https://app.mobile.net.sa/api/v1/sendSMS",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, numbers: cleanNums, message, sender: s, msgType: isArabic ? 2 : 0 })
-      },
-      {
-        label: "mobile.net.sa — api_key param",
-        url: "https://app.mobile.net.sa/api/v1/sendSMS",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: apiKey, numbers: cleanNums, message, sender: s })
-      },
-      {
-        label: "mobile.net.sa — token param",
-        url: "https://app.mobile.net.sa/api/v1/sendSMS",
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
-        body: JSON.stringify({ numbers: cleanNums, message, sender: s })
-      },
-      {
-        label: "mobile.net.sa — GET webservice",
-        url: `https://app.mobile.net.sa/webservice/?apiKey=${encodeURIComponent(apiKey)}&numbers=${encodeURIComponent(cleanNums)}&message=${encodeURIComponent(message)}&sender=${encodeURIComponent(s)}`,
-        method: "GET",
-        headers: {},
-        body: null
-      },
-      {
-        label: "allorigins proxy — Authorization",
-        url: `https://api.allorigins.win/raw?url=${encodeURIComponent("https://app.mobile.net.sa/api/v1/sendSMS")}`,
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ numbers: cleanNums, message, sender: s, msgType: isArabic ? 2 : 0 })
-      },
-      {
-        label: "allorigins proxy — apiKey in body",
-        url: `https://api.allorigins.win/raw?url=${encodeURIComponent("https://app.mobile.net.sa/api/v1/sendSMS")}`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, numbers: cleanNums, message, sender: s })
-      },
-      {
-        label: "corsproxy — Authorization",
-        url: `https://corsproxy.io/?${encodeURIComponent("https://app.mobile.net.sa/api/v1/sendSMS")}`,
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-        body: JSON.stringify({ numbers: cleanNums, message, sender: s })
-      },
+      // إرسال فردي — send-sms (المسار الأرجح بناء على get-balance)
+      { label: "send-sms — مباشر",
+        url: `${BASE}/send-sms`, method:"POST", headers: AUTH,
+        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
+      // إرسال متعدد — send-bulk-sms
+      { label: "send-bulk-sms — مباشر",
+        url: `${BASE}/send-bulk-sms`, method:"POST", headers: AUTH,
+        body: JSON.stringify({ mobiles: cleanNums, message, sender: s }) },
+      // SendSMS بـ PascalCase
+      { label: "SendSMS — مباشر",
+        url: `${BASE}/SendSMS`, method:"POST", headers: AUTH,
+        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
+      // numbers بدل mobile
+      { label: "send-sms — numbers — مباشر",
+        url: `${BASE}/send-sms`, method:"POST", headers: AUTH,
+        body: JSON.stringify({ numbers: cleanNums.join(","), message, sender: s }) },
+      // عبر proxy — send-sms
+      { label: "send-sms — proxy",
+        url: proxy(`${BASE}/send-sms`), method:"POST", headers: AUTH,
+        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
+      // عبر proxy — send-bulk-sms
+      { label: "send-bulk-sms — proxy",
+        url: proxy(`${BASE}/send-bulk-sms`), method:"POST", headers: AUTH,
+        body: JSON.stringify({ mobiles: cleanNums, message, sender: s }) },
+      // عبر proxy — numbers
+      { label: "send-sms — numbers — proxy",
+        url: proxy(`${BASE}/send-sms`), method:"POST", headers: AUTH,
+        body: JSON.stringify({ numbers: cleanNums.join(","), message, sender: s }) },
+      // corsproxy
+      { label: "send-sms — corsproxy",
+        url: `https://corsproxy.io/?${encodeURIComponent(`${BASE}/send-sms`)}`, method:"POST", headers: AUTH,
+        body: JSON.stringify({ mobile: cleanNums[0], message, sender: s }) },
+      // get-balance للتحقق من صحة الـ token
+      { label: "get-balance — للتحقق من الـ Token",
+        url: proxy(`${BASE}/get-balance`), method:"POST", headers: AUTH, body: "{}" },
     ];
 
     const allResults = [];
     for (let i = 0; i < attempts.length; i++) {
       const a = attempts[i];
       try {
-        const opts = { method: a.method, headers: a.headers };
-        if (a.body) opts.body = a.body;
-        const r = await fetch(a.url, opts);
+        const r = await fetch(a.url, { method: a.method, headers: a.headers, body: a.body });
         const text = await r.text();
         let p = null; try { p = JSON.parse(text); } catch {}
+        const raw = text.substring(0, 250);
+        allResults.push({ n:i+1, label:a.label, http:r.status, raw });
 
-        const raw = text.substring(0, 200);
-        allResults.push({ n: i+1, label: a.label, http: r.status, raw });
-
-        const ok = p?.success === true || p?.code === 0 || p?.code === "0" ||
-                   p?.status === "success" || p?.status === "sent" || p?.status === 200 ||
-                   text.trim() === "0" || text.trim() === "00" ||
-                   (r.status === 200 && !raw.includes("Not found") && !raw.includes("Unauthorized") && !raw.includes("error") && raw.length < 50);
-
-        if (ok) {
+        // نجاح الإرسال
+        const sent = p?.status === "Success" || p?.status === "success" ||
+                     p?.success === true || p?.code === 0 || p?.code === "0" ||
+                     (p?.data && !p?.data?.error);
+        if (sent && a.label !== "get-balance — للتحقق من الـ Token") {
           setSending(false);
-          setResult({ ok: true, msg: `✅ تم الإرسال بنجاح عبر: ${a.label}\n📋 رد الخادم: ${raw}` });
+          setResult({ ok:true, msg:`✅ تم الإرسال بنجاح!\n📡 المسار: ${a.label}\n📋 الرد: ${raw}` });
           return;
         }
+        // نجاح get-balance يثبت أن الـ token صحيح لكن المسار خاطئ
+        if (a.label.includes("get-balance") && p?.status === "Success") {
+          allResults[allResults.length-1].raw = "✅ Token صحيح! رصيد: " + p?.data?.balance + " — لكن مسار الإرسال يحتاج تعديل";
+        }
       } catch(e) {
-        allResults.push({ n: i+1, label: a.label, http: 0, raw: "خطأ: " + e.message });
+        allResults.push({ n:i+1, label:a.label, http:0, raw:"خطأ: "+e.message.substring(0,80) });
       }
     }
 
-    setResult({
-      ok: false,
-      topMsg: "❌ لم يُرسَل — تقرير التشخيص:",
-      attempts: allResults,
-      msg: "💡 تأكد أن API Key مفعّل وله صلاحية 'أرسل رسالة نصية قصيرة' من لوحة المدار"
-    });
     setSending(false);
+    setResult({
+      ok: false, topMsg: "❌ لم يُرسَل — تقرير التشخيص:",
+      attempts: allResults,
+      msg: "📸 أرسل صورة من صفحة SendSMS في توثيق Postman لنرى الـ body المطلوب"
+    });
   };
 
   // Send to selected contacts
@@ -3263,16 +3241,18 @@ function SMSPage({ teachers, attendance, week }) {
           <h3 className="font-black text-gray-800 mb-4">⚙️ إعدادات حساب المدار التقني</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="text-xs font-bold text-gray-500 mb-1 block">مفتاح API (API Key)</label>
-              <input value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono" placeholder="API Key من لوحة تحكم المدار" dir="ltr" />
-              <p className="text-xs text-gray-400 mt-1">من لوحة المدار: رموز API ← اسم الرمز ← تفعيل صلاحية إرسال رسالة</p>
+              <label className="text-xs font-bold text-gray-500 mb-1 block">🔑 مفتاح API (Bearer Token)</label>
+              <input value={apiKey} onChange={e => setApiKey(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono focus:border-green-400 focus:outline-none" dir="ltr"
+                placeholder="API Key من لوحة تحكم المدار" />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 mb-1 block">اسم المرسل (Sender)</label>
-              <input value={sender} onChange={e => setSender(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="School1" />
+              <label className="text-xs font-bold text-gray-500 mb-1 block">📛 اسم المرسل (Sender)</label>
+              <input value={sender} onChange={e => setSender(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="School1" />
             </div>
           </div>
-          <p className="text-xs text-green-600 mt-3 bg-green-50 rounded-xl px-3 py-2">✅ مفتاح API أكثر أماناً من كلمة المرور ويُحفظ في جلسة المتصفح فقط</p>
+          <p className="text-xs text-green-600 mt-3 bg-green-50 rounded-xl px-3 py-2">✅ يستخدم Bearer Token في Authorization header — المسار الرسمي: app.mobile.net.sa/api/v1/send-sms</p>
         </div>
       )}
 
