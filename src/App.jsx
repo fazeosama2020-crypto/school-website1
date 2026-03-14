@@ -5020,8 +5020,136 @@ export default function SchoolWebsite() {
   ];
 
   return (
-    <div dir="rtl" className="min-h-screen" style={{ fontFamily: siteFont, background: "linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 30%, #f5f5f4 100%)" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@400;700&family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700&family=Reem+Kufi:wght@400;700&family=Lateef&family=Amiri:wght@400;700&display=swap');`}</style>
+    <div dir="rtl" className="min-h-screen relative overflow-x-hidden" style={{ fontFamily: siteFont, background: "linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%)" }}>
+
+      {/* ── رذاذ الزوايا المتحرك ── */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&family=Noto+Kufi+Arabic:wght@400;700&family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700&family=Reem+Kufi:wght@400;700&family=Lateef&family=Amiri:wght@400;700&display=swap');
+          
+          :root {
+            --c-primary: #0d9488;
+            --c-primary-dark: #0f766e;
+            --c-accent: #f59e0b;
+            --c-page-bg: linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%);
+          }
+          /* بطاقات موحدة */
+          .page-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(13,148,136,.06);
+            border: 1px solid rgba(13,148,136,.08);
+          }
+          /* شريط العنوان الرئيسي لكل صفحة */
+          .page-header-bar {
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,.15);
+            position: relative;
+            overflow: hidden;
+          }
+          .page-header-bar::before {
+            content: '';
+            position: absolute;
+            top: -40%;
+            right: -10%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
+            border-radius: 50%;
+          }
+          .page-header-bar::after {
+            content: '';
+            position: absolute;
+            bottom: -50%;
+            left: -5%;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 70%);
+            border-radius: 50%;
+          }
+          /* بادج موحد */
+          .badge-teal   { background:#d1fae5; color:#065f46; }
+          .badge-red    { background:#fee2e2; color:#991b1b; }
+          .badge-amber  { background:#fef3c7; color:#92400e; }
+          .badge-blue   { background:#dbeafe; color:#1e40af; }
+          .badge-purple { background:#ede9fe; color:#5b21b6; }
+          /* تحسين الجداول */
+          .school-table thead { background: linear-gradient(135deg,#0f766e,#0d9488); color:white; }
+          .school-table tbody tr:nth-child(even) { background: rgba(13,148,136,.03); }
+          .school-table tbody tr:hover { background: rgba(13,148,136,.06); transition: background .15s; }
+                  @keyframes drift1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(18px,-22px) scale(1.08)} 66%{transform:translate(-12px,14px) scale(.94)} }
+          @keyframes drift2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-20px,16px) scale(1.1)} 66%{transform:translate(14px,-10px) scale(.92)} }
+          @keyframes drift3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(10px,20px) scale(1.06)} }
+          @keyframes drift4 { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(-16px,-18px) scale(1.12)} 80%{transform:translate(12px,8px) scale(.9)} }
+          @keyframes float-dot { 0%,100%{transform:translateY(0) scale(1);opacity:.7} 50%{transform:translateY(-18px) scale(1.2);opacity:.3} }
+          @keyframes spray-l { 0%{transform:translateX(-100%) scaleX(0);opacity:0} 40%{opacity:.6} 100%{transform:translateX(0) scaleX(1);opacity:.08} }
+          @keyframes spray-r { 0%{transform:translateX(100%) scaleX(0);opacity:0} 40%{opacity:.6} 100%{transform:translateX(0) scaleX(1);opacity:.08} }
+          .blob1{animation:drift1 9s ease-in-out infinite}
+          .blob2{animation:drift2 12s ease-in-out infinite}
+          .blob3{animation:drift3 7s ease-in-out infinite}
+          .blob4{animation:drift4 15s ease-in-out infinite}
+          .fdot{animation:float-dot 4s ease-in-out infinite}
+        `}</style>
+
+        {/* blob يسار-أعلى — أخضر زمردي */}
+        <div className="blob1 absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-20"
+          style={{background:"radial-gradient(circle,#2dd4bf 0%,#0d9488 40%,transparent 75%)"}} />
+        {/* blob يمين-أعلى — أزرق سماوي */}
+        <div className="blob2 absolute -top-16 -left-16 w-80 h-80 rounded-full opacity-15"
+          style={{background:"radial-gradient(circle,#38bdf8 0%,#0284c7 40%,transparent 75%)"}} />
+        {/* blob يسار-أسفل — بنفسجي */}
+        <div className="blob3 absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-15"
+          style={{background:"radial-gradient(circle,#a78bfa 0%,#7c3aed 40%,transparent 75%)"}} />
+        {/* blob يمين-أسفل — برتقالي-ذهبي */}
+        <div className="blob4 absolute -bottom-16 -left-16 w-64 h-64 rounded-full opacity-15"
+          style={{background:"radial-gradient(circle,#fbbf24 0%,#f59e0b 40%,transparent 75%)"}} />
+        {/* blob وسط خفيف */}
+        <div className="blob2 absolute top-1/2 left-1/2 w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-5"
+          style={{background:"radial-gradient(circle,#0d9488 0%,transparent 70%)"}} />
+
+        {/* نقاط رذاذ يمين */}
+        {[...Array(12)].map((_,i) => (
+          <div key={"dr"+i} className="fdot absolute rounded-full"
+            style={{
+              right: `${2 + (i%4)*2.5}%`,
+              top:   `${8 + i*7.5}%`,
+              width:  `${4 + (i%3)*3}px`,
+              height: `${4 + (i%3)*3}px`,
+              background: ["#0d9488","#2dd4bf","#0284c7","#38bdf8","#7c3aed","#a78bfa"][i%6],
+              opacity: 0.25 + (i%4)*0.06,
+              animationDelay: `${i*0.4}s`,
+              animationDuration: `${3.5 + i*0.3}s`,
+            }} />
+        ))}
+        {/* نقاط رذاذ يسار */}
+        {[...Array(12)].map((_,i) => (
+          <div key={"dl"+i} className="fdot absolute rounded-full"
+            style={{
+              left:  `${2 + (i%4)*2.5}%`,
+              top:   `${5 + i*7.8}%`,
+              width:  `${3 + (i%3)*4}px`,
+              height: `${3 + (i%3)*4}px`,
+              background: ["#f59e0b","#fbbf24","#0d9488","#34d399","#0284c7","#7dd3fc"][i%6],
+              opacity: 0.2 + (i%4)*0.05,
+              animationDelay: `${i*0.35 + 1}s`,
+              animationDuration: `${4 + i*0.25}s`,
+            }} />
+        ))}
+
+        {/* خط رذاذ أعلى يمين */}
+        <svg className="absolute top-0 right-0 w-64 h-64 opacity-10" viewBox="0 0 200 200" fill="none">
+          <path d="M200 0 Q160 40 120 20 Q80 0 60 40 Q40 80 0 60" stroke="#0d9488" strokeWidth="1.5" fill="none" strokeDasharray="4 4"/>
+          <path d="M200 20 Q150 60 100 40 Q60 20 20 70" stroke="#2dd4bf" strokeWidth="1" fill="none" strokeDasharray="3 6"/>
+        </svg>
+        {/* خط رذاذ أسفل يسار */}
+        <svg className="absolute bottom-0 left-0 w-64 h-64 opacity-10" viewBox="0 0 200 200" fill="none">
+          <path d="M0 200 Q40 160 80 180 Q120 200 140 160 Q160 120 200 140" stroke="#7c3aed" strokeWidth="1.5" fill="none" strokeDasharray="4 4"/>
+          <path d="M0 180 Q50 140 100 160 Q140 180 180 130" stroke="#f59e0b" strokeWidth="1" fill="none" strokeDasharray="3 6"/>
+        </svg>
+      </div>
+      <div className="relative z-10">
       <nav className="bg-white shadow-md sticky top-0 z-50 border-b border-teal-100">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -5075,8 +5203,11 @@ export default function SchoolWebsite() {
         {page === "report"        && <ProgramReportPage />}
         {page === "settings"      && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} />}
       </main>
-      <footer className="text-center py-6 text-xs text-gray-400 border-t border-gray-200 bg-white mt-8">
-        <p>مدرسة عبيدة بن الحارث المتوسطة — بوابة الإدارة المدرسية الإلكترونية © ١٤٤٧ هـ</p>
+      </div>{/* end relative z-10 */}
+      <footer className="relative text-center py-6 text-xs border-t bg-white mt-8 overflow-hidden" style={{borderColor:"rgba(13,148,136,.15)"}}>
+        <div className="absolute inset-0 opacity-5" style={{background:"linear-gradient(135deg,#0d9488,transparent)"}} />
+        <p className="relative text-teal-700 font-bold opacity-60">مدرسة عبيدة بن الحارث المتوسطة — بوابة الإدارة المدرسية الإلكترونية</p>
+        <p className="relative text-gray-400 mt-1">© ١٤٤٧ هـ — جميع الحقوق محفوظة</p>
       </footer>
     </div>
   );
