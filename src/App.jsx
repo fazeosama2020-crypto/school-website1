@@ -143,79 +143,92 @@ const PRELOADED_CLASS = {
 
 
 const SchoolLogo = ({ size = 'md', animate = true }) => {
-  const sizeMap = {
-    xl: { outer: 260, ring1: 248, ring2: 232, img: 216 },
-    lg: { outer: 180, ring1: 170, ring2: 158, img: 146 },
+  const circleMap = {
+    xl: { outer: 300, ring1: 286, ring2: 268, img: 250 },
+    lg: { outer: 200, ring1: 190, ring2: 176, img: 164 },
     md: { outer: 56,  ring1: 52,  ring2: 48,  img: 42  },
     sm: { outer: 40,  ring1: 37,  ring2: 34,  img: 30  },
   };
-  const s = sizeMap[size] || sizeMap.md;
-  return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: s.outer, height: s.outer }}>
-      <style>{`
-        @keyframes logo-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes logo-pulse { 0%,100% { opacity:.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.04); } }
-        @keyframes logo-shimmer {
-          0%   { transform: translateX(-100%) rotate(45deg); }
-          100% { transform: translateX(300%) rotate(45deg); }
-        }
-        @keyframes logo-glow {
-          0%,100% { box-shadow: 0 0 8px 2px rgba(212,175,55,.4), 0 0 16px 4px rgba(13,148,136,.25); }
-          50%     { box-shadow: 0 0 18px 6px rgba(212,175,55,.7), 0 0 30px 10px rgba(13,148,136,.4); }
-        }
-        @keyframes logo-wave {
-          0%,100% { border-color: rgba(212,175,55,.5); }
-          50%     { border-color: rgba(212,175,55,1); }
-        }
-      `}</style>
+  const s = circleMap[size] || circleMap.md;
 
-      {/* حلقة خارجية دوارة */}
-      {animate && size !== 'sm' && size !== 'md' && (
-        <div style={{
-          position:'absolute', width: s.outer, height: s.outer,
-          borderRadius:'50%',
-          border: size === 'xl' ? '3px dashed rgba(212,175,55,.5)' : '2px dashed rgba(212,175,55,.4)',
-          animation:'logo-spin 20s linear infinite',
-        }} />
+  const kf = `
+    @keyframes logo-spin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes logo-pulse   { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.04)} }
+    @keyframes logo-shimmer { 0%{transform:translateX(-120%) rotate(45deg)} 100%{transform:translateX(320%) rotate(45deg)} }
+    @keyframes logo-glow    { 0%,100%{box-shadow:0 0 8px 2px rgba(212,175,55,.4),0 0 16px 4px rgba(13,148,136,.25)} 50%{box-shadow:0 0 20px 7px rgba(212,175,55,.75),0 0 34px 12px rgba(13,148,136,.45)} }
+    @keyframes logo-wave    { 0%,100%{border-color:rgba(212,175,55,.5)} 50%{border-color:rgba(212,175,55,1)} }
+    @keyframes banner-glow  { 0%,100%{box-shadow:0 2px 14px rgba(212,175,55,.35)} 50%{box-shadow:0 2px 26px rgba(212,175,55,.75)} }
+    @keyframes ban-shine    { 0%{transform:translateX(-150%)} 100%{transform:translateX(250%)} }
+  `;
+
+  const circleEl = (
+    <div style={{ position:'relative', display:'inline-flex', alignItems:'center', justifyContent:'center', width:s.outer, height:s.outer, flexShrink:0 }}>
+      {animate && (size==='xl'||size==='lg') && (
+        <div style={{ position:'absolute', width:s.outer, height:s.outer, borderRadius:'50%',
+          border: size==='xl' ? '3px dashed rgba(212,175,55,.55)' : '2px dashed rgba(212,175,55,.4)',
+          animation:'logo-spin 22s linear infinite' }} />
       )}
-      {/* حلقة وسطى نبضة */}
-      <div style={{
-        position:'absolute', width: s.ring1, height: s.ring1,
-        borderRadius:'50%',
-        border: size === 'xl' ? '3px solid rgba(212,175,55,.7)' : size === 'lg' ? '2px solid rgba(212,175,55,.6)' : '1.5px solid rgba(212,175,55,.5)',
-        animation: animate ? 'logo-wave 2.5s ease-in-out infinite, logo-glow 2.5s ease-in-out infinite' : 'none',
-      }} />
-      {/* حلقة داخلية */}
-      <div style={{
-        position:'absolute', width: s.ring2, height: s.ring2,
-        borderRadius:'50%',
-        border: '1.5px solid rgba(13,148,136,.4)',
-        animation: animate ? 'logo-pulse 3s ease-in-out infinite' : 'none',
-      }} />
-      {/* الصورة */}
-      <div style={{
-        width: s.img, height: s.img,
-        borderRadius:'50%',
-        overflow:'hidden',
-        position:'relative',
-        boxShadow: size === 'xl' || size === 'lg' ? '0 4px 24px rgba(0,0,0,.25)' : 'none',
-      }}>
-        <img src={SCHOOL_LOGO} alt="شعار المدرسة"
-          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
-        {/* بريق متحرك */}
-        {animate && (size === 'xl' || size === 'lg') && (
-          <div style={{
-            position:'absolute', inset:0,
-            background:'linear-gradient(135deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%)',
-            animation:'logo-shimmer 3s ease-in-out infinite',
-            pointerEvents:'none',
-          }} />
+      <div style={{ position:'absolute', width:s.ring1, height:s.ring1, borderRadius:'50%',
+        border: size==='xl' ? '3px solid rgba(212,175,55,.8)' : size==='lg' ? '2.5px solid rgba(212,175,55,.7)' : '1.5px solid rgba(212,175,55,.5)',
+        animation: animate ? 'logo-wave 2.5s ease-in-out infinite, logo-glow 2.5s ease-in-out infinite' : 'none' }} />
+      <div style={{ position:'absolute', width:s.ring2, height:s.ring2, borderRadius:'50%',
+        border:'1.5px solid rgba(13,148,136,.45)',
+        animation: animate ? 'logo-pulse 3s ease-in-out infinite' : 'none' }} />
+      <div style={{ width:s.img, height:s.img, borderRadius:'50%', overflow:'hidden', position:'relative',
+        boxShadow:(size==='xl'||size==='lg') ? '0 6px 28px rgba(0,0,0,.3)' : 'none' }}>
+        <img src={SCHOOL_LOGO} alt="شعار المدرسة" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center 90%', display:'block' }} />
+        {animate && (size==='xl'||size==='lg') && (
+          <div style={{ position:'absolute', inset:0,
+            background:'linear-gradient(135deg,transparent 25%,rgba(255,255,255,.45) 50%,transparent 75%)',
+            animation:'logo-shimmer 3.2s ease-in-out infinite', pointerEvents:'none' }} />
         )}
       </div>
     </div>
   );
-};
 
+  if (size === 'sm' || size === 'md') {
+    return <><style>{kf}</style>{circleEl}</>;
+  }
+
+  const bw  = size==='xl' ? s.outer + 20 : s.outer + 10;
+  const bfs = size==='xl' ? 15 : 12;
+  const bpy = size==='xl' ? 10 : 7;
+  const bannerStyle = (delay) => ({
+    width:bw, textAlign:'center', direction:'rtl',
+    background:'linear-gradient(135deg,#1a5c33,#0d7a47,#1a5c33)',
+    borderRadius:14, padding:`${bpy}px 16px`,
+    position:'relative', overflow:'hidden',
+    animation: animate ? `banner-glow 2.5s ease-in-out infinite ${delay}` : 'none',
+  });
+  const shineStyle = (delay) => ({
+    position:'absolute', top:0, left:0, right:0, bottom:0,
+    background:'linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent)',
+    animation:`ban-shine 2.8s ease-in-out infinite ${delay}`,
+    pointerEvents:'none',
+  });
+  const textStyle = (fs) => ({
+    color:'#fff', fontWeight:900, fontSize:fs,
+    textShadow:'0 1px 4px rgba(0,0,0,.35)',
+    position:'relative', letterSpacing:'.4px',
+  });
+
+  return (
+    <>
+      <style>{kf}</style>
+      <div style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', gap: size==='xl' ? 14 : 10 }}>
+          <div style={bannerStyle('0s')}>
+          {animate && <div style={shineStyle('0s')} />}
+          <span style={textStyle(bfs)}>وزارة التعليم — الإدارة العامة للتعليم بجدة</span>
+        </div>
+        {circleEl}
+        <div style={{ ...bannerStyle('1.2s'), width: bw * 0.85 }}>
+          {animate && <div style={shineStyle('.6s')} />}
+          <span style={textStyle(bfs + 1)}>تعليم ✦ تميّز ✦ انتماء</span>
+        </div>
+      </div>
+    </>
+  );
+};
 function Badge({ children, color = "teal" }) {
   const c = { teal: "bg-teal-100 text-teal-800", red: "bg-red-100 text-red-700", amber: "bg-amber-100 text-amber-800", blue: "bg-blue-100 text-blue-800", green: "bg-green-100 text-green-800", purple: "bg-purple-100 text-purple-800", gray: "bg-gray-100 text-gray-600" };
   return <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${c[color] || c.teal}`}>{children}</span>;
@@ -374,7 +387,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal }
           <div className="flex justify-center mb-5">
             <SchoolLogo size="lg" animate={true} />
           </div>
-          <h1 className="text-2xl font-black mb-1">مدرسة عبيدة بن الحارث المتوسطة</h1>
+          <h1 className="text-xl font-black mb-1 mt-2">مدرسة عبيدة بن الحارث المتوسطة</h1>
           <p className="opacity-70 text-sm">بوابة الإدارة المدرسية الإلكترونية</p>
         </div>
         <div className="bg-white rounded-3xl p-6 shadow-2xl">
@@ -424,12 +437,11 @@ function HomePage({ teachers, announcements, activities, navigate }) {
     <div>
       <div className="bg-gradient-to-l from-teal-600 via-teal-700 to-emerald-800 rounded-3xl p-8 mb-6 text-white text-center shadow-xl" style={{overflow:'hidden', position:'relative'}}>
         <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 50% 0%,rgba(212,175,55,.15) 0%,transparent 60%)',pointerEvents:'none'}} />
-        <div className="flex justify-center mb-5 relative z-10">
+        <div className="flex justify-center mb-4 relative z-10">
           <SchoolLogo size="xl" animate={true} />
         </div>
-        <h1 className="text-3xl font-black mb-2 relative z-10">مدرسة عبيدة بن الحارث المتوسطة</h1>
-        <p className="opacity-80 text-lg relative z-10">بوابة الإدارة المدرسية الإلكترونية</p>
-        <p className="opacity-60 text-sm mt-2 relative z-10">العام الدراسي ١٤٤٧ هـ</p>
+        <p className="opacity-80 text-base relative z-10 mt-2">بوابة الإدارة المدرسية الإلكترونية</p>
+        <p className="opacity-60 text-sm mt-1 relative z-10">العام الدراسي ١٤٤٧ هـ</p>
       </div>
       <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
         <StatCard icon="👨‍🏫" label="معلم وإداري" value={teachers.length} color="bg-white" />
