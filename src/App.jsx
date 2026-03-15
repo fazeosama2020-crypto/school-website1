@@ -5984,6 +5984,7 @@ export default function SchoolWebsite() {
   const [teacherPortal, setTeacherPortal] = useState(false);
   const [page, setPage] = useState("home");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showExtra, setShowExtra] = useState(false);
   const [teachers, setTeachers] = useState(DEFAULT_TEACHERS);
   const [week, setWeek] = useState(DEFAULT_WEEK);
   const [attendance, setAttendance] = useState({});
@@ -6072,16 +6073,19 @@ export default function SchoolWebsite() {
     { id: "students",        label: "تقييم الطلاب",  icon: "👨‍🎓" },
     { id: "announcements", label: "الإعلانات",       icon: "📢" },
     { id: "activities",    label: "الأنشطة",         icon: "⚡" },
-    { id: "strategies",    label: "الاستراتيجيات",   icon: "📚" },
-    { id: "calendar",      label: "التقويم",          icon: "📅" },
-    { id: "gallery",       label: "معرض الأنشطة",   icon: "🖼" },
-    { id: "certificates",  label: "الشهادات",        icon: "🏅" },
-    { id: "poll",          label: "تميّز المعلم",    icon: "🏆" },
     { id: "messages",      label: "رسائل الأهالي",  icon: "✉️" },
-    { id: "surveys",       label: "الاستبيانات",     icon: "📊" },
     { id: "sms",           label: "رسائل SMS",       icon: "📱" },
-    { id: "report",        label: "تقرير برنامج",    icon: "📋" },
     { id: "settings",      label: "الإعدادات",       icon: "⚙️" },
+  ];
+
+  const extraPages = [
+    { id: "strategies",    label: "الاستراتيجيات",   icon: "📚" },
+    { id: "calendar",      label: "التقويم المدرسي", icon: "📅" },
+    { id: "gallery",       label: "معرض الأنشطة",   icon: "🖼" },
+    { id: "certificates",  label: "الشهادات الرقمية",icon: "🏅" },
+    { id: "poll",          label: "تميّز المعلم",    icon: "🏆" },
+    { id: "surveys",       label: "الاستبيانات",     icon: "📊" },
+    { id: "report",        label: "تقرير برنامج",    icon: "📋" },
   ];
 
   return (
@@ -6222,13 +6226,30 @@ export default function SchoolWebsite() {
               <SchoolLogo size="sm" animate={false} />
               <div className="hidden sm:block"><h1 className="font-black text-teal-900 text-sm">مدرسة عبيدة بن الحارث</h1><p className="text-xs text-gray-400">المتوسطة — ١٤٤٧ هـ</p></div>
             </div>
-            <div className="hidden lg:flex items-center gap-0.5 overflow-x-auto max-w-4xl scrollbar-hide" style={{scrollbarWidth:"none"}}>
+            <div className="hidden lg:flex items-center gap-0.5 relative">
               {pages.map(p => (
-                <button key={p.id} onClick={() => navigate(p.id)}
+                <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }}
                   className={`flex-shrink-0 px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${page === p.id ? "bg-teal-600 text-white" : "text-gray-600 hover:bg-teal-50"}`}>
                   <span className="ml-0.5">{p.icon}</span>{p.label}
                 </button>
               ))}
+              {/* قائمة المزيد */}
+              <div className="relative">
+                <button onClick={() => setShowExtra(!showExtra)}
+                  className={`flex-shrink-0 px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-0.5 ${extraPages.some(p=>p.id===page) ? "bg-purple-600 text-white" : "text-gray-600 hover:bg-purple-50"}`}>
+                  ✨ المزيد {showExtra ? "▴" : "▾"}
+                </button>
+                {showExtra && (
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 min-w-44">
+                    {extraPages.map(p => (
+                      <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }}
+                        className={`w-full text-right px-4 py-2.5 text-sm font-bold hover:bg-purple-50 transition-all flex items-center gap-2 ${page === p.id ? "text-purple-700 bg-purple-50" : "text-gray-700"}`}>
+                        <span>{p.icon}</span>{p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
@@ -6242,8 +6263,16 @@ export default function SchoolWebsite() {
           {menuOpen && (
             <div className="lg:hidden pb-4 space-y-1">
               {pages.map(p => (
-                <button key={p.id} onClick={() => navigate(p.id)}
+                <button key={p.id} onClick={() => { navigate(p.id); setMenuOpen(false); }}
                   className={`w-full text-right px-4 py-3 rounded-xl text-sm font-bold ${page === p.id ? "bg-teal-600 text-white" : "text-gray-600 hover:bg-teal-50"}`}>
+                  <span className="ml-2">{p.icon}</span>{p.label}
+                </button>
+              ))}
+              <div className="border-t border-gray-100 my-2" />
+              <div className="px-4 pb-1"><span className="text-xs text-purple-500 font-black">✨ صفحات إضافية</span></div>
+              {extraPages.map(p => (
+                <button key={p.id} onClick={() => { navigate(p.id); setMenuOpen(false); }}
+                  className={`w-full text-right px-4 py-3 rounded-xl text-sm font-bold ${page === p.id ? "bg-purple-600 text-white" : "text-gray-600 hover:bg-purple-50"}`}>
                   <span className="ml-2">{p.icon}</span>{p.label}
                 </button>
               ))}
