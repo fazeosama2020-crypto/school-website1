@@ -368,7 +368,7 @@ const LOGO_URL = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGlu
 const SCHOOL_LOGO_URL = "data:image/webp;base64,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";
 
 
-function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal }) {
+function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, onStudentRaffle }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -418,6 +418,11 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal }
             <button onClick={onParentPortal}
               className="w-full py-3 rounded-xl bg-gradient-to-l from-blue-500 to-indigo-600 text-white font-bold hover:shadow-lg transition-all text-sm">
               👨‍👦 بوابة أولياء الأمور — متابعة مستوى الطالب
+            </button>
+            <button onClick={onStudentRaffle}
+              className="w-full py-3 rounded-xl font-bold hover:shadow-lg transition-all text-sm text-white mt-2"
+              style={{ background: "linear-gradient(135deg,#7c3aed,#db2777,#f59e0b)" }}>
+              🎰 سحب الجوائز — تسجيل الطلاب
             </button>
           </div>
           <div className="mt-4 pt-3 border-t border-gray-100">
@@ -2097,6 +2102,297 @@ function PollPage({ teachers }) {
 
 
 
+
+
+// ===================================================================
+// ===== بوابة الطلاب — تسجيل السحب (عامة بدون دخول) =====
+// ===================================================================
+function StudentRafflePortal({ siteFont, onBack }) {
+  const CARRIERS = ["STC","موبايلي","زين"];
+  const [form, setForm] = useState({ name:"", class:"", carrier:"STC" });
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    DB.get("school-raffle-entries", []).then(d => {
+      const list = Array.isArray(d) ? d : [];
+      setEntries(list);
+      setTotalCount(list.length);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleRegister = async () => {
+    if (!form.name.trim()) { alert("أدخل اسمك الكامل"); return; }
+    if (!form.class.trim()) { alert("أدخل فصلك الدراسي"); return; }
+    const dup = entries.find(e => e.name.trim() === form.name.trim() && e.class.trim() === form.class.trim());
+    if (dup) { alert("⚠️ تم تسجيلك مسبقاً في هذا السحب!"); return; }
+    setSaving(true);
+    const newEntry = { id: Date.now(), ...form, registeredAt: new Date().toLocaleString("ar-SA") };
+    const updated = [...entries, newEntry];
+    setEntries(updated);
+    setTotalCount(updated.length);
+    await DB.set("school-raffle-entries", updated);
+    setSaving(false);
+    setDone(true);
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{fontFamily:siteFont, background:"linear-gradient(135deg,#7c3aed,#db2777,#f59e0b)"}}>
+      <div className="text-white text-center"><div className="text-6xl animate-bounce mb-4">🎰</div><p className="font-black text-lg">جاري التحميل…</p></div>
+    </div>
+  );
+
+  return (
+    <div dir="rtl" className="min-h-screen flex flex-col items-center justify-center p-4"
+      style={{ fontFamily: siteFont, background: "linear-gradient(135deg,#7c3aed 0%,#db2777 50%,#f59e0b 100%)" }}>
+      <style>{`
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .float { animation: float 2.5s ease-in-out infinite; }
+        @keyframes prize-pop { 0%{transform:scale(0);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+        .prize-pop { animation: prize-pop .5s cubic-bezier(.34,1.56,.64,1) forwards; }
+      `}</style>
+
+      <div className="w-full max-w-md">
+        {/* رأس الصفحة */}
+        <div className="text-center text-white mb-6">
+          <div className="text-7xl float mb-3">🎰</div>
+          <h1 className="text-2xl font-black mb-1">سحب الجوائز</h1>
+          <p className="opacity-80 text-sm">مدرسة عبيدة بن الحارث المتوسطة</p>
+        </div>
+
+        {/* الجوائز */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {[
+            { emoji:"🥇", val:"50 ريال", color:"#f59e0b" },
+            { emoji:"🥈", val:"30 ريال", color:"#818cf8" },
+            { emoji:"🥉", val:"20 ريال", color:"#34d399" },
+          ].map((p,i) => (
+            <div key={i} className="prize-pop bg-white bg-opacity-20 backdrop-blur rounded-2xl p-3 text-center text-white border border-white border-opacity-30"
+              style={{animationDelay:`${i*0.15}s`}}>
+              <div className="text-2xl">{p.emoji}</div>
+              <div className="font-black text-sm mt-1">{p.val}</div>
+              <div className="text-xs opacity-70">بطاقة شحن</div>
+            </div>
+          ))}
+        </div>
+
+        {done ? (
+          /* شاشة النجاح */
+          <div className="bg-white rounded-3xl p-8 text-center shadow-2xl">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-black text-gray-800 mb-2">تم تسجيلك!</h2>
+            <p className="text-gray-500 mb-1">بالتوفيق يا <span className="font-black text-purple-700">{form.name}</span></p>
+            <p className="text-gray-400 text-sm mb-5">أنت المشترك رقم <span className="font-black text-pink-600 text-lg">{totalCount}</span></p>
+            <div className="flex gap-2 justify-center mb-5 flex-wrap">
+              <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${form.carrier==="STC"?"bg-purple-100 text-purple-700":form.carrier==="موبايلي"?"bg-green-100 text-green-700":"bg-yellow-100 text-yellow-700"}`}>
+                {form.carrier==="STC"?"🟣":form.carrier==="موبايلي"?"🟢":"🟡"} {form.carrier}
+              </span>
+              <span className="px-3 py-1.5 rounded-full text-sm font-bold bg-blue-100 text-blue-700">📚 {form.class}</span>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">سيُعلَن عن الفائزين من قِبل الإدارة</p>
+            <button onClick={() => { setDone(false); setForm({ name:"", class:"", carrier:"STC" }); }}
+              className="w-full py-3 rounded-2xl font-black text-white text-sm"
+              style={{background:"linear-gradient(135deg,#7c3aed,#db2777)"}}>
+              🎟 تسجيل طالب آخر
+            </button>
+            <button onClick={onBack} className="w-full py-3 mt-2 rounded-2xl font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 text-sm">
+              ← العودة للصفحة الرئيسية
+            </button>
+          </div>
+        ) : (
+          /* نموذج التسجيل */
+          <div className="bg-white rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="text-center mb-2">
+              <h2 className="text-xl font-black text-gray-800">🎟 اشترك في السحب</h2>
+              <p className="text-xs text-gray-400 mt-1">{totalCount} مشترك حتى الآن</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-black text-gray-500 mb-1.5 block">👤 اسمك الكامل</label>
+              <input value={form.name} onChange={e => setForm(f => ({...f,name:e.target.value}))}
+                placeholder="أدخل اسمك الثلاثي"
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold" />
+            </div>
+
+            <div>
+              <label className="text-xs font-black text-gray-500 mb-1.5 block">📚 الفصل الدراسي</label>
+              <input value={form.class} onChange={e => setForm(f => ({...f,class:e.target.value}))}
+                placeholder="مثال: أول أ — ثاني ب — ثالث ج"
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold" />
+            </div>
+
+            <div>
+              <label className="text-xs font-black text-gray-500 mb-1.5 block">📱 نوع الشريحة</label>
+              <div className="grid grid-cols-3 gap-2">
+                {CARRIERS.map(c => (
+                  <button key={c} onClick={() => setForm(f => ({...f,carrier:c}))}
+                    className={`py-3.5 rounded-2xl font-black text-sm border-2 transition-all ${form.carrier === c
+                      ? c==="STC" ? "bg-purple-600 text-white border-purple-600 shadow-md"
+                        : c==="موبايلي" ? "bg-green-600 text-white border-green-600 shadow-md"
+                        : "bg-yellow-500 text-white border-yellow-500 shadow-md"
+                      : "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                    {c==="STC" ? "🟣 STC" : c==="موبايلي" ? "🟢 موبايلي" : "🟡 زين"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={handleRegister} disabled={saving}
+              className="w-full py-4 rounded-2xl font-black text-white text-base hover:shadow-xl transition-all disabled:opacity-60"
+              style={{background:"linear-gradient(135deg,#7c3aed,#db2777)"}}>
+              {saving ? "⏳ جاري التسجيل…" : "🎰 اشترك الآن"}
+            </button>
+
+            <button onClick={onBack} className="w-full py-2.5 rounded-2xl text-sm text-gray-400 hover:text-gray-600 font-bold">
+              ← العودة
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ===================================================================
+// ===== بوابة الطلاب — تسجيل السحب (عامة بدون دخول) =====
+// ===================================================================
+function StudentRafflePortal({ siteFont, onBack }) {
+  const CARRIERS = ["STC","موبايلي","زين"];
+  const [form, setForm] = useState({ name:"", class:"", carrier:"STC" });
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    DB.get("school-raffle-entries", []).then(d => {
+      const list = Array.isArray(d) ? d : [];
+      setEntries(list);
+      setTotalCount(list.length);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleRegister = async () => {
+    if (!form.name.trim()) { alert("أدخل اسمك الكامل"); return; }
+    if (!form.class.trim()) { alert("أدخل فصلك الدراسي"); return; }
+    const dup = entries.find(e => e.name.trim() === form.name.trim() && e.class.trim() === form.class.trim());
+    if (dup) { alert("تم تسجيلك مسبقاً في هذا السحب!"); return; }
+    setSaving(true);
+    const newEntry = { id: Date.now(), ...form, registeredAt: new Date().toLocaleString("ar-SA") };
+    const updated = [...entries, newEntry];
+    setEntries(updated);
+    setTotalCount(updated.length);
+    await DB.set("school-raffle-entries", updated);
+    setSaving(false);
+    setDone(true);
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{fontFamily:siteFont, background:"linear-gradient(135deg,#7c3aed,#db2777,#f59e0b)"}}>
+      <div className="text-white text-center"><div className="text-6xl animate-bounce mb-4">🎰</div><p className="font-black">جاري التحميل…</p></div>
+    </div>
+  );
+
+  return (
+    <div dir="rtl" className="min-h-screen flex flex-col items-center justify-center p-4"
+      style={{ fontFamily: siteFont, background: "linear-gradient(135deg,#7c3aed 0%,#db2777 50%,#f59e0b 100%)" }}>
+      <style>{`
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .float-ico { animation: float 2.5s ease-in-out infinite; }
+        @keyframes prize-in { 0%{transform:scale(0);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+        .prize-in { animation: prize-in .5s cubic-bezier(.34,1.56,.64,1) forwards; }
+      `}</style>
+
+      <div className="w-full max-w-md">
+        <div className="text-center text-white mb-6">
+          <div className="text-7xl float-ico mb-3">🎰</div>
+          <h1 className="text-2xl font-black mb-1">سحب الجوائز</h1>
+          <p className="opacity-80 text-sm">مدرسة عبيدة بن الحارث المتوسطة</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {[{emoji:"🥇",val:"50 ريال"},{emoji:"🥈",val:"30 ريال"},{emoji:"🥉",val:"20 ريال"}].map((p,i) => (
+            <div key={i} className="prize-in bg-white bg-opacity-20 rounded-2xl p-3 text-center text-white border border-white border-opacity-30" style={{animationDelay:`${i*0.15}s`}}>
+              <div className="text-2xl">{p.emoji}</div>
+              <div className="font-black text-sm mt-1">{p.val}</div>
+              <div className="text-xs opacity-70">بطاقة شحن</div>
+            </div>
+          ))}
+        </div>
+
+        {done ? (
+          <div className="bg-white rounded-3xl p-8 text-center shadow-2xl">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-black text-gray-800 mb-2">تم تسجيلك!</h2>
+            <p className="text-gray-500 mb-1">بالتوفيق يا <span className="font-black text-purple-700">{form.name}</span> 🍀</p>
+            <p className="text-gray-400 text-sm mb-4">أنت المشترك رقم <span className="font-black text-pink-600 text-xl">{totalCount}</span></p>
+            <div className="flex gap-2 justify-center mb-5 flex-wrap">
+              <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${form.carrier==="STC"?"bg-purple-100 text-purple-700":form.carrier==="موبايلي"?"bg-green-100 text-green-700":"bg-yellow-100 text-yellow-700"}`}>
+                {form.carrier==="STC"?"🟣":form.carrier==="موبايلي"?"🟢":"🟡"} {form.carrier}
+              </span>
+              <span className="px-3 py-1.5 rounded-full text-sm font-bold bg-blue-100 text-blue-700">📚 {form.class}</span>
+            </div>
+            <p className="text-xs text-gray-400 mb-5">سيُعلَن عن الفائزين من قِبل الإدارة</p>
+            <button onClick={() => { setDone(false); setForm({ name:"", class:"", carrier:"STC" }); }}
+              className="w-full py-3 rounded-2xl font-black text-white mb-2" style={{background:"linear-gradient(135deg,#7c3aed,#db2777)"}}>
+              🎟 تسجيل طالب آخر
+            </button>
+            <button onClick={onBack} className="w-full py-2.5 rounded-2xl text-gray-500 font-bold text-sm bg-gray-50 hover:bg-gray-100">
+              ← العودة للرئيسية
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="text-center mb-1">
+              <h2 className="text-xl font-black text-gray-800">🎟 اشترك في السحب</h2>
+              <p className="text-xs text-gray-400 mt-1">{totalCount} مشترك حتى الآن</p>
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-500 mb-1.5 block">👤 اسمك الكامل</label>
+              <input value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))}
+                placeholder="أدخل اسمك الثلاثي"
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold" />
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-500 mb-1.5 block">📚 الفصل الدراسي</label>
+              <input value={form.class} onChange={e => setForm(f=>({...f,class:e.target.value}))}
+                placeholder="مثال: أول أ — ثاني ب — ثالث ج"
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold" />
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-500 mb-1.5 block">📱 نوع الشريحة</label>
+              <div className="grid grid-cols-3 gap-2">
+                {CARRIERS.map(c => (
+                  <button key={c} onClick={() => setForm(f=>({...f,carrier:c}))}
+                    className={`py-3.5 rounded-2xl font-black text-sm border-2 transition-all ${form.carrier===c
+                      ? c==="STC"?"bg-purple-600 text-white border-purple-600 shadow-md"
+                        : c==="موبايلي"?"bg-green-600 text-white border-green-600 shadow-md"
+                        : "bg-yellow-500 text-white border-yellow-500 shadow-md"
+                      : "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                    {c==="STC"?"🟣 STC":c==="موبايلي"?"🟢 موبايلي":"🟡 زين"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={handleRegister} disabled={saving}
+              className="w-full py-4 rounded-2xl font-black text-white text-base disabled:opacity-60"
+              style={{background:"linear-gradient(135deg,#7c3aed,#db2777)"}}>
+              {saving ? "⏳ جاري التسجيل…" : "🎰 اشترك الآن"}
+            </button>
+            <button onClick={onBack} className="w-full py-2.5 rounded-2xl text-sm text-gray-400 font-bold">← العودة</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ===================================================================
 // ===== صفحة سحب الطلاب 🎰 =====
@@ -6323,6 +6619,7 @@ export default function SchoolWebsite() {
   const [user, setUser] = useState(null);
   const [parentPortal, setParentPortal] = useState(false);
   const [teacherPortal, setTeacherPortal] = useState(false);
+  const [studentRaffle, setStudentRaffle] = useState(false);
   const [page, setPage] = useState("home");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
@@ -6403,9 +6700,10 @@ export default function SchoolWebsite() {
     </div>
   );
 
+  if (!user && studentRaffle) return <StudentRafflePortal siteFont={siteFont} onBack={() => setStudentRaffle(false)} />;
   if (!user && teacherPortal) return <TeacherPortal classList={classList} setClassList={setClassList} saveClass={saveClass} siteFont={siteFont} onBack={() => setTeacherPortal(false)} attendance={attendance} teachers={teachers} week={week} />;
   if (!user && parentPortal) return <ParentPortal classList={classList} messages={messages} setMessages={setMessages} saveMessages={saveMessages} surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} siteFont={siteFont} onBack={() => setParentPortal(false)} />;
-  if (!user) return <LoginPage users={users} onLogin={setUser} siteFont={siteFont} onParentPortal={() => setParentPortal(true)} onTeacherPortal={() => setTeacherPortal(true)} />;
+  if (!user) return <LoginPage users={users} onLogin={setUser} siteFont={siteFont} onParentPortal={() => setParentPortal(true)} onTeacherPortal={() => setTeacherPortal(true)} onStudentRaffle={() => setStudentRaffle(true)} />;
 
   const pages = [
     { id: "home",            label: "الرئيسية",        icon: "🏠" },
