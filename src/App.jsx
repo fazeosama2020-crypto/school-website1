@@ -2097,6 +2097,347 @@ function PollPage({ teachers }) {
 
 
 
+
+// ===================================================================
+// ===== صفحة سحب الطلاب 🎰 =====
+// ===================================================================
+function RafflePage() {
+  const PRIZES = [
+    { label: "بطاقة شحن 50 ريال",  value: 50, emoji: "🥇", color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
+    { label: "بطاقة شحن 30 ريال",  value: 30, emoji: "🥈", color: "#6366f1", bg: "#eef2ff", border: "#c7d2fe" },
+    { label: "بطاقة شحن 20 ريال",  value: 20, emoji: "🥉", color: "#0d9488", bg: "#f0fdfa", border: "#99f6e4" },
+  ];
+  const CARRIERS = ["STC","موبايلي","زين"];
+
+  const [tab, setTab] = useState("register"); // register | admin | draw | winners
+  const [form, setForm] = useState({ name:"", class:"", carrier:"STC" });
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [winners, setWinners] = useState([]);
+  const [drawing, setDrawing] = useState(false);
+  const [drawStep, setDrawStep] = useState(-1); // which prize is being drawn
+  const [spinName, setSpinName] = useState("");
+  const [adminPin, setAdminPin] = useState("");
+  const [pinOk, setPinOk] = useState(false);
+  const [pinErr, setPinErr] = useState(false);
+  const ADMIN_PIN = "1234";
+
+  useEffect(() => {
+    Promise.all([
+      DB.get("school-raffle-entries", []),
+      DB.get("school-raffle-winners", []),
+    ]).then(([e, w]) => {
+      setEntries(Array.isArray(e) ? e : []);
+      setWinners(Array.isArray(w) ? w : []);
+      setLoading(false);
+    });
+  }, []);
+
+  // تسجيل طالب
+  const handleRegister = async () => {
+    if (!form.name.trim()) { alert("أدخل اسمك"); return; }
+    if (!form.class.trim()) { alert("أدخل فصلك"); return; }
+    const dup = entries.find(e => e.name.trim() === form.name.trim() && e.class === form.class);
+    if (dup) { alert("تم تسجيلك مسبقاً!"); return; }
+    setSaving(true);
+    const newEntry = { id: Date.now(), ...form, registeredAt: new Date().toLocaleString("ar-SA") };
+    const updated = [...entries, newEntry];
+    setEntries(updated);
+    await DB.set("school-raffle-entries", updated);
+    setRegistered(true); setSaving(false);
+  };
+
+  // السحب الآلي
+  const runDraw = async () => {
+    if (entries.length < PRIZES.length) { alert(`يجب أن يكون هناك على الأقل ${PRIZES.length} مشتركين`); return; }
+    setDrawing(true);
+    const pool = [...entries];
+    const drawn = [];
+
+    for (let i = 0; i < PRIZES.length; i++) {
+      setDrawStep(i);
+      // تأثير دوران الأسماء
+      await new Promise(res => {
+        let count = 0;
+        const total = 30 + i * 10;
+        const interval = setInterval(() => {
+          const rand = pool[Math.floor(Math.random() * pool.length)];
+          setSpinName(rand.name);
+          count++;
+          if (count >= total) {
+            clearInterval(interval);
+            // اختيار الفائز الحقيقي
+            const winIdx = Math.floor(Math.random() * pool.length);
+            const winner = pool.splice(winIdx, 1)[0];
+            setSpinName(winner.name);
+            drawn.push({ ...winner, prize: PRIZES[i] });
+            setTimeout(res, 1200);
+          }
+        }, 80 - i * 10);
+      });
+      await new Promise(res => setTimeout(res, 800));
+    }
+
+    setWinners(drawn);
+    await DB.set("school-raffle-winners", drawn);
+    setDrawing(false);
+    setDrawStep(-1);
+    setTab("winners");
+  };
+
+  const resetAll = async () => {
+    if (!confirm("⚠️ هل تريد إعادة ضبط السحب وحذف جميع المشتركين والفائزين؟")) return;
+    setEntries([]); setWinners([]); setRegistered(false);
+    await DB.set("school-raffle-entries", []);
+    await DB.set("school-raffle-winners", []);
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="text-5xl animate-bounce">🎰</div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5" dir="rtl">
+      <style>{`
+        @keyframes spin-name { 0%{transform:scale(.9);opacity:.6} 50%{transform:scale(1.05);opacity:1} 100%{transform:scale(.9);opacity:.6} }
+        .spin-name { animation: spin-name .16s ease-in-out infinite; }
+        @keyframes winner-pop { 0%{transform:scale(0) rotate(-10deg);opacity:0} 70%{transform:scale(1.1) rotate(2deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
+        .winner-pop { animation: winner-pop .6s cubic-bezier(.34,1.56,.64,1) forwards; }
+        @keyframes confetti-fall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(60px) rotate(360deg);opacity:0} }
+        .conf { animation: confetti-fall 1.5s ease-in forwards; position:absolute; pointer-events:none; }
+      `}</style>
+
+      {/* Header */}
+      <div className="page-header-bar relative overflow-hidden" style={{background:"linear-gradient(135deg,#7c3aed,#db2777,#f59e0b)"}}>
+        <div className="relative z-10 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-2xl font-black">🎰 سحب الجوائز</h2>
+            <p className="opacity-80 text-sm mt-1">بطاقات شحن 20 · 30 · 50 ريال</p>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="bg-white bg-opacity-20 rounded-xl px-3 py-1.5 font-black">{entries.length} مشترك</span>
+          </div>
+        </div>
+      </div>
+
+      {/* تبويبات */}
+      <div className="flex gap-2">
+        {[
+          { id:"register", label:"🎟 تسجيل" },
+          { id:"admin",    label:"⚙️ الإدارة" },
+          { id:"winners",  label:"🏆 الفائزون" },
+        ].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex-1 py-2.5 rounded-2xl font-black text-sm transition-all ${tab === t.id ? "bg-purple-600 text-white shadow-md" : "bg-white text-gray-600 hover:bg-purple-50 border border-gray-200"}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ===== تسجيل الطالب ===== */}
+      {tab === "register" && (
+        <div className="space-y-4">
+          {/* الجوائز */}
+          <div className="grid grid-cols-3 gap-3">
+            {PRIZES.map(p => (
+              <div key={p.value} className="rounded-2xl p-4 text-center border-2" style={{background:p.bg, borderColor:p.border}}>
+                <div className="text-3xl">{p.emoji}</div>
+                <div className="font-black mt-1 text-sm" style={{color:p.color}}>{p.value} ريال</div>
+                <div className="text-xs text-gray-500 mt-0.5">بطاقة شحن</div>
+              </div>
+            ))}
+          </div>
+
+          {registered ? (
+            <div className="bg-green-50 border-2 border-green-300 rounded-3xl p-8 text-center">
+              <div className="text-5xl mb-3">✅</div>
+              <h3 className="text-xl font-black text-green-700">تم تسجيلك بنجاح!</h3>
+              <p className="text-green-600 mt-2">اسمك في القرعة — بالتوفيق 🍀</p>
+              <p className="text-sm text-gray-400 mt-3">{form.name} — {form.class} — {form.carrier}</p>
+              <button onClick={() => { setRegistered(false); setForm({ name:"", class:"", carrier:"STC" }); }}
+                className="mt-4 px-6 py-2 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 text-sm">
+                تسجيل طالب آخر
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-purple-100 space-y-4">
+              <h3 className="font-black text-purple-800 text-lg text-center">🎟 سجّل الآن</h3>
+
+              <div>
+                <label className="text-xs font-black text-gray-500 mb-1.5 block">اسمك الكامل</label>
+                <input value={form.name} onChange={e => setForm(f => ({...f,name:e.target.value}))}
+                  placeholder="أدخل اسمك الثلاثي"
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold" />
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-500 mb-1.5 block">الفصل الدراسي</label>
+                <input value={form.class} onChange={e => setForm(f => ({...f,class:e.target.value}))}
+                  placeholder="مثال: أول أ — ثاني ب"
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold" />
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-500 mb-1.5 block">نوع الشريحة</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {CARRIERS.map(c => (
+                    <button key={c} onClick={() => setForm(f => ({...f,carrier:c}))}
+                      className={`py-3 rounded-2xl font-black text-sm border-2 transition-all ${form.carrier === c
+                        ? c === "STC" ? "bg-purple-600 text-white border-purple-600"
+                          : c === "موبايلي" ? "bg-green-600 text-white border-green-600"
+                          : "bg-yellow-500 text-white border-yellow-500"
+                        : "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                      {c === "STC" ? "🟣 STC" : c === "موبايلي" ? "🟢 موبايلي" : "🟡 زين"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={handleRegister} disabled={saving}
+                className="w-full py-4 rounded-2xl font-black text-white text-base hover:shadow-lg transition-all disabled:opacity-50"
+                style={{background:"linear-gradient(135deg,#7c3aed,#db2777)"}}>
+                {saving ? "جاري التسجيل…" : "🎟 اشترك في السحب"}
+              </button>
+            </div>
+          )}
+
+          {entries.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 border border-gray-100 text-center">
+              <p className="text-sm text-gray-500">عدد المشتركين: <span className="font-black text-purple-700 text-lg">{entries.length}</span></p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== لوحة الإدارة ===== */}
+      {tab === "admin" && (
+        <div className="space-y-4">
+          {!pinOk ? (
+            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 max-w-sm mx-auto text-center">
+              <div className="text-4xl mb-3">🔐</div>
+              <h3 className="font-black text-gray-800 mb-4">كود الإدارة</h3>
+              <input type="password" value={adminPin} onChange={e => { setAdminPin(e.target.value); setPinErr(false); }}
+                placeholder="أدخل الكود"
+                className={`w-full px-4 py-3 rounded-2xl border-2 text-center text-xl font-black tracking-widest focus:outline-none ${pinErr ? "border-red-400 bg-red-50" : "border-gray-200 focus:border-purple-400"}`} />
+              {pinErr && <p className="text-red-500 text-xs font-bold mt-2">كود خاطئ</p>}
+              <button onClick={() => { if (adminPin === ADMIN_PIN) { setPinOk(true); } else { setPinErr(true); } }}
+                className="mt-4 w-full py-3 bg-purple-600 text-white font-black rounded-2xl hover:bg-purple-700">
+                دخول
+              </button>
+              <p className="text-xs text-gray-400 mt-3">الكود الافتراضي: 1234</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* زر السحب الكبير */}
+              <div className="bg-gradient-to-br from-purple-600 via-pink-600 to-amber-500 rounded-3xl p-8 text-center text-white shadow-xl">
+                <div className="text-5xl mb-3">🎰</div>
+                <h3 className="text-2xl font-black mb-2">بدء السحب الآلي</h3>
+                <p className="opacity-80 text-sm mb-6">{entries.length} مشترك · 3 فائزين</p>
+                <button onClick={runDraw} disabled={drawing || entries.length < 3}
+                  className="px-10 py-4 bg-white text-purple-700 font-black text-xl rounded-2xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                  {drawing ? "جاري السحب…" : "🎲 ابدأ السحب"}
+                </button>
+                {entries.length < 3 && <p className="text-xs opacity-70 mt-3">يجب تسجيل 3 مشتركين على الأقل</p>}
+              </div>
+
+              {/* تأثير السحب */}
+              {drawing && (
+                <div className="bg-white rounded-3xl p-8 text-center shadow-xl border-2 border-purple-200">
+                  <div className="text-4xl mb-2">{PRIZES[drawStep]?.emoji || "🎰"}</div>
+                  <p className="text-sm text-gray-500 font-bold mb-3">{PRIZES[drawStep]?.label || "جاري السحب"}</p>
+                  <div className="spin-name text-3xl font-black text-purple-700 min-h-12 flex items-center justify-center">
+                    {spinName || "…"}
+                  </div>
+                  <div className="flex gap-2 justify-center mt-4">
+                    {PRIZES.map((p,i) => (
+                      <div key={i} className={`w-3 h-3 rounded-full transition-all ${i === drawStep ? "scale-125" : "opacity-30"}`}
+                        style={{background:p.color}} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* قائمة المشتركين */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                  <span className="font-black text-gray-800">قائمة المشتركين ({entries.length})</span>
+                  <button onClick={resetAll} className="text-xs text-red-500 font-bold px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100">
+                    🗑 إعادة ضبط
+                  </button>
+                </div>
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                  {entries.length === 0 ? (
+                    <p className="p-6 text-center text-gray-400 text-sm">لا يوجد مشتركون بعد</p>
+                  ) : entries.map((e, i) => (
+                    <div key={e.id} className="flex items-center gap-3 px-4 py-3">
+                      <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-black flex items-center justify-center">{i+1}</span>
+                      <div className="flex-1">
+                        <span className="font-bold text-gray-800 text-sm">{e.name}</span>
+                        <span className="text-xs text-gray-400 mr-2">— {e.class}</span>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${e.carrier === "STC" ? "bg-purple-100 text-purple-700" : e.carrier === "موبايلي" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                        {e.carrier}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== الفائزون ===== */}
+      {tab === "winners" && (
+        <div className="space-y-4">
+          {winners.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center shadow-sm">
+              <div className="text-5xl mb-3">🏆</div>
+              <p className="font-black text-gray-600">لم يُجرَ السحب بعد</p>
+              <p className="text-sm text-gray-400 mt-1">اذهب للإدارة وابدأ السحب</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 rounded-3xl p-6 text-center shadow-xl">
+                <div className="text-4xl mb-2">🎊</div>
+                <h3 className="text-2xl font-black text-amber-900">الفائزون بالسحب!</h3>
+                <p className="text-amber-800 text-sm mt-1">مبروك للفائزين 🎉</p>
+              </div>
+              <div className="space-y-4">
+                {winners.map((w, i) => (
+                  <div key={i} className="winner-pop rounded-3xl p-6 border-2 shadow-lg text-center" style={{background:w.prize.bg, borderColor:w.prize.border, animationDelay:`${i*0.2}s`}}>
+                    <div className="text-5xl mb-2">{w.prize.emoji}</div>
+                    <div className="text-3xl font-black mb-1" style={{color:w.prize.color}}>{w.name}</div>
+                    <div className="text-sm text-gray-500 mb-3">{w.class}</div>
+                    <div className="flex items-center justify-center gap-3">
+                      <span className={`px-3 py-1 rounded-full text-sm font-black ${w.carrier === "STC" ? "bg-purple-200 text-purple-800" : w.carrier === "موبايلي" ? "bg-green-200 text-green-800" : "bg-yellow-200 text-yellow-800"}`}>
+                        {w.carrier === "STC" ? "🟣" : w.carrier === "موبايلي" ? "🟢" : "🟡"} {w.carrier}
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-sm font-black text-white" style={{background:w.prize.color}}>
+                        {w.prize.label}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => window.print()}
+                className="w-full py-3 rounded-2xl bg-gray-800 text-white font-black hover:bg-gray-900">
+                🖨 طباعة النتائج
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
 // ===== سجل حضور المعلم — قراءة فقط مع الأسباب =====
 function TeacherAttendanceView({ currentTeacher, teachers, attendance, week, absenceReasons, saveAbsenceReason, savingReason, savedMsg }) {
   const ti = teachers ? teachers.findIndex(t => t === currentTeacher.name) : -1;
@@ -6084,6 +6425,7 @@ export default function SchoolWebsite() {
     { id: "gallery",       label: "معرض الأنشطة",   icon: "🖼" },
     { id: "certificates",  label: "الشهادات الرقمية",icon: "🏅" },
     { id: "poll",          label: "تميّز المعلم",    icon: "🏆" },
+    { id: "raffle",        label: "سحب الطلاب",      icon: "🎰" },
     { id: "surveys",       label: "الاستبيانات",     icon: "📊" },
     { id: "report",        label: "تقرير برنامج",    icon: "📋" },
   ];
@@ -6300,6 +6642,7 @@ export default function SchoolWebsite() {
         {page === "gallery"       && <GalleryPage />}
         {page === "certificates"  && <CertificatesPage teachers={teachers} attendance={attendance} week={week} classList={classList} />}
         {page === "poll"          && <PollPage teachers={teachers} />}
+        {page === "raffle"        && <RafflePage />}
         {page === "settings"      && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} />}
       </main>
       </div>{/* end relative z-10 */}
