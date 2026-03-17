@@ -373,39 +373,47 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
   const priorityColor = { "عاجل": "bg-red-100 text-red-700", "مهم": "bg-amber-100 text-amber-700", "عادي": "bg-gray-100 text-gray-600" };
   const ann = announcements.find(a => String(a.id) === String(annId));
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4"
+    <div dir="rtl" className="min-h-screen"
       style={{ fontFamily: siteFont, background: "linear-gradient(135deg, #0d9488 0%, #065f46 50%, #064e3b 100%)" }}>
-      <div className="w-full max-w-md">
-        <div className="text-center text-white mb-6">
-          <div className="text-4xl mb-2">🏫</div>
-          <p className="font-black text-base">مدرسة عبيدة بن الحارث المتوسطة</p>
-        </div>
+      {/* شريط العنوان */}
+      <div className="flex items-center justify-between px-6 py-4 bg-black bg-opacity-20">
+        <p className="font-black text-white text-sm">🏫 مدرسة عبيدة بن الحارث المتوسطة</p>
+        <button onClick={() => { window.location.hash = ""; window.location.reload(); }}
+          className="px-4 py-1.5 rounded-xl bg-white bg-opacity-20 text-white font-bold text-sm hover:bg-opacity-30 transition-all">
+          ← الرئيسية
+        </button>
+      </div>
+      {/* المحتوى */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {!ann ? (
           <div className="bg-white rounded-2xl p-8 text-center text-gray-400">
             <div className="text-4xl mb-2">📭</div>
             <p className="font-bold">الإعلان غير موجود</p>
-            <button onClick={() => { window.location.hash = ""; window.location.reload(); }}
-              className="mt-4 px-6 py-2 rounded-xl bg-teal-600 text-white font-bold text-sm">العودة</button>
           </div>
         ) : (
-          <div className={"bg-white rounded-2xl p-6 shadow-2xl border-r-4 " + (ann.pinned ? "border-amber-400" : "border-teal-400")}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">{cIcons[ann.category] || "📢"}</span>
-              <h1 className={"font-black flex-1 " + (ann.titleSize||"text-xl")} style={{color: ann.titleColor||"#1f2937"}}>{ann.title}</h1>
-              {ann.pinned && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">📌 مثبت</span>}
+          <div className={"bg-white rounded-2xl shadow-2xl overflow-hidden border-r-8 " + (ann.pinned ? "border-amber-400" : "border-teal-400")}
+            style={{ backgroundColor: ann.bgColor || "#ffffff" }}>
+            {/* رأس الإعلان */}
+            <div className="px-8 pt-8 pb-4">
+              <div className="flex items-start gap-3 mb-3 flex-wrap">
+                <span className="text-3xl">{cIcons[ann.category] || "📢"}</span>
+                <h1 className={"font-black flex-1 leading-snug " + (ann.titleSize||"text-2xl")} style={{color: ann.titleColor||"#1f2937"}}>{ann.title}</h1>
+                {ann.pinned && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">📌 مثبت</span>}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <span className={"text-xs px-3 py-1 rounded-full font-bold " + (priorityColor[ann.priority] || "bg-gray-100 text-gray-600")}>{ann.priority}</span>
+                <span className="text-xs px-3 py-1 rounded-full font-bold bg-teal-50 text-teal-700">{ann.category}</span>
+                <span className="text-xs px-3 py-1 rounded-full font-bold bg-gray-50 text-gray-500">{ann.date}</span>
+              </div>
             </div>
-            <span className={"inline-block text-xs px-3 py-1 rounded-full font-bold mb-4 " + (priorityColor[ann.priority] || "bg-gray-100 text-gray-600")}>{ann.priority}</span>
-            <div className="text-gray-700 text-sm leading-loose mb-4" dangerouslySetInnerHTML={{ __html: ann.content }}></div>
-            <div className="flex items-center justify-between text-xs text-gray-400 border-t pt-3">
-              <span>{ann.category}</span>
-              <span>{ann.date}</span>
+            {/* فاصل */}
+            <div className="border-t border-gray-100 mx-8"></div>
+            {/* محتوى الإعلان */}
+            <div className="px-8 py-6 text-gray-700 leading-loose text-base"
+              dangerouslySetInnerHTML={{ __html: ann.content }}>
             </div>
           </div>
         )}
-        <button onClick={() => { window.location.hash = ""; window.location.reload(); }}
-          className="mt-4 w-full py-3 rounded-2xl bg-white bg-opacity-20 text-white font-bold text-sm hover:bg-opacity-30 transition-all">
-          ← الصفحة الرئيسية
-        </button>
       </div>
     </div>
   );
