@@ -6605,7 +6605,7 @@ export default function SchoolWebsite() {
   const [parentPortal, setParentPortal] = useState(false);
   const [teacherPortal, setTeacherPortal] = useState(false);
   const [studentRaffle, setStudentRaffle] = useState(false);
-  const [publicAnnouncements, setPublicAnnouncements] = useState(true);
+  const [publicAnnouncements, setPublicAnnouncements] = useState(false);
   const [page, setPage] = useState("home");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
