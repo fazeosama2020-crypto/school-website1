@@ -5015,7 +5015,6 @@ function SMSPage({ teachers, attendance, week, classList }) {
 
   // ===== SEND FUNCTION — مباشر بدون خادم وسيط =====
   const sendSMS = async (numbers, message) => {
-    if (!apiKey.trim()) { setResult({ ok:false, topMsg:"⚙️ أدخل API Key في الإعدادات أولاً" }); return; }
     if (!numbers?.trim()) { setResult({ ok:false, topMsg:"📞 أدخل رقماً واحداً على الأقل" }); return; }
     if (!message.trim()) { setResult({ ok:false, topMsg:"✏️ اكتب نص الرسالة" }); return; }
     setSending(true); setResult(null);
@@ -5024,7 +5023,7 @@ function SMSPage({ teachers, attendance, week, classList }) {
       const res = await fetch("/api/send-sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey, numbers, message, sender: sender || "School1" }),
+        body: JSON.stringify({ numbers, message, sender: sender || "School1" }),
       });
       const data = await res.json();
       if (data.success) {
