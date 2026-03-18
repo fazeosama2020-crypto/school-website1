@@ -4883,8 +4883,7 @@ async function loadXLSX() {
 
 function SMSPage({ teachers, attendance, week, classList }) {
   const [tab, setTab] = useState("contacts");
-  const [smsUser, setSmsUser] = useState(() => localStorage.getItem("sms_user") || "966548454776");
-  const [smsPass, setSmsPass] = useState(() => localStorage.getItem("sms_pass") || "");
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("sms_apikey") || "");
   const [sender, setSender] = useState(() => localStorage.getItem("sms_sender") || "School1");
   const [showConfig, setShowConfig] = useState(false);
   const [sending, setSending] = useState(false);
@@ -5016,7 +5015,7 @@ function SMSPage({ teachers, attendance, week, classList }) {
 
   // ===== SEND FUNCTION — مباشر بدون خادم وسيط =====
   const sendSMS = async (numbers, message) => {
-    if (!smsPass.trim()) { setResult({ ok:false, topMsg:"⚙️ أدخل كلمة المرور في الإعدادات أولاً" }); return; }
+    if (!apiKey.trim()) { setResult({ ok:false, topMsg:"⚙️ أدخل API Key في الإعدادات أولاً" }); return; }
     if (!numbers?.trim()) { setResult({ ok:false, topMsg:"📞 أدخل رقماً واحداً على الأقل" }); return; }
     if (!message.trim()) { setResult({ ok:false, topMsg:"✏️ اكتب نص الرسالة" }); return; }
     setSending(true); setResult(null);
@@ -5025,7 +5024,7 @@ function SMSPage({ teachers, attendance, week, classList }) {
       const res = await fetch("/api/send-sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: smsUser, password: smsPass, numbers, message, sender: sender || "School1" }),
+        body: JSON.stringify({ apiKey, numbers, message, sender: sender || "School1" }),
       });
       const data = await res.json();
       if (data.success) {
@@ -5064,19 +5063,14 @@ function SMSPage({ teachers, attendance, week, classList }) {
       {showConfig && (
         <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
           <h3 className="font-black text-gray-800 mb-1">⚙️ إعدادات CORBIT المدار</h3>
-          <p className="text-xs text-gray-400 mb-4">نفس بيانات الدخول في app.mobile.net.sa</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
+          <p className="text-xs text-gray-400 mb-4">أدخل API Key من صفحة رموز API في حسابك</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
             <div>
-              <label className="text-xs font-black text-gray-600 mb-1 block">👤 اسم المستخدم (رقم الجوال)</label>
-              <input value={smsUser} onChange={e => { setSmsUser(e.target.value); localStorage.setItem("sms_user", e.target.value); }}
-                className="w-full border-2 border-gray-200 focus:border-teal-400 focus:outline-none rounded-xl px-3 py-2.5 text-sm"
-                placeholder="966548454776" dir="ltr" />
-            </div>
-            <div>
-              <label className="text-xs font-black text-gray-600 mb-1 block">🔑 كلمة المرور</label>
-              <input type="password" value={smsPass} onChange={e => { setSmsPass(e.target.value); localStorage.setItem("sms_pass", e.target.value); }}
-                className="w-full border-2 border-gray-200 focus:border-teal-400 focus:outline-none rounded-xl px-3 py-2.5 text-sm"
-                placeholder="••••••••" />
+              <label className="text-xs font-black text-gray-600 mb-1 block">🔑 API Key</label>
+              <input value={apiKey} onChange={e => { setApiKey(e.target.value); localStorage.setItem("sms_apikey", e.target.value); }}
+                className="w-full border-2 border-gray-200 focus:border-teal-400 focus:outline-none rounded-xl px-3 py-2.5 text-sm font-mono"
+                placeholder="أدخل API Key من لوحة التحكم" dir="ltr" />
+              <p className="text-xs text-gray-400 mt-1">📍 من حسابك: الإعدادات ← رموز API</p>
             </div>
             <div>
               <label className="text-xs font-black text-gray-600 mb-1 block">📛 اسم المرسل (Sender ID)</label>
@@ -5086,9 +5080,9 @@ function SMSPage({ teachers, attendance, week, classList }) {
             </div>
           </div>
           <div className="bg-teal-50 rounded-xl px-4 py-3 text-xs text-teal-700 space-y-1">
-            <p className="font-black">💡 نفس بيانات الدخول في CORBIT المدار</p>
-            <p>✅ البيانات تُحفظ تلقائياً في المتصفح</p>
+            <p className="font-black">💡 كيف يعمل الإرسال؟</p>
             <p>✅ الإرسال يتم عبر خادم Vercel مباشرةً بدون مشكلة CORS</p>
+            <p>✅ API Key يُحفظ تلقائياً في المتصفح</p>
           </div>
         </div>
       )}
@@ -9046,3 +9040,4 @@ export default function SchoolWebsite() {
     </div>
   );
 }
+
