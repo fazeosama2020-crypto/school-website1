@@ -11,7 +11,7 @@ module.exports = async function handler(req, res) {
   const senderName = sender || process.env.SMS_SENDER || "School1";
 
   if (!apiKey || !numbers || !message) {
-    return res.status(400).json({ success: false, message: "بيانات ناقصة — تأكد من API Key" });
+    return res.status(400).json({ success: false, message: "بيانات ناقصة" });
   }
 
   const cleanNums = numbers
@@ -29,7 +29,6 @@ module.exports = async function handler(req, res) {
     { label: "token in body", url: "https://app.mobile.net.sa/api/v1/sendSMS", method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: apiKey, numbers: cleanNums, message, sender: senderName }) },
     { label: "apiKey in body", url: "https://app.mobile.net.sa/api/v1/sendSMS", method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apiKey, numbers: cleanNums, message, sender: senderName }) },
     { label: "Token header", url: "https://app.mobile.net.sa/api/v1/sendSMS", method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Token " + apiKey }, body: JSON.stringify({ numbers: cleanNums, message, sender: senderName }) },
-    { label: "Bearer /api/send", url: "https://app.mobile.net.sa/api/send", method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey }, body: JSON.stringify({ numbers: cleanNums, message, sender: senderName }) },
     { label: "form token", url: "https://app.mobile.net.sa/api/v1/sendSMS", method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ token: apiKey, numbers: cleanNums, message, sender: senderName }).toString() },
     { label: "GET token", url: "https://app.mobile.net.sa/webservice/?token=" + encodeURIComponent(apiKey) + "&numbers=" + encodeURIComponent(cleanNums) + "&message=" + encodeURIComponent(message) + "&sender=" + encodeURIComponent(senderName), method: "GET", headers: {}, body: null },
   ];
@@ -48,7 +47,3 @@ module.exports = async function handler(req, res) {
     } catch (err) {
       results.push({ label: attempt.label, error: err.message });
     }
-  }
-
-  return res.status(500).json({ success: false, message: "فشل الإرسال", attempts: results });
-};
