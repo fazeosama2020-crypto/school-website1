@@ -8008,7 +8008,11 @@ function AttendanceAnalysisPage() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState(null);
-  const WORK_START = "07:00"; // وقت بدء الدوام الرسمي
+  const [timeFormat, setTimeFormat] = useState("24");
+  const [workStartInput, setWorkStartInput] = useState("07:00");
+  const [workEndInput, setWorkEndInput] = useState("14:00");
+  const WORK_START = workStartInput;
+  const WORK_END = workEndInput;
 
   const toMins = (t) => {
     if (!t || t === "-") return null;
@@ -8021,6 +8025,17 @@ function AttendanceAnalysisPage() {
     const h = Math.floor(Math.abs(mins) / 60);
     const m = Math.abs(mins) % 60;
     return (h > 0 ? h + "س " : "") + (m > 0 ? m + "د" : (h > 0 ? "" : "0د"));
+  };
+
+  const fmtTime = (t) => {
+    if (!t || t === "-") return "—";
+    if (timeFormat === "12") {
+      const [h, m] = t.split(":").map(Number);
+      const ampm = h >= 12 ? "م" : "ص";
+      const h12 = h % 12 || 12;
+      return h12 + ":" + String(m).padStart(2,"0") + " " + ampm;
+    }
+    return t;
   };
 
   const parseExcel = (file) => {
@@ -8094,16 +8109,15 @@ function AttendanceAnalysisPage() {
               : 0;
 
             const departureMins = toMins(departure);
-            const earlyDepartMins = (departureMins !== null && !isAbsent && !isWeekend && isAutoDepart)
-              ? 0
-              : (departureMins !== null && !isAbsent && !isWeekend)
-              ? Math.max(0, (workStart + 60 * 7) - departureMins)
+            const workEnd = toMins(WORK_END);
+            const earlyDepartMins = (departureMins !== null && !isAbsent && !isWeekend && !isAutoDepart && departureMins < workEnd)
+              ? workEnd - departureMins
               : 0;
 
             records.push({
               date, status, arrival, departure, actualHours,
               isWeekend, isAbsent, isPermission, isAutoDepart, isComplete,
-              lateMins, departureMins, arrivalMins,
+              lateMins, earlyDepartMins, departureMins, arrivalMins,
             });
           }
 
@@ -8115,6 +8129,8 @@ function AttendanceAnalysisPage() {
           const totalLateMins = latedays.reduce((s, r) => s + r.lateMins, 0);
           const autoDeparts = workdays.filter(r => r.isAutoDepart).length;
           const presentDays = workdays.filter(r => !r.isAbsent).length;
+          const earlyDays = workdays.filter(r => r.earlyDepartMins > 0);
+          const totalEarlyMins = earlyDays.reduce((s, r) => s + r.earlyDepartMins, 0);
 
           resolve({
             empName, empId, empRole,
@@ -8128,6 +8144,8 @@ function AttendanceAnalysisPage() {
               totalLateMins,
               avgLateMins: latedays.length > 0 ? Math.round(totalLateMins / latedays.length) : 0,
               autoDeparts,
+              earlyDays: earlyDays.length,
+              totalEarlyMins,
             }
           });
         } catch (err) {
@@ -8261,6 +8279,28 @@ function AttendanceAnalysisPage() {
         <p className="opacity-80 text-sm mt-1">رفع ملف Excel وتحليل حضور الموظف تلقائياً</p>
       </div>
 
+      {/* إعدادات الوقت */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-4 items-end">
+        <div>
+          <label className="text-xs font-black text-gray-500 mb-1 block">⏰ وقت بدء الدوام</label>
+          <input type="time" value={workStartInput} onChange={e => setWorkStartInput(e.target.value)}
+            className="px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold" />
+        </div>
+        <div>
+          <label className="text-xs font-black text-gray-500 mb-1 block">🏁 وقت انتهاء الدوام</label>
+          <input type="time" value={workEndInput} onChange={e => setWorkEndInput(e.target.value)}
+            className="px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold" />
+        </div>
+        <div>
+          <label className="text-xs font-black text-gray-500 mb-1 block">🕐 صيغة الوقت</label>
+          <select value={timeFormat} onChange={e => setTimeFormat(e.target.value)}
+            className="px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
+            <option value="24">24 ساعة</option>
+            <option value="12">12 ساعة (ص/م)</option>
+          </select>
+        </div>
+      </div>
+
       {/* رفع الملفات */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
         <label className="block cursor-pointer">
@@ -8319,6 +8359,8 @@ function AttendanceAnalysisPage() {
               { label:"إجمالي دقائق التأخر", value: selectedEmp.stats.totalLateMins + "د", icon:"⏱️", color:"bg-amber-50 text-amber-700 border-amber-200" },
               { label:"متوسط التأخر اليومي", value: selectedEmp.stats.avgLateMins + "د", icon:"📈", color:"bg-orange-50 text-orange-700 border-orange-200" },
               { label:"انصراف تلقائي", value: selectedEmp.stats.autoDeparts, icon:"🔄", color:"bg-gray-50 text-gray-700 border-gray-200" },
+              { label:"أيام الانصراف المبكر", value: selectedEmp.stats.earlyDays, icon:"🏃", color:"bg-orange-50 text-orange-700 border-orange-200" },
+              { label:"إجمالي دقائق الانصراف المبكر", value: selectedEmp.stats.totalEarlyMins + "د", icon:"⬅️", color:"bg-orange-50 text-orange-700 border-orange-200" },
             ].map(s => (
               <div key={s.label} className={"rounded-2xl p-4 border-2 text-center " + s.color}>
                 <div className="text-2xl mb-1">{s.icon}</div>
@@ -8343,6 +8385,7 @@ function AttendanceAnalysisPage() {
                     <th className="px-3 py-3 text-center text-xs font-black whitespace-nowrap">توقيت الحضور</th>
                     <th className="px-3 py-3 text-center text-xs font-black whitespace-nowrap">تأخر الصباح</th>
                     <th className="px-3 py-3 text-center text-xs font-black whitespace-nowrap">توقيت الانصراف</th>
+                    <th className="px-3 py-3 text-center text-xs font-black whitespace-nowrap">انصراف مبكر</th>
                     <th className="px-3 py-3 text-center text-xs font-black whitespace-nowrap">ساعات الدوام الفعلي</th>
                   </tr>
                 </thead>
@@ -8362,7 +8405,7 @@ function AttendanceAnalysisPage() {
                         <td className="px-3 py-2.5 text-center font-bold text-xs">
                           {r.arrival === "-" ? <span className="text-gray-300">—</span> : (
                             <span className={r.arrivalMins > toMins(WORK_START) ? "text-amber-600" : "text-green-600"}>
-                              {r.arrival}
+                              {fmtTime(r.arrival)}
                             </span>
                           )}
                         </td>
@@ -8374,8 +8417,15 @@ function AttendanceAnalysisPage() {
                         </td>
                         <td className="px-3 py-2.5 text-center font-bold text-xs">
                           {r.departure === "-" ? <span className="text-gray-300">—</span> : (
-                            <span className={r.isAutoDepart ? "text-blue-600" : "text-gray-700"}>{r.departure}</span>
+                            <span className={r.isAutoDepart ? "text-blue-600" : "text-gray-700"}>{fmtTime(r.departure)}</span>
                           )}
+                        </td>
+                        <td className="px-3 py-2.5 text-center font-black text-xs">
+                          {r.isWeekend || r.isAbsent ? <span className="text-gray-300">—</span>
+                            : r.earlyDepartMins > 0
+                            ? <span className="text-orange-600">🏃 {r.earlyDepartMins} دقيقة</span>
+                            : r.isAutoDepart ? <span className="text-blue-400 text-xs">تلقائي</span>
+                            : <span className="text-green-600">✅ كامل</span>}
                         </td>
                         <td className="px-3 py-2.5 text-center font-bold text-xs text-gray-700">{r.actualHours}</td>
                       </tr>
