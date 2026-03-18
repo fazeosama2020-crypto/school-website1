@@ -5025,7 +5025,9 @@ function SMSPage({ teachers, attendance, week, classList }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ numbers, message, sender: sender || "School1" }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch(e) { data = { success: false, message: "رد غير متوقع من السيرفر: " + text.substring(0,100) }; }
       if (data.success) {
         setResult({ ok:true, msg:"✅ تم الإرسال بنجاح!\n📋 رد الخادم: " + (data.response || "") });
       } else {
