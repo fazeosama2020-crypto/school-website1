@@ -4883,9 +4883,8 @@ async function loadXLSX() {
 
 function SMSPage({ teachers, attendance, week, classList }) {
   const [tab, setTab] = useState("contacts");
-  const [username, setUsername] = useState("966548454776");
-  const [password, setPassword] = useState("");
-  const [sender, setSender] = useState("School1");
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("sms_apikey") || "");
+  const [sender, setSender] = useState(() => localStorage.getItem("sms_sender") || "School1");
   const [showConfig, setShowConfig] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
@@ -5016,68 +5015,27 @@ function SMSPage({ teachers, attendance, week, classList }) {
 
   // ===== SEND FUNCTION — مباشر بدون خادم وسيط =====
   const sendSMS = async (numbers, message) => {
-    if (!password) { setResult({ ok:false, topMsg:"⚙️ أدخل كلمة المرور في الإعدادات أولاً" }); return; }
+    if (!apiKey.trim()) { setResult({ ok:false, topMsg:"⚙️ أدخل API Key في الإعدادات أولاً" }); return; }
     if (!numbers?.trim()) { setResult({ ok:false, topMsg:"📞 أدخل رقماً واحداً على الأقل" }); return; }
     if (!message.trim()) { setResult({ ok:false, topMsg:"✏️ اكتب نص الرسالة" }); return; }
     setSending(true); setResult(null);
 
-    const cleanNums = numbers.split(/[\n,،\s]+/)
-      .map(n => n.trim()).filter(n => n.length >= 9)
-      .map(n => n.startsWith("05") ? "966" + n.slice(1) : n)
-      .join(",");
-
-    const isArabic = /[\u0600-\u06FF]/.test(message);
-    const s = sender || "School1";
-
-    // الـ proxy الذي نجح في الاتصال
-    const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-
-    const jsonBody = (extra={}) => JSON.stringify({ username, password, numbers:cleanNums, message, sender:s, msgType:isArabic?2:0, ...extra });
-    const formBody = new URLSearchParams({ username, password, numbers:cleanNums, message, sender:s }).toString();
-
-    const attempts = [
-      // مسارات مختلفة لـ mobile.net.sa
-      { label:"v1/sendSMS JSON",   url: proxy("https://app.mobile.net.sa/api/v1/sendSMS"),       method:"POST", headers:{"Content-Type":"application/json"}, body:jsonBody() },
-      { label:"v1/send JSON",      url: proxy("https://app.mobile.net.sa/api/v1/send"),           method:"POST", headers:{"Content-Type":"application/json"}, body:jsonBody() },
-      { label:"send JSON",         url: proxy("https://app.mobile.net.sa/api/send"),              method:"POST", headers:{"Content-Type":"application/json"}, body:jsonBody() },
-      { label:"sendsms JSON",      url: proxy("https://app.mobile.net.sa/api/sendsms"),           method:"POST", headers:{"Content-Type":"application/json"}, body:jsonBody() },
-      { label:"v2/sendSMS JSON",   url: proxy("https://app.mobile.net.sa/api/v2/sendSMS"),       method:"POST", headers:{"Content-Type":"application/json"}, body:jsonBody() },
-      { label:"webservice GET",    url: proxy(`https://app.mobile.net.sa/webservice/?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&numbers=${encodeURIComponent(cleanNums)}&message=${encodeURIComponent(message)}&sender=${encodeURIComponent(s)}`), method:"GET", headers:{}, body:null },
-      { label:"api/v1/sms/send",   url: proxy("https://app.mobile.net.sa/api/v1/sms/send"),      method:"POST", headers:{"Content-Type":"application/json"}, body:jsonBody() },
-      { label:"form-encoded",      url: proxy("https://app.mobile.net.sa/api/v1/sendSMS"),       method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:formBody },
-      { label:"sms.mobile.net.sa", url: proxy("https://sms.mobile.net.sa/api/v1/sendSMS"),      method:"POST", headers:{"Content-Type":"application/json"}, body:jsonBody() },
-    ];
-
-    const allResults = [];
-    for (let i = 0; i < attempts.length; i++) {
-      const a = attempts[i];
-      try {
-        const opts = { method: a.method, headers: a.headers };
-        if (a.body) opts.body = a.body;
-        const r = await fetch(a.url, opts);
-        const text = await r.text();
-        let p = null; try { p = JSON.parse(text); } catch {}
-
-        const raw = text.substring(0, 150);
-        allResults.push({ n:i+1, label:a.label, http:r.status, raw });
-
-        const ok = p?.success===true || p?.code===0 || p?.code==="0" ||
-                   p?.status==="success" || p?.status==="sent" ||
-                   text.trim()==="0" || text.trim()==="00" ||
-                   (r.status===200 && p?.status !== "Error" && p?.message !== "Not found." && text.length < 30 && /^\d+$/.test(text.trim()));
-
-        if (ok) {
-          setSending(false);
-          setResult({ ok:true, msg:`✅ تم الإرسال بنجاح عبر: ${a.label}\n📋 رد الخادم: ${text}` });
-          return;
-        }
-      } catch(e) {
-        allResults.push({ n:i+1, label:a.label, http:0, raw:"خطأ: "+e.message });
+    try {
+      // إرسال عبر Vercel Serverless Function — تتجاوز مشكلة CORS تلقائياً
+      const res = await fetch("/api/send-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, numbers, message, sender: sender || "School1" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult({ ok:true, msg:"✅ تم الإرسال بنجاح!\n📋 رد الخادم: " + (data.response || "") });
+      } else {
+        setResult({ ok:false, topMsg:"❌ فشل الإرسال", msg: data.message || "تحقق من صحة API Key والرصيد" });
       }
+    } catch(e) {
+      setResult({ ok:false, topMsg:"❌ خطأ في الاتصال", msg: e.message });
     }
-
-    setResult({ ok:false, topMsg:"❌ لم يُرسَل — تقرير التشخيص:", attempts:allResults,
-      msg:"يرجى البحث عن رابط API في إعدادات حسابك في mobile.net.sa" });
     setSending(false);
   };
 
@@ -5105,22 +5063,29 @@ function SMSPage({ teachers, attendance, week, classList }) {
       {/* Config */}
       {showConfig && (
         <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
-          <h3 className="font-black text-gray-800 mb-4">⚙️ إعدادات حساب المدار التقني</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <h3 className="font-black text-gray-800 mb-1">⚙️ إعدادات mobile.net.sa</h3>
+          <p className="text-xs text-gray-400 mb-4">ادخل بيانات حسابك في mobile.net.sa</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
             <div>
-              <label className="text-xs font-bold text-gray-500 mb-1 block">اسم المستخدم</label>
-              <input value={username} onChange={e => setUsername(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="966XXXXXXXXX" dir="ltr" />
+              <label className="text-xs font-black text-gray-600 mb-1 block">🔑 API Key</label>
+              <input value={apiKey} onChange={e => { setApiKey(e.target.value); localStorage.setItem("sms_apikey", e.target.value); }}
+                className="w-full border-2 border-gray-200 focus:border-blue-400 focus:outline-none rounded-xl px-3 py-2.5 text-sm font-mono"
+                placeholder="أدخل API Key من لوحة التحكم" dir="ltr" />
+              <p className="text-xs text-gray-400 mt-1">📍 تجده في: لوحة التحكم ← الإعدادات ← API Key</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 mb-1 block">كلمة المرور</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="••••••••" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 mb-1 block">اسم المرسل (Sender)</label>
-              <input value={sender} onChange={e => setSender(e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="School1" />
+              <label className="text-xs font-black text-gray-600 mb-1 block">📛 اسم المرسل (Sender ID)</label>
+              <input value={sender} onChange={e => { setSender(e.target.value); localStorage.setItem("sms_sender", e.target.value); }}
+                className="w-full border-2 border-gray-200 focus:border-blue-400 focus:outline-none rounded-xl px-3 py-2.5 text-sm"
+                placeholder="مثال: School1" />
+              <p className="text-xs text-gray-400 mt-1">يجب أن يكون مسجلاً في الحساب</p>
             </div>
           </div>
-          <p className="text-xs text-amber-600 mt-3 bg-amber-50 rounded-xl px-3 py-2">⚠️ كلمة المرور تُحفظ في المتصفح فقط ولا تُرسل إلا عند الضغط على إرسال</p>
+          <div className="bg-blue-50 rounded-xl px-4 py-3 text-xs text-blue-700 space-y-1">
+            <p className="font-black">💡 كيف يعمل الإرسال؟</p>
+            <p>الإرسال يتم عبر خادم Vercel مباشرةً (لا مشكلة CORS) — أدخل API Key واضغط إرسال.</p>
+            <p>✅ API Key يُحفظ تلقائياً في المتصفح</p>
+          </div>
         </div>
       )}
 
