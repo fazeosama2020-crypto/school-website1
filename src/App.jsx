@@ -1177,7 +1177,7 @@ function newClass(id) {
   return { id, name: "", level: "الصف الأول", section: "أ", teacher: "", semester: "الثالث", students: [] };
 }
 function newStudent(num) {
-  return { id: Date.now() + Math.random() * 1000 | 0 + num, num, name: "", nationalId: "", grades: {} };
+  return { id: Date.now() + Math.random() * 1000 | 0 + num, num, name: "", nationalId: "", parentPhone: "", grades: {} };
 }
 
 // ===== استيراد إكسل =====
@@ -1313,7 +1313,7 @@ const cx = {
 };
 
 // ===== بوابة ولي الأمر =====
-function ParentPortal({ classList, messages, setMessages, saveMessages, surveys, setSurveys, saveSurveys, siteFont, onBack }) {
+function ParentPortal({ classList, setClassList, saveClass, messages, setMessages, saveMessages, surveys, setSurveys, saveSurveys, siteFont, onBack }) {
   const [nationalId, setNationalId] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -1321,6 +1321,21 @@ function ParentPortal({ classList, messages, setMessages, saveMessages, surveys,
   const [tab, setTab] = useState("notes"); // notes | grades | messages | surveys
   const [replyTexts, setReplyTexts] = useState({});
   const [replying, setReplying] = useState({});
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+
+  const saveParentPhone = (phone) => {
+    if (!result || !setClassList) return;
+    const updated = classList.map(cls =>
+      cls.id === result.cls.id
+        ? { ...cls, students: cls.students.map(s => s.id === result.student.id ? { ...s, parentPhone: phone } : s) }
+        : cls
+    );
+    setClassList(updated);
+    if (saveClass) saveClass({ ...result.cls, students: result.cls.students.map(s => s.id === result.student.id ? { ...s, parentPhone: phone } : s) });
+    setResult(prev => ({ ...prev, student: { ...prev.student, parentPhone: phone } }));
+    setEditingPhone(false);
+  };
 
   const handleSearch = () => {
     if (!nationalId.trim()) { setError("أدخل رقم الهوية"); return; }
@@ -1391,6 +1406,57 @@ function ParentPortal({ classList, messages, setMessages, saveMessages, surveys,
                   <div className="text-xs text-gray-400 font-bold">المعلم</div>
                   <div className="font-black text-gray-800 text-sm mt-1">{result.cls.teacher || "—"}</div>
                 </div>
+              </div>
+
+              {/* ===== جوال ولي الأمر ===== */}
+              <div className="px-4 py-3 border-t border-gray-100">
+                <div className="text-xs font-bold text-gray-500 mb-2">📱 جوال ولي الأمر (لاستقبال إشعارات واتساب)</div>
+                {result.student.parentPhone && !editingPhone ? (
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 bg-green-50 border border-green-200 text-green-800 text-sm font-bold px-3 py-2 rounded-xl text-center tracking-wide">
+                      {result.student.parentPhone}
+                    </span>
+                    <button onClick={() => { setPhoneInput(result.student.parentPhone); setEditingPhone(true); }}
+                      className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-2 rounded-xl font-bold transition-all">
+                      تعديل
+                    </button>
+                  </div>
+                ) : editingPhone ? (
+                  <div className="flex gap-2">
+                    <input type="tel" value={phoneInput} onChange={e => setPhoneInput(e.target.value)}
+                      placeholder="05XXXXXXXX"
+                      className="flex-1 px-3 py-2 rounded-xl border-2 border-green-300 focus:border-green-500 focus:outline-none text-sm text-center font-bold tracking-wide"
+                      style={{fontFamily:"inherit"}}
+                      onKeyDown={e => e.key === "Enter" && phoneInput.trim() && saveParentPhone(phoneInput.trim())}
+                    />
+                    <button onClick={() => phoneInput.trim() && saveParentPhone(phoneInput.trim())}
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+                      حفظ
+                    </button>
+                    <button onClick={() => setEditingPhone(false)}
+                      className="bg-gray-100 text-gray-500 text-xs font-bold px-3 py-2 rounded-xl">
+                      إلغاء
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input type="tel" value={phoneInput} onChange={e => setPhoneInput(e.target.value)}
+                        placeholder="05XXXXXXXX — أدخل جوالك لاستقبال الإشعارات"
+                        className="flex-1 px-3 py-2 rounded-xl border-2 border-dashed border-green-300 focus:border-green-500 focus:outline-none text-sm text-center font-bold"
+                        style={{fontFamily:"inherit"}}
+                        onKeyDown={e => e.key === "Enter" && phoneInput.trim() && saveParentPhone(phoneInput.trim())}
+                      />
+                      <button onClick={() => phoneInput.trim() && saveParentPhone(phoneInput.trim())}
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">
+                        💾 حفظ
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 text-center">
+                      📲 سيتمكن المعلم من إرسال إشعار واتساب مباشرة عند وجود ملاحظة
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3002,7 +3068,7 @@ function TeacherAttendanceView({ currentTeacher, teachers, attendance, week, abs
   );
 }
 
-function TeacherPortal({ classList, setClassList, saveClass, siteFont, onBack, attendance, teachers, week, onSendNote }) {
+function TeacherPortal({ classList, setClassList, saveClass, siteFont, onBack, attendance, teachers, week, onSendNote, messages }) {
   const [step, setStep] = useState("login"); // login | dashboard | attendance
   const [activeTab, setActiveTab] = useState("grades"); // grades | attendance
   const [teacherId, setTeacherId] = useState("");
@@ -3160,6 +3226,7 @@ function TeacherPortal({ classList, setClassList, saveClass, siteFont, onBack, a
             teacherMode={true}
             teacherName={currentTeacher.name}
             onSendNote={onSendNote}
+            messages={messages}
           />
         )}
 
@@ -3231,7 +3298,7 @@ function newEval() {
 }
 
 // مكوّن التقييم الأسبوعي للطالب
-function StudentEvalCard({ student, onUpdate, onDelete, onSendNote }) {
+function StudentEvalCard({ student, onUpdate, onDelete, onSendNote, messages }) {
   const [expanded, setExpanded] = useState(false);
   const [addingEval, setAddingEval] = useState(false);
   const [draft, setDraft] = useState(newEval());
@@ -3245,6 +3312,48 @@ function StudentEvalCard({ student, onUpdate, onDelete, onSendNote }) {
     if (onSendNote) await onSendNote(student, noteText.trim());
     setNoteText(""); setShowNoteForm(false);
     setNoteSent(true); setTimeout(() => setNoteSent(false), 4000);
+    // فتح واتساب إذا يوجد رقم جوال
+    if (student.parentPhone && student.parentPhone.trim()) {
+      const phone = student.parentPhone.trim().replace(/^0/, "966");
+      const siteUrl = "https://school-website1.vercel.app";
+      const msg = encodeURIComponent(
+        `السلام عليكم ورحمة الله وبركاته
+ولي أمر الطالب / ${student.name}
+
+نُفيدكم بوجود ملاحظة من معلم ابنكم.
+يرجى الاطلاع عليها والرد من خلال بوابة أولياء الأمور:
+${siteUrl}
+
+📌 أدخل رقم هوية الطالب: ${student.nationalId || "—"}
+ثم اختر تبويب 🔔 ملاحظات المعلم
+
+مع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`
+      );
+      window.open(\`https://wa.me/\${phone}?text=\${msg}\`, "_blank");
+    }
+  };
+
+  const openWhatsApp = () => {
+    if (!student.parentPhone || !student.parentPhone.trim()) {
+      alert("أضف رقم جوال ولي الأمر أولاً في بيانات الطالب");
+      return;
+    }
+    const phone = student.parentPhone.trim().replace(/^0/, "966");
+    const siteUrl = "https://school-website1.vercel.app";
+    const msg = encodeURIComponent(
+      `السلام عليكم ورحمة الله وبركاته
+ولي أمر الطالب / ${student.name}
+
+نُفيدكم بوجود ملاحظة من معلم ابنكم.
+يرجى الاطلاع عليها والرد من خلال بوابة أولياء الأمور:
+${siteUrl}
+
+📌 أدخل رقم هوية الطالب: ${student.nationalId || "—"}
+ثم اختر تبويب 🔔 ملاحظات المعلم
+
+مع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`
+    );
+    window.open(\`https://wa.me/\${phone}?text=\${msg}\`, "_blank");
   };
 
   const evals = student.evals || [];
@@ -3292,6 +3401,14 @@ function StudentEvalCard({ student, onUpdate, onDelete, onSendNote }) {
             </span>
           )}
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full font-bold">{evals.length} تقييم</span>
+          {/* أيقونة جوال ولي الأمر */}
+          <span
+            onClick={e => { e.stopPropagation(); onUpdate({ ...student, _showPhone: !student._showPhone }); }}
+            title={student.parentPhone ? "جوال ولي الأمر: " + student.parentPhone : "أضف جوال ولي الأمر"}
+            className="cursor-pointer text-base select-none"
+            style={{ filter: student.parentPhone ? "none" : "grayscale(1) opacity(0.4)" }}>
+            📱
+          </span>
           <button onClick={e => { e.stopPropagation(); onDelete(student.id); }}
             className="text-red-300 hover:text-red-500 text-sm px-1 font-bold">✕</button>
           <span className="text-gray-400 text-lg">{expanded ? "▲" : "▼"}</span>
@@ -3311,6 +3428,26 @@ function StudentEvalCard({ student, onUpdate, onDelete, onSendNote }) {
               onChange={e => onUpdate({ ...student, nationalId: e.target.value })}
               className="w-36 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm text-center focus:border-blue-400 focus:outline-none"
               style={{ fontFamily: "inherit" }} />
+          </div>
+          {/* جوال ولي الأمر — يظهر دائماً */}
+          <div className="flex items-center gap-2 px-4 pt-2 pb-1">
+            <span className="text-base">📱</span>
+            <input type="tel" value={student.parentPhone || ""}
+              placeholder="جوال ولي الأمر (05xxxxxxxx)"
+              onChange={e => onUpdate({ ...student, parentPhone: e.target.value })}
+              className="flex-1 px-3 py-2 rounded-xl border-2 text-sm text-center focus:outline-none"
+              style={{ fontFamily: "inherit",
+                borderColor: student.parentPhone ? "#22c55e" : "#e5e7eb",
+                background: student.parentPhone ? "#f0fdf4" : "#fff",
+                color: student.parentPhone ? "#166534" : "#374151",
+                fontWeight: student.parentPhone ? "700" : "400"
+              }} />
+            {student.parentPhone && (
+              <button onClick={() => openWhatsApp()}
+                className="shrink-0 bg-green-500 hover:bg-green-600 text-white text-xs font-black px-3 py-2 rounded-xl flex items-center gap-1 transition-all">
+                📲 واتساب
+              </button>
+            )}
           </div>
           {/* قائمة التقييمات السابقة */}
           {evals.length > 0 && (
@@ -3456,61 +3593,113 @@ function StudentEvalCard({ student, onUpdate, onDelete, onSendNote }) {
             </div>
           )}
 
-          {/* ===== زر إرسال ملاحظة لولي الأمر ===== */}
-          {onSendNote && (
-            <div className="px-4 pb-4">
-              {noteSent && (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-3 py-2 rounded-xl mb-2 animate-pulse">
-                  ✅ تم إرسال الملاحظة لولي الأمر بنجاح
-                </div>
-              )}
-              {!showNoteForm ? (
-                <button onClick={() => setShowNoteForm(true)}
-                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-amber-400 text-amber-700 text-sm font-black hover:border-amber-500 hover:bg-amber-50 transition-all flex items-center justify-center gap-2">
-                  📨 إرسال ملاحظة لولي الأمر
-                </button>
-              ) : (
-                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">📨</span>
-                    <span className="font-black text-amber-800 text-sm">إرسال ملاحظة لولي أمر: {student.name}</span>
-                  </div>
-                  {/* عرض آخر تقييم كمرجع */}
-                  {lastLevel && lastLevel.value && (
-                    <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-200">
-                      <span className="text-xs text-gray-500">آخر مستوى مُسجَّل:</span>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-black" style={{background:lastLevel.bg,color:lastLevel.color}}>{lastLevel.label}</span>
+          {/* ===== ملاحظات ولي الأمر ===== */}
+          {onSendNote && (() => {
+            const sentNotes = (messages || []).filter(m => m.type === "teacher_note" && m.studentId === student.nationalId);
+            const unread = sentNotes.filter(m => !m.reply).length;
+            return (
+              <div className="px-4 pb-4 space-y-2">
+                {/* سجل الملاحظات السابقة */}
+                {sentNotes.length > 0 && (
+                  <div className="bg-white border border-amber-200 rounded-2xl overflow-hidden mb-2">
+                    <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-100">
+                      <span className="text-xs font-black text-amber-800">📨 ملاحظات مُرسلة ({sentNotes.length})</span>
+                      {unread > 0 && (
+                        <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
+                          {unread} بدون رد
+                        </span>
+                      )}
                     </div>
-                  )}
-                  <textarea
-                    value={noteText}
-                    onChange={e => setNoteText(e.target.value)}
-                    rows={3}
-                    placeholder="اكتب ملاحظتك لولي الأمر... مثال: يُلاحَظ على الطالب تراجع في الواجبات خلال هذا الأسبوع"
-                    className="w-full px-3 py-2.5 rounded-xl border-2 border-amber-200 focus:border-amber-400 focus:outline-none text-sm resize-none bg-white"
-                    style={{fontFamily:"inherit"}}
-                  />
+                    <div className="divide-y divide-amber-50 max-h-56 overflow-y-auto">
+                      {[...sentNotes].reverse().map(note => (
+                        <div key={note.id} className="px-3 py-2">
+                          {/* نص الملاحظة */}
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <p className="text-xs text-gray-700 flex-1">{note.text}</p>
+                            <span className="text-xs text-gray-400 whitespace-nowrap">{note.date}</span>
+                          </div>
+                          {/* حالة القراءة والرد */}
+                          {note.reply ? (
+                            <div className="mt-1 bg-blue-50 border border-blue-200 rounded-xl px-2 py-1.5">
+                              <div className="text-xs font-black text-blue-600 mb-0.5">💬 رد ولي الأمر — {note.repliedAt}</div>
+                              <p className="text-xs text-blue-800">{note.reply}</p>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">⏳ لم يرد بعد</span>
+                              {student.parentPhone && (
+                                <button onClick={openWhatsApp}
+                                  className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition-all">
+                                  <span>📲</span> تذكير واتساب
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* تنبيه إرسال */}
+                {noteSent && (
+                  <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-3 py-2 rounded-xl animate-pulse">
+                    ✅ تم إرسال الملاحظة لولي الأمر بنجاح
+                  </div>
+                )}
+                {/* نموذج إرسال */}
+                {!showNoteForm ? (
                   <div className="flex gap-2">
-                    <button onClick={handleSendNote}
-                      className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-black transition-all">
-                      📤 إرسال الملاحظة
+                    <button onClick={() => setShowNoteForm(true)}
+                      className="flex-1 py-2.5 rounded-xl border-2 border-dashed border-amber-400 text-amber-700 text-sm font-black hover:border-amber-500 hover:bg-amber-50 transition-all flex items-center justify-center gap-2">
+                      📨 إرسال ملاحظة جديدة
                     </button>
-                    <button onClick={() => { setShowNoteForm(false); setNoteText(""); }}
-                      className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold hover:bg-gray-200">
-                      إلغاء
+                    <button onClick={openWhatsApp} title="إشعار واتساب مباشر"
+                      className="py-2.5 px-3 rounded-xl border-2 border-dashed border-green-400 text-green-700 text-sm font-black hover:border-green-500 hover:bg-green-50 transition-all flex items-center justify-center gap-1">
+                      📲 واتساب
                     </button>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">📨</span>
+                      <span className="font-black text-amber-800 text-sm">ملاحظة لولي أمر: {student.name}</span>
+                    </div>
+                    {lastLevel && lastLevel.value && (
+                      <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-200">
+                        <span className="text-xs text-gray-500">آخر مستوى:</span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-black" style={{background:lastLevel.bg,color:lastLevel.color}}>{lastLevel.label}</span>
+                      </div>
+                    )}
+                    <textarea
+                      value={noteText}
+                      onChange={e => setNoteText(e.target.value)}
+                      rows={3}
+                      placeholder="اكتب ملاحظتك لولي الأمر..."
+                      className="w-full px-3 py-2.5 rounded-xl border-2 border-amber-200 focus:border-amber-400 focus:outline-none text-sm resize-none bg-white"
+                      style={{fontFamily:"inherit"}}
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={handleSendNote}
+                        className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-black transition-all">
+                        📤 إرسال
+                      </button>
+                      <button onClick={() => { setShowNoteForm(false); setNoteText(""); }}
+                        className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold hover:bg-gray-200">
+                        إلغاء
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
   );
 }
 
-function ClassTable({ cls, onUpdateClass, onSave, onSendNote }) {
+function ClassTable({ cls, onUpdateClass, onSave, onSendNote, messages }) {
   const [search, setSearch] = useState("");
   const [editInfo, setEditInfo] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -3656,7 +3845,7 @@ function ClassTable({ cls, onUpdateClass, onSave, onSendNote }) {
             </div>
           </div>
           {filtered.map(s => (
-            <StudentEvalCard key={s.id} student={s} onUpdate={updateStudent} onDelete={removeStudent} onSendNote={onSendNote} />
+            <StudentEvalCard key={s.id} student={s} onUpdate={updateStudent} onDelete={removeStudent} onSendNote={onSendNote} messages={messages} />
           ))}
         </div>
       )}
@@ -3664,7 +3853,7 @@ function ClassTable({ cls, onUpdateClass, onSave, onSendNote }) {
   );
 }
 
-function StudentsPage({ classList, setClassList, saveClass, deleteClass, teacherMode, teacherName, onSendNote }) {
+function StudentsPage({ classList, setClassList, saveClass, deleteClass, teacherMode, teacherName, onSendNote, messages }) {
   const [activeId, setActiveId] = useState(null);
   const [showAddClass, setShowAddClass] = useState(false);
   const [newLevel, setNewLevel] = useState("الصف الأول");
@@ -3864,6 +4053,7 @@ function StudentsPage({ classList, setClassList, saveClass, deleteClass, teacher
                 onUpdateClass={handleUpdateClass}
                 onSave={handleSaveClass}
                 onSendNote={onSendNote}
+                messages={messages}
               />
             </div>
           )}
@@ -9060,8 +9250,8 @@ export default function SchoolWebsite() {
   if (directAnnId) return <SingleAnnouncementPage announcements={announcements} siteFont={siteFont} annId={directAnnId} />;
   if (!user && publicAnnouncements) return <PublicAnnouncementsPage announcements={announcements} siteFont={siteFont} onBack={() => setPublicAnnouncements(false)} />;
   if (!user && studentRaffle) return <StudentRafflePortal siteFont={siteFont} onBack={() => setStudentRaffle(false)} />;
-  if (!user && teacherPortal) return <TeacherPortal classList={classList} setClassList={setClassList} saveClass={saveClass} siteFont={siteFont} onBack={() => setTeacherPortal(false)} attendance={attendance} teachers={teachers} week={week} onSendNote={handleSendNote} />;
-  if (!user && parentPortal) return <ParentPortal classList={classList} messages={messages} setMessages={setMessages} saveMessages={saveMessages} surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} siteFont={siteFont} onBack={() => setParentPortal(false)} />;
+  if (!user && teacherPortal) return <TeacherPortal classList={classList} setClassList={setClassList} saveClass={saveClass} siteFont={siteFont} onBack={() => setTeacherPortal(false)} attendance={attendance} teachers={teachers} week={week} onSendNote={handleSendNote} messages={messages} />;
+  if (!user && parentPortal) return <ParentPortal classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} setMessages={setMessages} saveMessages={saveMessages} surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} siteFont={siteFont} onBack={() => setParentPortal(false)} />;
   if (!user) return <LoginPage users={users} onLogin={setUser} siteFont={siteFont} onParentPortal={() => setParentPortal(true)} onTeacherPortal={() => setTeacherPortal(true)} onStudentRaffle={() => setStudentRaffle(true)} onPublicAnnouncements={() => setPublicAnnouncements(true)} />;
 
   const pages = [
@@ -9299,7 +9489,7 @@ export default function SchoolWebsite() {
         {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} />}
         {page === "student-absence" && <StudentAbsencePage />}
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} />}
-        {page === "students"      && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} />}
+        {page === "students"      && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
         {page === "activities"    && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
         {page === "messages"      && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
@@ -9335,5 +9525,4 @@ export default function SchoolWebsite() {
     </div>
   );
 }
-
 
