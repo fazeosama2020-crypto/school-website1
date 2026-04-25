@@ -22683,7 +22683,7 @@ function SuggestionsAdminPage() {
                 ${item.studentName&&item.studentName!=="—"?`<div class="meta-item"><span class="meta-label">الطالب: </span><span class="meta-value">${item.studentName}</span></div><div class="meta-item"><span class="meta-label">الصف: </span><span class="meta-value">${item.studentClass||"—"}</span></div>`:""}
               </div>
               <div class="message-text">${(item.message||"").replace(/<[^>]*>/g,"")}</div>
-              ${item.images&&item.images.length>0?`<div class="img-row">${item.images.map(img=>`<img src="${img.data}" />`).join("")}</div>`:""}
+              ${item.images&&item.images.length>0?"<div class=\"img-row\">"+item.images.map(function(img){return "<img src=\""+img.data+"\" />";}).join("")+"</div>":""}
             </div>
           `).join("")}
           <div class="page-num">إجمالي ${printItems.length} رسالة — مدرسة عبيدة بن الحارث المتوسطة</div>
@@ -22740,7 +22740,7 @@ function SuggestionsAdminPage() {
               <tr><td>الحالة</td><td>${selected.status||"جديد"}</td></tr>
             </table>
             <div class="msg">${(selected.message||"").replace(/<[^>]*>/g,"")}</div>
-            ${selected.images&&selected.images.length>0?`<div class="imgs">${selected.images.map(img=>`<img src="${img.data}"/>`).join("")}</div>`:""}
+            ${selected.images&&selected.images.length>0?"<div class=\"imgs\">"+selected.images.map(function(img){return "<img src=\""+img.data+"\"/>";}).join("")+"</div>":""}
             <div class="footer">مدرسة عبيدة بن الحارث المتوسطة — قسم الشكاوى والاقتراحات — ${new Date().toLocaleDateString("ar-SA")}</div>
             <script>window.onload=()=>window.print()</script>
             </body></html>
@@ -23537,6 +23537,14 @@ function ProfessionalLicensePage() {
   const printRecord = (rec) => {
     const win = window.open("","_blank","width=900,height=700");
     const totalHours = (rec.courses||[]).reduce((s,c)=>s+(parseInt(c?.hours)||0),0);
+    const yr = academicYear || ".............. / .............. هـ";
+    const printDate = new Date().toLocaleDateString("ar-SA");
+    const licenseStatus = rec.hasLicense===true ? "✅ حاصل على الرخصة المهنية" : rec.hasLicense===false ? "❌ لم يحصل — "+(rec.licenseReason||"لم يُحدد") : "⏳ لم يُحدد بعد";
+    const needsRows = PGR_TRAINING_NEEDS.map(function(n,i){const nd=(rec.needs&&rec.needs[n.id])||{};return "<tr><td>"+(i+1)+"</td><td>"+n.icon+" "+n.label+"</td><td>"+(nd.needed===true?"✓":"○")+"</td><td>"+(nd.priority==="high"?"✓":"○")+"</td><td>"+(nd.priority==="medium"?"✓":"○")+"</td><td>"+(nd.priority==="low"?"✓":"○")+"</td></tr>";}).join("");
+    const planRows = (rec.growthPlan||[]).map(function(r,i){return "<tr><td>"+(i+1)+"</td><td>"+(r&&r.goal||"")+"</td><td>"+(r&&r.method||"")+"</td><td>"+(r&&r.duration||"")+"</td><td>"+(r&&r.indicator||"")+"</td></tr>";}).join("");
+    const courseRows = (rec.courses||[]).map(function(r,i){return "<tr><td>"+(i+1)+"</td><td>"+(r&&r.name||"")+"</td><td>"+(r&&r.org||"")+"</td><td>"+(r&&r.date||"")+"</td><td>"+(r&&r.hours||"")+"</td></tr>";}).join("");
+    const followRows = (rec.followup||[]).map(function(r,i){return "<tr><td>"+(i+1)+"</td><td>"+(r&&r.action||"")+"</td><td>"+(r&&r.done===true?"✓":"○")+"</td><td>"+(r&&r.done===false?"✓":"○")+"</td><td>"+(r&&r.execDate||"")+"</td><td>"+(r&&r.notes||"")+"</td></tr>";}).join("");
+    const impactRows = PGR_IMPACT_AREAS.map(function(area,i){const imp=(rec.impact&&rec.impact[area])||{};return "<tr><td>"+(i+1)+"</td><td>"+area+"</td><td>"+(imp.level==="تحسّن ملحوظ"?"✓":"○")+"</td><td>"+(imp.level==="متوسط"?"✓":"○")+"</td><td>"+(imp.level==="يحتاج دعم"?"✓":"○")+"</td><td>"+(imp.notes||"")+"</td></tr>";}).join("");
     win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head>
 <meta charset="UTF-8"><title>سجل النمو المهني</title>
 <style>
@@ -23581,7 +23589,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
     <div class="ministry">المملكة العربية السعودية — وزارة التعليم — إدارة التعليم بمحافظة جدة</div>
     <div class="school-name">مدرسة عبيدة بن الحارث المتوسطة</div>
     <div class="record-title">سجل النمو المهني للمعلمين</div>
-    <div class="year">العام الدراسي: ${academicYear || ".............. / .............. هـ"}</div>
+    <div class="year">العام الدراسي: ${yr}</div>
   </div>
 </div>
 <div class="quote">❝ المعلم المتعلّم دوماً هو المعلم القادر على صناعة التغيير. ❞</div>
@@ -23602,7 +23610,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
 <table>
   <thead><tr><th>م</th><th>المجال التدريبي</th><th>حاجة</th><th>عالية</th><th>متوسطة</th><th>منخفضة</th></tr></thead>
   <tbody>
-    ${PGR_TRAINING_NEEDS.map((n,i)=>{const nd=rec.needs?.[n.id]||{};return `<tr><td style="text-align:center">${i+1}</td><td>${n.icon} ${n.label}</td><td style="text-align:center"><span class="circle ${nd.needed===true?"yes":""}">${nd.needed===true?"✓":""}</span></td><td style="text-align:center"><span class="circle ${nd.priority==="high"?"high":""}">${nd.priority==="high"?"✓":""}</span></td><td style="text-align:center"><span class="circle ${nd.priority==="medium"?"med":""}">${nd.priority==="medium"?"✓":""}</span></td><td style="text-align:center"><span class="circle ${nd.priority==="low"?"low":""}">${nd.priority==="low"?"✓":""}</span></td></tr>`;}).join("")}
+    ${needsRows}
   </tbody>
 </table>
 
@@ -23610,7 +23618,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
 <table>
   <thead><tr><th>م</th><th>الهدف التطويري</th><th>وسيلة التطوير</th><th>المدة الزمنية</th><th>مؤشر الإنجاز</th></tr></thead>
   <tbody>
-    ${(rec.growthPlan||[]).map((r,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${r?.goal||""}</td><td>${r?.method||""}</td><td>${r?.duration||""}</td><td>${r?.indicator||""}</td></tr>`).join("")}
+    ${planRows}
   </tbody>
 </table>
 
@@ -23618,7 +23626,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
 <table>
   <thead><tr><th>م</th><th>اسم الدورة / البرنامج</th><th>الجهة المنظمة</th><th>التاريخ</th><th>عدد الساعات</th></tr></thead>
   <tbody>
-    ${(rec.courses||[]).map((r,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${r?.name||""}</td><td>${r?.org||""}</td><td>${r?.date||""}</td><td style="text-align:center">${r?.hours||""}</td></tr>`).join("")}
+    ${courseRows}
     <tr style="background:#f0fdf4"><td colspan="4" style="font-weight:700;text-align:right;color:#065f46">إجمالي الساعات التدريبية</td><td style="font-weight:900;text-align:center;color:#065f46">${totalHours}</td></tr>
   </tbody>
 </table>
@@ -23627,7 +23635,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
 <table>
   <thead><tr><th>م</th><th>البند / الإجراء التطويري</th><th>نعم</th><th>لا</th><th>تاريخ التنفيذ</th><th>الملاحظات</th></tr></thead>
   <tbody>
-    ${(rec.followup||[]).map((r,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${r?.action||""}</td><td style="text-align:center"><span class="circle ${r?.done===true?"yes":""}">${r?.done===true?"✓":""}</span></td><td style="text-align:center"><span class="circle ${r?.done===false?"no":""}">${r?.done===false?"✓":""}</span></td><td>${r?.execDate||""}</td><td>${r?.notes||""}</td></tr>`).join("")}
+    ${followRows}
   </tbody>
 </table>
 
@@ -23635,7 +23643,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
 <table>
   <thead><tr><th>م</th><th>مجال التدريب</th><th>تحسّن ملحوظ</th><th>متوسط</th><th>يحتاج دعم</th><th>الملاحظات</th></tr></thead>
   <tbody>
-    ${PGR_IMPACT_AREAS.map((area,i)=>{const imp=rec.impact?.[area]||{};return `<tr><td style="text-align:center">${i+1}</td><td>${area}</td><td style="text-align:center"><span class="circle ${imp.level==="تحسّن ملحوظ"?"yes":""}">${imp.level==="تحسّن ملحوظ"?"✓":""}</span></td><td style="text-align:center"><span class="circle ${imp.level==="متوسط"?"med":""}">${imp.level==="متوسط"?"✓":""}</span></td><td style="text-align:center"><span class="circle ${imp.level==="يحتاج دعم"?"no":""}">${imp.level==="يحتاج دعم"?"✓":""}</span></td><td>${imp.notes||""}</td></tr>`;}).join("")}
+    ${impactRows}
   </tbody>
 </table>
 
@@ -23651,7 +23659,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
 
 <div class="section-title">🏅 الرخصة المهنية</div>
 <table>
-  <tr><td class="label">حالة الرخصة</td><td colspan="3">${rec.hasLicense===true?"✅ حاصل على الرخصة المهنية":rec.hasLicense===false?"❌ لم يحصل على الرخصة — "+( rec.licenseReason||"لم يُحدد السبب"):"⏳ لم يُحدد بعد"}</td></tr>
+  <tr><td class="label">حالة الرخصة</td><td colspan="3">${licenseStatus}</td></tr>
 </table>
 
 <div class="section-title">✍️ الاعتماد والتوقيعات</div>
@@ -23662,7 +23670,7 @@ td.label{background:#f9fafb;color:#6b7280;font-weight:700;width:28%;white-space:
 </div>
 <table style="margin-top:8px"><tr><td class="label">تاريخ الاعتماد</td><td>${rec.approvalDate||"....../....../14.... هـ"}</td></tr></table>
 
-<div class="footer">مدرسة عبيدة بن الحارث المتوسطة — سجل النمو المهني — العام الدراسي ${academicYear||"............"} — تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}</div>
+<div class="footer">مدرسة عبيدة بن الحارث المتوسطة — سجل النمو المهني — العام الدراسي ${yr} — تاريخ الطباعة: ${printDate}</div>
 </div>
 <script>window.onload=()=>window.print()</script>
 </body></html>`);
