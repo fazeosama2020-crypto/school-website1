@@ -22961,6 +22961,9 @@ function ProfessionalLicensePage() {
   const [search, setSearch]     = useState("");
   const [importing, setImporting] = useState(false);
   const [saved, setSaved]       = useState(false);
+  const [academicYear, setAcademicYear] = useState(() => {
+    try { return localStorage.getItem("pgr-academic-year") || ""; } catch { return ""; }
+  });
   const imgRefs = [useRef(), useRef()];
 
   // تحميل من Firebase
@@ -23525,9 +23528,6 @@ function ProfessionalLicensePage() {
   }
 
   // ── القائمة الرئيسية ──
-  const [academicYear, setAcademicYear] = useState(() => {
-    try { return localStorage.getItem("pgr-academic-year") || ""; } catch { return ""; }
-  });
   const saveAcademicYear = (v) => {
     setAcademicYear(v);
     try { localStorage.setItem("pgr-academic-year", v); } catch {}
