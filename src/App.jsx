@@ -21372,7 +21372,7 @@ function TeacherProfilePortal({ siteFont, onBack, attendance, teachers, week }) 
     { id:"reports",   label:"تقاريري",   icon:"📁" },
     { id:"selfeval",  label:"تقييمي",    icon:"⭐" },
     { id:"analytics", label:"التحليل",   icon:"📈" },
-    { id:"license",   label:"سجل النمو المهني", icon:"📗" },
+    { id:"license",   label:"الرخصة المهنية", icon:"🏅" },
   ];
 
   // ════════ شاشة الدخول ════════
@@ -22370,12 +22370,13 @@ function SuggestionsPortal({ siteFont, onBack, classList }) {
           style={{background:"rgba(255,255,255,0.15)",backdropFilter:"blur(10px)",border:"1px solid rgba(255,255,255,0.25)"}}>
           💬
         </div>
-        <p className="text-sm font-bold opacity-80 mb-1">مدرسة عبيدة بن الحارث المتوسطة</p>
-        <h1 className="text-xl font-black mb-0.5">قسم الشكاوى والاقتراحات</h1>
-        <p className="opacity-75 text-xs">رأيك يبني مستقبل أبنائنا — شاركنا لنرتقي معاً</p>
+        <h1 className="text-2xl font-black mb-1">آراء ومقترحات</h1>
+        <p className="opacity-70 text-sm">مدرسة عبيدة بن الحارث المتوسطة</p>
+
+        {/* مربع مشاركة الرابط */}
         {step === "choice" && (
-          <div className="mt-3 bg-white/10 backdrop-blur rounded-2xl p-3 max-w-sm mx-auto border border-white/20">
-            <p className="text-xs opacity-75 mb-2">🔗 شارك رابط البوابة مع أولياء الأمور</p>
+          <div className="mt-4 bg-white/10 backdrop-blur rounded-2xl p-3 max-w-sm mx-auto border border-white/20">
+            <p className="text-xs opacity-75 mb-2">🔗 شارك رابط البوابة مع أولياء الأمور والمعلمين</p>
             <div className="flex gap-2 justify-center">
               <button onClick={copyLink}
                 className="flex-1 py-2 rounded-xl text-xs font-black border border-white/30 hover:bg-white/20 transition-all"
@@ -22387,6 +22388,7 @@ function SuggestionsPortal({ siteFont, onBack, classList }) {
                 💚 واتساب
               </button>
             </div>
+            <p className="text-xs opacity-50 mt-2 truncate">{portalLink}</p>
           </div>
         )}
       </div>
@@ -22602,57 +22604,6 @@ function SuggestionsAdminPage() {
   );
   const counts = { total:items.length, new:items.filter(i=>i.status==="جديد").length };
 
-  const TYPE_ICONS_PRINT = { "اقتراح":"💡","شكوى":"📢","ملاحظة":"📝","أخرى":"💬" };
-  const STATUS_COLORS_PRINT = { "جديد":"#dc2626","قيد المراجعة":"#d97706","تمت المعالجة":"#059669" };
-
-  const printAllItems = () => {
-    const list = filtered.length > 0 ? filtered : items;
-    const rows = list.map(function(item, idx) {
-      const typeColor = item.type==="اقتراح"?"#1d4ed8":item.type==="شكوى"?"#dc2626":item.type==="ملاحظة"?"#b45309":"#6b7280";
-      const typeBg = item.type==="اقتراح"?"#dbeafe":item.type==="شكوى"?"#fee2e2":item.type==="ملاحظة"?"#fef9c3":"#f3f4f6";
-      const stColor = STATUS_COLORS_PRINT[item.status]||"#6b7280";
-      const msgText = (item.message||"").replace(/<[^>]*>/g,"");
-      const imgHtml = (item.images&&item.images.length>0) ? "<div style='display:flex;gap:6px;flex-wrap:wrap;margin-top:6px'>"+item.images.map(function(img){return "<img src='"+img.data+"' style='width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb'/>";}).join("")+"</div>" : "";
-      const studentRow = (item.studentName && item.studentName !== "—") ? "<tr><td>الطالب</td><td>"+item.studentName+"</td><td>الصف</td><td>"+(item.studentClass||"—")+"</td></tr>" : "";
-      return "<div style='border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:12px;page-break-inside:avoid'>"
-        +"<div style='display:flex;align-items:center;gap:8px;border-bottom:1px dashed #e5e7eb;padding-bottom:8px;margin-bottom:8px'>"
-        +"<span style='font-size:18pt'>"+(TYPE_ICONS_PRINT[item.type]||"💬")+"</span>"
-        +"<span style='background:"+typeBg+";color:"+typeColor+";padding:2px 10px;border-radius:20px;font-weight:700;font-size:9pt'>"+item.type+"</span>"
-        +"<span style='background:"+stColor+"20;color:"+stColor+";padding:2px 10px;border-radius:20px;font-weight:700;font-size:9pt;margin-right:auto'>"+(item.status||"جديد")+"</span>"
-        +"<span style='font-size:8pt;color:#9ca3af'>"+item.date+" — "+(item.time||"")+"</span>"
-        +"</div>"
-        +"<table style='width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px'>"
-        +"<tr><td style='width:25%;color:#9ca3af;padding:3px 6px;border:1px solid #f3f4f6'>مقدم الطلب</td><td style='padding:3px 6px;border:1px solid #f3f4f6;font-weight:700'>"+(item.parentName||"—")+"</td>"
-        +"<td style='width:25%;color:#9ca3af;padding:3px 6px;border:1px solid #f3f4f6'>رقم التواصل</td><td style='padding:3px 6px;border:1px solid #f3f4f6;font-weight:700'>"+(item.phone||"—")+"</td></tr>"
-        +studentRow
-        +"</table>"
-        +"<div style='background:#f9fafb;padding:8px 10px;border-radius:6px;font-size:10pt;line-height:1.6'>"+msgText+"</div>"
-        +imgHtml
-        +"</div>";
-    }).join("");
-    const win = window.open("","_blank","width=900,height=700");
-    win.document.write("<!DOCTYPE html><html dir='rtl' lang='ar'><head><meta charset='UTF-8'><title>سجل الشكاوى والاقتراحات</title>"
-      +"<style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;padding:15mm 18mm;color:#1f2937;font-size:10pt}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>"
-      +"</head><body>"
-      +"<div style='text-align:center;border-bottom:3px solid #064e3b;padding-bottom:12px;margin-bottom:16px'>"
-      +"<div style='font-size:8pt;color:#6b7280'>المملكة العربية السعودية — وزارة التعليم</div>"
-      +"<div style='font-size:16pt;font-weight:900;color:#064e3b'>مدرسة عبيدة بن الحارث المتوسطة</div>"
-      +"<div style='font-size:12pt;font-weight:700;color:#0d9488'>قسم الشكاوى والاقتراحات</div>"
-      +"<div style='font-size:9pt;color:#6b7280;margin-top:4px'>رأيك يبني مستقبل أبنائنا — شاركنا لنرتقي معاً</div>"
-      +"</div>"
-      +"<div style='display:flex;gap:10px;margin-bottom:14px;justify-content:center'>"
-      +"<div style='flex:1;border:1px solid #d1fae5;background:#f0fdf4;border-radius:8px;padding:8px;text-align:center'><div style='font-size:18pt;font-weight:900;color:#064e3b'>"+items.length+"</div><div style='font-size:8pt;color:#6b7280'>إجمالي الرسائل</div></div>"
-      +"<div style='flex:1;border:1px solid #fee2e2;background:#fef2f2;border-radius:8px;padding:8px;text-align:center'><div style='font-size:18pt;font-weight:900;color:#dc2626'>"+items.filter(function(i){return i.status==="جديد";}).length+"</div><div style='font-size:8pt;color:#6b7280'>جديدة</div></div>"
-      +"<div style='flex:1;border:1px solid #d1fae5;background:#f0fdf4;border-radius:8px;padding:8px;text-align:center'><div style='font-size:18pt;font-weight:900;color:#059669'>"+items.filter(function(i){return i.status==="تمت المعالجة";}).length+"</div><div style='font-size:8pt;color:#6b7280'>تمت المعالجة</div></div>"
-      +"</div>"
-      +"<div style='font-size:8pt;color:#9ca3af;text-align:left;margin-bottom:10px'>تاريخ الطباعة: "+new Date().toLocaleDateString("ar-SA")+" — المطبوع: "+list.length+" رسالة</div>"
-      +rows
-      +"<div style='text-align:center;font-size:8pt;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:8px;margin-top:10px'>مدرسة عبيدة بن الحارث المتوسطة — قسم الشكاوى والاقتراحات</div>"
-      +"</body></html>");
-    win.document.close();
-    setTimeout(function(){win.print();}, 800);
-  };
-
   if (loading) return <div className="flex items-center justify-center py-20"><div className="text-4xl animate-bounce">💬</div></div>;
 
   if (selected) return (
@@ -22713,13 +22664,11 @@ function SuggestionsAdminPage() {
           <div className="flex items-center gap-3">
             <span className="text-3xl">💬</span>
             <div>
-              <h2 className="font-black text-xl">مدرسة عبيدة بن الحارث المتوسطة</h2>
-              <p className="opacity-80 text-sm font-bold">قسم الشكاوى والاقتراحات</p>
-              <p className="opacity-60 text-xs mt-0.5">رأيك يبني مستقبل أبنائنا</p>
+              <h2 className="font-black text-xl">الآراء والمقترحات</h2>
+              <p className="opacity-70 text-xs">رسائل أولياء الأمور والطلاب</p>
             </div>
           </div>
           <button onClick={refresh} className="px-3 py-2 rounded-xl text-xs font-black bg-white/20 hover:bg-white/30 border border-white/30">🔄 تحديث</button>
-          <button onClick={printAllItems} className="px-3 py-2 rounded-xl text-xs font-black bg-white/20 hover:bg-white/30 border border-white/30">🖨️ طباعة A4</button>
           <button onClick={() => {
             const link = window.location.origin + window.location.pathname + "#suggestions-portal";
             navigator.clipboard.writeText(link).then(() => alert("✅ تم نسخ رابط البوابة!\n" + link));
@@ -22781,815 +22730,849 @@ function SuggestionsAdminPage() {
 
 
 // ================================================================
-// ===== سجل النمو المهني للمعلمين =====
+// ===== صفحة الرخصة المهنية للمعلمين =====
 // ================================================================
-
-const PGR_NEEDS = [
-  {id:"strategies",label:"استراتيجيات التدريس الحديثة",icon:"🎯"},
-  {id:"active",label:"التعلّم النشط والتعاوني",icon:"🤝"},
-  {id:"assessment",label:"التقويم والقياس وبناء الاختبارات",icon:"📊"},
-  {id:"technology",label:"توظيف التقنية في التدريس",icon:"💻"},
-  {id:"elearning",label:"التعلّم الإلكتروني ومنصة مدرستي",icon:"🖥️"},
-  {id:"classmanage",label:"إدارة الصف والانضباط الصفي",icon:"🏫"},
-  {id:"planning",label:"التخطيط اليومي والفصلي",icon:"📋"},
-  {id:"thinking",label:"مهارات التفكير العليا",icon:"🧠"},
-  {id:"feedback",label:"التغذية الراجعة وأساليبها",icon:"💬"},
-  {id:"diff",label:"التعامل مع الفروق الفردية",icon:"🌈"},
-  {id:"gifted",label:"رعاية الموهوبين وذوي الاحتياجات",icon:"⭐"},
-  {id:"research",label:"البحث الإجرائي وتطوير الذات",icon:"🔬"},
-  {id:"communication",label:"مهارات التواصل مع الطلاب وأولياء الأمور",icon:"📞"},
-  {id:"mental",label:"الصحة النفسية والإرشاد التربوي",icon:"🧘"},
-  {id:"quality",label:"معايير الجودة في التعليم",icon:"🏆"},
-];
-const PGR_IMPACT = ["استراتيجيات التدريس","التقويم والقياس","توظيف التقنية","إدارة الصف","التعلّم النشط","مهارات التفكير","التغذية الراجعة","التعامل مع الفروق الفردية"];
-const PGR_SPECS = ["رياضيات","علوم","لغة عربية","اجتماعيات","تربية إسلامية","إنجليزي","حاسب وتقنية","تربية بدنية","فنون","كيمياء","فيزياء","أحياء","جغرافيا","تاريخ","تربية وطنية","أخرى"];
-const PGR_QUALS = ["دبلوم","بكالوريوس","ماجستير","دكتوراه","أخرى"];
-
-const mkPGR = (name) => ({
-  name:name||"",qualification:"",specialization:"",stage:"",yearsService:"",phone:"",email:"",prevCourses:"",startDate:"",
-  needs:Object.fromEntries(PGR_NEEDS.map(n=>[n.id,{needed:null,priority:""}])),
-  growthPlan:Array(8).fill(null).map(()=>({goal:"",method:"",duration:"",indicator:""})),
-  courses:Array(14).fill(null).map(()=>({name:"",org:"",date:"",hours:""})),
-  followup:Array(10).fill(null).map(()=>({action:"",done:null,execDate:"",notes:""})),
-  impact:Object.fromEntries(PGR_IMPACT.map(a=>[a,{level:"",notes:""}])),
-  monthlyReport:{month:"",pct:"",activities:"",challenges:""},
-  semesterReport:{semester:"",pct:"",achievements:"",recommendations:""},
-  hasLicense:null,licenseReason:"",licenseImages:[null,null],
-  teacherSign:"",principalSign:"",viceSign:"",approvalDate:"",
-});
-
-// دالة مشتركة لبناء HTML الطباعة
-function buildPrintHTML(rec, academicYear) {
-  const yr = academicYear||".............. / .............. هـ";
-  const totalHours = (rec.courses||[]).reduce(function(s,c){return s+(parseInt(c&&c.hours)||0);},0);
-  const needsRows = PGR_NEEDS.map(function(n,i){
-    const nd=(rec.needs&&rec.needs[n.id])||{};
-    return "<tr><td style='text-align:center'>"+(i+1)+"</td><td>"+n.icon+" "+n.label+"</td>"
-      +"<td style='text-align:center'>"+(nd.needed===true?"✓":"○")+"</td>"
-      +"<td style='text-align:center'>"+(nd.priority==="high"?"✓":"○")+"</td>"
-      +"<td style='text-align:center'>"+(nd.priority==="medium"?"✓":"○")+"</td>"
-      +"<td style='text-align:center'>"+(nd.priority==="low"?"✓":"○")+"</td></tr>";
-  }).join("");
-  const planRows = (rec.growthPlan||[]).map(function(r,i){
-    return "<tr><td style='text-align:center'>"+(i+1)+"</td><td>"+(r&&r.goal||"")+"</td><td>"+(r&&r.method||"")+"</td><td>"+(r&&r.duration||"")+"</td><td>"+(r&&r.indicator||"")+"</td></tr>";
-  }).join("");
-  const courseRows = (rec.courses||[]).map(function(r,i){
-    return "<tr><td style='text-align:center'>"+(i+1)+"</td><td>"+(r&&r.name||"")+"</td><td>"+(r&&r.org||"")+"</td><td>"+(r&&r.date||"")+"</td><td style='text-align:center'>"+(r&&r.hours||"")+"</td></tr>";
-  }).join("");
-  const followRows = (rec.followup||[]).map(function(r,i){
-    return "<tr><td style='text-align:center'>"+(i+1)+"</td><td>"+(r&&r.action||"")+"</td>"
-      +"<td style='text-align:center'>"+(r&&r.done===true?"✓":"○")+"</td>"
-      +"<td style='text-align:center'>"+(r&&r.done===false?"✓":"○")+"</td>"
-      +"<td>"+(r&&r.execDate||"")+"</td><td>"+(r&&r.notes||"")+"</td></tr>";
-  }).join("");
-  const impactRows = PGR_IMPACT.map(function(area,i){
-    const imp=(rec.impact&&rec.impact[area])||{};
-    return "<tr><td style='text-align:center'>"+(i+1)+"</td><td>"+area+"</td>"
-      +"<td style='text-align:center'>"+(imp.level==="تحسّن ملحوظ"?"✓":"○")+"</td>"
-      +"<td style='text-align:center'>"+(imp.level==="متوسط"?"✓":"○")+"</td>"
-      +"<td style='text-align:center'>"+(imp.level==="يحتاج دعم"?"✓":"○")+"</td>"
-      +"<td>"+(imp.notes||"")+"</td></tr>";
-  }).join("");
-  const licStatus = rec.hasLicense===true?"✅ حاصل على الرخصة المهنية":rec.hasLicense===false?"❌ لم يحصل — "+(rec.licenseReason||"لم يُحدد"):"⏳ لم يُحدد بعد";
-  const css = "@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');"
-    +"*{margin:0;padding:0;box-sizing:border-box}"
-    +"body{font-family:'Cairo',sans-serif;direction:rtl;background:#fff;color:#1f2937;font-size:10pt}"
-    +"@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}"
-    +".page{width:210mm;margin:0 auto;padding:12mm 15mm}"
-    +".hdr{display:flex;align-items:center;gap:14px;border-bottom:3px solid #064e3b;padding-bottom:10px;margin-bottom:12px}"
-    +".hdr-logo{width:56px;height:56px;background:linear-gradient(135deg,#064e3b,#0d9488);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24pt;flex-shrink:0}"
-    +".hdr h1{font-size:14pt;font-weight:900;color:#064e3b}"
-    +".hdr h2{font-size:11pt;font-weight:700;color:#0d9488}"
-    +".hdr .yr{font-size:9pt;color:#6b7280}"
-    +".quote{background:#f0fdf4;border-right:4px solid #0d9488;padding:5px 10px;font-size:9pt;color:#065f46;font-weight:700;margin-bottom:10px;border-radius:0 6px 6px 0}"
-    +".cover{background:linear-gradient(135deg,#1a3a2a,#064e3b);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}"
-    +".cover .name{font-size:14pt;font-weight:900}"
-    +".cover .sub{font-size:9pt;opacity:0.75}"
-    +".stitle{background:linear-gradient(90deg,#064e3b,#0d9488);color:#fff;padding:4px 12px;font-weight:700;font-size:9pt;border-radius:6px;margin:10px 0 6px}"
-    +"table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:4px}"
-    +"th{background:#f0fdf4;color:#065f46;font-weight:700;padding:4px 7px;border:1px solid #d1fae5;text-align:right}"
-    +"td{padding:3px 7px;border:1px solid #e5e7eb}"
-    +"td.lb{background:#f9fafb;color:#6b7280;font-weight:700;width:25%;white-space:nowrap}"
-    +".sign-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}"
-    +".sign-box{border:1px solid #e5e7eb;border-radius:6px;padding:8px;text-align:center;min-height:50px}"
-    +".sign-lbl{font-size:8pt;color:#6b7280;margin-bottom:4px}"
-    +".footer{text-align:center;font-size:8pt;color:#9ca3af;border-top:1px dashed #e5e7eb;padding-top:6px;margin-top:10px}";
-  return "<!DOCTYPE html><html dir='rtl' lang='ar'><head><meta charset='UTF-8'><title>سجل النمو المهني</title>"
-    +"<style>"+css+"</style></head><body><div class='page'>"
-    +"<div class='hdr'><div class='hdr-logo'>📗</div><div>"
-    +"<div style='font-size:8pt;color:#6b7280'>المملكة العربية السعودية — وزارة التعليم — إدارة التعليم بمحافظة جدة</div>"
-    +"<h1>مدرسة عبيدة بن الحارث المتوسطة</h1>"
-    +"<h2>سجل النمو المهني للمعلمين</h2>"
-    +"<div class='yr'>العام الدراسي: "+yr+"</div>"
-    +"</div></div>"
-    +"<div class='quote'>❝ المعلم المتعلّم دوماً هو المعلم القادر على صناعة التغيير. ❞</div>"
-    +"<div class='cover'><div style='font-size:26pt'>👨‍🏫</div><div><div class='name'>"+(rec.name||"—")+"</div>"
-    +"<div class='sub'>"+(rec.specialization||"")+(rec.stage?" • "+rec.stage:"")+(rec.yearsService?" • خبرة "+rec.yearsService+" سنوات":"")+"</div></div></div>"
-    +"<div class='stitle'>👤 البيانات الأساسية</div>"
-    +"<table><tr><td class='lb'>المؤهل العلمي</td><td>"+(rec.qualification||"—")+"</td><td class='lb'>التخصص</td><td>"+(rec.specialization||"—")+"</td></tr>"
-    +"<tr><td class='lb'>المرحلة الدراسية</td><td>"+(rec.stage||"—")+"</td><td class='lb'>سنوات الخبرة</td><td>"+(rec.yearsService||"—")+"</td></tr>"
-    +"<tr><td class='lb'>رقم الجوال</td><td>"+(rec.phone||"—")+"</td><td class='lb'>البريد الإلكتروني</td><td>"+(rec.email||"—")+"</td></tr>"
-    +"<tr><td class='lb'>عدد الدورات السابقة</td><td>"+(rec.prevCourses||"—")+"</td><td class='lb'>تاريخ المباشرة</td><td>"+(rec.startDate||"—")+"</td></tr>"
-    +"</table>"
-    +"<div class='stitle'>📋 حصر الاحتياجات التدريبية</div>"
-    +"<table><thead><tr><th>م</th><th>المجال التدريبي</th><th>حاجة</th><th>عالية</th><th>متوسطة</th><th>منخفضة</th></tr></thead><tbody>"+needsRows+"</tbody></table>"
-    +"<div class='stitle'>🌱 خطة النمو المهني</div>"
-    +"<table><thead><tr><th>م</th><th>الهدف التطويري</th><th>وسيلة التطوير</th><th>المدة الزمنية</th><th>مؤشر الإنجاز</th></tr></thead><tbody>"+planRows+"</tbody></table>"
-    +"<div class='stitle'>🎓 سجل الدورات التدريبية</div>"
-    +"<table><thead><tr><th>م</th><th>اسم الدورة / البرنامج</th><th>الجهة المنظمة</th><th>التاريخ</th><th>الساعات</th></tr></thead><tbody>"+courseRows
-    +"<tr style='background:#f0fdf4'><td colspan='4' style='font-weight:700;color:#065f46'>إجمالي الساعات التدريبية</td><td style='text-align:center;font-weight:900;color:#065f46'>"+totalHours+"</td></tr>"
-    +"</tbody></table>"
-    +"<div class='stitle'>📌 متابعة تنفيذ الخطة</div>"
-    +"<table><thead><tr><th>م</th><th>الإجراء التطويري</th><th>نعم</th><th>لا</th><th>تاريخ التنفيذ</th><th>الملاحظات</th></tr></thead><tbody>"+followRows+"</tbody></table>"
-    +"<div class='stitle'>📈 أثر التدريب على الأداء الصفي</div>"
-    +"<table><thead><tr><th>م</th><th>مجال التدريب</th><th>تحسّن ملحوظ</th><th>متوسط</th><th>يحتاج دعم</th><th>الملاحظات</th></tr></thead><tbody>"+impactRows+"</tbody></table>"
-    +"<div class='stitle'>📅 التقارير الدورية</div>"
-    +"<table>"
-    +"<tr><td class='lb'>الشهر</td><td>"+(rec.monthlyReport&&rec.monthlyReport.month||"—")+"</td><td class='lb'>نسبة الإنجاز الشهري</td><td>"+(rec.monthlyReport&&rec.monthlyReport.pct||"—")+" %</td></tr>"
-    +"<tr><td class='lb'>أبرز الأنشطة</td><td colspan='3'>"+(rec.monthlyReport&&rec.monthlyReport.activities||"—")+"</td></tr>"
-    +"<tr><td class='lb'>التحديات والمعوّقات</td><td colspan='3'>"+(rec.monthlyReport&&rec.monthlyReport.challenges||"—")+"</td></tr>"
-    +"<tr><td class='lb'>الفصل الدراسي</td><td>"+(rec.semesterReport&&rec.semesterReport.semester?"الفصل "+rec.semesterReport.semester:"—")+"</td><td class='lb'>نسبة إنجاز الفصل</td><td>"+(rec.semesterReport&&rec.semesterReport.pct||"—")+" %</td></tr>"
-    +"<tr><td class='lb'>أبرز الإنجازات</td><td colspan='3'>"+(rec.semesterReport&&rec.semesterReport.achievements||"—")+"</td></tr>"
-    +"<tr><td class='lb'>التوصيات للفصل القادم</td><td colspan='3'>"+(rec.semesterReport&&rec.semesterReport.recommendations||"—")+"</td></tr>"
-    +"</table>"
-    +"<div class='stitle'>🏅 الرخصة المهنية</div>"
-    +"<table><tr><td class='lb'>حالة الرخصة</td><td colspan='3'>"+licStatus+"</td></tr></table>"
-    +"<div class='stitle'>✍️ الاعتماد والتوقيعات</div>"
-    +"<div class='sign-grid'>"
-    +"<div class='sign-box'><div class='sign-lbl'>المعلم</div><div style='font-size:9pt;font-weight:700'>"+(rec.teacherSign||"...")+"</div></div>"
-    +"<div class='sign-box'><div class='sign-lbl'>قائد المدرسة</div><div style='font-size:9pt;font-weight:700'>"+(rec.principalSign||"...")+"</div></div>"
-    +"<div class='sign-box'><div class='sign-lbl'>وكيل الشؤون التعليمية</div><div style='font-size:9pt;font-weight:700'>"+(rec.viceSign||"...")+"</div></div>"
-    +"</div>"
-    +"<table style='margin-top:8px'><tr><td class='lb'>تاريخ الاعتماد</td><td>"+(rec.approvalDate||"....../....../14.... هـ")+"</td></tr></table>"
-    +"<div class='footer'>مدرسة عبيدة بن الحارث المتوسطة — سجل النمو المهني — العام الدراسي "+yr+" — تاريخ الطباعة: "+new Date().toLocaleDateString("ar-SA")+"</div>"
-    +"</div><script>window.onload=function(){window.print();}</script></body></html>";
-}
-
 function ProfessionalLicensePage() {
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const [search, setSearch] = useState("");
+
+  const SPECIALIZATIONS = [
+    "رياضيات","علوم","لغة عربية","اجتماعيات","تربية إسلامية",
+    "إنجليزي","حاسب وتقنية","تربية بدنية","فنون","كيمياء",
+    "فيزياء","أحياء","جغرافيا","تاريخ","تربية وطنية","أخرى"
+  ];
+
+  const PROGRAMS = [
+    { id:"planning",      label:"التخطيط للتدريس",           icon:"📋" },
+    { id:"strategies",    label:"استراتيجيات التدريس",        icon:"🎯" },
+    { id:"classmanage",   label:"إدارة الصف",                icon:"🏫" },
+    { id:"assessment",    label:"التقويم والقياس",            icon:"📊" },
+    { id:"technology",    label:"توظيف التقنية",              icon:"💻" },
+    { id:"thinking",      label:"تنمية مهارات التفكير",       icon:"🧠" },
+    { id:"relations",     label:"بناء العلاقة مع الطلاب",    icon:"🤝" },
+    { id:"development",   label:"التطوير المهني",             icon:"🌱" },
+    { id:"timemanage",    label:"إدارة الوقت",                icon:"⏱️" },
+    { id:"communication", label:"مهارات التواصل",             icon:"💬" },
+  ];
+
+  const NEED_LEVELS = [
+    { val:"high",   label:"حاجة عالية",    color:"#dc2626", bg:"#fee2e2" },
+    { val:"medium", label:"حاجة متوسطة",   color:"#d97706", bg:"#fef3c7" },
+    { val:"low",    label:"حاجة منخفضة",   color:"#059669", bg:"#d1fae5" },
+  ];
+
+  const mkEmpty = (name="") => ({
+    name, specialization:"", yearsService:"", trainingHours:"",
+    programs: Object.fromEntries(PROGRAMS.map(p=>[p.id,{need:"",notes:""}])),
+    hasLicense: null, licenseReason:"",
+    licenseImages:[null,null],
+  });
+
+  const [records, setRecords]   = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [selected, setSelected] = useState(null); // index
+  const [search, setSearch]     = useState("");
   const [importing, setImporting] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [academicYear, setAcademicYear] = useState(function(){ try{return localStorage.getItem("pgr-yr")||"";}catch(e){return "";} });
+  const [saved, setSaved]       = useState(false);
   const imgRefs = [useRef(), useRef()];
 
+  // تحميل من Firebase
   useEffect(() => {
-    Promise.all([DB.get("school-teachers",[]),DB.get("school-pgr-records",[])]).then(function(res){
-      const tch=Array.isArray(res[0])?res[0]:[];
-      const recs=Array.isArray(res[1])?res[1]:[];
-      const merged = tch.map(function(t){ return recs.find(function(r){return r.name===t;})||mkPGR(t); });
-      recs.forEach(function(r){ if(!tch.includes(r.name)) merged.push(r); });
+    Promise.all([
+      DB.get("school-teachers", []),
+      DB.get("school-license-records", []),
+    ]).then(([tch, recs]) => {
+      const teacherList = Array.isArray(tch) ? tch : [];
+      const recList = Array.isArray(recs) ? recs : [];
+      setTeachers(teacherList);
+      // دمج السجلات مع قائمة المعلمين
+      const merged = teacherList.map(t => {
+        const existing = recList.find(r => r.name === t);
+        return existing || mkEmpty(t);
+      });
+      // أضف أي سجلات لمعلمين غير في القائمة
+      recList.forEach(r => {
+        if (!teacherList.includes(r.name)) merged.push(r);
+      });
       setRecords(merged);
       setLoading(false);
     });
-  },[]);
+  }, []);
 
-  const save = function(newRecs){ setRecords(newRecs); DB.set("school-pgr-records",newRecs); setSaved(true); setTimeout(function(){setSaved(false);},1500); };
-  const updRec = function(idx,field,val){ const n=[...records]; n[idx]={...n[idx],[field]:val}; save(n); };
-  const updNeed = function(idx,id,field,val){ const n=[...records]; n[idx]={...n[idx],needs:{...n[idx].needs,[id]:{...n[idx].needs[id],[field]:val}}}; save(n); };
+  const save = (newRecs) => {
+    setRecords(newRecs);
+    DB.set("school-license-records", newRecs);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
 
-  const handleImg = function(imgIdx,recIdx,file){
-    if(!file)return;
-    readFileAsync(file,"dataurl").then(function(dataUrl){
-      const n=[...records]; const imgs=[...(n[recIdx].licenseImages||[null,null])];
-      imgs[imgIdx]={dataUrl,name:file.name}; n[recIdx]={...n[recIdx],licenseImages:imgs}; save(n);
+  const updRecord = (idx, field, val) => {
+    const next = [...records];
+    next[idx] = { ...next[idx], [field]: val };
+    save(next);
+  };
+
+  const updProgram = (idx, progId, field, val) => {
+    const next = [...records];
+    next[idx] = {
+      ...next[idx],
+      programs: { ...next[idx].programs, [progId]: { ...next[idx].programs[progId], [field]: val } }
+    };
+    save(next);
+  };
+
+  const handleLicenseImg = (idx, recIdx, file) => {
+    if (!file) return;
+    readFileAsync(file, "dataurl").then(dataUrl => {
+      const next = [...records];
+      const imgs = [...(next[recIdx].licenseImages || [null, null])];
+      imgs[idx] = { dataUrl, name: file.name };
+      next[recIdx] = { ...next[recIdx], licenseImages: imgs };
+      save(next);
     });
   };
-  const removeImg = function(imgIdx,recIdx){
-    const n=[...records]; const imgs=[...(n[recIdx].licenseImages||[null,null])];
-    imgs[imgIdx]=null; n[recIdx]={...n[recIdx],licenseImages:imgs}; save(n);
+
+  const removeLicenseImg = (idx, recIdx) => {
+    const next = [...records];
+    const imgs = [...(next[recIdx].licenseImages || [null, null])];
+    imgs[idx] = null;
+    next[recIdx] = { ...next[recIdx], licenseImages: imgs };
+    save(next);
   };
 
-  const handleImportExcel = async function(file){
+  // استيراد Excel
+  const handleImportExcel = async (file) => {
     setImporting(true);
-    try{
+    try {
       await loadXLSX();
-      const buf=await file.arrayBuffer();
-      const wb=window.XLSX.read(buf);
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=window.XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-      const names=[];
-      rows.forEach(function(row,i){ if(i===0)return; const nm=String(row[0]||"").trim(); if(nm&&nm.length>2)names.push(nm); });
-      const existing=records.map(function(r){return r.name;});
-      const newRecs=[...records];
-      names.forEach(function(nm){ if(!existing.includes(nm))newRecs.push(mkPGR(nm)); });
+      const buf = await file.arrayBuffer();
+      const wb = window.XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = window.XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
+      const names = [];
+      rows.forEach((row, i) => {
+        if (i === 0) return;
+        const name = String(row[0]||"").trim();
+        if (name && name.length > 2) names.push(name);
+      });
+      // أضف أسماء جديدة فقط
+      const existing = records.map(r => r.name);
+      const newRecs = [...records];
+      names.forEach(n => { if (!existing.includes(n)) newRecs.push(mkEmpty(n)); });
+      setTeachers(prev => {
+        const all = [...new Set([...prev, ...names])];
+        DB.set("school-teachers", all);
+        return all;
+      });
       save(newRecs);
-      alert("✅ تم استيراد "+names.length+" معلم");
-    }catch(e){ alert("❌ خطأ في قراءة الملف"); }
+      alert(`✅ تم استيراد ${names.length} معلم`);
+    } catch (e) {
+      alert("❌ خطأ في قراءة الملف");
+    }
     setImporting(false);
   };
 
-  const addManual = function(){
-    const nm=prompt("أدخل اسم المعلم:");
-    if(!nm||!nm.trim())return;
-    const newRecs=[...records,mkPGR(nm.trim())];
-    save(newRecs); setSelected(newRecs.length-1);
+  const addManual = () => {
+    const name = prompt("أدخل اسم المعلم:");
+    if (!name?.trim()) return;
+    const newRecs = [...records, mkEmpty(name.trim())];
+    save(newRecs);
+    setSelected(newRecs.length - 1);
   };
 
-  const deleteRec = function(idx){
-    if(!confirm("هل تريد حذف هذا السجل؟"))return;
-    save(records.filter(function(_,i){return i!==idx;})); setSelected(null);
+  const deleteRecord = (idx) => {
+    if (!confirm("هل تريد حذف هذا السجل؟")) return;
+    const next = records.filter((_,i) => i !== idx);
+    save(next);
+    setSelected(null);
   };
 
-  const saveYr = function(v){ setAcademicYear(v); try{localStorage.setItem("pgr-yr",v);}catch(e){} };
-
-  const pct = function(rec){
-    let d=0,t=5;
-    if(rec.specialization)d++; if(rec.qualification)d++; if(rec.yearsService)d++;
-    if(Object.values(rec.needs||{}).some(function(n){return n.needed===true;}))d++;
-    if(rec.hasLicense!==null)d++;
-    return Math.round(d/t*100);
+  const getNeedLevel = (val) => NEED_LEVELS.find(n => n.val === val);
+  const getCompletePct = (rec) => {
+    if (!rec) return 0;
+    let done = 0, total = 4;
+    if (rec.specialization) done++;
+    if (rec.yearsService) done++;
+    if (rec.trainingHours) done++;
+    if (rec.hasLicense !== null) done++;
+    return Math.round(done / total * 100);
   };
 
-  const filtered = records.filter(function(r){ return !search||r.name.includes(search); });
+  const filtered = records.filter(r =>
+    !search || r.name.includes(search)
+  );
 
-  if(loading) return <div className="flex items-center justify-center py-20"><div className="text-4xl animate-bounce">📗</div></div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20 text-gray-400">
+      <div className="text-center"><div className="text-5xl mb-3 animate-bounce">🏆</div><p className="font-bold">جاري التحميل…</p></div>
+    </div>
+  );
 
-  // ── تفاصيل معلم ──
-  if(selected!==null && records[selected]){
-    const rec=records[selected]; const idx=selected;
+  // ── عرض تفاصيل معلم ──
+  if (selected !== null && records[selected]) {
+    const rec = records[selected];
+    const idx = selected;
+    const pct = getCompletePct(rec);
     return (
       <div dir="rtl" className="max-w-3xl mx-auto px-3 py-4 space-y-4" style={{fontFamily:"'Cairo',sans-serif"}}>
         <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={()=>setSelected(null)} className="px-4 py-2 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm">← القائمة</button>
+          <button onClick={()=>setSelected(null)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm">
+            ← قائمة المعلمين
+          </button>
           <div className="flex-1 font-black text-lg text-gray-800">{rec.name}</div>
           <div className="flex items-center gap-2">
             {saved && <span className="text-green-600 text-xs font-bold">✅ محفوظ</span>}
-            <button onClick={()=>{const w=window.open("","_blank","width=900,height=700");w.document.write(buildPrintHTML(rec,academicYear));w.document.close();}}
-              className="px-3 py-1.5 rounded-xl text-xs font-black bg-teal-600 text-white hover:bg-teal-700">🖨️ طباعة A4</button>
-            <span className="text-xs font-bold px-3 py-1 rounded-full" style={{background:pct(rec)===100?"#d1fae5":"#fef3c7",color:pct(rec)===100?"#059669":"#d97706"}}>{pct(rec)}%</span>
+            <span className="text-xs font-bold px-3 py-1 rounded-full"
+              style={{background: pct===100?"#d1fae5":"#fef3c7", color: pct===100?"#059669":"#d97706"}}>
+              {pct}% مكتمل
+            </span>
           </div>
         </div>
 
-        {/* غلاف السجل */}
-        <div className="rounded-3xl p-5 text-white text-center shadow-xl relative overflow-hidden" style={{background:"linear-gradient(135deg,#1a3a2a,#064e3b,#0d9488)"}}>
-          <div className="absolute inset-0 opacity-5">{[...Array(4)].map((_,i)=><div key={i} className="absolute rounded-full border border-white" style={{width:(i+2)*80,height:(i+2)*80,top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>)}</div>
-          <div className="relative"><div className="text-5xl mb-2">📗</div>
-            <div className="font-black text-xl mb-1">سجل النمو المهني</div>
-            <div className="opacity-70 text-sm">مدرسة عبيدة بن الحارث المتوسطة</div>
-            <div className="mt-3 bg-white/15 rounded-2xl p-3"><div className="font-black text-lg">{rec.name}</div>
-              <div className="opacity-70 text-xs mt-1">{rec.specialization}{rec.stage?" • "+rec.stage:""}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* مقدمة */}
-        <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4">
-          <div className="font-black text-teal-800 mb-2">✦ المقدمة</div>
-          <p className="text-xs text-teal-700 leading-relaxed">يُعدّ النمو المهني للمعلم ركيزةً أساسيةً من ركائز العملية التعليمية الناجحة. جاء هذا السجل ليكون خارطة طريق واضحة للمعلم والقيادة المدرسية، تُعين على رصد الاحتياجات التدريبية، ووضع خطط نمو مهني دقيقة، ومتابعة تنفيذها.</p>
-          <div className="mt-2 bg-teal-800/10 rounded-xl p-2 text-center text-xs font-black text-teal-800 italic">❝ المعلم المتعلّم دوماً هو المعلم القادر على صناعة التغيير. ❞</div>
-        </div>
-
-        {/* بيانات أساسية */}
+        {/* ── بيانات أساسية ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
+          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
+            style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
             <span>👤</span> البيانات الأساسية
           </div>
-          <div className="p-5 grid grid-cols-2 gap-3">
-            {[["المؤهل العلمي","qualification","select",PGR_QUALS],["التخصص الدقيق","specialization","select",PGR_SPECS],["سنوات الخبرة","yearsService","number"],["رقم الجوال","phone","tel"],["البريد الإلكتروني","email","email"],["عدد الدورات السابقة","prevCourses","number"],["تاريخ المباشرة","startDate","text"]].map(function(f){
-              return <div key={f[1]}>
-                <label className="text-xs font-black text-gray-600 mb-1 block">{f[0]}</label>
-                {f[2]==="select"
-                  ? <select value={rec[f[1]]||""} onChange={function(e){updRec(idx,f[1],e.target.value);}} className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm bg-white font-bold">
-                      <option value="">— اختر —</option>
-                      {f[3].map(function(s){return <option key={s} value={s}>{s}</option>;})}
-                    </select>
-                  : <input type={f[2]} value={rec[f[1]]||""} onChange={function(e){updRec(idx,f[1],e.target.value);}} className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm" />
-                }
-              </div>;
+          <div className="p-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-1.5 block">📚 التخصص</label>
+              <select value={rec.specialization||""} onChange={e=>updRecord(idx,"specialization",e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
+                <option value="">— اختر التخصص —</option>
+                {SPECIALIZATIONS.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-1.5 block">📅 سنوات الخدمة</label>
+              <select value={rec.yearsService||""} onChange={e=>updRecord(idx,"yearsService",e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
+                <option value="">— اختر —</option>
+                {["أقل من سنة","1-3 سنوات","4-6 سنوات","7-10 سنوات","11-15 سنة","أكثر من 15 سنة"].map(s=>(
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-1.5 block">🎓 ساعات التدريب (تقريباً)</label>
+              <select value={rec.trainingHours||""} onChange={e=>updRecord(idx,"trainingHours",e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
+                <option value="">— اختر —</option>
+                {["أقل من 20 ساعة","20-40 ساعة","41-60 ساعة","61-80 ساعة","81-100 ساعة","أكثر من 100 ساعة"].map(s=>(
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* ── البرامج ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
+            style={{background:"linear-gradient(135deg,#065f46,#0d9488)"}}>
+            <span>📋</span> البرامج التدريبية المحتاجة
+          </div>
+          <div className="divide-y divide-gray-100">
+            {PROGRAMS.map(prog => {
+              const pd = rec.programs?.[prog.id] || {need:"", notes:""};
+              const nl = getNeedLevel(pd.need);
+              return (
+                <div key={prog.id} className="px-5 py-3">
+                  <div className="flex items-start gap-3 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-xl flex-shrink-0">{prog.icon}</span>
+                      <span className="font-black text-sm text-gray-800">{prog.label}</span>
+                      {nl && (
+                        <span className="text-xs font-black px-2 py-0.5 rounded-full flex-shrink-0"
+                          style={{background:nl.bg, color:nl.color}}>
+                          {nl.label}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 items-center flex-shrink-0">
+                      <select value={pd.need||""} onChange={e=>updProgram(idx,prog.id,"need",e.target.value)}
+                        className="px-2 py-1.5 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-xs font-bold bg-white"
+                        style={{minWidth:130}}>
+                        <option value="">— درجة الحاجة —</option>
+                        {NEED_LEVELS.map(n=>(
+                          <option key={n.val} value={n.val}>{n.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <input value={pd.notes||""} onChange={e=>updProgram(idx,prog.id,"notes",e.target.value)}
+                      placeholder="أهمية البرنامج أو ملاحظات..."
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-teal-400 focus:outline-none text-xs text-gray-700" />
+                  </div>
+                </div>
+              );
             })}
-            <div className="col-span-2">
-              <label className="text-xs font-black text-gray-600 mb-1 block">المرحلة الدراسية</label>
-              <div className="flex gap-2">{["ابتدائي","متوسط","ثانوي"].map(function(s){return <button key={s} onClick={function(){updRec(idx,"stage",s);}} className={"flex-1 py-2 rounded-xl text-xs font-black border-2 transition-all "+(rec.stage===s?"border-blue-500 bg-blue-50 text-blue-700":"border-gray-200 text-gray-500")}>{s}</button>;})}</div>
-            </div>
           </div>
         </div>
 
-        {/* حصر الاحتياجات التدريبية */}
+        {/* ── الرخصة المهنية ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#065f46,#0d9488)"}}>
-            <span>📋</span> حصر الاحتياجات التدريبية
-          </div>
-          <div className="p-4 overflow-x-auto">
-            <p className="text-xs text-gray-500 mb-2">ضع علامة أمام المجالات التي تحتاج للتطوير فيها وحدّد الأولوية:</p>
-            <table className="w-full text-xs">
-              <thead><tr className="bg-gray-50">
-                <th className="text-right p-2 font-black text-gray-700 w-6">م</th>
-                <th className="text-right p-2 font-black text-gray-700">المجال التدريبي</th>
-                <th className="p-2 font-black text-teal-600 text-center">حاجة</th>
-                <th className="p-2 font-black text-red-600 text-center">عالية</th>
-                <th className="p-2 font-black text-yellow-600 text-center">متوسطة</th>
-                <th className="p-2 font-black text-green-600 text-center">منخفضة</th>
-              </tr></thead>
-              <tbody className="divide-y divide-gray-100">
-                {PGR_NEEDS.map(function(need,i){
-                  const nd=(rec.needs&&rec.needs[need.id])||{needed:null,priority:""};
-                  return <tr key={need.id} className="hover:bg-gray-50">
-                    <td className="p-2 text-gray-400">{i+1}</td>
-                    <td className="p-2 font-bold text-gray-700">{need.icon} {need.label}</td>
-                    <td className="p-2 text-center"><button onClick={function(){updNeed(idx,need.id,"needed",nd.needed===true?null:true);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(nd.needed===true?"bg-teal-500 border-teal-500 text-white":"border-gray-300")}>{nd.needed===true?"✓":""}</button></td>
-                    {["high","medium","low"].map(function(p){return <td key={p} className="p-2 text-center"><button onClick={function(){updNeed(idx,need.id,"priority",nd.priority===p?"":p);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(nd.priority===p?(p==="high"?"bg-red-500 border-red-500 text-white":p==="medium"?"bg-yellow-400 border-yellow-400 text-white":"bg-green-500 border-green-500 text-white"):"border-gray-300")}>{nd.priority===p?"✓":""}</button></td>;})}
-                  </tr>;
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* خطة النمو المهني */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#1e3a5f,#7c3aed)"}}>
-            <span>🌱</span> خطة النمو المهني
-          </div>
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead><tr className="bg-gray-50"><th className="p-2 w-6">م</th><th className="text-right p-2 font-black text-gray-600">الهدف التطويري</th><th className="text-right p-2 font-black text-gray-600">وسيلة التطوير</th><th className="text-right p-2 font-black text-gray-600">المدة</th><th className="text-right p-2 font-black text-gray-600">مؤشر الإنجاز</th></tr></thead>
-              <tbody className="divide-y divide-gray-100">
-                {(rec.growthPlan||[]).map(function(row,i){
-                  return <tr key={i}><td className="p-2 text-gray-400 text-center">{i+1}</td>
-                    {["goal","method","duration","indicator"].map(function(f){
-                      return <td key={f} className="p-1"><input value={row&&row[f]||""} onChange={function(e){const n=[...records];const p=[...(n[idx].growthPlan||[])];p[i]={...p[i],[f]:e.target.value};n[idx]={...n[idx],growthPlan:p};save(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>;
-                    })}
-                  </tr>;
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* سجل الدورات */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#7c3aed,#db2777)"}}>
-            <span>🎓</span> سجل الدورات التدريبية
-          </div>
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead><tr className="bg-gray-50"><th className="p-2 w-6">م</th><th className="text-right p-2 font-black text-gray-600">اسم الدورة</th><th className="text-right p-2 font-black text-gray-600">الجهة</th><th className="text-right p-2 font-black text-gray-600">التاريخ</th><th className="text-right p-2 font-black text-gray-600 w-16">الساعات</th></tr></thead>
-              <tbody className="divide-y divide-gray-100">
-                {(rec.courses||[]).map(function(row,i){
-                  return <tr key={i}><td className="p-2 text-gray-400 text-center">{i+1}</td>
-                    {["name","org","date","hours"].map(function(f){
-                      return <td key={f} className="p-1"><input value={row&&row[f]||""} onChange={function(e){const n=[...records];const c=[...(n[idx].courses||[])];c[i]={...c[i],[f]:e.target.value};n[idx]={...n[idx],courses:c};save(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>;
-                    })}
-                  </tr>;
-                })}
-              </tbody>
-              <tfoot><tr className="bg-purple-50"><td colSpan={3} className="p-2 font-black text-purple-800 text-right">إجمالي الساعات</td><td className="p-2 font-black text-purple-800 text-center">{(rec.courses||[]).reduce(function(s,c){return s+(parseInt(c&&c.hours)||0);},0)}</td></tr></tfoot>
-            </table>
-          </div>
-        </div>
-
-        {/* متابعة التنفيذ */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)"}}>
-            <span>📌</span> متابعة تنفيذ الخطة
-          </div>
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead><tr className="bg-gray-50"><th className="p-2 w-6">م</th><th className="text-right p-2 font-black text-gray-600">الإجراء</th><th className="p-2 font-black text-green-600 text-center w-10">نعم</th><th className="p-2 font-black text-red-500 text-center w-10">لا</th><th className="text-right p-2 font-black text-gray-600">تاريخ التنفيذ</th><th className="text-right p-2 font-black text-gray-600">الملاحظات</th></tr></thead>
-              <tbody className="divide-y divide-gray-100">
-                {(rec.followup||[]).map(function(row,i){
-                  return <tr key={i}><td className="p-2 text-gray-400 text-center">{i+1}</td>
-                    <td className="p-1"><input value={row&&row.action||""} onChange={function(e){const n=[...records];const f=[...(n[idx].followup||[])];f[i]={...f[i],action:e.target.value};n[idx]={...n[idx],followup:f};save(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>
-                    {[true,false].map(function(v){return <td key={String(v)} className="p-2 text-center"><button onClick={function(){const n=[...records];const f=[...(n[idx].followup||[])];f[i]={...f[i],done:row&&row.done===v?null:v};n[idx]={...n[idx],followup:f};save(n);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(row&&row.done===v?(v?"bg-green-500 border-green-500 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300")}>{row&&row.done===v?"✓":""}</button></td>;})}
-                    {["execDate","notes"].map(function(f){return <td key={f} className="p-1"><input value={row&&row[f]||""} onChange={function(e){const n=[...records];const fu=[...(n[idx].followup||[])];fu[i]={...fu[i],[f]:e.target.value};n[idx]={...n[idx],followup:fu};save(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>;})}
-                  </tr>;
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* أثر التدريب */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#065f46,#15803d)"}}>
-            <span>📈</span> أثر التدريب على الأداء الصفي
-          </div>
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead><tr className="bg-gray-50"><th className="p-2 w-6">م</th><th className="text-right p-2 font-black text-gray-600">مجال التدريب</th><th className="p-2 font-black text-green-600 text-center">تحسّن ملحوظ</th><th className="p-2 font-black text-yellow-600 text-center">متوسط</th><th className="p-2 font-black text-red-500 text-center">يحتاج دعم</th><th className="text-right p-2 font-black text-gray-600">ملاحظات</th></tr></thead>
-              <tbody className="divide-y divide-gray-100">
-                {PGR_IMPACT.map(function(area,i){
-                  const imp=(rec.impact&&rec.impact[area])||{level:"",notes:""};
-                  return <tr key={area} className="hover:bg-gray-50">
-                    <td className="p-2 text-gray-400 text-center">{i+1}</td>
-                    <td className="p-2 font-bold text-gray-700">{area}</td>
-                    {["تحسّن ملحوظ","متوسط","يحتاج دعم"].map(function(level){return <td key={level} className="p-2 text-center"><button onClick={function(){const n=[...records];n[idx]={...n[idx],impact:{...n[idx].impact,[area]:{...imp,level:imp.level===level?"":level}}};save(n);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(imp.level===level?(level==="تحسّن ملحوظ"?"bg-green-500 border-green-500 text-white":level==="متوسط"?"bg-yellow-400 border-yellow-400 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300")}>{imp.level===level?"✓":""}</button></td>;})}
-                    <td className="p-1"><input value={imp.notes||""} onChange={function(e){const n=[...records];n[idx]={...n[idx],impact:{...n[idx].impact,[area]:{...imp,notes:e.target.value}}};save(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>
-                  </tr>;
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* التقارير الدورية */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#b45309,#d97706)"}}>
-            <span>📅</span> التقارير الدورية
-          </div>
-          <div className="p-5 space-y-3">
-            <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200">
-              <div className="font-black text-amber-800 mb-3">◆ التقرير الشهري</div>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div><label className="text-xs font-black text-gray-600 mb-1 block">الشهر</label><input value={rec.monthlyReport&&rec.monthlyReport.month||""} onChange={function(e){const n=[...records];n[idx]={...n[idx],monthlyReport:{...n[idx].monthlyReport,month:e.target.value}};save(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm" placeholder="مثال: محرم"/></div>
-                <div><label className="text-xs font-black text-gray-600 mb-1 block">نسبة الإنجاز %</label><input type="number" min="0" max="100" value={rec.monthlyReport&&rec.monthlyReport.pct||""} onChange={function(e){const n=[...records];n[idx]={...n[idx],monthlyReport:{...n[idx].monthlyReport,pct:e.target.value}};save(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm font-bold"/></div>
-              </div>
-              <div className="space-y-2">
-                <div><label className="text-xs font-black text-gray-600 mb-1 block">أبرز الأنشطة التطويرية</label><textarea value={rec.monthlyReport&&rec.monthlyReport.activities||""} rows={2} onChange={function(e){const n=[...records];n[idx]={...n[idx],monthlyReport:{...n[idx].monthlyReport,activities:e.target.value}};save(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none"/></div>
-                <div><label className="text-xs font-black text-gray-600 mb-1 block">التحديات والمعوّقات</label><textarea value={rec.monthlyReport&&rec.monthlyReport.challenges||""} rows={2} onChange={function(e){const n=[...records];n[idx]={...n[idx],monthlyReport:{...n[idx].monthlyReport,challenges:e.target.value}};save(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none"/></div>
-              </div>
-            </div>
-            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-200">
-              <div className="font-black text-blue-800 mb-3">◆ التقرير الفصلي</div>
-              <div className="flex gap-3 mb-3">
-                {["الأول","الثاني"].map(function(s){return <button key={s} onClick={function(){const n=[...records];n[idx]={...n[idx],semesterReport:{...n[idx].semesterReport,semester:s}};save(n);}} className={"flex-1 py-2 rounded-xl text-sm font-black border-2 transition-all "+(rec.semesterReport&&rec.semesterReport.semester===s?"border-blue-500 bg-blue-100 text-blue-700":"border-gray-200 text-gray-500")}>الفصل {s}</button>;})}
-                <input type="number" min="0" max="100" value={rec.semesterReport&&rec.semesterReport.pct||""} onChange={function(e){const n=[...records];n[idx]={...n[idx],semesterReport:{...n[idx].semesterReport,pct:e.target.value}};save(n);}} placeholder="نسبة الإنجاز %" className="flex-1 px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm font-bold"/>
-              </div>
-              <div className="space-y-2">
-                <div><label className="text-xs font-black text-gray-600 mb-1 block">أبرز الإنجازات</label><textarea value={rec.semesterReport&&rec.semesterReport.achievements||""} rows={2} onChange={function(e){const n=[...records];n[idx]={...n[idx],semesterReport:{...n[idx].semesterReport,achievements:e.target.value}};save(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none"/></div>
-                <div><label className="text-xs font-black text-gray-600 mb-1 block">التوصيات للفصل القادم</label><textarea value={rec.semesterReport&&rec.semesterReport.recommendations||""} rows={2} onChange={function(e){const n=[...records];n[idx]={...n[idx],semesterReport:{...n[idx].semesterReport,recommendations:e.target.value}};save(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none"/></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* الرخصة المهنية */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)"}}>
+          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
+            style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)"}}>
             <span>🏅</span> الرخصة المهنية
           </div>
           <div className="p-5 space-y-4">
             <div>
               <label className="text-xs font-black text-gray-600 mb-2 block">هل حصلت على الرخصة المهنية؟</label>
               <div className="flex gap-3">
-                {[{val:true,label:"✅ نعم، حصلت عليها"},{val:false,label:"❌ لا، لم أحصل عليها"}].map(function(opt){return <button key={String(opt.val)} onClick={function(){updRec(idx,"hasLicense",opt.val);}} className="flex-1 py-3 rounded-2xl font-black text-sm border-2 transition-all" style={{background:rec.hasLicense===opt.val?(opt.val?"#d1fae5":"#fee2e2"):"#f9fafb",borderColor:rec.hasLicense===opt.val?(opt.val?"#059669":"#dc2626"):"#e5e7eb",color:rec.hasLicense===opt.val?(opt.val?"#065f46":"#991b1b"):"#6b7280"}}>{opt.label}</button>;})}
+                {[{val:true,label:"✅ نعم، حصلت عليها"},{val:false,label:"❌ لا، لم أحصل عليها"}].map(opt=>(
+                  <button key={String(opt.val)} onClick={()=>updRecord(idx,"hasLicense",opt.val)}
+                    className="flex-1 py-3 rounded-2xl font-black text-sm border-2 transition-all"
+                    style={{
+                      background: rec.hasLicense===opt.val ? (opt.val?"#d1fae5":"#fee2e2") : "#f9fafb",
+                      borderColor: rec.hasLicense===opt.val ? (opt.val?"#059669":"#dc2626") : "#e5e7eb",
+                      color: rec.hasLicense===opt.val ? (opt.val?"#065f46":"#991b1b") : "#6b7280",
+                    }}>
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
-            {rec.hasLicense===false && <div><label className="text-xs font-black text-gray-600 mb-1.5 block">سبب عدم الحصول على الرخصة</label><textarea value={rec.licenseReason||""} onChange={function(e){updRec(idx,"licenseReason",e.target.value);}} placeholder="اكتب السبب هنا..." rows={3} className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm resize-none"/></div>}
-            {rec.hasLicense===true && <div>
-              <label className="text-xs font-black text-gray-600 mb-3 block">📸 صور الرخصة المهنية</label>
-              <div className="grid grid-cols-2 gap-4">
-                {[0,1].map(function(imgIdx){
-                  const img=rec.licenseImages&&rec.licenseImages[imgIdx];
-                  return <div key={imgIdx} className="rounded-2xl overflow-hidden border-2 border-dashed" style={{borderColor:img?"#7c3aed":"#d1d5db",minHeight:150}}>
-                    {img ? <div className="relative">
-                        <img src={img.dataUrl} alt="" className="w-full object-cover" style={{height:145}}/>
-                        <button onClick={function(){removeImg(imgIdx,idx);}} className="absolute top-2 left-2 bg-red-500/90 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">🗑️</button>
-                        <div className="py-1.5 text-center text-xs font-black text-white" style={{background:"#7c3aed"}}>صورة {imgIdx+1}</div>
-                      </div>
-                    : <label className="flex flex-col items-center justify-center cursor-pointer hover:bg-purple-50 transition-all" style={{minHeight:150}}>
-                        <div className="text-3xl mb-2">📷</div>
-                        <div className="text-xs font-black" style={{color:"#7c3aed"}}>صورة الرخصة {imgIdx+1}</div>
-                        <div className="text-xs text-gray-400 mt-1">اضغط لرفع الصورة</div>
-                        <input type="file" accept="image/*" className="hidden" ref={imgRefs[imgIdx]} onChange={function(e){const f=e.target.files&&e.target.files[0];if(f)handleImg(imgIdx,idx,f);e.target.value="";}}/>
-                      </label>}
-                  </div>;
-                })}
+
+            {rec.hasLicense === false && (
+              <div>
+                <label className="text-xs font-black text-gray-600 mb-1.5 block">سبب عدم الحصول على الرخصة</label>
+                <textarea value={rec.licenseReason||""} onChange={e=>updRecord(idx,"licenseReason",e.target.value)}
+                  placeholder="اكتب السبب هنا..." rows={3}
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm resize-none" />
               </div>
-            </div>}
+            )}
+
+            {rec.hasLicense === true && (
+              <div>
+                <label className="text-xs font-black text-gray-600 mb-3 block">صور الرخصة المهنية</label>
+                <div className="grid grid-cols-2 gap-4">
+                  {[0,1].map(imgIdx => {
+                    const img = rec.licenseImages?.[imgIdx];
+                    return (
+                      <div key={imgIdx} className="rounded-2xl overflow-hidden border-2 border-dashed"
+                        style={{borderColor: img?"#7c3aed":"#d1d5db", minHeight:160}}>
+                        {img ? (
+                          <div className="relative">
+                            <img src={img.dataUrl} alt={`رخصة ${imgIdx+1}`}
+                              className="w-full object-cover" style={{height:160}} />
+                            <button onClick={()=>removeLicenseImg(imgIdx,idx)}
+                              className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                              🗑️
+                            </button>
+                            <div className="text-center py-1.5 text-xs font-black text-white"
+                              style={{background:"#7c3aed"}}>صورة الرخصة {imgIdx+1}</div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center h-full cursor-pointer hover:bg-purple-50 transition-all"
+                            style={{minHeight:160}}>
+                            <div className="text-3xl mb-2">📷</div>
+                            <div className="text-xs font-black" style={{color:"#7c3aed"}}>
+                              صورة الرخصة {imgIdx+1}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">اضغط لرفع الصورة</div>
+                            <input type="file" accept="image/*" className="hidden"
+                              ref={imgRefs[imgIdx]}
+                              onChange={e=>{const f=e.target.files?.[0];if(f)handleLicenseImg(imgIdx,idx,f);e.target.value="";}} />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* التوقيعات */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#374151,#1f2937)"}}>
-            <span>✍️</span> الاعتماد والتوقيعات
-          </div>
-          <div className="p-5 grid grid-cols-2 gap-4">
-            {[["المعلم","teacherSign"],["قائد المدرسة","principalSign"],["وكيل الشؤون التعليمية","viceSign"],["تاريخ الاعتماد","approvalDate"]].map(function(item){return <div key={item[1]} className="bg-gray-50 rounded-xl p-3"><div className="font-black text-gray-700 text-xs mb-2">{item[0]}</div><input value={rec[item[1]]||""} onChange={function(e){updRec(idx,item[1],e.target.value);}} placeholder={item[1]==="approvalDate"?"مثال: 1446/05/01 هـ":"الاسم والتوقيع"} className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none text-sm"/></div>;})}
-          </div>
-        </div>
-
-        {/* أزرار */}
+        {/* ── أزرار ── */}
         <div className="flex justify-between items-center">
-          <button onClick={function(){deleteRec(idx);}} className="px-4 py-2 rounded-xl text-sm font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100">🗑️ حذف السجل</button>
-          <button onClick={function(){setSelected(null);}} className="px-6 py-2.5 rounded-xl text-sm font-black text-white" style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>← رجوع للقائمة</button>
+          <button onClick={()=>deleteRecord(idx)}
+            className="px-4 py-2 rounded-xl text-sm font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100">
+            🗑️ حذف السجل
+          </button>
+          <button onClick={()=>setSelected(null)}
+            className="px-6 py-2.5 rounded-xl text-sm font-black text-white"
+            style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
+            ← رجوع للقائمة
+          </button>
         </div>
       </div>
     );
   }
 
   // ── القائمة الرئيسية ──
+  const stats = {
+    total: records.length,
+    hasLicense: records.filter(r=>r.hasLicense===true).length,
+    noLicense:  records.filter(r=>r.hasLicense===false).length,
+    pending:    records.filter(r=>r.hasLicense===null).length,
+  };
+
   return (
     <div dir="rtl" className="max-w-3xl mx-auto px-3 py-4 space-y-4" style={{fontFamily:"'Cairo',sans-serif"}}>
-
-      {/* Header المدرسة */}
-      <div className="rounded-3xl overflow-hidden shadow-xl">
-        <div className="relative h-36 flex items-center justify-center" style={{background:"linear-gradient(135deg,#1a3a2a,#064e3b,#065f46,#0d9488)"}}>
-          <div className="absolute inset-0 overflow-hidden opacity-10">
-            {[...Array(5)].map(function(_,i){return <div key={i} className="absolute rounded-full border-2 border-white" style={{width:(i+2)*60,height:(i+2)*60,top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>;})}
-          </div>
-          <div className="relative text-center text-white px-6">
-            <div className="text-4xl mb-2">📗</div>
-            <div className="font-black text-lg">مدرسة عبيدة بن الحارث المتوسطة</div>
-            <div className="opacity-80 text-sm">سجل النمو المهني للمعلمين</div>
-            <div className="text-xs opacity-60 italic mt-1">نحو تطوير تربوي ومهني مستدام</div>
-          </div>
-        </div>
-        <div className="bg-white px-5 py-3 flex items-center gap-3 border-b border-gray-100">
-          <span className="text-sm font-black text-gray-600 whitespace-nowrap">📅 العام الدراسي:</span>
-          <input value={academicYear} onChange={function(e){saveYr(e.target.value);}} placeholder="مثال: 1446 / 1447 هـ" className="flex-1 px-3 py-1.5 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm font-bold"/>
-        </div>
-        <div className="p-4 text-white" style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8,#7c3aed)"}}>
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-            <span className="font-black">👨‍🏫 سجلات المعلمين</span>
-            <div className="flex gap-2 flex-wrap">
-              <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black cursor-pointer border border-white/30 bg-white/15 hover:bg-white/25">
-                {importing?"⏳ جاري...":"📥 استيراد Excel"}
-                <input type="file" accept=".xlsx,.xls" className="hidden" onChange={function(e){const f=e.target.files&&e.target.files[0];if(f)handleImportExcel(f);e.target.value="";}}/>
-              </label>
-              <button onClick={addManual} className="px-3 py-2 rounded-xl text-xs font-black border border-white/30 bg-white/15 hover:bg-white/25">➕ إضافة يدوي</button>
+      {/* ── Header ── */}
+      <div className="rounded-2xl p-5 text-white shadow-xl"
+        style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8,#7c3aed)"}}>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="text-4xl">🏅</div>
+            <div>
+              <h2 className="font-black text-xl">الرخصة المهنية للمعلمين</h2>
+              <p className="opacity-70 text-xs">تتبع البرامج التدريبية وحالة الرخصة</p>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            {[{v:records.length,l:"إجمالي",c:"#93c5fd"},{v:records.filter(function(r){return r.hasLicense===true;}).length,l:"حاصل",c:"#86efac"},{v:records.filter(function(r){return r.hasLicense===false;}).length,l:"لم يحصل",c:"#fca5a5"},{v:records.filter(function(r){return r.hasLicense===null;}).length,l:"غير محدد",c:"#fbbf24"}].map(function(s){return <div key={s.l} className="bg-white/15 rounded-xl py-2 text-center"><div className="text-xl font-black" style={{color:s.c}}>{s.v}</div><div className="text-xs opacity-75">{s.l}</div></div>;})}
+          <div className="flex gap-2 flex-wrap">
+            <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black cursor-pointer border border-white/30 bg-white/15 hover:bg-white/25">
+              {importing ? "⏳ جاري..." : "📥 استيراد Excel"}
+              <input type="file" accept=".xlsx,.xls" className="hidden"
+                onChange={e=>{const f=e.target.files?.[0];if(f)handleImportExcel(f);e.target.value="";}} />
+            </label>
+            <button onClick={addManual}
+              className="px-3 py-2 rounded-xl text-xs font-black border border-white/30 bg-white/15 hover:bg-white/25">
+              ➕ إضافة يدوي
+            </button>
           </div>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            {v:stats.total,     l:"إجمالي",      c:"#93c5fd"},
+            {v:stats.hasLicense,l:"حاصل",        c:"#86efac"},
+            {v:stats.noLicense, l:"لم يحصل",     c:"#fca5a5"},
+            {v:stats.pending,   l:"غير محدد",    c:"#fbbf24"},
+          ].map(s=>(
+            <div key={s.l} className="bg-white/15 rounded-xl py-2 text-center">
+              <div className="text-xl font-black" style={{color:s.c}}>{s.v}</div>
+              <div className="text-xs opacity-75">{s.l}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <input value={search} onChange={function(e){setSearch(e.target.value);}} placeholder="🔍 بحث باسم المعلم..." className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm"/>
+      {/* ── بحث ── */}
+      <input value={search} onChange={e=>setSearch(e.target.value)}
+        placeholder="🔍 بحث باسم المعلم..."
+        className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm" />
 
-      {filtered.length===0
-        ? <div className="text-center py-16 text-gray-400"><div className="text-5xl mb-3">👨‍🏫</div><p className="font-bold mb-2">لا يوجد معلمون</p><p className="text-sm">استورد ملف Excel أو أضف يدوياً</p></div>
-        : <div className="space-y-2">
-            {filtered.map(function(rec,i){
-              const realIdx=records.indexOf(rec);
-              const p=pct(rec);
-              const totalH=(rec.courses||[]).reduce(function(s,c){return s+(parseInt(c&&c.hours)||0);},0);
-              return <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all">
-                <button onClick={function(){setSelected(realIdx);}} className="w-full p-4 text-right">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0" style={{background:rec.hasLicense===true?"#d1fae5":rec.hasLicense===false?"#fee2e2":"#f0fdf4"}}>{rec.hasLicense===true?"🏅":rec.hasLicense===false?"❌":"📗"}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-black text-sm text-gray-800 truncate">{rec.name}</span>
-                        {rec.specialization && <span className="text-xs px-2 py-0.5 rounded-full font-bold flex-shrink-0" style={{background:"#dbeafe",color:"#1d4ed8"}}>{rec.specialization}</span>}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        {rec.yearsService && <span>📅 {rec.yearsService} سنوات</span>}
-                        {totalH>0 && <span>🎓 {totalH} ساعة</span>}
-                      </div>
-                      <div className="mt-1.5 bg-gray-100 rounded-full h-1.5 overflow-hidden"><div className="h-full rounded-full transition-all" style={{width:p+"%",background:p===100?"#059669":"#1d4ed8"}}/></div>
-                    </div>
-                    <span className="text-gray-300 flex-shrink-0">◄</span>
+      {/* ── القائمة ── */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <div className="text-5xl mb-3">👨‍🏫</div>
+          <p className="font-bold mb-2">لا يوجد معلمون</p>
+          <p className="text-sm">استورد ملف Excel أو أضف يدوياً</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((rec, i) => {
+            const realIdx = records.indexOf(rec);
+            const pct = getCompletePct(rec);
+            const highNeeds = PROGRAMS.filter(p => rec.programs?.[p.id]?.need === "high");
+            return (
+              <button key={i} onClick={()=>setSelected(realIdx)}
+                className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all text-right">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
+                    style={{background: rec.hasLicense===true?"#d1fae5":rec.hasLicense===false?"#fee2e2":"#f3f4f6"}}>
+                    {rec.hasLicense===true?"🏅":rec.hasLicense===false?"❌":"⏳"}
                   </div>
-                </button>
-                <div className="px-4 pb-3 flex justify-end">
-                  <button onClick={function(e){e.stopPropagation();const w=window.open("","_blank","width=900,height=700");w.document.write(buildPrintHTML(rec,academicYear));w.document.close();}} className="px-3 py-1.5 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 flex items-center gap-1">🖨️ طباعة A4</button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-black text-sm text-gray-800 truncate">{rec.name}</span>
+                      {rec.specialization && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-bold flex-shrink-0"
+                          style={{background:"#dbeafe",color:"#1d4ed8"}}>{rec.specialization}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      {rec.yearsService && <span>📅 {rec.yearsService}</span>}
+                      {rec.trainingHours && <span>🎓 {rec.trainingHours}</span>}
+                      {highNeeds.length > 0 && (
+                        <span className="text-red-500 font-bold">⚠️ {highNeeds.length} احتياج عالي</span>
+                      )}
+                    </div>
+                    <div className="mt-1.5 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full rounded-full transition-all"
+                        style={{width:pct+"%", background: pct===100?"#059669":"#1d4ed8"}} />
+                    </div>
+                  </div>
+                  <span className="text-gray-300 flex-shrink-0">◄</span>
                 </div>
-              </div>;
-            })}
-          </div>
-      }
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
+
+
 // ================================================================
-// ===== سجل النمو المهني داخل بوابة المعلم =====
+// ===== تبويب الرخصة المهنية داخل بوابة المعلم =====
 // ================================================================
 function TeacherLicenseTab({ teacherName, teacherId }) {
-  const DB_KEY = "school-pgr-"+teacherId;
-  const [rec, setRec] = useState(null);
+
+  const SPECIALIZATIONS = [
+    "رياضيات","علوم","لغة عربية","اجتماعيات","تربية إسلامية",
+    "إنجليزي","حاسب وتقنية","تربية بدنية","فنون","كيمياء",
+    "فيزياء","أحياء","جغرافيا","تاريخ","تربية وطنية","أخرى"
+  ];
+
+  const PROGRAMS = [
+    { id:"planning",      label:"التخطيط للتدريس",           icon:"📋" },
+    { id:"strategies",    label:"استراتيجيات التدريس",        icon:"🎯" },
+    { id:"classmanage",   label:"إدارة الصف",                icon:"🏫" },
+    { id:"assessment",    label:"التقويم والقياس",            icon:"📊" },
+    { id:"technology",    label:"توظيف التقنية",              icon:"💻" },
+    { id:"thinking",      label:"تنمية مهارات التفكير",       icon:"🧠" },
+    { id:"relations",     label:"بناء العلاقة مع الطلاب",    icon:"🤝" },
+    { id:"development",   label:"التطوير المهني",             icon:"🌱" },
+    { id:"timemanage",    label:"إدارة الوقت",                icon:"⏱️" },
+    { id:"communication", label:"مهارات التواصل",             icon:"💬" },
+  ];
+
+  const NEED_LEVELS = [
+    { val:"high",   label:"حاجة عالية",    color:"#dc2626", bg:"#fee2e2" },
+    { val:"medium", label:"حاجة متوسطة",   color:"#d97706", bg:"#fef3c7" },
+    { val:"low",    label:"حاجة منخفضة",   color:"#059669", bg:"#d1fae5" },
+  ];
+
+  const DB_KEY = `school-license-${teacherId}`;
+
+  const mkEmpty = () => ({
+    specialization:"", yearsService:"", trainingHours:"",
+    programs: Object.fromEntries(PROGRAMS.map(p=>[p.id,{need:"",notes:""}])),
+    hasLicense:null, licenseReason:"",
+    licenseImages:[null,null],
+    name: teacherName || "",
+  });
+
+  const [rec, setRec]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]   = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
-  const [activeTab, setActiveTab] = useState("info");
-  const [academicYear] = useState(function(){ try{return localStorage.getItem("pgr-yr")||"";}catch(e){return "";} });
   const imgRefs = [useRef(), useRef()];
   const saveTimer = useRef(null);
 
-  useEffect(function(){
-    if(!teacherId){setLoading(false);return;}
-    DB.get(DB_KEY,null).then(function(data){
-      if(data){setRec({...mkPGR(teacherName),...data});}
-      else{DB.get("school-pgr-records",[]).then(function(recs){
-        const found=Array.isArray(recs)?recs.find(function(r){return r.name===teacherName||r.teacherId===teacherId;}):null;
-        setRec(found?{...mkPGR(teacherName),...found}:mkPGR(teacherName));
-      });}
+  // تحميل البيانات
+  useEffect(() => {
+    if (!teacherId) { setLoading(false); return; }
+    // أولاً: جرّب المفتاح الخاص بهذا المعلم
+    DB.get(DB_KEY, null).then(data => {
+      if (data) {
+        // تأكد من وجود كل الحقول
+        const full = { ...mkEmpty(), ...data };
+        if (!full.programs) full.programs = mkEmpty().programs;
+        if (!full.licenseImages || full.licenseImages.length < 2)
+          full.licenseImages = [null, null];
+        setRec(full);
+      } else {
+        // جرّب من السجل المركزي
+        DB.get("school-license-records", []).then(recs => {
+          const found = Array.isArray(recs) ? recs.find(r => r.name === teacherName) : null;
+          if (found) {
+            const full = { ...mkEmpty(), ...found };
+            setRec(full);
+          } else {
+            setRec(mkEmpty());
+          }
+        });
+      }
       setLoading(false);
     });
-  },[teacherId]);
+  }, [teacherId]);
 
-  const autoSave = function(newRec){
-    if(!teacherId)return;
+  // حفظ تلقائي مع debounce
+  const autoSave = (newRec) => {
+    if (!teacherId) return;
     setSaving(true);
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async function(){
-      const toSave={...newRec,savedAt:new Date().toISOString(),teacherId,name:teacherName};
-      await DB.set(DB_KEY,toSave);
-      const recs=await DB.get("school-pgr-records",[]);
-      const arr=Array.isArray(recs)?recs:[];
-      const i=arr.findIndex(function(r){return r.name===teacherName||r.teacherId===teacherId;});
-      if(i>=0)arr[i]=toSave;else arr.push(toSave);
-      await DB.set("school-pgr-records",arr);
+    saveTimer.current = setTimeout(async () => {
+      const toSave = {
+        ...newRec,
+        licenseImages: (newRec.licenseImages||[]).map(img => img ? { dataUrl: img.dataUrl, name: img.name } : null),
+        savedAt: new Date().toISOString(),
+        teacherId,
+        name: teacherName,
+      };
+      // احفظ في مفتاح خاص بالمعلم
+      await DB.set(DB_KEY, toSave);
+      // احفظ أيضاً في السجل المركزي
+      const recs = await DB.get("school-license-records", []);
+      const arr = Array.isArray(recs) ? recs : [];
+      const idx = arr.findIndex(r => r.name === teacherName || r.teacherId === teacherId);
+      if (idx >= 0) arr[idx] = toSave;
+      else arr.push(toSave);
+      await DB.set("school-license-records", arr);
       setSaving(false);
       setLastSaved(new Date().toLocaleTimeString("ar-SA-u-nu-latn",{hour:"2-digit",minute:"2-digit"}));
-    },800);
+    }, 800);
   };
 
-  const upd = function(field,val){const n={...rec,[field]:val};setRec(n);autoSave(n);};
-  const updNeed = function(id,field,val){const n={...rec,needs:{...rec.needs,[id]:{...rec.needs[id],[field]:val}}};setRec(n);autoSave(n);};
-  const handleImg = function(imgIdx,file){if(!file)return;readFileAsync(file,"dataurl").then(function(dataUrl){const imgs=[...(rec.licenseImages||[null,null])];imgs[imgIdx]={dataUrl,name:file.name};const n={...rec,licenseImages:imgs};setRec(n);autoSave(n);});};
-  const removeImg = function(imgIdx){const imgs=[...(rec.licenseImages||[null,null])];imgs[imgIdx]=null;const n={...rec,licenseImages:imgs};setRec(n);autoSave(n);};
-
-  const pct = function(){
-    if(!rec)return 0;
-    let d=0,t=5;
-    if(rec.specialization)d++;if(rec.qualification)d++;if(rec.yearsService)d++;
-    if(rec.needs&&Object.values(rec.needs).some(function(n){return n.needed===true;}))d++;
-    if(rec.hasLicense!==null)d++;
-    return Math.round(d/t*100);
+  const upd = (field, val) => {
+    const next = { ...rec, [field]: val };
+    setRec(next);
+    autoSave(next);
   };
 
-  if(loading)return <div className="flex items-center justify-center py-16 text-gray-400"><div className="text-center"><div className="text-4xl mb-2 animate-bounce">📗</div><p className="text-sm font-bold">جاري تحميل سجلك…</p></div></div>;
-  if(!rec)return null;
+  const updProgram = (progId, field, val) => {
+    const next = {
+      ...rec,
+      programs: { ...rec.programs, [progId]: { ...rec.programs[progId], [field]: val } }
+    };
+    setRec(next);
+    autoSave(next);
+  };
 
-  const p=pct();
-  const TABS=[{id:"info",label:"البيانات",icon:"👤"},{id:"needs",label:"الاحتياجات",icon:"📋"},{id:"plan",label:"الخطة",icon:"🌱"},{id:"courses",label:"الدورات",icon:"🎓"},{id:"followup",label:"المتابعة",icon:"📌"},{id:"impact",label:"الأثر",icon:"📈"},{id:"reports",label:"التقارير",icon:"📅"},{id:"license",label:"الرخصة",icon:"🏅"}];
+  const handleLicenseImg = (imgIdx, file) => {
+    if (!file) return;
+    readFileAsync(file, "dataurl").then(dataUrl => {
+      const imgs = [...(rec.licenseImages||[null,null])];
+      imgs[imgIdx] = { dataUrl, name: file.name };
+      const next = { ...rec, licenseImages: imgs };
+      setRec(next);
+      autoSave(next);
+    });
+  };
+
+  const removeLicenseImg = (imgIdx) => {
+    const imgs = [...(rec.licenseImages||[null,null])];
+    imgs[imgIdx] = null;
+    const next = { ...rec, licenseImages: imgs };
+    setRec(next);
+    autoSave(next);
+  };
+
+  const getNeedLevel = (val) => NEED_LEVELS.find(n => n.val === val);
+
+  const getCompletePct = () => {
+    if (!rec) return 0;
+    let done = 0, total = 5;
+    if (rec.specialization) done++;
+    if (rec.yearsService) done++;
+    if (rec.trainingHours) done++;
+    if (PROGRAMS.some(p => rec.programs?.[p.id]?.need)) done++;
+    if (rec.hasLicense !== null) done++;
+    return Math.round(done / total * 100);
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16 text-gray-400">
+      <div className="text-center"><div className="text-4xl mb-2 animate-bounce">🏅</div><p className="text-sm font-bold">جاري تحميل بياناتك…</p></div>
+    </div>
+  );
+
+  if (!rec) return null;
+
+  const pct = getCompletePct();
 
   return (
     <div className="space-y-4 pb-6">
-      {/* شريط الحالة */}
-      <div className="rounded-2xl p-4 text-white shadow-lg" style={{background:"linear-gradient(135deg,#1a3a2a,#064e3b,#0d9488)"}}>
+
+      {/* ── شريط الحالة ── */}
+      <div className="rounded-2xl p-4 text-white shadow-lg"
+        style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed)"}}>
         <div className="flex items-center justify-between mb-3">
-          <div><div className="font-black text-base">📗 سجل النمو المهني</div><div className="text-xs opacity-70 mt-0.5">ملف {teacherName}</div></div>
-          <div className="flex items-center gap-2">
-            {saving?<span className="text-xs animate-pulse text-yellow-300">💾 جاري الحفظ…</span>:lastSaved?<span className="text-xs text-green-300">✅ محفوظ {lastSaved}</span>:null}
-            <button onClick={function(){const w=window.open("","_blank","width=900,height=700");w.document.write(buildPrintHTML(rec,academicYear));w.document.close();}} className="px-3 py-1.5 rounded-xl text-xs font-black bg-white/20 border border-white/30 hover:bg-white/30">🖨️ طباعة</button>
+          <div>
+            <div className="font-black text-base">🏅 الرخصة المهنية</div>
+            <div className="text-xs opacity-70 mt-0.5">ملف {teacherName}</div>
+          </div>
+          <div className="text-right">
+            {saving ? (
+              <div className="flex items-center gap-1.5 text-xs font-bold">
+                <span className="animate-pulse text-yellow-300">💾</span>
+                <span className="opacity-80">جاري الحفظ…</span>
+              </div>
+            ) : lastSaved ? (
+              <div className="flex items-center gap-1.5 text-xs font-bold">
+                <span className="text-green-300">✅</span>
+                <span className="opacity-80">محفوظ {lastSaved}</span>
+              </div>
+            ) : null}
           </div>
         </div>
-        <div className="flex items-center gap-2 mb-1"><div className="flex-1 bg-white/20 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-white transition-all" style={{width:p+"%"}}/></div><span className="text-sm font-black">{p}%</span></div>
-        <div className="text-xs opacity-60">اكتمال سجلك المهني</div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-white/20 rounded-full h-2.5 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500"
+              style={{width:pct+"%", background: pct===100?"#86efac":"#fbbf24"}} />
+          </div>
+          <span className="text-sm font-black">{pct}%</span>
+        </div>
+        <div className="text-xs opacity-60 mt-1">اكتمال ملفك المهني</div>
       </div>
 
-      {/* تبويبات */}
-      <div className="flex gap-1.5 flex-wrap">
-        {TABS.map(function(t){return <button key={t.id} onClick={function(){setActiveTab(t.id);}} className={"px-3 py-1.5 rounded-xl text-xs font-black border-2 transition-all "+(activeTab===t.id?"text-white border-transparent":"bg-white text-gray-600 border-gray-200")} style={activeTab===t.id?{background:"linear-gradient(135deg,#064e3b,#0d9488)"}:{}}>{t.icon} {t.label}</button>;})}
-      </div>
-
-      {/* البيانات الأساسية */}
-      {activeTab==="info" && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}><span>👤</span> بياناتك الأساسية</div>
+      {/* ── البيانات الأساسية ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2"
+          style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
+          <span>👤</span> بياناتك الأساسية
+        </div>
         <div className="p-4 space-y-3">
-          <div><label className="text-xs font-black text-gray-600 mb-1.5 block">المؤهل العلمي</label><select value={rec.qualification||""} onChange={function(e){upd("qualification",e.target.value);}} className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white"><option value="">— اختر —</option>{PGR_QUALS.map(function(s){return <option key={s} value={s}>{s}</option>;})}</select></div>
-          <div><label className="text-xs font-black text-gray-600 mb-1.5 block">التخصص الدقيق</label><select value={rec.specialization||""} onChange={function(e){upd("specialization",e.target.value);}} className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white"><option value="">— اختر تخصصك —</option>{PGR_SPECS.map(function(s){return <option key={s} value={s}>{s}</option>;})}</select></div>
-          <div><label className="text-xs font-black text-gray-600 mb-1.5 block">المرحلة الدراسية</label><div className="flex gap-2">{["ابتدائي","متوسط","ثانوي"].map(function(s){return <button key={s} onClick={function(){upd("stage",s);}} className={"flex-1 py-2 rounded-xl text-xs font-black border-2 transition-all "+(rec.stage===s?"border-blue-500 bg-blue-50 text-blue-700":"border-gray-200 text-gray-500")}>{s}</button>;})}</div></div>
+          <div>
+            <label className="text-xs font-black text-gray-600 mb-1.5 block">📚 تخصصك</label>
+            <select value={rec.specialization||""} onChange={e=>upd("specialization",e.target.value)}
+              className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
+              <option value="">— اختر تخصصك —</option>
+              {SPECIALIZATIONS.map(s=><option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs font-black text-gray-600 mb-1.5 block">سنوات الخبرة</label><input type="number" min="0" max="40" value={rec.yearsService||""} onChange={function(e){upd("yearsService",e.target.value);}} placeholder="مثال: 7" className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold"/></div>
-            <div><label className="text-xs font-black text-gray-600 mb-1.5 block">عدد الدورات السابقة</label><input type="number" min="0" value={rec.prevCourses||""} onChange={function(e){upd("prevCourses",e.target.value);}} className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm"/></div>
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-1.5 block">📅 سنوات الخدمة</label>
+              <select value={rec.yearsService||""} onChange={e=>upd("yearsService",e.target.value)}
+                className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
+                <option value="">— اختر —</option>
+                {Array.from({length:35},(_,i)=>i+1).map(y=>(
+                  <option key={y} value={y}>{y} {y===1?"سنة":"سنوات"}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-1.5 block">🎓 ساعات التدريب (تقريباً)</label>
+              <select value={rec.trainingHours||""} onChange={e=>upd("trainingHours",e.target.value)}
+                className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
+                <option value="">— اختر —</option>
+                {["أقل من 20 ساعة","20–40 ساعة","41–60 ساعة","61–80 ساعة","81–100 ساعة","أكثر من 100 ساعة"].map(s=>(
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div><label className="text-xs font-black text-gray-600 mb-1.5 block">رقم الجوال</label><input type="tel" value={rec.phone||""} onChange={function(e){upd("phone",e.target.value);}} placeholder="05XXXXXXXX" className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm"/></div>
-          <div><label className="text-xs font-black text-gray-600 mb-1.5 block">البريد الإلكتروني</label><input type="email" value={rec.email||""} onChange={function(e){upd("email",e.target.value);}} placeholder="example@edu.sa" className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm"/></div>
-          <div><label className="text-xs font-black text-gray-600 mb-1.5 block">تاريخ المباشرة في المدرسة</label><input type="text" value={rec.startDate||""} onChange={function(e){upd("startDate",e.target.value);}} placeholder="مثال: 1443/09/01 هـ" className="w-full px-3 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm"/></div>
         </div>
-      </div>}
+      </div>
 
-      {/* الاحتياجات */}
-      {activeTab==="needs" && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#065f46,#0d9488)"}}><span>📋</span> حصر الاحتياجات التدريبية</div>
-        <div className="p-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead><tr className="bg-gray-50"><th className="text-right p-2 font-black text-gray-700">المجال</th><th className="p-2 font-black text-teal-600 text-center w-12">حاجة</th><th className="p-2 font-black text-red-600 text-center w-12">عالية</th><th className="p-2 font-black text-yellow-600 text-center w-12">متوسطة</th><th className="p-2 font-black text-green-600 text-center w-12">منخفضة</th></tr></thead>
-            <tbody className="divide-y divide-gray-100">
-              {PGR_NEEDS.map(function(need){
-                const nd=(rec.needs&&rec.needs[need.id])||{needed:null,priority:""};
-                return <tr key={need.id} className="hover:bg-gray-50">
-                  <td className="p-2 font-bold text-gray-700">{need.icon} {need.label}</td>
-                  <td className="p-2 text-center"><button onClick={function(){updNeed(need.id,"needed",nd.needed===true?null:true);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(nd.needed===true?"bg-teal-500 border-teal-500 text-white":"border-gray-300")}>{nd.needed===true?"✓":""}</button></td>
-                  {["high","medium","low"].map(function(pp){return <td key={pp} className="p-2 text-center"><button onClick={function(){updNeed(need.id,"priority",nd.priority===pp?"":pp);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(nd.priority===pp?(pp==="high"?"bg-red-500 border-red-500 text-white":pp==="medium"?"bg-yellow-400 border-yellow-400 text-white":"bg-green-500 border-green-500 text-white"):"border-gray-300")}>{nd.priority===pp?"✓":""}</button></td>;})}
-                </tr>;
-              })}
-            </tbody>
-          </table>
+      {/* ── البرامج التدريبية ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2"
+          style={{background:"linear-gradient(135deg,#065f46,#0d9488)"}}>
+          <span>📋</span> البرامج التدريبية التي تحتاجها
         </div>
-      </div>}
+        <div className="divide-y divide-gray-100">
+          {PROGRAMS.map(prog => {
+            const pd = rec.programs?.[prog.id] || {need:"",notes:""};
+            const nl = getNeedLevel(pd.need);
+            return (
+              <div key={prog.id} className="p-4 space-y-2">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{prog.icon}</span>
+                    <span className="font-black text-sm text-gray-800">{prog.label}</span>
+                    {nl && (
+                      <span className="text-xs font-black px-2 py-0.5 rounded-full"
+                        style={{background:nl.bg, color:nl.color}}>{nl.label}</span>
+                    )}
+                  </div>
+                  <select value={pd.need||""} onChange={e=>updProgram(prog.id,"need",e.target.value)}
+                    className="px-2 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-xs font-bold bg-white"
+                    style={{minWidth:140}}>
+                    <option value="">— درجة الحاجة —</option>
+                    {NEED_LEVELS.map(n=>(
+                      <option key={n.val} value={n.val}>{n.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <input value={pd.notes||""} onChange={e=>updProgram(prog.id,"notes",e.target.value)}
+                  placeholder="أهمية هذا البرنامج أو ملاحظاتك..."
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-teal-400 focus:outline-none text-xs text-gray-700" />
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-      {/* خطة النمو */}
-      {activeTab==="plan" && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#1e3a5f,#7c3aed)"}}><span>🌱</span> خطة النمو المهني</div>
-        <div className="p-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead><tr className="bg-gray-50"><th className="p-2 w-6">م</th><th className="text-right p-2 font-black text-gray-600">الهدف التطويري</th><th className="text-right p-2 font-black text-gray-600">وسيلة التطوير</th><th className="text-right p-2 font-black text-gray-600">المدة</th><th className="text-right p-2 font-black text-gray-600">مؤشر الإنجاز</th></tr></thead>
-            <tbody className="divide-y divide-gray-100">
-              {(rec.growthPlan||[]).map(function(row,i){return <tr key={i}><td className="p-2 text-gray-400 text-center">{i+1}</td>{["goal","method","duration","indicator"].map(function(f){return <td key={f} className="p-1"><input value={row&&row[f]||""} onChange={function(e){const p=[...(rec.growthPlan||[])];p[i]={...p[i],[f]:e.target.value};const n={...rec,growthPlan:p};setRec(n);autoSave(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>;})} </tr>;})}
-            </tbody>
-          </table>
+      {/* ── الرخصة المهنية ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2"
+          style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)"}}>
+          <span>🏅</span> حالة الرخصة المهنية
         </div>
-      </div>}
-
-      {/* الدورات */}
-      {activeTab==="courses" && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#7c3aed,#db2777)"}}><span>🎓</span> سجل الدورات التدريبية</div>
-        <div className="p-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead><tr className="bg-gray-50"><th className="p-2 w-6">م</th><th className="text-right p-2 font-black text-gray-600">اسم الدورة</th><th className="text-right p-2 font-black text-gray-600">الجهة</th><th className="text-right p-2 font-black text-gray-600">التاريخ</th><th className="p-2 font-black text-gray-600 w-16">الساعات</th></tr></thead>
-            <tbody className="divide-y divide-gray-100">
-              {(rec.courses||[]).map(function(row,i){return <tr key={i}><td className="p-2 text-gray-400 text-center">{i+1}</td>{["name","org","date","hours"].map(function(f){return <td key={f} className="p-1"><input value={row&&row[f]||""} onChange={function(e){const c=[...(rec.courses||[])];c[i]={...c[i],[f]:e.target.value};const n={...rec,courses:c};setRec(n);autoSave(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>;})} </tr>;})}
-            </tbody>
-            <tfoot><tr className="bg-purple-50"><td colSpan={3} className="p-2 font-black text-purple-800 text-right">إجمالي الساعات</td><td className="p-2 font-black text-purple-800 text-center">{(rec.courses||[]).reduce(function(s,c){return s+(parseInt(c&&c.hours)||0);},0)}</td></tr></tfoot>
-          </table>
-        </div>
-      </div>}
-
-      {/* المتابعة */}
-      {activeTab==="followup" && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)"}}><span>📌</span> متابعة تنفيذ الخطة</div>
-        <div className="p-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead><tr className="bg-gray-50"><th className="p-2 w-6">م</th><th className="text-right p-2 font-black text-gray-600">الإجراء</th><th className="p-2 font-black text-green-600 text-center w-10">نعم</th><th className="p-2 font-black text-red-500 text-center w-10">لا</th><th className="text-right p-2 font-black text-gray-600">تاريخ التنفيذ</th><th className="text-right p-2 font-black text-gray-600">الملاحظات</th></tr></thead>
-            <tbody className="divide-y divide-gray-100">
-              {(rec.followup||[]).map(function(row,i){return <tr key={i}>
-                <td className="p-2 text-gray-400 text-center">{i+1}</td>
-                <td className="p-1"><input value={row&&row.action||""} onChange={function(e){const f=[...(rec.followup||[])];f[i]={...f[i],action:e.target.value};const n={...rec,followup:f};setRec(n);autoSave(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>
-                {[true,false].map(function(v){return <td key={String(v)} className="p-2 text-center"><button onClick={function(){const f=[...(rec.followup||[])];f[i]={...f[i],done:row&&row.done===v?null:v};const n={...rec,followup:f};setRec(n);autoSave(n);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(row&&row.done===v?(v?"bg-green-500 border-green-500 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300")}>{row&&row.done===v?"✓":""}</button></td>;})}
-                {["execDate","notes"].map(function(f){return <td key={f} className="p-1"><input value={row&&row[f]||""} onChange={function(e){const fu=[...(rec.followup||[])];fu[i]={...fu[i],[f]:e.target.value};const n={...rec,followup:fu};setRec(n);autoSave(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>;})}
-              </tr>;})}
-            </tbody>
-          </table>
-        </div>
-      </div>}
-
-      {/* أثر التدريب */}
-      {activeTab==="impact" && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#065f46,#15803d)"}}><span>📈</span> أثر التدريب على الأداء الصفي</div>
-        <div className="p-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead><tr className="bg-gray-50"><th className="text-right p-2 font-black text-gray-600">المجال</th><th className="p-2 font-black text-green-600 text-center">تحسّن ملحوظ</th><th className="p-2 font-black text-yellow-600 text-center">متوسط</th><th className="p-2 font-black text-red-500 text-center">يحتاج دعم</th><th className="text-right p-2 font-black text-gray-600">ملاحظات</th></tr></thead>
-            <tbody className="divide-y divide-gray-100">
-              {PGR_IMPACT.map(function(area){
-                const imp=(rec.impact&&rec.impact[area])||{level:"",notes:""};
-                return <tr key={area} className="hover:bg-gray-50">
-                  <td className="p-2 font-bold text-gray-700">{area}</td>
-                  {["تحسّن ملحوظ","متوسط","يحتاج دعم"].map(function(level){return <td key={level} className="p-2 text-center"><button onClick={function(){const n={...rec,impact:{...rec.impact,[area]:{...imp,level:imp.level===level?"":level}}};setRec(n);autoSave(n);}} className={"w-6 h-6 rounded-full border-2 mx-auto flex items-center justify-center "+(imp.level===level?(level==="تحسّن ملحوظ"?"bg-green-500 border-green-500 text-white":level==="متوسط"?"bg-yellow-400 border-yellow-400 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300")}>{imp.level===level?"✓":""}</button></td>;})}
-                  <td className="p-1"><input value={imp.notes||""} onChange={function(e){const n={...rec,impact:{...rec.impact,[area]:{...imp,notes:e.target.value}}};setRec(n);autoSave(n);}} className="w-full px-2 py-1.5 rounded-lg border border-gray-200 focus:outline-none text-xs"/></td>
-                </tr>;
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>}
-
-      {/* التقارير */}
-      {activeTab==="reports" && <div className="space-y-4">
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <div className="font-black text-amber-800 mb-3">◆ التقرير الشهري</div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div><label className="text-xs font-black text-gray-600 mb-1 block">الشهر</label><input value={rec.monthlyReport&&rec.monthlyReport.month||""} onChange={function(e){const n={...rec,monthlyReport:{...rec.monthlyReport,month:e.target.value}};setRec(n);autoSave(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm" placeholder="مثال: محرم"/></div>
-            <div><label className="text-xs font-black text-gray-600 mb-1 block">نسبة الإنجاز %</label><input type="number" min="0" max="100" value={rec.monthlyReport&&rec.monthlyReport.pct||""} onChange={function(e){const n={...rec,monthlyReport:{...rec.monthlyReport,pct:e.target.value}};setRec(n);autoSave(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm font-bold"/></div>
-          </div>
-          <div><label className="text-xs font-black text-gray-600 mb-1 block">أبرز الأنشطة</label><textarea value={rec.monthlyReport&&rec.monthlyReport.activities||""} rows={2} onChange={function(e){const n={...rec,monthlyReport:{...rec.monthlyReport,activities:e.target.value}};setRec(n);autoSave(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none mb-2"/></div>
-          <div><label className="text-xs font-black text-gray-600 mb-1 block">التحديات والمعوّقات</label><textarea value={rec.monthlyReport&&rec.monthlyReport.challenges||""} rows={2} onChange={function(e){const n={...rec,monthlyReport:{...rec.monthlyReport,challenges:e.target.value}};setRec(n);autoSave(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none"/></div>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <div className="font-black text-blue-800 mb-3">◆ التقرير الفصلي</div>
-          <div className="flex gap-3 mb-3">
-            {["الأول","الثاني"].map(function(s){return <button key={s} onClick={function(){const n={...rec,semesterReport:{...rec.semesterReport,semester:s}};setRec(n);autoSave(n);}} className={"flex-1 py-2 rounded-xl text-sm font-black border-2 transition-all "+(rec.semesterReport&&rec.semesterReport.semester===s?"border-blue-500 bg-blue-100 text-blue-700":"border-gray-200 text-gray-500")}>الفصل {s}</button>;})}
-            <input type="number" min="0" max="100" value={rec.semesterReport&&rec.semesterReport.pct||""} onChange={function(e){const n={...rec,semesterReport:{...rec.semesterReport,pct:e.target.value}};setRec(n);autoSave(n);}} placeholder="نسبة الإنجاز %" className="flex-1 px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm font-bold"/>
-          </div>
-          <div><label className="text-xs font-black text-gray-600 mb-1 block">أبرز الإنجازات</label><textarea value={rec.semesterReport&&rec.semesterReport.achievements||""} rows={2} onChange={function(e){const n={...rec,semesterReport:{...rec.semesterReport,achievements:e.target.value}};setRec(n);autoSave(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none mb-2"/></div>
-          <div><label className="text-xs font-black text-gray-600 mb-1 block">التوصيات للفصل القادم</label><textarea value={rec.semesterReport&&rec.semesterReport.recommendations||""} rows={2} onChange={function(e){const n={...rec,semesterReport:{...rec.semesterReport,recommendations:e.target.value}};setRec(n);autoSave(n);}} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:outline-none text-sm resize-none"/></div>
-        </div>
-      </div>}
-
-      {/* الرخصة */}
-      {activeTab==="license" && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-4 py-3 font-black text-sm text-white flex items-center gap-2" style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)"}}><span>🏅</span> حالة الرخصة المهنية</div>
         <div className="p-4 space-y-4">
-          <div><label className="text-xs font-black text-gray-600 mb-2 block">هل حصلت على الرخصة المهنية؟</label>
+          <div>
+            <label className="text-xs font-black text-gray-600 mb-2 block">هل حصلت على الرخصة المهنية؟</label>
             <div className="grid grid-cols-2 gap-3">
-              {[{val:true,label:"✅ نعم، حصلت عليها"},{val:false,label:"❌ لا، لم أحصل عليها"}].map(function(opt){return <button key={String(opt.val)} onClick={function(){upd("hasLicense",opt.val);}} className="py-3 rounded-2xl font-black text-sm border-2 transition-all" style={{background:rec.hasLicense===opt.val?(opt.val?"#d1fae5":"#fee2e2"):"#f9fafb",borderColor:rec.hasLicense===opt.val?(opt.val?"#059669":"#dc2626"):"#e5e7eb",color:rec.hasLicense===opt.val?(opt.val?"#065f46":"#991b1b"):"#9ca3af"}}>{opt.label}</button>;})}
+              {[{val:true,label:"✅ نعم، حصلت عليها"},{val:false,label:"❌ لا، لم أحصل عليها"}].map(opt=>(
+                <button key={String(opt.val)} onClick={()=>upd("hasLicense",opt.val)}
+                  className="py-3 rounded-2xl font-black text-sm border-2 transition-all"
+                  style={{
+                    background: rec.hasLicense===opt.val ? (opt.val?"#d1fae5":"#fee2e2") : "#f9fafb",
+                    borderColor: rec.hasLicense===opt.val ? (opt.val?"#059669":"#dc2626") : "#e5e7eb",
+                    color: rec.hasLicense===opt.val ? (opt.val?"#065f46":"#991b1b") : "#9ca3af",
+                  }}>
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
-          {rec.hasLicense===false && <div><label className="text-xs font-black text-gray-600 mb-1.5 block">سبب عدم الحصول على الرخصة</label><textarea value={rec.licenseReason||""} onChange={function(e){upd("licenseReason",e.target.value);}} placeholder="اكتب السبب هنا..." rows={3} className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm resize-none"/></div>}
-          {rec.hasLicense===true && <div>
-            <label className="text-xs font-black text-gray-600 mb-3 block">📸 صور الرخصة المهنية</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[0,1].map(function(imgIdx){
-                const img=rec.licenseImages&&rec.licenseImages[imgIdx];
-                return <div key={imgIdx} className="rounded-2xl overflow-hidden border-2 border-dashed" style={{borderColor:img?"#7c3aed":"#d1d5db",minHeight:150}}>
-                  {img?<div className="relative"><img src={img.dataUrl} alt="" className="w-full object-cover" style={{height:145}}/><button onClick={function(){removeImg(imgIdx);}} className="absolute top-2 left-2 bg-red-500/90 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">🗑️</button><div className="py-1.5 text-center text-xs font-black text-white" style={{background:"#7c3aed"}}>صورة رقم {imgIdx+1}</div></div>
-                  :<label className="flex flex-col items-center justify-center cursor-pointer hover:bg-purple-50 transition-all" style={{minHeight:150}}><div className="text-3xl mb-2">📷</div><div className="text-xs font-black" style={{color:"#7c3aed"}}>صورة الرخصة {imgIdx+1}</div><div className="text-xs text-gray-400 mt-1">اضغط لرفع</div><input type="file" accept="image/*" className="hidden" ref={imgRefs[imgIdx]} onChange={function(e){const f=e.target.files&&e.target.files[0];if(f)handleImg(imgIdx,f);e.target.value="";"}}/></label>}
-                </div>;
-              })}
-            </div>
-          </div>}
-        </div>
-      </div>}
 
-      {/* حفظ يدوي */}
+          {rec.hasLicense === false && (
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-1.5 block">سبب عدم الحصول على الرخصة</label>
+              <textarea value={rec.licenseReason||""} onChange={e=>upd("licenseReason",e.target.value)}
+                placeholder="اكتب السبب هنا..." rows={3}
+                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm resize-none" />
+            </div>
+          )}
+
+          {rec.hasLicense === true && (
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-3 block">📸 صور الرخصة المهنية</label>
+              <div className="grid grid-cols-2 gap-3">
+                {[0,1].map(imgIdx => {
+                  const img = rec.licenseImages?.[imgIdx];
+                  return (
+                    <div key={imgIdx} className="rounded-2xl overflow-hidden border-2 border-dashed"
+                      style={{borderColor:img?"#7c3aed":"#d1d5db", minHeight:150}}>
+                      {img ? (
+                        <div className="relative">
+                          <img src={img.dataUrl} alt={`رخصة ${imgIdx+1}`}
+                            className="w-full object-cover" style={{height:145}} />
+                          <button onClick={()=>removeLicenseImg(imgIdx)}
+                            className="absolute top-2 left-2 bg-red-500/90 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">
+                            🗑️
+                          </button>
+                          <div className="py-1.5 text-center text-xs font-black text-white"
+                            style={{background:"#7c3aed"}}>صورة رقم {imgIdx+1}</div>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center cursor-pointer hover:bg-purple-50 transition-all"
+                          style={{minHeight:150}}>
+                          <div className="text-3xl mb-2">📷</div>
+                          <div className="text-xs font-black" style={{color:"#7c3aed"}}>صورة الرخصة {imgIdx+1}</div>
+                          <div className="text-xs text-gray-400 mt-1">اضغط لرفع</div>
+                          <input type="file" accept="image/*" className="hidden"
+                            ref={imgRefs[imgIdx]}
+                            onChange={e=>{const f=e.target.files?.[0];if(f)handleLicenseImg(imgIdx,f);e.target.value="";}} />
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── حفظ يدوي ── */}
       <div className="flex items-center justify-between px-1">
-        <div className="text-xs text-gray-400">{lastSaved?"✅ آخر حفظ: "+lastSaved:"لم يُحفظ بعد"}</div>
-        <button onClick={function(){autoSave(rec);}} disabled={saving} className="px-5 py-2.5 rounded-xl font-black text-sm text-white shadow-md" style={{background:saving?"#9ca3af":"linear-gradient(135deg,#064e3b,#0d9488)"}}>
-          {saving?"⏳ جاري الحفظ...":"💾 حفظ البيانات"}
+        <div className="text-xs text-gray-400">
+          {lastSaved ? `✅ آخر حفظ: ${lastSaved}` : "لم يُحفظ بعد"}
+        </div>
+        <button onClick={()=>autoSave(rec)}
+          disabled={saving}
+          className="px-5 py-2.5 rounded-xl font-black text-sm text-white shadow-md"
+          style={{background: saving ? "#9ca3af" : "linear-gradient(135deg,#4c1d95,#7c3aed)"}}>
+          {saving ? "⏳ جاري الحفظ..." : "💾 حفظ البيانات"}
         </button>
       </div>
+
     </div>
   );
 }
+
 
 
 // ================================================================
@@ -27426,7 +27409,7 @@ export default function SchoolWebsite() {
     { id: "committeemeeting",label: "اجتماعات اللجان",     icon: "👔" },
     { id: "teachereval",    label: "قياس أداء المعلم",     icon: "🎖️" },
     { id: "suggestions",    label: "آراء ومقترحات",        icon: "💬" },
-    { id: "prolicense",     label: "سجل النمو المهني",         icon: "🏅" },
+    { id: "prolicense",     label: "الرخصة المهنية",         icon: "🏅" },
     { id: "teacherreports", label: "ملفات المعلمين",       icon: "🗄️" },
   ];
   const extraPages = [...classToolPages, ...reportPages];
