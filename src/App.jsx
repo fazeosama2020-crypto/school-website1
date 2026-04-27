@@ -5149,10 +5149,10 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
           width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center",
           fontSize:32, margin:"0 auto 14px" }}>📋</div>
         <h1 style={{ fontSize:19, fontWeight:900, color:"#1e293b", marginBottom:4 }}>بوابة أعذار الطلاب</h1>
-        <p style={{ fontSize:12.5, color:"#64748b", marginBottom:6, lineHeight:1.8 }}>
-          مدرسة عبيدة بن الحارث المتوسطة
+        <p style={{ fontSize:13, color:"#064e3b", marginBottom:2, fontWeight:700 }}>
+          🏫 مدرسة عبيدة بن الحارث المتوسطة
         </p>
-        <p style={{ fontSize:11.5, color:"#94a3b8", marginBottom:22 }}>
+        <p style={{ fontSize:11, color:"#94a3b8", marginBottom:22 }}>
           أدخل رقم هوية الطالب لتقديم عذر الغياب
         </p>
 
@@ -22529,6 +22529,94 @@ function ProfessionalLicensePage() {
               <button onClick={addManual}
                 className="px-3 py-2 rounded-xl text-xs font-black border border-white/30 bg-white/15 hover:bg-white/25">
                 ➕ إضافة يدوي
+              </button>
+              <button onClick={()=>{
+                // طباعة المعلمين الذين أدخلوا بياناتهم فقط
+                const PRINCIPAL = "فازع القرني";
+                const SCHOOL = "مدرسة عبيدة بن الحارث المتوسطة";
+                const filledRecs = records.filter(r=>
+                  r.specialization || r.yearsService || r.hasLicense!==null ||
+                  (r.courses||[]).some(c=>c&&c.name) ||
+                  Object.values(r.needs||{}).some(n=>n.needed===true) ||
+                  r.teacherRating
+                );
+                if(filledRecs.length===0){alert("لا يوجد معلمون مدخلون لبياناتهم بعد");return;}
+                const win=window.open("","_blank","width=1000,height=800");
+                const schoolYear = (filledRecs[0]?.academicYear)||(records.find(r=>r.academicYear)?.academicYear)||"1446 / 1447 هـ";
+                const RATINGS_COLORS = {"ممتاز":"#059669","جيد جداً":"#0284c7","جيد":"#d97706","متدني":"#dc2626"};
+                const RATINGS_BG = {"ممتاز":"#d1fae5","جيد جداً":"#dbeafe","جيد":"#fef3c7","متدني":"#fee2e2"};
+                const cards = filledRecs.map((rec,idx)=>{
+                  const totalH=(rec.courses||[]).reduce((s,c)=>s+(parseInt(c?.hours)||0),0);
+                  const rColor=RATINGS_COLORS[rec.teacherRating]||"#6b7280";
+                  const rBg=RATINGS_BG[rec.teacherRating]||"#f3f4f6";
+                  const needsRows=(Object.entries(rec.needs||{}))
+                    .filter(([,v])=>v&&v.needed===true)
+                    .map(([id,v])=>{
+                      const need=TRAINING_NEEDS_LIST.find(n=>n.id===id);
+                      const p=v.priority==="high"?"عالية":v.priority==="medium"?"متوسطة":v.priority==="low"?"منخفضة":"—";
+                      return need?"<tr><td style='padding:3px 6px;border:1px solid #e5e7eb'>"+need.label+"</td><td style='padding:3px 6px;border:1px solid #e5e7eb;text-align:center;color:"+rColor+"'>"+p+"</td></tr>":"";
+                    }).join("");
+                  const courseRows=(rec.courses||[]).filter(c=>c&&c.name)
+                    .map((c,i)=>"<tr><td style='padding:3px 6px;border:1px solid #e5e7eb;text-align:center'>"+(i+1)+"</td><td style='padding:3px 6px;border:1px solid #e5e7eb'>"+c.name+"</td><td style='padding:3px 6px;border:1px solid #e5e7eb'>"+( c.org||"")+"</td><td style='padding:3px 6px;border:1px solid #e5e7eb;text-align:center'>"+(c.hours||"")+"</td></tr>").join("");
+                  const impactRows=IMPACT_AREAS_LIST.map((area)=>{
+                    const imp=(rec.impact||{})[area]||{};
+                    if(!imp.level)return "";
+                    return "<tr><td style='padding:3px 6px;border:1px solid #e5e7eb'>"+area+"</td><td style='padding:3px 6px;border:1px solid #e5e7eb;text-align:center'>"+imp.level+"</td><td style='padding:3px 6px;border:1px solid #e5e7eb'>"+( imp.notes||"")+"</td></tr>";
+                  }).filter(Boolean).join("");
+                  return "<div style='page-break-before:"+(idx>0?"always":"avoid")+";padding:0'>"
+                    +"<div style='text-align:center;border-bottom:3px solid #064e3b;padding-bottom:10px;margin-bottom:12px'>"
+                    +"<div style='font-size:8pt;color:#6b7280'>المملكة العربية السعودية — وزارة التعليم — إدارة التعليم بمحافظة جدة</div>"
+                    +"<div style='font-size:16pt;font-weight:900;color:#064e3b'>"+SCHOOL+"</div>"
+                    +"<div style='font-size:12pt;font-weight:700;color:#0d9488'>سجل متابعة النمو المهني للمعلمين</div>"
+                    +"<div style='font-size:8pt;color:#9ca3af;margin-top:3px;font-style:italic'>❝ المعلم الذي يتوقف عن التعلّم يجب أن يتوقف عن التعليم ❞</div>"
+                    +"<div style='font-size:9pt;color:#6b7280;margin-top:4px'>العام الدراسي: "+schoolYear+"</div>"
+                    +"</div>"
+                    +"<div style='background:linear-gradient(135deg,#1a3a2a,#064e3b);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between'>"
+                    +"<div><div style='font-size:14pt;font-weight:900'>"+rec.name+"</div>"
+                    +"<div style='font-size:9pt;opacity:0.75'>"+(rec.specialization||"")+(rec.yearsService?" • خبرة "+rec.yearsService+" سنوات":"")+"</div></div>"
+                    +(rec.teacherRating?"<div style='background:"+rBg+";color:"+rColor+";padding:6px 14px;border-radius:20px;font-weight:900;font-size:11pt'>"+rec.teacherRating+"</div>":"")
+                    +"</div>"
+                    +"<table style='width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px'>"
+                    +"<tr><td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;width:25%'>المؤهل العلمي</td><td style='padding:4px 8px;border:1px solid #e5e7eb'>"+(rec.qualification||"—")+"</td>"
+                    +"<td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;width:25%'>ساعات التدريب</td><td style='padding:4px 8px;border:1px solid #e5e7eb;font-weight:700;color:#065f46'>"+totalH+"</td></tr>"
+                    +"<tr><td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700'>الرخصة المهنية</td><td colspan='3' style='padding:4px 8px;border:1px solid #e5e7eb'>"+(rec.hasLicense===true?"✅ حاصل":rec.hasLicense===false?"❌ لم يحصل — "+(rec.licenseReason||""):"—")+"</td></tr>"
+                    +"</table>"
+                    +(needsRows?"<div style='font-weight:900;font-size:9pt;color:#fff;background:linear-gradient(135deg,#065f46,#0d9488);padding:4px 10px;border-radius:6px;margin-bottom:4px'>📋 الاحتياجات التدريبية</div>"
+                    +"<table style='width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px'>"
+                    +"<thead><tr style='background:#0d9488;color:#fff'><th style='padding:4px 8px;border:1px solid #0f766e;text-align:right'>المجال التدريبي</th><th style='padding:4px 8px;border:1px solid #0f766e'>الأولوية</th></tr></thead>"
+                    +"<tbody>"+needsRows+"</tbody></table>":"")
+                    +(courseRows?"<div style='font-weight:900;font-size:9pt;color:#fff;background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:4px 10px;border-radius:6px;margin-bottom:4px'>🎓 سجل الدورات التدريبية</div>"
+                    +"<table style='width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px'>"
+                    +"<thead><tr style='background:#7c3aed;color:#fff'><th style='padding:4px;border:1px solid #6d28d9'>م</th><th style='padding:4px 8px;border:1px solid #6d28d9;text-align:right'>اسم الدورة</th><th style='padding:4px 8px;border:1px solid #6d28d9;text-align:right'>الجهة</th><th style='padding:4px;border:1px solid #6d28d9'>الساعات</th></tr></thead>"
+                    +"<tbody>"+courseRows+"</tbody>"
+                    +"<tfoot><tr style='background:#f5f3ff'><td colspan='3' style='padding:4px 8px;font-weight:700;color:#6d28d9;border:1px solid #e5e7eb'>إجمالي الساعات</td><td style='padding:4px;font-weight:900;color:#6d28d9;text-align:center;border:1px solid #e5e7eb'>"+totalH+"</td></tr></tfoot>"
+                    +"</table>":"")
+                    +(impactRows?"<div style='font-weight:900;font-size:9pt;color:#fff;background:linear-gradient(135deg,#065f46,#15803d);padding:4px 10px;border-radius:6px;margin-bottom:4px'>📈 أثر التدريب على الأداء</div>"
+                    +"<table style='width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px'>"
+                    +"<thead><tr style='background:#15803d;color:#fff'><th style='padding:4px 8px;border:1px solid #166534;text-align:right'>مجال التدريب</th><th style='padding:4px 8px;border:1px solid #166534'>مستوى الأثر</th><th style='padding:4px 8px;border:1px solid #166534;text-align:right'>الملاحظات</th></tr></thead>"
+                    +"<tbody>"+impactRows+"</tbody></table>":"")
+                    +((rec.monthlyReport?.month||rec.semesterReport?.semester)?"<div style='font-weight:900;font-size:9pt;color:#fff;background:linear-gradient(135deg,#b45309,#d97706);padding:4px 10px;border-radius:6px;margin-bottom:4px'>📅 التقارير الدورية</div>"
+                    +"<table style='width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px'>"
+                    +(rec.monthlyReport?.month?"<tr><td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;width:25%'>الشهر</td><td style='padding:4px 8px;border:1px solid #e5e7eb'>"+rec.monthlyReport.month+"</td><td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;width:25%'>نسبة الإنجاز</td><td style='padding:4px 8px;border:1px solid #e5e7eb;font-weight:700'>"+( rec.monthlyReport?.pct||"—")+" %</td></tr>"
+                    +(rec.monthlyReport?.activities?"<tr><td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700'>أبرز الأنشطة</td><td colspan='3' style='padding:4px 8px;border:1px solid #e5e7eb'>"+rec.monthlyReport.activities+"</td></tr>":""):"")
+                    +(rec.semesterReport?.semester?"<tr><td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700'>الفصل الدراسي</td><td style='padding:4px 8px;border:1px solid #e5e7eb'>"+rec.semesterReport.semester+"</td><td style='padding:4px 8px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:700'>نسبة إنجاز الفصل</td><td style='padding:4px 8px;border:1px solid #e5e7eb;font-weight:700'>"+( rec.semesterReport?.pct||"—")+" %</td></tr>":"")
+                    +"</table>":"")
+                    +"<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px'>"
+                    +"<div style='border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;min-height:55px'><div style='font-size:8pt;color:#6b7280;margin-bottom:6px;font-weight:700'>المعلم / التوقيع</div><div style='font-size:10pt;font-weight:700;color:#1f2937'>"+rec.name+"</div></div>"
+                    +"<div style='border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;min-height:55px'><div style='font-size:8pt;color:#6b7280;margin-bottom:6px;font-weight:700'>قائد المدرسة / التوقيع</div><div style='font-size:10pt;font-weight:700;color:#064e3b'>"+PRINCIPAL+"</div></div>"
+                    +"<div style='border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;min-height:55px'><div style='font-size:8pt;color:#6b7280;margin-bottom:6px;font-weight:700'>تاريخ الاعتماد</div><div style='font-size:9pt;color:#6b7280'>......../......../14..... هـ</div></div>"
+                    +"</div>"
+                    +"<div style='text-align:center;font-size:8pt;color:#9ca3af;border-top:1px dashed #e5e7eb;padding-top:6px;margin-top:10px'>"+SCHOOL+" — سجل النمو المهني — "+new Date().toLocaleDateString("ar-SA")+"</div>"
+                    +"</div>";
+                }).join("");
+                win.document.write("<!DOCTYPE html><html dir='rtl'><head><meta charset='UTF-8'><title>سجل النمو المهني</title>"
+                  +"<style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;color:#1f2937;font-size:10pt}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}@page{size:A4;margin:12mm 14mm}body{padding:0}}@media screen{body{padding:16px;max-width:210mm;margin:0 auto}}</style>"
+                  +"</head><body>"+cards
+                  +"</body></html>");
+                win.document.close();
+                setTimeout(()=>win.print(),800);
+              }} className="px-3 py-2 rounded-xl text-xs font-black border border-white/30 bg-white/20 hover:bg-white/30 flex items-center gap-1">
+                🖨️ طباعة الجميع
               </button>
             </div>
           </div>
