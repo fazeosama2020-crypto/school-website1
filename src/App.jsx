@@ -21737,6 +21737,688 @@ function SuggestionsAdminPage() {
 // ================================================================
 // ===== صفحة الرخصة المهنية للمعلمين =====
 // ================================================================
+// ================================================================
+// ===== صفحة الأداء الوظيفي للمعلمين =====
+// ================================================================
+function PerformancePage() {
+
+  const CRITERIA = [
+    { id:"duties",     label:"أداء الواجبات الوظيفية",                   req:"حضوري - المناوبة - الإشراف - الانتظار - النشاط - الإذاعة",         weight:0.10 },
+    { id:"community",  label:"التفاعل مع المجتمع المهني",                  req:"الزيارات الصفية - ملف النمو المهني - مجتمعات التعلم المهني",        weight:0.10 },
+    { id:"parents",    label:"التفاعل مع أولياء الأمور",                   req:"الخطة الأسبوعية - إشعار أولياء الأمور - التواصل (المنصة/الجوال)",   weight:0.10 },
+    { id:"strategies", label:"التنويع في استراتيجيات التدريس",             req:"خطة التحضير - أوراق عمل - 5 استراتيجيات كحد أدنى",                 weight:0.10 },
+    { id:"results",    label:"تحسين نتائج المتعلمين",                      req:"أنشطة إثرائية للمتميزين - خطط علاجية للمتعثرين",                    weight:0.10 },
+    { id:"plan",       label:"إعداد وتنفيذ خطة التعلم",                   req:"توزيع المنهج - الخطة الأسبوعية - تحضير الدروس - الواجبات",          weight:0.10 },
+    { id:"tech",       label:"توظيف تقنيات ووسائل التعلم المناسبة",       req:"أوراق تفاعلية - وسائل مساعدة - أجهزة ذكية - منصة مدرستي",          weight:0.10 },
+    { id:"env",        label:"تهيئة بيئة تعليمية",                        req:"انضباط الصف - المعمل - مصادر التعلم - وسائل حسية",                  weight:0.05 },
+    { id:"classmanage",label:"الإدارة الصفية",                             req:"كشف المتابعة - تنويع الأسئلة - توزيع زمن الحصة",                    weight:0.05 },
+    { id:"analysis",   label:"تحليل نتائج المتعلمين وتشخيص مستوياتهم",   req:"اختبار تشخيصي - أنماط التعلم - تصنيف الطلاب",                      weight:0.10 },
+    { id:"assessment", label:"تنوع أساليب التقويم",                       req:"اختبارات تحسين - شهرية - مشاركة - أسئلة تمهيد ونهاية",              weight:0.10 },
+  ];
+
+  const LEVELS = [
+    { val:5, label:"مثالي",            pct:"90-100", color:"#059669", bg:"#d1fae5" },
+    { val:4, label:"تخطى التوقعات",    pct:"80-89",  color:"#0284c7", bg:"#dbeafe" },
+    { val:3, label:"وافق التوقعات",    pct:"70-79",  color:"#7c3aed", bg:"#ede9fe" },
+    { val:2, label:"يحتاج إلى تطوير", pct:"60-69",  color:"#d97706", bg:"#fef3c7" },
+    { val:1, label:"غير مرضٍ",         pct:"< 60",   color:"#dc2626", bg:"#fee2e2" },
+  ];
+
+  const mkEmpty = (name="") => ({
+    name, jobNum:"", specialization:"", stage:"", subject:"", classes:"",
+    evaluator:"فازع القرني", evalDate:"",
+    scores: Object.fromEntries(CRITERIA.map(c=>[c.id, null])),
+    notes:"",
+  });
+
+  const [records, setRecords] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [viewMode, setViewMode] = useState("list");
+
+  const DEFAULT_TEACHERS = [
+    "معيض صالح محمد القرني",
+    "عبدالواحد بن مبارك بن عبدالواحد الجبعه الخنفري القحطاني",
+    "حامد محمد عبدالله الزهراني",
+    "رامي علي حسن ال مطر الغامدي",
+    "عبدالحميد عبدالمعطي حميد اللقماني",
+    "حسن حامد إبراهيم الساعدي",
+    "فواز محمد عطيه الثقفي",
+    "رجيان رويحي عتيق الله السلمي",
+    "صالح احمد سعيد الغامدي",
+    "بندر فيحان طلق السلمي",
+    "عبدالله عبدالرحيم محمد الطلحي",
+    "عبدالرحمن ابراهيم علي الفقيه",
+    "سلطان حمد محمد المقاطي العتيبي",
+    "عبدالهادي بن سالم بن عويتق المعبدي الحربي",
+    "فهد عبيد عبدالله النباتي",
+    "طلال سعد ساعد السلمي",
+    "هاني رده لافي الجحدلي",
+    "عبد الله حامد خليوي اللقماني",
+    "ضيف الله حلسان صالح الزهراني",
+    "حامد بن عبد الله بن علي المحمادي",
+    "صالح أحمد سميح المجنوني",
+    "محمد عوض عبدالله الجابري",
+    "محمد مساعد فويران اللحياني",
+    "مسلم سعد مسعود الجهني",
+    "مشعل مساعد عيد الحربي",
+    "بدر سرور مسعد العتيبي",
+    "وليد مسلم سليم السهلي",
+    "مصلح محمد مصلح المعبدي",
+    "جازي عبدالرحمن عبدربه الثبيتي",
+    "بدر حمد محمد اللهيبي",
+    "عطيه سعيد علي الغامدي",
+    "علي عبدالله حزام بن عبود",
+    "محمد علي عبدالله المحوري",
+  ];
+
+  useEffect(()=>{
+    Promise.all([DB.get("school-teachers",[]), DB.get("school-performance-records",[])]).then(([tch, recs])=>{
+      const teachers = Array.isArray(tch) && tch.length > 0 ? tch : DEFAULT_TEACHERS;
+      const existing = Array.isArray(recs)?recs:[];
+      const merged = teachers.map(t=>existing.find(r=>r.name===t)||mkEmpty(t));
+      existing.forEach(r=>{ if(!teachers.includes(r.name)) merged.push(r); });
+      setRecords(merged);
+      setLoading(false);
+    });
+  },[]);
+
+  const save = (newRecs) => {
+    setRecords(newRecs);
+    DB.set("school-performance-records", newRecs);
+    setSaved(true);
+    setTimeout(()=>setSaved(false), 1500);
+  };
+
+  const addManual = () => {
+    const nm = prompt("أدخل اسم المعلم:");
+    if(!nm||!nm.trim()) return;
+    const newRecs = [...records, mkEmpty(nm.trim())];
+    save(newRecs); setSelected(newRecs.length-1);
+  };
+
+  const getTotal = (rec) => {
+    return CRITERIA.reduce((sum, c)=>{
+      const score = rec.scores?.[c.id];
+      if(!score) return sum;
+      return sum + (score/5)*c.weight*100;
+    }, 0);
+  };
+
+  const getLevel = (total) => {
+    if(total >= 90) return LEVELS[0];
+    if(total >= 80) return LEVELS[1];
+    if(total >= 70) return LEVELS[2];
+    if(total >= 60) return LEVELS[3];
+    return LEVELS[4];
+  };
+
+  const getFilledCount = (rec) => Object.values(rec.scores||{}).filter(v=>v!==null).length;
+
+  const printRecord = (rec) => {
+    const total = getTotal(rec);
+    const lv = getLevel(total);
+    const rows = CRITERIA.map((c,i)=>{
+      const score = rec.scores?.[c.id]||"—";
+      const result = rec.scores?.[c.id] ? ((rec.scores[c.id]/5)*c.weight*100).toFixed(2) : "—";
+      const lvlObj = LEVELS.find(l=>l.val===rec.scores?.[c.id]);
+      const rowBg = i%2===0?"#fff":"#f9fdf9";
+      return `<tr style="background:${rowBg}">
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;color:#64748b">${i+1}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:700">${c.label}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:8pt;color:#64748b">${c.req}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:#0d9488">${(c.weight*100).toFixed(0)}%</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:20pt">${score!=="—"?score:"—"}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-size:8pt;color:${lvlObj?lvlObj.color:"#6b7280"}">${lvlObj?lvlObj.label:"—"}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#064e3b">${result}</td>
+      </tr>`;
+    }).join("");
+    const win = window.open("","_blank","width=900,height=700");
+    win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+    <title>استمارة تقييم أداء المعلم</title>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;color:#1e293b;font-size:10pt}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:12mm 14mm}}</style>
+    </head><body style="padding:10mm">
+    <div style="text-align:center;border-bottom:3px solid #064e3b;padding-bottom:10px;margin-bottom:12px">
+      <div style="font-size:8pt;color:#64748b">المملكة العربية السعودية — وزارة التعليم — إدارة التعليم بمحافظة جدة</div>
+      <div style="font-size:16pt;font-weight:900;color:#064e3b">مدرسة عبيدة بن الحارث المتوسطة</div>
+      <div style="font-size:13pt;font-weight:700;color:#0d9488">استمارة تقييم أداء المعلم</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:10px">
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">اسم المعلم</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:900">${rec.name}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">الرقم الوظيفي</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0">${rec.jobNum||"—"}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">التخصص</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0">${rec.specialization||"—"}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">المرحلة الدراسية</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0">${rec.stage||"—"}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">المادة</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0">${rec.subject||"—"}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">الصفوف التي يدرّسها</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0">${rec.classes||"—"}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">اسم المُقيِّم</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0">${rec.evaluator||"فازع القرني"}</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">تاريخ التقييم</td>
+        <td style="padding:5px 8px;border:1px solid #e2e8f0">${rec.evalDate||"—"}</td>
+      </tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:10px">
+      <thead>
+        <tr style="background:linear-gradient(135deg,#064e3b,#0d9488);color:#fff">
+          <th style="padding:6px 8px;border:1px solid #0f766e;width:30px">م</th>
+          <th style="padding:6px 8px;border:1px solid #0f766e;text-align:right">عناصر التقييم</th>
+          <th style="padding:6px 8px;border:1px solid #0f766e;text-align:right">متطلبات تحقيق المعيار</th>
+          <th style="padding:6px 8px;border:1px solid #0f766e;width:55px">الوزن</th>
+          <th style="padding:6px 8px;border:1px solid #0f766e;width:55px">المستوى</th>
+          <th style="padding:6px 8px;border:1px solid #0f766e;width:90px">وصف المستوى</th>
+          <th style="padding:6px 8px;border:1px solid #0f766e;width:65px">الناتج</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr style="background:linear-gradient(135deg,#1e3a5f,#1d4ed8);color:#fff">
+          <td colspan="5" style="padding:7px 10px;border:1px solid #1d4ed8;font-weight:900">المجموع الكلي / التقدير العام للأداء</td>
+          <td colspan="2" style="padding:7px 10px;border:1px solid #1d4ed8;text-align:center;font-weight:900;font-size:13pt">${total.toFixed(1)} / 100</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="background:${lv.bg};border:2px solid ${lv.color};border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:16px;margin-bottom:10px">
+      <div style="font-size:11pt;font-weight:700;color:#374151">التقدير العام النهائي:</div>
+      <div style="font-size:18pt;font-weight:900;color:${lv.color}">${lv.label}</div>
+      <div style="font-size:11pt;font-weight:700;color:${lv.color}">(${total.toFixed(1)}%)</div>
+    </div>
+    ${rec.notes?`<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-bottom:10px">
+      <div style="font-weight:700;color:#374151;margin-bottom:4px">الملاحظات والتوصيات:</div>
+      <div style="color:#64748b;line-height:1.8">${rec.notes}</div>
+    </div>`:""}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px">
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:8pt;color:#64748b;margin-bottom:6px;font-weight:700">المُقيِّم</div>
+        <div style="font-size:9pt;font-weight:700">${rec.evaluator||"فازع القرني"}</div>
+        <div style="border-top:1px dashed #0d9488;margin-top:14px;padding-top:4px;font-size:8pt;color:#94a3b8">التوقيع</div>
+      </div>
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:8pt;color:#64748b;margin-bottom:6px;font-weight:700">المعلم</div>
+        <div style="font-size:9pt;font-weight:700">${rec.name}</div>
+        <div style="border-top:1px dashed #0d9488;margin-top:14px;padding-top:4px;font-size:8pt;color:#94a3b8">التوقيع</div>
+      </div>
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:8pt;color:#64748b;margin-bottom:6px;font-weight:700">مدير المدرسة</div>
+        <div style="font-size:9pt;font-weight:700">فازع القرني</div>
+        <div style="border-top:1px dashed #0d9488;margin-top:14px;padding-top:4px;font-size:8pt;color:#94a3b8">التوقيع</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:8pt;color:#94a3b8;margin-top:12px;border-top:1px dashed #e2e8f0;padding-top:6px">
+      ⚠ تستند معايير التقييم إلى لائحة الوظائف التعليمية - وزارة التعليم — مدرسة عبيدة بن الحارث المتوسطة — ${new Date().toLocaleDateString("ar-SA")}
+    </div>
+    <script>window.onload=()=>window.print()</script>
+    </body></html>`);
+    win.document.close();
+  };
+
+  const filtered = records.filter(r=>!searchText||r.name.includes(searchText));
+
+  const stats = {
+    total: records.length,
+    evaluated: records.filter(r=>getFilledCount(r)===CRITERIA.length).length,
+    partial: records.filter(r=>getFilledCount(r)>0 && getFilledCount(r)<CRITERIA.length).length,
+    pending: records.filter(r=>getFilledCount(r)===0).length,
+  };
+
+  const levelStats = LEVELS.map(lv=>({
+    ...lv,
+    count: records.filter(r=>{
+      if(getFilledCount(r)<CRITERIA.length) return false;
+      return getLevel(getTotal(r)).val===lv.val;
+    }).length
+  }));
+
+  // ── تفاصيل معلم ──
+  if(selected!==null && records[selected]){
+    const rec = records[selected];
+    const idx = selected;
+    const total = getTotal(rec);
+    const lv = getLevel(total);
+    const filled = getFilledCount(rec);
+
+    const updScore = (id, val) => {
+      const next=[...records];
+      next[idx]={...next[idx],scores:{...next[idx].scores,[id]:val===next[idx].scores?.[id]?null:val}};
+      save(next);
+    };
+
+    return (
+      <div dir="rtl" className="max-w-4xl mx-auto px-3 py-4 space-y-4" style={{fontFamily:"'Cairo',sans-serif"}}>
+        {/* Header */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button onClick={()=>setSelected(null)}
+            className="px-4 py-2 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm flex items-center gap-1">
+            ← قائمة المعلمين
+          </button>
+          <div className="flex-1 font-black text-lg text-gray-800">{rec.name}</div>
+          <div className="flex items-center gap-2">
+            {saved && <span className="text-green-600 text-xs font-bold">✅ محفوظ</span>}
+            <button onClick={()=>printRecord(rec)}
+              className="px-3 py-1.5 rounded-xl text-xs font-black bg-teal-600 text-white hover:bg-teal-700 flex items-center gap-1">
+              🖨️ طباعة A4
+            </button>
+          </div>
+        </div>
+
+        {/* درجة كلية */}
+        <div className="rounded-2xl p-5 text-white shadow-lg relative overflow-hidden"
+          style={{background:`linear-gradient(135deg,${lv.color}dd,${lv.color})`}}>
+          <div className="absolute inset-0 opacity-10 overflow-hidden">
+            {[...Array(3)].map((_,i)=><div key={i} className="absolute rounded-full border-2 border-white"
+              style={{width:(i+2)*100,height:(i+2)*100,top:"50%",left:"10%",transform:"translateY(-50%)"}}/>)}
+          </div>
+          <div className="relative flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="opacity-80 text-sm mb-1">المجموع النهائي من 100</div>
+              <div className="font-black text-5xl mb-1">{total.toFixed(1)}</div>
+              <div className="font-black text-xl">{lv.label}</div>
+            </div>
+            <div className="text-left">
+              <div className="opacity-80 text-xs mb-1">المعايير المُقيَّمة</div>
+              <div className="font-black text-3xl">{filled} / {CRITERIA.length}</div>
+              <div className="mt-2 bg-white/20 rounded-full h-2 overflow-hidden" style={{width:120}}>
+                <div className="h-full bg-white rounded-full" style={{width:(filled/CRITERIA.length*100)+"%",transition:"width .4s"}}/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* سلّم التقدير */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <div className="text-xs font-black text-gray-500 mb-3">سُلَّم التقدير لقياس مستوى الإتقان</div>
+          <div className="grid grid-cols-5 gap-2">
+            {LEVELS.map(l=>(
+              <div key={l.val} className="text-center rounded-xl py-2 px-1"
+                style={{background:l.bg,border:`1px solid ${l.color}30`}}>
+                <div className="font-black text-lg" style={{color:l.color}}>{l.val}</div>
+                <div className="text-xs font-bold" style={{color:l.color}}>{l.label}</div>
+                <div className="text-xs opacity-60 mt-0.5" style={{color:l.color}}>{l.pct}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* البيانات الأساسية */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
+            style={{background:"linear-gradient(135deg,#064e3b,#0d9488)"}}>
+            <span>👤</span> بيانات المعلم
+          </div>
+          <div className="p-5 grid grid-cols-2 gap-3">
+            {[["اسم المعلم","name"],["الرقم الوظيفي","jobNum"],["التخصص","specialization"],["المرحلة الدراسية","stage"],["المادة","subject"],["الصفوف التي يدرّسها","classes"],["تاريخ التقييم","evalDate"]].map(([label,field])=>(
+              <div key={field}>
+                <label className="text-xs font-black text-gray-600 mb-1 block">{label}</label>
+                <input value={rec[field]||""} onChange={e=>{
+                  const next=[...records];next[idx]={...next[idx],[field]:e.target.value};save(next);
+                }} className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm font-bold"/>
+              </div>
+            ))}
+            <div>
+              <label className="text-xs font-black text-gray-600 mb-1 block">اسم المُقيِّم</label>
+              <input value={rec.evaluator||"فازع القرني"} onChange={e=>{
+                const next=[...records];next[idx]={...next[idx],evaluator:e.target.value};save(next);
+              }} className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm font-bold"/>
+            </div>
+          </div>
+        </div>
+
+        {/* معايير التقييم */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
+            style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
+            <span>📊</span> معايير تقييم الأداء الوظيفي
+          </div>
+          <div className="p-4 space-y-3">
+            {CRITERIA.map((c,i)=>{
+              const score = rec.scores?.[c.id];
+              const result = score ? ((score/5)*c.weight*100) : 0;
+              const scoreLv = LEVELS.find(l=>l.val===score);
+              return (
+                <div key={c.id} className="rounded-2xl overflow-hidden border border-gray-100 hover:shadow-md transition-all"
+                  style={{background: scoreLv ? scoreLv.bg+"40" : "#fff"}}>
+                  <div className="px-4 py-3 flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-black text-gray-400">{i+1}</span>
+                        <span className="font-black text-sm text-gray-800">{c.label}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                          style={{background:"#f0fdf4",color:"#059669"}}>
+                          {(c.weight*100).toFixed(0)}%
+                        </span>
+                        {score && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-black"
+                            style={{background:scoreLv?.bg,color:scoreLv?.color}}>
+                            {result.toFixed(2)} درجة
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 leading-relaxed">{c.req}</div>
+                    </div>
+                  </div>
+                  {/* أزرار المستويات */}
+                  <div className="px-4 pb-3 grid grid-cols-5 gap-2">
+                    {LEVELS.map(l=>(
+                      <button key={l.val} onClick={()=>updScore(c.id, l.val)}
+                        className="py-2.5 rounded-xl font-black text-sm border-2 transition-all flex flex-col items-center gap-0.5"
+                        style={{
+                          background: score===l.val ? l.bg : "#f9fafb",
+                          borderColor: score===l.val ? l.color : "#e5e7eb",
+                          color: score===l.val ? l.color : "#9ca3af",
+                          transform: score===l.val ? "scale(1.05)" : "scale(1)",
+                          boxShadow: score===l.val ? `0 2px 8px ${l.color}40` : "none",
+                        }}>
+                        <span className="text-xl font-black">{l.val}</span>
+                        <span className="text-xs leading-tight text-center">{l.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ملخص الدرجات */}
+        {filled>0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
+              style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)"}}>
+              <span>📈</span> ملخص الدرجات
+            </div>
+            <div className="p-4 overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr style={{background:"#7c3aed"}}>
+                    <th className="p-2 text-white font-black text-right border border-purple-800">المعيار</th>
+                    <th className="p-2 text-white font-black text-center border border-purple-800 w-16">الوزن</th>
+                    <th className="p-2 text-white font-black text-center border border-purple-800 w-16">المستوى</th>
+                    <th className="p-2 text-white font-black text-center border border-purple-800 w-20">الناتج</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CRITERIA.map((c,i)=>{
+                    const score=rec.scores?.[c.id];
+                    const result=score?((score/5)*c.weight*100):null;
+                    const lvl=LEVELS.find(l=>l.val===score);
+                    return (
+                      <tr key={c.id} style={{background:i%2===0?"#faf5ff":"#f3e8ff"}}>
+                        <td className="p-2 font-bold text-gray-700 border border-gray-200">{c.label}</td>
+                        <td className="p-2 text-center font-bold text-teal-700 border border-gray-200">{(c.weight*100).toFixed(0)}%</td>
+                        <td className="p-2 text-center border border-gray-200">
+                          {score?<span className="px-2 py-0.5 rounded-full font-black text-xs" style={{background:lvl?.bg,color:lvl?.color}}>{score} — {lvl?.label}</span>:<span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="p-2 text-center font-black border border-gray-200" style={{color:result?lvl?.color:"#d1d5db"}}>
+                          {result?result.toFixed(2):"—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
+                    <td colSpan={3} className="p-2 font-black text-white text-right border border-blue-800">المجموع الكلي / التقدير العام</td>
+                    <td className="p-2 text-center font-black text-xl border border-blue-800"
+                      style={{color:lv.bg}}>{total.toFixed(1)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div className="mt-3 flex items-center gap-3 p-3 rounded-xl"
+                style={{background:lv.bg,border:`2px solid ${lv.color}40`}}>
+                <span className="font-black text-2xl" style={{color:lv.color}}>{total.toFixed(1)}%</span>
+                <div>
+                  <div className="font-black text-sm" style={{color:lv.color}}>{lv.label}</div>
+                  <div className="text-xs" style={{color:lv.color}}>النطاق: {lv.pct}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* الملاحظات والتوصيات */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
+            style={{background:"linear-gradient(135deg,#b45309,#d97706)"}}>
+            <span>📝</span> الملاحظات والتوصيات
+          </div>
+          <div className="p-5">
+            <textarea value={rec.notes||""} onChange={e=>{
+              const next=[...records];next[idx]={...next[idx],notes:e.target.value};save(next);
+            }} rows={3} placeholder="اكتب الملاحظات والتوصيات هنا..."
+              className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-amber-400 focus:outline-none text-sm resize-none"/>
+          </div>
+        </div>
+
+        {/* أزرار */}
+        <div className="flex justify-between items-center pb-6">
+          <button onClick={()=>{if(confirm("هل تريد حذف سجل هذا المعلم؟")){save(records.filter((_,i)=>i!==idx));setSelected(null);}}}
+            className="px-4 py-2 rounded-xl text-sm font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100">
+            🗑️ حذف السجل
+          </button>
+          <button onClick={()=>setSelected(null)}
+            className="px-6 py-2.5 rounded-xl text-sm font-black text-white"
+            style={{background:"linear-gradient(135deg,#064e3b,#0d9488)"}}>
+            ← رجوع للقائمة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── القائمة الرئيسية ──
+  return (
+    <div dir="rtl" className="max-w-3xl mx-auto px-3 py-4 space-y-4" style={{fontFamily:"'Cairo',sans-serif"}}>
+
+      {/* Header */}
+      <div className="rounded-3xl overflow-hidden shadow-xl">
+        <div className="relative py-8 px-6 text-white text-center"
+          style={{background:"linear-gradient(135deg,#1a3a2a,#064e3b,#0d9488)"}}>
+          <div className="absolute inset-0 overflow-hidden opacity-10">
+            {[...Array(4)].map((_,i)=>(
+              <div key={i} className="absolute rounded-full border-2 border-white"
+                style={{width:(i+2)*70,height:(i+2)*70,top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+            ))}
+          </div>
+          <div className="relative">
+            <div className="text-5xl mb-2">📊</div>
+            <div className="font-black text-xl mb-0.5">مدرسة عبيدة بن الحارث المتوسطة</div>
+            <div className="opacity-80 text-sm font-bold">استمارة تقييم الأداء الوظيفي للمعلمين</div>
+            <div className="text-xs opacity-60 italic mt-1">وزارة التعليم — لائحة الوظائف التعليمية</div>
+          </div>
+        </div>
+
+        {/* إحصائيات */}
+        <div className="p-4 text-white" style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+            <div className="font-black text-base">👨‍🏫 تقييم المعلمين</div>
+            <div className="flex gap-2">
+              <button onClick={addManual}
+                className="px-3 py-2 rounded-xl text-xs font-black border border-white/30 bg-white/15 hover:bg-white/25">
+                ➕ إضافة يدوي
+              </button>
+              <button onClick={()=>{
+                const evaluated = records.filter(r=>getFilledCount(r)===CRITERIA.length);
+                if(!evaluated.length){alert("لا يوجد معلمون مكتملو التقييم");return;}
+                const win=window.open("","_blank","width=900,height=700");
+                const rows = evaluated.map((rec,pidx)=>{
+                  const tot=getTotal(rec); const lv=getLevel(tot);
+                  const scoreRows = CRITERIA.map((c,i)=>{
+                    const sc=rec.scores?.[c.id]||"—";
+                    const res=rec.scores?.[c.id]?((rec.scores[c.id]/5)*c.weight*100).toFixed(2):"—";
+                    const lvO=LEVELS.find(l=>l.val===rec.scores?.[c.id]);
+                    return `<tr style="background:${i%2===0?"#fff":"#f9fdf9"}"><td style="padding:4px 6px;border:1px solid #e2e8f0;text-align:center;color:#64748b">${i+1}</td><td style="padding:4px 6px;border:1px solid #e2e8f0;font-weight:700">${c.label}</td><td style="padding:4px 6px;border:1px solid #e2e8f0;font-size:8pt;color:#64748b">${c.req}</td><td style="padding:4px 6px;border:1px solid #e2e8f0;text-align:center;color:#059669;font-weight:700">${(c.weight*100).toFixed(0)}%</td><td style="padding:4px 6px;border:1px solid #e2e8f0;text-align:center;font-weight:900">${sc}</td><td style="padding:4px 6px;border:1px solid #e2e8f0;text-align:center;font-size:8pt;color:${lvO?lvO.color:"#6b7280"}">${lvO?lvO.label:"—"}</td><td style="padding:4px 6px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#064e3b">${res}</td></tr>`;
+                  }).join("");
+                  return `<div style="page-break-before:${pidx>0?"always":"avoid"};padding:0">
+                    <div style="text-align:center;border-bottom:3px solid #064e3b;padding-bottom:8px;margin-bottom:10px">
+                      <div style="font-size:8pt;color:#64748b">وزارة التعليم — إدارة تعليم جدة</div>
+                      <div style="font-size:14pt;font-weight:900;color:#064e3b">مدرسة عبيدة بن الحارث المتوسطة</div>
+                      <div style="font-size:11pt;font-weight:700;color:#0d9488">استمارة تقييم أداء المعلم</div>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px">
+                      <tr><td style="padding:4px 6px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700;width:20%">اسم المعلم</td><td style="padding:4px 6px;border:1px solid #e2e8f0;font-weight:900">${rec.name}</td><td style="padding:4px 6px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700;width:20%">التخصص</td><td style="padding:4px 6px;border:1px solid #e2e8f0">${rec.specialization||"—"}</td></tr>
+                      <tr><td style="padding:4px 6px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">المُقيِّم</td><td style="padding:4px 6px;border:1px solid #e2e8f0">${rec.evaluator||"فازع القرني"}</td><td style="padding:4px 6px;border:1px solid #e2e8f0;background:#f0fdf4;font-weight:700">تاريخ التقييم</td><td style="padding:4px 6px;border:1px solid #e2e8f0">${rec.evalDate||"—"}</td></tr>
+                    </table>
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8px">
+                      <thead><tr style="background:linear-gradient(135deg,#064e3b,#0d9488);color:#fff">
+                        <th style="padding:5px 6px;border:1px solid #0f766e">م</th><th style="padding:5px 6px;border:1px solid #0f766e;text-align:right">عناصر التقييم</th>
+                        <th style="padding:5px 6px;border:1px solid #0f766e;text-align:right">المتطلبات</th><th style="padding:5px 6px;border:1px solid #0f766e">الوزن</th>
+                        <th style="padding:5px 6px;border:1px solid #0f766e">المستوى</th><th style="padding:5px 6px;border:1px solid #0f766e">التقدير</th><th style="padding:5px 6px;border:1px solid #0f766e">الناتج</th>
+                      </tr></thead><tbody>${scoreRows}</tbody>
+                      <tfoot><tr style="background:linear-gradient(135deg,#1e3a5f,#1d4ed8);color:#fff">
+                        <td colspan="5" style="padding:6px 8px;border:1px solid #1d4ed8;font-weight:900">المجموع الكلي</td>
+                        <td colspan="2" style="padding:6px;border:1px solid #1d4ed8;text-align:center;font-weight:900;font-size:12pt">${tot.toFixed(1)} / 100</td>
+                      </tr></tfoot>
+                    </table>
+                    <div style="background:${lv.bg};border:2px solid ${lv.color};border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                      <div style="font-size:16pt;font-weight:900;color:${lv.color}">${tot.toFixed(1)}%</div>
+                      <div style="font-size:11pt;font-weight:900;color:${lv.color}">${lv.label}</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+                      <div style="border:1px solid #e2e8f0;border-radius:6px;padding:8px;text-align:center">
+                        <div style="font-size:8pt;color:#64748b;margin-bottom:4px;font-weight:700">المُقيِّم</div>
+                        <div style="font-size:9pt;font-weight:700">${rec.evaluator||"فازع القرني"}</div>
+                        <div style="border-top:1px dashed #0d9488;margin-top:10px;font-size:8pt;color:#94a3b8">التوقيع</div>
+                      </div>
+                      <div style="border:1px solid #e2e8f0;border-radius:6px;padding:8px;text-align:center">
+                        <div style="font-size:8pt;color:#64748b;margin-bottom:4px;font-weight:700">المعلم</div>
+                        <div style="font-size:9pt;font-weight:700">${rec.name}</div>
+                        <div style="border-top:1px dashed #0d9488;margin-top:10px;font-size:8pt;color:#94a3b8">التوقيع</div>
+                      </div>
+                      <div style="border:1px solid #e2e8f0;border-radius:6px;padding:8px;text-align:center">
+                        <div style="font-size:8pt;color:#64748b;margin-bottom:4px;font-weight:700">مدير المدرسة</div>
+                        <div style="font-size:9pt;font-weight:700">فازع القرني</div>
+                        <div style="border-top:1px dashed #0d9488;margin-top:10px;font-size:8pt;color:#94a3b8">التوقيع</div>
+                      </div>
+                    </div>
+                    <div style="text-align:center;font-size:8pt;color:#94a3b8;margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:4px">⚠ تستند معايير التقييم إلى لائحة الوظائف التعليمية - وزارة التعليم</div>
+                  </div>`;
+                }).join("");
+                win.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>تقييم الأداء الوظيفي</title><style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;color:#1e293b;font-size:10pt}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:10mm 12mm}}@media screen{body{padding:16px;max-width:210mm;margin:0 auto}}</style></head><body>${rows}</body></html>`);
+                win.document.close();
+                setTimeout(()=>win.print(),800);
+              }} className="px-3 py-2 rounded-xl text-xs font-black border border-white/30 bg-white/20 hover:bg-white/30">
+                🖨️ طباعة الجميع
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {[
+              {v:stats.total,     l:"إجمالي",      c:"#93c5fd"},
+              {v:stats.evaluated, l:"مكتمل",        c:"#86efac"},
+              {v:stats.partial,   l:"جزئي",         c:"#fbbf24"},
+              {v:stats.pending,   l:"لم يُقيَّم",   c:"#fca5a5"},
+            ].map(s=>(
+              <div key={s.l} className="bg-white/15 rounded-xl py-2 text-center">
+                <div className="text-xl font-black" style={{color:s.c}}>{s.v}</div>
+                <div className="text-xs opacity-75">{s.l}</div>
+              </div>
+            ))}
+          </div>
+          {/* توزيع مستويات التقدير */}
+          <div className="bg-white/10 rounded-2xl p-3">
+            <div className="text-xs font-black opacity-70 mb-2">توزيع مستويات التقدير</div>
+            <div className="flex gap-2">
+              {levelStats.map(l=>(
+                <div key={l.val} className="flex-1 text-center rounded-lg py-1"
+                  style={{background:l.bg+"40",border:`1px solid ${l.color}40`}}>
+                  <div className="font-black text-sm" style={{color:l.bg}}>{l.count}</div>
+                  <div className="text-xs opacity-70" style={{color:l.bg}}>{l.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* سلّم التقدير */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="text-xs font-black text-gray-500 mb-3 flex items-center gap-2">
+          <span>📋</span> سُلَّم التقدير لقياس مستوى الإتقان
+        </div>
+        <div className="grid grid-cols-5 gap-2">
+          {LEVELS.map(l=>(
+            <div key={l.val} className="text-center rounded-xl py-2 px-1"
+              style={{background:l.bg,border:`1px solid ${l.color}30`}}>
+              <div className="font-black text-lg" style={{color:l.color}}>{l.val}</div>
+              <div className="text-xs font-bold leading-tight" style={{color:l.color}}>{l.label}</div>
+              <div className="text-xs opacity-60 mt-0.5" style={{color:l.color}}>{l.pct}%</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* بحث */}
+      <input value={searchText} onChange={e=>setSearchText(e.target.value)}
+        placeholder="🔍 بحث باسم المعلم..."
+        className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm"/>
+
+      {/* قائمة المعلمين */}
+      {loading ? (
+        <div className="text-center py-16 text-gray-400"><div className="text-5xl mb-3 animate-bounce">📊</div><p>جاري التحميل…</p></div>
+      ) : filtered.length===0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <div className="text-5xl mb-3">👨‍🏫</div>
+          <p className="font-bold mb-2">لا يوجد معلمون</p>
+          <p className="text-sm">اضغط "إضافة يدوي" لإضافة معلم</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((rec,i)=>{
+            const realIdx=records.indexOf(rec);
+            const total=getTotal(rec);
+            const filled=getFilledCount(rec);
+            const lv=filled===CRITERIA.length?getLevel(total):null;
+            const pctFilled=Math.round(filled/CRITERIA.length*100);
+            return (
+              <button key={i} onClick={()=>setSelected(realIdx)}
+                className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-teal-200 transition-all text-right">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
+                    style={{background:lv?lv.bg:"#f0fdf4",border:`2px solid ${lv?lv.color+"40":"#d1fae5"}`}}>
+                    {lv?["🌟","⭐","✅","⚠️","❌"][5-lv.val]:"📝"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="font-black text-sm text-gray-800 truncate">{rec.name}</span>
+                      {rec.specialization&&<span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{background:"#dbeafe",color:"#1d4ed8"}}>{rec.specialization}</span>}
+                      {lv&&<span className="text-xs px-2 py-0.5 rounded-full font-black" style={{background:lv.bg,color:lv.color}}>{lv.label} ({total.toFixed(1)}%)</span>}
+                      {!lv&&filled>0&&<span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{background:"#fef3c7",color:"#d97706"}}>جزئي ({filled}/{CRITERIA.length})</span>}
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div className="h-full rounded-full transition-all"
+                          style={{width:pctFilled+"%",background:lv?lv.color:"#0d9488"}}/>
+                      </div>
+                      <span className="text-xs text-gray-400 font-bold">{pctFilled}%</span>
+                    </div>
+                  </div>
+                  <span className="text-gray-300 flex-shrink-0">◄</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfessionalLicensePage() {
 
   const SPECIALIZATIONS = [
@@ -26717,6 +27399,7 @@ export default function SchoolWebsite() {
     { id: "teachereval",    label: "قياس أداء المعلم",     icon: "🎖️" },
     { id: "suggestions",    label: "آراء ومقترحات",        icon: "💬" },
     { id: "prolicense",     label: "الرخصة المهنية",         icon: "🏅" },
+    { id: "performance",    label: "الأداء الوظيفي",         icon: "📊" },
     { id: "teacherreports", label: "ملفات المعلمين",       icon: "🗄️" },
   ];
   const extraPages = [...classToolPages, ...reportPages];
@@ -27115,17 +27798,21 @@ export default function SchoolWebsite() {
         {page === "perfresults"    && <PerfResultsAdminPage />}
         {page === "suggestions"    && <SuggestionsAdminPage />}
         {page === "prolicense"     && <ProfessionalLicensePage />}
+        {page === "performance"     && <PerformancePage />}
         {page === "dailyattend"    && <DailyAttendanceTrackerPage teachers={teachers} />}
         {page === "teacherreports" && <TeacherReportsAdminPage teachers={teachers} week={week} />}
                 {page === "teacherreports" && <TeacherReportsAdminPage teachers={teachers} week={week} />}
                 {page === "perfresults"    && <PerfResultsAdminPage />}
         {page === "suggestions"    && <SuggestionsAdminPage />}
         {page === "prolicense"     && <ProfessionalLicensePage />}
+        {page === "performance"     && <PerformancePage />}
         {page === "dailyattend"    && <DailyAttendanceTrackerPage teachers={teachers} />}
                 {page === "suggestions"    && <SuggestionsAdminPage />}
         {page === "prolicense"     && <ProfessionalLicensePage />}
+        {page === "performance"     && <PerformancePage />}
         {page === "dailyattend"    && <DailyAttendanceTrackerPage teachers={teachers} />}
                 {page === "prolicense"     && <ProfessionalLicensePage />}
+        {page === "performance"     && <PerformancePage />}
         {page === "dailyattend"    && <DailyAttendanceTrackerPage teachers={teachers} />}
                 {page === "dailyattend"    && <DailyAttendanceTrackerPage teachers={teachers} />}
                 {page === "assessment"     && <AssessmentPage teachers={teachers} />}
@@ -27361,6 +28048,7 @@ export default function SchoolWebsite() {
         {page === "perfresults"    && <PerfResultsAdminPage />}
         {page === "suggestions"    && <SuggestionsAdminPage />}
         {page === "prolicense"     && <ProfessionalLicensePage />}
+        {page === "performance"     && <PerformancePage />}
         {page === "dailyattend"    && <DailyAttendanceTrackerPage teachers={teachers} />}
                 {page === "assessment"     && <AssessmentPage teachers={teachers} />}
                 {page === "studentexcuses" && <StudentExcusePortal isAdmin={true} siteFont={siteFont} />}
