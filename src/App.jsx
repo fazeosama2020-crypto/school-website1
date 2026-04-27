@@ -21646,24 +21646,47 @@ function SuggestionsAdminPage() {
 
   return (
     <div dir="rtl" className="max-w-3xl mx-auto px-3 py-4 space-y-4">
-      <div className="rounded-2xl p-5 text-white shadow-lg" style={{background:"linear-gradient(135deg,#064e3b,#0d9488)"}}>
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">💬</span>
+      <div className="rounded-2xl overflow-hidden shadow-lg">
+        <div className="p-5 text-white" style={{background:"linear-gradient(135deg,#064e3b,#065f46,#0d9488)"}}>
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
             <div>
-              <h2 className="font-black text-xl">الآراء والمقترحات</h2>
-              <p className="opacity-70 text-xs">رسائل أولياء الأمور والطلاب</p>
+              <div className="text-xs font-bold opacity-75 mb-0.5">مدرسة عبيدة بن الحارث المتوسطة</div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">💬</span>
+                <h2 className="font-black text-xl">الآراء والمقترحات</h2>
+              </div>
+              <p className="opacity-70 text-xs mt-0.5">رسائل أولياء الأمور والطلاب</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={refresh} className="px-3 py-2 rounded-xl text-xs font-black bg-white/20 hover:bg-white/30 border border-white/30">🔄 تحديث</button>
+              <button onClick={()=>{
+                const win=window.open("","_blank","width=800,height=600");
+                const rows=filtered.map((item,i)=>"<tr style='background:"+(i%2===0?"#fff":"#f9fdf9")+"'><td style='padding:6px 8px;border:1px solid #e5e7eb'>"+(i+1)+"</td><td style='padding:6px 8px;border:1px solid #e5e7eb;font-weight:700'>"+(item.parentName||"—")+"</td><td style='padding:6px 8px;border:1px solid #e5e7eb'>"+(item.type||"")+"</td><td style='padding:6px 8px;border:1px solid #e5e7eb'>"+(item.message||"").replace(/<[^>]*>/g,"")+"</td><td style='padding:6px 8px;border:1px solid #e5e7eb'>"+(item.status||"")+"</td><td style='padding:6px 8px;border:1px solid #e5e7eb'>"+(item.date||"")+"</td></tr>").join("");
+                win.document.write("<!DOCTYPE html><html dir='rtl'><head><meta charset='UTF-8'><title>الآراء والمقترحات</title><style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');body{font-family:'Cairo',sans-serif;direction:rtl;padding:20px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>"
+                  +"<div style='text-align:center;border-bottom:3px solid #064e3b;padding-bottom:12px;margin-bottom:16px'>"
+                  +"<div style='font-size:9pt;color:#6b7280'>المملكة العربية السعودية — وزارة التعليم</div>"
+                  +"<div style='font-size:16pt;font-weight:900;color:#064e3b'>مدرسة عبيدة بن الحارث المتوسطة</div>"
+                  +"<div style='font-size:12pt;font-weight:700;color:#0d9488'>سجل الآراء والمقترحات والشكاوى</div>"
+                  +"<div style='font-size:9pt;color:#6b7280;margin-top:4px'>إجمالي: "+items.length+" رسالة — تاريخ الطباعة: "+new Date().toLocaleDateString("ar-SA")+"</div>"
+                  +"</div>"
+                  +"<table style='width:100%;border-collapse:collapse;font-size:10pt'>"
+                  +"<thead><tr style='background:#0d9488;color:#fff'><th style='padding:8px;border:1px solid #0f766e'>م</th><th style='padding:8px;border:1px solid #0f766e'>مقدم الطلب</th><th style='padding:8px;border:1px solid #0f766e'>النوع</th><th style='padding:8px;border:1px solid #0f766e'>الرسالة</th><th style='padding:8px;border:1px solid #0f766e'>الحالة</th><th style='padding:8px;border:1px solid #0f766e'>التاريخ</th></tr></thead>"
+                  +"<tbody>"+rows+"</tbody></table>"
+                  +"<div style='text-align:center;font-size:8pt;color:#9ca3af;margin-top:16px;border-top:1px solid #e5e7eb;padding-top:8px'>مدرسة عبيدة بن الحارث المتوسطة — قسم الآراء والمقترحات</div>"
+                  +"</body></html>");
+                win.document.close();
+                setTimeout(()=>win.print(),600);
+              }} className="px-3 py-2 rounded-xl text-xs font-black bg-white/20 hover:bg-white/30 border border-white/30">🖨️ طباعة A4</button>
             </div>
           </div>
-          <button onClick={refresh} className="px-3 py-2 rounded-xl text-xs font-black bg-white/20 hover:bg-white/30 border border-white/30">🔄 تحديث</button>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[{v:counts.total,l:"إجمالي",c:"#93c5fd"},{v:counts.new,l:"جديدة",c:"#fca5a5"},{v:items.filter(i=>i.status==="تمت المعالجة").length,l:"معالجة",c:"#86efac"}].map(s=>(
-            <div key={s.l} className="bg-white/15 rounded-xl py-2 text-center">
-              <div className="text-xl font-black" style={{color:s.c}}>{s.v}</div>
-              <div className="text-xs opacity-75">{s.l}</div>
-            </div>
-          ))}
+          <div className="grid grid-cols-3 gap-3">
+            {[{v:counts.total,l:"إجمالي",c:"#93c5fd"},{v:counts.new,l:"جديدة",c:"#fca5a5"},{v:items.filter(i=>i.status==="تمت المعالجة").length,l:"معالجة",c:"#86efac"}].map(s=>(
+              <div key={s.l} className="bg-white/15 rounded-xl py-2 text-center">
+                <div className="text-xl font-black" style={{color:s.c}}>{s.v}</div>
+                <div className="text-xs opacity-75">{s.l}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
@@ -21741,27 +21764,28 @@ function ProfessionalLicensePage() {
     { val:"low",    label:"حاجة منخفضة",   color:"#059669", bg:"#d1fae5" },
   ];
 
-  const TRAINING_NEEDS = [
-    {id:"strategies",label:"استراتيجيات التدريس الحديثة"},
-    {id:"active",label:"التعلّم النشط والتعاوني"},
-    {id:"assessment",label:"التقويم والقياس وبناء الاختبارات"},
-    {id:"technology",label:"توظيف التقنية في التدريس"},
-    {id:"elearning",label:"التعلّم الإلكتروني ومنصة مدرستي"},
-    {id:"classmanage",label:"إدارة الصف والانضباط الصفي"},
-    {id:"planning",label:"التخطيط اليومي والفصلي"},
-    {id:"thinking",label:"مهارات التفكير العليا"},
-    {id:"feedback",label:"التغذية الراجعة وأساليبها"},
-    {id:"diff",label:"التعامل مع الفروق الفردية"},
-    {id:"gifted",label:"رعاية الموهوبين وذوي الاحتياجات"},
-    {id:"research",label:"البحث الإجرائي وتطوير الذات"},
+  const TRAINING_NEEDS_LIST = [
+    {id:"strategies",  label:"استراتيجيات التدريس الحديثة"},
+    {id:"active",      label:"التعلّم النشط والتعاوني"},
+    {id:"assessment",  label:"التقويم والقياس وبناء الاختبارات"},
+    {id:"technology",  label:"توظيف التقنية في التدريس"},
+    {id:"elearning",   label:"التعلّم الإلكتروني ومنصة مدرستي"},
+    {id:"classmanage", label:"إدارة الصف والانضباط الصفي"},
+    {id:"planning",    label:"التخطيط اليومي والفصلي"},
+    {id:"thinking",    label:"مهارات التفكير العليا"},
+    {id:"feedback",    label:"التغذية الراجعة وأساليبها"},
+    {id:"diff",        label:"التعامل مع الفروق الفردية"},
+    {id:"gifted",      label:"رعاية الموهوبين وذوي الاحتياجات"},
+    {id:"research",    label:"البحث الإجرائي وتطوير الذات"},
     {id:"communication",label:"مهارات التواصل مع الطلاب وأولياء الأمور"},
-    {id:"mental",label:"الصحة النفسية والإرشاد التربوي"},
-    {id:"quality",label:"معايير الجودة في التعليم"},
+    {id:"mental",      label:"الصحة النفسية والإرشاد التربوي"},
+    {id:"quality",     label:"معايير الجودة في التعليم"},
   ];
 
-  const IMPACT_AREAS = [
+  const IMPACT_AREAS_LIST = [
     "استراتيجيات التدريس","التقويم والقياس","توظيف التقنية",
-    "إدارة الصف","التعلّم النشط","مهارات التفكير","التغذية الراجعة","التعامل مع الفروق الفردية",
+    "إدارة الصف","التعلّم النشط","مهارات التفكير",
+    "التغذية الراجعة","التعامل مع الفروق الفردية",
   ];
 
   const mkEmpty = (name="") => ({
@@ -21769,20 +21793,6 @@ function ProfessionalLicensePage() {
     programs: Object.fromEntries(PROGRAMS.map(p=>[p.id,{need:"",notes:""}])),
     hasLicense: null, licenseReason:"",
     licenseImages:[null,null],
-    // فقرات جديدة
-    needs: Object.fromEntries([
-      "strategies","active","assessment","technology","elearning",
-      "classmanage","planning","thinking","feedback","diff",
-      "gifted","research","communication","mental","quality"
-    ].map(id=>[id,{needed:null,priority:""}])),
-    courses: Array(9).fill(null).map(()=>({name:"",org:"",date:"",hours:""})),
-    impact: Object.fromEntries([
-      "استراتيجيات التدريس","التقويم والقياس","توظيف التقنية",
-      "إدارة الصف","التعلّم النشط","مهارات التفكير","التغذية الراجعة","التعامل مع الفروق الفردية"
-    ].map(a=>[a,{level:"",notes:""}])),
-    monthlyReport:{month:"",date:"",activities:"",pct:"",challenges:""},
-    semesterReport:{semester:"",achievements:"",pct:"",recommendations:""},
-    principalName:"", academicYear:"", teacherRating:"",
   });
 
   const [records, setRecords]   = useState([]);
@@ -21941,6 +21951,49 @@ function ProfessionalLicensePage() {
           <div className="flex-1 font-black text-lg text-gray-800">{rec.name}</div>
           <div className="flex items-center gap-2">
             {saved && <span className="text-green-600 text-xs font-bold">✅ محفوظ</span>}
+            <button onClick={()=>{
+              const win=window.open("","_blank","width=900,height=700");
+              const totalH=(rec.courses||[]).reduce((s,c)=>s+(parseInt(c?.hours)||0),0);
+              const rating=rec.teacherRating||"—";
+              win.document.write("<!DOCTYPE html><html dir='rtl'><head><meta charset='UTF-8'><title>سجل النمو المهني</title>"
+                +"<style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;padding:15mm;color:#1f2937;font-size:10pt}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}.hdr{text-align:center;border-bottom:3px solid #064e3b;padding-bottom:10px;margin-bottom:14px}.hdr h1{font-size:16pt;font-weight:900;color:#064e3b}.hdr h2{font-size:12pt;font-weight:700;color:#0d9488}.quote{background:#f0fdf4;border-right:4px solid #0d9488;padding:6px 10px;font-style:italic;color:#065f46;font-weight:700;margin-bottom:12px;border-radius:0 8px 8px 0}.sec{font-weight:900;font-size:10pt;color:#fff;background:linear-gradient(135deg,#064e3b,#0d9488);padding:5px 12px;border-radius:6px;margin:10px 0 6px}table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6px}th{background:#0d9488;color:#fff;padding:5px 8px;border:1px solid #0f766e;text-align:right}td{padding:4px 8px;border:1px solid #e5e7eb}td.lb{background:#f9fafb;color:#6b7280;font-weight:700;width:30%}.footer{text-align:center;font-size:8pt;color:#9ca3af;border-top:1px dashed #e5e7eb;padding-top:8px;margin-top:12px}</style></head><body>"
+                +"<div class='hdr'><div style='font-size:8pt;color:#6b7280'>المملكة العربية السعودية — وزارة التعليم — إدارة التعليم بمحافظة جدة</div>"
+                +"<h1>مدرسة عبيدة بن الحارث المتوسطة</h1><h2>سجل متابعة النمو المهني للمعلمين</h2>"
+                +"<div style='font-size:9pt;color:#6b7280;margin-top:4px'>العام الدراسي: "+(rec.academicYear||".......... هـ")+" — مدير المدرسة: "+(rec.principalName||"............")+"</div></div>"
+                +"<div class='quote'>❝ المعلم الذي يتوقف عن التعلّم يجب أن يتوقف عن التعليم — جون ديوي ❞</div>"
+                +"<div style='background:linear-gradient(135deg,#1a3a2a,#064e3b);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px'>"
+                +"<div style='font-size:14pt;font-weight:900'>"+rec.name+"</div>"
+                +"<div style='font-size:9pt;opacity:0.75'>"+(rec.specialization||"")+(rec.yearsService?" • خبرة "+rec.yearsService:"")+" • التصنيف: "+rating+"</div></div>"
+                +"<div class='sec'>👤 البيانات الأساسية</div>"
+                +"<table><tr><td class='lb'>التخصص</td><td>"+(rec.specialization||"—")+"</td><td class='lb'>سنوات الخدمة</td><td>"+(rec.yearsService||"—")+"</td></tr>"
+                +"<tr><td class='lb'>ساعات التدريب</td><td>"+(rec.trainingHours||"—")+"</td><td class='lb'>العام الدراسي</td><td>"+(rec.academicYear||"—")+"</td></tr></table>"
+                +"<div class='sec'>🎓 سجل الدورات التدريبية</div>"
+                +"<table><thead><tr><th>م</th><th>اسم الدورة</th><th>الجهة المنظمة</th><th>التاريخ</th><th>الساعات</th></tr></thead><tbody>"
+                +(rec.courses||[]).map((c,i)=>"<tr><td style='text-align:center'>"+(i+1)+"</td><td>"+(c&&c.name||"")+"</td><td>"+(c&&c.org||"")+"</td><td>"+(c&&c.date||"")+"</td><td style='text-align:center'>"+(c&&c.hours||"")+"</td></tr>").join("")
+                +"<tr style='background:#f0fdf4;font-weight:700'><td colspan='4' style='text-align:right;color:#065f46'>إجمالي الساعات</td><td style='text-align:center;color:#065f46'>"+totalH+"</td></tr>"
+                +"</tbody></table>"
+                +"<div class='sec'>📈 أثر التدريب على الأداء</div>"
+                +"<table><thead><tr><th>م</th><th>مجال التدريب</th><th>تحسّن ملحوظ</th><th>متوسط</th><th>يحتاج دعم</th><th>الملاحظات</th></tr></thead><tbody>"
+                +IMPACT_AREAS_LIST.map((a,i)=>{const imp=(rec.impact||{})[a]||{};return "<tr><td style='text-align:center'>"+(i+1)+"</td><td>"+a+"</td><td style='text-align:center'>"+(imp.level==="تحسّن ملحوظ"?"✓":"○")+"</td><td style='text-align:center'>"+(imp.level==="متوسط"?"✓":"○")+"</td><td style='text-align:center'>"+(imp.level==="يحتاج دعم"?"✓":"○")+"</td><td>"+(imp.notes||"")+"</td></tr>";}).join("")
+                +"</tbody></table>"
+                +"<div class='sec'>📅 التقارير الدورية</div>"
+                +"<table><tr><td class='lb'>الشهر</td><td>"+((rec.monthlyReport||{}).month||"—")+"</td><td class='lb'>نسبة الإنجاز الشهري</td><td>"+((rec.monthlyReport||{}).pct||"—")+" %</td></tr>"
+                +"<tr><td class='lb'>الفصل الدراسي</td><td>"+((rec.semesterReport||{}).semester?"الفصل "+((rec.semesterReport||{}).semester):"—")+"</td><td class='lb'>نسبة الإنجاز الفصلي</td><td>"+((rec.semesterReport||{}).pct||"—")+" %</td></tr>"
+                +"<tr><td class='lb'>التحديات</td><td colspan='3'>"+((rec.monthlyReport||{}).challenges||"—")+"</td></tr>"
+                +"<tr><td class='lb'>التوصيات</td><td colspan='3'>"+((rec.semesterReport||{}).recommendations||"—")+"</td></tr></table>"
+                +"<div class='sec'>🏅 الرخصة المهنية والتصنيف</div>"
+                +"<table><tr><td class='lb'>حالة الرخصة</td><td>"+(rec.hasLicense===true?"✅ حاصل":rec.hasLicense===false?"❌ لم يحصل — "+(rec.licenseReason||""):"غير محدد")+"</td><td class='lb'>التصنيف</td><td><b>"+(rec.teacherRating||"—")+"</b></td></tr></table>"
+                +"<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px'>"
+                +"<div style='border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;min-height:50px'><div style='font-size:8pt;color:#6b7280;margin-bottom:6px'>المعلم</div></div>"
+                +"<div style='border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;min-height:50px'><div style='font-size:8pt;color:#6b7280;margin-bottom:6px'>مدير المدرسة</div><div style='font-size:9pt;font-weight:700'>"+(rec.principalName||"")+"</div></div>"
+                +"<div style='border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center;min-height:50px'><div style='font-size:8pt;color:#6b7280;margin-bottom:6px'>وكيل الشؤون التعليمية</div></div></div>"
+                +"<div class='footer'>مدرسة عبيدة بن الحارث المتوسطة — سجل النمو المهني — "+new Date().toLocaleDateString("ar-SA")+"</div>"
+                +"</body></html>");
+              win.document.close();
+              setTimeout(()=>win.print(),600);
+            }} className="px-3 py-1.5 rounded-xl text-xs font-black bg-teal-600 text-white hover:bg-teal-700 flex items-center gap-1">
+              🖨️ طباعة A4
+            </button>
             <span className="text-xs font-bold px-3 py-1 rounded-full"
               style={{background: pct===100?"#d1fae5":"#fef3c7", color: pct===100?"#059669":"#d97706"}}>
               {pct}% مكتمل
@@ -22118,39 +22171,37 @@ function ProfessionalLicensePage() {
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr style={{background:"#0d9488"}}>
-                    <th className="text-right p-2 text-white font-black">م</th>
-                    <th className="text-right p-2 text-white font-black">المجال / الموضوع التدريبي</th>
+                    <th className="p-2 text-white font-black text-right w-8">م</th>
+                    <th className="p-2 text-white font-black text-right">المجال / الموضوع التدريبي</th>
                     <th className="p-2 text-white font-black text-center" colSpan={2}>الحاجة للتدريب</th>
                     <th className="p-2 text-white font-black text-center" colSpan={3}>أولوية التدريب</th>
                   </tr>
                   <tr style={{background:"#f0fdf4"}}>
-                    <th className="p-2"></th><th className="p-2"></th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#059669"}}>نعم</th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#dc2626"}}>لا</th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#dc2626"}}>عالية</th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#d97706"}}>متوسطة</th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#059669"}}>منخفضة</th>
+                    <th className="p-1 border border-gray-200"></th>
+                    <th className="p-1 border border-gray-200"></th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#059669"}}>نعم</th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#dc2626"}}>لا</th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#dc2626"}}>عالية</th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#d97706"}}>متوسطة</th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#059669"}}>منخفضة</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {TRAINING_NEEDS.map((need, i) => {
-                    const nd = rec.needs?.[need.id] || {needed:null, priority:""};
-                    const bg = i%2===0 ? "#fff" : "#f9fdf9";
+                  {TRAINING_NEEDS_LIST.map((need, i) => {
+                    const nd = (rec.needs||{})[need.id] || {needed:null, priority:""};
                     return (
-                      <tr key={need.id} style={{background:bg}}>
-                        <td className="p-2 text-center font-bold text-gray-500 text-xs border border-gray-100">{i+1}</td>
+                      <tr key={need.id} style={{background:i%2===0?"#fff":"#f9fdf9"}}>
+                        <td className="p-2 text-center font-bold text-gray-500 border border-gray-100">{i+1}</td>
                         <td className="p-2 font-bold text-gray-700 border border-gray-100">{need.label}</td>
-                        {[
-                          {field:"needed", val:true},
-                          {field:"needed", val:false},
-                        ].map((opt,oi) => (
-                          <td key={oi} className="p-2 text-center border border-gray-100">
+                        {[true, false].map((v, vi) => (
+                          <td key={vi} className="p-2 text-center border border-gray-100">
                             <button onClick={()=>{
                               const next=[...records];
-                              next[idx]={...next[idx],needs:{...next[idx].needs,[need.id]:{...nd,needed:nd.needed===opt.val?null:opt.val}}};
+                              const cur=(next[idx].needs||{});
+                              next[idx]={...next[idx],needs:{...cur,[need.id]:{...nd,needed:nd.needed===v?null:v}}};
                               save(next);
-                            }} className={"w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center text-xs font-black transition-all "+(nd.needed===opt.val?(opt.val?"bg-green-500 border-green-500 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300 text-gray-300")}>
-                              {nd.needed===opt.val?"✓":"○"}
+                            }} className={"w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center text-xs font-black "+(nd.needed===v?(v?"bg-green-500 border-green-500 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300 bg-white")}>
+                              {nd.needed===v?"✓":""}
                             </button>
                           </td>
                         ))}
@@ -22158,10 +22209,11 @@ function ProfessionalLicensePage() {
                           <td key={p} className="p-2 text-center border border-gray-100">
                             <button onClick={()=>{
                               const next=[...records];
-                              next[idx]={...next[idx],needs:{...next[idx].needs,[need.id]:{...nd,priority:nd.priority===p?"":p}}};
+                              const cur=(next[idx].needs||{});
+                              next[idx]={...next[idx],needs:{...cur,[need.id]:{...nd,priority:nd.priority===p?"":p}}};
                               save(next);
-                            }} className={"w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center text-xs font-black transition-all "+(nd.priority===p?(p==="high"?"bg-red-500 border-red-500 text-white":p==="medium"?"bg-yellow-400 border-yellow-400 text-white":"bg-green-500 border-green-500 text-white"):"border-gray-300 text-gray-300")}>
-                              {nd.priority===p?"✓":"○"}
+                            }} className={"w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center text-xs font-black "+(nd.priority===p?(p==="high"?"bg-red-500 border-red-500 text-white":p==="medium"?"bg-yellow-400 border-yellow-400 text-white":"bg-green-500 border-green-500 text-white"):"border-gray-300 bg-white")}>
+                              {nd.priority===p?"✓":""}
                             </button>
                           </td>
                         ))}
@@ -22192,18 +22244,18 @@ function ProfessionalLicensePage() {
                 </tr>
               </thead>
               <tbody>
-                {(rec.courses||[]).map((row, i) => (
+                {(rec.courses||Array(9).fill({})).map((row, i) => (
                   <tr key={i} style={{background:i%2===0?"#fff":"#f9fdf9"}}>
                     <td className="p-1 text-center font-bold text-gray-400 border border-gray-100">{i+1}</td>
                     {["name","org","date","hours"].map(f => (
                       <td key={f} className="p-1 border border-gray-100">
                         <input value={row?.[f]||""} onChange={e=>{
                           const next=[...records];
-                          const courses=[...(next[idx].courses||[])];
+                          const courses=[...(next[idx].courses||Array(9).fill({}))];
                           courses[i]={...courses[i],[f]:e.target.value};
                           next[idx]={...next[idx],courses};
                           save(next);
-                        }} className="w-full px-2 py-1 rounded-lg border border-gray-200 focus:border-teal-400 focus:outline-none text-xs bg-transparent"/>
+                        }} className="w-full px-2 py-1 rounded-lg border border-gray-100 focus:border-teal-400 focus:outline-none text-xs bg-transparent"/>
                       </td>
                     ))}
                   </tr>
@@ -22225,7 +22277,7 @@ function ProfessionalLicensePage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
             style={{background:"linear-gradient(135deg,#065f46,#0d9488)"}}>
-            <span>📈</span> أثر التدريب على الأداء
+            <span>📈</span> أثر التدريب على الأداء الصفي
           </div>
           <div className="p-4">
             <p className="text-xs text-gray-500 mb-3">ضع علامة (✓) في العمود الذي يعكس أثر كل مجال تدريبي على أدائك الفعلي:</p>
@@ -22233,22 +22285,23 @@ function ProfessionalLicensePage() {
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr style={{background:"#0d9488"}}>
-                    <th className="p-2 text-white font-black text-right" style={{minWidth:30}}>م</th>
+                    <th className="p-2 text-white font-black text-right w-8">م</th>
                     <th className="p-2 text-white font-black text-right">مجال التدريب</th>
                     <th className="p-2 text-white font-black text-center" colSpan={3}>مستوى الأثر على الأداء</th>
                     <th className="p-2 text-white font-black text-right">الملاحظات</th>
                   </tr>
-                  <tr style={{background:"#f0fdf4"}}>
-                    <th className="p-2"></th><th className="p-2"></th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#059669",background:"#dcfce7"}}>تحسّن ملحوظ</th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#d97706",background:"#fef9c3"}}>متوسط</th>
-                    <th className="p-2 text-center text-xs font-black" style={{color:"#dc2626",background:"#fee2e2"}}>يحتاج دعم</th>
-                    <th className="p-2"></th>
+                  <tr>
+                    <th className="p-1 border border-gray-200"></th>
+                    <th className="p-1 border border-gray-200"></th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#059669",background:"#dcfce7"}}>تحسّن ملحوظ</th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#d97706",background:"#fef9c3"}}>متوسط</th>
+                    <th className="p-2 text-center text-xs font-black border border-gray-200" style={{color:"#dc2626",background:"#fee2e2"}}>يحتاج دعم</th>
+                    <th className="p-1 border border-gray-200"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {IMPACT_AREAS.map((area, i) => {
-                    const imp = rec.impact?.[area] || {level:"", notes:""};
+                  {IMPACT_AREAS_LIST.map((area, i) => {
+                    const imp = (rec.impact||{})[area] || {level:"", notes:""};
                     return (
                       <tr key={area} style={{background:i%2===0?"#fff":"#f9fdf9"}}>
                         <td className="p-2 text-center font-bold text-gray-500 border border-gray-100">{i+1}</td>
@@ -22257,19 +22310,21 @@ function ProfessionalLicensePage() {
                           <td key={level} className="p-2 text-center border border-gray-100">
                             <button onClick={()=>{
                               const next=[...records];
-                              next[idx]={...next[idx],impact:{...next[idx].impact,[area]:{...imp,level:imp.level===level?"":level}}};
+                              const cur=(next[idx].impact||{});
+                              next[idx]={...next[idx],impact:{...cur,[area]:{...imp,level:imp.level===level?"":level}}};
                               save(next);
-                            }} className={"w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center text-xs font-black transition-all "+(imp.level===level?(level==="تحسّن ملحوظ"?"bg-green-500 border-green-500 text-white":level==="متوسط"?"bg-yellow-400 border-yellow-400 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300 text-gray-300")}>
-                              {imp.level===level?"✓":"○"}
+                            }} className={"w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center text-xs font-black "+(imp.level===level?(level==="تحسّن ملحوظ"?"bg-green-500 border-green-500 text-white":level==="متوسط"?"bg-yellow-400 border-yellow-400 text-white":"bg-red-500 border-red-500 text-white"):"border-gray-300 bg-white")}>
+                              {imp.level===level?"✓":""}
                             </button>
                           </td>
                         ))}
                         <td className="p-1 border border-gray-100">
                           <input value={imp.notes||""} onChange={e=>{
                             const next=[...records];
-                            next[idx]={...next[idx],impact:{...next[idx].impact,[area]:{...imp,notes:e.target.value}}};
+                            const cur=(next[idx].impact||{});
+                            next[idx]={...next[idx],impact:{...cur,[area]:{...imp,notes:e.target.value}}};
                             save(next);
-                          }} className="w-full px-2 py-1 rounded-lg border border-gray-200 focus:border-teal-400 focus:outline-none text-xs bg-transparent"/>
+                          }} className="w-full px-2 py-1 rounded-lg border border-gray-100 focus:border-teal-400 focus:outline-none text-xs bg-transparent"/>
                         </td>
                       </tr>
                     );
@@ -22289,81 +22344,76 @@ function ProfessionalLicensePage() {
           <div className="p-4 space-y-4">
             {/* التقرير الشهري */}
             <div className="rounded-xl overflow-hidden border border-gray-200">
-              <div className="px-4 py-2 font-black text-sm text-white flex items-center gap-2" style={{background:"#0d9488"}}>
-                ◆ التقرير الشهري
-              </div>
+              <div className="px-4 py-2.5 font-black text-sm text-white" style={{background:"#0d9488"}}>◆ التقرير الشهري</div>
               <div className="p-4 space-y-3" style={{background:"#f9fdf9"}}>
-                <div className="flex gap-3 flex-wrap">
-                  <div className="flex-1">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
                     <label className="text-xs font-black text-gray-600 mb-1 block">الشهر</label>
-                    <input value={rec.monthlyReport?.month||""} onChange={e=>{
-                      const next=[...records];next[idx]={...next[idx],monthlyReport:{...next[idx].monthlyReport,month:e.target.value}};save(next);
+                    <input value={(rec.monthlyReport||{}).month||""} onChange={e=>{
+                      const next=[...records];next[idx]={...next[idx],monthlyReport:{...(next[idx].monthlyReport||{}),month:e.target.value}};save(next);
                     }} placeholder="مثال: محرم" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm"/>
                   </div>
-                  <div className="flex-1">
+                  <div>
                     <label className="text-xs font-black text-gray-600 mb-1 block">التاريخ</label>
-                    <input value={rec.monthlyReport?.date||""} onChange={e=>{
-                      const next=[...records];next[idx]={...next[idx],monthlyReport:{...next[idx].monthlyReport,date:e.target.value}};save(next);
-                    }} placeholder="مثال: 1446/02/01" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm"/>
+                    <input value={(rec.monthlyReport||{}).date||""} onChange={e=>{
+                      const next=[...records];next[idx]={...next[idx],monthlyReport:{...(next[idx].monthlyReport||{}),date:e.target.value}};save(next);
+                    }} placeholder="1446/02/01 هـ" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm"/>
                   </div>
-                  <div style={{width:100}}>
+                  <div>
                     <label className="text-xs font-black text-gray-600 mb-1 block">نسبة الإنجاز %</label>
-                    <input type="number" min="0" max="100" value={rec.monthlyReport?.pct||""} onChange={e=>{
-                      const next=[...records];next[idx]={...next[idx],monthlyReport:{...next[idx].monthlyReport,pct:e.target.value}};save(next);
+                    <input type="number" min="0" max="100" value={(rec.monthlyReport||{}).pct||""} onChange={e=>{
+                      const next=[...records];next[idx]={...next[idx],monthlyReport:{...(next[idx].monthlyReport||{}),pct:e.target.value}};save(next);
                     }} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm font-bold"/>
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-black text-gray-600 mb-1 block">أبرز الأنشطة التطويرية خلال الشهر</label>
-                  <textarea value={rec.monthlyReport?.activities||""} rows={2} onChange={e=>{
-                    const next=[...records];next[idx]={...next[idx],monthlyReport:{...next[idx].monthlyReport,activities:e.target.value}};save(next);
+                  <textarea value={(rec.monthlyReport||{}).activities||""} rows={2} onChange={e=>{
+                    const next=[...records];next[idx]={...next[idx],monthlyReport:{...(next[idx].monthlyReport||{}),activities:e.target.value}};save(next);
                   }} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm resize-none"/>
                 </div>
                 <div>
                   <label className="text-xs font-black text-gray-600 mb-1 block">التحديات والمعوّقات</label>
-                  <textarea value={rec.monthlyReport?.challenges||""} rows={2} onChange={e=>{
-                    const next=[...records];next[idx]={...next[idx],monthlyReport:{...next[idx].monthlyReport,challenges:e.target.value}};save(next);
+                  <textarea value={(rec.monthlyReport||{}).challenges||""} rows={2} onChange={e=>{
+                    const next=[...records];next[idx]={...next[idx],monthlyReport:{...(next[idx].monthlyReport||{}),challenges:e.target.value}};save(next);
                   }} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm resize-none"/>
                 </div>
               </div>
             </div>
-
             {/* التقرير الفصلي */}
             <div className="rounded-xl overflow-hidden border border-gray-200">
-              <div className="px-4 py-2 font-black text-sm text-white flex items-center gap-2" style={{background:"#0d9488"}}>
-                ◆ التقرير الفصلي
-              </div>
+              <div className="px-4 py-2.5 font-black text-sm text-white" style={{background:"#0d9488"}}>◆ التقرير الفصلي</div>
               <div className="p-4 space-y-3" style={{background:"#f9fdf9"}}>
-                <div className="flex gap-3 items-center flex-wrap">
+                <div className="flex gap-3 items-end flex-wrap">
                   <div>
                     <label className="text-xs font-black text-gray-600 mb-1 block">الفصل الدراسي</label>
                     <div className="flex gap-2">
                       {["الأول","الثاني"].map(s=>(
                         <button key={s} onClick={()=>{
-                          const next=[...records];next[idx]={...next[idx],semesterReport:{...next[idx].semesterReport,semester:s}};save(next);
-                        }} className={"px-4 py-2 rounded-xl text-sm font-black border-2 transition-all "+(rec.semesterReport?.semester===s?"border-teal-500 bg-teal-50 text-teal-700":"border-gray-200 text-gray-500")}>
+                          const next=[...records];next[idx]={...next[idx],semesterReport:{...(next[idx].semesterReport||{}),semester:s}};save(next);
+                        }} className={"px-4 py-2 rounded-xl text-sm font-black border-2 transition-all "+((rec.semesterReport||{}).semester===s?"border-teal-500 bg-teal-50 text-teal-700":"border-gray-200 text-gray-500")}>
                           {s}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div style={{width:100}}>
+                  <div>
                     <label className="text-xs font-black text-gray-600 mb-1 block">نسبة الإنجاز %</label>
-                    <input type="number" min="0" max="100" value={rec.semesterReport?.pct||""} onChange={e=>{
-                      const next=[...records];next[idx]={...next[idx],semesterReport:{...next[idx].semesterReport,pct:e.target.value}};save(next);
-                    }} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm font-bold"/>
+                    <input type="number" min="0" max="100" value={(rec.semesterReport||{}).pct||""} onChange={e=>{
+                      const next=[...records];next[idx]={...next[idx],semesterReport:{...(next[idx].semesterReport||{}),pct:e.target.value}};save(next);
+                    }} className="px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm font-bold" style={{width:100}}/>
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-black text-gray-600 mb-1 block">ملخّص أبرز الإنجازات التطويرية للفصل</label>
-                  <textarea value={rec.semesterReport?.achievements||""} rows={2} onChange={e=>{
-                    const next=[...records];next[idx]={...next[idx],semesterReport:{...next[idx].semesterReport,achievements:e.target.value}};save(next);
+                  <textarea value={(rec.semesterReport||{}).achievements||""} rows={2} onChange={e=>{
+                    const next=[...records];next[idx]={...next[idx],semesterReport:{...(next[idx].semesterReport||{}),achievements:e.target.value}};save(next);
                   }} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm resize-none"/>
                 </div>
                 <div>
                   <label className="text-xs font-black text-gray-600 mb-1 block">التوصيات للفصل القادم</label>
-                  <textarea value={rec.semesterReport?.recommendations||""} rows={2} onChange={e=>{
-                    const next=[...records];next[idx]={...next[idx],semesterReport:{...next[idx].semesterReport,recommendations:e.target.value}};save(next);
+                  <textarea value={(rec.semesterReport||{}).recommendations||""} rows={2} onChange={e=>{
+                    const next=[...records];next[idx]={...next[idx],semesterReport:{...(next[idx].semesterReport||{}),recommendations:e.target.value}};save(next);
                   }} className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm resize-none"/>
                 </div>
               </div>
@@ -22371,38 +22421,30 @@ function ProfessionalLicensePage() {
           </div>
         </div>
 
-        {/* ══ التقييم والتصنيف ══ */}
+        {/* ══ تصنيف المعلم ══ */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
             style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)"}}>
-            <span>⭐</span> تصنيف المعلم وبيانات الاعتماد
+            <span>⭐</span> تصنيف المعلم
           </div>
           <div className="p-5 space-y-4">
-            {/* اسم المدرسة والعام الدراسي */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-black text-gray-600 mb-1.5 block">🏫 اسم المدرسة</label>
-                <input value={rec.schoolName||"مدرسة عبيدة بن الحارث المتوسطة"} readOnly
-                  className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-bold bg-gray-50 text-gray-600"/>
-              </div>
               <div>
                 <label className="text-xs font-black text-gray-600 mb-1.5 block">📅 العام الدراسي</label>
                 <input value={rec.academicYear||""} onChange={e=>updRecord(idx,"academicYear",e.target.value)}
-                  placeholder="مثال: 1446/1447 هـ"
+                  placeholder="مثال: 1446 / 1447 هـ"
                   className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm"/>
               </div>
+              <div>
+                <label className="text-xs font-black text-gray-600 mb-1.5 block">👨‍💼 مدير المدرسة</label>
+                <input value={rec.principalName||""} onChange={e=>updRecord(idx,"principalName",e.target.value)}
+                  placeholder="اسم مدير المدرسة"
+                  className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold"/>
+              </div>
             </div>
-            {/* مدير المدرسة */}
             <div>
-              <label className="text-xs font-black text-gray-600 mb-1.5 block">👨‍💼 اسم مدير المدرسة</label>
-              <input value={rec.principalName||""} onChange={e=>updRecord(idx,"principalName",e.target.value)}
-                placeholder="أدخل اسم مدير المدرسة"
-                className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm font-bold"/>
-            </div>
-            {/* تصنيف المعلم */}
-            <div>
-              <label className="text-xs font-black text-gray-600 mb-2 block">🏆 تصنيف المعلم</label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <label className="text-xs font-black text-gray-600 mb-2 block">🏆 التصنيف النهائي للمعلم</label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
                   {val:"ممتاز",    color:"#059669", bg:"#d1fae5", border:"#059669", icon:"🌟"},
                   {val:"جيد جداً", color:"#0284c7", bg:"#dbeafe", border:"#0284c7", icon:"⭐"},
@@ -22410,14 +22452,15 @@ function ProfessionalLicensePage() {
                   {val:"متدني",    color:"#dc2626", bg:"#fee2e2", border:"#dc2626", icon:"⚠️"},
                 ].map(opt=>(
                   <button key={opt.val} onClick={()=>updRecord(idx,"teacherRating",opt.val)}
-                    className="py-3 rounded-2xl font-black text-sm border-2 transition-all flex flex-col items-center gap-1"
+                    className="py-4 rounded-2xl font-black text-sm border-2 transition-all flex flex-col items-center gap-1.5"
                     style={{
                       background: rec.teacherRating===opt.val ? opt.bg : "#f9fafb",
                       borderColor: rec.teacherRating===opt.val ? opt.border : "#e5e7eb",
                       color: rec.teacherRating===opt.val ? opt.color : "#9ca3af",
-                      transform: rec.teacherRating===opt.val ? "scale(1.03)" : "scale(1)",
+                      transform: rec.teacherRating===opt.val ? "scale(1.04)" : "scale(1)",
+                      boxShadow: rec.teacherRating===opt.val ? "0 4px 12px "+opt.color+"40" : "none",
                     }}>
-                    <span className="text-xl">{opt.icon}</span>
+                    <span className="text-2xl">{opt.icon}</span>
                     {opt.val}
                   </button>
                 ))}
@@ -22443,20 +22486,12 @@ function ProfessionalLicensePage() {
   }
 
   // ── القائمة الرئيسية ──
-  const [schoolYear, setSchoolYear] = useState(() => {
-    try { return localStorage.getItem("license-school-year") || ""; } catch { return ""; }
-  });
-  const [principalNameGlobal, setPrincipalNameGlobal] = useState(() => {
-    try { return localStorage.getItem("license-principal") || ""; } catch { return ""; }
-  });
-
-  const RATINGS = [
+  const RATINGS_LIST = [
     {val:"ممتاز",    color:"#059669", bg:"#d1fae5", icon:"🌟"},
     {val:"جيد جداً", color:"#0284c7", bg:"#dbeafe", icon:"⭐"},
     {val:"جيد",      color:"#d97706", bg:"#fef3c7", icon:"✨"},
     {val:"متدني",    color:"#dc2626", bg:"#fee2e2", icon:"⚠️"},
   ];
-
   const stats = {
     total: records.length,
     hasLicense: records.filter(r=>r.hasLicense===true).length,
@@ -22464,16 +22499,12 @@ function ProfessionalLicensePage() {
     pending:    records.filter(r=>r.hasLicense===null).length,
   };
 
-  const ratingStats = Object.fromEntries(RATINGS.map(r=>[r.val, records.filter(rec=>rec.teacherRating===r.val).length]));
-
   return (
     <div dir="rtl" className="max-w-3xl mx-auto px-3 py-4 space-y-4" style={{fontFamily:"'Cairo',sans-serif"}}>
-
       {/* ── Header المدرسة ── */}
       <div className="rounded-3xl overflow-hidden shadow-xl">
-        {/* غلاف */}
-        <div className="relative px-6 py-8 text-white text-center" style={{background:"linear-gradient(135deg,#1a3a2a,#064e3b,#065f46)"}}>
-          <div className="absolute inset-0 opacity-10 overflow-hidden">
+        <div className="relative py-8 px-6 text-white text-center" style={{background:"linear-gradient(135deg,#1a3a2a,#064e3b,#0d9488)"}}>
+          <div className="absolute inset-0 overflow-hidden opacity-10">
             {[...Array(4)].map((_,i)=>(
               <div key={i} className="absolute rounded-full border-2 border-white"
                 style={{width:(i+2)*70,height:(i+2)*70,top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
@@ -22486,29 +22517,9 @@ function ProfessionalLicensePage() {
             <div className="text-xs opacity-60 italic mt-1">نحو تطوير تربوي ومهني مستدام</div>
           </div>
         </div>
-
-        {/* العام الدراسي ومدير المدرسة */}
-        <div className="bg-white px-5 py-3 grid grid-cols-2 gap-3 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-gray-500 whitespace-nowrap">📅 العام الدراسي:</span>
-            <input value={schoolYear} onChange={e=>{setSchoolYear(e.target.value);try{localStorage.setItem("license-school-year",e.target.value);}catch(err){}}}
-              placeholder="مثال: 1446 / 1447 هـ"
-              className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 focus:border-teal-400 focus:outline-none text-xs font-bold"/>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-gray-500 whitespace-nowrap">👨‍💼 مدير المدرسة:</span>
-            <input value={principalNameGlobal} onChange={e=>{setPrincipalNameGlobal(e.target.value);try{localStorage.setItem("license-principal",e.target.value);}catch(err){}}}
-              placeholder="اسم المدير"
-              className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 focus:border-teal-400 focus:outline-none text-xs font-bold"/>
-          </div>
-        </div>
-
-        {/* إحصائيات */}
         <div className="p-4 text-white" style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8,#7c3aed)"}}>
           <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-            <div className="flex items-center gap-2">
-              <span className="font-black text-base">👨‍🏫 المعلمون</span>
-            </div>
+            <div className="font-black text-base">👨‍🏫 المعلمون</div>
             <div className="flex gap-2 flex-wrap">
               <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black cursor-pointer border border-white/30 bg-white/15 hover:bg-white/25">
                 {importing ? "⏳ جاري..." : "📥 استيراد Excel"}
@@ -22534,13 +22545,12 @@ function ProfessionalLicensePage() {
               </div>
             ))}
           </div>
-          {/* تصنيف المعلمين */}
           <div className="bg-white/10 rounded-2xl p-3">
-            <div className="text-xs font-black opacity-75 mb-2">⭐ تصنيف المعلمين</div>
+            <div className="text-xs font-black opacity-70 mb-2">⭐ تصنيف المعلمين</div>
             <div className="grid grid-cols-4 gap-2">
-              {RATINGS.map(r=>(
+              {RATINGS_LIST.map(r=>(
                 <div key={r.val} className="text-center">
-                  <div className="text-base font-black">{r.icon} {ratingStats[r.val]||0}</div>
+                  <div className="font-black">{r.icon} {records.filter(rec=>rec.teacherRating===r.val).length}</div>
                   <div className="text-xs opacity-70">{r.val}</div>
                 </div>
               ))}
@@ -22567,7 +22577,7 @@ function ProfessionalLicensePage() {
             const realIdx = records.indexOf(rec);
             const pct = getCompletePct(rec);
             const highNeeds = PROGRAMS.filter(p => rec.programs?.[p.id]?.need === "high");
-            const rating = RATINGS.find(r=>r.val===rec.teacherRating);
+            const rating = RATINGS_LIST.find(r=>r.val===rec.teacherRating);
             return (
               <button key={i} onClick={()=>setSelected(realIdx)}
                 className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all text-right">
@@ -22577,7 +22587,7 @@ function ProfessionalLicensePage() {
                     {rec.hasLicense===true?"🏅":rec.hasLicense===false?"❌":"⏳"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-black text-sm text-gray-800 truncate">{rec.name}</span>
                       {rec.specialization && (
                         <span className="text-xs px-2 py-0.5 rounded-full font-bold flex-shrink-0"
@@ -26622,6 +26632,20 @@ export default function SchoolWebsite() {
     { id: "teacherreports", label: "ملفات المعلمين",       icon: "🗄️" },
   ];
   const extraPages = [...classToolPages, ...reportPages];
+  const allPagesList = [...pages, ...extraPages];
+
+  const [favPages, setFavPages] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("school-fav-pages")||"[]"); } catch { return []; }
+  });
+  const [showFavMenu, setShowFavMenu] = useState(false);
+
+  const toggleFav = (id) => {
+    const next = favPages.includes(id) ? favPages.filter(f=>f!==id) : [...favPages.slice(0,7), id];
+    setFavPages(next);
+    try { localStorage.setItem("school-fav-pages", JSON.stringify(next)); } catch(e) {}
+  };
+
+  const favPageObjects = favPages.map(id => allPagesList.find(p=>p.id===id)).filter(Boolean);
 
   return (
     <>
@@ -26815,7 +26839,60 @@ export default function SchoolWebsite() {
           <span style={{ color:"#2dd4bf" }}>🏫</span>
           <span>مدرسة عبيدة بن الحارث — بوابة الإدارة</span>
         </div>
-        {/* مفتاح الوضع */}
+        {/* أزرار اليمين */}
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {/* زر المفضلة */}
+          <div style={{position:"relative"}}>
+            <button onClick={()=>setShowFavMenu(v=>!v)} style={{
+              padding:"3px 10px", borderRadius:16, fontSize:11, fontWeight:700,
+              cursor:"pointer", border:"1px solid #334155", transition:"all .2s",
+              background: showFavMenu ? "linear-gradient(135deg,#f59e0b,#d97706)" : "#1e293b",
+              color: showFavMenu ? "#fff" : "#f59e0b",
+            }}>⭐ مفضلتي {favPageObjects.length>0 && <span style={{background:"#f59e0b",color:"#1f2937",borderRadius:10,padding:"0 5px",fontSize:10,fontWeight:900,marginRight:3}}>{favPageObjects.length}</span>}</button>
+            {showFavMenu && (
+              <div style={{
+                position:"absolute", top:"calc(100% + 6px)", left:0,
+                background:"#1e293b", border:"1px solid #334155", borderRadius:14,
+                padding:12, minWidth:260, zIndex:100,
+                boxShadow:"0 8px 24px rgba(0,0,0,0.4)",
+              }}>
+                <div style={{color:"#94a3b8",fontSize:10,fontWeight:700,marginBottom:8,paddingBottom:6,borderBottom:"1px solid #334155"}}>⭐ الأدوات المفضلة — اضغط للوصول السريع</div>
+                {favPageObjects.length===0 && (
+                  <div style={{color:"#475569",fontSize:10,textAlign:"center",padding:"8px 0"}}>لا توجد أدوات مفضلة بعد</div>
+                )}
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {favPageObjects.map(p=>(
+                    <button key={p.id} onClick={()=>{setPage(p.id);setShowFavMenu(false);}} style={{
+                      padding:"6px 10px",borderRadius:10,background:"#0f172a",
+                      border:"1px solid #334155",cursor:"pointer",
+                      display:"flex",alignItems:"center",gap:8,
+                      color:"#e2e8f0",fontSize:12,fontWeight:700,transition:"all .15s",
+                    }} onMouseEnter={e=>e.target.style.background="#0d9488"} onMouseLeave={e=>e.target.style.background="#0f172a"}>
+                      <span style={{fontSize:16}}>{p.icon}</span>{p.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{borderTop:"1px solid #334155",marginTop:8,paddingTop:8}}>
+                  <div style={{color:"#94a3b8",fontSize:10,fontWeight:700,marginBottom:6}}>✏️ تعديل المفضلة — اضغط على ⭐ بجانب أي أداة:</div>
+                  <div style={{maxHeight:160,overflowY:"auto",display:"flex",flexDirection:"column",gap:2}}>
+                    {allPagesList.filter(p=>p.id!=="home").map(p=>(
+                      <button key={p.id} onClick={()=>toggleFav(p.id)} style={{
+                        padding:"4px 8px",borderRadius:8,
+                        background:favPages.includes(p.id)?"rgba(245,158,11,0.15)":"transparent",
+                        border:favPages.includes(p.id)?"1px solid #f59e0b20":"1px solid transparent",
+                        cursor:"pointer",display:"flex",alignItems:"center",gap:6,
+                        color: favPages.includes(p.id)?"#fbbf24":"#64748b",fontSize:11,fontWeight:700,
+                      }}>
+                        <span style={{fontSize:14}}>{favPages.includes(p.id)?"⭐":"☆"}</span>
+                        <span style={{fontSize:13}}>{p.icon}</span>{p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* مفتاح الوضع */}
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
           <span style={{ color:"#64748b", fontSize:10, fontWeight:600 }}>وضع العرض:</span>
           <div style={{
@@ -26838,7 +26915,33 @@ export default function SchoolWebsite() {
             }}>🖥️ كمبيوتر</button>
           </div>
         </div>
-      </div>
+        </div>{/* end right buttons */}
+      </div>{/* end top bar */}
+
+      {/* ══ شريط المفضلة السريع ══ */}
+      {favPageObjects.length > 0 && (
+        <div dir="rtl" style={{
+          background:"linear-gradient(90deg,#1e293b,#0f2027)",
+          borderBottom:"1px solid rgba(245,158,11,0.2)",
+          padding:"4px 12px",
+          display:"flex", alignItems:"center", gap:6,
+          overflowX:"auto", fontFamily:"'Cairo',sans-serif",
+          position:"sticky", top:32, zIndex:59,
+        }}>
+          <span style={{color:"#f59e0b",fontSize:11,fontWeight:900,flexShrink:0}}>⭐ سريع:</span>
+          {favPageObjects.map(p=>(
+            <button key={p.id} onClick={()=>setPage(p.id)} style={{
+              padding:"3px 10px", borderRadius:20, fontSize:11, fontWeight:700,
+              cursor:"pointer", border:"none", flexShrink:0, transition:"all .15s",
+              background: page===p.id ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(245,158,11,0.12)",
+              color: page===p.id ? "#fff" : "#fbbf24",
+              border: page===p.id ? "none" : "1px solid rgba(245,158,11,0.25)",
+            }}>
+              {p.icon} {p.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════
           وضع الجوال — إطار هاتف
@@ -26978,21 +27081,33 @@ export default function SchoolWebsite() {
                 background:"#fafbfc", padding:"4px" }}>
                 {extraPages.map(p => {
                   const active = page === p.id;
+                  const isFav = favPages.includes(p.id);
                   return (
-                    <button key={p.id} onClick={() => navigate(p.id)} style={{
-                      display:"flex", flexDirection:"row", alignItems:"center", gap:6,
-                      padding:"8px 10px", border:"none", cursor:"pointer",
-                      background: active ? "#f0fdfa" : "transparent",
-                      borderRadius:8, margin:"1px",
-                      border: active ? "1px solid #0d9488" : "1px solid transparent",
-                      transition:"all .15s", textAlign:"right",
-                      fontFamily:"'Cairo',sans-serif",
-                    }}>
-                      <span style={{ fontSize:16, flexShrink:0 }}>{p.icon}</span>
-                      <span style={{ fontSize:11, fontWeight:700, whiteSpace:"nowrap",
-                        overflow:"hidden", textOverflow:"ellipsis",
-                        color: active ? "#0d9488" : "#374151" }}>{p.label}</span>
-                    </button>
+                    <div key={p.id} style={{position:"relative",margin:"1px"}}>
+                      <button onClick={() => navigate(p.id)} style={{
+                        display:"flex", flexDirection:"row", alignItems:"center", gap:6,
+                        padding:"8px 10px", paddingLeft:24, border:"none", cursor:"pointer",
+                        background: active ? "#f0fdfa" : "transparent",
+                        borderRadius:8, width:"100%",
+                        border: active ? "1px solid #0d9488" : "1px solid transparent",
+                        transition:"all .15s", textAlign:"right",
+                        fontFamily:"'Cairo',sans-serif",
+                      }}>
+                        <span style={{ fontSize:16, flexShrink:0 }}>{p.icon}</span>
+                        <span style={{ fontSize:11, fontWeight:700, whiteSpace:"nowrap",
+                          overflow:"hidden", textOverflow:"ellipsis",
+                          color: active ? "#0d9488" : "#374151" }}>{p.label}</span>
+                      </button>
+                      <button onClick={e=>{e.stopPropagation();toggleFav(p.id);}} title={isFav?"إزالة من المفضلة":"إضافة للمفضلة"} style={{
+                        position:"absolute", left:3, top:"50%", transform:"translateY(-50%)",
+                        background:"none", border:"none", cursor:"pointer",
+                        fontSize:11, opacity: isFav ? 1 : 0.25,
+                        transition:"opacity .2s",
+                        color: isFav ? "#f59e0b" : "#94a3b8",
+                      }} onMouseEnter={e=>e.target.style.opacity="1"} onMouseLeave={e=>e.target.style.opacity=isFav?"1":"0.25"}>
+                        {isFav?"⭐":"☆"}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -27004,7 +27119,7 @@ export default function SchoolWebsite() {
         /* ══════════════════════════════════════════
             وضع الكمبيوتر — التخطيط الكامل
         ══════════════════════════════════════════ */
-        <>
+        <div style={{minHeight:"100vh"}}>
       <nav className="bg-white shadow-lg sticky top-8 z-50 border-b border-teal-100" style={{fontFamily:"'Cairo', 'Noto Naskh Arabic', sans-serif"}}>
         <div className="w-full px-3">
 
@@ -27168,7 +27283,7 @@ export default function SchoolWebsite() {
         <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة عبيدة بن الحارث المتوسطة — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
         <p className="relative text-gray-400 mt-1">© ١٤٤٧ هـ — جميع الحقوق محفوظة</p>
       </footer>
-      </>
+      </div>{/* end desktop mode div */}
       )}{/* end viewMode conditional */}
       </div>{/* end relative z-10 */}
     </div>
