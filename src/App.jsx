@@ -27894,7 +27894,7 @@ export default function SchoolWebsite() {
         /* ══════════════════════════════════════════
             وضع الكمبيوتر — التخطيط الكامل
         ══════════════════════════════════════════ */
-        <div style={{minHeight:"100vh"}}>
+        <React.Fragment>
       <nav className="bg-white shadow-lg sticky top-8 z-50 border-b border-teal-100" style={{fontFamily:"'Cairo', 'Noto Naskh Arabic', sans-serif"}}>
         <div className="w-full px-3">
 
@@ -28059,7 +28059,7 @@ export default function SchoolWebsite() {
         <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة عبيدة بن الحارث المتوسطة — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
         <p className="relative text-gray-400 mt-1">© ١٤٤٧ هـ — جميع الحقوق محفوظة</p>
       </footer>
-      </div>{/* end desktop mode div */}
+      </React.Fragment>
       )}{/* end viewMode conditional */}
       </div>{/* end relative z-10 */}
     </div>
