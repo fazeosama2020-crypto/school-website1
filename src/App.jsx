@@ -11482,7 +11482,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
             </div>
 
             {/* المحتوى — textarea بسيط في الجوال */}
-            <textarea placeholder="محتوى الإعلان..." value={newAnn.content.replace(/<[^>]*>/g,"")}
+            <textarea placeholder="محتوى الإعلان..." value={newAnn.content.replace(/<[^>]*>/g,'')}
               onChange={e => setNewAnn(p=>({...p,content:e.target.value}))}
               rows={4}
               style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"2px solid #e2e8f0",
@@ -11564,7 +11564,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                     <div style={{ fontSize:12, fontWeight:800, color:"#0d9488", marginBottom:8 }}>✏️ تعديل الإعلان</div>
                     <input value={editAnn.title} onChange={e=>setEditAnn(p=>({...p,title:e.target.value}))}
                       style={{ width:"100%", padding:"8px 10px", borderRadius:10, border:"2px solid #0d9488", fontSize:14, fontWeight:800, color:editAnn.titleColor||"#1f2937", fontFamily:"'Cairo',sans-serif", boxSizing:"border-box", outline:"none", marginBottom:8 }} />
-                    <textarea value={editAnn.content.replace(/<[^>]*>/g,"")}
+                    <textarea value={editAnn.content.replace(/<[^>]*>/g,'')}
                       onChange={e=>setEditAnn(p=>({...p,content:e.target.value}))} rows={3}
                       style={{ width:"100%", padding:"8px 10px", borderRadius:10, border:"1.5px solid #e2e8f0", fontSize:12, resize:"vertical", fontFamily:"'Cairo',sans-serif", boxSizing:"border-box", outline:"none", marginBottom:8, lineHeight:1.8 }} />
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
@@ -17862,22 +17862,126 @@ function EvalFeedbackDisplay({ text, imgs, criterionName }) {
 }
 
 function TeacherPerformanceEvalPage() {
-  // ── بيانات المعايير من ملف Excel ──
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // المعايير الـ 11 مع عناصرها التفصيلية من ملف PDF الرسمي
+  //
+  // منطق الحساب الدقيق لكل مؤشر:
+  //   - كل عنصر له ثلاث حالات: "yes"=متحقق | "no"=غير متحقق | "na"=غير موجود
+  //   - درجة المؤشر = (عدد المتحقق) ÷ (الكل − غير موجود) × وزن المؤشر × 100
+  //   - العنصر "غير موجود" يُستثنى من المقام تلقائياً (لا يُحسب عليه)
+  // ═══════════════════════════════════════════════════════════════════════
   const CRITERIA = [
-    { num:1,  element:"أداء الواجبات الوظيفية",                    reqs:"حضوري - المناوبة - الإشراف - الانتظار - النشاط - الإذاعة",                        weight:0.10, criterion:"الواجبات الوظيفية" },
-    { num:2,  element:"التفاعل مع المجتمع المهني",                  reqs:"الزيارات الصفية - ملف النمو المهني - مجتمعات التعلم المهني",                       weight:0.10, criterion:"المجتمع المهني" },
-    { num:3,  element:"التفاعل مع أولياء الأمور",                   reqs:"الخطة الأسبوعية - إشعار أولياء الأمور - التواصل (المنصة/الجوال)",                  weight:0.10, criterion:"أولياء الأمور" },
-    { num:4,  element:"التنويع في استراتيجيات التدريس",             reqs:"خطة التحضير - أوراق عمل - 5 استراتيجيات كحد أدنى",                                weight:0.10, criterion:"استراتيجيات التدريس" },
-    { num:5,  element:"تحسين نتائج المتعلمين",                      reqs:"أنشطة إثرائية للمتميزين - خطط علاجية للمتعثرين",                                  weight:0.10, criterion:"تحسين النتائج" },
-    { num:6,  element:"إعداد وتنفيذ خطة التعلم",                   reqs:"توزيع المنهج - الخطة الأسبوعية - تحضير الدروس - الواجبات",                         weight:0.10, criterion:"خطة التعلم" },
-    { num:7,  element:"توظيف تقنيات ووسائل التعلم المناسبة",        reqs:"أوراق تفاعلية - وسائل مساعدة - أجهزة ذكية - منصة مدرستي",                          weight:0.10, criterion:"تقنيات التعلم" },
-    { num:8,  element:"تهيئة بيئة تعليمية",                         reqs:"انضباط الصف - المعمل - مصادر التعلم - وسائل حسية",                                 weight:0.05, criterion:"بيئة تعليمية" },
-    { num:9,  element:"الإدارة الصفية",                              reqs:"كشف المتابعة - تنويع الأسئلة - توزيع زمن الحصة",                                  weight:0.05, criterion:"الإدارة الصفية" },
-    { num:10, element:"تحليل نتائج المتعلمين وتشخيص مستوياتهم",    reqs:"اختبار تشخيصي - أنماط التعلم - تصنيف الطلاب",                                    weight:0.10, criterion:"تحليل النتائج" },
-    { num:11, element:"تنوع أساليب التقويم",                        reqs:"اختبارات تحسين - شهرية - مشاركة - أسئلة تمهيد ونهاية",                            weight:0.10, criterion:"أساليب التقويم" },
+    {
+      num:1, element:"أداء الواجبات الوظيفية", weight:0.10,
+      icon:"🏫", color:"#1d4ed8", bg:"#eff6ff",
+      items:[
+        { id:"1a", text:"التقيد بالدوام الرسمي",                                evidence:"سجل الدوام الرسمي" },
+        { id:"1b", text:"تأدية الحصص الدراسية وفق الجدول الدراسي",             evidence:"الجدول الدراسي" },
+        { id:"1c", text:"المشاركة في الإشراف والمناوبة وحصص الانتظار",         evidence:"سجل المناوبة والإشراف اليومي" },
+        { id:"1d", text:"إعداد ومتابعة الدروس والواجبات والاختبارات",          evidence:"خطة توزيع المنهج" },
+      ],
+    },
+    {
+      num:2, element:"التفاعل مع المجتمع المهني", weight:0.10,
+      icon:"🤝", color:"#0d9488", bg:"#f0fdfa",
+      items:[
+        { id:"2a", text:"المشاركة الفاعلة في مجتمعات التعلم المهنية",          evidence:"سجل مجتمعات التعلم المهنية" },
+        { id:"2b", text:"تبادل الزيارات الصفية مع الزملاء",                    evidence:"سجل تبادل الزيارات" },
+        { id:"2c", text:"الدروس التطبيقية",                                     evidence:"تقرير تنفيذ درس تطبيقي" },
+        { id:"2d", text:"بحث الدرس",                                            evidence:"وثيقة بحث الدرس" },
+        { id:"2e", text:"حضور الدورات والورش التدريبية",                        evidence:"شهادات حضور الدورات والورش" },
+      ],
+    },
+    {
+      num:3, element:"التفاعل مع أولياء الأمور", weight:0.10,
+      icon:"👨‍👩‍👧", color:"#7c3aed", bg:"#faf5ff",
+      items:[
+        { id:"3a", text:"التواصل الفعّال مع أولياء الأمور بالتنسيق مع الموجه الطلابي", evidence:"تقرير اجتماع ولي الأمر مع المعلم" },
+        { id:"3b", text:"تزويد أولياء الأمور بمستويات الطالب",                  evidence:"إشعارات المستوى الدراسي" },
+        { id:"3c", text:"إيصال الملاحظات الهامة لأولياء الأمور",               evidence:"رسائل ومراسلات التواصل" },
+        { id:"3d", text:"تفعيل الخطة الأسبوعية للمدرسة",                       evidence:"نسخة من الخطة الأسبوعية للمدرسة" },
+        { id:"3e", text:"المشاركة الفاعلة في الجمعية العمومية للمعلمين وأولياء الأمور", evidence:"صور من الجمعية العمومية" },
+      ],
+    },
+    {
+      num:4, element:"التنويع في استراتيجيات التدريس", weight:0.10,
+      icon:"🎯", color:"#d97706", bg:"#fffbeb",
+      items:[
+        { id:"4a", text:"استخدام استراتيجيات تدريسية متنوعة",                  evidence:"تقرير عن تطبيق الاستراتيجية" },
+        { id:"4b", text:"تناسب الاستراتيجيات مع مستويات الطلاب",               evidence:"ملف إنجاز المعلم" },
+        { id:"4c", text:"مراعاة الفروق الفردية بين الطلاب",                    evidence:"أوراق عمل متمايزة" },
+      ],
+    },
+    {
+      num:5, element:"تحسين نتائج المتعلمين", weight:0.10,
+      icon:"📈", color:"#059669", bg:"#f0fdf4",
+      items:[
+        { id:"5a", text:"معالجة الفاقد التعليمي",                              evidence:"نتائج الاختبار القبلي والبعدي" },
+        { id:"5b", text:"وضع الخطط العلاجية للطلاب الضعاف",                    evidence:"كشف متابعة الطلاب" },
+        { id:"5c", text:"وضع الخطط الإثرائية للطلاب المتميزين",               evidence:"خطط إثرائية موثقة" },
+        { id:"5d", text:"تكريم الطلاب المتميزين والذين تحسّن مستواهم",         evidence:"صور وشهادات التكريم" },
+      ],
+    },
+    {
+      num:6, element:"إعداد وتنفيذ خطة التعلم", weight:0.10,
+      icon:"📋", color:"#0284c7", bg:"#f0f9ff",
+      items:[
+        { id:"6a", text:"توزيع المنهج وإعداد الدروس",                          evidence:"خطة توزيع المنهج" },
+        { id:"6b", text:"إعداد الواجبات والاختبارات",                          evidence:"نماذج من الواجبات والاختبارات" },
+        { id:"6c", text:"تنفيذ الدروس وفق الخطة",                             evidence:"نموذج من إعداد الدروس" },
+      ],
+    },
+    {
+      num:7, element:"توظيف تقنيات ووسائل التعلم المناسبة", weight:0.10,
+      icon:"💻", color:"#6d28d9", bg:"#f5f3ff",
+      items:[
+        { id:"7a", text:"دمج التقنية في التعليم",                              evidence:"تقرير عن برنامج تقني تم استخدامه" },
+        { id:"7b", text:"التنويع في الوسائل التعليمية",                        evidence:"صور من الوسائل التعليمية المستخدمة" },
+      ],
+    },
+    {
+      num:8, element:"تهيئة البيئة التعليمية", weight:0.05,
+      icon:"🏛️", color:"#be185d", bg:"#fdf2f8",
+      items:[
+        { id:"8a", text:"مراعاة حاجات الطلاب",                                evidence:"تقرير تصنيف الطلاب وفق أنماط التعلم" },
+        { id:"8b", text:"التهيئة النفسية للطلاب",                              evidence:"نماذج من التحفيز المعنوي" },
+        { id:"8c", text:"التحفيز المادي والمعنوي",                             evidence:"نماذج من التحفيز المادي والمعنوي" },
+        { id:"8d", text:"توفير متطلبات الدرس",                                 evidence:"قائمة الوسائل والمتطلبات" },
+      ],
+    },
+    {
+      num:9, element:"الإدارة الصفية", weight:0.05,
+      icon:"📐", color:"#b45309", bg:"#fef9c3",
+      items:[
+        { id:"9a", text:"ضبط سلوك الطلاب",                                    evidence:"كشف المتابعة" },
+        { id:"9b", text:"شد انتباه الطلاب وتفاعلهم",                           evidence:"تطبيق إدارة الصف" },
+        { id:"9c", text:"مراعاة الفروق الفردية",                               evidence:"أنشطة متنوعة في الملف" },
+        { id:"9d", text:"متابعة الحضور والغياب والتأخر",                       evidence:"كشف الحضور اليومي" },
+      ],
+    },
+    {
+      num:10, element:"تحليل نتائج المتعلمين وتشخيص مستوياتهم", weight:0.10,
+      icon:"📊", color:"#0f766e", bg:"#f0fdfa",
+      items:[
+        { id:"10a", text:"تحليل نتائج الاختبارات الفترية والنهائية",           evidence:"تقرير تحليل نتائج الطلاب" },
+        { id:"10b", text:"تصنيف الطلاب وفق نتائجهم",                          evidence:"جدول تصنيف الطلاب" },
+        { id:"10c", text:"معالجة الفاقد التعليمي",                             evidence:"سجل معالجة الفاقد التعليمي" },
+        { id:"10d", text:"تحديد نقاط القوة والضعف",                            evidence:"تقرير التشخيص" },
+      ],
+    },
+    {
+      num:11, element:"تنوع أساليب التقويم", weight:0.10,
+      icon:"📝", color:"#1e40af", bg:"#eff6ff",
+      items:[
+        { id:"11a", text:"تطبيق الاختبارات الورقية والإلكترونية",             evidence:"نماذج من الاختبارات" },
+        { id:"11b", text:"المشاريع الطلابية",                                  evidence:"نماذج من مشاريع الطلاب" },
+        { id:"11c", text:"المهام الأدائية",                                    evidence:"نماذج من المهام الأدائية" },
+        { id:"11d", text:"ملفات إنجاز الطلاب",                                 evidence:"نماذج من ملفات إنجاز الطلاب" },
+      ],
+    },
   ];
 
-  // ── قائمة المعلمين الـ 33 ──
   const TEACHERS_LIST = [
     "طالب حمدي مبروك اليوبي","نايف عقال شريم الزهراني","حبيب سعد حبيب السلمي",
     "عبدالحميد عبدالمعطي حميد اللقماني","معيض صالح محمد القرني",
@@ -17894,292 +17998,238 @@ function TeacherPerformanceEvalPage() {
     "جازي عبدالرحمن عبدربه الثبيتي","بدر حمد محمد اللهيبي",
   ];
 
-  // ── وصف مستويات التقدير ──
-  const LEVEL_DESC = {
-    1:"ضعيف جداً", 2:"ضعيف", 3:"متوسط", 4:"جيد", 5:"ممتاز"
-  };
-  const LEVEL_COLOR = {
-    1:"#dc2626", 2:"#f97316", 3:"#eab308", 4:"#22c55e", 5:"#0d9488"
-  };
-  const LEVEL_BG = {
-    1:"#fef2f2", 2:"#fff7ed", 3:"#fefce8", 4:"#f0fdf4", 5:"#f0fdfa"
-  };
-
-  // التقدير العام
-  const GENERAL_RATINGS = [
-    { min:90, max:100, label:"ممتاز" },
-    { min:75, max:89,  label:"جيد جداً" },
-    { min:60, max:74,  label:"جيد" },
-    { min:50, max:59,  label:"مقبول" },
-    { min:0,  max:49,  label:"ضعيف" },
+  // ── حالات العنصر الفرعي ──
+  const ITEM_STATES = [
+    { val:"yes", label:"✓ متحقق",      bg:"#d1fae5", color:"#065f46", border:"#34d399" },
+    { val:"no",  label:"✗ غير متحقق", bg:"#fee2e2", color:"#991b1b", border:"#f87171" },
+    { val:"na",  label:"— غير موجود", bg:"#f1f5f9", color:"#64748b", border:"#cbd5e1" },
   ];
 
-  const [view, setView]         = useState("list");    // list | form | detail | summary
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [search, setSearch]     = useState("");
-  const [records, setRecords]   = useState({});
-  const [formValues, setFormValues] = useState({});
-  const [detailTeacher, setDetailTeacher] = useState(null);
-  const [saving, setSaving]     = useState(false);
-  const [saveMsg, setSaveMsg]   = useState("");
-  const [filterStatus, setFilterStatus] = useState("all"); // all|done|pending
+  const GENERAL_RATINGS = [
+    { min:90, max:100, label:"ممتاز",    color:"#0d9488" },
+    { min:75, max:89,  label:"جيد جداً", color:"#22c55e" },
+    { min:60, max:74,  label:"جيد",      color:"#eab308" },
+    { min:50, max:59,  label:"مقبول",    color:"#f97316" },
+    { min:0,  max:49,  label:"ضعيف",     color:"#dc2626" },
+  ];
 
-  // طباعة إحصائيات الجميع
-  const handlePrintAll = (records, teachersList, criteria, levelDesc, levelColor, generalRatings) => {
-    const getGeneralRating = s => { for(const r of generalRatings){if(s>=r.min&&s<=r.max)return r.label;} return "—"; };
-    const getStatusColor   = s => s>=90?"#0d9488":s>=75?"#22c55e":s>=60?"#eab308":s>=50?"#f97316":"#dc2626";
-    const evaluated = teachersList.filter(t => !!records[t]);
-    const avg = evaluated.length ? Math.round(evaluated.reduce((s,t)=>s+(records[t].total||0),0)/evaluated.length*10)/10 : 0;
-    const sorted = [...evaluated].sort((a,b)=>(records[b].total||0)-(records[a].total||0));
+  const getGeneralRating = s => GENERAL_RATINGS.find(r => s>=r.min && s<=r.max) || { label:"—", color:"#94a3b8" };
+  const getStatusColor   = s => s>=90?"#0d9488":s>=75?"#22c55e":s>=60?"#eab308":s>=50?"#f97316":"#dc2626";
 
-    const ratingGroups = {};
-    ["ممتاز","جيد جداً","جيد","مقبول","ضعيف"].forEach(l=>{ratingGroups[l]=0;});
-    evaluated.forEach(t=>{const r=getGeneralRating(records[t].total||0); ratingGroups[r]=(ratingGroups[r]||0)+1;});
-
-    const printWindow = window.open("","_blank","width=1000,height=750");
-    if(!printWindow) return;
-    printWindow.document.write(`<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-<meta charset="UTF-8"/>
-<title>إحصائيات تقييم أداء المعلمين</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Cairo',sans-serif;background:#fff;color:#1e293b;padding:20px;font-size:12px;}
-  .header{text-align:center;margin-bottom:20px;border-bottom:3px solid #0d3b6e;padding-bottom:14px;}
-  .header h1{font-size:20px;font-weight:900;color:#0d3b6e;margin-bottom:4px;}
-  .header p{font-size:12px;color:#64748b;}
-  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-  .stat-card{text-align:center;padding:14px;border-radius:12px;border:2px solid;}
-  .stat-val{font-size:28px;font-weight:900;margin-bottom:4px;}
-  .stat-label{font-size:11px;color:#64748b;}
-  .rating-dist{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;}
-  .rating-card{text-align:center;padding:10px 6px;border-radius:10px;border:2px solid;}
-  table{width:100%;border-collapse:collapse;margin-bottom:20px;}
-  th{background:#0d3b6e;color:#fff;padding:8px 10px;text-align:right;font-weight:700;font-size:12px;}
-  td{padding:7px 10px;border:1px solid #e2e8f0;font-size:12px;}
-  tr:nth-child(even) td{background:#f8fafc;}
-  .rank-1 td{background:#fef3c7!important;font-weight:900;}
-  .rank-2 td{background:#f0fdf4!important;font-weight:800;}
-  .rank-3 td{background:#eff6ff!important;font-weight:800;}
-  .criteria-table{page-break-before:always;}
-  @media print{body{padding:0;}@page{size:A4 landscape;margin:10mm;}
-    .page-break{page-break-before:always;}}
-</style>
-</head>
-<body>
-<div class="header">
-  <h1>📊 إحصائيات تقييم أداء المعلمين</h1>
-  <p>مدرسة عبيدة بن الحارث المتوسطة | تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} | المقيَّمون: ${evaluated.length} من أصل ${teachersList.length}</p>
-</div>
-
-<div class="stats-grid">
-  <div class="stat-card" style="border-color:#7c3aed;background:#faf5ff">
-    <div class="stat-val" style="color:#7c3aed">${evaluated.length}</div>
-    <div class="stat-label">إجمالي المقيَّمين</div>
-  </div>
-  <div class="stat-card" style="border-color:#0d9488;background:#f0fdfa">
-    <div class="stat-val" style="color:#0d9488">${avg}</div>
-    <div class="stat-label">متوسط الدرجات</div>
-  </div>
-  <div class="stat-card" style="border-color:#f59e0b;background:#fffbeb">
-    <div class="stat-val" style="color:#f59e0b">${sorted.length?records[sorted[0]].total:"—"}</div>
-    <div class="stat-label">أعلى درجة</div>
-  </div>
-  <div class="stat-card" style="border-color:#dc2626;background:#fef2f2">
-    <div class="stat-val" style="color:#dc2626">${sorted.length?records[sorted[sorted.length-1]].total:"—"}</div>
-    <div class="stat-label">أدنى درجة</div>
-  </div>
-</div>
-
-<h3 style="font-weight:900;color:#0d3b6e;margin-bottom:10px">توزيع التقديرات</h3>
-<div class="rating-dist">
-  ${[
-    {label:"ممتاز",min:90,color:"#0d9488",bg:"#f0fdfa"},
-    {label:"جيد جداً",min:75,color:"#22c55e",bg:"#f0fdf4"},
-    {label:"جيد",min:60,color:"#eab308",bg:"#fefce8"},
-    {label:"مقبول",min:50,color:"#f97316",bg:"#fff7ed"},
-    {label:"ضعيف",min:0,color:"#dc2626",bg:"#fef2f2"},
-  ].map(r=>{
-    const cnt=ratingGroups[r.label]||0;
-    const pct=evaluated.length?Math.round(cnt/evaluated.length*100):0;
-    return "<div class='rating-card' style='border-color:"+r.color+";background:"+r.bg+"'><div style='font-size:24px;font-weight:900;color:"+r.color+"'>"+cnt+"</div><div style='font-weight:700;color:"+r.color+"'>"+r.label+"</div><div style='font-size:10px;color:#64748b'>"+pct+"%</div></div>";
-  }).join("")}
-</div>
-
-<h3 style="font-weight:900;color:#0d3b6e;margin-bottom:10px">ترتيب المعلمين حسب الدرجة</h3>
-<table>
-  <thead><tr>
-    <th style="width:40px;text-align:center">الترتيب</th>
-    <th>اسم المعلم</th>
-    <th style="width:80px;text-align:center">الدرجة / 100</th>
-    <th style="width:90px;text-align:center">التقدير</th>
-    <th style="width:120px;text-align:center">المُقيِّم</th>
-    <th style="width:110px;text-align:center">تاريخ التقييم</th>
-    ${criteria.map(c=>"<th style='width:45px;text-align:center'>م"+c.num+"</th>").join("")}
-  </tr></thead>
-  <tbody>
-    ${sorted.map((t,i)=>{
-      const rec=records[t];
-      const sc=rec.total||0;
-      const rt=getGeneralRating(sc);
-      const cl=getStatusColor(sc);
-      return "<tr class='"+(i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":"")+"'><td style='text-align:center;font-weight:900'>"+(i+1)+"</td><td style='font-weight:700'>"+t+"</td><td style='text-align:center;font-size:16px;font-weight:900;color:"+cl+"'>"+sc+"</td><td style='text-align:center;font-weight:700;color:"+cl+"'>"+rt+"</td><td style='text-align:center;font-size:11px'>"+( rec.evaluatorName||"—")+"</td><td style='text-align:center;font-size:11px'>"+(rec.evaluatorDate||"—")+"</td>"+criteria.map(c=>{const lv=parseInt(rec["level_"+c.num])||0;const colors={"1":"#dc2626","2":"#f97316","3":"#eab308","4":"#22c55e","5":"#0d9488"};return "<td style='text-align:center;font-weight:900;color:"+(lv?colors[lv]:"#ccc")+"'>"+(lv||"—")+"</td>";}).join("")+"</tr>";
-    }).join("")}
-    <tr style="background:#0d3b6e;color:#fff;font-weight:900">
-      <td colspan="2" style="text-align:right">المتوسط العام</td>
-      <td style="text-align:center;font-size:16px;font-weight:900">${avg}</td>
-      <td style="text-align:center">${getGeneralRating(avg)}</td>
-      <td colspan="${criteria.length+2}"></td>
-    </tr>
-  </tbody>
-</table>
-
-<div class="page-break" style="margin-top:20px">
-<h3 style="font-weight:900;color:#0d3b6e;margin-bottom:10px">متوسط كل معيار عبر جميع المعلمين</h3>
-<table>
-  <thead><tr>
-    <th style="width:30px;text-align:center">م</th>
-    <th>عنصر التقييم</th>
-    <th style="width:70px;text-align:center">الوزن</th>
-    <th style="width:90px;text-align:center">متوسط التقدير (1-5)</th>
-    <th style="width:90px;text-align:center">متوسط الدرجة</th>
-    <th style="width:200px">توزيع التقديرات</th>
-  </tr></thead>
-  <tbody>
-    ${criteria.map(c=>{
-      const lvls=evaluated.map(t=>parseInt(records[t]["level_"+c.num])||0).filter(x=>x>0);
-      const avgLv=lvls.length?Math.round(lvls.reduce((s,x)=>s+x,0)/lvls.length*10)/10:0;
-      const avgPts=avgLv?(avgLv*c.weight*20).toFixed(1):0;
-      const dist=[1,2,3,4,5].map(n=>({n,cnt:evaluated.filter(t=>parseInt(records[t]["level_"+c.num])===n).length}));
-      const colors={1:"#dc2626",2:"#f97316",3:"#eab308",4:"#22c55e",5:"#0d9488"};
-      return "<tr><td style='text-align:center;font-weight:900'>"+c.num+"</td><td style='font-weight:700'>"+c.element+"</td><td style='text-align:center'>"+Math.round(c.weight*100)+"%</td><td style='text-align:center;font-size:16px;font-weight:900;color:"+colors[Math.round(avgLv)]+"'>"+avgLv+"</td><td style='text-align:center;font-weight:900;color:"+colors[Math.round(avgLv)]+"'>"+avgPts+"</td><td>"+dist.map(d=>"<span style='display:inline-block;margin:1px 2px;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:"+colors[d.n]+"22;color:"+colors[d.n]+"'>"+d.n+": "+d.cnt+"</span>").join("")+"</td></tr>";
-    }).join("")}
-  </tbody>
-</table>
-</div>
-<script>window.onload=()=>{window.print();}<\/script>
-</body></html>`);
-    printWindow.document.close();
+  // ── حساب درجة مؤشر واحد ──
+  const calcCriterionScore = (c, vals) => {
+    const active  = c.items.filter(it => vals[it.id] !== "na" && vals[it.id]);
+    if (!active.length) return 0;
+    const achieved = active.filter(it => vals[it.id] === "yes").length;
+    return Math.round((achieved / active.length) * c.weight * 100 * 10) / 10;
   };
 
-  // تحميل البيانات
+  const calcCriterionPct = (c, vals) => {
+    const active = c.items.filter(it => vals[it.id] !== "na" && vals[it.id]);
+    if (!active.length) return 0;
+    const achieved = active.filter(it => vals[it.id] === "yes").length;
+    return Math.round((achieved / active.length) * 100);
+  };
+
+  const calcTotal = vals =>
+    Math.round(CRITERIA.reduce((s, c) => s + calcCriterionScore(c, vals), 0) * 10) / 10;
+
+  // ── الحالة ──
+  const [view,            setView]            = useState("list");
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [detailTeacher,   setDetailTeacher]   = useState(null);
+  const [search,          setSearch]          = useState("");
+  const [records,         setRecords]         = useState({});
+  const [formValues,      setFormValues]      = useState({});
+  const [saving,          setSaving]          = useState(false);
+  const [saveMsg,         setSaveMsg]         = useState("");
+  const [filterStatus,    setFilterStatus]    = useState("all");
+  const [openCriteria,    setOpenCriteria]    = useState({});   // أي المؤشرات مفتوحة
+
   useEffect(() => {
-    DB.get("school-teacher-perf-eval", {}).then(d => {
+    DB.get("school-perf-eval-v4", {}).then(d => {
       if (d && typeof d === "object") setRecords(d);
     });
   }, []);
 
-  const saveRecords = async (newRecs) => {
-    setRecords(newRecs);
-    await DB.set("school-teacher-perf-eval", newRecs);
+  const saveRecords = async recs => {
+    setRecords(recs);
+    await DB.set("school-perf-eval-v4", recs);
   };
-
-  // حساب المجموع
-  const calcTotal = (vals) => {
-    let total = 0;
-    CRITERIA.forEach(c => {
-      const lv = parseInt(vals[`level_${c.num}`]) || 0;
-      total += lv * c.weight * 20; // 1-5 × weight × 20 = نسبة من 100
-    });
-    return Math.round(total * 10) / 10;
-  };
-
-  const getGeneralRating = (score) => {
-    for (const r of GENERAL_RATINGS) {
-      if (score >= r.min && score <= r.max) return r.label;
-    }
-    return "—";
-  };
-
-  const getStatusColor = (score) => {
-    if (score >= 90) return "#0d9488";
-    if (score >= 75) return "#22c55e";
-    if (score >= 60) return "#eab308";
-    if (score >= 50) return "#f97316";
-    return "#dc2626";
-  };
-
-  // ── فلترة المعلمين ──
-  const filtered = TEACHERS_LIST.filter(t => {
-    const matchSearch = t.includes(search.trim());
-    if (!matchSearch) return false;
-    if (filterStatus === "done")    return !!records[t];
-    if (filterStatus === "pending") return !records[t];
-    return true;
-  });
 
   const doneCount    = TEACHERS_LIST.filter(t => !!records[t]).length;
   const pendingCount = TEACHERS_LIST.length - doneCount;
 
-  // ── فتح نموذج التقييم ──
-  const openForm = (teacher) => {
-    const existing = records[teacher] || {};
-    const vals = {};
-    CRITERIA.forEach(c => {
-      vals[`level_${c.num}`] = existing[`level_${c.num}`] || "";
-      vals[`desc_${c.num}`]  = existing[`desc_${c.num}`]  || "";
-    });
-    vals.evaluatorName  = existing.evaluatorName  || "";
-    vals.evaluatorDate  = existing.evaluatorDate  || "";
-    vals.jobId          = existing.jobId          || "";
-    vals.specialization = existing.specialization || "";
-    vals.schoolLevel    = existing.schoolLevel    || "";
-    vals.subject        = existing.subject        || "";
-    vals.classes        = existing.classes        || "";
-    vals.notes          = existing.notes          || "";
+  const filtered = TEACHERS_LIST.filter(t => {
+    if (!t.includes(search.trim())) return false;
+    if (filterStatus === "done"    && !records[t]) return false;
+    if (filterStatus === "pending" &&  records[t]) return false;
+    return true;
+  });
+
+  const openForm = teacher => {
+    const ex = records[teacher] || {};
+    const vals = { ...ex };
+    // تأكد من وجود حقول الأساسية
+    ["evaluatorName","evaluatorDate","jobId","specialization","schoolLevel","subject","classes","notes"]
+      .forEach(f => { if (!vals[f]) vals[f] = ""; });
     setFormValues(vals);
     setSelectedTeacher(teacher);
+    // افتح المؤشر الأول تلقائياً
+    setOpenCriteria({ 1: true });
     setView("form");
   };
 
-  // ── حفظ نموذج التقييم ──
+  const toggleCriterion = num =>
+    setOpenCriteria(prev => ({ ...prev, [num]: !prev[num] }));
+
+  const setItemVal = (itemId, val) =>
+    setFormValues(prev => {
+      const cur = prev[itemId];
+      return { ...prev, [itemId]: cur === val ? "" : val };  // نقر مرة ثانية يلغي الاختيار
+    });
+
   const handleSave = async () => {
-    // التحقق من اكتمال جميع المستويات
-    const missing = CRITERIA.filter(c => !formValues[`level_${c.num}`]);
-    if (missing.length > 0) {
-      setSaveMsg("⚠️ يرجى تحديد مستوى التقدير لجميع المعايير الـ11");
-      setTimeout(() => setSaveMsg(""), 4000);
-      return;
-    }
     setSaving(true);
     const total = calcTotal(formValues);
-    const newRec = { ...formValues, total, savedAt: new Date().toLocaleString("ar-SA") };
-    const newRecs = { ...records, [selectedTeacher]: newRec };
-    await saveRecords(newRecs);
+    const newRec = { ...formValues, total, savedAt: new Date().toLocaleDateString("ar-SA") };
+    await saveRecords({ ...records, [selectedTeacher]: newRec });
     setSaving(false);
     setSaveMsg("✅ تم الحفظ بنجاح!");
-    setTimeout(() => { setSaveMsg(""); setView("list"); }, 1500);
+    setTimeout(() => { setSaveMsg(""); setView("list"); }, 1400);
   };
 
-  // ── عرض تفاصيل معلم ──
-  const openDetail = (teacher) => {
-    setDetailTeacher(teacher);
-    setView("detail");
+  // ── طباعة تقرير معلم ──
+  const handlePrint = (teacher, rec) => {
+    const total  = rec.total || 0;
+    const rating = getGeneralRating(total);
+
+    const criteriaRows = CRITERIA.map(c => {
+      const score   = calcCriterionScore(c, rec);
+      const pct     = calcCriterionPct(c, rec);
+      const itemRows = c.items.map(it => {
+        const sv  = rec[it.id] || "";
+        const st  = ITEM_STATES.find(s => s.val === sv);
+        const badge = st
+          ? `<span style="background:${st.bg};color:${st.color};border:1px solid ${st.border};padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">${st.label}</span>`
+          : `<span style="color:#94a3b8;font-size:10px">—</span>`;
+        return `<tr>
+          <td style="padding:4px 8px;font-size:11px;border-bottom:1px solid #f0f0f0">${it.text}</td>
+          <td style="padding:4px 8px;text-align:center;border-bottom:1px solid #f0f0f0">${badge}</td>
+          <td style="padding:4px 8px;font-size:10px;color:#64748b;border-bottom:1px solid #f0f0f0">${it.evidence}</td>
+        </tr>`;
+      }).join("");
+
+      return `
+      <tr style="background:${c.bg}">
+        <td colspan="3" style="padding:8px 10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:24px;height:24px;border-radius:50%;background:${c.color};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0">${c.num}</span>
+            <span style="font-weight:800;font-size:13px;color:${c.color};flex:1">${c.icon} ${c.element}</span>
+            <span style="font-weight:900;font-size:14px;color:${c.color}">${pct}%</span>
+            <span style="font-size:11px;color:#64748b">(${score}/${(c.weight*100).toFixed(0)} درجة)</span>
+            <div style="width:80px;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;flex-shrink:0">
+              <div style="height:100%;background:${c.color};width:${pct}%;border-radius:99px"></div>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <tr><td colspan="3" style="padding:0 0 8px 20px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8fafc">
+            <th style="padding:4px 8px;font-size:10px;font-weight:700;text-align:right;color:#475569">العنصر</th>
+            <th style="padding:4px 8px;font-size:10px;font-weight:700;color:#475569;width:100px;text-align:center">الحالة</th>
+            <th style="padding:4px 8px;font-size:10px;font-weight:700;text-align:right;color:#475569">الشاهد</th>
+          </tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        ${rec[`note_${c.num}`] ? `<div style="margin-top:4px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:10px;color:#64748b">💬 ${rec[`note_${c.num}`]}</div>` : ""}
+      </td></tr>`;
+    }).join("");
+
+    const infoRows = [
+      ["الرقم الوظيفي", rec.jobId], ["التخصص", rec.specialization],
+      ["المرحلة", rec.schoolLevel], ["المادة", rec.subject],
+      ["الصفوف", rec.classes], ["المُقيِّم", rec.evaluatorName], ["التاريخ", rec.evaluatorDate],
+    ].filter(([,v]) => v)
+     .map(([l,v]) => `<div style="background:#f8fafc;border-radius:8px;padding:6px 10px"><div style="font-size:10px;color:#64748b;font-weight:700">${l}</div><div style="font-size:12px;font-weight:800;color:#1e293b;margin-top:1px">${v}</div></div>`)
+     .join("");
+
+    const w = window.open("","_blank");
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8">
+    <title>استمارة تقييم — ${teacher}</title>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:Arial,Tahoma,sans-serif;direction:rtl;padding:16px;font-size:12px;color:#1e293b}
+      .hdr{background:linear-gradient(135deg,#0d3b6e,#0d9488);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+      .hdr h1{font-size:15px;font-weight:800}.hdr p{opacity:.85;font-size:11px;margin-top:2px}
+      .score-badge{text-align:center;background:rgba(255,255,255,.15);border-radius:12px;padding:8px 16px}
+      .score-badge .sv{font-size:30px;font-weight:900}.score-badge .sl{font-size:11px;opacity:.9}
+      .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+      table{width:100%;border-collapse:collapse;margin-bottom:12px}
+      .total-row td{background:#0d3b6e;color:#fff;padding:8px 10px;font-weight:900;font-size:13px;text-align:center}
+      .sig-row{display:flex;gap:20px;margin-top:14px;padding-top:12px;border-top:1.5px dashed #e2e8f0}
+      .sig{flex:1;text-align:center}
+      .sig .sl{font-size:10px;color:#6b7280;margin-bottom:16px}
+      .sig .sn{font-weight:800;font-size:11px;border-top:1px solid #374151;padding-top:4px}
+      @page{size:A4;margin:1cm}
+    </style></head><body>
+    <div class="hdr">
+      <div>
+        <h1>📊 استمارة تقييم أداء المعلم</h1>
+        <p>مدرسة عبيدة بن الحارث المتوسطة</p>
+        <p style="font-size:14px;font-weight:800;margin-top:5px">${teacher}</p>
+      </div>
+      <div class="score-badge">
+        <div class="sv">${total}</div>
+        <div class="sl">${rating.label}</div>
+      </div>
+    </div>
+    <div class="info-grid">${infoRows}</div>
+    <table>
+      <thead><tr style="background:#0d3b6e">
+        <th style="padding:7px 10px;color:#fff;font-size:11px;text-align:right" colspan="2">المؤشر والعناصر</th>
+        <th style="padding:7px 10px;color:#fff;font-size:11px;width:80px;text-align:center">الشاهد</th>
+      </tr></thead>
+      <tbody>${criteriaRows}</tbody>
+      <tfoot><tr class="total-row">
+        <td colspan="2">الدرجة الإجمالية</td>
+        <td>${total} / 100 — ${rating.label}</td>
+      </tr></tfoot>
+    </table>
+    ${rec.notes ? `<div style="background:#f8fafc;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;border:1px solid #e2e8f0"><b>💬 الملاحظات العامة:</b> ${rec.notes}</div>` : ""}
+    <div class="sig-row">
+      <div class="sig"><div class="sl">توقيع المعلم</div><div class="sn">__________________</div></div>
+      <div class="sig"><div class="sl">مدير المدرسة</div><div class="sn">فازع القرني</div></div>
+      <div class="sig"><div class="sl">التاريخ</div><div class="sn">${rec.evaluatorDate || "__________________"}</div></div>
+    </div>
+    <script>window.onload=()=>window.print();</script>
+    </body></html>`);
+    w.document.close();
   };
 
-  // ─────────────────────────────────────────
-  // العرض: قائمة المعلمين
-  // ─────────────────────────────────────────
+  // ═══════════════════════════════════════
+  // VIEW: قائمة المعلمين
+  // ═══════════════════════════════════════
   if (view === "list") return (
-    <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",padding:16,maxWidth:900,margin:"0 auto"}}>
-      {/* الرأس */}
+    <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",padding:16,maxWidth:920,margin:"0 auto"}}>
+
+      {/* رأس */}
       <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
           <div style={{fontSize:36}}>📊</div>
           <div>
             <h2 style={{margin:0,fontWeight:900,fontSize:20}}>استمارة تقييم أداء المعلم</h2>
-            <p style={{margin:0,opacity:.8,fontSize:13}}>33 معلماً — 11 معياراً — تقييم متكامل</p>
+            <p style={{margin:0,opacity:.8,fontSize:13}}>33 معلماً — 11 مؤشراً — عناصر تفصيلية دقيقة لكل مؤشر</p>
           </div>
         </div>
-        {/* إحصائيات سريعة */}
-        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
           {[
-            { label:"الإجمالي", val:TEACHERS_LIST.length, icon:"👥", color:"#fff" },
-            { label:"مكتمل",    val:doneCount,             icon:"✅", color:"#86efac" },
-            { label:"لم يُقيَّم",val:pendingCount,         icon:"⏳", color:"#fcd34d" },
-          ].map(s => (
+            {label:"الإجمالي",   val:TEACHERS_LIST.length, icon:"👥", color:"#fff"},
+            {label:"مُقيَّم",    val:doneCount,             icon:"✅", color:"#86efac"},
+            {label:"لم يُقيَّم", val:pendingCount,          icon:"⏳", color:"#fcd34d"},
+          ].map(s=>(
             <div key={s.label} style={{background:"rgba(255,255,255,.15)",borderRadius:12,padding:"8px 16px",flex:1,minWidth:80,textAlign:"center"}}>
               <div style={{fontSize:20,marginBottom:2}}>{s.icon}</div>
               <div style={{fontWeight:900,fontSize:22,color:s.color}}>{s.val}</div>
@@ -18188,95 +18238,81 @@ function TeacherPerformanceEvalPage() {
           ))}
           <div style={{background:"rgba(255,255,255,.15)",borderRadius:12,padding:"8px 16px",flex:1,minWidth:80,textAlign:"center"}}>
             <div style={{fontSize:20,marginBottom:2}}>📈</div>
-            <div style={{fontWeight:900,fontSize:22,color:"#93c5fd"}}>{doneCount ? Math.round(doneCount/TEACHERS_LIST.length*100) : 0}%</div>
+            <div style={{fontWeight:900,fontSize:22,color:"#93c5fd"}}>{doneCount?Math.round(doneCount/TEACHERS_LIST.length*100):0}%</div>
             <div style={{fontSize:11,opacity:.9}}>نسبة الإنجاز</div>
           </div>
         </div>
       </div>
 
-      {/* شريط الفلتر والبحث */}
+      {/* بحث وفلتر */}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        <input
-          value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder="🔍 ابحث عن معلم..."
-          style={{flex:1,minWidth:180,padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"'Cairo',sans-serif"}}
-        />
-        {[["all","الكل","#64748b"],["done","مكتمل","#0d9488"],["pending","لم يُقيَّم","#f59e0b"]].map(([v,l,c]) => (
+        <input value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder="🔍 ابحث باسم المعلم..."
+          style={{flex:1,minWidth:180,padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"'Cairo',sans-serif"}}/>
+        {[["all","الكل","#64748b"],["done","مُقيَّم","#0d9488"],["pending","لم يُقيَّم","#f59e0b"]].map(([v,l,c])=>(
           <button key={v} onClick={()=>setFilterStatus(v)}
-            style={{padding:"10px 16px",borderRadius:12,border:`2px solid ${filterStatus===v?c:"#e2e8f0"}`,
-              background:filterStatus===v?c:"#fff",color:filterStatus===v?"#fff":c,
+            style={{padding:"10px 16px",borderRadius:12,
+              border:`2px solid ${filterStatus===v?c:"#e2e8f0"}`,
+              background:filterStatus===v?c:"#fff",
+              color:filterStatus===v?"#fff":c,
               fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
             {l}
           </button>
         ))}
-        {doneCount > 0 && (
-          <button onClick={()=>setView("summary")}
-            style={{padding:"10px 16px",borderRadius:12,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",color:"#fff",fontWeight:700,fontSize:13,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-            📊 ملخص النتائج
-          </button>
-        )}
-        {doneCount > 0 && (
-          <button onClick={()=>handlePrintAll(records, TEACHERS_LIST, CRITERIA, LEVEL_DESC, LEVEL_COLOR, GENERAL_RATINGS)}
-            style={{padding:"10px 16px",borderRadius:12,background:"linear-gradient(135deg,#0d3b6e,#1e40af)",color:"#fff",fontWeight:700,fontSize:13,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-            🖨️ طباعة الجميع
-          </button>
-        )}
       </div>
 
-      {/* قائمة المعلمين */}
+      {/* قائمة */}
       <div style={{display:"grid",gap:10}}>
-        {filtered.map((teacher, idx) => {
-          const rec = records[teacher];
+        {filtered.map((teacher,idx)=>{
+          const rec    = records[teacher];
           const isDone = !!rec;
-          const score = isDone ? rec.total : null;
+          const score  = isDone ? rec.total : null;
           const rating = isDone ? getGeneralRating(score) : null;
-          const sColor = isDone ? getStatusColor(score) : "#94a3b8";
           return (
             <div key={teacher}
-              style={{background:"#fff",borderRadius:14,padding:"14px 16px",border:"1.5px solid #e2e8f0",
-                display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 8px rgba(0,0,0,.04)",
-                transition:"box-shadow .2s",cursor:"default"}}>
-              {/* رقم */}
-              <div style={{width:32,height:32,borderRadius:"50%",background:isDone?"#0d9488":"#f1f5f9",
-                color:isDone?"#fff":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",
+              style={{background:"#fff",borderRadius:14,padding:"14px 16px",
+                border:"1.5px solid #e2e8f0",display:"flex",alignItems:"center",
+                gap:12,boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
+              <div style={{width:32,height:32,borderRadius:"50%",
+                background:isDone?"#0d9488":"#f1f5f9",
+                color:isDone?"#fff":"#94a3b8",
+                display:"flex",alignItems:"center",justifyContent:"center",
                 fontWeight:900,fontSize:13,flexShrink:0}}>
                 {idx+1}
               </div>
-              {/* الاسم */}
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:800,fontSize:14,color:"#1e293b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                <div style={{fontWeight:800,fontSize:14,color:"#1e293b",
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                   {teacher}
                 </div>
                 {isDone && (
                   <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
-                    حُفظ: {rec.savedAt} | المقيِّم: {rec.evaluatorName||"—"}
+                    حُفظ: {rec.savedAt} | المُقيِّم: {rec.evaluatorName||"—"}
                   </div>
                 )}
               </div>
-              {/* النتيجة */}
               {isDone && (
-                <div style={{textAlign:"center",minWidth:70}}>
-                  <div style={{fontWeight:900,fontSize:20,color:sColor}}>{score}</div>
-                  <div style={{fontSize:10,color:sColor,fontWeight:700}}>{rating}</div>
+                <div style={{textAlign:"center",minWidth:64}}>
+                  <div style={{fontWeight:900,fontSize:22,color:rating.color}}>{score}</div>
+                  <div style={{fontSize:11,color:rating.color,fontWeight:700}}>{rating.label}</div>
                 </div>
               )}
-              {/* حالة */}
-              <div style={{background:isDone?"#f0fdfa":"#fef9ef",border:`1.5px solid ${isDone?"#99f6e4":"#fde68a"}`,
+              <div style={{background:isDone?"#f0fdfa":"#fef9ef",
+                border:`1.5px solid ${isDone?"#99f6e4":"#fde68a"}`,
                 borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,
                 color:isDone?"#0d9488":"#d97706",flexShrink:0}}>
                 {isDone?"✅ مكتمل":"⏳ لم يُقيَّم"}
               </div>
-              {/* أزرار */}
               <div style={{display:"flex",gap:6,flexShrink:0}}>
                 {isDone && (
-                  <button onClick={()=>openDetail(teacher)}
+                  <button onClick={()=>{setDetailTeacher(teacher);setView("detail");}}
                     style={{padding:"7px 12px",borderRadius:9,background:"#eff6ff",color:"#3b82f6",
                       fontWeight:700,fontSize:12,border:"1.5px solid #bfdbfe",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
                     عرض
                   </button>
                 )}
                 {isDone && (
-                  <button onClick={()=>buildAndPrintEvalForm(teacher, records[teacher], CRITERIA, getGeneralRating, getStatusColor)}
+                  <button onClick={()=>handlePrint(teacher,rec)}
                     style={{padding:"7px 12px",borderRadius:9,background:"#f0fdf4",color:"#0d9488",
                       fontWeight:700,fontSize:12,border:"1.5px solid #86efac",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
                     🖨️
@@ -18286,7 +18322,8 @@ function TeacherPerformanceEvalPage() {
                   style={{padding:"7px 12px",borderRadius:9,
                     background:isDone?"#fef9ef":"linear-gradient(135deg,#0d9488,#0f766e)",
                     color:isDone?"#d97706":"#fff",
-                    fontWeight:700,fontSize:12,border:isDone?"1.5px solid #fde68a":"none",
+                    fontWeight:700,fontSize:12,
+                    border:isDone?"1.5px solid #fde68a":"none",
                     cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
                   {isDone?"تعديل":"تقييم"}
                 </button>
@@ -18294,7 +18331,7 @@ function TeacherPerformanceEvalPage() {
             </div>
           );
         })}
-        {filtered.length === 0 && (
+        {filtered.length===0 && (
           <div style={{textAlign:"center",padding:40,color:"#94a3b8",fontSize:15}}>
             لا توجد نتائج مطابقة
           </div>
@@ -18303,39 +18340,47 @@ function TeacherPerformanceEvalPage() {
     </div>
   );
 
-  // ─────────────────────────────────────────
-  // العرض: نموذج التقييم
-  // ─────────────────────────────────────────
+  // ═══════════════════════════════════════
+  // VIEW: نموذج التقييم
+  // ═══════════════════════════════════════
   if (view === "form") {
-    const total = calcTotal(formValues);
+    const total         = calcTotal(formValues);
     const generalRating = getGeneralRating(total);
-    const completedCriteria = CRITERIA.filter(c => formValues[`level_${c.num}`]).length;
+    const filledCount   = CRITERIA.filter(c =>
+      c.items.some(it => formValues[it.id] === "yes" || formValues[it.id] === "no" || formValues[it.id] === "na")
+    ).length;
 
     return (
-      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:860,margin:"0 auto",padding:16}}>
+      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:900,margin:"0 auto",padding:16}}>
+
         {/* رأس النموذج */}
-        <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
+        <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff",position:"sticky",top:0,zIndex:10}}>
           <button onClick={()=>setView("list")}
             style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:10,
-              padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",marginBottom:12}}>
+              padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",marginBottom:10}}>
             ← رجوع للقائمة
           </button>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{fontSize:32}}>📝</div>
-            <div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:30}}>📝</div>
+            <div style={{flex:1}}>
               <h2 style={{margin:0,fontWeight:900,fontSize:18}}>استمارة تقييم أداء المعلم</h2>
               <p style={{margin:0,opacity:.85,fontSize:14,marginTop:2}}>{selectedTeacher}</p>
             </div>
+            {/* الدرجة الحية */}
+            <div style={{textAlign:"center",background:"rgba(255,255,255,.18)",borderRadius:16,padding:"10px 18px",minWidth:90}}>
+              <div style={{fontWeight:900,fontSize:30}}>{total}</div>
+              <div style={{fontSize:12,opacity:.9}}>{generalRating.label}</div>
+            </div>
           </div>
           {/* شريط التقدم */}
-          <div style={{marginTop:14}}>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:6,opacity:.9}}>
-              <span>اكتمال التقييم: {completedCriteria}/{CRITERIA.length} معيار</span>
-              <span>{Math.round(completedCriteria/CRITERIA.length*100)}%</span>
+          <div style={{marginTop:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:4,opacity:.9}}>
+              <span>المؤشرات المكتملة: {filledCount} / {CRITERIA.length}</span>
+              <span>{Math.round(filledCount/CRITERIA.length*100)}%</span>
             </div>
-            <div style={{background:"rgba(255,255,255,.2)",borderRadius:99,height:8,overflow:"hidden"}}>
+            <div style={{background:"rgba(255,255,255,.2)",borderRadius:99,height:6,overflow:"hidden"}}>
               <div style={{height:"100%",background:"#86efac",borderRadius:99,
-                width:`${Math.round(completedCriteria/CRITERIA.length*100)}%`,transition:"width .3s"}} />
+                width:`${Math.round(filledCount/CRITERIA.length*100)}%`,transition:"width .3s"}}/>
             </div>
           </div>
         </div>
@@ -18352,7 +18397,7 @@ function TeacherPerformanceEvalPage() {
               ["classes","الصفوف التي يدرّسها","مثال: 2أ، 2ب"],
               ["evaluatorName","اسم المُقيِّم","الاسم الكامل"],
               ["evaluatorDate","تاريخ التقييم","مثال: 1447/10/10 هـ"],
-            ].map(([field,label,ph]) => (
+            ].map(([field,label,ph])=>(
               <div key={field}>
                 <label style={{fontSize:12,fontWeight:700,color:"#64748b",display:"block",marginBottom:4}}>{label}</label>
                 <input value={formValues[field]||""} onChange={e=>setFormValues(p=>({...p,[field]:e.target.value}))}
@@ -18364,106 +18409,187 @@ function TeacherPerformanceEvalPage() {
           </div>
         </div>
 
-        {/* جدول المعايير */}
-        <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <h3 style={{margin:0,fontWeight:800,color:"#0d3b6e",fontSize:15}}>📊 معايير التقييم</h3>
-            <div style={{background:total>=90?"#f0fdfa":total>=75?"#f0fdf4":total>=60?"#fefce8":total>=50?"#fff7ed":"#fef2f2",
-              border:`2px solid ${getStatusColor(total)}`,borderRadius:12,padding:"6px 14px",textAlign:"center"}}>
-              <div style={{fontWeight:900,fontSize:22,color:getStatusColor(total)}}>{total}</div>
-              <div style={{fontSize:11,color:getStatusColor(total),fontWeight:700}}>{generalRating}</div>
-            </div>
-          </div>
+        {/* ══ المؤشرات الـ 11 ══ */}
+        <div style={{display:"grid",gap:14,marginBottom:16}}>
+          {CRITERIA.map(c => {
+            const score   = calcCriterionScore(c, formValues);
+            const pct     = calcCriterionPct(c, formValues);
+            const isOpen  = !!openCriteria[c.num];
+            const yesN    = c.items.filter(it => formValues[it.id]==="yes").length;
+            const noN     = c.items.filter(it => formValues[it.id]==="no").length;
+            const naN     = c.items.filter(it => formValues[it.id]==="na").length;
+            const filledN = yesN + noN + naN;
 
-          <div style={{display:"grid",gap:12}}>
-            {CRITERIA.map(c => {
-              const lv = parseInt(formValues[`level_${c.num}`]) || 0;
-              const lColor = lv ? LEVEL_COLOR[lv] : "#94a3b8";
-              const lBg    = lv ? LEVEL_BG[lv]    : "#f8fafc";
-              return (
-                <div key={c.num} style={{border:`1.5px solid ${lv?"#e2e8f0":"#fde68a"}`,borderRadius:14,
-                  padding:14,background:lv?"#fff":"#fffbeb"}}>
-                  <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
-                    {/* رقم */}
-                    <div style={{width:28,height:28,borderRadius:"50%",background:lv?lColor:"#f1f5f9",
-                      color:lv?"#fff":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",
-                      fontWeight:900,fontSize:13,flexShrink:0,marginTop:2}}>
-                      {c.num}
+            // لون شريط التقدم حسب النسبة
+            const barColor = pct>=80 ? "#10b981" : pct>=50 ? "#f59e0b" : pct>0 ? "#ef4444" : "#e2e8f0";
+
+            return (
+              <div key={c.num}
+                style={{background:"#fff",borderRadius:16,
+                  border:`2px solid ${filledN>0 ? c.color+"55" : "#e2e8f0"}`,
+                  overflow:"hidden",
+                  boxShadow:"0 2px 10px rgba(0,0,0,.05)"}}>
+
+                {/* ─ رأس المؤشر (قابل للنقر) ─ */}
+                <div onClick={()=>toggleCriterion(c.num)}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",
+                    background:c.bg,cursor:"pointer",userSelect:"none",
+                    borderBottom: isOpen ? `1.5px solid ${c.color}33` : "none"}}>
+
+                  {/* رقم */}
+                  <div style={{width:32,height:32,borderRadius:"50%",
+                    background:filledN>0 ? c.color : "#e2e8f0",
+                    color:filledN>0 ? "#fff" : "#94a3b8",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontWeight:900,fontSize:13,flexShrink:0}}>
+                    {c.num}
+                  </div>
+
+                  {/* عنوان + معلومات */}
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:800,fontSize:14,color:"#1e293b"}}>
+                      {c.icon} {c.element}
                     </div>
-                    <div style={{flex:1}}>
-                      <div style={{fontWeight:800,fontSize:14,color:"#1e293b"}}>{c.element}</div>
-                      <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{c.reqs}</div>
-                    </div>
-                    <div style={{background:"#f0fdfa",borderRadius:8,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#0d9488",flexShrink:0}}>
-                      الوزن: {Math.round(c.weight*100)}%
+                    <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                      الوزن: {Math.round(c.weight*100)}% &nbsp;|&nbsp; {filledN}/{c.items.length} عناصر محددة
                     </div>
                   </div>
 
-                  {/* أزرار التقدير 1-5 */}
-                  <div style={{display:"flex",gap:6,marginBottom:lv?10:0}}>
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n}
-                        onClick={()=>setFormValues(p=>({...p,[`level_${c.num}`]:String(n)}))}
-                        style={{flex:1,padding:"8px 4px",borderRadius:10,
-                          border:`2px solid ${lv===n?LEVEL_COLOR[n]:"#e2e8f0"}`,
-                          background:lv===n?LEVEL_COLOR[n]:"#f8fafc",
-                          color:lv===n?"#fff":LEVEL_COLOR[n],
-                          fontWeight:lv===n?900:700,fontSize:13,cursor:"pointer",
-                          fontFamily:"'Cairo',sans-serif",transition:"all .15s",textAlign:"center"}}>
-                        <div style={{fontSize:12}}>{n}</div>
-                        <div style={{fontSize:9,marginTop:1,opacity:lv===n?1:.7}}>{LEVEL_DESC[n]}</div>
-                      </button>
-                    ))}
+                  {/* نسبة التحقق + الدرجة */}
+                  <div style={{textAlign:"center",minWidth:72}}>
+                    <div style={{fontWeight:900,fontSize:20,color: pct>0 ? c.color : "#94a3b8"}}>{pct}%</div>
+                    <div style={{fontSize:10,color:"#64748b"}}>{score}/{(c.weight*100).toFixed(0)} درجة</div>
                   </div>
 
-                  {/* عرض النتيجة الجزئية */}
-                  {lv > 0 && (
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                      <div style={{background:lBg,border:`1.5px solid ${lColor}`,borderRadius:8,
-                        padding:"4px 12px",fontSize:12,fontWeight:700,color:lColor}}>
-                        المستوى {lv} — {LEVEL_DESC[lv]}
-                      </div>
-                      <div style={{fontSize:12,color:"#64748b"}}>
-                        النقاط: <b style={{color:lColor}}>{(lv*c.weight*20).toFixed(1)}</b>/
-                        {(5*c.weight*20).toFixed(1)}
-                      </div>
-                    </div>
-                  )}
+                  {/* شريط مرئي */}
+                  <div style={{width:70,height:8,background:"#e2e8f0",borderRadius:99,overflow:"hidden",flexShrink:0}}>
+                    <div style={{height:"100%",background:barColor,borderRadius:99,
+                      width:`${pct}%`,transition:"width .4s"}}/>
+                  </div>
 
-                  {/* تعليق وتغذية راجعة من المدير */}
-                  <EvalFeedbackField
-                    criterionNum={c.num}
-                    formValues={formValues}
-                    setFormValues={setFormValues}
-                  />
+                  {/* سهم */}
+                  <div style={{fontSize:20,color:c.color,
+                    transform:isOpen?"rotate(90deg)":"rotate(0deg)",
+                    transition:"transform .2s",flexShrink:0}}>›</div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* ─ عناصر المؤشر ─ */}
+                {isOpen && (
+                  <div style={{padding:"14px 16px 16px"}}>
+
+                    {/* تعليمة */}
+                    <div style={{background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:10,
+                      padding:"8px 12px",marginBottom:12,fontSize:12,color:"#0369a1",fontWeight:600}}>
+                      💡 حدد حالة كل عنصر — كلما زاد "متحقق" ارتفعت درجة المؤشر تلقائياً
+                    </div>
+
+                    <div style={{display:"grid",gap:8}}>
+                      {c.items.map(it => {
+                        const curVal = formValues[it.id] || "";
+                        return (
+                          <div key={it.id}
+                            style={{background:"#f8fafc",borderRadius:12,
+                              border:`1.5px solid ${curVal==="yes"?"#34d399":curVal==="no"?"#f87171":curVal==="na"?"#cbd5e1":"#e2e8f0"}`,
+                              padding:"10px 12px",
+                              transition:"border-color .2s"}}>
+                            <div style={{display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+                              {/* نص العنصر */}
+                              <div style={{flex:1,minWidth:140}}>
+                                <div style={{fontWeight:700,fontSize:13,color:"#1e293b"}}>{it.text}</div>
+                                <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>
+                                  📎 الشاهد: {it.evidence}
+                                </div>
+                              </div>
+                              {/* أزرار الحالة الثلاث */}
+                              <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
+                                {ITEM_STATES.map(st=>(
+                                  <button key={st.val}
+                                    onClick={()=>setItemVal(it.id, st.val)}
+                                    style={{
+                                      padding:"7px 11px",
+                                      borderRadius:9,
+                                      border:`2px solid ${curVal===st.val ? st.border : "#e2e8f0"}`,
+                                      background:curVal===st.val ? st.bg : "#fff",
+                                      color:curVal===st.val ? st.color : "#94a3b8",
+                                      fontWeight:curVal===st.val ? 800 : 600,
+                                      fontSize:12,
+                                      cursor:"pointer",
+                                      fontFamily:"'Cairo',sans-serif",
+                                      transition:"all .15s",
+                                      whiteSpace:"nowrap",
+                                      transform:curVal===st.val?"scale(1.05)":"scale(1)",
+                                    }}>
+                                    {st.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* ملخص المؤشر */}
+                    <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap",
+                      background:c.bg,borderRadius:10,padding:"10px 14px",
+                      border:`1px solid ${c.color}33`}}>
+                      <div style={{fontSize:12,fontWeight:700,color:c.color}}>
+                        ✅ متحقق: {yesN}
+                      </div>
+                      <div style={{fontSize:12,color:"#94a3b8"}}>|</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#dc2626"}}>
+                        ✗ غير متحقق: {noN}
+                      </div>
+                      <div style={{fontSize:12,color:"#94a3b8"}}>|</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#64748b"}}>
+                        — غير موجود: {naN}
+                      </div>
+                      <div style={{flex:1}}/>
+                      <div style={{fontWeight:900,fontSize:13,color:c.color}}>
+                        نسبة التحقق: {pct}% → الدرجة: {score}/{(c.weight*100).toFixed(0)}
+                      </div>
+                    </div>
+
+                    {/* ملاحظة على المؤشر */}
+                    <textarea
+                      value={formValues[`note_${c.num}`]||""}
+                      onChange={e=>setFormValues(p=>({...p,[`note_${c.num}`]:e.target.value}))}
+                      placeholder={`ملاحظة على مؤشر "${c.element}" (اختياري)...`}
+                      style={{width:"100%",marginTop:8,padding:"8px 12px",borderRadius:10,
+                        border:"1.5px solid #e2e8f0",fontSize:12,fontFamily:"'Cairo',sans-serif",
+                        minHeight:52,boxSizing:"border-box",resize:"vertical",color:"#1e293b"}}/>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* ملاحظات */}
+        {/* ملاحظات عامة */}
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
-          <label style={{fontSize:13,fontWeight:700,color:"#64748b",display:"block",marginBottom:6}}>💬 الملاحظات والتوصيات</label>
+          <label style={{fontSize:13,fontWeight:700,color:"#64748b",display:"block",marginBottom:6}}>
+            💬 الملاحظات والتوصيات العامة
+          </label>
           <textarea value={formValues.notes||""} onChange={e=>setFormValues(p=>({...p,notes:e.target.value}))}
-            placeholder="أكتب ملاحظاتك وتوصياتك هنا..."
+            placeholder="أكتب ملاحظاتك وتوصياتك العامة هنا..."
             style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",
-              fontSize:13,fontFamily:"'Cairo',sans-serif",minHeight:90,boxSizing:"border-box",resize:"vertical"}}/>
+              fontSize:13,fontFamily:"'Cairo',sans-serif",minHeight:80,boxSizing:"border-box",resize:"vertical"}}/>
         </div>
 
-        {/* زر الحفظ */}
+        {/* حفظ */}
         <div style={{display:"flex",gap:10,justifyContent:"flex-end",alignItems:"center"}}>
-          {saveMsg && <div style={{fontWeight:700,fontSize:14,color:saveMsg.startsWith("✅")?"#0d9488":"#f59e0b"}}>{saveMsg}</div>}
+          {saveMsg && <div style={{fontWeight:700,fontSize:14,color:"#0d9488"}}>{saveMsg}</div>}
           <button onClick={()=>setView("list")}
             style={{padding:"12px 20px",borderRadius:12,background:"#f1f5f9",color:"#64748b",
               fontWeight:700,fontSize:14,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
             إلغاء
           </button>
           <button onClick={handleSave} disabled={saving}
-            style={{padding:"12px 24px",borderRadius:12,
+            style={{padding:"12px 26px",borderRadius:12,
               background:saving?"#94a3b8":"linear-gradient(135deg,#0d9488,#0f766e)",
-              color:"#fff",fontWeight:900,fontSize:14,border:"none",cursor:saving?"not-allowed":"pointer",
-              fontFamily:"'Cairo',sans-serif",boxShadow:"0 4px 14px rgba(13,148,136,.4)"}}>
+              color:"#fff",fontWeight:900,fontSize:14,border:"none",
+              cursor:saving?"not-allowed":"pointer",fontFamily:"'Cairo',sans-serif",
+              boxShadow:"0 4px 14px rgba(13,148,136,.4)"}}>
             {saving?"⏳ جاري الحفظ...":"💾 حفظ التقييم"}
           </button>
         </div>
@@ -18471,18 +18597,17 @@ function TeacherPerformanceEvalPage() {
     );
   }
 
-  // ─────────────────────────────────────────
-  // العرض: تفاصيل معلم
-  // ─────────────────────────────────────────
+  // ═══════════════════════════════════════
+  // VIEW: تفاصيل معلم
+  // ═══════════════════════════════════════
   if (view === "detail" && detailTeacher) {
-    const rec = records[detailTeacher];
+    const rec    = records[detailTeacher];
     if (!rec) return null;
-    const score = rec.total;
-    const rating = getGeneralRating(score);
-    const sColor = getStatusColor(score);
+    const total  = rec.total || 0;
+    const rating = getGeneralRating(total);
 
     return (
-      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:860,margin:"0 auto",padding:16}}>
+      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:900,margin:"0 auto",padding:16}}>
         <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
           <button onClick={()=>setView("list")}
             style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:10,
@@ -18496,8 +18621,8 @@ function TeacherPerformanceEvalPage() {
               <p style={{margin:0,opacity:.85,fontSize:14,marginTop:2}}>{detailTeacher}</p>
             </div>
             <div style={{textAlign:"center",background:"rgba(255,255,255,.15)",borderRadius:16,padding:"10px 20px"}}>
-              <div style={{fontWeight:900,fontSize:32,color:"#fff"}}>{score}</div>
-              <div style={{fontSize:14,opacity:.9}}>{rating}</div>
+              <div style={{fontWeight:900,fontSize:34}}>{total}</div>
+              <div style={{fontSize:14,opacity:.9}}>{rating.label}</div>
             </div>
           </div>
         </div>
@@ -18505,12 +18630,11 @@ function TeacherPerformanceEvalPage() {
         {/* بيانات */}
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            {[
-              ["الرقم الوظيفي",rec.jobId],["التخصص",rec.specialization],
+            {[["الرقم الوظيفي",rec.jobId],["التخصص",rec.specialization],
               ["المرحلة",rec.schoolLevel],["المادة",rec.subject],
               ["الصفوف",rec.classes],["المُقيِّم",rec.evaluatorName],
-              ["تاريخ التقييم",rec.evaluatorDate],
-            ].filter(([,v])=>v).map(([l,v])=>(
+              ["التاريخ",rec.evaluatorDate]]
+              .filter(([,v])=>v).map(([l,v])=>(
               <div key={l} style={{padding:"8px 12px",background:"#f8fafc",borderRadius:10}}>
                 <div style={{fontSize:11,color:"#64748b",fontWeight:700}}>{l}</div>
                 <div style={{fontSize:13,fontWeight:800,color:"#1e293b",marginTop:2}}>{v}</div>
@@ -18519,191 +18643,93 @@ function TeacherPerformanceEvalPage() {
           </div>
         </div>
 
-        {/* المعايير */}
-        <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
-          <h3 style={{margin:"0 0 14px",fontWeight:800,color:"#0d3b6e",fontSize:15}}>📊 نتائج المعايير</h3>
-          <div style={{display:"grid",gap:8}}>
-            {CRITERIA.map(c => {
-              const lv = parseInt(rec[`level_${c.num}`]) || 0;
-              const pts = (lv * c.weight * 20).toFixed(1);
-              const maxPts = (5 * c.weight * 20).toFixed(1);
-              const pct = lv ? Math.round(lv/5*100) : 0;
-              const lColor = lv ? LEVEL_COLOR[lv] : "#94a3b8";
-              return (
-                <div key={c.num} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
-                  background:"#f8fafc",borderRadius:12}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:lColor,color:"#fff",
-                    display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,flexShrink:0}}>
+        {/* نتائج المؤشرات مع عناصرها */}
+        <div style={{display:"grid",gap:12,marginBottom:16}}>
+          {CRITERIA.map(c => {
+            const score = calcCriterionScore(c, rec);
+            const pct   = calcCriterionPct(c, rec);
+            const yesN  = c.items.filter(it => rec[it.id]==="yes").length;
+            const barColor = pct>=80?"#10b981":pct>=50?"#f59e0b":pct>0?"#ef4444":"#e2e8f0";
+            return (
+              <div key={c.num} style={{background:"#fff",borderRadius:14,
+                border:`1.5px solid ${c.color}33`,overflow:"hidden"}}>
+                {/* رأس */}
+                <div style={{display:"flex",alignItems:"center",gap:10,
+                  padding:"10px 14px",background:c.bg}}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:c.color,color:"#fff",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontWeight:900,fontSize:12,flexShrink:0}}>
                     {c.num}
                   </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:700,fontSize:13,color:"#1e293b"}}>{c.element}</div>
-                    <div style={{background:"#e2e8f0",borderRadius:99,height:6,marginTop:4,overflow:"hidden"}}>
-                      <div style={{height:"100%",background:lColor,width:`${pct}%`,borderRadius:99,transition:"width .4s"}}/>
+                  <div style={{flex:1,fontWeight:800,fontSize:13,color:"#1e293b"}}>
+                    {c.icon} {c.element}
+                  </div>
+                  <div style={{textAlign:"center",minWidth:64}}>
+                    <div style={{fontWeight:900,fontSize:18,color:c.color}}>{pct}%</div>
+                    <div style={{fontSize:10,color:"#64748b"}}>{score}/{(c.weight*100).toFixed(0)}</div>
+                  </div>
+                  <div style={{width:70,height:6,background:"#e2e8f0",borderRadius:99,overflow:"hidden",flexShrink:0}}>
+                    <div style={{height:"100%",background:barColor,borderRadius:99,width:`${pct}%`}}/>
+                  </div>
+                </div>
+                {/* عناصر */}
+                <div style={{padding:"8px 14px 12px"}}>
+                  <div style={{display:"grid",gap:4}}>
+                    {c.items.map(it => {
+                      const sv   = rec[it.id]||"";
+                      const stObj = ITEM_STATES.find(s=>s.val===sv);
+                      return (
+                        <div key={it.id} style={{display:"flex",alignItems:"center",gap:8,
+                          padding:"5px 8px",borderRadius:8,
+                          background:stObj?stObj.bg+"55":"#f8fafc"}}>
+                          {stObj
+                            ? <span style={{background:stObj.bg,color:stObj.color,
+                                border:`1px solid ${stObj.border}`,
+                                borderRadius:99,padding:"2px 8px",fontSize:10,
+                                fontWeight:700,flexShrink:0,minWidth:80,textAlign:"center"}}>
+                                {stObj.label}
+                              </span>
+                            : <span style={{color:"#94a3b8",fontSize:10,flexShrink:0,minWidth:80,textAlign:"center"}}>—</span>
+                          }
+                          <span style={{fontSize:12,color:"#1e293b"}}>{it.text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {rec[`note_${c.num}`] && (
+                    <div style={{marginTop:6,fontSize:11,color:"#64748b",background:"#f1f5f9",
+                      borderRadius:8,padding:"5px 10px"}}>
+                      💬 {rec[`note_${c.num}`]}
                     </div>
-                  </div>
-                  <div style={{textAlign:"left",flexShrink:0,minWidth:80}}>
-                    <div style={{fontWeight:900,fontSize:14,color:lColor}}>{LEVEL_DESC[lv]||"—"}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{pts}/{maxPts}</div>
-                  </div>
-                  {/* التغذية الراجعة في صفحة التفاصيل */}
-                  {(records[detailTeacher]?.[`feedback_text_${c.num}`] || (records[detailTeacher]?.[`feedback_imgs_${c.num}`]||[]).length > 0) && (
-                    <EvalFeedbackDisplay
-                      text={records[detailTeacher]?.[`feedback_text_${c.num}`]}
-                      imgs={records[detailTeacher]?.[`feedback_imgs_${c.num}`]||[]}
-                      criterionName={c.element}
-                    />
                   )}
                 </div>
-              );
-            })}
-          </div>
-          {/* المجموع */}
-          <div style={{marginTop:14,padding:"14px 18px",background:LEVEL_BG[Math.round(score/20)]||"#f0fdfa",
-            border:`2px solid ${sColor}`,borderRadius:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{fontWeight:800,fontSize:15,color:"#1e293b"}}>المجموع الكلي</div>
-            <div style={{fontWeight:900,fontSize:24,color:sColor}}>{score} / 100</div>
-            <div style={{background:sColor,color:"#fff",borderRadius:10,padding:"6px 14px",fontWeight:900,fontSize:14}}>
-              {rating}
-            </div>
-          </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* الملاحظات */}
         {rec.notes && (
-          <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
-            <h3 style={{margin:"0 0 8px",fontWeight:800,color:"#0d3b6e",fontSize:14}}>💬 الملاحظات والتوصيات</h3>
-            <p style={{margin:0,fontSize:13,color:"#374151",lineHeight:1.7}}>{rec.notes}</p>
+          <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 16px",marginBottom:16,border:"1.5px solid #e2e8f0"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#64748b",marginBottom:4}}>💬 الملاحظات العامة</div>
+            <div style={{fontSize:13,color:"#1e293b"}}>{rec.notes}</div>
           </div>
         )}
 
-        <div style={{display:"flex",gap:10}}>
-          <button onClick={()=>buildAndPrintEvalForm(detailTeacher, records[detailTeacher], CRITERIA, getGeneralRating, getStatusColor)}
-            style={{padding:"12px 20px",borderRadius:12,background:"#eff6ff",color:"#3b82f6",
-              fontWeight:900,fontSize:14,border:"1.5px solid #bfdbfe",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-            🖨️ طباعة الاستمارة
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+          <button onClick={()=>handlePrint(detailTeacher,rec)}
+            style={{padding:"10px 20px",borderRadius:12,
+              background:"linear-gradient(135deg,#0d9488,#0f766e)",
+              color:"#fff",fontWeight:700,fontSize:13,border:"none",
+              cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            🖨️ طباعة التقرير
           </button>
           <button onClick={()=>openForm(detailTeacher)}
-            style={{padding:"12px 20px",borderRadius:12,background:"linear-gradient(135deg,#0d9488,#0f766e)",
-              color:"#fff",fontWeight:900,fontSize:14,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            style={{padding:"10px 20px",borderRadius:12,
+              background:"linear-gradient(135deg,#0d3b6e,#1e40af)",
+              color:"#fff",fontWeight:700,fontSize:13,border:"none",
+              cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
             ✏️ تعديل التقييم
           </button>
-          <button onClick={()=>setView("list")}
-            style={{padding:"12px 20px",borderRadius:12,background:"#f1f5f9",color:"#64748b",
-              fontWeight:700,fontSize:14,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-            رجوع
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────
-  // العرض: ملخص النتائج
-  // ─────────────────────────────────────────
-  if (view === "summary") {
-    const evaluated = TEACHERS_LIST.filter(t => !!records[t]);
-    const sortedByScore = [...evaluated].sort((a,b) => (records[b].total||0) - (records[a].total||0));
-    const avg = evaluated.length ? Math.round(evaluated.reduce((s,t)=>s+(records[t].total||0),0)/evaluated.length*10)/10 : 0;
-
-    const ratingGroups = {};
-    GENERAL_RATINGS.forEach(r => { ratingGroups[r.label] = 0; });
-    evaluated.forEach(t => {
-      const r = getGeneralRating(records[t].total||0);
-      ratingGroups[r] = (ratingGroups[r]||0) + 1;
-    });
-
-    return (
-      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:900,margin:"0 auto",padding:16}}>
-        <div style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
-          <button onClick={()=>setView("list")}
-            style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:10,
-              padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",marginBottom:12}}>
-            ← رجوع
-          </button>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{fontSize:36}}>📊</div>
-            <div>
-              <h2 style={{margin:0,fontWeight:900,fontSize:20}}>ملخص نتائج التقييم</h2>
-              <p style={{margin:0,opacity:.8,fontSize:13}}>{evaluated.length} معلم مُقيَّم من أصل {TEACHERS_LIST.length}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* إحصائيات عامة */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:16}}>
-          {[
-            {label:"متوسط الدرجات",val:avg,icon:"📈",color:"#7c3aed"},
-            {label:"أعلى درجة",val:sortedByScore.length?records[sortedByScore[0]].total:"—",icon:"🥇",color:"#f59e0b"},
-            {label:"أدنى درجة",val:sortedByScore.length?records[sortedByScore[sortedByScore.length-1]].total:"—",icon:"📉",color:"#dc2626"},
-            {label:"مكتمل التقييم",val:evaluated.length,icon:"✅",color:"#0d9488"},
-          ].map(s=>(
-            <div key={s.label} style={{background:"#fff",borderRadius:14,padding:"16px",border:"1.5px solid #e2e8f0",textAlign:"center"}}>
-              <div style={{fontSize:24,marginBottom:6}}>{s.icon}</div>
-              <div style={{fontWeight:900,fontSize:24,color:s.color}}>{s.val}</div>
-              <div style={{fontSize:12,color:"#64748b",marginTop:4}}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* توزيع التقديرات */}
-        <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
-          <h3 style={{margin:"0 0 14px",fontWeight:800,color:"#0d3b6e",fontSize:15}}>توزيع التقديرات</h3>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-            {GENERAL_RATINGS.map(r => {
-              const cnt = ratingGroups[r.label]||0;
-              const pct = evaluated.length ? Math.round(cnt/evaluated.length*100) : 0;
-              const colors = {ممتاز:"#0d9488","جيد جداً":"#22c55e",جيد:"#eab308",مقبول:"#f97316",ضعيف:"#dc2626"};
-              const c = colors[r.label]||"#64748b";
-              return (
-                <div key={r.label} style={{flex:1,minWidth:90,textAlign:"center",padding:"12px 8px",
-                  background:`${c}11`,border:`2px solid ${c}`,borderRadius:12}}>
-                  <div style={{fontWeight:900,fontSize:22,color:c}}>{cnt}</div>
-                  <div style={{fontWeight:700,fontSize:12,color:c}}>{r.label}</div>
-                  <div style={{fontSize:11,color:"#64748b"}}>{pct}%</div>
-                  <div style={{fontSize:10,color:"#94a3b8"}}>{r.min}-{r.max}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ترتيب المعلمين */}
-        <div style={{background:"#fff",borderRadius:16,padding:20,border:"1.5px solid #e2e8f0"}}>
-          <h3 style={{margin:"0 0 14px",fontWeight:800,color:"#0d3b6e",fontSize:15}}>ترتيب المعلمين حسب الدرجة</h3>
-          <div style={{display:"grid",gap:8}}>
-            {sortedByScore.map((teacher, idx) => {
-              const rec = records[teacher];
-              const score = rec.total;
-              const sColor = getStatusColor(score);
-              const rating = getGeneralRating(score);
-              return (
-                <div key={teacher} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
-                  background:"#f8fafc",borderRadius:12}}>
-                  <div style={{width:30,height:30,borderRadius:"50%",
-                    background:idx<3?"#f59e0b":"#e2e8f0",
-                    color:idx<3?"#fff":"#64748b",
-                    display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,flexShrink:0}}>
-                    {idx+1}
-                  </div>
-                  <div style={{flex:1,fontWeight:700,fontSize:13,color:"#1e293b"}}>{teacher}</div>
-                  <div style={{background:LEVEL_BG[Math.round(score/20)]||"#f0fdfa",
-                    border:`1.5px solid ${sColor}`,borderRadius:8,padding:"4px 12px",
-                    fontWeight:900,fontSize:14,color:sColor}}>
-                    {score}
-                  </div>
-                  <div style={{fontSize:12,color:sColor,fontWeight:700,minWidth:60,textAlign:"center"}}>
-                    {rating}
-                  </div>
-                  <button onClick={()=>{setDetailTeacher(teacher);setView("detail");}}
-                    style={{padding:"6px 12px",borderRadius:8,background:"#eff6ff",color:"#3b82f6",
-                      fontWeight:700,fontSize:11,border:"1.5px solid #bfdbfe",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-                    تفاصيل
-                  </button>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </div>
     );
@@ -18712,10 +18738,6 @@ function TeacherPerformanceEvalPage() {
   return null;
 }
 
-
-
-// ═══════════════════════════════════════════════════════════
-//  🎯 صفحة قياس أداء المعلمين — التطوير المهني
 // ═══════════════════════════════════════════════════════════
 function TeacherEvalPage({ teachers = [] }) {
   const LS_KEY  = "teacher_eval_records_v2";
