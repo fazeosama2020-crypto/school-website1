@@ -162,39 +162,33 @@ const DEFAULT_TEACHERS = [
 // ملاحظة: يرجى استبدال الأرقام بالأرقام الصحيحة من خلال رفع ملف Excel في صفحة الإعدادات
 // قائمة المعلمين بأرقام هوياتهم الرسمية — مستخرجة من ملف بيانات المدرسة
 const DEFAULT_TEACHERS_WITH_IDS = [
-  { name: "معيض صالح محمد القرني", id: "1036502514" },
-  { name: "عبدالواحد بن مبارك بن عبدالواحد الجبعه الخنفري القحطاني", id: "1046618607" },
-  { name: "حامد محمد عبدالله الزهراني", id: "1056228677" },
-  { name: "رامي علي حسن ال مطر الغامدي", id: "1032749952" },
-  { name: "عبدالحميد عبدالمعطي حميد اللقماني", id: "1048137358" },
-  { name: "حسن حامد إبراهيم الساعدي", id: "1025827583" },
-  { name: "فواز محمد عطيه الثقفي", id: "1024289223" },
-  { name: "رجيان رويحي عتيق الله السلمي", id: "1068362936" },
-  { name: "صالح احمد سعيد الغامدي", id: "1037320924" },
-  { name: "بندر فيحان طلق السلمي", id: "1049094053" },
-  { name: "عبدالله عبدالرحيم محمد الطلحي", id: "1018372589" },
-  { name: "عبدالرحمن ابراهيم علي الفقيه", id: "1073328542" },
-  { name: "سلطان حمد محمد المقاطي العتيبي", id: "1005422215" },
-  { name: "عبدالهادي بن سالم بن عويتق المعبدي الحربي", id: "1009800283" },
-  { name: "فهد عبيد عبدالله النباتي", id: "1035178803" },
-  { name: "طلال سعد ساعد السلمي", id: "1036658415" },
-  { name: "هاني رده لافي الجحدلي", id: "1010690061" },
-  { name: "عبد الله حامد خليوي اللقماني", id: "1015309949" },
-  { name: "ضيف الله حلسان صالح الزهراني", id: "1054217631" },
-  { name: "حامد بن عبد الله بن علي المحمادي", id: "1031670795" },
-  { name: "صالح أحمد سميح المجنوني", id: "1064090242" },
-  { name: "محمد عوض عبدالله الجابري", id: "1033897784" },
-  { name: "محمد مساعد فويران اللحياني", id: "1028026183" },
-  { name: "مسلم سعد مسعود الجهني", id: "1102617287" },
-  { name: "مشعل مساعد عيد الحربي", id: "1102809009" },
-  { name: "بدر سرور مسعد العتيبي", id: "1033283704" },
-  { name: "وليد مسلم سليم السهلي", id: "1057175273" },
-  { name: "مصلح محمد مصلح المعبدي", id: "1043906278" },
-  { name: "جازي عبدالرحمن عبدربه الثبيتي", id: "1045345863" },
-  { name: "بدر حمد محمد اللهيبي", id: "1022066664" },
-  { name: "عطيه سعيد علي الغامدي", id: "1072245713" },
-  { name: "علي عبدالله حزام بن عبود", id: "1066246867" },
-  { name: "محمد علي عبدالله المحوري", id: "1063668352" },
+  { name: "وليد صويلح عبدالله الزايدي", id: "1021779531" },
+  { name: "عبدالعزيز بن احمد بن خضران الزهراني", id: "1041995687" },
+  { name: "رمضان عطيه احمد الزهراني", id: "1014213126" },
+  { name: "صاطي جارالله رده الحارثي", id: "1070136708" },
+  { name: "حاتم سعد الرشيدي الشمراني", id: "1062902190" },
+  { name: "مجاهد دميس احمد الزهراني", id: "1070327034" },
+  { name: "محمد حمدان خالد القارحى", id: "1059652113" },
+  { name: "حسن مزهر حمدي العيسى", id: "1065520999" },
+  { name: "جابر عبدالله عبدالرحمن الشهري", id: "1074998749" },
+  { name: "اسامه عطيه علي السفري", id: "1089533028" },
+  { name: "عبدالعزيز راشد بسيس الذبياني", id: "1064564766" },
+  { name: "محمد موسى وراد الحربي", id: "1079290977" },
+  { name: "علي عبدالله علي الغامدي", id: "1007320953" },
+  { name: "عبدالعزيز عبدالله بن جارالله الزهراني", id: "1065577981" },
+  { name: "عبدالرحيم احمد علي رضوان", id: "1000184265" },
+  { name: "طارق مساعد بن جارالله الزهراني", id: "1071438145" },
+  { name: "فارس محمد وارد البشري", id: "1044380671" },
+  { name: "أحمد بن علي بن ابراهيم عزي", id: "1066305911" },
+  { name: "هادي جابر جبير المقاطي العتيبي", id: "1044067724" },
+  { name: "عمر ابن علي ابن صالح العمشاني", id: "1052745013" },
+  { name: "احمد محمد عبدالرحمن الشهري", id: "1010008108" },
+  { name: "محمد حامد محمد الجوفي", id: "1013420078" },
+  { name: "سعد قطنان مقبل العتيبي", id: "1051486841" },
+  { name: "فهد علي بن محمد ال رده", id: "1064061094" },
+  { name: "فيصل هليل ابن مستور العتيبى", id: "1069431516" },
+  { name: "ماجد بن طالع بن دخيل الكعبي الهذلي", id: "1060330295" },
+  { name: "محمد علي محمد الشهري", id: "1070196769" },
 ];
 
 const DEFAULT_WEEK = {
@@ -978,7 +972,7 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
       style={{ fontFamily: siteFont, background: "linear-gradient(135deg, #0d9488 0%, #065f46 50%, #064e3b 100%)" }}>
       {/* شريط العنوان */}
       <div className="flex items-center justify-between px-6 py-4 bg-black bg-opacity-20">
-        <p className="font-black text-white text-sm">🏫 مدرسة عبيدة بن الحارث المتوسطة</p>
+        <p className="font-black text-white text-sm">🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
         <button onClick={() => { window.location.hash = ""; window.location.reload(); }}
           className="px-4 py-1.5 rounded-xl bg-white bg-opacity-20 text-white font-bold text-sm hover:bg-opacity-30 transition-all">
           ← الرئيسية
@@ -1461,7 +1455,7 @@ function PublicAnnouncementsPage({ announcements, siteFont, onLogin, onTeacherPo
         <div className="flex items-center justify-between mb-6 pt-4">
           <div className="text-center flex-1">
             <div className="text-4xl mb-1">🏫</div>
-            <h1 className="text-lg font-black text-white">مدرسة عبيدة بن الحارث المتوسطة</h1>
+            <h1 className="text-lg font-black text-white">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
             <p className="text-white opacity-70 text-xs">بوابة الإعلانات المدرسية</p>
             <div className="mt-3 flex justify-center"><BoldVisitorBadge pageKey="announcements" /></div>
           </div>
@@ -1555,7 +1549,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
           <div className="flex justify-center mb-5">
             <SchoolLogo size="lg" animate={true} />
           </div>
-          <h1 className="text-xl font-black mb-1 mt-2">مدرسة عبيدة بن الحارث المتوسطة</h1>
+          <h1 className="text-xl font-black mb-1 mt-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
           <p className="opacity-70 text-sm">بوابة الإدارة المدرسية الإلكترونية</p>
         </div>
         <div className="bg-white rounded-3xl p-6 shadow-2xl">
@@ -1646,7 +1640,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         <div className="flex justify-center mb-4 relative z-10">
           <SchoolLogo size="xl" animate={true} />
         </div>
-        <h1 className="text-xl font-black relative z-10 mt-2">مدرسة عبيدة بن الحارث المتوسطة</h1>
+        <h1 className="text-xl font-black relative z-10 mt-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
         <p className="opacity-80 text-base relative z-10 mt-1">بوابة الإدارة المدرسية الإلكترونية</p>
         <p className="opacity-60 text-sm mt-1 relative z-10">{todayStr}</p>
         {/* شريط حضور اليوم */}
@@ -2120,7 +2114,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
       </div>
       <div class="header">
         <h1>المملكة العربية السعودية — وزارة التعليم</h1>
-        <p>مدرسة عبيدة بن الحارث المتوسطة — إدارة تعليم جدة</p>
+        <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة</p>
         <p style="margin-top:6px;font-size:14px;font-weight:900;color:#1e3a5f">نموذج مساءلة ${isLate?"تأخر":"غياب"} — ${day.name}</p>
       </div>
       <div style="text-align:center;margin-bottom:14px">
@@ -2380,7 +2374,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
       @media print{@page{size:A4;margin:1.5cm}}
     </style></head><body>
     <div class="header">
-      <h1>مدرسة عبيدة بن الحارث المتوسطة</h1>
+      <h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
       <p>سجل الحضور والغياب — ${day.name} | ${day.dateH} هـ | ${day.dateM} م</p>
     </div>
     ${assemblyLine}
@@ -2425,7 +2419,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
       <thead><tr><th>م</th><th>اسم المعلم / الإداري</th><th>الحالة</th><th>التفاصيل</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="footer">تم الإصدار بتاريخ ${new Date().toLocaleDateString('ar-SA')} — بوابة مدرسة عبيدة بن الحارث الإلكترونية</div>
+    <div class="footer">تم الإصدار بتاريخ ${new Date().toLocaleDateString('ar-SA')} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -2456,7 +2450,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
     th{background:#7c3aed;color:#fff;padding:7px;text-align:center}
     td{border:1px solid #e5e7eb;padding:5px;text-align:center}
     @media print{@page{size:A4 landscape;margin:1cm}}</style></head><body>
-    <div class="header"><h1>مدرسة عبيدة بن الحارث المتوسطة</h1>
+    <div class="header"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
     <p>ملخص الحضور والغياب الأسبوعي — ${week.days[0]?.dateH} إلى ${week.days[week.days.length-1]?.dateH} هـ</p></div>
     <table><thead><tr><th>م</th><th>اسم المعلم</th>
     ${week.days.map((d,di)=>`<th>${d.name}<br/><span style="font-weight:normal;font-size:10px">${(() => { const a = getAssembly(di); return a !== null ? (a ? "🎺✅":"🎺❌") : "🎺—"; })()}</span></th>`).join("")}
@@ -2475,7 +2469,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
           <div className="text-center sm:text-right">
             <div className="text-4xl mb-1">📋</div>
             <h2 className="text-2xl font-black">سجل الحضور والغياب</h2>
-            <p className="opacity-80 text-sm mt-1">مدرسة عبيدة بن الحارث المتوسطة — ١٤٤٧هـ</p>
+            <p className="opacity-80 text-sm mt-1">مدرسة الأمير عبدالمجيد المتوسطة الأولى — ١٤٤٧هـ</p>
           </div>
           <div className="flex gap-2 flex-wrap justify-center">
             <button onClick={handlePrint}
@@ -3753,7 +3747,7 @@ function AdminAttendancePage() {
     td{border:1px solid #e5e7eb;padding:5px;text-align:center}
     .footer{text-align:center;margin-top:16px;font-size:10px;color:#999}
     @media print{@page{size:A4;margin:1.5cm}}</style></head><body>
-    <div class="hdr"><h1>مدرسة عبيدة بن الحارث المتوسطة</h1>
+    <div class="hdr"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
     <p>سجل دوام الإداريين — ${day.name} | ${day.dateM} م</p></div>
     <div class="stats">
       <div class="st"><span>${totalPresent(selDay)}</span><small>✅ حاضر</small></div>
@@ -3764,7 +3758,7 @@ function AdminAttendancePage() {
     </div>
     <table><thead><tr><th>م</th><th>اسم الإداري</th><th>الحالة</th><th>التفاصيل</th><th>ملاحظات</th></tr></thead>
     <tbody>${rows}</tbody></table>
-    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة عبيدة بن الحارث الإلكترونية</div>
+    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
     <script>window.onload=()=>window.print()</script></body></html>`);
   };
 
@@ -3801,13 +3795,13 @@ function AdminAttendancePage() {
     td{border:1px solid #e5e7eb;padding:4px;text-align:center}
     .footer{text-align:center;margin-top:12px;font-size:9px;color:#aaa}
     @media print{@page{size:A4 landscape;margin:1cm}}</style></head><body>
-    <div class="hdr"><h1>مدرسة عبيدة بن الحارث المتوسطة</h1>
+    <div class="hdr"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
     <p>${title} — ${wk.days[0]?.dateM} إلى ${wk.days[wk.days.length-1]?.dateM} م</p></div>
     <table><thead><tr><th>م</th><th>اسم الإداري</th>
     ${wk.days.map(d=>`<th>${d.name}</th>`).join("")}
     <th>🌅متأخر</th><th>📋مستأذن</th><th>🚶انسحاب</th><th>❌غائب</th></tr></thead>
     <tbody>${rows}</tbody></table>
-    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة عبيدة بن الحارث الإلكترونية</div>
+    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
     <script>window.onload=()=>window.print()</script></body></html>`);
   };
 
@@ -3852,12 +3846,12 @@ function AdminAttendancePage() {
     td{border:1px solid #e5e7eb;padding:5px;text-align:center}
     .footer{text-align:center;margin-top:16px;font-size:10px;color:#999}
     @media print{@page{size:A4;margin:1.5cm}}</style></head><body>
-    <div class="hdr"><h1>مدرسة عبيدة بن الحارث المتوسطة</h1>
+    <div class="hdr"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
     <p>تقرير دوام الإداريين التراكمي — عام ${printYear} م (${allWeeks.length} أسبوع)</p></div>
     <table><thead><tr>
       <th>م</th><th>اسم الإداري</th><th>🌅تأخر</th><th>دقائق تأخر</th><th>📋استئذان</th><th>🚶انسحاب</th><th>❌غياب</th>
     </tr></thead><tbody>${rows}</tbody></table>
-    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة عبيدة بن الحارث الإلكترونية</div>
+    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
     <script>window.onload=()=>window.print()</script></body></html>`);
   };
 
@@ -3872,7 +3866,7 @@ function AdminAttendancePage() {
           <div className="text-center sm:text-right">
             <div className="text-4xl mb-1">🏢</div>
             <h2 className="text-2xl font-black">سجل دوام الإداريين</h2>
-            <p className="opacity-80 text-sm mt-1">مدرسة عبيدة بن الحارث المتوسطة — {new Date().getFullYear()}م</p>
+            <p className="opacity-80 text-sm mt-1">مدرسة الأمير عبدالمجيد المتوسطة الأولى — {new Date().getFullYear()}م</p>
           </div>
           <div className="flex gap-2 flex-wrap justify-center">
             <button onClick={printDay} className="bg-white text-purple-700 px-3 py-2 rounded-xl text-xs font-bold hover:bg-purple-50 shadow">🖨️ طباعة اليوم</button>
@@ -4626,7 +4620,7 @@ function printAllExcuses(excusesList) {
 <div class="page-header">
   <div class="logo-box">🏫</div>
   <div class="school-info">
-    <div class="school-name">مدرسة عبيدة بن الحارث المتوسطة</div>
+    <div class="school-name">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
     <div class="report-title">تقرير أعذار غياب الطلاب</div>
     <div class="report-date">تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} | إجمالي السجلات: ${excusesList.length}</div>
   </div>
@@ -4695,7 +4689,7 @@ function printAllExcuses(excusesList) {
   </div>
 </div>
 
-<div class="footer">مدرسة عبيدة بن الحارث المتوسطة — تقرير أعذار الطلاب</div>
+<div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — تقرير أعذار الطلاب</div>
 <script>window.onload=()=>{window.print();}<\/script>
 </body></html>`);
   win.document.close();
@@ -4885,7 +4879,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
       .sig-line{border-top:1.5px solid #374151;padding-top:8px;margin-top:28px;font-weight:700}
       @media print{@page{size:A4;margin:2cm}body{padding:0}}
     </style></head><body>
-    <div class="school">إدارة تعليم جدة — مدرسة عبيدة بن الحارث المتوسطة</div>
+    <div class="school">إدارة تعليم جدة — مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
     <h1>📋 نموذج عذر طالب</h1>
     <div class="grid">
       <div class="field"><div class="label">👤 اسم الطالب</div><div class="val">${ex.studentName}</div></div>
@@ -5628,7 +5622,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
           <span style={{ fontSize:22 }}>📋</span>
           <div style={{ flex:1 }}>
             <div style={{ fontWeight:900, fontSize:14 }}>نموذج تقديم العذر</div>
-            <div style={{ opacity:.7, fontSize:11 }}>مدرسة عبيدة بن الحارث المتوسطة</div>
+            <div style={{ opacity:.7, fontSize:11 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
           </div>
         </div>
         <div style={{ maxWidth:600, margin:"0 auto", padding:"14px 12px 60px" }}>
@@ -5828,7 +5822,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
           fontSize:32, margin:"0 auto 14px" }}>📋</div>
         <h1 style={{ fontSize:19, fontWeight:900, color:"#1e293b", marginBottom:4 }}>بوابة أعذار الطلاب</h1>
         <p style={{ fontSize:12.5, color:"#64748b", marginBottom:6, lineHeight:1.8 }}>
-          مدرسة عبيدة بن الحارث المتوسطة
+          مدرسة الأمير عبدالمجيد المتوسطة الأولى
         </p>
         <p style={{ fontSize:11.5, color:"#94a3b8", marginBottom:22 }}>
           أدخل رقم هوية الطالب لتقديم عذر الغياب
@@ -5951,7 +5945,7 @@ function ParentPortal({ classList, setClassList, saveClass, messages, setMessage
       {/* رأس الصفحة */}
       <div className="text-center text-white pt-10 pb-6 px-4">
         <div className="text-5xl mb-3">🏫</div>
-        <h1 className="text-2xl font-black mb-1">مدرسة عبيدة بن الحارث المتوسطة</h1>
+        <h1 className="text-2xl font-black mb-1">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
         <p className="opacity-80 text-sm">بوابة أولياء الأمور — متابعة مستوى الطالب</p>
         <button onClick={onSuggestions}
           className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm shadow-lg"
@@ -6775,7 +6769,7 @@ function CertificatesPage({ teachers, attendance, week, classList }) {
       <div class="corner tl"></div><div class="corner tr"></div>
       <div class="corner bl"></div><div class="corner br"></div>
       <div class="star">⭐</div>
-      <div class="school">مدرسة عبيدة بن الحارث المتوسطة — الإدارة العامة للتعليم بجدة</div>
+      <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى — الإدارة العامة للتعليم بجدة</div>
       <div class="type-title">شهادة ${cert.type}</div>
       <div class="divider"></div>
       <div class="present">يُشرِّف إدارة المدرسة أن تُقدِّم هذه الشهادة إلى</div>
@@ -7050,7 +7044,7 @@ function StudentRafflePortal({ siteFont, onBack }) {
         <div className="text-center text-white mb-6">
           <div className="text-7xl float-ico mb-3">🎰</div>
           <h1 className="text-2xl font-black mb-1">سحب الجوائز</h1>
-          <p className="opacity-80 text-sm">مدرسة عبيدة بن الحارث المتوسطة</p>
+          <p className="opacity-80 text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-5">
@@ -8532,7 +8526,7 @@ function PerformanceStandardsPortal({ siteFont, onBack }) {
         <div className="w-full max-w-lg">
           <div className="text-center text-white mb-8">
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-2xl" style={{ background:"rgba(255,255,255,0.12)", backdropFilter:"blur(10px)", border:"1px solid rgba(255,255,255,0.2)" }}>📊</div>
-            <h1 className="text-2xl font-black mb-2">مدرسة عبيدة بن الحارث المتوسطة</h1>
+            <h1 className="text-2xl font-black mb-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
             <p className="text-sm opacity-70 bg-white/10 rounded-full px-5 py-2 inline-block">بطاقة التقويم الذاتي لعناصر الأداء الوظيفي</p>
             <div className="mt-2"><PageVisitorCounter pageKey="self-assessment" label="زيارة" /></div>
           </div>
@@ -9395,7 +9389,7 @@ function StudentEvalCard({ student, onUpdate, onDelete, onSendNote, messages }) 
 يمكنك متابعة مستوى ابنك والاطلاع على ملاحظات المعلم ومراسلته مباشرةً عبر الرابط التالي:
 ${shareUrl}
 
-مع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`
+مع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`
     );
     window.open("https://wa.me/" + phone + "?text=" + msg, "_blank");
   };
@@ -9404,7 +9398,7 @@ ${shareUrl}
     if (!student.parentPhone) { alert("أضف رقم جوال ولي الأمر أولاً"); return; }
     const phone = student.parentPhone.trim();
     const msg = encodeURIComponent(
-      `مدرسة عبيدة بن الحارث - رابط متابعة الطالب ${student.name}: ${shareUrl}`
+      `مدرسة الأمير عبدالمجيد - رابط متابعة الطالب ${student.name}: ${shareUrl}`
     );
     window.open("sms:" + phone + "?body=" + msg);
   };
@@ -9441,12 +9435,12 @@ ${shareUrl}
 يمكن الاطلاع عليها والرد مباشرةً عبر الرابط:
 ${parentLink}
 
-مع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`
+مع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`
     );
     if (sendMethod === "sms") {
       if (student.parentPhone) {
         window.open("sms:" + student.parentPhone.trim() + "?body=" + encodeURIComponent(
-          `مدرسة عبيدة بن الحارث - يوجد ملاحظة من المعلم للطالب ${student.name}. الرابط: ${parentLink}`
+          `مدرسة الأمير عبدالمجيد - يوجد ملاحظة من المعلم للطالب ${student.name}. الرابط: ${parentLink}`
         ));
       }
     } else if (student.parentPhone && student.parentPhone.trim()) {
@@ -9469,7 +9463,7 @@ ${parentLink}
 يمكنك متابعة مستوى ابنك والتواصل مع المعلم من خلال الرابط المباشر:
 ${link}
 
-مع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`
+مع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`
     );
     window.open("https://wa.me/" + phone + "?text=" + msg, "_blank");
   };
@@ -9635,7 +9629,7 @@ ${link}
     <div class="header">
       <div class="header-icon">👨‍🎓</div>
       <div>
-        <div class="header-school">مدرسة عبيدة بن الحارث المتوسطة — إدارة تعليم جدة</div>
+        <div class="header-school">مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة</div>
         <div class="header-name">${stu.name || "—"}</div>
         <div class="header-meta">رقم الهوية: ${stu.nationalId||"—"} · جوال ولي الأمر: ${stu.parentPhone||"—"}</div>
         ${lastLv&&lastLv.value?`<span class="level-badge" style="background:${lastLv.bg};color:${lastLv.color}">آخر مستوى: ${lastLv.label}</span>`:""}
@@ -9662,7 +9656,7 @@ ${link}
       <div class="sig"><div class="sig-label">توقيع ولي الأمر</div><div class="sig-line">__________________</div></div>
       <div class="sig"><div class="sig-label">التاريخ</div><div class="sig-line">__________________</div></div>
     </div>
-    <div class="footer">بوابة مدرسة عبيدة بن الحارث الإلكترونية © ١٤٤٧هـ</div>
+    <div class="footer">بوابة مدرسة الأمير عبدالمجيد الإلكترونية © ١٤٤٧هـ</div>
 
     <script>window.onload=()=>{ window.print(); }</script>
     </body></html>`);
@@ -10315,7 +10309,7 @@ function ClassTable({ cls, onUpdateClass, onSave, onSendNote, messages }) {
     .footer{text-align:center;margin-top:20px;font-size:9px;color:#999}
     @page{size:A4;margin:1.5cm}</style></head><body>
     <h1>🏫 سجل التقييم الأسبوعي — ${cls.name||cls.level+" / "+cls.section}</h1>
-    <div class="sub">مدرسة عبيدة بن الحارث المتوسطة — الفصل ${cls.semester||"—"} — ${cls.teacher||""}</div>
+    <div class="sub">مدرسة الأمير عبدالمجيد المتوسطة الأولى — الفصل ${cls.semester||"—"} — ${cls.teacher||""}</div>
     <table><thead><tr><th>م</th><th>اسم الطالب</th><th>آخر مستوى</th><th>التاريخ</th><th>الملاحظات</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div style="display:flex;gap:40px;margin-top:20px;font-size:10px">
@@ -10323,7 +10317,7 @@ function ClassTable({ cls, onUpdateClass, onSave, onSendNote, messages }) {
       <div>توقيع مدير المدرسة: __________________</div>
       <div>التاريخ: __________________</div>
     </div>
-    <div class="footer">بوابة مدرسة عبيدة بن الحارث الإلكترونية © ١٤٤٧هـ</div>
+    <div class="footer">بوابة مدرسة الأمير عبدالمجيد الإلكترونية © ١٤٤٧هـ</div>
     </body></html>`);
   };
 
@@ -10481,7 +10475,7 @@ function StudentsPage({ classList, setClassList, saveClass, deleteClass, teacher
         style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2E6DA4 60%, #1a8fe3 100%)" }}>
         <div className="text-4xl mb-2">👨‍🎓</div>
         <h2 className="text-2xl font-black mb-1">سجل تقييم الطلاب</h2>
-        <p className="opacity-80 text-sm">للعام الدراسي ١٤٤٧هـ — مدرسة عبيدة بن الحارث المتوسطة</p>
+        <p className="opacity-80 text-sm">للعام الدراسي ١٤٤٧هـ — مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
         <div className="flex justify-center gap-4 mt-3 text-sm opacity-90">
           <span>📚 {classList.length} فصل</span>
           <span>👨‍🎓 {totalStudents} طالب</span>
@@ -10709,7 +10703,7 @@ function MessagesPage({ messages, setMessages, saveMessages, isParent, parentNam
             <div className="text-center md:text-right flex-1">
               <h2 className="text-2xl font-black mb-2">شراكة الأسرة والمدرسة</h2>
               <p className="text-blue-100 leading-relaxed text-sm">
-                تؤمن مدرسة عبيدة بن الحارث المتوسطة بأن نجاح الطالب يبدأ من شراكة حقيقية بين الأسرة والمدرسة.
+                تؤمن مدرسة الأمير عبدالمجيد المتوسطة الأولى بأن نجاح الطالب يبدأ من شراكة حقيقية بين الأسرة والمدرسة.
                 هذه المنصة جسر تواصل مفتوح بين أولياء الأمور والمدرسة — شاركونا آراءكم ومقترحاتكم واستفساراتكم،
                 فأنتم شركاؤنا في بناء جيل واعٍ ومتميز.
               </p>
@@ -10728,7 +10722,7 @@ function MessagesPage({ messages, setMessages, saveMessages, isParent, parentNam
               <button onClick={() => {
                 const link = "https://school-website1.vercel.app";
                 const msg = encodeURIComponent(
-                  `🏫 *مدرسة عبيدة بن الحارث المتوسطة*\n\n` +
+                  `🏫 *مدرسة الأمير عبدالمجيد المتوسطة الأولى*\n\n` +
                   `✉️ *بوابة التواصل مع الأسرة*\n\n` +
                   `أعزاءنا أولياء الأمور،\n` +
                   `يسعدنا إطلاق بوابة التواصل المدرسي حيث يمكنكم إرسال آرائكم ومقترحاتكم واستفساراتكم مباشرةً لإدارة المدرسة.\n\n` +
@@ -11000,7 +10994,7 @@ function SurveyBuilder({ survey, onSave, onCancel }) {
       <div style={{ background:`linear-gradient(135deg, ${s.color} 0%, ${s.color}cc 100%)`, borderRadius:16, padding:"16px 20px", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div>
           <div style={{ color:"#fff", fontWeight:900, fontSize:16 }}>📋 {s.id === survey.id && s.title ? "تعديل الاستبيان" : "استبيان جديد"}</div>
-          <div style={{ color:"rgba(255,255,255,.7)", fontSize:11, marginTop:2 }}>مدرسة عبيدة بن الحارث المتوسطة</div>
+          <div style={{ color:"rgba(255,255,255,.7)", fontSize:11, marginTop:2 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
         </div>
         <button onClick={onCancel} style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, color:"#fff", fontWeight:800, fontSize:12, padding:"6px 14px", cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>✕ إلغاء</button>
       </div>
@@ -11117,7 +11111,7 @@ function SurveyRespond({ survey, onClose }) {
     </style></head><body>
     <div class="page">
       <div class="header">
-        <div class="school-name">🏫 مدرسة عبيدة بن الحارث المتوسطة</div>
+        <div class="school-name">🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
         <div class="survey-title">📋 ${survey.title}</div>
         <div class="quote">« رأيك يُسهم في تحسين بيئة التعلم وتجويد العمل المدرسي — شكراً لمشاركتك »</div>
         <div class="meta-row">
@@ -11149,7 +11143,7 @@ function SurveyRespond({ survey, onClose }) {
           </table>
         </div>`).join("")}
       <div class="secret">🔒 هذه الاستبانة سرية ولا يطلع عليها إلا المعنيون في إدارة المدرسة</div>
-      <div class="footer">مدرسة عبيدة بن الحارث المتوسطة — إدارة تعليم جدة — ${new Date().getFullYear()} م</div>
+      <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة — ${new Date().getFullYear()} م</div>
     </div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`;
@@ -11160,7 +11154,7 @@ function SurveyRespond({ survey, onClose }) {
     <div dir="rtl" style={{ fontFamily:"'Cairo','Noto Naskh Arabic',sans-serif", background:"#f8fafc", minHeight:"100vh" }}>
       {/* رأس الاستبيان */}
       <div style={{ background:`linear-gradient(135deg,${survey.color},${survey.color}bb)`, padding:"20px 16px", textAlign:"center" }}>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,.8)", marginBottom:4 }}>🏫 مدرسة عبيدة بن الحارث المتوسطة</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,.8)", marginBottom:4 }}>🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
         <div style={{ fontSize:20, fontWeight:900, color:"#fff", marginBottom:6 }}>{survey.title}</div>
         <div style={{ fontSize:11.5, color:"rgba(255,255,255,.75)", lineHeight:1.7 }}>
           « رأيك يُسهم في تحسين بيئة التعلم وتجويد العمل المدرسي »
@@ -11417,7 +11411,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
       @media print{@page{size:A4;margin:2cm}body{padding:0}}
     </style></head><body>
     <div class="header">
-      <div class="school">مدرسة عبيدة بن الحارث المتوسطة</div>
+      <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
       <div class="title">${cIcons[ann.category]||"📌"} ${ann.title}</div>
       <div class="meta">
         <span class="badge">${ann.priority}</span>
@@ -11426,7 +11420,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
       </div>
     </div>
     <div class="body">${ann.content}</div>
-    <div class="footer">مدرسة عبيدة بن الحارث المتوسطة — ${new Date().toLocaleDateString('ar-SA')}</div>
+    <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${new Date().toLocaleDateString('ar-SA')}</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -11929,7 +11923,7 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
       @media print{@page{size:A4;margin:2cm}body{padding:0}}
     </style></head><body>
     <div class="header">
-      <div class="school">مدرسة عبيدة بن الحارث المتوسطة</div>
+      <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
       <div class="icon">${act.image||"🎯"}</div>
       <div class="title">${act.title}</div>
       <div class="meta">
@@ -11940,7 +11934,7 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
       </div>
     </div>
     <div class="body">${act.description||"لا يوجد وصف"}</div>
-    <div class="footer">مدرسة عبيدة بن الحارث المتوسطة — ${new Date().toLocaleDateString('ar-SA')}</div>
+    <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${new Date().toLocaleDateString('ar-SA')}</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -12196,7 +12190,7 @@ function SMSPage({ teachers, attendance, week, classList }) {
       const r = attendance?.[teachers.indexOf(t)]?.[di] || {};
       return `${i + 1}. ${t} (${r.lateType || "صباحي"} - ${r.lateMinutes || 0} دقيقة)`;
     });
-    let msg = `📋 تقرير حضور ${dayLabel} ${dateLabel}\nمدرسة عبيدة بن الحارث المتوسطة\n\n`;
+    let msg = `📋 تقرير حضور ${dayLabel} ${dateLabel}\nمدرسة الأمير عبدالمجيد المتوسطة الأولى\n\n`;
     if (absents.length) msg += `❌ الغائبون (${absents.length}):\n${absents.join("\n")}\n\n`;
     if (lates.length) msg += `🕐 المتأخرون (${lates.length}):\n${lates.join("\n")}\n`;
     if (!absents.length && !lates.length) msg += `✅ جميع المعلمين حاضرون`;
@@ -12570,10 +12564,10 @@ function SMSPage({ teachers, attendance, week, classList }) {
             <label className="text-xs font-bold text-gray-500 mb-2 block">قوالب جاهزة</label>
             <div className="flex gap-2 flex-wrap">
               {[
-                { label:"دعوة اجتماع", msg:"أولياء الأمور الكرام\nيُعقد اجتماعاً بالمدرسة يوم ............\nالرجاء الحضور في الموعد المحدد\nمدرسة عبيدة بن الحارث المتوسطة" },
-                { label:"موعد الاختبارات", msg:"أولياء الأمور الكرام\nتبدأ الاختبارات يوم ............\nنتمنى لأبنائكم التوفيق\nمدرسة عبيدة بن الحارث المتوسطة" },
-                { label:"إجازة عارضة", msg:"أولياء الأمور الكرام\nتُعلم المدرسة بعدم الدراسة يوم ............\nمع التقدير\nمدرسة عبيدة بن الحارث المتوسطة" },
-                { label:"نشاط مدرسي", msg:"أولياء الأمور الكرام\nتقيم المدرسة نشاطاً بتاريخ ............\nنتشرف بحضوركم\nمدرسة عبيدة بن الحارث المتوسطة" },
+                { label:"دعوة اجتماع", msg:"أولياء الأمور الكرام\nيُعقد اجتماعاً بالمدرسة يوم ............\nالرجاء الحضور في الموعد المحدد\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
+                { label:"موعد الاختبارات", msg:"أولياء الأمور الكرام\nتبدأ الاختبارات يوم ............\nنتمنى لأبنائكم التوفيق\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
+                { label:"إجازة عارضة", msg:"أولياء الأمور الكرام\nتُعلم المدرسة بعدم الدراسة يوم ............\nمع التقدير\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
+                { label:"نشاط مدرسي", msg:"أولياء الأمور الكرام\nتقيم المدرسة نشاطاً بتاريخ ............\nنتشرف بحضوركم\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
               ].map(t => (
                 <button key={t.label} onClick={() => setBulkMsg(t.msg)}
                   className="bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 transition-all">
@@ -12801,12 +12795,12 @@ function StudentAbsencePage() {
     const dateAr = new Date(date).toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
     let msg = "";
     if (att.status === "غائب")
-      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nغاب عن المدرسة بتاريخ ${dateAr}\nنرجو التواصل مع الإدارة لمعرفة السبب.\nمع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`;
+      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nغاب عن المدرسة بتاريخ ${dateAr}\nنرجو التواصل مع الإدارة لمعرفة السبب.\nمع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
     else if (att.status === "تأخر صباحي")
-      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن الحضور الصباحي بتاريخ ${dateAr}${att.lateReason && att.lateReason !== "لم يُحدَّد السبب" ? `\nالسبب المُسجَّل: ${att.lateReason}` : ""}\nنرجو الحرص على الالتزام بالحضور في وقته.\nمع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`;
+      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن الحضور الصباحي بتاريخ ${dateAr}${att.lateReason && att.lateReason !== "لم يُحدَّد السبب" ? `\nالسبب المُسجَّل: ${att.lateReason}` : ""}\nنرجو الحرص على الالتزام بالحضور في وقته.\nمع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
     else if (att.status === "تأخر حصص") {
       const perNames = (att.periods||[]).sort((a,b)=>a-b).map(p => "الحصة " + PERIODS_T[p]).join("، ");
-      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن ${perNames} بتاريخ ${dateAr}\nنرجو متابعة الأمر.\nمع تحيات إدارة مدرسة عبيدة بن الحارث المتوسطة`;
+      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن ${perNames} بتاريخ ${dateAr}\nنرجو متابعة الأمر.\nمع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
     }
     setModal({ stu, msg }); setCopied(false);
   };
@@ -12843,7 +12837,7 @@ function StudentAbsencePage() {
       <div style="background:linear-gradient(135deg,#7f1d1d,#991b1b);color:white;padding:20px 24px;border-radius:12px 12px 0 0">
         <div style="font-size:18px;font-weight:900">📋 كشف الغياب والتأخر اليومي</div>
         <div style="font-size:13px;opacity:.85;margin-top:6px">${className} &nbsp;|&nbsp; ${dateAr}</div>
-        <div style="font-size:12px;opacity:.75;margin-top:3px">مدرسة عبيدة بن الحارث المتوسطة — جدة</div>
+        <div style="font-size:12px;opacity:.75;margin-top:3px">مدرسة الأمير عبدالمجيد المتوسطة الأولى — جدة</div>
       </div>
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:none;padding:14px 20px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">${stats}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-top:none">
@@ -13494,7 +13488,7 @@ body{font-family:'Cairo',sans-serif;background:#fff;color:#1a2035;direction:rtl;
   <div class="hdr">
     <div class="hc r"><div style="font-size:11px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:14px;font-weight:900">وزارة التعليم</div><div style="font-size:11px;opacity:.8">إدارة تعليم جدة</div></div>
     <div class="hc c"><img src="${LOGO_URL}" class="logo"/></div>
-    <div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة عبيدة بن الحارث المتوسطة</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div><div style="font-size:11px;opacity:.8">الفصل الدراسي ${report.semester}</div></div>
+    <div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div><div style="font-size:11px;opacity:.8">الفصل الدراسي ${report.semester}</div></div>
   </div>
   <div class="quote-bar">✨ ${report.motivationalQuote || QUOTE}</div>
   <div class="yr"><div class="yc">العام الدراسي ${report.acadYear}</div><div class="yc">الفصل الدراسي ${report.semester}</div></div>
@@ -13531,7 +13525,7 @@ body{font-family:'Cairo',sans-serif;background:#fff;color:#1a2035;direction:rtl;
   <div class="hdr">
     <div class="hc r"><div style="font-size:11px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:14px;font-weight:900">وزارة التعليم</div><div style="font-size:11px;opacity:.8">إدارة تعليم جدة</div></div>
     <div class="hc c"><img src="${LOGO_URL}" class="logo"/></div>
-    <div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة عبيدة بن الحارث المتوسطة</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div></div>
+    <div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div></div>
   </div>
   <div class="wt">شواهد ${report.reportTitle}</div>
   <div class="wg">${wHtml}</div>
@@ -13635,7 +13629,7 @@ body{font-family:'Cairo',sans-serif;background:#fff;color:#1a2035;direction:rtl;
             <div style={{width:"1.5px",height:60,background:"rgba(255,255,255,.3)",borderRadius:2}}/>
           </div>
           <div className="flex-1 flex flex-col justify-center text-left px-5 py-3">
-            <div className="font-black text-sm">مدرسة عبيدة بن الحارث المتوسطة</div>
+            <div className="font-black text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
             <div className="flex gap-2 mt-2">
               <select value={report.acadYear} onChange={e=>upd("acadYear",e.target.value)}
                 className="bg-white/15 rounded-lg px-2 py-0.5 text-white text-xs font-bold focus:outline-none border border-white/30">
@@ -13954,7 +13948,7 @@ function MonthlyReportPage({ teachers, attendance, week, weekArchive, classList,
       @media print{@page{size:A4;margin:1.5cm}body{padding:0}}
     </style></head><body>
     <div class="header">
-      <h1>🏫 مدرسة عبيدة بن الحارث المتوسطة</h1>
+      <h1>🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
       <p>تقرير الحضور والغياب — ${period} | ${displayWeeks.length} أسبوع | إجمالي الأيام: ${teacherStats[0]?.totalDays||0} يوم لكل معلم</p>
     </div>
     <div class="kpi-grid">
@@ -13976,7 +13970,7 @@ function MonthlyReportPage({ teachers, attendance, week, weekArchive, classList,
       <tbody>${rows}</tbody>
     </table>
     <div class="footer">
-      مدرسة عبيدة بن الحارث المتوسطة — بوابة الإدارة الإلكترونية © ١٤٤٧ هـ |
+      مدرسة الأمير عبدالمجيد المتوسطة الأولى — بوابة الإدارة الإلكترونية © ١٤٤٧ هـ |
       تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}
     </div>
     <script>window.onload=()=>window.print()</script>
@@ -14523,7 +14517,7 @@ function GradeAnalysisPage() {
     <div class="hd">
       <div>
         <h1>📊 تقرير تحليل نتائج الطلاب</h1>
-        <p>مدرسة عبيدة بن الحارث المتوسطة — المرحلة: ${stage} | الفصل: ${sem} | ${r.total} طالب</p>
+        <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — المرحلة: ${stage} | الفصل: ${sem} | ${r.total} طالب</p>
         <p>تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} — دليل وزارة التعليم ١٤٤٧/١٤٤٨ هـ</p>
       </div>
     </div>
@@ -14563,7 +14557,7 @@ function GradeAnalysisPage() {
       <p>• نسبة النجاح ${r.passRate}% — ${r.passRate>=90?"ممتازة وتستحق التكريم 🎉":r.passRate>=70?"جيدة وتستحق التعزيز":"تحتاج خطة تحسين عاجلة"}</p>
       <p>• أقوى مادة: <strong>${r.best}</strong> (${r.ss[r.best]?.avg}%) — نموذج يُحتذى به</p>
     </div>
-    <div class="footer">مدرسة عبيدة بن الحارث المتوسطة — نظام تحليل الدرجات الإلكتروني © ١٤٤٧ هـ</div>
+    <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — نظام تحليل الدرجات الإلكتروني © ١٤٤٧ هـ</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -16996,7 +16990,7 @@ function AssessmentPage({ teachers: appTeachers = [] }) {
         <div class="hdr-logo">📊</div>
         <div class="hdr-center">
           <h1>بطاقة تشخيص قياس التحصيل الدراسي</h1>
-          <p>مدرسة عبيدة بن الحارث المتوسطة — إدارة تعليم جدة</p>
+          <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة</p>
         </div>
         <div class="hdr-dates">
           <div><span class="lbl">هجري:</span> <span class="val">${fmtHijri||"—"}</span></div>
@@ -17571,7 +17565,7 @@ function AssessmentPage({ teachers: appTeachers = [] }) {
         <div style={{ position:"relative", zIndex:2 }}>
           <div style={{ fontSize:32, marginBottom:6 }}>📊</div>
           <div style={{ fontSize:22, fontWeight:900, color:"#fff", marginBottom:4 }}>بطاقات تشخيص قياس التحصيل</div>
-          <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)" }}>مدرسة عبيدة بن الحارث المتوسطة</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)" }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
           <div style={{ display:"flex", gap:12, justifyContent:"center", marginTop:18, flexWrap:"wrap" }}>
             {[
               {n:ASSESSMENT_TEACHERS.length, l:"إجمالي المعلمين",    c:"#fff"},
@@ -17862,126 +17856,22 @@ function EvalFeedbackDisplay({ text, imgs, criterionName }) {
 }
 
 function TeacherPerformanceEvalPage() {
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // المعايير الـ 11 مع عناصرها التفصيلية من ملف PDF الرسمي
-  //
-  // منطق الحساب الدقيق لكل مؤشر:
-  //   - كل عنصر له ثلاث حالات: "yes"=متحقق | "no"=غير متحقق | "na"=غير موجود
-  //   - درجة المؤشر = (عدد المتحقق) ÷ (الكل − غير موجود) × وزن المؤشر × 100
-  //   - العنصر "غير موجود" يُستثنى من المقام تلقائياً (لا يُحسب عليه)
-  // ═══════════════════════════════════════════════════════════════════════
+  // ── بيانات المعايير من ملف Excel ──
   const CRITERIA = [
-    {
-      num:1, element:"أداء الواجبات الوظيفية", weight:0.10,
-      icon:"🏫", color:"#1d4ed8", bg:"#eff6ff",
-      items:[
-        { id:"1a", text:"التقيد بالدوام الرسمي",                                evidence:"سجل الدوام الرسمي" },
-        { id:"1b", text:"تأدية الحصص الدراسية وفق الجدول الدراسي",             evidence:"الجدول الدراسي" },
-        { id:"1c", text:"المشاركة في الإشراف والمناوبة وحصص الانتظار",         evidence:"سجل المناوبة والإشراف اليومي" },
-        { id:"1d", text:"إعداد ومتابعة الدروس والواجبات والاختبارات",          evidence:"خطة توزيع المنهج" },
-      ],
-    },
-    {
-      num:2, element:"التفاعل مع المجتمع المهني", weight:0.10,
-      icon:"🤝", color:"#0d9488", bg:"#f0fdfa",
-      items:[
-        { id:"2a", text:"المشاركة الفاعلة في مجتمعات التعلم المهنية",          evidence:"سجل مجتمعات التعلم المهنية" },
-        { id:"2b", text:"تبادل الزيارات الصفية مع الزملاء",                    evidence:"سجل تبادل الزيارات" },
-        { id:"2c", text:"الدروس التطبيقية",                                     evidence:"تقرير تنفيذ درس تطبيقي" },
-        { id:"2d", text:"بحث الدرس",                                            evidence:"وثيقة بحث الدرس" },
-        { id:"2e", text:"حضور الدورات والورش التدريبية",                        evidence:"شهادات حضور الدورات والورش" },
-      ],
-    },
-    {
-      num:3, element:"التفاعل مع أولياء الأمور", weight:0.10,
-      icon:"👨‍👩‍👧", color:"#7c3aed", bg:"#faf5ff",
-      items:[
-        { id:"3a", text:"التواصل الفعّال مع أولياء الأمور بالتنسيق مع الموجه الطلابي", evidence:"تقرير اجتماع ولي الأمر مع المعلم" },
-        { id:"3b", text:"تزويد أولياء الأمور بمستويات الطالب",                  evidence:"إشعارات المستوى الدراسي" },
-        { id:"3c", text:"إيصال الملاحظات الهامة لأولياء الأمور",               evidence:"رسائل ومراسلات التواصل" },
-        { id:"3d", text:"تفعيل الخطة الأسبوعية للمدرسة",                       evidence:"نسخة من الخطة الأسبوعية للمدرسة" },
-        { id:"3e", text:"المشاركة الفاعلة في الجمعية العمومية للمعلمين وأولياء الأمور", evidence:"صور من الجمعية العمومية" },
-      ],
-    },
-    {
-      num:4, element:"التنويع في استراتيجيات التدريس", weight:0.10,
-      icon:"🎯", color:"#d97706", bg:"#fffbeb",
-      items:[
-        { id:"4a", text:"استخدام استراتيجيات تدريسية متنوعة",                  evidence:"تقرير عن تطبيق الاستراتيجية" },
-        { id:"4b", text:"تناسب الاستراتيجيات مع مستويات الطلاب",               evidence:"ملف إنجاز المعلم" },
-        { id:"4c", text:"مراعاة الفروق الفردية بين الطلاب",                    evidence:"أوراق عمل متمايزة" },
-      ],
-    },
-    {
-      num:5, element:"تحسين نتائج المتعلمين", weight:0.10,
-      icon:"📈", color:"#059669", bg:"#f0fdf4",
-      items:[
-        { id:"5a", text:"معالجة الفاقد التعليمي",                              evidence:"نتائج الاختبار القبلي والبعدي" },
-        { id:"5b", text:"وضع الخطط العلاجية للطلاب الضعاف",                    evidence:"كشف متابعة الطلاب" },
-        { id:"5c", text:"وضع الخطط الإثرائية للطلاب المتميزين",               evidence:"خطط إثرائية موثقة" },
-        { id:"5d", text:"تكريم الطلاب المتميزين والذين تحسّن مستواهم",         evidence:"صور وشهادات التكريم" },
-      ],
-    },
-    {
-      num:6, element:"إعداد وتنفيذ خطة التعلم", weight:0.10,
-      icon:"📋", color:"#0284c7", bg:"#f0f9ff",
-      items:[
-        { id:"6a", text:"توزيع المنهج وإعداد الدروس",                          evidence:"خطة توزيع المنهج" },
-        { id:"6b", text:"إعداد الواجبات والاختبارات",                          evidence:"نماذج من الواجبات والاختبارات" },
-        { id:"6c", text:"تنفيذ الدروس وفق الخطة",                             evidence:"نموذج من إعداد الدروس" },
-      ],
-    },
-    {
-      num:7, element:"توظيف تقنيات ووسائل التعلم المناسبة", weight:0.10,
-      icon:"💻", color:"#6d28d9", bg:"#f5f3ff",
-      items:[
-        { id:"7a", text:"دمج التقنية في التعليم",                              evidence:"تقرير عن برنامج تقني تم استخدامه" },
-        { id:"7b", text:"التنويع في الوسائل التعليمية",                        evidence:"صور من الوسائل التعليمية المستخدمة" },
-      ],
-    },
-    {
-      num:8, element:"تهيئة البيئة التعليمية", weight:0.05,
-      icon:"🏛️", color:"#be185d", bg:"#fdf2f8",
-      items:[
-        { id:"8a", text:"مراعاة حاجات الطلاب",                                evidence:"تقرير تصنيف الطلاب وفق أنماط التعلم" },
-        { id:"8b", text:"التهيئة النفسية للطلاب",                              evidence:"نماذج من التحفيز المعنوي" },
-        { id:"8c", text:"التحفيز المادي والمعنوي",                             evidence:"نماذج من التحفيز المادي والمعنوي" },
-        { id:"8d", text:"توفير متطلبات الدرس",                                 evidence:"قائمة الوسائل والمتطلبات" },
-      ],
-    },
-    {
-      num:9, element:"الإدارة الصفية", weight:0.05,
-      icon:"📐", color:"#b45309", bg:"#fef9c3",
-      items:[
-        { id:"9a", text:"ضبط سلوك الطلاب",                                    evidence:"كشف المتابعة" },
-        { id:"9b", text:"شد انتباه الطلاب وتفاعلهم",                           evidence:"تطبيق إدارة الصف" },
-        { id:"9c", text:"مراعاة الفروق الفردية",                               evidence:"أنشطة متنوعة في الملف" },
-        { id:"9d", text:"متابعة الحضور والغياب والتأخر",                       evidence:"كشف الحضور اليومي" },
-      ],
-    },
-    {
-      num:10, element:"تحليل نتائج المتعلمين وتشخيص مستوياتهم", weight:0.10,
-      icon:"📊", color:"#0f766e", bg:"#f0fdfa",
-      items:[
-        { id:"10a", text:"تحليل نتائج الاختبارات الفترية والنهائية",           evidence:"تقرير تحليل نتائج الطلاب" },
-        { id:"10b", text:"تصنيف الطلاب وفق نتائجهم",                          evidence:"جدول تصنيف الطلاب" },
-        { id:"10c", text:"معالجة الفاقد التعليمي",                             evidence:"سجل معالجة الفاقد التعليمي" },
-        { id:"10d", text:"تحديد نقاط القوة والضعف",                            evidence:"تقرير التشخيص" },
-      ],
-    },
-    {
-      num:11, element:"تنوع أساليب التقويم", weight:0.10,
-      icon:"📝", color:"#1e40af", bg:"#eff6ff",
-      items:[
-        { id:"11a", text:"تطبيق الاختبارات الورقية والإلكترونية",             evidence:"نماذج من الاختبارات" },
-        { id:"11b", text:"المشاريع الطلابية",                                  evidence:"نماذج من مشاريع الطلاب" },
-        { id:"11c", text:"المهام الأدائية",                                    evidence:"نماذج من المهام الأدائية" },
-        { id:"11d", text:"ملفات إنجاز الطلاب",                                 evidence:"نماذج من ملفات إنجاز الطلاب" },
-      ],
-    },
+    { num:1,  element:"أداء الواجبات الوظيفية",                    reqs:"حضوري - المناوبة - الإشراف - الانتظار - النشاط - الإذاعة",                        weight:0.10, criterion:"الواجبات الوظيفية" },
+    { num:2,  element:"التفاعل مع المجتمع المهني",                  reqs:"الزيارات الصفية - ملف النمو المهني - مجتمعات التعلم المهني",                       weight:0.10, criterion:"المجتمع المهني" },
+    { num:3,  element:"التفاعل مع أولياء الأمور",                   reqs:"الخطة الأسبوعية - إشعار أولياء الأمور - التواصل (المنصة/الجوال)",                  weight:0.10, criterion:"أولياء الأمور" },
+    { num:4,  element:"التنويع في استراتيجيات التدريس",             reqs:"خطة التحضير - أوراق عمل - 5 استراتيجيات كحد أدنى",                                weight:0.10, criterion:"استراتيجيات التدريس" },
+    { num:5,  element:"تحسين نتائج المتعلمين",                      reqs:"أنشطة إثرائية للمتميزين - خطط علاجية للمتعثرين",                                  weight:0.10, criterion:"تحسين النتائج" },
+    { num:6,  element:"إعداد وتنفيذ خطة التعلم",                   reqs:"توزيع المنهج - الخطة الأسبوعية - تحضير الدروس - الواجبات",                         weight:0.10, criterion:"خطة التعلم" },
+    { num:7,  element:"توظيف تقنيات ووسائل التعلم المناسبة",        reqs:"أوراق تفاعلية - وسائل مساعدة - أجهزة ذكية - منصة مدرستي",                          weight:0.10, criterion:"تقنيات التعلم" },
+    { num:8,  element:"تهيئة بيئة تعليمية",                         reqs:"انضباط الصف - المعمل - مصادر التعلم - وسائل حسية",                                 weight:0.05, criterion:"بيئة تعليمية" },
+    { num:9,  element:"الإدارة الصفية",                              reqs:"كشف المتابعة - تنويع الأسئلة - توزيع زمن الحصة",                                  weight:0.05, criterion:"الإدارة الصفية" },
+    { num:10, element:"تحليل نتائج المتعلمين وتشخيص مستوياتهم",    reqs:"اختبار تشخيصي - أنماط التعلم - تصنيف الطلاب",                                    weight:0.10, criterion:"تحليل النتائج" },
+    { num:11, element:"تنوع أساليب التقويم",                        reqs:"اختبارات تحسين - شهرية - مشاركة - أسئلة تمهيد ونهاية",                            weight:0.10, criterion:"أساليب التقويم" },
   ];
 
+  // ── قائمة المعلمين الـ 33 ──
   const TEACHERS_LIST = [
     "طالب حمدي مبروك اليوبي","نايف عقال شريم الزهراني","حبيب سعد حبيب السلمي",
     "عبدالحميد عبدالمعطي حميد اللقماني","معيض صالح محمد القرني",
@@ -17998,238 +17888,292 @@ function TeacherPerformanceEvalPage() {
     "جازي عبدالرحمن عبدربه الثبيتي","بدر حمد محمد اللهيبي",
   ];
 
-  // ── حالات العنصر الفرعي ──
-  const ITEM_STATES = [
-    { val:"yes", label:"✓ متحقق",      bg:"#d1fae5", color:"#065f46", border:"#34d399" },
-    { val:"no",  label:"✗ غير متحقق", bg:"#fee2e2", color:"#991b1b", border:"#f87171" },
-    { val:"na",  label:"— غير موجود", bg:"#f1f5f9", color:"#64748b", border:"#cbd5e1" },
-  ];
+  // ── وصف مستويات التقدير ──
+  const LEVEL_DESC = {
+    1:"ضعيف جداً", 2:"ضعيف", 3:"متوسط", 4:"جيد", 5:"ممتاز"
+  };
+  const LEVEL_COLOR = {
+    1:"#dc2626", 2:"#f97316", 3:"#eab308", 4:"#22c55e", 5:"#0d9488"
+  };
+  const LEVEL_BG = {
+    1:"#fef2f2", 2:"#fff7ed", 3:"#fefce8", 4:"#f0fdf4", 5:"#f0fdfa"
+  };
 
+  // التقدير العام
   const GENERAL_RATINGS = [
-    { min:90, max:100, label:"ممتاز",    color:"#0d9488" },
-    { min:75, max:89,  label:"جيد جداً", color:"#22c55e" },
-    { min:60, max:74,  label:"جيد",      color:"#eab308" },
-    { min:50, max:59,  label:"مقبول",    color:"#f97316" },
-    { min:0,  max:49,  label:"ضعيف",     color:"#dc2626" },
+    { min:90, max:100, label:"ممتاز" },
+    { min:75, max:89,  label:"جيد جداً" },
+    { min:60, max:74,  label:"جيد" },
+    { min:50, max:59,  label:"مقبول" },
+    { min:0,  max:49,  label:"ضعيف" },
   ];
 
-  const getGeneralRating = s => GENERAL_RATINGS.find(r => s>=r.min && s<=r.max) || { label:"—", color:"#94a3b8" };
-  const getStatusColor   = s => s>=90?"#0d9488":s>=75?"#22c55e":s>=60?"#eab308":s>=50?"#f97316":"#dc2626";
-
-  // ── حساب درجة مؤشر واحد ──
-  const calcCriterionScore = (c, vals) => {
-    const active  = c.items.filter(it => vals[it.id] !== "na" && vals[it.id]);
-    if (!active.length) return 0;
-    const achieved = active.filter(it => vals[it.id] === "yes").length;
-    return Math.round((achieved / active.length) * c.weight * 100 * 10) / 10;
-  };
-
-  const calcCriterionPct = (c, vals) => {
-    const active = c.items.filter(it => vals[it.id] !== "na" && vals[it.id]);
-    if (!active.length) return 0;
-    const achieved = active.filter(it => vals[it.id] === "yes").length;
-    return Math.round((achieved / active.length) * 100);
-  };
-
-  const calcTotal = vals =>
-    Math.round(CRITERIA.reduce((s, c) => s + calcCriterionScore(c, vals), 0) * 10) / 10;
-
-  // ── الحالة ──
-  const [view,            setView]            = useState("list");
+  const [view, setView]         = useState("list");    // list | form | detail | summary
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [detailTeacher,   setDetailTeacher]   = useState(null);
-  const [search,          setSearch]          = useState("");
-  const [records,         setRecords]         = useState({});
-  const [formValues,      setFormValues]      = useState({});
-  const [saving,          setSaving]          = useState(false);
-  const [saveMsg,         setSaveMsg]         = useState("");
-  const [filterStatus,    setFilterStatus]    = useState("all");
-  const [openCriteria,    setOpenCriteria]    = useState({});   // أي المؤشرات مفتوحة
+  const [search, setSearch]     = useState("");
+  const [records, setRecords]   = useState({});
+  const [formValues, setFormValues] = useState({});
+  const [detailTeacher, setDetailTeacher] = useState(null);
+  const [saving, setSaving]     = useState(false);
+  const [saveMsg, setSaveMsg]   = useState("");
+  const [filterStatus, setFilterStatus] = useState("all"); // all|done|pending
 
+  // طباعة إحصائيات الجميع
+  const handlePrintAll = (records, teachersList, criteria, levelDesc, levelColor, generalRatings) => {
+    const getGeneralRating = s => { for(const r of generalRatings){if(s>=r.min&&s<=r.max)return r.label;} return "—"; };
+    const getStatusColor   = s => s>=90?"#0d9488":s>=75?"#22c55e":s>=60?"#eab308":s>=50?"#f97316":"#dc2626";
+    const evaluated = teachersList.filter(t => !!records[t]);
+    const avg = evaluated.length ? Math.round(evaluated.reduce((s,t)=>s+(records[t].total||0),0)/evaluated.length*10)/10 : 0;
+    const sorted = [...evaluated].sort((a,b)=>(records[b].total||0)-(records[a].total||0));
+
+    const ratingGroups = {};
+    ["ممتاز","جيد جداً","جيد","مقبول","ضعيف"].forEach(l=>{ratingGroups[l]=0;});
+    evaluated.forEach(t=>{const r=getGeneralRating(records[t].total||0); ratingGroups[r]=(ratingGroups[r]||0)+1;});
+
+    const printWindow = window.open("","_blank","width=1000,height=750");
+    if(!printWindow) return;
+    printWindow.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8"/>
+<title>إحصائيات تقييم أداء المعلمين</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Cairo',sans-serif;background:#fff;color:#1e293b;padding:20px;font-size:12px;}
+  .header{text-align:center;margin-bottom:20px;border-bottom:3px solid #0d3b6e;padding-bottom:14px;}
+  .header h1{font-size:20px;font-weight:900;color:#0d3b6e;margin-bottom:4px;}
+  .header p{font-size:12px;color:#64748b;}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  .stat-card{text-align:center;padding:14px;border-radius:12px;border:2px solid;}
+  .stat-val{font-size:28px;font-weight:900;margin-bottom:4px;}
+  .stat-label{font-size:11px;color:#64748b;}
+  .rating-dist{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;}
+  .rating-card{text-align:center;padding:10px 6px;border-radius:10px;border:2px solid;}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+  th{background:#0d3b6e;color:#fff;padding:8px 10px;text-align:right;font-weight:700;font-size:12px;}
+  td{padding:7px 10px;border:1px solid #e2e8f0;font-size:12px;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .rank-1 td{background:#fef3c7!important;font-weight:900;}
+  .rank-2 td{background:#f0fdf4!important;font-weight:800;}
+  .rank-3 td{background:#eff6ff!important;font-weight:800;}
+  .criteria-table{page-break-before:always;}
+  @media print{body{padding:0;}@page{size:A4 landscape;margin:10mm;}
+    .page-break{page-break-before:always;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📊 إحصائيات تقييم أداء المعلمين</h1>
+  <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى | تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} | المقيَّمون: ${evaluated.length} من أصل ${teachersList.length}</p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card" style="border-color:#7c3aed;background:#faf5ff">
+    <div class="stat-val" style="color:#7c3aed">${evaluated.length}</div>
+    <div class="stat-label">إجمالي المقيَّمين</div>
+  </div>
+  <div class="stat-card" style="border-color:#0d9488;background:#f0fdfa">
+    <div class="stat-val" style="color:#0d9488">${avg}</div>
+    <div class="stat-label">متوسط الدرجات</div>
+  </div>
+  <div class="stat-card" style="border-color:#f59e0b;background:#fffbeb">
+    <div class="stat-val" style="color:#f59e0b">${sorted.length?records[sorted[0]].total:"—"}</div>
+    <div class="stat-label">أعلى درجة</div>
+  </div>
+  <div class="stat-card" style="border-color:#dc2626;background:#fef2f2">
+    <div class="stat-val" style="color:#dc2626">${sorted.length?records[sorted[sorted.length-1]].total:"—"}</div>
+    <div class="stat-label">أدنى درجة</div>
+  </div>
+</div>
+
+<h3 style="font-weight:900;color:#0d3b6e;margin-bottom:10px">توزيع التقديرات</h3>
+<div class="rating-dist">
+  ${[
+    {label:"ممتاز",min:90,color:"#0d9488",bg:"#f0fdfa"},
+    {label:"جيد جداً",min:75,color:"#22c55e",bg:"#f0fdf4"},
+    {label:"جيد",min:60,color:"#eab308",bg:"#fefce8"},
+    {label:"مقبول",min:50,color:"#f97316",bg:"#fff7ed"},
+    {label:"ضعيف",min:0,color:"#dc2626",bg:"#fef2f2"},
+  ].map(r=>{
+    const cnt=ratingGroups[r.label]||0;
+    const pct=evaluated.length?Math.round(cnt/evaluated.length*100):0;
+    return "<div class='rating-card' style='border-color:"+r.color+";background:"+r.bg+"'><div style='font-size:24px;font-weight:900;color:"+r.color+"'>"+cnt+"</div><div style='font-weight:700;color:"+r.color+"'>"+r.label+"</div><div style='font-size:10px;color:#64748b'>"+pct+"%</div></div>";
+  }).join("")}
+</div>
+
+<h3 style="font-weight:900;color:#0d3b6e;margin-bottom:10px">ترتيب المعلمين حسب الدرجة</h3>
+<table>
+  <thead><tr>
+    <th style="width:40px;text-align:center">الترتيب</th>
+    <th>اسم المعلم</th>
+    <th style="width:80px;text-align:center">الدرجة / 100</th>
+    <th style="width:90px;text-align:center">التقدير</th>
+    <th style="width:120px;text-align:center">المُقيِّم</th>
+    <th style="width:110px;text-align:center">تاريخ التقييم</th>
+    ${criteria.map(c=>"<th style='width:45px;text-align:center'>م"+c.num+"</th>").join("")}
+  </tr></thead>
+  <tbody>
+    ${sorted.map((t,i)=>{
+      const rec=records[t];
+      const sc=rec.total||0;
+      const rt=getGeneralRating(sc);
+      const cl=getStatusColor(sc);
+      return "<tr class='"+(i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":"")+"'><td style='text-align:center;font-weight:900'>"+(i+1)+"</td><td style='font-weight:700'>"+t+"</td><td style='text-align:center;font-size:16px;font-weight:900;color:"+cl+"'>"+sc+"</td><td style='text-align:center;font-weight:700;color:"+cl+"'>"+rt+"</td><td style='text-align:center;font-size:11px'>"+( rec.evaluatorName||"—")+"</td><td style='text-align:center;font-size:11px'>"+(rec.evaluatorDate||"—")+"</td>"+criteria.map(c=>{const lv=parseInt(rec["level_"+c.num])||0;const colors={"1":"#dc2626","2":"#f97316","3":"#eab308","4":"#22c55e","5":"#0d9488"};return "<td style='text-align:center;font-weight:900;color:"+(lv?colors[lv]:"#ccc")+"'>"+(lv||"—")+"</td>";}).join("")+"</tr>";
+    }).join("")}
+    <tr style="background:#0d3b6e;color:#fff;font-weight:900">
+      <td colspan="2" style="text-align:right">المتوسط العام</td>
+      <td style="text-align:center;font-size:16px;font-weight:900">${avg}</td>
+      <td style="text-align:center">${getGeneralRating(avg)}</td>
+      <td colspan="${criteria.length+2}"></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break" style="margin-top:20px">
+<h3 style="font-weight:900;color:#0d3b6e;margin-bottom:10px">متوسط كل معيار عبر جميع المعلمين</h3>
+<table>
+  <thead><tr>
+    <th style="width:30px;text-align:center">م</th>
+    <th>عنصر التقييم</th>
+    <th style="width:70px;text-align:center">الوزن</th>
+    <th style="width:90px;text-align:center">متوسط التقدير (1-5)</th>
+    <th style="width:90px;text-align:center">متوسط الدرجة</th>
+    <th style="width:200px">توزيع التقديرات</th>
+  </tr></thead>
+  <tbody>
+    ${criteria.map(c=>{
+      const lvls=evaluated.map(t=>parseInt(records[t]["level_"+c.num])||0).filter(x=>x>0);
+      const avgLv=lvls.length?Math.round(lvls.reduce((s,x)=>s+x,0)/lvls.length*10)/10:0;
+      const avgPts=avgLv?(avgLv*c.weight*20).toFixed(1):0;
+      const dist=[1,2,3,4,5].map(n=>({n,cnt:evaluated.filter(t=>parseInt(records[t]["level_"+c.num])===n).length}));
+      const colors={1:"#dc2626",2:"#f97316",3:"#eab308",4:"#22c55e",5:"#0d9488"};
+      return "<tr><td style='text-align:center;font-weight:900'>"+c.num+"</td><td style='font-weight:700'>"+c.element+"</td><td style='text-align:center'>"+Math.round(c.weight*100)+"%</td><td style='text-align:center;font-size:16px;font-weight:900;color:"+colors[Math.round(avgLv)]+"'>"+avgLv+"</td><td style='text-align:center;font-weight:900;color:"+colors[Math.round(avgLv)]+"'>"+avgPts+"</td><td>"+dist.map(d=>"<span style='display:inline-block;margin:1px 2px;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:"+colors[d.n]+"22;color:"+colors[d.n]+"'>"+d.n+": "+d.cnt+"</span>").join("")+"</td></tr>";
+    }).join("")}
+  </tbody>
+</table>
+</div>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`);
+    printWindow.document.close();
+  };
+
+  // تحميل البيانات
   useEffect(() => {
-    DB.get("school-perf-eval-v4", {}).then(d => {
+    DB.get("school-teacher-perf-eval", {}).then(d => {
       if (d && typeof d === "object") setRecords(d);
     });
   }, []);
 
-  const saveRecords = async recs => {
-    setRecords(recs);
-    await DB.set("school-perf-eval-v4", recs);
+  const saveRecords = async (newRecs) => {
+    setRecords(newRecs);
+    await DB.set("school-teacher-perf-eval", newRecs);
   };
+
+  // حساب المجموع
+  const calcTotal = (vals) => {
+    let total = 0;
+    CRITERIA.forEach(c => {
+      const lv = parseInt(vals[`level_${c.num}`]) || 0;
+      total += lv * c.weight * 20; // 1-5 × weight × 20 = نسبة من 100
+    });
+    return Math.round(total * 10) / 10;
+  };
+
+  const getGeneralRating = (score) => {
+    for (const r of GENERAL_RATINGS) {
+      if (score >= r.min && score <= r.max) return r.label;
+    }
+    return "—";
+  };
+
+  const getStatusColor = (score) => {
+    if (score >= 90) return "#0d9488";
+    if (score >= 75) return "#22c55e";
+    if (score >= 60) return "#eab308";
+    if (score >= 50) return "#f97316";
+    return "#dc2626";
+  };
+
+  // ── فلترة المعلمين ──
+  const filtered = TEACHERS_LIST.filter(t => {
+    const matchSearch = t.includes(search.trim());
+    if (!matchSearch) return false;
+    if (filterStatus === "done")    return !!records[t];
+    if (filterStatus === "pending") return !records[t];
+    return true;
+  });
 
   const doneCount    = TEACHERS_LIST.filter(t => !!records[t]).length;
   const pendingCount = TEACHERS_LIST.length - doneCount;
 
-  const filtered = TEACHERS_LIST.filter(t => {
-    if (!t.includes(search.trim())) return false;
-    if (filterStatus === "done"    && !records[t]) return false;
-    if (filterStatus === "pending" &&  records[t]) return false;
-    return true;
-  });
-
-  const openForm = teacher => {
-    const ex = records[teacher] || {};
-    const vals = { ...ex };
-    // تأكد من وجود حقول الأساسية
-    ["evaluatorName","evaluatorDate","jobId","specialization","schoolLevel","subject","classes","notes"]
-      .forEach(f => { if (!vals[f]) vals[f] = ""; });
+  // ── فتح نموذج التقييم ──
+  const openForm = (teacher) => {
+    const existing = records[teacher] || {};
+    const vals = {};
+    CRITERIA.forEach(c => {
+      vals[`level_${c.num}`] = existing[`level_${c.num}`] || "";
+      vals[`desc_${c.num}`]  = existing[`desc_${c.num}`]  || "";
+    });
+    vals.evaluatorName  = existing.evaluatorName  || "";
+    vals.evaluatorDate  = existing.evaluatorDate  || "";
+    vals.jobId          = existing.jobId          || "";
+    vals.specialization = existing.specialization || "";
+    vals.schoolLevel    = existing.schoolLevel    || "";
+    vals.subject        = existing.subject        || "";
+    vals.classes        = existing.classes        || "";
+    vals.notes          = existing.notes          || "";
     setFormValues(vals);
     setSelectedTeacher(teacher);
-    // افتح المؤشر الأول تلقائياً
-    setOpenCriteria({ 1: true });
     setView("form");
   };
 
-  const toggleCriterion = num =>
-    setOpenCriteria(prev => ({ ...prev, [num]: !prev[num] }));
-
-  const setItemVal = (itemId, val) =>
-    setFormValues(prev => {
-      const cur = prev[itemId];
-      return { ...prev, [itemId]: cur === val ? "" : val };  // نقر مرة ثانية يلغي الاختيار
-    });
-
+  // ── حفظ نموذج التقييم ──
   const handleSave = async () => {
+    // التحقق من اكتمال جميع المستويات
+    const missing = CRITERIA.filter(c => !formValues[`level_${c.num}`]);
+    if (missing.length > 0) {
+      setSaveMsg("⚠️ يرجى تحديد مستوى التقدير لجميع المعايير الـ11");
+      setTimeout(() => setSaveMsg(""), 4000);
+      return;
+    }
     setSaving(true);
     const total = calcTotal(formValues);
-    const newRec = { ...formValues, total, savedAt: new Date().toLocaleDateString("ar-SA") };
-    await saveRecords({ ...records, [selectedTeacher]: newRec });
+    const newRec = { ...formValues, total, savedAt: new Date().toLocaleString("ar-SA") };
+    const newRecs = { ...records, [selectedTeacher]: newRec };
+    await saveRecords(newRecs);
     setSaving(false);
     setSaveMsg("✅ تم الحفظ بنجاح!");
-    setTimeout(() => { setSaveMsg(""); setView("list"); }, 1400);
+    setTimeout(() => { setSaveMsg(""); setView("list"); }, 1500);
   };
 
-  // ── طباعة تقرير معلم ──
-  const handlePrint = (teacher, rec) => {
-    const total  = rec.total || 0;
-    const rating = getGeneralRating(total);
-
-    const criteriaRows = CRITERIA.map(c => {
-      const score   = calcCriterionScore(c, rec);
-      const pct     = calcCriterionPct(c, rec);
-      const itemRows = c.items.map(it => {
-        const sv  = rec[it.id] || "";
-        const st  = ITEM_STATES.find(s => s.val === sv);
-        const badge = st
-          ? `<span style="background:${st.bg};color:${st.color};border:1px solid ${st.border};padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">${st.label}</span>`
-          : `<span style="color:#94a3b8;font-size:10px">—</span>`;
-        return `<tr>
-          <td style="padding:4px 8px;font-size:11px;border-bottom:1px solid #f0f0f0">${it.text}</td>
-          <td style="padding:4px 8px;text-align:center;border-bottom:1px solid #f0f0f0">${badge}</td>
-          <td style="padding:4px 8px;font-size:10px;color:#64748b;border-bottom:1px solid #f0f0f0">${it.evidence}</td>
-        </tr>`;
-      }).join("");
-
-      return `
-      <tr style="background:${c.bg}">
-        <td colspan="3" style="padding:8px 10px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="width:24px;height:24px;border-radius:50%;background:${c.color};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0">${c.num}</span>
-            <span style="font-weight:800;font-size:13px;color:${c.color};flex:1">${c.icon} ${c.element}</span>
-            <span style="font-weight:900;font-size:14px;color:${c.color}">${pct}%</span>
-            <span style="font-size:11px;color:#64748b">(${score}/${(c.weight*100).toFixed(0)} درجة)</span>
-            <div style="width:80px;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;flex-shrink:0">
-              <div style="height:100%;background:${c.color};width:${pct}%;border-radius:99px"></div>
-            </div>
-          </div>
-        </td>
-      </tr>
-      <tr><td colspan="3" style="padding:0 0 8px 20px">
-        <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:#f8fafc">
-            <th style="padding:4px 8px;font-size:10px;font-weight:700;text-align:right;color:#475569">العنصر</th>
-            <th style="padding:4px 8px;font-size:10px;font-weight:700;color:#475569;width:100px;text-align:center">الحالة</th>
-            <th style="padding:4px 8px;font-size:10px;font-weight:700;text-align:right;color:#475569">الشاهد</th>
-          </tr></thead>
-          <tbody>${itemRows}</tbody>
-        </table>
-        ${rec[`note_${c.num}`] ? `<div style="margin-top:4px;padding:4px 8px;background:#f8fafc;border-radius:6px;font-size:10px;color:#64748b">💬 ${rec[`note_${c.num}`]}</div>` : ""}
-      </td></tr>`;
-    }).join("");
-
-    const infoRows = [
-      ["الرقم الوظيفي", rec.jobId], ["التخصص", rec.specialization],
-      ["المرحلة", rec.schoolLevel], ["المادة", rec.subject],
-      ["الصفوف", rec.classes], ["المُقيِّم", rec.evaluatorName], ["التاريخ", rec.evaluatorDate],
-    ].filter(([,v]) => v)
-     .map(([l,v]) => `<div style="background:#f8fafc;border-radius:8px;padding:6px 10px"><div style="font-size:10px;color:#64748b;font-weight:700">${l}</div><div style="font-size:12px;font-weight:800;color:#1e293b;margin-top:1px">${v}</div></div>`)
-     .join("");
-
-    const w = window.open("","_blank");
-    if (!w) return;
-    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8">
-    <title>استمارة تقييم — ${teacher}</title>
-    <style>
-      *{margin:0;padding:0;box-sizing:border-box}
-      body{font-family:Arial,Tahoma,sans-serif;direction:rtl;padding:16px;font-size:12px;color:#1e293b}
-      .hdr{background:linear-gradient(135deg,#0d3b6e,#0d9488);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-      .hdr h1{font-size:15px;font-weight:800}.hdr p{opacity:.85;font-size:11px;margin-top:2px}
-      .score-badge{text-align:center;background:rgba(255,255,255,.15);border-radius:12px;padding:8px 16px}
-      .score-badge .sv{font-size:30px;font-weight:900}.score-badge .sl{font-size:11px;opacity:.9}
-      .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
-      table{width:100%;border-collapse:collapse;margin-bottom:12px}
-      .total-row td{background:#0d3b6e;color:#fff;padding:8px 10px;font-weight:900;font-size:13px;text-align:center}
-      .sig-row{display:flex;gap:20px;margin-top:14px;padding-top:12px;border-top:1.5px dashed #e2e8f0}
-      .sig{flex:1;text-align:center}
-      .sig .sl{font-size:10px;color:#6b7280;margin-bottom:16px}
-      .sig .sn{font-weight:800;font-size:11px;border-top:1px solid #374151;padding-top:4px}
-      @page{size:A4;margin:1cm}
-    </style></head><body>
-    <div class="hdr">
-      <div>
-        <h1>📊 استمارة تقييم أداء المعلم</h1>
-        <p>مدرسة عبيدة بن الحارث المتوسطة</p>
-        <p style="font-size:14px;font-weight:800;margin-top:5px">${teacher}</p>
-      </div>
-      <div class="score-badge">
-        <div class="sv">${total}</div>
-        <div class="sl">${rating.label}</div>
-      </div>
-    </div>
-    <div class="info-grid">${infoRows}</div>
-    <table>
-      <thead><tr style="background:#0d3b6e">
-        <th style="padding:7px 10px;color:#fff;font-size:11px;text-align:right" colspan="2">المؤشر والعناصر</th>
-        <th style="padding:7px 10px;color:#fff;font-size:11px;width:80px;text-align:center">الشاهد</th>
-      </tr></thead>
-      <tbody>${criteriaRows}</tbody>
-      <tfoot><tr class="total-row">
-        <td colspan="2">الدرجة الإجمالية</td>
-        <td>${total} / 100 — ${rating.label}</td>
-      </tr></tfoot>
-    </table>
-    ${rec.notes ? `<div style="background:#f8fafc;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;border:1px solid #e2e8f0"><b>💬 الملاحظات العامة:</b> ${rec.notes}</div>` : ""}
-    <div class="sig-row">
-      <div class="sig"><div class="sl">توقيع المعلم</div><div class="sn">__________________</div></div>
-      <div class="sig"><div class="sl">مدير المدرسة</div><div class="sn">فازع القرني</div></div>
-      <div class="sig"><div class="sl">التاريخ</div><div class="sn">${rec.evaluatorDate || "__________________"}</div></div>
-    </div>
-    <script>window.onload=()=>window.print();</script>
-    </body></html>`);
-    w.document.close();
+  // ── عرض تفاصيل معلم ──
+  const openDetail = (teacher) => {
+    setDetailTeacher(teacher);
+    setView("detail");
   };
 
-  // ═══════════════════════════════════════
-  // VIEW: قائمة المعلمين
-  // ═══════════════════════════════════════
+  // ─────────────────────────────────────────
+  // العرض: قائمة المعلمين
+  // ─────────────────────────────────────────
   if (view === "list") return (
-    <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",padding:16,maxWidth:920,margin:"0 auto"}}>
-
-      {/* رأس */}
+    <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",padding:16,maxWidth:900,margin:"0 auto"}}>
+      {/* الرأس */}
       <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
           <div style={{fontSize:36}}>📊</div>
           <div>
             <h2 style={{margin:0,fontWeight:900,fontSize:20}}>استمارة تقييم أداء المعلم</h2>
-            <p style={{margin:0,opacity:.8,fontSize:13}}>33 معلماً — 11 مؤشراً — عناصر تفصيلية دقيقة لكل مؤشر</p>
+            <p style={{margin:0,opacity:.8,fontSize:13}}>33 معلماً — 11 معياراً — تقييم متكامل</p>
           </div>
         </div>
-        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+        {/* إحصائيات سريعة */}
+        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
           {[
-            {label:"الإجمالي",   val:TEACHERS_LIST.length, icon:"👥", color:"#fff"},
-            {label:"مُقيَّم",    val:doneCount,             icon:"✅", color:"#86efac"},
-            {label:"لم يُقيَّم", val:pendingCount,          icon:"⏳", color:"#fcd34d"},
-          ].map(s=>(
+            { label:"الإجمالي", val:TEACHERS_LIST.length, icon:"👥", color:"#fff" },
+            { label:"مكتمل",    val:doneCount,             icon:"✅", color:"#86efac" },
+            { label:"لم يُقيَّم",val:pendingCount,         icon:"⏳", color:"#fcd34d" },
+          ].map(s => (
             <div key={s.label} style={{background:"rgba(255,255,255,.15)",borderRadius:12,padding:"8px 16px",flex:1,minWidth:80,textAlign:"center"}}>
               <div style={{fontSize:20,marginBottom:2}}>{s.icon}</div>
               <div style={{fontWeight:900,fontSize:22,color:s.color}}>{s.val}</div>
@@ -18238,81 +18182,95 @@ function TeacherPerformanceEvalPage() {
           ))}
           <div style={{background:"rgba(255,255,255,.15)",borderRadius:12,padding:"8px 16px",flex:1,minWidth:80,textAlign:"center"}}>
             <div style={{fontSize:20,marginBottom:2}}>📈</div>
-            <div style={{fontWeight:900,fontSize:22,color:"#93c5fd"}}>{doneCount?Math.round(doneCount/TEACHERS_LIST.length*100):0}%</div>
+            <div style={{fontWeight:900,fontSize:22,color:"#93c5fd"}}>{doneCount ? Math.round(doneCount/TEACHERS_LIST.length*100) : 0}%</div>
             <div style={{fontSize:11,opacity:.9}}>نسبة الإنجاز</div>
           </div>
         </div>
       </div>
 
-      {/* بحث وفلتر */}
+      {/* شريط الفلتر والبحث */}
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder="🔍 ابحث باسم المعلم..."
-          style={{flex:1,minWidth:180,padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"'Cairo',sans-serif"}}/>
-        {[["all","الكل","#64748b"],["done","مُقيَّم","#0d9488"],["pending","لم يُقيَّم","#f59e0b"]].map(([v,l,c])=>(
+        <input
+          value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder="🔍 ابحث عن معلم..."
+          style={{flex:1,minWidth:180,padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",fontSize:14,fontFamily:"'Cairo',sans-serif"}}
+        />
+        {[["all","الكل","#64748b"],["done","مكتمل","#0d9488"],["pending","لم يُقيَّم","#f59e0b"]].map(([v,l,c]) => (
           <button key={v} onClick={()=>setFilterStatus(v)}
-            style={{padding:"10px 16px",borderRadius:12,
-              border:`2px solid ${filterStatus===v?c:"#e2e8f0"}`,
-              background:filterStatus===v?c:"#fff",
-              color:filterStatus===v?"#fff":c,
+            style={{padding:"10px 16px",borderRadius:12,border:`2px solid ${filterStatus===v?c:"#e2e8f0"}`,
+              background:filterStatus===v?c:"#fff",color:filterStatus===v?"#fff":c,
               fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
             {l}
           </button>
         ))}
+        {doneCount > 0 && (
+          <button onClick={()=>setView("summary")}
+            style={{padding:"10px 16px",borderRadius:12,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",color:"#fff",fontWeight:700,fontSize:13,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            📊 ملخص النتائج
+          </button>
+        )}
+        {doneCount > 0 && (
+          <button onClick={()=>handlePrintAll(records, TEACHERS_LIST, CRITERIA, LEVEL_DESC, LEVEL_COLOR, GENERAL_RATINGS)}
+            style={{padding:"10px 16px",borderRadius:12,background:"linear-gradient(135deg,#0d3b6e,#1e40af)",color:"#fff",fontWeight:700,fontSize:13,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            🖨️ طباعة الجميع
+          </button>
+        )}
       </div>
 
-      {/* قائمة */}
+      {/* قائمة المعلمين */}
       <div style={{display:"grid",gap:10}}>
-        {filtered.map((teacher,idx)=>{
-          const rec    = records[teacher];
+        {filtered.map((teacher, idx) => {
+          const rec = records[teacher];
           const isDone = !!rec;
-          const score  = isDone ? rec.total : null;
+          const score = isDone ? rec.total : null;
           const rating = isDone ? getGeneralRating(score) : null;
+          const sColor = isDone ? getStatusColor(score) : "#94a3b8";
           return (
             <div key={teacher}
-              style={{background:"#fff",borderRadius:14,padding:"14px 16px",
-                border:"1.5px solid #e2e8f0",display:"flex",alignItems:"center",
-                gap:12,boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
-              <div style={{width:32,height:32,borderRadius:"50%",
-                background:isDone?"#0d9488":"#f1f5f9",
-                color:isDone?"#fff":"#94a3b8",
-                display:"flex",alignItems:"center",justifyContent:"center",
+              style={{background:"#fff",borderRadius:14,padding:"14px 16px",border:"1.5px solid #e2e8f0",
+                display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 8px rgba(0,0,0,.04)",
+                transition:"box-shadow .2s",cursor:"default"}}>
+              {/* رقم */}
+              <div style={{width:32,height:32,borderRadius:"50%",background:isDone?"#0d9488":"#f1f5f9",
+                color:isDone?"#fff":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",
                 fontWeight:900,fontSize:13,flexShrink:0}}>
                 {idx+1}
               </div>
+              {/* الاسم */}
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:800,fontSize:14,color:"#1e293b",
-                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                <div style={{fontWeight:800,fontSize:14,color:"#1e293b",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                   {teacher}
                 </div>
                 {isDone && (
                   <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
-                    حُفظ: {rec.savedAt} | المُقيِّم: {rec.evaluatorName||"—"}
+                    حُفظ: {rec.savedAt} | المقيِّم: {rec.evaluatorName||"—"}
                   </div>
                 )}
               </div>
+              {/* النتيجة */}
               {isDone && (
-                <div style={{textAlign:"center",minWidth:64}}>
-                  <div style={{fontWeight:900,fontSize:22,color:rating.color}}>{score}</div>
-                  <div style={{fontSize:11,color:rating.color,fontWeight:700}}>{rating.label}</div>
+                <div style={{textAlign:"center",minWidth:70}}>
+                  <div style={{fontWeight:900,fontSize:20,color:sColor}}>{score}</div>
+                  <div style={{fontSize:10,color:sColor,fontWeight:700}}>{rating}</div>
                 </div>
               )}
-              <div style={{background:isDone?"#f0fdfa":"#fef9ef",
-                border:`1.5px solid ${isDone?"#99f6e4":"#fde68a"}`,
+              {/* حالة */}
+              <div style={{background:isDone?"#f0fdfa":"#fef9ef",border:`1.5px solid ${isDone?"#99f6e4":"#fde68a"}`,
                 borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,
                 color:isDone?"#0d9488":"#d97706",flexShrink:0}}>
                 {isDone?"✅ مكتمل":"⏳ لم يُقيَّم"}
               </div>
+              {/* أزرار */}
               <div style={{display:"flex",gap:6,flexShrink:0}}>
                 {isDone && (
-                  <button onClick={()=>{setDetailTeacher(teacher);setView("detail");}}
+                  <button onClick={()=>openDetail(teacher)}
                     style={{padding:"7px 12px",borderRadius:9,background:"#eff6ff",color:"#3b82f6",
                       fontWeight:700,fontSize:12,border:"1.5px solid #bfdbfe",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
                     عرض
                   </button>
                 )}
                 {isDone && (
-                  <button onClick={()=>handlePrint(teacher,rec)}
+                  <button onClick={()=>buildAndPrintEvalForm(teacher, records[teacher], CRITERIA, getGeneralRating, getStatusColor)}
                     style={{padding:"7px 12px",borderRadius:9,background:"#f0fdf4",color:"#0d9488",
                       fontWeight:700,fontSize:12,border:"1.5px solid #86efac",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
                     🖨️
@@ -18322,8 +18280,7 @@ function TeacherPerformanceEvalPage() {
                   style={{padding:"7px 12px",borderRadius:9,
                     background:isDone?"#fef9ef":"linear-gradient(135deg,#0d9488,#0f766e)",
                     color:isDone?"#d97706":"#fff",
-                    fontWeight:700,fontSize:12,
-                    border:isDone?"1.5px solid #fde68a":"none",
+                    fontWeight:700,fontSize:12,border:isDone?"1.5px solid #fde68a":"none",
                     cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
                   {isDone?"تعديل":"تقييم"}
                 </button>
@@ -18331,7 +18288,7 @@ function TeacherPerformanceEvalPage() {
             </div>
           );
         })}
-        {filtered.length===0 && (
+        {filtered.length === 0 && (
           <div style={{textAlign:"center",padding:40,color:"#94a3b8",fontSize:15}}>
             لا توجد نتائج مطابقة
           </div>
@@ -18340,47 +18297,39 @@ function TeacherPerformanceEvalPage() {
     </div>
   );
 
-  // ═══════════════════════════════════════
-  // VIEW: نموذج التقييم
-  // ═══════════════════════════════════════
+  // ─────────────────────────────────────────
+  // العرض: نموذج التقييم
+  // ─────────────────────────────────────────
   if (view === "form") {
-    const total         = calcTotal(formValues);
+    const total = calcTotal(formValues);
     const generalRating = getGeneralRating(total);
-    const filledCount   = CRITERIA.filter(c =>
-      c.items.some(it => formValues[it.id] === "yes" || formValues[it.id] === "no" || formValues[it.id] === "na")
-    ).length;
+    const completedCriteria = CRITERIA.filter(c => formValues[`level_${c.num}`]).length;
 
     return (
-      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:900,margin:"0 auto",padding:16}}>
-
+      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:860,margin:"0 auto",padding:16}}>
         {/* رأس النموذج */}
-        <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff",position:"sticky",top:0,zIndex:10}}>
+        <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
           <button onClick={()=>setView("list")}
             style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:10,
-              padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",marginBottom:10}}>
+              padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",marginBottom:12}}>
             ← رجوع للقائمة
           </button>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{fontSize:30}}>📝</div>
-            <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{fontSize:32}}>📝</div>
+            <div>
               <h2 style={{margin:0,fontWeight:900,fontSize:18}}>استمارة تقييم أداء المعلم</h2>
               <p style={{margin:0,opacity:.85,fontSize:14,marginTop:2}}>{selectedTeacher}</p>
             </div>
-            {/* الدرجة الحية */}
-            <div style={{textAlign:"center",background:"rgba(255,255,255,.18)",borderRadius:16,padding:"10px 18px",minWidth:90}}>
-              <div style={{fontWeight:900,fontSize:30}}>{total}</div>
-              <div style={{fontSize:12,opacity:.9}}>{generalRating.label}</div>
-            </div>
           </div>
           {/* شريط التقدم */}
-          <div style={{marginTop:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:4,opacity:.9}}>
-              <span>المؤشرات المكتملة: {filledCount} / {CRITERIA.length}</span>
-              <span>{Math.round(filledCount/CRITERIA.length*100)}%</span>
+          <div style={{marginTop:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:6,opacity:.9}}>
+              <span>اكتمال التقييم: {completedCriteria}/{CRITERIA.length} معيار</span>
+              <span>{Math.round(completedCriteria/CRITERIA.length*100)}%</span>
             </div>
-            <div style={{background:"rgba(255,255,255,.2)",borderRadius:99,height:6,overflow:"hidden"}}>
+            <div style={{background:"rgba(255,255,255,.2)",borderRadius:99,height:8,overflow:"hidden"}}>
               <div style={{height:"100%",background:"#86efac",borderRadius:99,
-                width:`${Math.round(filledCount/CRITERIA.length*100)}%`,transition:"width .3s"}}/>
+                width:`${Math.round(completedCriteria/CRITERIA.length*100)}%`,transition:"width .3s"}} />
             </div>
           </div>
         </div>
@@ -18397,7 +18346,7 @@ function TeacherPerformanceEvalPage() {
               ["classes","الصفوف التي يدرّسها","مثال: 2أ، 2ب"],
               ["evaluatorName","اسم المُقيِّم","الاسم الكامل"],
               ["evaluatorDate","تاريخ التقييم","مثال: 1447/10/10 هـ"],
-            ].map(([field,label,ph])=>(
+            ].map(([field,label,ph]) => (
               <div key={field}>
                 <label style={{fontSize:12,fontWeight:700,color:"#64748b",display:"block",marginBottom:4}}>{label}</label>
                 <input value={formValues[field]||""} onChange={e=>setFormValues(p=>({...p,[field]:e.target.value}))}
@@ -18409,187 +18358,106 @@ function TeacherPerformanceEvalPage() {
           </div>
         </div>
 
-        {/* ══ المؤشرات الـ 11 ══ */}
-        <div style={{display:"grid",gap:14,marginBottom:16}}>
-          {CRITERIA.map(c => {
-            const score   = calcCriterionScore(c, formValues);
-            const pct     = calcCriterionPct(c, formValues);
-            const isOpen  = !!openCriteria[c.num];
-            const yesN    = c.items.filter(it => formValues[it.id]==="yes").length;
-            const noN     = c.items.filter(it => formValues[it.id]==="no").length;
-            const naN     = c.items.filter(it => formValues[it.id]==="na").length;
-            const filledN = yesN + noN + naN;
-
-            // لون شريط التقدم حسب النسبة
-            const barColor = pct>=80 ? "#10b981" : pct>=50 ? "#f59e0b" : pct>0 ? "#ef4444" : "#e2e8f0";
-
-            return (
-              <div key={c.num}
-                style={{background:"#fff",borderRadius:16,
-                  border:`2px solid ${filledN>0 ? c.color+"55" : "#e2e8f0"}`,
-                  overflow:"hidden",
-                  boxShadow:"0 2px 10px rgba(0,0,0,.05)"}}>
-
-                {/* ─ رأس المؤشر (قابل للنقر) ─ */}
-                <div onClick={()=>toggleCriterion(c.num)}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",
-                    background:c.bg,cursor:"pointer",userSelect:"none",
-                    borderBottom: isOpen ? `1.5px solid ${c.color}33` : "none"}}>
-
-                  {/* رقم */}
-                  <div style={{width:32,height:32,borderRadius:"50%",
-                    background:filledN>0 ? c.color : "#e2e8f0",
-                    color:filledN>0 ? "#fff" : "#94a3b8",
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontWeight:900,fontSize:13,flexShrink:0}}>
-                    {c.num}
-                  </div>
-
-                  {/* عنوان + معلومات */}
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:800,fontSize:14,color:"#1e293b"}}>
-                      {c.icon} {c.element}
-                    </div>
-                    <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
-                      الوزن: {Math.round(c.weight*100)}% &nbsp;|&nbsp; {filledN}/{c.items.length} عناصر محددة
-                    </div>
-                  </div>
-
-                  {/* نسبة التحقق + الدرجة */}
-                  <div style={{textAlign:"center",minWidth:72}}>
-                    <div style={{fontWeight:900,fontSize:20,color: pct>0 ? c.color : "#94a3b8"}}>{pct}%</div>
-                    <div style={{fontSize:10,color:"#64748b"}}>{score}/{(c.weight*100).toFixed(0)} درجة</div>
-                  </div>
-
-                  {/* شريط مرئي */}
-                  <div style={{width:70,height:8,background:"#e2e8f0",borderRadius:99,overflow:"hidden",flexShrink:0}}>
-                    <div style={{height:"100%",background:barColor,borderRadius:99,
-                      width:`${pct}%`,transition:"width .4s"}}/>
-                  </div>
-
-                  {/* سهم */}
-                  <div style={{fontSize:20,color:c.color,
-                    transform:isOpen?"rotate(90deg)":"rotate(0deg)",
-                    transition:"transform .2s",flexShrink:0}}>›</div>
-                </div>
-
-                {/* ─ عناصر المؤشر ─ */}
-                {isOpen && (
-                  <div style={{padding:"14px 16px 16px"}}>
-
-                    {/* تعليمة */}
-                    <div style={{background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:10,
-                      padding:"8px 12px",marginBottom:12,fontSize:12,color:"#0369a1",fontWeight:600}}>
-                      💡 حدد حالة كل عنصر — كلما زاد "متحقق" ارتفعت درجة المؤشر تلقائياً
-                    </div>
-
-                    <div style={{display:"grid",gap:8}}>
-                      {c.items.map(it => {
-                        const curVal = formValues[it.id] || "";
-                        return (
-                          <div key={it.id}
-                            style={{background:"#f8fafc",borderRadius:12,
-                              border:`1.5px solid ${curVal==="yes"?"#34d399":curVal==="no"?"#f87171":curVal==="na"?"#cbd5e1":"#e2e8f0"}`,
-                              padding:"10px 12px",
-                              transition:"border-color .2s"}}>
-                            <div style={{display:"flex",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
-                              {/* نص العنصر */}
-                              <div style={{flex:1,minWidth:140}}>
-                                <div style={{fontWeight:700,fontSize:13,color:"#1e293b"}}>{it.text}</div>
-                                <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>
-                                  📎 الشاهد: {it.evidence}
-                                </div>
-                              </div>
-                              {/* أزرار الحالة الثلاث */}
-                              <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
-                                {ITEM_STATES.map(st=>(
-                                  <button key={st.val}
-                                    onClick={()=>setItemVal(it.id, st.val)}
-                                    style={{
-                                      padding:"7px 11px",
-                                      borderRadius:9,
-                                      border:`2px solid ${curVal===st.val ? st.border : "#e2e8f0"}`,
-                                      background:curVal===st.val ? st.bg : "#fff",
-                                      color:curVal===st.val ? st.color : "#94a3b8",
-                                      fontWeight:curVal===st.val ? 800 : 600,
-                                      fontSize:12,
-                                      cursor:"pointer",
-                                      fontFamily:"'Cairo',sans-serif",
-                                      transition:"all .15s",
-                                      whiteSpace:"nowrap",
-                                      transform:curVal===st.val?"scale(1.05)":"scale(1)",
-                                    }}>
-                                    {st.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* ملخص المؤشر */}
-                    <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap",
-                      background:c.bg,borderRadius:10,padding:"10px 14px",
-                      border:`1px solid ${c.color}33`}}>
-                      <div style={{fontSize:12,fontWeight:700,color:c.color}}>
-                        ✅ متحقق: {yesN}
-                      </div>
-                      <div style={{fontSize:12,color:"#94a3b8"}}>|</div>
-                      <div style={{fontSize:12,fontWeight:700,color:"#dc2626"}}>
-                        ✗ غير متحقق: {noN}
-                      </div>
-                      <div style={{fontSize:12,color:"#94a3b8"}}>|</div>
-                      <div style={{fontSize:12,fontWeight:700,color:"#64748b"}}>
-                        — غير موجود: {naN}
-                      </div>
-                      <div style={{flex:1}}/>
-                      <div style={{fontWeight:900,fontSize:13,color:c.color}}>
-                        نسبة التحقق: {pct}% → الدرجة: {score}/{(c.weight*100).toFixed(0)}
-                      </div>
-                    </div>
-
-                    {/* ملاحظة على المؤشر */}
-                    <textarea
-                      value={formValues[`note_${c.num}`]||""}
-                      onChange={e=>setFormValues(p=>({...p,[`note_${c.num}`]:e.target.value}))}
-                      placeholder={`ملاحظة على مؤشر "${c.element}" (اختياري)...`}
-                      style={{width:"100%",marginTop:8,padding:"8px 12px",borderRadius:10,
-                        border:"1.5px solid #e2e8f0",fontSize:12,fontFamily:"'Cairo',sans-serif",
-                        minHeight:52,boxSizing:"border-box",resize:"vertical",color:"#1e293b"}}/>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ملاحظات عامة */}
+        {/* جدول المعايير */}
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
-          <label style={{fontSize:13,fontWeight:700,color:"#64748b",display:"block",marginBottom:6}}>
-            💬 الملاحظات والتوصيات العامة
-          </label>
-          <textarea value={formValues.notes||""} onChange={e=>setFormValues(p=>({...p,notes:e.target.value}))}
-            placeholder="أكتب ملاحظاتك وتوصياتك العامة هنا..."
-            style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",
-              fontSize:13,fontFamily:"'Cairo',sans-serif",minHeight:80,boxSizing:"border-box",resize:"vertical"}}/>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <h3 style={{margin:0,fontWeight:800,color:"#0d3b6e",fontSize:15}}>📊 معايير التقييم</h3>
+            <div style={{background:total>=90?"#f0fdfa":total>=75?"#f0fdf4":total>=60?"#fefce8":total>=50?"#fff7ed":"#fef2f2",
+              border:`2px solid ${getStatusColor(total)}`,borderRadius:12,padding:"6px 14px",textAlign:"center"}}>
+              <div style={{fontWeight:900,fontSize:22,color:getStatusColor(total)}}>{total}</div>
+              <div style={{fontSize:11,color:getStatusColor(total),fontWeight:700}}>{generalRating}</div>
+            </div>
+          </div>
+
+          <div style={{display:"grid",gap:12}}>
+            {CRITERIA.map(c => {
+              const lv = parseInt(formValues[`level_${c.num}`]) || 0;
+              const lColor = lv ? LEVEL_COLOR[lv] : "#94a3b8";
+              const lBg    = lv ? LEVEL_BG[lv]    : "#f8fafc";
+              return (
+                <div key={c.num} style={{border:`1.5px solid ${lv?"#e2e8f0":"#fde68a"}`,borderRadius:14,
+                  padding:14,background:lv?"#fff":"#fffbeb"}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
+                    {/* رقم */}
+                    <div style={{width:28,height:28,borderRadius:"50%",background:lv?lColor:"#f1f5f9",
+                      color:lv?"#fff":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",
+                      fontWeight:900,fontSize:13,flexShrink:0,marginTop:2}}>
+                      {c.num}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:800,fontSize:14,color:"#1e293b"}}>{c.element}</div>
+                      <div style={{fontSize:11,color:"#64748b",marginTop:2}}>{c.reqs}</div>
+                    </div>
+                    <div style={{background:"#f0fdfa",borderRadius:8,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#0d9488",flexShrink:0}}>
+                      الوزن: {Math.round(c.weight*100)}%
+                    </div>
+                  </div>
+
+                  {/* أزرار التقدير 1-5 */}
+                  <div style={{display:"flex",gap:6,marginBottom:lv?10:0}}>
+                    {[1,2,3,4,5].map(n => (
+                      <button key={n}
+                        onClick={()=>setFormValues(p=>({...p,[`level_${c.num}`]:String(n)}))}
+                        style={{flex:1,padding:"8px 4px",borderRadius:10,
+                          border:`2px solid ${lv===n?LEVEL_COLOR[n]:"#e2e8f0"}`,
+                          background:lv===n?LEVEL_COLOR[n]:"#f8fafc",
+                          color:lv===n?"#fff":LEVEL_COLOR[n],
+                          fontWeight:lv===n?900:700,fontSize:13,cursor:"pointer",
+                          fontFamily:"'Cairo',sans-serif",transition:"all .15s",textAlign:"center"}}>
+                        <div style={{fontSize:12}}>{n}</div>
+                        <div style={{fontSize:9,marginTop:1,opacity:lv===n?1:.7}}>{LEVEL_DESC[n]}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* عرض النتيجة الجزئية */}
+                  {lv > 0 && (
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                      <div style={{background:lBg,border:`1.5px solid ${lColor}`,borderRadius:8,
+                        padding:"4px 12px",fontSize:12,fontWeight:700,color:lColor}}>
+                        المستوى {lv} — {LEVEL_DESC[lv]}
+                      </div>
+                      <div style={{fontSize:12,color:"#64748b"}}>
+                        النقاط: <b style={{color:lColor}}>{(lv*c.weight*20).toFixed(1)}</b>/
+                        {(5*c.weight*20).toFixed(1)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* تعليق وتغذية راجعة من المدير */}
+                  <EvalFeedbackField
+                    criterionNum={c.num}
+                    formValues={formValues}
+                    setFormValues={setFormValues}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* حفظ */}
+        {/* ملاحظات */}
+        <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
+          <label style={{fontSize:13,fontWeight:700,color:"#64748b",display:"block",marginBottom:6}}>💬 الملاحظات والتوصيات</label>
+          <textarea value={formValues.notes||""} onChange={e=>setFormValues(p=>({...p,notes:e.target.value}))}
+            placeholder="أكتب ملاحظاتك وتوصياتك هنا..."
+            style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",
+              fontSize:13,fontFamily:"'Cairo',sans-serif",minHeight:90,boxSizing:"border-box",resize:"vertical"}}/>
+        </div>
+
+        {/* زر الحفظ */}
         <div style={{display:"flex",gap:10,justifyContent:"flex-end",alignItems:"center"}}>
-          {saveMsg && <div style={{fontWeight:700,fontSize:14,color:"#0d9488"}}>{saveMsg}</div>}
+          {saveMsg && <div style={{fontWeight:700,fontSize:14,color:saveMsg.startsWith("✅")?"#0d9488":"#f59e0b"}}>{saveMsg}</div>}
           <button onClick={()=>setView("list")}
             style={{padding:"12px 20px",borderRadius:12,background:"#f1f5f9",color:"#64748b",
               fontWeight:700,fontSize:14,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
             إلغاء
           </button>
           <button onClick={handleSave} disabled={saving}
-            style={{padding:"12px 26px",borderRadius:12,
+            style={{padding:"12px 24px",borderRadius:12,
               background:saving?"#94a3b8":"linear-gradient(135deg,#0d9488,#0f766e)",
-              color:"#fff",fontWeight:900,fontSize:14,border:"none",
-              cursor:saving?"not-allowed":"pointer",fontFamily:"'Cairo',sans-serif",
-              boxShadow:"0 4px 14px rgba(13,148,136,.4)"}}>
+              color:"#fff",fontWeight:900,fontSize:14,border:"none",cursor:saving?"not-allowed":"pointer",
+              fontFamily:"'Cairo',sans-serif",boxShadow:"0 4px 14px rgba(13,148,136,.4)"}}>
             {saving?"⏳ جاري الحفظ...":"💾 حفظ التقييم"}
           </button>
         </div>
@@ -18597,17 +18465,18 @@ function TeacherPerformanceEvalPage() {
     );
   }
 
-  // ═══════════════════════════════════════
-  // VIEW: تفاصيل معلم
-  // ═══════════════════════════════════════
+  // ─────────────────────────────────────────
+  // العرض: تفاصيل معلم
+  // ─────────────────────────────────────────
   if (view === "detail" && detailTeacher) {
-    const rec    = records[detailTeacher];
+    const rec = records[detailTeacher];
     if (!rec) return null;
-    const total  = rec.total || 0;
-    const rating = getGeneralRating(total);
+    const score = rec.total;
+    const rating = getGeneralRating(score);
+    const sColor = getStatusColor(score);
 
     return (
-      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:900,margin:"0 auto",padding:16}}>
+      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:860,margin:"0 auto",padding:16}}>
         <div style={{background:"linear-gradient(135deg,#0d3b6e,#0d9488)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
           <button onClick={()=>setView("list")}
             style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:10,
@@ -18621,8 +18490,8 @@ function TeacherPerformanceEvalPage() {
               <p style={{margin:0,opacity:.85,fontSize:14,marginTop:2}}>{detailTeacher}</p>
             </div>
             <div style={{textAlign:"center",background:"rgba(255,255,255,.15)",borderRadius:16,padding:"10px 20px"}}>
-              <div style={{fontWeight:900,fontSize:34}}>{total}</div>
-              <div style={{fontSize:14,opacity:.9}}>{rating.label}</div>
+              <div style={{fontWeight:900,fontSize:32,color:"#fff"}}>{score}</div>
+              <div style={{fontSize:14,opacity:.9}}>{rating}</div>
             </div>
           </div>
         </div>
@@ -18630,11 +18499,12 @@ function TeacherPerformanceEvalPage() {
         {/* بيانات */}
         <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            {[["الرقم الوظيفي",rec.jobId],["التخصص",rec.specialization],
+            {[
+              ["الرقم الوظيفي",rec.jobId],["التخصص",rec.specialization],
               ["المرحلة",rec.schoolLevel],["المادة",rec.subject],
               ["الصفوف",rec.classes],["المُقيِّم",rec.evaluatorName],
-              ["التاريخ",rec.evaluatorDate]]
-              .filter(([,v])=>v).map(([l,v])=>(
+              ["تاريخ التقييم",rec.evaluatorDate],
+            ].filter(([,v])=>v).map(([l,v])=>(
               <div key={l} style={{padding:"8px 12px",background:"#f8fafc",borderRadius:10}}>
                 <div style={{fontSize:11,color:"#64748b",fontWeight:700}}>{l}</div>
                 <div style={{fontSize:13,fontWeight:800,color:"#1e293b",marginTop:2}}>{v}</div>
@@ -18643,93 +18513,191 @@ function TeacherPerformanceEvalPage() {
           </div>
         </div>
 
-        {/* نتائج المؤشرات مع عناصرها */}
-        <div style={{display:"grid",gap:12,marginBottom:16}}>
-          {CRITERIA.map(c => {
-            const score = calcCriterionScore(c, rec);
-            const pct   = calcCriterionPct(c, rec);
-            const yesN  = c.items.filter(it => rec[it.id]==="yes").length;
-            const barColor = pct>=80?"#10b981":pct>=50?"#f59e0b":pct>0?"#ef4444":"#e2e8f0";
-            return (
-              <div key={c.num} style={{background:"#fff",borderRadius:14,
-                border:`1.5px solid ${c.color}33`,overflow:"hidden"}}>
-                {/* رأس */}
-                <div style={{display:"flex",alignItems:"center",gap:10,
-                  padding:"10px 14px",background:c.bg}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:c.color,color:"#fff",
-                    display:"flex",alignItems:"center",justifyContent:"center",
-                    fontWeight:900,fontSize:12,flexShrink:0}}>
+        {/* المعايير */}
+        <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
+          <h3 style={{margin:"0 0 14px",fontWeight:800,color:"#0d3b6e",fontSize:15}}>📊 نتائج المعايير</h3>
+          <div style={{display:"grid",gap:8}}>
+            {CRITERIA.map(c => {
+              const lv = parseInt(rec[`level_${c.num}`]) || 0;
+              const pts = (lv * c.weight * 20).toFixed(1);
+              const maxPts = (5 * c.weight * 20).toFixed(1);
+              const pct = lv ? Math.round(lv/5*100) : 0;
+              const lColor = lv ? LEVEL_COLOR[lv] : "#94a3b8";
+              return (
+                <div key={c.num} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+                  background:"#f8fafc",borderRadius:12}}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:lColor,color:"#fff",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,flexShrink:0}}>
                     {c.num}
                   </div>
-                  <div style={{flex:1,fontWeight:800,fontSize:13,color:"#1e293b"}}>
-                    {c.icon} {c.element}
-                  </div>
-                  <div style={{textAlign:"center",minWidth:64}}>
-                    <div style={{fontWeight:900,fontSize:18,color:c.color}}>{pct}%</div>
-                    <div style={{fontSize:10,color:"#64748b"}}>{score}/{(c.weight*100).toFixed(0)}</div>
-                  </div>
-                  <div style={{width:70,height:6,background:"#e2e8f0",borderRadius:99,overflow:"hidden",flexShrink:0}}>
-                    <div style={{height:"100%",background:barColor,borderRadius:99,width:`${pct}%`}}/>
-                  </div>
-                </div>
-                {/* عناصر */}
-                <div style={{padding:"8px 14px 12px"}}>
-                  <div style={{display:"grid",gap:4}}>
-                    {c.items.map(it => {
-                      const sv   = rec[it.id]||"";
-                      const stObj = ITEM_STATES.find(s=>s.val===sv);
-                      return (
-                        <div key={it.id} style={{display:"flex",alignItems:"center",gap:8,
-                          padding:"5px 8px",borderRadius:8,
-                          background:stObj?stObj.bg+"55":"#f8fafc"}}>
-                          {stObj
-                            ? <span style={{background:stObj.bg,color:stObj.color,
-                                border:`1px solid ${stObj.border}`,
-                                borderRadius:99,padding:"2px 8px",fontSize:10,
-                                fontWeight:700,flexShrink:0,minWidth:80,textAlign:"center"}}>
-                                {stObj.label}
-                              </span>
-                            : <span style={{color:"#94a3b8",fontSize:10,flexShrink:0,minWidth:80,textAlign:"center"}}>—</span>
-                          }
-                          <span style={{fontSize:12,color:"#1e293b"}}>{it.text}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {rec[`note_${c.num}`] && (
-                    <div style={{marginTop:6,fontSize:11,color:"#64748b",background:"#f1f5f9",
-                      borderRadius:8,padding:"5px 10px"}}>
-                      💬 {rec[`note_${c.num}`]}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:13,color:"#1e293b"}}>{c.element}</div>
+                    <div style={{background:"#e2e8f0",borderRadius:99,height:6,marginTop:4,overflow:"hidden"}}>
+                      <div style={{height:"100%",background:lColor,width:`${pct}%`,borderRadius:99,transition:"width .4s"}}/>
                     </div>
+                  </div>
+                  <div style={{textAlign:"left",flexShrink:0,minWidth:80}}>
+                    <div style={{fontWeight:900,fontSize:14,color:lColor}}>{LEVEL_DESC[lv]||"—"}</div>
+                    <div style={{fontSize:11,color:"#64748b"}}>{pts}/{maxPts}</div>
+                  </div>
+                  {/* التغذية الراجعة في صفحة التفاصيل */}
+                  {(records[detailTeacher]?.[`feedback_text_${c.num}`] || (records[detailTeacher]?.[`feedback_imgs_${c.num}`]||[]).length > 0) && (
+                    <EvalFeedbackDisplay
+                      text={records[detailTeacher]?.[`feedback_text_${c.num}`]}
+                      imgs={records[detailTeacher]?.[`feedback_imgs_${c.num}`]||[]}
+                      criterionName={c.element}
+                    />
                   )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          {/* المجموع */}
+          <div style={{marginTop:14,padding:"14px 18px",background:LEVEL_BG[Math.round(score/20)]||"#f0fdfa",
+            border:`2px solid ${sColor}`,borderRadius:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontWeight:800,fontSize:15,color:"#1e293b"}}>المجموع الكلي</div>
+            <div style={{fontWeight:900,fontSize:24,color:sColor}}>{score} / 100</div>
+            <div style={{background:sColor,color:"#fff",borderRadius:10,padding:"6px 14px",fontWeight:900,fontSize:14}}>
+              {rating}
+            </div>
+          </div>
         </div>
 
+        {/* الملاحظات */}
         {rec.notes && (
-          <div style={{background:"#f8fafc",borderRadius:12,padding:"12px 16px",marginBottom:16,border:"1.5px solid #e2e8f0"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#64748b",marginBottom:4}}>💬 الملاحظات العامة</div>
-            <div style={{fontSize:13,color:"#1e293b"}}>{rec.notes}</div>
+          <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
+            <h3 style={{margin:"0 0 8px",fontWeight:800,color:"#0d3b6e",fontSize:14}}>💬 الملاحظات والتوصيات</h3>
+            <p style={{margin:0,fontSize:13,color:"#374151",lineHeight:1.7}}>{rec.notes}</p>
           </div>
         )}
 
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-          <button onClick={()=>handlePrint(detailTeacher,rec)}
-            style={{padding:"10px 20px",borderRadius:12,
-              background:"linear-gradient(135deg,#0d9488,#0f766e)",
-              color:"#fff",fontWeight:700,fontSize:13,border:"none",
-              cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-            🖨️ طباعة التقرير
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>buildAndPrintEvalForm(detailTeacher, records[detailTeacher], CRITERIA, getGeneralRating, getStatusColor)}
+            style={{padding:"12px 20px",borderRadius:12,background:"#eff6ff",color:"#3b82f6",
+              fontWeight:900,fontSize:14,border:"1.5px solid #bfdbfe",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            🖨️ طباعة الاستمارة
           </button>
           <button onClick={()=>openForm(detailTeacher)}
-            style={{padding:"10px 20px",borderRadius:12,
-              background:"linear-gradient(135deg,#0d3b6e,#1e40af)",
-              color:"#fff",fontWeight:700,fontSize:13,border:"none",
-              cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            style={{padding:"12px 20px",borderRadius:12,background:"linear-gradient(135deg,#0d9488,#0f766e)",
+              color:"#fff",fontWeight:900,fontSize:14,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
             ✏️ تعديل التقييم
           </button>
+          <button onClick={()=>setView("list")}
+            style={{padding:"12px 20px",borderRadius:12,background:"#f1f5f9",color:"#64748b",
+              fontWeight:700,fontSize:14,border:"none",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            رجوع
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────
+  // العرض: ملخص النتائج
+  // ─────────────────────────────────────────
+  if (view === "summary") {
+    const evaluated = TEACHERS_LIST.filter(t => !!records[t]);
+    const sortedByScore = [...evaluated].sort((a,b) => (records[b].total||0) - (records[a].total||0));
+    const avg = evaluated.length ? Math.round(evaluated.reduce((s,t)=>s+(records[t].total||0),0)/evaluated.length*10)/10 : 0;
+
+    const ratingGroups = {};
+    GENERAL_RATINGS.forEach(r => { ratingGroups[r.label] = 0; });
+    evaluated.forEach(t => {
+      const r = getGeneralRating(records[t].total||0);
+      ratingGroups[r] = (ratingGroups[r]||0) + 1;
+    });
+
+    return (
+      <div dir="rtl" style={{fontFamily:"'Cairo',sans-serif",maxWidth:900,margin:"0 auto",padding:16}}>
+        <div style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)",borderRadius:20,padding:"20px 24px",marginBottom:20,color:"#fff"}}>
+          <button onClick={()=>setView("list")}
+            style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:10,
+              padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",marginBottom:12}}>
+            ← رجوع
+          </button>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:36}}>📊</div>
+            <div>
+              <h2 style={{margin:0,fontWeight:900,fontSize:20}}>ملخص نتائج التقييم</h2>
+              <p style={{margin:0,opacity:.8,fontSize:13}}>{evaluated.length} معلم مُقيَّم من أصل {TEACHERS_LIST.length}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* إحصائيات عامة */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:16}}>
+          {[
+            {label:"متوسط الدرجات",val:avg,icon:"📈",color:"#7c3aed"},
+            {label:"أعلى درجة",val:sortedByScore.length?records[sortedByScore[0]].total:"—",icon:"🥇",color:"#f59e0b"},
+            {label:"أدنى درجة",val:sortedByScore.length?records[sortedByScore[sortedByScore.length-1]].total:"—",icon:"📉",color:"#dc2626"},
+            {label:"مكتمل التقييم",val:evaluated.length,icon:"✅",color:"#0d9488"},
+          ].map(s=>(
+            <div key={s.label} style={{background:"#fff",borderRadius:14,padding:"16px",border:"1.5px solid #e2e8f0",textAlign:"center"}}>
+              <div style={{fontSize:24,marginBottom:6}}>{s.icon}</div>
+              <div style={{fontWeight:900,fontSize:24,color:s.color}}>{s.val}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:4}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* توزيع التقديرات */}
+        <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1.5px solid #e2e8f0"}}>
+          <h3 style={{margin:"0 0 14px",fontWeight:800,color:"#0d3b6e",fontSize:15}}>توزيع التقديرات</h3>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            {GENERAL_RATINGS.map(r => {
+              const cnt = ratingGroups[r.label]||0;
+              const pct = evaluated.length ? Math.round(cnt/evaluated.length*100) : 0;
+              const colors = {ممتاز:"#0d9488","جيد جداً":"#22c55e",جيد:"#eab308",مقبول:"#f97316",ضعيف:"#dc2626"};
+              const c = colors[r.label]||"#64748b";
+              return (
+                <div key={r.label} style={{flex:1,minWidth:90,textAlign:"center",padding:"12px 8px",
+                  background:`${c}11`,border:`2px solid ${c}`,borderRadius:12}}>
+                  <div style={{fontWeight:900,fontSize:22,color:c}}>{cnt}</div>
+                  <div style={{fontWeight:700,fontSize:12,color:c}}>{r.label}</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{pct}%</div>
+                  <div style={{fontSize:10,color:"#94a3b8"}}>{r.min}-{r.max}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ترتيب المعلمين */}
+        <div style={{background:"#fff",borderRadius:16,padding:20,border:"1.5px solid #e2e8f0"}}>
+          <h3 style={{margin:"0 0 14px",fontWeight:800,color:"#0d3b6e",fontSize:15}}>ترتيب المعلمين حسب الدرجة</h3>
+          <div style={{display:"grid",gap:8}}>
+            {sortedByScore.map((teacher, idx) => {
+              const rec = records[teacher];
+              const score = rec.total;
+              const sColor = getStatusColor(score);
+              const rating = getGeneralRating(score);
+              return (
+                <div key={teacher} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+                  background:"#f8fafc",borderRadius:12}}>
+                  <div style={{width:30,height:30,borderRadius:"50%",
+                    background:idx<3?"#f59e0b":"#e2e8f0",
+                    color:idx<3?"#fff":"#64748b",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,flexShrink:0}}>
+                    {idx+1}
+                  </div>
+                  <div style={{flex:1,fontWeight:700,fontSize:13,color:"#1e293b"}}>{teacher}</div>
+                  <div style={{background:LEVEL_BG[Math.round(score/20)]||"#f0fdfa",
+                    border:`1.5px solid ${sColor}`,borderRadius:8,padding:"4px 12px",
+                    fontWeight:900,fontSize:14,color:sColor}}>
+                    {score}
+                  </div>
+                  <div style={{fontSize:12,color:sColor,fontWeight:700,minWidth:60,textAlign:"center"}}>
+                    {rating}
+                  </div>
+                  <button onClick={()=>{setDetailTeacher(teacher);setView("detail");}}
+                    style={{padding:"6px 12px",borderRadius:8,background:"#eff6ff",color:"#3b82f6",
+                      fontWeight:700,fontSize:11,border:"1.5px solid #bfdbfe",cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                    تفاصيل
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -18738,6 +18706,10 @@ function TeacherPerformanceEvalPage() {
   return null;
 }
 
+
+
+// ═══════════════════════════════════════════════════════════
+//  🎯 صفحة قياس أداء المعلمين — التطوير المهني
 // ═══════════════════════════════════════════════════════════
 function TeacherEvalPage({ teachers = [] }) {
   const LS_KEY  = "teacher_eval_records_v2";
@@ -18944,7 +18916,7 @@ function TeacherEvalPage({ teachers = [] }) {
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ fontSize:60, marginBottom:12 }}>🎯</div>
           <div style={{ color:"#fff", fontWeight:900, fontSize:22, lineHeight:1.2 }}>قياس الأداء المهني</div>
-          <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginTop:6 }}>مدرسة عبيدة بن الحارث المتوسطة</div>
+          <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginTop:6 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
         </div>
         <div style={{ background:"#fff", borderRadius:24, padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.4)" }}>
           <div style={{ fontWeight:900, fontSize:16, color:"#1e293b", textAlign:"center", marginBottom:20 }}>دخول المعلم</div>
@@ -19231,7 +19203,7 @@ function TeacherEvalPage({ teachers = [] }) {
     tr:nth-child(even){background:#f9fafb}
     .footer{text-align:center;margin-top:20px;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:10px}
     @media print{@page{size:A4 landscape;margin:1cm}body{padding:0}}</style></head><body>
-    <div class="hdr"><h1>🎯 تقرير قياس الأداء المهني للمعلمين</h1><p>مدرسة عبيدة بن الحارث المتوسطة — ${new Date().toLocaleDateString("ar-SA")}</p></div>
+    <div class="hdr"><h1>🎯 تقرير قياس الأداء المهني للمعلمين</h1><p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${new Date().toLocaleDateString("ar-SA")}</p></div>
     <div class="stats">
       <div class="stat"><div class="stat-num">${totalTeachers}</div><div class="stat-lbl">إجمالي المعلمين</div></div>
       <div class="stat"><div class="stat-num">${completedRecs.length}</div><div class="stat-lbl">أكملوا التقييم</div></div>
@@ -19274,7 +19246,7 @@ function TeacherEvalPage({ teachers = [] }) {
             .bar{background:#e5e7eb;border-radius:99px;height:8px;overflow:hidden;margin-top:4px}
             .bar-fill{height:100%;border-radius:99px}
             @media print{@page{size:A4;margin:1.5cm}}</style></head><body>
-            <div class="hdr"><h1>🎯 تقرير أداء المعلم</h1><p>مدرسة عبيدة بن الحارث المتوسطة — ${rec.date}</p></div>
+            <div class="hdr"><h1>🎯 تقرير أداء المعلم</h1><p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${rec.date}</p></div>
             <div class="score"><div class="num">${rec.pct}%</div><div class="lbl">${lvInfo.emoji} ${lvInfo.label}</div></div>
             <div class="info-grid">
               <div class="info-item"><strong>المعلم</strong>${rec.teacherName}</div>
@@ -19996,7 +19968,7 @@ function TeacherNoteBox({ planId, initialNote, onSave }) {
 
 
 // ===== النماذج الرسمية — الدليل الإجرائي =====
-const SCHOOL_NAME = "مدرسة عبيدة بن الحارث المتوسطة";
+const SCHOOL_NAME = "مدرسة الأمير عبدالمجيد المتوسطة الأولى";
 const FORM_GREEN = "#2d6a4f";
 const FORM_LIGHT = "#d8f3dc";
 
@@ -21204,7 +21176,7 @@ function CommitteeMeetingPage({ teachers }) {
 
   <!-- الرأس -->
   <div class="header">
-    <div class="logo-text">الإدارة العامة للتعليم<br>بمحافظة جدة<br>مدرسة عبيدة بن الحارث المتوسطة</div>
+    <div class="logo-text">الإدارة العامة للتعليم<br>بمحافظة جدة<br>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
     <div class="header-center">
       <h1>وزارة التعليم</h1>
       <h2>Ministry of Education</h2>
@@ -21515,7 +21487,7 @@ function CommitteeMeetingPage({ teachers }) {
               <div className="text-xs leading-relaxed" style={{color:COM_GREEN}}>
                 <div className="font-black">الإدارة العامة للتعليم</div>
                 <div className="font-bold">بمحافظة جدة</div>
-                <div className="font-bold">مدرسة عبيدة بن الحارث المتوسطة</div>
+                <div className="font-bold">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
               </div>
               <div className="text-center">
                 <div className="font-black text-sm" style={{color:COM_GREEN}}>وزارة التعليم</div>
@@ -21771,7 +21743,7 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
               className={`p-3 rounded-xl border-2 text-sm transition-all text-right ${siteFont === f.value ? "border-teal-500 bg-teal-50 text-teal-800" : "border-gray-200 hover:border-teal-300"}`}
               style={{ fontFamily: f.value }}>
               <div className="font-bold">{f.label}</div>
-              <div className="text-xs mt-1 opacity-60">مدرسة عبيدة بن الحارث</div>
+              <div className="text-xs mt-1 opacity-60">مدرسة الأمير عبدالمجيد</div>
             </button>
           ))}
         </div>
@@ -22522,7 +22494,7 @@ function buildAndPrintEvalForm(teacherName, rec, CRITERIA, getGeneralRating, get
 <div class="page-header">
   <div class="school-logo">🏫</div>
   <div class="school-info">
-    <div class="school-name">مدرسة عبيدة بن الحارث المتوسطة</div>
+    <div class="school-name">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
     <div class="form-title">استمارة تقييم أداء المعلم</div>
     <div class="form-sub">وزارة التعليم — المملكة العربية السعودية</div>
   </div>
@@ -22737,7 +22709,7 @@ function TeacherProfilePortal({ siteFont, onBack, attendance, teachers, week }) 
           <div className="w-24 h-24 rounded-3xl mx-auto mb-4 flex items-center justify-center text-5xl shadow-2xl"
             style={{ background:"rgba(255,255,255,0.12)", backdropFilter:"blur(10px)", border:"1px solid rgba(255,255,255,0.2)" }}>👨‍🏫</div>
           <h1 className="text-2xl font-black mb-1">بوابة المعلم</h1>
-          <p className="text-sm opacity-60">مدرسة عبيدة بن الحارث المتوسطة</p>
+          <p className="text-sm opacity-60">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
           <div className="flex justify-center gap-3 mt-3 flex-wrap text-xs opacity-75">
             {["📊 التقويم الذاتي","📁 الملف الأسبوعي","📈 التحليل البياني","📋 التقارير"].map(l=>(
               <span key={l} className="bg-white/10 rounded-full px-3 py-1">{l}</span>
@@ -23610,7 +23582,7 @@ function SuggestionsPortal({ siteFont, onBack, classList }) {
           💬
         </div>
         <h1 className="text-2xl font-black mb-1">آراء ومقترحات</h1>
-        <p className="opacity-70 text-sm">مدرسة عبيدة بن الحارث المتوسطة</p>
+        <p className="opacity-70 text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
       </div>
 
       <div className="px-4 pb-10 max-w-md mx-auto w-full">
@@ -23755,7 +23727,7 @@ function printSingleSuggestion(item) {
 </head>
 <body>
 <div class="header">
-  <div class="school">مدرسة عبيدة بن الحارث المتوسطة</div>
+  <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
   <div class="sub">آراء ومقترحات أولياء الأمور</div>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -23787,7 +23759,7 @@ function printSingleSuggestion(item) {
     <div style="font-size:13px;font-weight:900;color:#0d3b6e;margin:6px 0">${item.date}</div>
   </div>
 </div>
-<div class="footer">مدرسة عبيدة بن الحارث المتوسطة — إدارة الآراء والمقترحات</div>
+<div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة الآراء والمقترحات</div>
 <script>window.onload=()=>{window.print();}<\/script>
 </body></html>`);
   win.document.close();
@@ -23850,7 +23822,7 @@ function printAllSuggestions(items) {
 <body>
 <div class="header">
   <h1>📊 تقرير الآراء والمقترحات</h1>
-  <div class="sub">مدرسة عبيدة بن الحارث المتوسطة | طُبع بتاريخ: ${new Date().toLocaleDateString("ar-SA")}</div>
+  <div class="sub">مدرسة الأمير عبدالمجيد المتوسطة الأولى | طُبع بتاريخ: ${new Date().toLocaleDateString("ar-SA")}</div>
 </div>
 <div class="stats">
   <div class="stat" style="border-color:#7c3aed;background:#faf5ff">
@@ -23882,7 +23854,7 @@ function printAllSuggestions(items) {
   </tr></thead>
   <tbody>${rows}</tbody>
 </table>
-<div class="footer">مدرسة عبيدة بن الحارث المتوسطة — تقرير الآراء والمقترحات</div>
+<div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — تقرير الآراء والمقترحات</div>
 <script>window.onload=()=>{window.print();}<\/script>
 </body></html>`);
   win.document.close();
@@ -24553,7 +24525,7 @@ function LicenseShareLink() {
   const shareLink = () => {
     if (navigator.share) {
       navigator.share({
-        title: "الرخصة المهنية — مدرسة عبيدة بن الحارث",
+        title: "الرخصة المهنية — مدرسة الأمير عبدالمجيد",
         text: "أكمل بياناتك للرخصة المهنية من خلال هذا الرابط",
         url: getLink(),
       });
@@ -24563,7 +24535,7 @@ function LicenseShareLink() {
   };
 
   const whatsapp = () => {
-    const msg = encodeURIComponent(`📋 *الرخصة المهنية — مدرسة عبيدة بن الحارث المتوسطة*
+    const msg = encodeURIComponent(`📋 *الرخصة المهنية — مدرسة الأمير عبدالمجيد المتوسطة الأولى*
 
 أكمل بياناتك للرخصة المهنية من خلال الرابط:
 ${getLink()}`);
@@ -25157,7 +25129,7 @@ function DailyAttendanceTrackerPage({ teachers }) {
       return "<tr><td>"+t+"</td><td style=\"text-align:center;font-weight:900;color:"+(si?.color||"#94a3b8")+"\">"+(si?.label||"—")+"</td><td style=\"text-align:center;color:#7c3aed\">"+(at?at.icon+" "+at.val:"—")+"</td><td style=\"text-align:center;font-weight:900;color:"+(r.farisEntered?"#059669":r.farisEntered===false?"#dc2626":"#94a3b8")+"\">"+(r.farisEntered===true?"✅ نعم":r.farisEntered===false?"❌ لا":"—")+"</td></tr>";
     }).join("");
     const st = {حاضر:dayStat("حاضر"),غائب:dayStat("غائب"),متأخر:dayStat("متأخر"),مستأذن:dayStat("مستأذن")};
-    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف الحضور اليومي</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;font-size:12px}.page{max-width:760px;margin:0 auto;border:3px solid #0d3b6e}.hdr{background:linear-gradient(135deg,#0d3b6e,#1a5276,#0d9488);color:#fff;display:flex;align-items:stretch;min-height:78px}.hc{flex:1;padding:10px 15px;display:flex;flex-direction:column;justify-content:center}.hc.c{flex:0 0 95px;align-items:center}.hc.r{text-align:right}.hc.l{text-align:left}.logo{height:55px;filter:brightness(0) invert(1)}.tb{background:#1a2f5e;color:#fff;text-align:center;padding:9px;font-size:14px;font-weight:900;border-top:4px solid #f59e0b}.meta{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0d9488}.mc{padding:6px 10px;border-left:1px solid #c7d2e8;background:#f8fafd}.mc:last-child{border-left:none}.ml{font-size:9px;color:#64748b;font-weight:700}.mv{font-size:11px;font-weight:700}.stats{display:grid;grid-template-columns:repeat(4,1fr);margin:8px 12px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.st{padding:7px;text-align:center;border-left:1px solid #c7d2e8}.st:first-child{border-left:none}.stn{font-size:17px;font-weight:900}.stl{font-size:9px;color:#64748b}table{width:100%;border-collapse:collapse;margin:0 0 8px}thead tr{background:linear-gradient(135deg,#0d3b6e,#1d4ed8);color:#fff}th,td{padding:6px 10px;border:1px solid #c7d2e8;font-size:11px}th{font-weight:900;text-align:center}td:first-child{text-align:right}tbody tr:nth-child(even){background:#f8fafd}.sig{display:grid;grid-template-columns:1fr 1fr;margin:0 12px 8px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.sb{padding:10px;text-align:center;border-left:1px solid #c7d2e8}.sb:first-child{border-left:none}.sr{font-size:9px;color:#64748b}.sn{border-top:1.5px dashed #0d9488;padding-top:5px;font-size:11px;font-weight:900;color:#0d3b6e;margin-top:12px}.footer{background:#0d1b2e;color:rgba(255,255,255,.5);text-align:center;padding:5px;font-size:9px}@media print{@page{size:A4;margin:8mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page"><div class="hdr"><div class="hc r"><div style="font-size:10px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:13px;font-weight:900">وزارة التعليم</div><div style="font-size:10px;opacity:.8">إدارة تعليم جدة</div></div><div class="hc c"><img src="${LOGO_URL}" class="logo"/></div><div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة عبيدة بن الحارث المتوسطة</div></div></div><div class="tb">كشف متابعة الحضور اليومي للمعلمين</div><div class="meta"><div class="mc"><div class="ml">اليوم</div><div class="mv">${selDay}</div></div><div class="mc"><div class="ml">الهجري</div><div class="mv">${selDayNum} ${selHijriM} ${selHijriY}هـ</div></div><div class="mc"><div class="ml">الميلادي</div><div class="mv">${selDayNum} ${selGregM} ${selGregY}م</div></div><div class="mc"><div class="ml">الإجمالي</div><div class="mv">${teacherList.length} معلم</div></div></div><div class="stats"><div class="st"><div class="stn" style="color:#059669">${st.حاضر}</div><div class="stl">حاضر</div></div><div class="st"><div class="stn" style="color:#dc2626">${st.غائب}</div><div class="stl">غائب</div></div><div class="st"><div class="stn" style="color:#d97706">${st.متأخر}</div><div class="stl">متأخر</div></div><div class="st"><div class="stn" style="color:#2563eb">${st.مستأذن}</div><div class="stl">مستأذن</div></div></div><table><thead><tr><th>اسم المعلم</th><th>الحالة</th><th>نوع الغياب</th><th>فارس</th></tr></thead><tbody>${rows}</tbody></table><div class="sig"><div class="sb"><div class="sr">مشرف الحضور</div><div class="sn">______________</div></div><div class="sb"><div class="sr">مدير المدرسة</div><div class="sn">فازع عبدالله القرني</div></div></div><div class="footer">مدرسة عبيدة بن الحارث المتوسطة — كشف الحضور اليومي</div></div><script>window.onload=()=>window.print();</script></body></html>`);
+    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف الحضور اليومي</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;font-size:12px}.page{max-width:760px;margin:0 auto;border:3px solid #0d3b6e}.hdr{background:linear-gradient(135deg,#0d3b6e,#1a5276,#0d9488);color:#fff;display:flex;align-items:stretch;min-height:78px}.hc{flex:1;padding:10px 15px;display:flex;flex-direction:column;justify-content:center}.hc.c{flex:0 0 95px;align-items:center}.hc.r{text-align:right}.hc.l{text-align:left}.logo{height:55px;filter:brightness(0) invert(1)}.tb{background:#1a2f5e;color:#fff;text-align:center;padding:9px;font-size:14px;font-weight:900;border-top:4px solid #f59e0b}.meta{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0d9488}.mc{padding:6px 10px;border-left:1px solid #c7d2e8;background:#f8fafd}.mc:last-child{border-left:none}.ml{font-size:9px;color:#64748b;font-weight:700}.mv{font-size:11px;font-weight:700}.stats{display:grid;grid-template-columns:repeat(4,1fr);margin:8px 12px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.st{padding:7px;text-align:center;border-left:1px solid #c7d2e8}.st:first-child{border-left:none}.stn{font-size:17px;font-weight:900}.stl{font-size:9px;color:#64748b}table{width:100%;border-collapse:collapse;margin:0 0 8px}thead tr{background:linear-gradient(135deg,#0d3b6e,#1d4ed8);color:#fff}th,td{padding:6px 10px;border:1px solid #c7d2e8;font-size:11px}th{font-weight:900;text-align:center}td:first-child{text-align:right}tbody tr:nth-child(even){background:#f8fafd}.sig{display:grid;grid-template-columns:1fr 1fr;margin:0 12px 8px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.sb{padding:10px;text-align:center;border-left:1px solid #c7d2e8}.sb:first-child{border-left:none}.sr{font-size:9px;color:#64748b}.sn{border-top:1.5px dashed #0d9488;padding-top:5px;font-size:11px;font-weight:900;color:#0d3b6e;margin-top:12px}.footer{background:#0d1b2e;color:rgba(255,255,255,.5);text-align:center;padding:5px;font-size:9px}@media print{@page{size:A4;margin:8mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page"><div class="hdr"><div class="hc r"><div style="font-size:10px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:13px;font-weight:900">وزارة التعليم</div><div style="font-size:10px;opacity:.8">إدارة تعليم جدة</div></div><div class="hc c"><img src="${LOGO_URL}" class="logo"/></div><div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div></div></div><div class="tb">كشف متابعة الحضور اليومي للمعلمين</div><div class="meta"><div class="mc"><div class="ml">اليوم</div><div class="mv">${selDay}</div></div><div class="mc"><div class="ml">الهجري</div><div class="mv">${selDayNum} ${selHijriM} ${selHijriY}هـ</div></div><div class="mc"><div class="ml">الميلادي</div><div class="mv">${selDayNum} ${selGregM} ${selGregY}م</div></div><div class="mc"><div class="ml">الإجمالي</div><div class="mv">${teacherList.length} معلم</div></div></div><div class="stats"><div class="st"><div class="stn" style="color:#059669">${st.حاضر}</div><div class="stl">حاضر</div></div><div class="st"><div class="stn" style="color:#dc2626">${st.غائب}</div><div class="stl">غائب</div></div><div class="st"><div class="stn" style="color:#d97706">${st.متأخر}</div><div class="stl">متأخر</div></div><div class="st"><div class="stn" style="color:#2563eb">${st.مستأذن}</div><div class="stl">مستأذن</div></div></div><table><thead><tr><th>اسم المعلم</th><th>الحالة</th><th>نوع الغياب</th><th>فارس</th></tr></thead><tbody>${rows}</tbody></table><div class="sig"><div class="sb"><div class="sr">مشرف الحضور</div><div class="sn">______________</div></div><div class="sb"><div class="sr">مدير المدرسة</div><div class="sn">فازع عبدالله القرني</div></div></div><div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — كشف الحضور اليومي</div></div><script>window.onload=()=>window.print();</script></body></html>`);
   };
 
   if (loading) return (
@@ -25195,7 +25167,7 @@ function DailyAttendanceTrackerPage({ teachers }) {
             <div style={{width:"1.5px",height:52,background:"rgba(255,255,255,.3)",borderRadius:2}}/>
           </div>
           <div className="flex-1 flex flex-col justify-center text-left px-5 py-3">
-            <div className="font-black text-sm">مدرسة عبيدة بن الحارث المتوسطة</div>
+            <div className="font-black text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
             <div className="text-xs opacity-70 mt-0.5">متابعة الحضور اليومي</div>
           </div>
         </div>
@@ -25549,7 +25521,7 @@ function BroadcastPage() {
   ];
   const [items, setItems] = useState(defaultItems);
   const [date, setDate] = useState(new Date().toLocaleDateString("ar-SA-u-nu-arab", {weekday:"long", year:"numeric", month:"long", day:"numeric"}));
-  const [schoolName] = useState("مدرسة عبيدة بن الحارث المتوسطة");
+  const [schoolName] = useState("مدرسة الأمير عبدالمجيد المتوسطة الأولى");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -25685,7 +25657,7 @@ function QuizPage() {
     printWindow(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title>نتيجة الاختبار</title>
     <style>body{font-family:sans-serif;padding:30px;direction:rtl;} h1{color:#0d9488;} .score{font-size:48px;font-weight:bold;text-align:center;color:${r.percent>=60?"#0d9488":"#dc2626"};}</style>
     </head><body>
-    <h1>🏫 مدرسة عبيدة بن الحارث المتوسطة</h1>
+    <h1>🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
     <h2>نتيجة اختبار: ${r.quizTitle}</h2>
     <p>الطالب: <strong>${r.studentName}</strong></p>
     <p>رقم الهوية: ${r.studentId||"—"}</p>
@@ -26045,7 +26017,7 @@ function TimetablePage({ teachers }) {
   const print = () => {
     printWindow(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title>جدول الحصص</title>
     <style>body{font-family:sans-serif;direction:rtl;padding:20px;font-size:12px;} h1{color:#0d9488;text-align:center;} table{width:100%;border-collapse:collapse;margin-top:16px;} th,td{border:1px solid #ccc;padding:8px 6px;text-align:center;} th{background:#0d9488;color:white;font-size:11px;} td{font-size:11px;} .period{background:#f0fdfa;font-weight:bold;}</style>
-    </head><body><h1>🏫 جدول الحصص الأسبوعي — مدرسة عبيدة بن الحارث المتوسطة</h1>
+    </head><body><h1>🏫 جدول الحصص الأسبوعي — مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
     <table><tr><th>الحصة</th>${days.map(d=>`<th>${d}</th>`).join("")}</tr>
     ${periods.map(p=>`<tr><td class="period">الحصة ${p}</td>${days.map(d=>`<td>${timetable[d+"-"+p]||""}</td>`).join("")}</tr>`).join("")}
     </table></body></html>`);
@@ -26112,7 +26084,7 @@ function HonorBoardPage({ classList }) {
     printWindow(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title>لوحة الشرف</title>
     <style>body{font-family:sans-serif;direction:rtl;padding:30px;text-align:center;background:#fffbeb;} h1{color:#0d9488;font-size:22px;margin-bottom:4px;} .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-top:24px;} .card{background:white;border:2px solid #fde68a;border-radius:12px;padding:16px;} .badge{font-size:36px;} .name{font-weight:bold;font-size:14px;margin:8px 0 4px;} .class{font-size:12px;color:#666;} .reason{font-size:11px;color:#0d9488;margin-top:6px;}</style>
     </head><body>
-    <h1>🏫 لوحة الشرف</h1><p style="color:#666;font-size:13px;">مدرسة عبيدة بن الحارث المتوسطة</p>
+    <h1>🏫 لوحة الشرف</h1><p style="color:#666;font-size:13px;">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
     <div class="grid">${honorStudents.map(s=>`<div class="card"><div class="badge">${s.badge}</div><div class="name">${s.name}</div><div class="class">${s.class}</div><div class="reason">${s.reason||""}</div></div>`).join("")}</div>
     </body></html>`);
   };
@@ -26819,7 +26791,7 @@ function AttendanceAnalysisPage() {
     .sig{text-align:center;flex:1}.sig .lb{color:#6b7280;font-size:10px;margin-bottom:20px}
     .sig .ln{border-top:1px solid #374151;padding-top:4px;font-weight:900;font-size:11px}
     @page{size:A4;margin:1.2cm}</style></head><body>
-    <div class="h"><h1>📊 تقرير استخراج الغياب والتأخر — مدرسة عبيدة بن الحارث المتوسطة</h1>
+    <div class="h"><h1>📊 تقرير استخراج الغياب والتأخر — مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
     <p><strong>${teacher.name||"—"}</strong> · ${teacher.id||""} · ${teacher.role||""}</p>
     <p>الفترات: ${periods} · ${teacher.files.length} ملف · ${st.total} يوم دوام</p></div>
     <div class="ks">
@@ -26901,7 +26873,7 @@ function AttendanceAnalysisPage() {
     <div class="header">
       <div>
         <h1>🏫 تقرير الحضور والانصراف</h1>
-        <p>مدرسة عبيدة بن الحارث المتوسطة</p>
+        <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
         <p style="margin-top:6px;font-size:13px;font-weight:700;">${emp.empName}</p>
         <p>${emp.empId}${emp.empRole ? " — " + emp.empRole : ""}</p>
         <p style="margin-top:2px;opacity:.7;">${emp.dateRange}</p>
@@ -27703,7 +27675,7 @@ function QiyasAlatharPage() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>استبانة قياس الأثر — مدرسة عبيدة بن الحارث المتوسطة</title>
+<title>استبانة قياس الأثر — مدرسة الأمير عبدالمجيد المتوسطة الأولى</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -28022,7 +27994,7 @@ body {
   <!-- ── رأس ── -->
   <div class="hdr">
     <div class="hdr-ornament">❖ &nbsp; ❖ &nbsp; ❖</div>
-    <div class="school-name">مدرسة عبيدة بن الحارث المتوسطة</div>
+    <div class="school-name">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
     <div class="school-sub">إدارة تعليم جدة &nbsp;—&nbsp; وزارة التعليم</div>
 
     <div class="sep">
@@ -28126,7 +28098,7 @@ body {
 
   <!-- ذيل -->
   <div class="footer">
-    مدرسة عبيدة بن الحارث المتوسطة &nbsp;|&nbsp; إدارة تعليم جدة &nbsp;|&nbsp; وزارة التعليم
+    مدرسة الأمير عبدالمجيد المتوسطة الأولى &nbsp;|&nbsp; إدارة تعليم جدة &nbsp;|&nbsp; وزارة التعليم
     &nbsp;|&nbsp; 🔒 جميع البيانات سرية ومحمية
   </div>
 </div>
@@ -28567,7 +28539,7 @@ export default function SchoolWebsite() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 50%, #f5f5f4 100%)" }}>
       <div className="text-center">
         <div className="text-6xl mb-4 animate-bounce">🏫</div>
-        <h2 className="text-xl font-black text-teal-800 mb-2">مدرسة عبيدة بن الحارث المتوسطة</h2>
+        <h2 className="text-xl font-black text-teal-800 mb-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h2>
         <p className="text-gray-400 text-sm">جاري تحميل البيانات…</p>
       </div>
     </div>
@@ -28831,7 +28803,7 @@ export default function SchoolWebsite() {
         {/* اسم المدرسة مختصر */}
         <div style={{ color:"#94a3b8", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
           <span style={{ color:"#2dd4bf" }}>🏫</span>
-          <span>مدرسة عبيدة بن الحارث — بوابة الإدارة</span>
+          <span>مدرسة الأمير عبدالمجيد — بوابة الإدارة</span>
         </div>
         {/* مفتاح الوضع */}
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -28889,7 +28861,7 @@ export default function SchoolWebsite() {
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:30, height:30, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🏫</div>
                 <div>
-                  <div style={{ color:"#fff", fontWeight:900, fontSize:12.5, lineHeight:1.1 }}>مدرسة عبيدة بن الحارث</div>
+                  <div style={{ color:"#fff", fontWeight:900, fontSize:12.5, lineHeight:1.1 }}>مدرسة الأمير عبدالمجيد</div>
                   <div style={{ color:"rgba(255,255,255,0.7)", fontSize:9, fontWeight:600 }}>المتوسطة • ١٤٤٧ هـ</div>
                 </div>
               </div>
@@ -29032,7 +29004,7 @@ export default function SchoolWebsite() {
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("home")}>
               <SchoolLogo size="sm" animate={false} />
               <div>
-                <h1 className="font-black text-teal-900" style={{fontSize:"15px",letterSpacing:"-0.3px"}}>مدرسة عبيدة بن الحارث</h1>
+                <h1 className="font-black text-teal-900" style={{fontSize:"15px",letterSpacing:"-0.3px"}}>مدرسة الأمير عبدالمجيد</h1>
                 <p className="text-gray-400 font-bold" style={{fontSize:"11px"}}>المتوسطة — ١٤٤٧ هـ</p>
               </div>
             </div>
@@ -29185,7 +29157,7 @@ export default function SchoolWebsite() {
       </main>
       <footer className="relative text-center py-6 text-xs border-t bg-white mt-8 overflow-hidden" style={{borderColor:"rgba(13,148,136,.15)"}}>
         <div className="absolute inset-0 opacity-5" style={{background:"linear-gradient(135deg,#0d9488,transparent)"}} />
-        <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة عبيدة بن الحارث المتوسطة — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
+        <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة الأمير عبدالمجيد المتوسطة الأولى — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
         <p className="relative text-gray-400 mt-1">© ١٤٤٧ هـ — جميع الحقوق محفوظة</p>
       </footer>
       </>
