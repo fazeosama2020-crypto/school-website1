@@ -1670,7 +1670,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         <div style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",justifyContent:"space-between",gap:20,flexWrap:"wrap"}}>
           <div style={{display:"flex",alignItems:"center",gap:15}}>
             <SchoolLogo size="md" animate={false}/>
-            <div><div style={{fontSize:22,fontWeight:900}}>بوابة الإدارة المدرسية</div><div style={{opacity:.76,fontSize:12,marginTop:3}}>مدرسة الأمير عبدالمجيد المتوسطة الأولى · {todayStr}</div></div>
+            <div><div style={{fontSize:22,fontWeight:900}}>لوحة القيادة الذكية <span style={{fontSize:10,background:"#d4af37",color:"#082f2a",padding:"4px 8px",borderRadius:99,verticalAlign:"middle"}}>الإصدار الجديد</span></div><div style={{opacity:.76,fontSize:12,marginTop:3}}>مدرسة الأمير عبدالمجيد المتوسطة الأولى · {todayStr}</div></div>
           </div>
           <div style={{display:"flex",gap:9,flexWrap:"wrap"}}>
             <span style={{background:"rgba(255,255,255,.11)",border:"1px solid rgba(255,255,255,.16)",padding:"8px 13px",borderRadius:13,fontSize:11,fontWeight:800}}>👨‍🏫 {teachers.length} معلماً</span>
@@ -28907,7 +28907,7 @@ export default function SchoolWebsite() {
             وضع الكمبيوتر — التخطيط الكامل
         ══════════════════════════════════════════ */
         <>
-      <nav className="bg-white shadow-lg sticky top-8 z-50 border-b border-teal-100" style={{fontFamily:"'Cairo', 'Noto Naskh Arabic', sans-serif"}}>
+      <nav className="bg-white shadow-lg sticky top-8 z-50 border-b border-teal-100" style={{fontFamily:"'Cairo', 'Noto Naskh Arabic', sans-serif", display: page === "home" ? "none" : undefined}}>
         <div className="w-full px-3">
 
           {/* - صف أول: الشعار + اسم المدرسة + بيانات المستخدم - */}
