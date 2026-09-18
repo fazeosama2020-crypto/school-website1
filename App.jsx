@@ -28931,29 +28931,31 @@ export default function SchoolWebsite() {
             </div>
           </div>
 
-          {/* - صف ثانٍ: أزرار التنقل (desktop) - */}
-          <div className="hidden lg:block py-2 space-y-2">
-            <button onClick={() => { navigate("home"); setShowExtra(false); }} className={`nav-pill-main ${page === "home" ? "active" : ""}`}>
-              <span className="nav-pill-icon">🏡</span>الرئيسية
-            </button>
-            {navGroups.map(g => (
-              <div key={g.title} className="rounded-2xl px-3 py-2" style={{ background:g.color+"0d", border:`1px solid ${g.color}22` }}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-sm">{g.icon}</span>
-                  <span className="text-xs font-black" style={{color:g.color}}>{g.title}</span>
-                  <div className="flex-1 h-px" style={{background:g.color+"22"}}></div>
+          {/* في الرئيسية نعرض لوحة التحكم الحديثة فقط؛ وفي الصفحات الداخلية تظهر أدوات التنقل التقليدية */}
+          {page !== "home" && (
+            <div className="hidden lg:block py-2 space-y-2">
+              <button onClick={() => { navigate("home"); setShowExtra(false); }} className={`nav-pill-main ${page === "home" ? "active" : ""}`}>
+                <span className="nav-pill-icon">🏡</span>الرئيسية
+              </button>
+              {navGroups.map(g => (
+                <div key={g.title} className="rounded-2xl px-3 py-2" style={{ background:g.color+"0d", border:`1px solid ${g.color}22` }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">{g.icon}</span>
+                    <span className="text-xs font-black" style={{color:g.color}}>{g.title}</span>
+                    <div className="flex-1 h-px" style={{background:g.color+"22"}}></div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
+                      <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }} className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
+                        <span className="nav-pill-icon">{p.icon}</span>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
-                    <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }} className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
-                      <span className="nav-pill-icon">{p.icon}</span>
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* - موبايل - */}
           {menuOpen && (
