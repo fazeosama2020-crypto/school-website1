@@ -21936,34 +21936,7 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
           </div>
         )}
       </div>
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
-        <h3 className="font-bold text-gray-800 mb-4">👨‍🏫 إدارة أسماء المعلمين ({teachers.length})</h3>
-        <div className="flex gap-2 mb-4">
-          <input type="text" placeholder="أدخل اسم المعلم الجديد..." value={newT} onChange={e => setNewT(e.target.value)} onKeyDown={e => e.key === "Enter" && addT()}
-            className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm" />
-          <button onClick={addT} className="bg-teal-600 text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-teal-700">+ إضافة</button>
-        </div>
-        <div className="space-y-2 max-h-96 overflow-y-auto">{teachers.map((t, i) => (
-          <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 group">
-            {editIdx === i ? (
-              <div className="flex items-center gap-2 flex-1">
-                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveE()}
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-teal-300 text-sm focus:outline-none" autoFocus />
-                <button onClick={saveE} className="text-teal-600 text-xs font-bold px-2 py-1">حفظ</button>
-                <button onClick={() => setEditIdx(-1)} className="text-gray-400 text-xs px-2 py-1">إلغاء</button>
-              </div>
-            ) : (
-              <>
-                <span className="text-sm font-medium"><span className="text-gray-400 ml-2">{i+1}.</span>{t}</span>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => { setEditIdx(i); setEditName(t); }} className="text-xs px-2 py-1 rounded-lg hover:bg-teal-100 text-teal-600">✏️</button>
-                  <button onClick={() => rmT(i)} className="text-xs px-2 py-1 rounded-lg hover:bg-red-100 text-red-500">🗑️</button>
-                </div>
-              </>
-            )}
-          </div>
-        ))}</div>
-      </div>
+      <TeacherNamesManager teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} />
       <div className={cx.card}>
         <h3 className="font-bold text-gray-800 mb-4">🔐 حسابات المستخدمين</h3>
         <div className="space-y-2">{users.map((u, i) => (
@@ -21977,6 +21950,149 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
     </div>
   );
 }
+
+// ===== إدارة المعلمين الموحّدة (أسماء + هويات + استيراد Excel) =====
+function TeacherNamesManager({ teachers, setTeachers, saveTeachers }) {
+  const [list, setList]   = useState([]);
+  const [nName, setNName] = useState("");
+  const [nId, setNId]     = useState("");
+  const [eIdx, setEIdx]   = useState(-1);
+  const [eName, setEName] = useState("");
+  const [eId, setEId]     = useState("");
+  const [msg, setMsg]     = useState("");
+  const [busy, setBusy]   = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      const perf = await DB.get("school-perf-teachers", []);
+      if (Array.isArray(perf) && perf.length) {
+        setList(perf.map(t => ({ name: String(t.name || "").trim(), id: String(t.id || "").trim() })));
+      } else if (Array.isArray(teachers) && teachers.length) {
+        setList(teachers.map(n => ({ name: String(n || "").trim(), id: "" })));
+      }
+    })();
+  }, []);
+
+  const flash = (t) => { setMsg(t); setTimeout(() => setMsg(""), 2600); };
+
+  // يكتب في كل قوائم المعلمين حتى يظهر المعلم في جميع الأقسام
+  const commit = (next) => {
+    const seen = new Set(); const clean = [];
+    for (const t of next) {
+      const name = String(t.name || "").trim();
+      const id = String(t.id || "").replace(/\D/g, "").trim();
+      if (!name) continue;
+      const key = id || name;
+      if (seen.has(key)) continue;
+      seen.add(key); clean.push({ name, id });
+    }
+    setList(clean);
+    const names = clean.map(t => t.name);
+    setTeachers(names); saveTeachers(names);      // school-teachers (الحضور وغيره)
+    DB.set("school-perf-teachers", clean);        // بطاقة تقويم الأداء (الدخول بالهوية)
+  };
+
+  const add = () => { if (!nName.trim()) return; commit([...list, { name: nName.trim(), id: nId.trim() }]); setNName(""); setNId(""); };
+  const rm = (i) => commit(list.filter((_, j) => j !== i));
+  const saveEdit = () => { if (!eName.trim()) return; commit(list.map((t, j) => j === eIdx ? { name: eName.trim(), id: eId.trim() } : t)); setEIdx(-1); };
+  const clearAll = () => { if (!window.confirm("سيتم حذف جميع المعلمين من القائمة (تُزال من الحضور وبطاقة الأداء). هل أنت متأكد؟")) return; commit([]); };
+
+  const onFile = async (e) => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    setBusy(true); setMsg("جارٍ قراءة الملف…");
+    try {
+      await loadXLSX();
+      const buf = await file.arrayBuffer();
+      const wb = window.XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      const isId = (v) => /^\d{10}$/.test(String(v).replace(/\D/g, ""));
+      const nameKeys = ["اسم المعلم", "الاسم", "اسم"];
+      const idKeys = ["رقم الهوية", "الهوية الوطنية", "السجل المدني", "رقم السجل", "الهوية"];
+      let nameCol = -1, idCol = -1, headerRow = -1;
+      for (let r = 0; r < Math.min(rows.length, 40); r++) {
+        (rows[r] || []).forEach((c, ci) => {
+          const v = String(c).trim();
+          if (nameCol < 0 && nameKeys.some(k => v.includes(k))) { nameCol = ci; headerRow = r; }
+          if (idCol < 0 && idKeys.some(k => v.includes(k))) { idCol = ci; headerRow = r; }
+        });
+        if (nameCol >= 0 && idCol >= 0) break;
+      }
+      if (idCol < 0) {
+        const cnt = {}; rows.forEach(row => (row || []).forEach((c, ci) => { if (isId(c)) cnt[ci] = (cnt[ci] || 0) + 1; }));
+        const k = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0]; idCol = k === undefined ? -1 : Number(k);
+      }
+      if (nameCol < 0) {
+        const cnt = {}; rows.forEach(row => (row || []).forEach((c, ci) => { if (ci !== idCol && !isId(c) && /[\u0600-\u06FF]{3,}/.test(String(c))) cnt[ci] = (cnt[ci] || 0) + 1; }));
+        const k = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0]; nameCol = k === undefined ? -1 : Number(k);
+      }
+      if (nameCol < 0) { flash("تعذّر العثور على عمود الأسماء في الملف."); setBusy(false); return; }
+      const start = headerRow >= 0 ? headerRow + 1 : 0;
+      const imported = [];
+      for (let r = start; r < rows.length; r++) {
+        const name = String((rows[r] || [])[nameCol] || "").trim();
+        const id = idCol >= 0 ? String((rows[r] || [])[idCol] || "").replace(/\D/g, "").trim() : "";
+        if (!name || !/[\u0600-\u06FF]/.test(name)) continue;
+        if (nameKeys.some(k => name === k)) continue;
+        imported.push({ name, id });
+      }
+      if (!imported.length) { flash("لم يتم العثور على أسماء في الملف."); setBusy(false); return; }
+      commit([...list, ...imported]);
+      flash("تم استيراد " + imported.length + " معلمًا ✅");
+    } catch (err) { flash("تعذّر قراءة الملف. تأكد أنه ملف Excel صحيح."); }
+    setBusy(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h3 className="font-bold text-gray-800">👨‍🏫 إدارة المعلمين ({list.length})</h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          {msg && <span className="text-xs font-bold text-teal-600">{msg}</span>}
+          <button onClick={() => fileRef.current && fileRef.current.click()} disabled={busy}
+            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 disabled:opacity-50">📥 استيراد Excel</button>
+          {list.length > 0 && <button onClick={clearAll} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-100">🗑️ حذف الكل</button>}
+          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={onFile} className="hidden" />
+        </div>
+      </div>
+      <p className="text-xs text-gray-400 mb-3">أضف معلمًا يدويًا، أو استورد ملف Excel يحتوي عمودَي «الاسم» و«رقم الهوية». تظهر الأسماء تلقائيًا في الحضور وبطاقة تقويم الأداء.</p>
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <input type="text" placeholder="اسم المعلم" value={nName} onChange={e => setNName(e.target.value)} onKeyDown={e => e.key === "Enter" && add()}
+          className="flex-1 min-w-32 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm" />
+        <input type="text" inputMode="numeric" placeholder="رقم الهوية (اختياري)" value={nId} onChange={e => setNId(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && add()}
+          className="w-40 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm" />
+        <button onClick={add} className="bg-teal-600 text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-teal-700">+ إضافة</button>
+      </div>
+      <div className="space-y-2 max-h-96 overflow-y-auto">{list.map((t, i) => (
+        <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 group">
+          {eIdx === i ? (
+            <div className="flex items-center gap-2 flex-1 flex-wrap">
+              <input type="text" value={eName} onChange={e => setEName(e.target.value)} className="flex-1 min-w-32 px-3 py-1.5 rounded-lg border border-teal-300 text-sm focus:outline-none" autoFocus />
+              <input type="text" inputMode="numeric" value={eId} onChange={e => setEId(e.target.value.replace(/\D/g, ""))} placeholder="رقم الهوية" className="w-40 px-3 py-1.5 rounded-lg border border-teal-300 text-sm focus:outline-none" />
+              <button onClick={saveEdit} className="text-teal-600 text-xs font-bold px-2 py-1">حفظ</button>
+              <button onClick={() => setEIdx(-1)} className="text-gray-400 text-xs px-2 py-1">إلغاء</button>
+            </div>
+          ) : (
+            <>
+              <span className="text-sm font-medium flex items-center gap-2">
+                <span className="text-gray-400">{i + 1}.</span>
+                <span>{t.name}</span>
+                {t.id ? <span className="text-xs text-gray-400 font-mono">({t.id})</span> : <span className="text-xs text-amber-500">بدون هوية</span>}
+              </span>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => { setEIdx(i); setEName(t.name); setEId(t.id || ""); }} className="text-xs px-2 py-1 rounded-lg hover:bg-teal-100 text-teal-600">✏️</button>
+                <button onClick={() => rm(i)} className="text-xs px-2 py-1 rounded-lg hover:bg-red-100 text-red-500">🗑️</button>
+              </div>
+            </>
+          )}
+        </div>
+      ))}</div>
+    </div>
+  );
+}
+
 
 // ===== إدارة حسابات المعلمين =====
 function TeacherAccountsSection() {
@@ -28611,6 +28727,15 @@ export default function SchoolWebsite() {
     { id: "teacherreports", label: "ملفات المعلمين",       icon: "🗄️" },
   ];
   const extraPages = [...classToolPages, ...reportPages];
+  const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
+  const navGroups = [
+    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["students","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
+    { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["announcements","messages","sms","broadcast","suggestions"] },
+    { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","officialforms","timetable","settings"] },
+  ];
 
   return (
     <>
@@ -28963,28 +29088,37 @@ export default function SchoolWebsite() {
                 })}
               </div>
 
-              {/* ─ الأدوات — شبكة عمودين ─ */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr",
-                background:"#fafbfc", padding:"4px" }}>
-                {extraPages.map(p => {
-                  const active = page === p.id;
-                  return (
-                    <button key={p.id} onClick={() => navigate(p.id)} style={{
-                      display:"flex", flexDirection:"row", alignItems:"center", gap:6,
-                      padding:"8px 10px", border:"none", cursor:"pointer",
-                      background: active ? "#f0fdfa" : "transparent",
-                      borderRadius:8, margin:"1px",
-                      border: active ? "1px solid #0d9488" : "1px solid transparent",
-                      transition:"all .15s", textAlign:"right",
-                      fontFamily:"'Cairo',sans-serif",
-                    }}>
-                      <span style={{ fontSize:16, flexShrink:0 }}>{p.icon}</span>
-                      <span style={{ fontSize:11, fontWeight:700, whiteSpace:"nowrap",
-                        overflow:"hidden", textOverflow:"ellipsis",
-                        color: active ? "#0d9488" : "#374151" }}>{p.label}</span>
-                    </button>
-                  );
-                })}
+              {/* ─ الأدوات مصنّفة ─ */}
+              <div style={{ background:"#fafbfc", padding:"6px" }}>
+                {navGroups.map(g => (
+                  <div key={g.title} style={{ marginBottom:8 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 6px", fontFamily:"'Cairo',sans-serif" }}>
+                      <span style={{fontSize:13}}>{g.icon}</span>
+                      <span style={{fontSize:11, fontWeight:900, color:g.color}}>{g.title}</span>
+                      <div style={{flex:1, height:1, background:g.color+"33"}}></div>
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px" }}>
+                      {g.ids.map(id => pageById[id]).filter(Boolean).map(p => {
+                        const active = page === p.id;
+                        return (
+                          <button key={p.id} onClick={() => navigate(p.id)} style={{
+                            display:"flex", flexDirection:"row", alignItems:"center", gap:6,
+                            padding:"8px 10px", cursor:"pointer",
+                            background: active ? g.color+"14" : "#fff",
+                            borderRadius:8, transition:"all .15s", textAlign:"right",
+                            fontFamily:"'Cairo',sans-serif",
+                            border: active ? ("1px solid "+g.color) : "1px solid #eef1f4",
+                          }}>
+                            <span style={{ fontSize:15, flexShrink:0 }}>{p.icon}</span>
+                            <span style={{ fontSize:10.5, fontWeight:700, whiteSpace:"nowrap",
+                              overflow:"hidden", textOverflow:"ellipsis",
+                              color: active ? g.color : "#374151" }}>{p.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
 
             </div>
@@ -29020,36 +29154,27 @@ export default function SchoolWebsite() {
           </div>
 
           {/* - صف ثانٍ: أزرار التنقل (desktop) - */}
-          <div className="hidden lg:block py-2">
-            {/* الصف الأول من الأزرار */}
-            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              {pages.map(p => (
-                <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }}
-                  className={`nav-pill-main ${page === p.id ? "active" : ""}`}>
-                  <span className="nav-pill-icon">{p.icon}</span>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            {/* الصف الثاني: أدوات وتقارير — قائمتان منفصلتان */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-bold opacity-50 flex-shrink-0" style={{color:"#0d9488"}}>🧰 أدوات:</span>
-              {classToolPages.map(p => (
-                <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }}
-                  className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
-                  <span className="nav-pill-icon">{p.icon}</span>
-                  {p.label}
-                </button>
-              ))}
-              <span className="text-xs font-bold opacity-50 flex-shrink-0 mr-2" style={{color:"#7c3aed"}}>📋 تقارير:</span>
-              {reportPages.map(p => (
-                <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }}
-                  className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
-                  <span className="nav-pill-icon">{p.icon}</span>
-                  {p.label}
-                </button>
-              ))}
-            </div>
+          <div className="hidden lg:block py-2 space-y-2">
+            <button onClick={() => { navigate("home"); setShowExtra(false); }} className={`nav-pill-main ${page === "home" ? "active" : ""}`}>
+              <span className="nav-pill-icon">🏡</span>الرئيسية
+            </button>
+            {navGroups.map(g => (
+              <div key={g.title} className="rounded-2xl px-3 py-2" style={{ background:g.color+"0d", border:`1px solid ${g.color}22` }}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-sm">{g.icon}</span>
+                  <span className="text-xs font-black" style={{color:g.color}}>{g.title}</span>
+                  <div className="flex-1 h-px" style={{background:g.color+"22"}}></div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
+                    <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }} className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
+                      <span className="nav-pill-icon">{p.icon}</span>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* - موبايل - */}
@@ -29070,38 +29195,26 @@ export default function SchoolWebsite() {
                   </button>
                 ))}
               </div>
-              {/* أدوات الفصل */}
-              <div className="text-xs font-black px-2 mb-1.5 flex items-center gap-1.5" style={{color:"#0d9488"}}>🧰 أدوات الفصل</div>
-              <div className="grid grid-cols-2 gap-1.5 mb-3">
-                {classToolPages.map(p => (
-                  <button key={p.id} onClick={() => { navigate(p.id); setMenuOpen(false); }}
-                    style={{
-                      padding:"8px 10px", borderRadius:"14px", fontSize:"11px", fontWeight:"700",
-                      fontFamily:"'Cairo',sans-serif", textAlign:"right",
-                      background: page===p.id ? "linear-gradient(135deg,#0d9488,#059669)" : "#f0fdf4",
-                      color: page===p.id ? "#fff" : "#0d9488",
-                      border: "1.5px solid #99f6e4",
-                    }}>
-                    <span style={{marginLeft:"3px"}}>{p.icon}</span>{p.label}
-                  </button>
-                ))}
-              </div>
-              {/* تقارير وإدارة */}
-              <div className="text-xs font-black px-2 mb-1.5 flex items-center gap-1.5" style={{color:"#7c3aed"}}>📋 تقارير وإدارة</div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {reportPages.map(p => (
-                  <button key={p.id} onClick={() => { navigate(p.id); setMenuOpen(false); }}
-                    style={{
-                      padding:"8px 10px", borderRadius:"14px", fontSize:"11px", fontWeight:"700",
-                      fontFamily:"'Cairo',sans-serif", textAlign:"right",
-                      background: page===p.id ? "linear-gradient(135deg,#7c3aed,#6d28d9)" : "#faf5ff",
-                      color: page===p.id ? "#fff" : "#7c3aed",
-                      border: "1.5px solid #e9d5ff",
-                    }}>
-                    <span style={{marginLeft:"3px"}}>{p.icon}</span>{p.label}
-                  </button>
-                ))}
-              </div>
+              {/* الأقسام المصنّفة */}
+              {navGroups.map(g => (
+                <div key={g.title} className="mb-3">
+                  <div className="text-xs font-black px-2 mb-1.5 flex items-center gap-1.5" style={{color:g.color}}>{g.icon} {g.title}</div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
+                      <button key={p.id} onClick={() => { navigate(p.id); setMenuOpen(false); }}
+                        style={{
+                          padding:"8px 10px", borderRadius:"14px", fontSize:"11px", fontWeight:"700",
+                          fontFamily:"'Cairo',sans-serif", textAlign:"right",
+                          background: page===p.id ? g.color : g.color+"12",
+                          color: page===p.id ? "#fff" : g.color,
+                          border: `1.5px solid ${g.color}33`,
+                        }}>
+                        <span style={{marginLeft:"3px"}}>{p.icon}</span>{p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
               <div className="border-t border-gray-100 pt-3 flex items-center justify-between px-2">
                 <span className="text-sm font-black text-gray-700">{user.name} — {user.role}</span>
                 <button onClick={() => setUser(null)} className="text-xs text-red-500 font-black px-3 py-2 rounded-full bg-red-50 border border-red-100">🚪 خروج</button>
