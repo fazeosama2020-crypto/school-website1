@@ -1004,7 +1004,7 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
             {/* فاصل */}
             <div className="border-t border-gray-100 mx-8"></div>
             {/* محتوى الإعلان */}
-            <div className="px-8 py-6 text-gray-700 leading-loose text-base"
+            <div className="px-4 sm:px-8 py-6 text-gray-700 leading-loose text-base annhtml"
               dangerouslySetInnerHTML={{ __html: ann.content }}>
             </div>
             {/* عداد الزوار + التعليقات */}
@@ -1320,7 +1320,7 @@ function CreativeAnnouncementsView({ announcements }) {
             <div style={{
               fontSize:15,lineHeight:2,color:"#cbd5e1",
               fontFamily:"'Cairo',sans-serif",
-            }} dangerouslySetInnerHTML={{__html:selected.content}}/>
+            }} className="annhtml" dangerouslySetInnerHTML={{__html:selected.content}}/>
 
             {/* التعليقات */}
             <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid #1e293b"}}>
@@ -11413,7 +11413,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                       <>
                         <div style={{ borderTop:"1px solid rgba(0,0,0,0.05)", margin:"0 12px" }} />
                         <div style={{ padding:"10px 12px" }}
-                          className="text-sm leading-loose text-gray-700"
+                          className="text-sm leading-loose text-gray-700 annhtml"
                           dangerouslySetInnerHTML={{ __html: ann.content }} />
                         {/* أزرار الإجراءات */}
                         <div style={{ display:"flex", gap:6, padding:"0 12px 8px", flexWrap:"wrap" }}>
@@ -11631,7 +11631,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                     <button onClick={() => del(ann.id)} className="text-xs px-2 py-1.5 rounded-lg hover:bg-red-50 text-red-500 font-bold border border-red-100">🗑️</button>
                   </div>
                 </div>
-                <div className="text-gray-700 text-sm leading-relaxed mb-3" dangerouslySetInnerHTML={{ __html: ann.content }}></div>
+                <div className="text-gray-700 text-sm leading-relaxed mb-3 annhtml" dangerouslySetInnerHTML={{ __html: ann.content }}></div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>{ann.date}</span>
                   <div className="flex gap-2"><Badge color="gray">{ann.category}</Badge><Badge color={pColors[ann.priority]}>{ann.priority}</Badge></div>
@@ -11863,7 +11863,7 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
                     <h3 className="font-bold text-gray-900">{act.title}</h3>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${sc[act.status]}`}>{act.status}</span>
                   </div>
-                  <div className="text-gray-500 text-sm mb-3 leading-relaxed" dangerouslySetInnerHTML={{ __html: act.description }}></div>
+                  <div className="text-gray-500 text-sm mb-3 leading-relaxed annhtml" dangerouslySetInnerHTML={{ __html: act.description }}></div>
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <span>📅 {act.date}</span><span>👤 {act.responsible}</span>
                   </div>
@@ -28590,6 +28590,10 @@ export default function SchoolWebsite() {
         background: #ede9fe; border-color: #c4b5fd;
       }
       .nav-pill-icon { font-size: 16px; }
+      .annhtml { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+      .annhtml, .annhtml * { max-width:100% !important; box-sizing:border-box; overflow-wrap:break-word; word-break:break-word; }
+      .annhtml img, .annhtml video, .annhtml iframe { height:auto !important; }
+      .annhtml table { display:block; overflow-x:auto; }
     `}</style>
     <div dir="rtl" className="min-h-screen relative overflow-x-hidden" style={{ fontFamily: siteFont, background: "linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%)" }}>
 
