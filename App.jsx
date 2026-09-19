@@ -1696,249 +1696,95 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
   const kpiColor = (v,good,warn) => v>=good?"#22c55e":v>=warn?"#f59e0b":"#ef4444";
   const kpiBg   = (v,good,warn) => v>=good?"#dcfce7":v>=warn?"#fef3c7":"#fee2e2";
 
+  const [hubSel, setHubSel] = useState(2);
+  const hubG = HUB_GROUPS[hubSel];
+  const recentOps = [
+    ...(announcements||[]).slice(0,3).map(a=>({icon:"📣", text:"إعلان: "+(a.title||""), date:a.date||""})),
+    ...(activities||[]).slice(0,3).map(a=>({icon:"🎯", text:"نشاط: "+(a.title||""), date:a.date||""})),
+    ...(messages||[]).slice(0,3).map(m=>({icon:"💌", text:"رسالة: "+((m.sender||m.name||m.title)||"ولي أمر"), date:m.date||m.time||""})),
+  ].filter(o=>o.text && o.text.length>7).slice(0,6);
   return (
-    <div>
-      {/* - الترويسة الأصلية - */}
-      <div className="bg-gradient-to-l from-teal-600 via-teal-700 to-emerald-800 p-8 mb-4 text-white text-center shadow-xl" style={{overflow:"hidden",position:"relative"}}>
-        <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 50% 0%,rgba(212,175,55,.15) 0%,transparent 60%)",pointerEvents:"none"}} />
-        <div className="flex justify-center mb-4 relative z-10">
-          <SchoolLogo size="xl" animate={true} />
-        </div>
-        <h1 className="text-xl font-black relative z-10 mt-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
-        <p className="opacity-80 text-base relative z-10 mt-1">بوابة الإدارة المدرسية الإلكترونية</p>
-        <p className="opacity-60 text-sm mt-1 relative z-10">{todayStr}</p>
-        {/* شريط حضور اليوم */}
-        <div className="flex items-center justify-center gap-6 mt-4 relative z-10">
-          <div className="text-center bg-white bg-opacity-15 rounded-2xl px-5 py-2">
-            <div className="text-2xl font-black">{attendRate}%</div>
-            <div className="text-xs opacity-70">حضور اليوم</div>
-          </div>
-          <div className="w-px h-10 bg-white bg-opacity-30"/>
-          <div className="text-center bg-white bg-opacity-15 rounded-2xl px-5 py-2">
-            <div className="text-2xl font-black">{weekStats}%</div>
-            <div className="text-xs opacity-70">حضور الأسبوع</div>
-          </div>
-        </div>
-        {/* شريط تقدم */}
-        <div className="h-1.5 flex mt-4 rounded-full overflow-hidden relative z-10">
-          <div style={{width:attendRate+"%",background:"#22c55e"}}/>
-          <div style={{width:(todayLate/Math.max(teachers.length,1)*100)+"%",background:"#f59e0b"}}/>
-          <div style={{width:(todayAbsent/Math.max(teachers.length,1)*100)+"%",background:"#ef4444"}}/>
+    <div className="pb-4">
+      {/* ── الشعار الترحيبي ── */}
+      <div className="relative overflow-hidden rounded-2xl mb-4 text-white shadow-xl" style={{background:"linear-gradient(115deg,#0b5138,#127a57 55%,#0b5138)"}}>
+        <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" style={{position:"absolute",left:0,top:0,bottom:0,width:"42%",opacity:.85,pointerEvents:"none"}}>
+          <rect x="60" y="70" width="200" height="120" fill="#e9e2cf" opacity=".85"/>
+          <polygon points="60,70 160,35 260,70" fill="#7c5c3a" opacity=".85"/>
+          <rect x="150" y="120" width="26" height="70" fill="#5b3f26"/>
+          <g fill="#8fd0f5" opacity=".9"><rect x="80" y="90" width="18" height="18"/><rect x="110" y="90" width="18" height="18"/><rect x="200" y="90" width="18" height="18"/><rect x="230" y="90" width="18" height="18"/></g>
+          <rect x="300" y="42" width="4" height="148" fill="#cfd8dc"/><polygon points="304,42 340,52 304,66" fill="#0a8f4f"/>
+          <g stroke="#2f7d32" strokeWidth="5" fill="none"><path d="M30 190 q6 -40 0 -70"/></g><ellipse cx="30" cy="112" rx="26" ry="12" fill="#2f7d32"/>
+        </svg>
+        <div className="relative z-10 flex items-center justify-between gap-4 p-6 flex-wrap">
+          <div className="bg-white/10 rounded-2xl p-3 text-xs leading-relaxed max-w-xs">"التعليم لا يغيّر العالم فقط، بل يصنع أجيالاً قادرة على تغييره"<br/><br/>مدرستنا .. بيئة آمنة · تعلّم ممتع · مستقبل واعد</div>
+          <div className="text-center flex-1 min-w-[200px]"><h2 className="text-2xl sm:text-3xl font-black">معاً .. نحو مدرسة متميزة</h2><p className="opacity-90 mt-1">بالعلم .. بالقيم .. نصنع المستقبل</p></div>
+          <div className="flex items-center gap-3"><div className="text-left text-sm font-extrabold leading-tight">مدرسة<br/>الأمير عبدالمجيد</div><SchoolLogo size="lg" /></div>
         </div>
       </div>
 
-      {/* - بطاقات KPI - */}
-      <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
-        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
-          style={{background:kpiBg(attendRate,90,75)}} onClick={()=>navigate("attendance")}>
-          <div className="text-3xl mb-1">✅</div>
-          <div className="text-3xl font-black" style={{color:kpiColor(attendRate,90,75)}}>{todayPresent}</div>
-          <div className="text-xs font-bold mt-1 opacity-80" style={{color:kpiColor(attendRate,90,75)}}>حاضر اليوم</div>
-          <div className="text-xs opacity-60" style={{color:kpiColor(attendRate,90,75)}}>{teachers.length} معلم</div>
-        </div>
-        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
-          style={{background:todayAbsent===0?"#dcfce7":"#fee2e2"}} onClick={()=>navigate("attendance")}>
-          <div className="text-3xl mb-1">❌</div>
-          <div className="text-3xl font-black" style={{color:todayAbsent===0?"#16a34a":"#dc2626"}}>{todayAbsent}</div>
-          <div className="text-xs font-bold mt-1 opacity-80" style={{color:todayAbsent===0?"#16a34a":"#dc2626"}}>غائب اليوم</div>
-          <div className="text-xs opacity-60" style={{color:todayAbsent===0?"#16a34a":"#dc2626"}}>{todayAbsent>0?"يحتاج متابعة":"ممتاز"}</div>
-        </div>
-        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
-          style={{background:todayLate===0?"#dcfce7":"#fef3c7"}} onClick={()=>navigate("attendance")}>
-          <div className="text-3xl mb-1">⚠️</div>
-          <div className="text-3xl font-black" style={{color:todayLate===0?"#16a34a":"#b45309"}}>{todayLate}</div>
-          <div className="text-xs font-bold mt-1 opacity-80" style={{color:todayLate===0?"#16a34a":"#b45309"}}>متأخر اليوم</div>
-          <div className="text-xs opacity-60" style={{color:todayLate===0?"#16a34a":"#b45309"}}>{todayLate>0?"تأخر صباحي":"لا تأخر"}</div>
-        </div>
-        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
-          style={{background:"#eff6ff"}} onClick={()=>navigate("students")}>
-          <div className="text-3xl mb-1">👨‍🎓</div>
-          <div className="text-3xl font-black" style={{color:"#1d4ed8"}}>{totalStudents}</div>
-          <div className="text-xs font-bold mt-1 opacity-80" style={{color:"#1d4ed8"}}>الطلاب</div>
-          <div className="text-xs opacity-60" style={{color:"#1d4ed8"}}>{classList.length} فصل</div>
-        </div>
-      </div>
-
-      {/* - تنبيهات + إعلانات + أنشطة - */}
-      <div className="grid gap-4 sm:grid-cols-3 mb-6">
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <h3 className="font-black text-gray-800 mb-3 flex items-center gap-2 text-sm">
-            🔔 التنبيهات
-            {(unreadMsgs+unreadNotes)>0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">{unreadMsgs+unreadNotes}</span>}
-          </h3>
-          <div className="space-y-2">
-            {todayAbsent>0 && <div className="flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("attendance")}><span className="text-red-500">❌</span><span className="text-xs font-bold text-red-700">{todayAbsent} معلم غائب اليوم</span></div>}
-            {todayLate>0  && <div className="flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("attendance")}><span className="text-amber-500">⚠️</span><span className="text-xs font-bold text-amber-700">{todayLate} معلم متأخر اليوم</span></div>}
-            {unreadMsgs>0 && <div className="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("messages")}><span className="text-blue-500">✉️</span><span className="text-xs font-bold text-blue-700">{unreadMsgs} رسالة غير مقروءة</span></div>}
-            {unreadNotes>0&& <div className="flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("messages")}><span>📨</span><span className="text-xs font-bold text-amber-700">{unreadNotes} ملاحظة بلا رد</span></div>}
-            {todayAbsent===0&&todayLate===0&&unreadMsgs===0&&unreadNotes===0 && <div className="text-center py-3"><div className="text-2xl mb-1">🎉</div><div className="text-xs text-gray-400 font-bold">لا توجد تنبيهات</div></div>}
-            <div className="flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate()}>
-              <span className="text-red-500">🚨</span><span className="text-xs font-bold text-red-700">مراقبة الطلاب المعرضين للتعثر</span>
-            </div>
+      {/* ── الأقسام: بطاقات (وسط) + لوحة الأدوات (يمين) ── */}
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr] mb-4">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden self-start order-2 lg:order-1 border border-gray-100">
+          <div className="p-4 text-white flex items-center gap-3" style={{background:`linear-gradient(120deg,${hubG.c},${hubG.c}cc)`}}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl" style={{background:"rgba(255,255,255,.25)"}}>{hubG.icon}</div>
+            <div><h3 className="font-black text-lg">{hubG.title}</h3><p className="text-xs opacity-90">{hubG.tools.length} أداة</p></div>
           </div>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <h3 className="font-black text-gray-800 mb-3 flex items-center justify-between text-sm">
-            <span>📢 آخر الإعلانات</span>
-            <button onClick={()=>navigate("announcements")} className="text-xs text-teal-600 font-bold">الكل</button>
-          </h3>
-          {recentAnn.length===0 ? <div className="text-center py-4 text-xs text-gray-400">لا توجد إعلانات</div> :
-            <div className="space-y-2">{recentAnn.map(a=>(
-              <div key={a.id} className="flex items-start gap-2 bg-gray-50 rounded-xl px-3 py-2">
-                <span className="text-lg flex-shrink-0">{a.emoji||"📢"}</span>
-                <div className="flex-1 min-w-0"><div className="text-xs font-black text-gray-800 truncate">{a.title}</div><div className="text-xs text-gray-400 mt-0.5">{a.date}</div></div>
-              </div>))}
-            </div>}
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <h3 className="font-black text-gray-800 mb-3 flex items-center justify-between text-sm">
-            <span>📅 الأنشطة القادمة</span>
-            <button onClick={()=>navigate("activities")} className="text-xs text-teal-600 font-bold">الكل</button>
-          </h3>
-          {upcomingAct.length===0 ? <div className="text-center py-4 text-xs text-gray-400">لا توجد أنشطة قادمة</div> :
-            <div className="space-y-2">{upcomingAct.map(a=>(
-              <div key={a.id} className="flex items-start gap-2 bg-teal-50 rounded-xl px-3 py-2">
-                <span className="text-lg flex-shrink-0">{a.image||"⚡"}</span>
-                <div className="flex-1 min-w-0"><div className="text-xs font-black text-gray-800 truncate">{a.title}</div><div className="text-xs text-teal-600 mt-0.5 font-bold">{a.dateH}</div></div>
-              </div>))}
-            </div>}
-        </div>
-      </div>
-
-      {/* - رؤية المدرسة ورسالتها (مُعادة) - */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <div className="text-center mb-6">
-          <h3 className="text-xl font-black text-teal-900 mb-1">رؤيتنا ورسالتنا</h3>
-          <div className="w-16 h-1 bg-teal-500 rounded-full mx-auto"></div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="bg-gradient-to-b from-teal-50 to-white rounded-2xl p-5 text-center border border-teal-100">
-            <div className="text-3xl mb-3">🔭</div>
-            <h4 className="font-black text-teal-800 mb-2">الرؤية</h4>
-            <p className="text-sm text-gray-600 leading-relaxed">بيئة تعليمية محفّزة تصنع جيلاً واعياً ومبدعاً قادراً على بناء مستقبل وطنه.</p>
-          </div>
-          <div className="bg-gradient-to-b from-emerald-50 to-white rounded-2xl p-5 text-center border border-emerald-100">
-            <div className="text-3xl mb-3">🎯</div>
-            <h4 className="font-black text-emerald-800 mb-2">الرسالة</h4>
-            <p className="text-sm text-gray-600 leading-relaxed">تقديم تعليم نوعي يُراعي الفروق الفردية في شراكة فاعلة بين المدرسة والأسرة.</p>
-          </div>
-          <div className="bg-gradient-to-b from-green-50 to-white rounded-2xl p-5 text-center border border-green-100">
-            <div className="text-3xl mb-3">⭐</div>
-            <h4 className="font-black text-green-800 mb-2">أهدافنا</h4>
-            <p className="text-sm text-gray-600 leading-relaxed">تعزيز القيم الإسلامية ورفع التحصيل الدراسي وتطوير مهارات المعلمين.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* - الغياب هذا الأسبوع - */}
-      {mostAbsent.length>0 && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-100 mb-6">
-          <h3 className="font-black text-gray-800 mb-3 text-sm flex items-center gap-2">
-            ⚠️ الأكثر غياباً هذا الأسبوع
-            <button onClick={()=>navigate("absencestats")} className="text-xs text-red-500 font-bold hover:underline mr-auto">تحليل كامل</button>
-          </h3>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {mostAbsent.map(t=>(
-              <div key={t.name} className="flex items-center justify-between bg-red-50 rounded-xl px-4 py-3">
-                <span className="text-sm font-bold text-gray-800 truncate">{t.name}</span>
-                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold flex-shrink-0 mr-2">{t.count} أيام</span>
-              </div>
+          <div className="p-2 max-h-[430px] overflow-y-auto">
+            {hubG.tools.map(t => (
+              <button key={t.id} onClick={() => navigate(t.id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition hover:brightness-95 text-right" style={{background:hubG.tint+"66"}}>
+                <span className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{background:hubG.tint,color:hubG.c}}>{t.icon}</span>
+                <span className="text-sm font-bold text-gray-700">{t.label}</span>
+                <span className="mr-auto text-gray-300">←</span>
+              </button>
             ))}
           </div>
         </div>
-      )}
-
-      {/* - الأسبوع الحالي - */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
-        <h3 className="font-black text-gray-800 mb-3 text-sm">📊 حضور الأسبوع الحالي</h3>
-        <div className="grid grid-cols-5 gap-2">
-          {week.days.map((day,di)=>{
-            const abs=teachers.filter((_,ti)=>(attendance[ti]?.[di]?.status||"حاضر")==="غائب").length;
-            const late=teachers.filter((_,ti)=>(attendance[ti]?.[di]?.status||"حاضر")==="متأخر").length;
-            const rate=teachers.length>0?Math.round(((teachers.length-abs)/teachers.length)*100):100;
-            const col=rate>=95?"#22c55e":rate>=85?"#f59e0b":"#ef4444";
-            return(
-              <div key={di} className="rounded-xl p-2 text-center border cursor-pointer hover:shadow-md transition-all"
-                style={{borderColor:col+"44",background:col+"11"}} onClick={()=>navigate("attendance")}>
-                <div className="text-xs font-black text-gray-700">{day.name}</div>
-                <div className="text-xs text-amber-600 font-bold">🌙 {day.dateH}</div>
-                <div className="text-lg font-black mt-1" style={{color:col}}>{rate}%</div>
-                {abs>0&&<div className="text-xs text-red-500 font-bold">{abs}غ</div>}
-                {late>0&&<div className="text-xs text-amber-500 font-bold">{late}ت</div>}
-              </div>
-            );
-          })}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 order-1 lg:order-2">
+          {HUB_GROUPS.map((grp, i) => (
+            <button key={i} onClick={() => setHubSel(i)} className="text-right bg-white rounded-2xl p-5 transition hover:-translate-y-1 hover:shadow-xl border-2" style={{borderColor: hubSel === i ? grp.c : "transparent", boxShadow: hubSel===i ? `0 10px 26px ${grp.c}22` : undefined}}>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-3" style={{background:grp.tint,color:grp.c}}>{grp.icon}</div>
+              <h4 className="font-black text-lg text-gray-800 mb-1">{grp.title}</h4>
+              <p className="text-xs text-gray-500 leading-relaxed mb-4" style={{minHeight:36}}>{grp.desc}</p>
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-xl" style={{background:grp.tint,color:grp.c}}>عرض الأدوات ←</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      <DashboardHub navigate={navigate} />
-
-      {/* - روابط خارجية - */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* بطاقة ملف الأداء الوظيفي */}
-        <a href="https://fazeosama2020-crypto.github.io/school/ubaidah_school_v2.html"
-          target="_blank" rel="noreferrer"
-          className="flex items-center gap-4 rounded-2xl p-4 text-white shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all relative overflow-hidden"
-          style={{background:"linear-gradient(135deg,#0f2d55,#1a5276,#2471a3)"}}>
-          <div style={{position:"absolute",inset:0,background:"linear-gradient(120deg,transparent 35%,rgba(255,255,255,.08) 55%,transparent 80%)",pointerEvents:"none"}} />
-          <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 14px rgba(0,0,0,.25)"}}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <path d="M9.5 10.5l1 1 2-2" stroke="#4ade80" strokeWidth="1.8"/>
-            </svg>
-          </div>
-          <div className="relative flex-1">
-            <div style={{fontSize:14,fontWeight:900,fontFamily:"Cairo,sans-serif"}}>ملف الأداء الوظيفي</div>
-            <div style={{fontSize:10,opacity:.75,fontFamily:"Cairo,sans-serif",marginTop:3}}>رفع الشواهد · معايير الأداء · التقييم الذاتي</div>
-            <div className="flex gap-1.5 mt-2">
-              {["شواهد","أداء","تقييم"].map(t=><span key={t} style={{fontSize:9,background:"rgba(255,255,255,.15)",borderRadius:8,padding:"2px 7px",fontFamily:"Cairo,sans-serif",fontWeight:700}}>{t}</span>)}
-            </div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="2" strokeLinecap="round">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </a>
-
-        {/* بطاقة منصة الاختبارات */}
-        <a href="https://fazeosama2020-crypto.github.io/school/quiz.html"
-          target="_blank" rel="noreferrer"
-          className="flex items-center gap-4 rounded-2xl p-4 text-white shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all relative overflow-hidden"
-          style={{background:"linear-gradient(135deg,#4a1d96,#6d28d9,#7c3aed)"}}>
-          <div style={{position:"absolute",inset:0,background:"linear-gradient(120deg,transparent 35%,rgba(255,255,255,.08) 55%,transparent 80%)",pointerEvents:"none"}} />
-          <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 14px rgba(0,0,0,.25)"}}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-              <path d="M7 8h10M7 12h6" stroke="rgba(255,255,255,.6)"/>
-              <path d="M14 12l2 2 4-4" stroke="#a78bfa" strokeWidth="2"/>
-            </svg>
-          </div>
-          <div className="relative flex-1">
-            <div style={{fontSize:14,fontWeight:900,fontFamily:"Cairo,sans-serif"}}>منصة الاختبارات</div>
-            <div style={{fontSize:10,opacity:.75,fontFamily:"Cairo,sans-serif",marginTop:3}}>اختبارات إلكترونية · نتائج فورية · تقارير</div>
-            <div className="flex gap-1.5 mt-2">
-              {["اختبار","نتائج","تقارير"].map(t=><span key={t} style={{fontSize:9,background:"rgba(255,255,255,.15)",borderRadius:8,padding:"2px 7px",fontFamily:"Cairo,sans-serif",fontWeight:700}}>{t}</span>)}
-            </div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="2" strokeLinecap="round">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-        </a>
+      {/* ── المؤشرات + مهامي اليوم ── */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_300px] mb-4">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#e0f2fe"}}>👥</div><div><div className="text-2xl font-black">{totalStudents}</div><div className="text-xs text-gray-400">إجمالي الطلاب</div></div></div>
+          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#dcfce7"}}>✅</div><div><div className="text-2xl font-black" style={{color:"#059669"}}>{todayPresent}</div><div className="text-xs text-gray-400">حضور المعلمين · {attendRate}%</div></div></div>
+          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#fee2e2"}}>❌</div><div><div className="text-2xl font-black" style={{color:"#dc2626"}}>{todayAbsent}</div><div className="text-xs text-gray-400">غياب المعلمين</div></div></div>
+          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#fef3c7"}}>⏰</div><div><div className="text-2xl font-black" style={{color:"#d97706"}}>{todayLate}</div><div className="text-xs text-gray-400">تأخّر المعلمين</div></div></div>
+        </div>
+        <div className="bg-white rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">📋 مهامي اليوم</b></div>
+          {["متابعة طابور الصباح","مراجعة غياب الطلاب","الرد على الرسائل","متابعة تقارير المعلمين"].map((t,i)=>(
+            <label key={i} className="flex items-center gap-2 text-sm py-1.5 text-gray-600 cursor-pointer"><input type="checkbox" defaultChecked={i===0} style={{accentColor:"#0f6b4a",width:16,height:16}} />{t}</label>
+          ))}
+        </div>
       </div>
 
-      {/* رؤية المدرسة */}
-      <div className="rounded-2xl p-5 text-center shadow-sm" style={{background:"linear-gradient(135deg,#f0fdf4,#eff6ff)"}}>
-        <div className="text-2xl mb-2">🏫</div>
-        <h3 className="font-black text-gray-700 mb-1 text-sm">رؤية المدرسة</h3>
-        <p className="text-xs text-gray-500 leading-relaxed max-w-lg mx-auto">
-          بيئة تعليمية متكاملة تُعلي من قيم الانتماء والإبداع، وتُهيئ منظومة تعليمية رائدة تُخرج مواطناً صالحاً مُتسلحاً بالعلم والمعرفة.
-        </p>
+      {/* ── الإعلانات + أخر العمليات + روابط سريعة ── */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="bg-white rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">📢 أحدث الإعلانات</b><span onClick={()=>navigate("announcements")} className="text-xs text-blue-600 cursor-pointer">عرض الكل</span></div>
+          {recentAnn.length ? recentAnn.map((a,i)=>(<div key={i} className="flex items-center gap-2 text-sm py-2 border-b border-gray-100 last:border-0 text-gray-700"><span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:["#ef4444","#f59e0b","#3b82f6"][i%3]}}></span>{a.title}</div>)) : <div className="text-xs text-gray-400 py-3">لا توجد إعلانات</div>}
+        </div>
+        <div className="bg-white rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">🕐 أخر العمليات</b></div>
+          {recentOps.length ? recentOps.map((o,i)=>(<div key={i} className="flex items-center gap-2 text-xs py-2 border-b border-gray-100 last:border-0 text-gray-600"><span>{o.icon}</span><span className="flex-1 truncate">{o.text}</span>{o.date && <span className="text-gray-400 flex-shrink-0" style={{fontFamily:"monospace"}}>{o.date}</span>}</div>)) : <div className="text-xs text-gray-400 py-3">لا توجد عمليات حديثة</div>}
+        </div>
+        <div className="bg-white rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">⚡ روابط سريعة</b></div>
+          <div className="grid grid-cols-2 gap-2">
+            {[["جدول الحصص","📅","timetable"],["كشف الحضور","🧾","dailyattend"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
+              <button key={id} onClick={()=>navigate(id)} className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 flex items-center gap-2 text-xs font-bold text-gray-700 hover:bg-teal-50 hover:border-teal-200 transition">{ic} {l}</button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -29164,6 +29010,7 @@ export default function SchoolWebsite() {
           </div>
 
           {/* - صف ثانٍ: أزرار التنقل (desktop) - */}
+          {page !== "home" && (
           <div className="hidden lg:block py-2 space-y-2">
             <button onClick={() => { navigate("home"); setShowExtra(false); }} className={`nav-pill-main ${page === "home" ? "active" : ""}`}>
               <span className="nav-pill-icon">🏡</span>الرئيسية
@@ -29186,6 +29033,7 @@ export default function SchoolWebsite() {
               </div>
             ))}
           </div>
+          )}
 
           {/* - موبايل - */}
           {menuOpen && (
