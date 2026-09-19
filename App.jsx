@@ -1609,110 +1609,342 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
   );
 }
 
+// ===== لوحة الأقسام: بطاقات مصنّفة + لوحة أدوات جانبية =====
+const HUB_GROUPS = [
+  { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
+    tools:[{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
+  { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
+    tools:[{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
+  { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
+    tools:[{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
+  { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
+    tools:[{id:"announcements",label:"الإعلانات",icon:"📣"},{id:"messages",label:"رسائل الأهالي",icon:"💌"},{id:"sms",label:"رسائل SMS",icon:"📲"},{id:"broadcast",label:"الإذاعة المدرسية",icon:"🎙️"},{id:"suggestions",label:"آراء ومقترحات",icon:"💬"}] },
+  { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
+    tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
+  { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"timetable",label:"جدول الحصص",icon:"📅"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+];
+
+function DashboardHub({ navigate }) {
+  const [sel, setSel] = useState(2);
+  const g = HUB_GROUPS[sel];
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">🧭</span>
+        <h3 className="font-black text-gray-800 text-lg">الأقسام والأدوات</h3>
+        <div className="flex-1 h-px bg-gray-200"></div>
+        <span className="text-xs text-gray-400 font-bold">اضغط أي قسم لعرض أدواته</span>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+        {/* ── لوحة الأدوات (يمين) ── */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden self-start order-2 lg:order-1 border border-gray-100">
+          <div className="p-4 text-white flex items-center gap-3" style={{background:`linear-gradient(120deg,${g.c},${g.c}cc)`}}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl" style={{background:"rgba(255,255,255,.25)"}}>{g.icon}</div>
+            <div><h3 className="font-black text-lg">{g.title}</h3><p className="text-xs opacity-90">{g.tools.length} أداة</p></div>
+          </div>
+          <div className="p-2 max-h-[460px] overflow-y-auto">
+            {g.tools.map(t => (
+              <button key={t.id} onClick={() => navigate(t.id)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all hover:brightness-95 text-right"
+                style={{background:g.tint+"66"}}>
+                <span className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{background:g.tint,color:g.c}}>{t.icon}</span>
+                <span className="text-sm font-bold text-gray-700">{t.label}</span>
+                <span className="mr-auto text-gray-300 text-sm">←</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* ── البطاقات الست (وسط) ── */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 order-1 lg:order-2">
+          {HUB_GROUPS.map((grp, i) => (
+            <button key={i} onClick={() => setSel(i)}
+              className="text-right bg-white rounded-2xl p-5 transition-all hover:-translate-y-1 hover:shadow-xl border-2"
+              style={{borderColor: sel === i ? grp.c : "transparent", boxShadow: sel===i ? `0 10px 26px ${grp.c}22` : undefined}}>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-3" style={{background:grp.tint,color:grp.c}}>{grp.icon}</div>
+              <h4 className="font-black text-lg text-gray-800 mb-1">{grp.title}</h4>
+              <p className="text-xs text-gray-500 leading-relaxed mb-4" style={{minHeight:36}}>{grp.desc}</p>
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-xl" style={{background:grp.tint,color:grp.c}}>عرض الأدوات ←</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HomePage({ teachers, announcements, activities, navigate, attendance, week, messages, classList, weekArchive }) {
-  const [openGroup, setOpenGroup] = useState(null);
-  const [toolSearch, setToolSearch] = useState("");
   const today = new Date();
   const todayStr = today.toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
   const jsDay = today.getDay();
   const todayDi = jsDay <= 4 ? jsDay : 0;
   const todayAbsent  = teachers.filter((_,ti) => (attendance[ti]?.[todayDi]?.status || "حاضر") === "غائب").length;
   const todayLate    = teachers.filter((_,ti) => (attendance[ti]?.[todayDi]?.status || "حاضر") === "متأخر").length;
-  const todayPresent = Math.max(0, teachers.length - todayAbsent - todayLate);
-  const attendRate   = teachers.length ? Math.round((todayPresent / teachers.length) * 100) : 100;
-  const totalStudents = classList.reduce((s,c) => s + (c.students || []).filter(st=>st.name).length, 0);
-  const unreadMsgs = messages.filter(m => !m.read).length;
-
-  const groups = [
-    { title:"الحضور والدوام", subtitle:"الحضور والغياب والتقارير اليومية", icon:"🗓️", color:"#0f766e", soft:"#ecfdf5", glow:"rgba(15,118,110,.22)", tools:[
-      ["attendance","الحضور اليومي","📅"],["admin-attendance","دوام الإداريين","🏛️"],["dailyattend","كشف الحضور اليومي","🧾"],["attendancereport","تحليل الحضور","🗂️"],["student-absence","غياب الطلاب","🎒"],["studentexcuses","أعذار الطلاب","📄"],["absencestats","إحصائيات الغياب","📉"] ]},
-    { title:"الطلاب", subtitle:"التقييم والتحليل والخطط العلاجية", icon:"🎓", color:"#1d4ed8", soft:"#eff6ff", glow:"rgba(29,78,216,.20)", tools:[
-      ["students","تقييم الطلاب","🎓"],["gradeanalysis","تحليل درجات الطلاب","📈"],["assessment","بطاقة التشخيص","🔍"],["lessonrecommend","الخطط العلاجية","🩺"],["quiz","اختبارات الطلاب","📝"],["dailyquiz","الاختبار اليومي","🎯"],["honorboard","لوحة الشرف","🌟"],["certificates","الشهادات الرقمية","🏅"],["raffle","سحب الطلاب","🎰"],["luckywheel","عجلة الحظ","🎡"] ]},
-    { title:"المعلمون", subtitle:"الأداء والتطوير والأدوات الذكية", icon:"👨‍🏫", color:"#6d28d9", soft:"#f5f3ff", glow:"rgba(109,40,217,.20)", tools:[
-      ["teacherperfeval","استمارة أداء المعلم","📋"],["perfresults","تقويم الأداء","📈"],["teachereval","قياس أداء المعلم","🎖️"],["poll","تميّز المعلم","🏆"],["teacherreports","ملفات المعلمين","🗄️"],["prolicense","الرخصة المهنية","🏅"],["aiteacher","مساعد المعلم الذكي","🤖"],["lessonprep","تحضير الدرس الذكي","✏️"],["strategies","الاستراتيجيات","🧠"] ]},
-    { title:"التواصل والإعلام", subtitle:"الإعلانات والرسائل والإذاعة", icon:"📣", color:"#be185d", soft:"#fdf2f8", glow:"rgba(190,24,93,.18)", tools:[
-      ["announcements","الإعلانات","📣"],["messages","رسائل الأهالي","💌"],["sms","رسائل SMS","📲"],["broadcast","الإذاعة المدرسية","🎙️"],["suggestions","آراء ومقترحات","💬"] ]},
-    { title:"الأنشطة والفعاليات", subtitle:"الفعاليات والاجتماعات واللجان", icon:"🎉", color:"#b45309", soft:"#fffbeb", glow:"rgba(180,83,9,.18)", tools:[
-      ["activities","الأنشطة","🎯"],["gallery","معرض الأنشطة","🖼️"],["meetings","الاجتماعات","🤝"],["committeemeeting","اجتماعات اللجان","👔"] ]},
-    { title:"التقارير والأدوات", subtitle:"التقارير والقياس والنماذج والإعدادات", icon:"📊", color:"#334155", soft:"#f8fafc", glow:"rgba(51,65,85,.16)", tools:[
-      ["monthlyreport","التقرير الشهري","📑"],["report","تقرير برنامج","📋"],["qiyas","قياس الأثر","📏"],["surveys","الاستبيانات","📊"],["officialforms","النماذج الرسمية","📃"],["timetable","جدول الحصص","📅"],["settings","الإعدادات","⚙️"] ]},
-  ];
-
-  const allTools = groups.flatMap(g => g.tools.map(t => ({...g, tool:t})));
-  const searchResults = toolSearch.trim() ? allTools.filter(x => x.tool[1].includes(toolSearch.trim()) || x.title.includes(toolSearch.trim())).slice(0,10) : [];
-  const go = id => { setOpenGroup(null); setToolSearch(""); navigate(id); };
+  const todayPresent = teachers.length - todayAbsent - todayLate;
+  const attendRate   = teachers.length > 0 ? Math.round((todayPresent / teachers.length) * 100) : 100;
+  const totalStudents = classList.reduce((s,c) => s + c.students.filter(st=>st.name).length, 0);
+  const unreadMsgs  = messages.filter(m => !m.read && m.type !== "teacher_note").length;
+  const unreadNotes = messages.filter(m => !m.read && m.type === "teacher_note").length;
+  const recentAnn   = [...announcements].slice(0,3);
+  const upcomingAct = activities.filter(a => a.status === "قادم").slice(0,3);
+  const weekStats = (() => {
+    let total=0, present=0;
+    week.days.forEach((_,di) => { teachers.forEach((_,ti) => { const st=attendance[ti]?.[di]?.status||"حاضر"; total++; if(st==="حاضر") present++; }); });
+    return total > 0 ? Math.round(present/total*100) : 100;
+  })();
+  const mostAbsent = teachers.map((name,ti) => ({ name, count: week.days.filter((_,di) => (attendance[ti]?.[di]?.status||"حاضر")==="غائب").length })).filter(t=>t.count>0).sort((a,b)=>b.count-a.count).slice(0,3);
+  const kpiColor = (v,good,warn) => v>=good?"#22c55e":v>=warn?"#f59e0b":"#ef4444";
+  const kpiBg   = (v,good,warn) => v>=good?"#dcfce7":v>=warn?"#fef3c7":"#fee2e2";
 
   return (
-    <div dir="rtl" className="lux-home">
-      <style>{`
-        .lux-home{font-family:'Cairo',sans-serif;min-height:100%;padding:18px;background:linear-gradient(145deg,#f8fafc 0%,#f0fdfa 48%,#fff 100%);position:relative;overflow:hidden}
-        .lux-hero{background:linear-gradient(125deg,#082f2a,#0f5d50 52%,#123c35);border-radius:30px;padding:28px 30px;color:#fff;position:relative;overflow:hidden;box-shadow:0 22px 55px rgba(15,76,67,.20)}
-        .lux-hero:before{content:'';position:absolute;width:430px;height:430px;border-radius:50%;left:-130px;top:-250px;background:radial-gradient(circle,rgba(212,175,55,.30),transparent 68%)}
-        .lux-hero:after{content:'';position:absolute;width:330px;height:330px;border-radius:50%;right:-150px;bottom:-250px;background:radial-gradient(circle,rgba(45,212,191,.24),transparent 68%)}
-        .lux-search{background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.8);box-shadow:0 12px 30px rgba(0,0,0,.12);border-radius:17px;color:#0f172a;outline:none;width:100%;padding:13px 48px 13px 16px;font-weight:700}
-        .lux-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin-top:18px}
-        .lux-card{background:#fff;border:1px solid rgba(226,232,240,.9);border-radius:24px;padding:20px;text-align:right;cursor:pointer;transition:.25s ease;position:relative;overflow:hidden;min-height:158px}
-        .lux-card:hover{transform:translateY(-5px);box-shadow:0 20px 42px var(--glow);border-color:var(--color)}
-        .lux-card:before{content:'';position:absolute;width:120px;height:120px;border-radius:50%;left:-50px;top:-55px;background:var(--soft);transition:.25s}
-        .lux-card:hover:before{transform:scale(1.25)}
-        .lux-icon{width:54px;height:54px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:27px;background:var(--soft);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8)}
-        .lux-mini{background:#fff;border:1px solid #e8eef2;border-radius:20px;padding:16px;box-shadow:0 7px 22px rgba(15,23,42,.05)}
-        .lux-drawer-bg{position:fixed;inset:0;background:rgba(2,6,23,.38);backdrop-filter:blur(3px);z-index:9998;animation:luxFade .18s ease}
-        .lux-drawer{position:fixed;left:0;top:0;bottom:0;width:min(430px,92vw);background:#fff;z-index:9999;box-shadow:18px 0 60px rgba(2,6,23,.25);padding:22px;overflow:auto;animation:luxSlide .28s ease}
-        .lux-tool{width:100%;display:flex;align-items:center;gap:12px;text-align:right;padding:12px;border-radius:15px;border:1px solid #edf2f7;background:#fff;transition:.18s;cursor:pointer}
-        .lux-tool:hover{background:var(--soft);border-color:var(--color);transform:translateX(3px)}
-        @keyframes luxSlide{from{transform:translateX(-105%)}to{transform:translateX(0)}} @keyframes luxFade{from{opacity:0}to{opacity:1}}
-        @media(max-width:900px){.lux-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lux-hero{padding:22px}}
-        @media(max-width:560px){.lux-grid{grid-template-columns:1fr}.lux-home{padding:10px}.lux-card{min-height:135px}}
-      `}</style>
-
-      <section className="lux-hero">
-        <div style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",justifyContent:"space-between",gap:20,flexWrap:"wrap"}}>
-          <div style={{display:"flex",alignItems:"center",gap:15}}>
-            <SchoolLogo size="md" animate={false}/>
-            <div><div style={{fontSize:22,fontWeight:900}}>لوحة القيادة الذكية <span style={{fontSize:10,background:"#d4af37",color:"#082f2a",padding:"4px 8px",borderRadius:99,verticalAlign:"middle"}}>الإصدار الجديد</span></div><div style={{opacity:.76,fontSize:12,marginTop:3}}>مدرسة الأمير عبدالمجيد المتوسطة الأولى · {todayStr}</div></div>
+    <div>
+      {/* - الترويسة الأصلية - */}
+      <div className="bg-gradient-to-l from-teal-600 via-teal-700 to-emerald-800 p-8 mb-4 text-white text-center shadow-xl" style={{overflow:"hidden",position:"relative"}}>
+        <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 50% 0%,rgba(212,175,55,.15) 0%,transparent 60%)",pointerEvents:"none"}} />
+        <div className="flex justify-center mb-4 relative z-10">
+          <SchoolLogo size="xl" animate={true} />
+        </div>
+        <h1 className="text-xl font-black relative z-10 mt-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+        <p className="opacity-80 text-base relative z-10 mt-1">بوابة الإدارة المدرسية الإلكترونية</p>
+        <p className="opacity-60 text-sm mt-1 relative z-10">{todayStr}</p>
+        {/* شريط حضور اليوم */}
+        <div className="flex items-center justify-center gap-6 mt-4 relative z-10">
+          <div className="text-center bg-white bg-opacity-15 rounded-2xl px-5 py-2">
+            <div className="text-2xl font-black">{attendRate}%</div>
+            <div className="text-xs opacity-70">حضور اليوم</div>
           </div>
-          <div style={{display:"flex",gap:9,flexWrap:"wrap"}}>
-            <span style={{background:"rgba(255,255,255,.11)",border:"1px solid rgba(255,255,255,.16)",padding:"8px 13px",borderRadius:13,fontSize:11,fontWeight:800}}>👨‍🏫 {teachers.length} معلماً</span>
-            <span style={{background:"rgba(255,255,255,.11)",border:"1px solid rgba(255,255,255,.16)",padding:"8px 13px",borderRadius:13,fontSize:11,fontWeight:800}}>🎓 {totalStudents} طالباً</span>
+          <div className="w-px h-10 bg-white bg-opacity-30"/>
+          <div className="text-center bg-white bg-opacity-15 rounded-2xl px-5 py-2">
+            <div className="text-2xl font-black">{weekStats}%</div>
+            <div className="text-xs opacity-70">حضور الأسبوع</div>
           </div>
         </div>
-        <div style={{position:"relative",zIndex:5,maxWidth:720,margin:"22px auto 0"}}>
-          <span style={{position:"absolute",right:17,top:11,fontSize:20}}>⌕</span>
-          <input className="lux-search" value={toolSearch} onChange={e=>setToolSearch(e.target.value)} placeholder="ابحث عن أداة... مثال: غياب، تقويم، تقرير" />
-          {searchResults.length>0 && <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,left:0,background:"#fff",borderRadius:18,padding:8,boxShadow:"0 18px 45px rgba(0,0,0,.2)",color:"#111827",zIndex:20}}>
-            {searchResults.map(x=><button key={x.tool[0]} onClick={()=>go(x.tool[0])} style={{width:"100%",border:0,background:"transparent",padding:"10px 12px",borderRadius:12,cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:"inherit",textAlign:"right"}} onMouseEnter={e=>e.currentTarget.style.background=x.soft} onMouseLeave={e=>e.currentTarget.style.background="transparent"}><span style={{fontSize:20}}>{x.tool[2]}</span><span style={{fontWeight:800,flex:1}}>{x.tool[1]}</span><span style={{fontSize:10,color:"#94a3b8"}}>{x.title}</span></button>)}
-          </div>}
+        {/* شريط تقدم */}
+        <div className="h-1.5 flex mt-4 rounded-full overflow-hidden relative z-10">
+          <div style={{width:attendRate+"%",background:"#22c55e"}}/>
+          <div style={{width:(todayLate/Math.max(teachers.length,1)*100)+"%",background:"#f59e0b"}}/>
+          <div style={{width:(todayAbsent/Math.max(teachers.length,1)*100)+"%",background:"#ef4444"}}/>
         </div>
-      </section>
-
-      <div className="lux-grid">
-        {groups.map((g,i)=><button key={g.title} className="lux-card" onClick={()=>setOpenGroup(g)} style={{"--color":g.color,"--soft":g.soft,"--glow":g.glow,fontFamily:"inherit"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",position:"relative",zIndex:2}}><div className="lux-icon">{g.icon}</div><span style={{fontSize:11,fontWeight:900,color:g.color,background:g.soft,padding:"5px 9px",borderRadius:99}}>{g.tools.length} أدوات</span></div>
-          <div style={{fontSize:17,fontWeight:900,color:"#172033",marginTop:15,position:"relative",zIndex:2}}>{g.title}</div>
-          <div style={{fontSize:11,color:"#7b8798",marginTop:5,position:"relative",zIndex:2}}>{g.subtitle}</div>
-          <div style={{display:"flex",alignItems:"center",gap:5,color:g.color,fontSize:11,fontWeight:900,marginTop:13}}>فتح القسم <span style={{fontSize:16}}>←</span></div>
-        </button>)}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12,marginTop:16}}>
-        <button className="lux-mini" onClick={()=>navigate("attendance")} style={{fontFamily:"inherit",cursor:"pointer",textAlign:"right"}}><div style={{fontSize:11,color:"#64748b",fontWeight:800}}>حضور المعلمين اليوم</div><div style={{display:"flex",alignItems:"end",justifyContent:"space-between",marginTop:7}}><strong style={{fontSize:28,color:"#0f766e"}}>{attendRate}%</strong><span style={{fontSize:11,color:"#16a34a",fontWeight:800}}>{todayPresent} حاضر</span></div></button>
-        <button className="lux-mini" onClick={()=>navigate("attendance")} style={{fontFamily:"inherit",cursor:"pointer",textAlign:"right"}}><div style={{fontSize:11,color:"#64748b",fontWeight:800}}>متابعة اليوم</div><div style={{display:"flex",gap:18,marginTop:9}}><span><b style={{fontSize:22,color:"#dc2626"}}>{todayAbsent}</b><small style={{display:"block",color:"#94a3b8"}}>غائب</small></span><span><b style={{fontSize:22,color:"#d97706"}}>{todayLate}</b><small style={{display:"block",color:"#94a3b8"}}>متأخر</small></span></div></button>
-        <button className="lux-mini" onClick={()=>navigate("messages")} style={{fontFamily:"inherit",cursor:"pointer",textAlign:"right"}}><div style={{fontSize:11,color:"#64748b",fontWeight:800}}>مركز التواصل</div><div style={{fontSize:28,fontWeight:900,color:"#be185d",marginTop:7}}>{unreadMsgs}</div><div style={{fontSize:10,color:"#94a3b8"}}>رسائل تحتاج الاطلاع</div></button>
-        <button className="lux-mini" onClick={()=>navigate("announcements")} style={{fontFamily:"inherit",cursor:"pointer",textAlign:"right"}}><div style={{fontSize:11,color:"#64748b",fontWeight:800}}>آخر المستجدات</div><div style={{fontSize:15,fontWeight:900,color:"#334155",marginTop:10,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{announcements[0]?.title || "لا توجد إعلانات جديدة"}</div></button>
+      {/* - بطاقات KPI - */}
+      <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
+        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
+          style={{background:kpiBg(attendRate,90,75)}} onClick={()=>navigate("attendance")}>
+          <div className="text-3xl mb-1">✅</div>
+          <div className="text-3xl font-black" style={{color:kpiColor(attendRate,90,75)}}>{todayPresent}</div>
+          <div className="text-xs font-bold mt-1 opacity-80" style={{color:kpiColor(attendRate,90,75)}}>حاضر اليوم</div>
+          <div className="text-xs opacity-60" style={{color:kpiColor(attendRate,90,75)}}>{teachers.length} معلم</div>
+        </div>
+        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
+          style={{background:todayAbsent===0?"#dcfce7":"#fee2e2"}} onClick={()=>navigate("attendance")}>
+          <div className="text-3xl mb-1">❌</div>
+          <div className="text-3xl font-black" style={{color:todayAbsent===0?"#16a34a":"#dc2626"}}>{todayAbsent}</div>
+          <div className="text-xs font-bold mt-1 opacity-80" style={{color:todayAbsent===0?"#16a34a":"#dc2626"}}>غائب اليوم</div>
+          <div className="text-xs opacity-60" style={{color:todayAbsent===0?"#16a34a":"#dc2626"}}>{todayAbsent>0?"يحتاج متابعة":"ممتاز"}</div>
+        </div>
+        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
+          style={{background:todayLate===0?"#dcfce7":"#fef3c7"}} onClick={()=>navigate("attendance")}>
+          <div className="text-3xl mb-1">⚠️</div>
+          <div className="text-3xl font-black" style={{color:todayLate===0?"#16a34a":"#b45309"}}>{todayLate}</div>
+          <div className="text-xs font-bold mt-1 opacity-80" style={{color:todayLate===0?"#16a34a":"#b45309"}}>متأخر اليوم</div>
+          <div className="text-xs opacity-60" style={{color:todayLate===0?"#16a34a":"#b45309"}}>{todayLate>0?"تأخر صباحي":"لا تأخر"}</div>
+        </div>
+        <div className="rounded-2xl p-4 text-center cursor-pointer hover:scale-105 transition-transform shadow-sm"
+          style={{background:"#eff6ff"}} onClick={()=>navigate("students")}>
+          <div className="text-3xl mb-1">👨‍🎓</div>
+          <div className="text-3xl font-black" style={{color:"#1d4ed8"}}>{totalStudents}</div>
+          <div className="text-xs font-bold mt-1 opacity-80" style={{color:"#1d4ed8"}}>الطلاب</div>
+          <div className="text-xs opacity-60" style={{color:"#1d4ed8"}}>{classList.length} فصل</div>
+        </div>
       </div>
 
-      {openGroup && <><div className="lux-drawer-bg" onClick={()=>setOpenGroup(null)}/><aside className="lux-drawer" style={{"--color":openGroup.color,"--soft":openGroup.soft}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingBottom:18,borderBottom:"1px solid #eef2f7"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}><div className="lux-icon" style={{background:openGroup.soft}}>{openGroup.icon}</div><div><div style={{fontSize:19,fontWeight:900,color:"#172033"}}>{openGroup.title}</div><div style={{fontSize:11,color:"#94a3b8",marginTop:2}}>{openGroup.subtitle}</div></div></div>
-          <button onClick={()=>setOpenGroup(null)} style={{width:36,height:36,borderRadius:12,border:"1px solid #e5e7eb",background:"#f8fafc",cursor:"pointer",fontSize:18}}>×</button>
+      {/* - تنبيهات + إعلانات + أنشطة - */}
+      <div className="grid gap-4 sm:grid-cols-3 mb-6">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <h3 className="font-black text-gray-800 mb-3 flex items-center gap-2 text-sm">
+            🔔 التنبيهات
+            {(unreadMsgs+unreadNotes)>0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">{unreadMsgs+unreadNotes}</span>}
+          </h3>
+          <div className="space-y-2">
+            {todayAbsent>0 && <div className="flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("attendance")}><span className="text-red-500">❌</span><span className="text-xs font-bold text-red-700">{todayAbsent} معلم غائب اليوم</span></div>}
+            {todayLate>0  && <div className="flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("attendance")}><span className="text-amber-500">⚠️</span><span className="text-xs font-bold text-amber-700">{todayLate} معلم متأخر اليوم</span></div>}
+            {unreadMsgs>0 && <div className="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("messages")}><span className="text-blue-500">✉️</span><span className="text-xs font-bold text-blue-700">{unreadMsgs} رسالة غير مقروءة</span></div>}
+            {unreadNotes>0&& <div className="flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate("messages")}><span>📨</span><span className="text-xs font-bold text-amber-700">{unreadNotes} ملاحظة بلا رد</span></div>}
+            {todayAbsent===0&&todayLate===0&&unreadMsgs===0&&unreadNotes===0 && <div className="text-center py-3"><div className="text-2xl mb-1">🎉</div><div className="text-xs text-gray-400 font-bold">لا توجد تنبيهات</div></div>}
+            <div className="flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2 cursor-pointer" onClick={()=>navigate()}>
+              <span className="text-red-500">🚨</span><span className="text-xs font-bold text-red-700">مراقبة الطلاب المعرضين للتعثر</span>
+            </div>
+          </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",margin:"18px 2px 10px"}}><b style={{fontSize:12,color:"#475569"}}>أدوات القسم</b><span style={{fontSize:10,color:openGroup.color,fontWeight:900,background:openGroup.soft,padding:"4px 8px",borderRadius:99}}>{openGroup.tools.length} أدوات</span></div>
-        <div style={{display:"grid",gap:8}}>{openGroup.tools.map(t=><button key={t[0]} className="lux-tool" onClick={()=>go(t[0])}><span style={{width:42,height:42,borderRadius:13,display:"flex",alignItems:"center",justifyContent:"center",fontSize:21,background:openGroup.soft}}>{t[2]}</span><span style={{fontWeight:800,color:"#334155",fontFamily:"Cairo,sans-serif",flex:1}}>{t[1]}</span><span style={{color:openGroup.color,fontSize:17}}>←</span></button>)}</div>
-      </aside></>}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <h3 className="font-black text-gray-800 mb-3 flex items-center justify-between text-sm">
+            <span>📢 آخر الإعلانات</span>
+            <button onClick={()=>navigate("announcements")} className="text-xs text-teal-600 font-bold">الكل</button>
+          </h3>
+          {recentAnn.length===0 ? <div className="text-center py-4 text-xs text-gray-400">لا توجد إعلانات</div> :
+            <div className="space-y-2">{recentAnn.map(a=>(
+              <div key={a.id} className="flex items-start gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                <span className="text-lg flex-shrink-0">{a.emoji||"📢"}</span>
+                <div className="flex-1 min-w-0"><div className="text-xs font-black text-gray-800 truncate">{a.title}</div><div className="text-xs text-gray-400 mt-0.5">{a.date}</div></div>
+              </div>))}
+            </div>}
+        </div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <h3 className="font-black text-gray-800 mb-3 flex items-center justify-between text-sm">
+            <span>📅 الأنشطة القادمة</span>
+            <button onClick={()=>navigate("activities")} className="text-xs text-teal-600 font-bold">الكل</button>
+          </h3>
+          {upcomingAct.length===0 ? <div className="text-center py-4 text-xs text-gray-400">لا توجد أنشطة قادمة</div> :
+            <div className="space-y-2">{upcomingAct.map(a=>(
+              <div key={a.id} className="flex items-start gap-2 bg-teal-50 rounded-xl px-3 py-2">
+                <span className="text-lg flex-shrink-0">{a.image||"⚡"}</span>
+                <div className="flex-1 min-w-0"><div className="text-xs font-black text-gray-800 truncate">{a.title}</div><div className="text-xs text-teal-600 mt-0.5 font-bold">{a.dateH}</div></div>
+              </div>))}
+            </div>}
+        </div>
+      </div>
+
+      {/* - رؤية المدرسة ورسالتها (مُعادة) - */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-black text-teal-900 mb-1">رؤيتنا ورسالتنا</h3>
+          <div className="w-16 h-1 bg-teal-500 rounded-full mx-auto"></div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="bg-gradient-to-b from-teal-50 to-white rounded-2xl p-5 text-center border border-teal-100">
+            <div className="text-3xl mb-3">🔭</div>
+            <h4 className="font-black text-teal-800 mb-2">الرؤية</h4>
+            <p className="text-sm text-gray-600 leading-relaxed">بيئة تعليمية محفّزة تصنع جيلاً واعياً ومبدعاً قادراً على بناء مستقبل وطنه.</p>
+          </div>
+          <div className="bg-gradient-to-b from-emerald-50 to-white rounded-2xl p-5 text-center border border-emerald-100">
+            <div className="text-3xl mb-3">🎯</div>
+            <h4 className="font-black text-emerald-800 mb-2">الرسالة</h4>
+            <p className="text-sm text-gray-600 leading-relaxed">تقديم تعليم نوعي يُراعي الفروق الفردية في شراكة فاعلة بين المدرسة والأسرة.</p>
+          </div>
+          <div className="bg-gradient-to-b from-green-50 to-white rounded-2xl p-5 text-center border border-green-100">
+            <div className="text-3xl mb-3">⭐</div>
+            <h4 className="font-black text-green-800 mb-2">أهدافنا</h4>
+            <p className="text-sm text-gray-600 leading-relaxed">تعزيز القيم الإسلامية ورفع التحصيل الدراسي وتطوير مهارات المعلمين.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* - الغياب هذا الأسبوع - */}
+      {mostAbsent.length>0 && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-100 mb-6">
+          <h3 className="font-black text-gray-800 mb-3 text-sm flex items-center gap-2">
+            ⚠️ الأكثر غياباً هذا الأسبوع
+            <button onClick={()=>navigate("absencestats")} className="text-xs text-red-500 font-bold hover:underline mr-auto">تحليل كامل</button>
+          </h3>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {mostAbsent.map(t=>(
+              <div key={t.name} className="flex items-center justify-between bg-red-50 rounded-xl px-4 py-3">
+                <span className="text-sm font-bold text-gray-800 truncate">{t.name}</span>
+                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold flex-shrink-0 mr-2">{t.count} أيام</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* - الأسبوع الحالي - */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+        <h3 className="font-black text-gray-800 mb-3 text-sm">📊 حضور الأسبوع الحالي</h3>
+        <div className="grid grid-cols-5 gap-2">
+          {week.days.map((day,di)=>{
+            const abs=teachers.filter((_,ti)=>(attendance[ti]?.[di]?.status||"حاضر")==="غائب").length;
+            const late=teachers.filter((_,ti)=>(attendance[ti]?.[di]?.status||"حاضر")==="متأخر").length;
+            const rate=teachers.length>0?Math.round(((teachers.length-abs)/teachers.length)*100):100;
+            const col=rate>=95?"#22c55e":rate>=85?"#f59e0b":"#ef4444";
+            return(
+              <div key={di} className="rounded-xl p-2 text-center border cursor-pointer hover:shadow-md transition-all"
+                style={{borderColor:col+"44",background:col+"11"}} onClick={()=>navigate("attendance")}>
+                <div className="text-xs font-black text-gray-700">{day.name}</div>
+                <div className="text-xs text-amber-600 font-bold">🌙 {day.dateH}</div>
+                <div className="text-lg font-black mt-1" style={{color:col}}>{rate}%</div>
+                {abs>0&&<div className="text-xs text-red-500 font-bold">{abs}غ</div>}
+                {late>0&&<div className="text-xs text-amber-500 font-bold">{late}ت</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <DashboardHub navigate={navigate} />
+
+      {/* - روابط خارجية - */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* بطاقة ملف الأداء الوظيفي */}
+        <a href="https://fazeosama2020-crypto.github.io/school/ubaidah_school_v2.html"
+          target="_blank" rel="noreferrer"
+          className="flex items-center gap-4 rounded-2xl p-4 text-white shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all relative overflow-hidden"
+          style={{background:"linear-gradient(135deg,#0f2d55,#1a5276,#2471a3)"}}>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(120deg,transparent 35%,rgba(255,255,255,.08) 55%,transparent 80%)",pointerEvents:"none"}} />
+          <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 14px rgba(0,0,0,.25)"}}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <path d="M9.5 10.5l1 1 2-2" stroke="#4ade80" strokeWidth="1.8"/>
+            </svg>
+          </div>
+          <div className="relative flex-1">
+            <div style={{fontSize:14,fontWeight:900,fontFamily:"Cairo,sans-serif"}}>ملف الأداء الوظيفي</div>
+            <div style={{fontSize:10,opacity:.75,fontFamily:"Cairo,sans-serif",marginTop:3}}>رفع الشواهد · معايير الأداء · التقييم الذاتي</div>
+            <div className="flex gap-1.5 mt-2">
+              {["شواهد","أداء","تقييم"].map(t=><span key={t} style={{fontSize:9,background:"rgba(255,255,255,.15)",borderRadius:8,padding:"2px 7px",fontFamily:"Cairo,sans-serif",fontWeight:700}}>{t}</span>)}
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+
+        {/* بطاقة منصة الاختبارات */}
+        <a href="https://fazeosama2020-crypto.github.io/school/quiz.html"
+          target="_blank" rel="noreferrer"
+          className="flex items-center gap-4 rounded-2xl p-4 text-white shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all relative overflow-hidden"
+          style={{background:"linear-gradient(135deg,#4a1d96,#6d28d9,#7c3aed)"}}>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(120deg,transparent 35%,rgba(255,255,255,.08) 55%,transparent 80%)",pointerEvents:"none"}} />
+          <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 14px rgba(0,0,0,.25)"}}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+              <path d="M7 8h10M7 12h6" stroke="rgba(255,255,255,.6)"/>
+              <path d="M14 12l2 2 4-4" stroke="#a78bfa" strokeWidth="2"/>
+            </svg>
+          </div>
+          <div className="relative flex-1">
+            <div style={{fontSize:14,fontWeight:900,fontFamily:"Cairo,sans-serif"}}>منصة الاختبارات</div>
+            <div style={{fontSize:10,opacity:.75,fontFamily:"Cairo,sans-serif",marginTop:3}}>اختبارات إلكترونية · نتائج فورية · تقارير</div>
+            <div className="flex gap-1.5 mt-2">
+              {["اختبار","نتائج","تقارير"].map(t=><span key={t} style={{fontSize:9,background:"rgba(255,255,255,.15)",borderRadius:8,padding:"2px 7px",fontFamily:"Cairo,sans-serif",fontWeight:700}}>{t}</span>)}
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      </div>
+
+      {/* رؤية المدرسة */}
+      <div className="rounded-2xl p-5 text-center shadow-sm" style={{background:"linear-gradient(135deg,#f0fdf4,#eff6ff)"}}>
+        <div className="text-2xl mb-2">🏫</div>
+        <h3 className="font-black text-gray-700 mb-1 text-sm">رؤية المدرسة</h3>
+        <p className="text-xs text-gray-500 leading-relaxed max-w-lg mx-auto">
+          بيئة تعليمية متكاملة تُعلي من قيم الانتماء والإبداع، وتُهيئ منظومة تعليمية رائدة تُخرج مواطناً صالحاً مُتسلحاً بالعلم والمعرفة.
+        </p>
+      </div>
     </div>
   );
 }
+
+
 
 function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, saveWeek, attendance, setAttendance, saveAttendance, navigate, weekArchive, setWeekArchive, saveWeekArchive }) {
   // ── حماية من الحفظ المبكر (قبل اكتمال تحميل Firebase) ──
@@ -28907,7 +29139,7 @@ export default function SchoolWebsite() {
             وضع الكمبيوتر — التخطيط الكامل
         ══════════════════════════════════════════ */
         <>
-      <nav className="bg-white shadow-lg sticky top-8 z-50 border-b border-teal-100" style={{fontFamily:"'Cairo', 'Noto Naskh Arabic', sans-serif", display: page === "home" ? "none" : undefined}}>
+      <nav className="bg-white shadow-lg sticky top-8 z-50 border-b border-teal-100" style={{fontFamily:"'Cairo', 'Noto Naskh Arabic', sans-serif"}}>
         <div className="w-full px-3">
 
           {/* - صف أول: الشعار + اسم المدرسة + بيانات المستخدم - */}
@@ -28931,31 +29163,29 @@ export default function SchoolWebsite() {
             </div>
           </div>
 
-          {/* في الرئيسية نعرض لوحة التحكم الحديثة فقط؛ وفي الصفحات الداخلية تظهر أدوات التنقل التقليدية */}
-          {page !== "home" && (
-            <div className="hidden lg:block py-2 space-y-2">
-              <button onClick={() => { navigate("home"); setShowExtra(false); }} className={`nav-pill-main ${page === "home" ? "active" : ""}`}>
-                <span className="nav-pill-icon">🏡</span>الرئيسية
-              </button>
-              {navGroups.map(g => (
-                <div key={g.title} className="rounded-2xl px-3 py-2" style={{ background:g.color+"0d", border:`1px solid ${g.color}22` }}>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-sm">{g.icon}</span>
-                    <span className="text-xs font-black" style={{color:g.color}}>{g.title}</span>
-                    <div className="flex-1 h-px" style={{background:g.color+"22"}}></div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
-                      <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }} className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
-                        <span className="nav-pill-icon">{p.icon}</span>
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
+          {/* - صف ثانٍ: أزرار التنقل (desktop) - */}
+          <div className="hidden lg:block py-2 space-y-2">
+            <button onClick={() => { navigate("home"); setShowExtra(false); }} className={`nav-pill-main ${page === "home" ? "active" : ""}`}>
+              <span className="nav-pill-icon">🏡</span>الرئيسية
+            </button>
+            {navGroups.map(g => (
+              <div key={g.title} className="rounded-2xl px-3 py-2" style={{ background:g.color+"0d", border:`1px solid ${g.color}22` }}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-sm">{g.icon}</span>
+                  <span className="text-xs font-black" style={{color:g.color}}>{g.title}</span>
+                  <div className="flex-1 h-px" style={{background:g.color+"22"}}></div>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
+                    <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }} className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
+                      <span className="nav-pill-icon">{p.icon}</span>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
 
           {/* - موبايل - */}
           {menuOpen && (
