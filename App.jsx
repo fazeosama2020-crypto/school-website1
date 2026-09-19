@@ -1625,54 +1625,6 @@ const HUB_GROUPS = [
     tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"timetable",label:"جدول الحصص",icon:"📅"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
-function DashboardHub({ navigate }) {
-  const [sel, setSel] = useState(2);
-  const g = HUB_GROUPS[sel];
-  return (
-    <div className="mb-5">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">🧭</span>
-        <h3 className="font-black text-gray-800 text-lg">الأقسام والأدوات</h3>
-        <div className="flex-1 h-px bg-gray-200"></div>
-        <span className="text-xs text-gray-400 font-bold">اضغط أي قسم لعرض أدواته</span>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-        {/* ── لوحة الأدوات (يمين) ── */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden self-start order-2 lg:order-1 border border-gray-100">
-          <div className="p-4 text-white flex items-center gap-3" style={{background:`linear-gradient(120deg,${g.c},${g.c}cc)`}}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl" style={{background:"rgba(255,255,255,.25)"}}>{g.icon}</div>
-            <div><h3 className="font-black text-lg">{g.title}</h3><p className="text-xs opacity-90">{g.tools.length} أداة</p></div>
-          </div>
-          <div className="p-2 max-h-[460px] overflow-y-auto">
-            {g.tools.map(t => (
-              <button key={t.id} onClick={() => navigate(t.id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all hover:brightness-95 text-right"
-                style={{background:g.tint+"66"}}>
-                <span className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{background:g.tint,color:g.c}}>{t.icon}</span>
-                <span className="text-sm font-bold text-gray-700">{t.label}</span>
-                <span className="mr-auto text-gray-300 text-sm">←</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        {/* ── البطاقات الست (وسط) ── */}
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 order-1 lg:order-2">
-          {HUB_GROUPS.map((grp, i) => (
-            <button key={i} onClick={() => setSel(i)}
-              className="text-right bg-white rounded-2xl p-5 transition-all hover:-translate-y-1 hover:shadow-xl border-2"
-              style={{borderColor: sel === i ? grp.c : "transparent", boxShadow: sel===i ? `0 10px 26px ${grp.c}22` : undefined}}>
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-3" style={{background:grp.tint,color:grp.c}}>{grp.icon}</div>
-              <h4 className="font-black text-lg text-gray-800 mb-1">{grp.title}</h4>
-              <p className="text-xs text-gray-500 leading-relaxed mb-4" style={{minHeight:36}}>{grp.desc}</p>
-              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-xl" style={{background:grp.tint,color:grp.c}}>عرض الأدوات ←</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function HomePage({ teachers, announcements, activities, navigate, attendance, week, messages, classList, weekArchive }) {
   const today = new Date();
   const todayStr = today.toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
@@ -1707,7 +1659,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
     <div className="pb-4">
       {/* ── الشعار الترحيبي ── */}
       <div className="relative overflow-hidden rounded-2xl mb-4 text-white shadow-xl" style={{background:"linear-gradient(115deg,#0b5138,#127a57 55%,#0b5138)"}}>
-        <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" style={{position:"absolute",left:0,top:0,bottom:0,width:"42%",opacity:.85,pointerEvents:"none"}}>
+        <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" style={{position:"absolute",right:0,top:0,bottom:0,width:"42%",opacity:.85,pointerEvents:"none"}}>
           <rect x="60" y="70" width="200" height="120" fill="#e9e2cf" opacity=".85"/>
           <polygon points="60,70 160,35 260,70" fill="#7c5c3a" opacity=".85"/>
           <rect x="150" y="120" width="26" height="70" fill="#5b3f26"/>
@@ -1716,9 +1668,9 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
           <g stroke="#2f7d32" strokeWidth="5" fill="none"><path d="M30 190 q6 -40 0 -70"/></g><ellipse cx="30" cy="112" rx="26" ry="12" fill="#2f7d32"/>
         </svg>
         <div className="relative z-10 flex items-center justify-between gap-4 p-6 flex-wrap">
-          <div className="bg-white/10 rounded-2xl p-3 text-xs leading-relaxed max-w-xs">"التعليم لا يغيّر العالم فقط، بل يصنع أجيالاً قادرة على تغييره"<br/><br/>مدرستنا .. بيئة آمنة · تعلّم ممتع · مستقبل واعد</div>
-          <div className="text-center flex-1 min-w-[200px]"><h2 className="text-2xl sm:text-3xl font-black">معاً .. نحو مدرسة متميزة</h2><p className="opacity-90 mt-1">بالعلم .. بالقيم .. نصنع المستقبل</p></div>
-          <div className="flex items-center gap-3"><div className="text-left text-sm font-extrabold leading-tight">مدرسة<br/>الأمير عبدالمجيد</div><SchoolLogo size="lg" /></div>
+          <div className="flex items-center gap-3 order-1"><SchoolLogo size="lg" /><div className="text-right text-sm font-extrabold leading-tight">مدرسة<br/>الأمير عبدالمجيد</div></div>
+          <div className="text-center flex-1 min-w-[200px] order-2"><h2 className="text-xl sm:text-2xl font-black">معاً .. نحو مدرسة متميزة</h2><p className="opacity-90 mt-1 text-sm">بالعلم .. بالقيم .. نصنع المستقبل</p></div>
+          <div className="bg-white/10 rounded-2xl p-3 text-xs leading-relaxed max-w-xs order-3">"التعليم لا يغيّر العالم فقط، بل يصنع أجيالاً قادرة على تغييره"<br/><br/>مدرستنا .. بيئة آمنة · تعلّم ممتع · مستقبل واعد</div>
         </div>
       </div>
 
@@ -1741,9 +1693,9 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         </div>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 order-1 lg:order-2">
           {HUB_GROUPS.map((grp, i) => (
-            <button key={i} onClick={() => setHubSel(i)} className="text-right bg-white rounded-2xl p-5 transition hover:-translate-y-1 hover:shadow-xl border-2" style={{borderColor: hubSel === i ? grp.c : "transparent", boxShadow: hubSel===i ? `0 10px 26px ${grp.c}22` : undefined}}>
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-3" style={{background:grp.tint,color:grp.c}}>{grp.icon}</div>
-              <h4 className="font-black text-lg text-gray-800 mb-1">{grp.title}</h4>
+            <button key={i} onClick={() => setHubSel(i)} className="text-right bg-white rounded-2xl p-6 transition hover:-translate-y-1 hover:shadow-xl border-2" style={{borderColor: hubSel === i ? grp.c : "transparent", boxShadow: hubSel===i ? `0 10px 26px ${grp.c}22` : undefined}}>
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4" style={{background:grp.tint,color:grp.c}}>{grp.icon}</div>
+              <h4 className="font-black text-xl text-gray-800 mb-1">{grp.title}</h4>
               <p className="text-xs text-gray-500 leading-relaxed mb-4" style={{minHeight:36}}>{grp.desc}</p>
               <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-xl" style={{background:grp.tint,color:grp.c}}>عرض الأدوات ←</span>
             </button>
