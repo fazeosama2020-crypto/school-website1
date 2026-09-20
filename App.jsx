@@ -28590,10 +28590,11 @@ export default function SchoolWebsite() {
         background: #ede9fe; border-color: #c4b5fd;
       }
       .nav-pill-icon { font-size: 16px; }
-      .annhtml { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-      .annhtml, .annhtml * { max-width:100% !important; box-sizing:border-box; overflow-wrap:break-word; word-break:break-word; }
+      .annhtml { overflow-x:hidden; max-width:100%; }
+      .annhtml, .annhtml * { max-width:100% !important; width:auto !important; min-width:0 !important; box-sizing:border-box !important; white-space:normal !important; overflow-wrap:anywhere !important; word-break:break-word !important; float:none !important; text-indent:0 !important; }
       .annhtml img, .annhtml video, .annhtml iframe { height:auto !important; }
-      .annhtml table { display:block; overflow-x:auto; }
+      .annhtml table { display:block !important; overflow-x:auto !important; width:100% !important; }
+      .annhtml td, .annhtml th { white-space:normal !important; }
     `}</style>
     <div dir="rtl" className="min-h-screen relative overflow-x-hidden" style={{ fontFamily: siteFont, background: "linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%)" }}>
 
