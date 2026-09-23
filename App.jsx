@@ -1835,6 +1835,13 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
   const kpiBg   = (v,good,warn) => v>=good?"#dcfce7":v>=warn?"#fef3c7":"#fee2e2";
 
   const [hubSel, setHubSel] = useState(2);
+  const [now, setNow] = useState(new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000 * 20); return () => clearInterval(t); }, []);
+  const clock = now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" });
+  const dayName = now.toLocaleDateString("ar-SA", { weekday: "long" });
+  const hijri = (() => { try { return now.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long", year: "numeric" }); } catch { return ""; } })();
+  const greg = now.toLocaleDateString("ar-EG-u-nu-arab", { day: "numeric", month: "long", year: "numeric" });
+  const hr = now.getHours(); const greet = hr < 12 ? "صباح الخير ☀️" : hr < 17 ? "طاب يومك 🌤️" : "مساء الخير 🌙";
   const hubG = HUB_GROUPS[hubSel];
   const recentOps = [
     ...(announcements||[]).slice(0,3).map(a=>({icon:"📣", text:"إعلان: "+(a.title||""), date:a.date||""})),
@@ -1843,20 +1850,72 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
   ].filter(o=>o.text && o.text.length>7).slice(0,6);
   return (
     <div className="pb-4">
-      {/* ── الشعار الترحيبي ── */}
-      <div className="relative overflow-hidden rounded-2xl mb-4 text-white shadow-xl" style={{background:"linear-gradient(115deg,#0b5138,#127a57 55%,#0b5138)"}}>
-        <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" style={{position:"absolute",right:0,top:0,bottom:0,width:"42%",opacity:.85,pointerEvents:"none"}}>
-          <rect x="60" y="70" width="200" height="120" fill="#e9e2cf" opacity=".85"/>
-          <polygon points="60,70 160,35 260,70" fill="#7c5c3a" opacity=".85"/>
-          <rect x="150" y="120" width="26" height="70" fill="#5b3f26"/>
-          <g fill="#8fd0f5" opacity=".9"><rect x="80" y="90" width="18" height="18"/><rect x="110" y="90" width="18" height="18"/><rect x="200" y="90" width="18" height="18"/><rect x="230" y="90" width="18" height="18"/></g>
-          <rect x="300" y="42" width="4" height="148" fill="#cfd8dc"/><polygon points="304,42 340,52 304,66" fill="#0a8f4f"/>
-          <g stroke="#2f7d32" strokeWidth="5" fill="none"><path d="M30 190 q6 -40 0 -70"/></g><ellipse cx="30" cy="112" rx="26" ry="12" fill="#2f7d32"/>
-        </svg>
-        <div className="relative z-10 flex items-center justify-between gap-4 p-6 flex-wrap">
-          <div className="flex items-center gap-3 order-1"><SchoolLogo size="lg" /><div className="text-right text-sm font-extrabold leading-tight">مدرسة<br/>الأمير عبدالمجيد</div></div>
-          <div className="text-center flex-1 min-w-[200px] order-2"><h2 className="text-xl sm:text-2xl font-black">معاً .. نحو مدرسة متميزة</h2><p className="opacity-90 mt-1 text-sm">بالعلم .. بالقيم .. نصنع المستقبل</p></div>
-          <div className="bg-white/10 rounded-2xl p-3 text-xs leading-relaxed max-w-xs order-3">"التعليم لا يغيّر العالم فقط، بل يصنع أجيالاً قادرة على تغييره"<br/><br/>مدرستنا .. بيئة آمنة · تعلّم ممتع · مستقبل واعد</div>
+      {/* ── الواجهة الترحيبية العصرية ── */}
+      <style>{`
+        @keyframes hrFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes hrSpin{to{transform:rotate(360deg)}}
+        @keyframes hrPulse{0%,100%{opacity:.55}50%{opacity:1}}
+        .hr-wrap{position:relative;overflow:hidden;border-radius:28px;color:#fff;margin-bottom:18px;background:radial-gradient(1200px 400px at 85% -10%,rgba(45,212,191,.35),transparent 60%),radial-gradient(700px 380px at 0% 110%,rgba(212,160,23,.28),transparent 60%),linear-gradient(135deg,#06302b 0%,#0b4f45 45%,#0f766e 100%);box-shadow:0 30px 60px -30px rgba(6,48,43,.8)}
+        .hr-pat{position:absolute;inset:0;opacity:.09;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.2'%3E%3Cpath d='M40 4l10 26 26 10-26 10-10 26-10-26L4 40l26-10z'/%3E%3Ccircle cx='40' cy='40' r='9'/%3E%3C/g%3E%3C/svg%3E");background-size:80px 80px}
+        .hr-in{position:relative;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px;padding:28px 30px 22px;align-items:center}
+        .hr-logo{position:relative;width:118px;height:118px;flex-shrink:0;animation:hrFloat 6s ease-in-out infinite}
+        .hr-logo::before{content:"";position:absolute;inset:-10px;border-radius:50%;background:conic-gradient(from 0deg,#d4a017,#2dd4bf,#fff,#d4a017);animation:hrSpin 9s linear infinite;filter:blur(.3px)}
+        .hr-logo::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:#0b4f45}
+        .hr-logo img{position:relative;z-index:1;width:100%;height:100%;border-radius:50%;background:#fff;padding:6px;box-shadow:0 12px 30px -10px rgba(0,0,0,.6)}
+        .hr-kicker{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:5px 12px;border-radius:999px;font-size:12px;font-weight:800;backdrop-filter:blur(6px)}
+        .hr-kicker i{width:7px;height:7px;border-radius:50%;background:#34d399;animation:hrPulse 1.6s infinite}
+        .hr-title{font-size:clamp(24px,3.4vw,40px);font-weight:900;line-height:1.25;margin:10px 0 4px;letter-spacing:-.5px}
+        .hr-title span{background:linear-gradient(90deg,#fde68a,#fbbf24);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .hr-sub{font-size:14px;font-weight:600;opacity:.85}
+        .hr-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+        .hr-tags b{font-size:12px;font-weight:800;padding:6px 12px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}
+        .hr-glass{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:22px;padding:16px 18px;backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+        .hr-clock{font-size:clamp(34px,4vw,48px);font-weight:900;letter-spacing:1px;line-height:1;font-variant-numeric:tabular-nums}
+        .hr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+        .hr-stat{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;font-family:inherit;color:#fff}
+        .hr-stat:hover{background:rgba(255,255,255,.16);transform:translateY(-2px)}
+        .hr-stat b{display:block;font-size:22px;font-weight:900}
+        .hr-stat small{font-size:10.5px;font-weight:700;opacity:.85}
+        .hr-quick{position:relative;display:flex;gap:10px;flex-wrap:wrap;padding:0 30px 24px}
+        .hr-q{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:14px;background:#fff;color:#0b4f45;font-weight:900;font-size:13px;border:none;cursor:pointer;box-shadow:0 10px 20px -12px rgba(0,0,0,.6);transition:all .2s;font-family:inherit}
+        .hr-q:hover{transform:translateY(-2px);box-shadow:0 16px 26px -14px rgba(0,0,0,.7)}
+        .hr-q span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:15px}
+        @media (max-width:900px){.hr-in{grid-template-columns:1fr;padding:22px 18px}.hr-quick{padding:0 18px 20px}.hr-logo{width:88px;height:88px}}
+      `}</style>
+      <div className="hr-wrap">
+        <div className="hr-pat" />
+        <div className="hr-in">
+          <div className="flex items-center gap-5 flex-wrap">
+            <div className="hr-logo"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div>
+            <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+              <div className="hr-kicker"><i />بوابة الإدارة المدرسية • {greet}</div>
+              <h1 className="hr-title">مدرسة <span>الأمير عبدالمجيد</span> المتوسطة</h1>
+              <div className="hr-sub">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div>
+              <div className="hr-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 معاً نحو مدرسة متميزة</b></div>
+            </div>
+          </div>
+          <div className="hr-glass">
+            <div className="flex items-end justify-between gap-3 flex-wrap">
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, opacity: .8 }}>{dayName}</div>
+                <div className="hr-clock">{clock}</div>
+              </div>
+              <div style={{ textAlign: "left", fontSize: 12.5, fontWeight: 800, lineHeight: 1.8 }}>
+                <div>🌙 {hijri}</div>
+                <div style={{ opacity: .75 }}>📅 {greg}</div>
+              </div>
+            </div>
+            <div className="hr-stats">
+              <button className="hr-stat" onClick={() => navigate("attendance")}><b>{attendRate}٪</b><small>حضور المعلمين اليوم</small></button>
+              <button className="hr-stat" onClick={() => navigate("students")}><b>{totalStudents}</b><small>طالباً مسجّلاً</small></button>
+              <button className="hr-stat" onClick={() => navigate("messages")}><b>{unreadMsgs}</b><small>رسالة جديدة</small></button>
+            </div>
+          </div>
+        </div>
+        <div className="hr-quick">
+          {[["attendance", "الحضور اليومي", "📅", "#ccfbf1"], ["announcements", "الإعلانات", "📣", "#fce7f3"], ["formative", "التقويم التكويني", "📘", "#dbeafe"], ["prolicense", "الرخصة المهنية", "🪪", "#fef3c7"], ["student-absence", "غياب الطلاب", "🎒", "#ede9fe"]].map(([id, l, ic, bg]) => (
+            <button key={id} className="hr-q" onClick={() => navigate(id)}><span style={{ background: bg }}>{ic}</span>{l}</button>
+          ))}
         </div>
       </div>
 
@@ -24156,489 +24215,352 @@ function SuggestionsAdminPage() {
 // ================================================================
 // ===== صفحة الرخصة المهنية للمعلمين =====
 // ================================================================
+// ══════════════════════════════════════════════════════════
+// سجل متابعة الرخصة المهنية للمعلمين
+// كل معلم في عقدة مستقلة + صورة الرخصة في عقدة منفصلة (حتى لا يفشل الحفظ بسبب حجم الصور)
+// ══════════════════════════════════════════════════════════
+const LIC_NODE = "school-license2";
+const LIC_IMG_NODE = "school-license2-img";
+const LIC_YEARS = ["1446", "1447", "1448", "1449", "1450", "1451"];
+const LIC_SPECS = ["القرآن الكريم والدراسات الإسلامية", "اللغة العربية", "الرياضيات", "العلوم", "اللغة الإنجليزية", "الدراسات الاجتماعية", "المهارات الرقمية", "التفكير الناقد", "التربية الفنية", "التربية البدنية والدفاع عن النفس", "المهارات الحياتية والأسرية", "التربية الخاصة", "التوجيه الطلابي", "مصادر التعلم", "أخرى"];
+const LIC_REASONS = ["لم يُتقدَّم للاختبار بعد", "اجتياز الاختبار العام فقط", "لم يُجتز الاختبار التخصصي", "بانتظار صدور النتيجة", "بانتظار إصدار الرخصة", "انتهت صلاحية الرخصة", "ظروف صحية أو عائلية", "عدم توفر موعد مناسب للاختبار"];
+const licId = () => "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const licToAr = n => String(n ?? "").replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+
+async function licGet(path) { try { const r = await fetch(`${FIREBASE_URL}/school/${path}.json`); return await r.json(); } catch { return null; } }
+async function licDel(path) { try { const r = await fetch(`${FIREBASE_URL}/school/${path}.json`, { method: "DELETE" }); return r.ok; } catch { return false; } }
+// تصغير صورة الرخصة مع الحفاظ على وضوحها
+async function licCompressImage(file) {
+  const src = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
+  if (!file.type.startsWith("image/")) return src;
+  try {
+    const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+    const scale = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+    const cv = document.createElement("canvas"); cv.width = Math.round(img.naturalWidth * scale); cv.height = Math.round(img.naturalHeight * scale);
+    const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+    const out = cv.toDataURL("image/jpeg", 0.88);
+    return out.length < src.length ? out : src;
+  } catch { return src; }
+}
+const licStatus = r => r.hasLicense === true ? { k: "yes", l: "حاصل على الرخصة", c: "#15803d", bg: "#dcfce7", ic: "✅" } : r.hasLicense === false ? { k: "no", l: "غير حاصل", c: "#b91c1c", bg: "#fee2e2", ic: "⏳" } : { k: "none", l: "لم يُستكمل", c: "#64748b", bg: "#f1f5f9", ic: "•" };
+
+const LIC_CSS = `
+.lic{font-family:'Cairo','Noto Naskh Arabic',sans-serif;color:#0f172a}
+.lic-card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 10px 30px -20px rgba(15,23,42,.3)}
+.lic-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 15px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:800;font-size:13px;color:#334155;cursor:pointer;transition:all .18s;white-space:nowrap}
+.lic-btn:hover{transform:translateY(-1px);box-shadow:0 8px 16px -10px rgba(15,23,42,.4)}
+.lic-btn.pri{background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;border-color:transparent}
+.lic-btn.gold{background:linear-gradient(135deg,#d4a017,#a16207);color:#fff;border-color:transparent}
+.lic-btn.red{color:#dc2626;border-color:#fecaca;background:#fff5f5}
+.lic-inp{width:100%;min-height:42px;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;padding:8px 12px;font-family:inherit;font-size:14px;font-weight:700;outline:none;transition:all .15s}
+.lic-inp:focus{border-color:#14b8a6;background:#fff;box-shadow:0 0 0 3px rgba(20,184,166,.18)}
+.lic-lbl{font-size:12px;font-weight:900;color:#475569;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.lic-step{width:24px;height:24px;border-radius:8px;display:inline-grid;place-items:center;background:#0f766e;color:#fff;font-size:12px;font-weight:900}
+.lic-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1.5px solid transparent;cursor:pointer;transition:all .15s;text-align:right;width:100%;background:transparent;font-family:inherit}
+.lic-row:hover{background:#f8fafc}
+.lic-row.on{background:#f0fdfa;border-color:#14b8a6}
+.lic-av{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-weight:900;color:#fff;flex-shrink:0;font-size:14px}
+.lic-yn{flex:1;padding:16px;border-radius:16px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;font-family:inherit;font-weight:900;font-size:15px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.lic-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1.5px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:800;font-size:12.5px;cursor:pointer;transition:all .15s}
+.lic-chip.on{background:#fef2f2;border-color:#f87171;color:#b91c1c}
+.lic-drop{border:2px dashed #99f6e4;border-radius:18px;background:#f0fdfa;padding:22px;text-align:center;cursor:pointer;transition:all .2s}
+.lic-drop:hover{background:#ccfbf1}
+`;
+
 function ProfessionalLicensePage() {
+  const [recs, setRecs] = useState([]);
+  const [imgs, setImgs] = useState({});        // id -> dataURL (تُحمَّل عند الحاجة)
+  const [year, setYear] = useState("1448");
+  const [sel, setSel] = useState(null);
+  const [q, setQ] = useState("");
+  const [flt, setFlt] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+  const saveT = useRef({});
 
-  const SPECIALIZATIONS = [
-    "رياضيات","علوم","لغة عربية","اجتماعيات","تربية إسلامية",
-    "إنجليزي","حاسب وتقنية","تربية بدنية","فنون","كيمياء",
-    "فيزياء","أحياء","جغرافيا","تاريخ","تربية وطنية","أخرى"
-  ];
+  const toast = (t) => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
 
-  const PROGRAMS = [
-    { id:"planning",      label:"التخطيط للتدريس",           icon:"📋" },
-    { id:"strategies",    label:"استراتيجيات التدريس",        icon:"🎯" },
-    { id:"classmanage",   label:"إدارة الصف",                icon:"🏫" },
-    { id:"assessment",    label:"التقويم والقياس",            icon:"📊" },
-    { id:"technology",    label:"توظيف التقنية",              icon:"💻" },
-    { id:"thinking",      label:"تنمية مهارات التفكير",       icon:"🧠" },
-    { id:"relations",     label:"بناء العلاقة مع الطلاب",    icon:"🤝" },
-    { id:"development",   label:"التطوير المهني",             icon:"🌱" },
-    { id:"timemanage",    label:"إدارة الوقت",                icon:"⏱️" },
-    { id:"communication", label:"مهارات التواصل",             icon:"💬" },
-  ];
-
-  const NEED_LEVELS = [
-    { val:"high",   label:"حاجة عالية",    color:"#dc2626", bg:"#fee2e2" },
-    { val:"medium", label:"حاجة متوسطة",   color:"#d97706", bg:"#fef3c7" },
-    { val:"low",    label:"حاجة منخفضة",   color:"#059669", bg:"#d1fae5" },
-  ];
-
-  const mkEmpty = (name="") => ({
-    name, specialization:"", yearsService:"", trainingHours:"",
-    programs: Object.fromEntries(PROGRAMS.map(p=>[p.id,{need:"",notes:""}])),
-    hasLicense: null, licenseReason:"",
-    licenseImages:[null,null],
-  });
-
-  const [records, setRecords]   = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [selected, setSelected] = useState(null); // index
-  const [search, setSearch]     = useState("");
-  const [importing, setImporting] = useState(false);
-  const [saved, setSaved]       = useState(false);
-  const imgRefs = [useRef(), useRef()];
-
-  // تحميل من Firebase
   useEffect(() => {
-    Promise.all([
-      DB.get("school-teachers", []),
-      DB.get("school-license-records", []),
-    ]).then(([tch, recs]) => {
-      const teacherList = Array.isArray(tch) ? tch : [];
-      const recList = Array.isArray(recs) ? recs : [];
-      setTeachers(teacherList);
-      // دمج السجلات مع قائمة المعلمين
-      const merged = teacherList.map(t => {
-        const existing = recList.find(r => r.name === t);
-        return existing || mkEmpty(t);
-      });
-      // أضف أي سجلات لمعلمين غير في القائمة
-      recList.forEach(r => {
-        if (!teacherList.includes(r.name)) merged.push(r);
-      });
-      setRecords(merged);
-      setLoading(false);
-    });
+    (async () => {
+      const [items, meta] = await Promise.all([licGet(LIC_NODE), licGet("school-license2-meta")]);
+      let list = items && typeof items === "object" ? Object.values(items).filter(r => r && r.id) : [];
+      if (meta && meta.year) setYear(String(meta.year));
+      if (!list.length && !(meta && meta.migrated)) {
+        // ترحيل الأسماء المضافة سابقاً (مرة واحدة فقط)
+        const [old, tch] = await Promise.all([DB.get("school-license-records", []), DB.get("school-teachers", [])]);
+        const oldArr = Array.isArray(old) ? old : (old && typeof old === "object" ? Object.values(old) : []);
+        const names = new Map();
+        oldArr.forEach(r => r && r.name && names.set(r.name, r));
+        (Array.isArray(tch) ? tch : []).forEach(n => n && !names.has(n) && names.set(n, { name: n }));
+        list = [...names.values()].map(r => ({ id: licId(), name: r.name, spec: r.specialization || "", years: r.yearsService || "", hasLicense: r.hasLicense ?? null, reasons: [], reasonText: r.licenseReason || "", expected: "", hasImg: false }));
+        for (const r of list) await dbFirebasePut(`${LIC_NODE}/${r.id}`, r);
+        dbFirebasePut("school-license2-meta", { year: meta?.year || "1448", migrated: true });
+      }
+      list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
+      setRecs(list); setSel(list[0]?.id || null); setLoading(false);
+    })();
   }, []);
 
-  const save = (newRecs) => {
-    setRecords(newRecs);
-    DB.set("school-license-records", newRecs);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
+  const cur = recs.find(r => r.id === sel) || null;
+  useEffect(() => { // جلب صورة الرخصة للمعلم المحدد
+    if (cur && cur.hasImg && imgs[cur.id] === undefined) licGet(`${LIC_IMG_NODE}/${cur.id}`).then(d => setImgs(p => ({ ...p, [cur.id]: typeof d === "string" ? d : null })));
+  }, [sel, cur?.hasImg]);
+
+  const persist = (r) => {
+    clearTimeout(saveT.current[r.id]);
+    saveT.current[r.id] = setTimeout(async () => { const ok = await dbFirebasePut(`${LIC_NODE}/${r.id}`, r); if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); }, 600);
+  };
+  const upd = (patch) => setRecs(prev => prev.map(r => { if (r.id !== sel) return r; const n = { ...r, ...patch, updated: Date.now() }; persist(n); return n; }));
+  const setYearSave = (y) => { setYear(y); dbFirebasePut("school-license2-meta", { year: y, migrated: true }); };
+
+  const addTeacher = () => {
+    const n = window.prompt("اسم المعلم:"); if (!n || !n.trim()) return;
+    if (recs.some(r => r.name === n.trim())) { alert("هذا الاسم موجود"); return; }
+    const r = { id: licId(), name: n.trim(), spec: "", years: "", hasLicense: null, reasons: [], reasonText: "", expected: "", hasImg: false };
+    dbFirebasePut(`${LIC_NODE}/${r.id}`, r);
+    setRecs(p => [...p, r].sort((a, b) => a.name.localeCompare(b.name, "ar"))); setSel(r.id);
+  };
+  const delTeacher = async (r) => {
+    if (!window.confirm(`حذف «${r.name}» وجميع بياناته من السجل؟`)) return;
+    await Promise.all([licDel(`${LIC_NODE}/${r.id}`), licDel(`${LIC_IMG_NODE}/${r.id}`)]);
+    setRecs(p => { const n = p.filter(x => x.id !== r.id); if (sel === r.id) setSel(n[0]?.id || null); return n; });
+    toast("🗑️ تم حذف المعلم");
+  };
+  const delAll = async () => {
+    if (!recs.length) return;
+    const t = window.prompt(`سيتم حذف جميع المعلمين (${recs.length}) وبياناتهم نهائياً.\nللتأكيد اكتب: حذف`);
+    if ((t || "").trim() !== "حذف") return;
+    setBusy(true);
+    await Promise.all([licDel(LIC_NODE), licDel(LIC_IMG_NODE)]);
+    await dbFirebasePut("school-license2-meta", { year, migrated: true });
+    setRecs([]); setImgs({}); setSel(null); setBusy(false); toast("🗑️ تم حذف جميع المعلمين");
+  };
+  const onFile = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f || !cur) return;
+    if (f.size > 12 * 1024 * 1024) { alert("الملف كبير جداً (الحد ١٢ ميجا)"); return; }
+    setBusy(true);
+    const data = await licCompressImage(f);
+    if (data.length > 9000000) { setBusy(false); alert("الملف كبير بعد الضغط — صوّر الرخصة بدقة أقل أو ارفع صورة بدلاً من PDF"); return; }
+    const ok = await dbFirebasePut(`${LIC_IMG_NODE}/${cur.id}`, data);
+    setBusy(false);
+    if (!ok) { alert("⚠️ تعذّر رفع الصورة — تحقق من الاتصال وأعد المحاولة"); return; }
+    setImgs(p => ({ ...p, [cur.id]: data })); upd({ hasImg: true, imgType: f.type.startsWith("image/") ? "image" : "pdf" });
+    toast("✅ تم رفع نسخة الرخصة");
+  };
+  const removeImg = async () => {
+    if (!window.confirm("حذف نسخة الرخصة المرفوعة؟")) return;
+    await licDel(`${LIC_IMG_NODE}/${cur.id}`); setImgs(p => ({ ...p, [cur.id]: null })); upd({ hasImg: false });
   };
 
-  const updRecord = (idx, field, val) => {
-    const next = [...records];
-    next[idx] = { ...next[idx], [field]: val };
-    save(next);
+  // ── الطباعة
+  const loadAllImgs = async (list) => {
+    const need = list.filter(r => r.hasImg && imgs[r.id] === undefined);
+    if (!need.length) return imgs;
+    const got = await Promise.all(need.map(r => licGet(`${LIC_IMG_NODE}/${r.id}`)));
+    const next = { ...imgs }; need.forEach((r, i) => next[r.id] = typeof got[i] === "string" ? got[i] : null);
+    setImgs(next); return next;
+  };
+  const printDocs = async (list, withSummary) => {
+    setBusy(true);
+    const im = await loadAllImgs(list);
+    setBusy(false);
+    const yr = licToAr(year);
+    const logo = typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : "";
+    const head = `<div class="hd"><div class="hr"><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة</b></div><div class="hc">${logo}</div><div class="hl">العام الدراسي<br><b class="yr">${yr} هـ</b></div></div>
+      <div class="tt"><span>سجل متابعة الرخصة المهنية للعام الدراسي ${yr} هـ</span></div>`;
+    const yes = list.filter(r => r.hasLicense === true).length, no = list.filter(r => r.hasLicense === false).length;
+    const summary = `<section class="pg">${head}
+      <div class="kp"><div style="--c:#0f766e"><b>${licToAr(list.length)}</b>إجمالي المعلمين</div><div style="--c:#15803d"><b>${licToAr(yes)}</b>حاصلون على الرخصة</div><div style="--c:#b91c1c"><b>${licToAr(no)}</b>غير حاصلين</div><div style="--c:#a16207"><b>${licToAr(list.length ? Math.round(yes / list.length * 100) : 0)}٪</b>نسبة الحصول</div></div>
+      <table><thead><tr><th>م</th><th>اسم المعلم</th><th>التخصص</th><th>سنوات الخبرة</th><th>الرخصة</th><th>الأسباب / الموعد المتوقع</th></tr></thead><tbody>
+      ${list.map((r, i) => { const s = licStatus(r); return `<tr><td>${licToAr(i + 1)}</td><td class="nm">${r.name}</td><td>${r.spec || "—"}</td><td>${r.years ? licToAr(r.years) : "—"}</td><td><span class="bd" style="background:${s.bg};color:${s.c}">${s.l}</span></td><td class="rs">${r.hasLicense === false ? [...(r.reasons || []), r.reasonText].filter(Boolean).join("، ") + (r.expected ? `<br><small>المتوقع: ${r.expected}</small>` : "") : ""}</td></tr>`; }).join("")}
+      </tbody></table>${sig()}</section>`;
+    function sig() { return `<div class="sg"><div>وكيل شؤون المعلمين<br><span>............................</span></div><div>مدير المدرسة<br><span>............................</span></div></div>`; }
+    const pages = list.map(r => { const s = licStatus(r); const img = im[r.id];
+      return `<section class="pg">${head}
+      <div class="tc"><div class="av">${(r.name || "?").trim().charAt(0)}</div><div><div class="tn">${r.name}</div><div class="ts"><span>📚 ${r.spec || "—"}</span><span>⏳ ${r.years ? licToAr(r.years) + " سنة خبرة" : "—"}</span></div></div><div class="st" style="background:${s.bg};color:${s.c}">${s.ic} ${s.l}</div></div>
+      ${r.hasLicense === true ? `<div class="bx g"><h3>📜 نسخة الرخصة المهنية</h3>${img ? (String(img).startsWith("data:image") ? `<img src="${img}" class="li">` : `<p>مرفق ملف PDF — يُطبع من صفحة المعلم</p>`) : `<p class="mu">لم تُرفق نسخة من الرخصة</p>`}</div>`
+        : r.hasLicense === false ? `<div class="bx r"><h3>📝 أسباب عدم الحصول على الرخصة</h3>${(r.reasons || []).length ? `<ul>${r.reasons.map(x => `<li>${x}</li>`).join("")}</ul>` : ""}${r.reasonText ? `<div class="tx">${String(r.reasonText).replace(/</g, "&lt;").replace(/\n/g, "<br>")}</div>` : ""}<div class="ex">📅 الموعد المتوقع للحصول عليها: <b>${r.expected || "—"}</b></div></div>`
+        : `<div class="bx"><p class="mu">لم يستكمل المعلم البيانات بعد</p></div>`}
+      <div class="sg"><div>المعلم<br><span>............................</span></div><div>وكيل شؤون المعلمين<br><span>............................</span></div><div>مدير المدرسة<br><span>............................</span></div></div></section>`; }).join("");
+    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>سجل متابعة الرخصة المهنية ${yr} هـ</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a;background:#fff}
+.pg{page-break-after:always;border:2px solid #0f766e;border-radius:18px;padding:16px 18px;min-height:276mm;position:relative;overflow:hidden;background:linear-gradient(180deg,#fff,#fff 85%,#f0fdfa)}
+.pg:last-child{page-break-after:auto}
+.pg::before{content:"";position:absolute;inset:0 0 auto 0;height:7px;background:linear-gradient(90deg,#0f766e,#14b8a6,#d4a017)}
+.hd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:12.5px;line-height:1.8;padding:8px 0 10px;border-bottom:2px solid #e2e8f0}
+.hl{text-align:left}.yr{font-size:18px;color:#0f766e}.lg{width:74px;height:74px}
+.tt{text-align:center;margin:14px 0}.tt span{display:inline-block;background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;font-weight:900;font-size:18px;padding:9px 28px;border-radius:999px;box-shadow:0 6px 16px -8px #0f766e}
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}.kp div{border:1.5px solid var(--c);border-radius:14px;padding:8px;text-align:center;font-size:11.5px;font-weight:700;color:var(--c);background:#fff}.kp b{display:block;font-size:22px;font-weight:900}
+table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e;color:#fff;padding:7px;font-weight:900}td{border-bottom:1px solid #cbd5e1;padding:6px;text-align:center}tr:nth-child(even) td{background:#f8fafc}.nm{text-align:right;font-weight:800}.rs{text-align:right;font-size:10.5px}
+.bd{padding:2px 10px;border-radius:999px;font-weight:800;font-size:10.5px;white-space:nowrap}
+.tc{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#f0fdfa,#fff);border:1.5px solid #99f6e4;border-radius:18px;padding:14px 16px;margin-bottom:14px}
+.av{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#14b8a6,#0f766e);color:#fff;display:grid;place-items:center;font-size:26px;font-weight:900}
+.tn{font-size:20px;font-weight:900}.ts{display:flex;gap:16px;font-size:13px;font-weight:700;color:#475569;margin-top:2px}
+.st{margin-right:auto;padding:8px 16px;border-radius:999px;font-weight:900;font-size:13px}
+.bx{border:1.5px solid #e2e8f0;border-radius:18px;padding:14px 16px;margin-bottom:14px}.bx h3{margin:0 0 10px;font-size:15px}
+.bx.g{border-color:#86efac;background:#f7fef9}.bx.r{border-color:#fca5a5;background:#fffafa}
+.li{display:block;max-width:100%;max-height:150mm;margin:0 auto;border-radius:10px;border:1px solid #e2e8f0}
+ul{margin:0 0 10px;padding-right:20px;font-weight:700;font-size:13.5px;line-height:2}.tx{background:#fff;border:1px solid #fecaca;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.9;min-height:60px}
+.ex{margin-top:10px;font-size:13.5px;font-weight:700;color:#7c2d12}.mu{color:#94a3b8;text-align:center;font-weight:700}
+.sg{display:flex;justify-content:space-around;position:absolute;bottom:18px;left:18px;right:18px;font-weight:800;font-size:13px;text-align:center}.sg span{display:block;margin-top:18px;color:#94a3b8}
+</style></head><body>${withSummary ? summary : ""}${pages}<script>setTimeout(()=>print(),900)</script></body></html>`);
   };
 
-  const updProgram = (idx, progId, field, val) => {
-    const next = [...records];
-    next[idx] = {
-      ...next[idx],
-      programs: { ...next[idx].programs, [progId]: { ...next[idx].programs[progId], [field]: val } }
-    };
-    save(next);
-  };
+  if (loading) return <div className="lic p-10 text-center font-bold text-gray-400">جاري تحميل سجل الرخص المهنية…</div>;
 
-  const handleLicenseImg = (idx, recIdx, file) => {
-    if (!file) return;
-    readFileAsync(file, "dataurl").then(dataUrl => {
-      const next = [...records];
-      const imgs = [...(next[recIdx].licenseImages || [null, null])];
-      imgs[idx] = { dataUrl, name: file.name };
-      next[recIdx] = { ...next[recIdx], licenseImages: imgs };
-      save(next);
-    });
-  };
-
-  const removeLicenseImg = (idx, recIdx) => {
-    const next = [...records];
-    const imgs = [...(next[recIdx].licenseImages || [null, null])];
-    imgs[idx] = null;
-    next[recIdx] = { ...next[recIdx], licenseImages: imgs };
-    save(next);
-  };
-
-  // استيراد Excel
-  const handleImportExcel = async (file) => {
-    setImporting(true);
-    try {
-      await loadXLSX();
-      const buf = await file.arrayBuffer();
-      const wb = window.XLSX.read(buf);
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = window.XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
-      const names = [];
-      rows.forEach((row, i) => {
-        if (i === 0) return;
-        const name = String(row[0]||"").trim();
-        if (name && name.length > 2) names.push(name);
-      });
-      // أضف أسماء جديدة فقط
-      const existing = records.map(r => r.name);
-      const newRecs = [...records];
-      names.forEach(n => { if (!existing.includes(n)) newRecs.push(mkEmpty(n)); });
-      setTeachers(prev => {
-        const all = [...new Set([...prev, ...names])];
-        DB.set("school-teachers", all);
-        return all;
-      });
-      save(newRecs);
-      alert(`✅ تم استيراد ${names.length} معلم`);
-    } catch (e) {
-      alert("❌ خطأ في قراءة الملف");
-    }
-    setImporting(false);
-  };
-
-  const addManual = () => {
-    const name = prompt("أدخل اسم المعلم:");
-    if (!name?.trim()) return;
-    const newRecs = [...records, mkEmpty(name.trim())];
-    save(newRecs);
-    setSelected(newRecs.length - 1);
-  };
-
-  const deleteRecord = (idx) => {
-    if (!confirm("هل تريد حذف هذا السجل؟")) return;
-    const next = records.filter((_,i) => i !== idx);
-    save(next);
-    setSelected(null);
-  };
-
-  const getNeedLevel = (val) => NEED_LEVELS.find(n => n.val === val);
-  const getCompletePct = (rec) => {
-    if (!rec) return 0;
-    let done = 0, total = 4;
-    if (rec.specialization) done++;
-    if (rec.yearsService) done++;
-    if (rec.trainingHours) done++;
-    if (rec.hasLicense !== null) done++;
-    return Math.round(done / total * 100);
-  };
-
-  const filtered = records.filter(r =>
-    !search || r.name.includes(search)
-  );
-
-  if (loading) return (
-    <div className="flex items-center justify-center py-20 text-gray-400">
-      <div className="text-center"><div className="text-5xl mb-3 animate-bounce">🏆</div><p className="font-bold">جاري التحميل…</p></div>
-    </div>
-  );
-
-  // ── عرض تفاصيل معلم ──
-  if (selected !== null && records[selected]) {
-    const rec = records[selected];
-    const idx = selected;
-    const pct = getCompletePct(rec);
-    return (
-      <div dir="rtl" className="max-w-3xl mx-auto px-3 py-4 space-y-4" style={{fontFamily:"'Cairo',sans-serif"}}>
-        <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={()=>setSelected(null)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm">
-            ← قائمة المعلمين
-          </button>
-          <div className="flex-1 font-black text-lg text-gray-800">{rec.name}</div>
-          <div className="flex items-center gap-2">
-            {saved && <span className="text-green-600 text-xs font-bold">✅ محفوظ</span>}
-            <span className="text-xs font-bold px-3 py-1 rounded-full"
-              style={{background: pct===100?"#d1fae5":"#fef3c7", color: pct===100?"#059669":"#d97706"}}>
-              {pct}% مكتمل
-            </span>
-          </div>
-        </div>
-
-        {/* ── بيانات أساسية ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
-            style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
-            <span>👤</span> البيانات الأساسية
-          </div>
-          <div className="p-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <label className="text-xs font-black text-gray-600 mb-1.5 block">📚 التخصص</label>
-              <select value={rec.specialization||""} onChange={e=>updRecord(idx,"specialization",e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
-                <option value="">— اختر التخصص —</option>
-                {SPECIALIZATIONS.map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-black text-gray-600 mb-1.5 block">📅 سنوات الخدمة</label>
-              <select value={rec.yearsService||""} onChange={e=>updRecord(idx,"yearsService",e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
-                <option value="">— اختر —</option>
-                {["أقل من سنة","1-3 سنوات","4-6 سنوات","7-10 سنوات","11-15 سنة","أكثر من 15 سنة"].map(s=>(
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-black text-gray-600 mb-1.5 block">🎓 ساعات التدريب (تقريباً)</label>
-              <select value={rec.trainingHours||""} onChange={e=>updRecord(idx,"trainingHours",e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm font-bold bg-white">
-                <option value="">— اختر —</option>
-                {["أقل من 20 ساعة","20-40 ساعة","41-60 ساعة","61-80 ساعة","81-100 ساعة","أكثر من 100 ساعة"].map(s=>(
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* ── البرامج ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
-            style={{background:"linear-gradient(135deg,#065f46,#0d9488)"}}>
-            <span>📋</span> البرامج التدريبية المحتاجة
-          </div>
-          <div className="divide-y divide-gray-100">
-            {PROGRAMS.map(prog => {
-              const pd = rec.programs?.[prog.id] || {need:"", notes:""};
-              const nl = getNeedLevel(pd.need);
-              return (
-                <div key={prog.id} className="px-5 py-3">
-                  <div className="flex items-start gap-3 flex-wrap sm:flex-nowrap">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-xl flex-shrink-0">{prog.icon}</span>
-                      <span className="font-black text-sm text-gray-800">{prog.label}</span>
-                      {nl && (
-                        <span className="text-xs font-black px-2 py-0.5 rounded-full flex-shrink-0"
-                          style={{background:nl.bg, color:nl.color}}>
-                          {nl.label}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2 items-center flex-shrink-0">
-                      <select value={pd.need||""} onChange={e=>updProgram(idx,prog.id,"need",e.target.value)}
-                        className="px-2 py-1.5 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-xs font-bold bg-white"
-                        style={{minWidth:130}}>
-                        <option value="">— درجة الحاجة —</option>
-                        {NEED_LEVELS.map(n=>(
-                          <option key={n.val} value={n.val}>{n.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <input value={pd.notes||""} onChange={e=>updProgram(idx,prog.id,"notes",e.target.value)}
-                      placeholder="أهمية البرنامج أو ملاحظات..."
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-teal-400 focus:outline-none text-xs text-gray-700" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── الرخصة المهنية ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 font-black text-sm text-white flex items-center gap-2"
-            style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)"}}>
-            <span>🏅</span> الرخصة المهنية
-          </div>
-          <div className="p-5 space-y-4">
-            <div>
-              <label className="text-xs font-black text-gray-600 mb-2 block">هل حصلت على الرخصة المهنية؟</label>
-              <div className="flex gap-3">
-                {[{val:true,label:"✅ نعم، حصلت عليها"},{val:false,label:"❌ لا، لم أحصل عليها"}].map(opt=>(
-                  <button key={String(opt.val)} onClick={()=>updRecord(idx,"hasLicense",opt.val)}
-                    className="flex-1 py-3 rounded-2xl font-black text-sm border-2 transition-all"
-                    style={{
-                      background: rec.hasLicense===opt.val ? (opt.val?"#d1fae5":"#fee2e2") : "#f9fafb",
-                      borderColor: rec.hasLicense===opt.val ? (opt.val?"#059669":"#dc2626") : "#e5e7eb",
-                      color: rec.hasLicense===opt.val ? (opt.val?"#065f46":"#991b1b") : "#6b7280",
-                    }}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {rec.hasLicense === false && (
-              <div>
-                <label className="text-xs font-black text-gray-600 mb-1.5 block">سبب عدم الحصول على الرخصة</label>
-                <textarea value={rec.licenseReason||""} onChange={e=>updRecord(idx,"licenseReason",e.target.value)}
-                  placeholder="اكتب السبب هنا..." rows={3}
-                  className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm resize-none" />
-              </div>
-            )}
-
-            {rec.hasLicense === true && (
-              <div>
-                <label className="text-xs font-black text-gray-600 mb-3 block">صور الرخصة المهنية</label>
-                <div className="grid grid-cols-2 gap-4">
-                  {[0,1].map(imgIdx => {
-                    const img = rec.licenseImages?.[imgIdx];
-                    return (
-                      <div key={imgIdx} className="rounded-2xl overflow-hidden border-2 border-dashed"
-                        style={{borderColor: img?"#7c3aed":"#d1d5db", minHeight:160}}>
-                        {img ? (
-                          <div className="relative">
-                            <img src={img.dataUrl} alt={`رخصة ${imgIdx+1}`}
-                              className="w-full object-cover" style={{height:160}} />
-                            <button onClick={()=>removeLicenseImg(imgIdx,idx)}
-                              className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
-                              🗑️
-                            </button>
-                            <div className="text-center py-1.5 text-xs font-black text-white"
-                              style={{background:"#7c3aed"}}>صورة الرخصة {imgIdx+1}</div>
-                          </div>
-                        ) : (
-                          <label className="flex flex-col items-center justify-center h-full cursor-pointer hover:bg-purple-50 transition-all"
-                            style={{minHeight:160}}>
-                            <div className="text-3xl mb-2">📷</div>
-                            <div className="text-xs font-black" style={{color:"#7c3aed"}}>
-                              صورة الرخصة {imgIdx+1}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1">اضغط لرفع الصورة</div>
-                            <input type="file" accept="image/*" className="hidden"
-                              ref={imgRefs[imgIdx]}
-                              onChange={e=>{const f=e.target.files?.[0];if(f)handleLicenseImg(imgIdx,idx,f);e.target.value="";}} />
-                          </label>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── أزرار ── */}
-        <div className="flex justify-between items-center">
-          <button onClick={()=>deleteRecord(idx)}
-            className="px-4 py-2 rounded-xl text-sm font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100">
-            🗑️ حذف السجل
-          </button>
-          <button onClick={()=>setSelected(null)}
-            className="px-6 py-2.5 rounded-xl text-sm font-black text-white"
-            style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8)"}}>
-            ← رجوع للقائمة
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── القائمة الرئيسية ──
-  const stats = {
-    total: records.length,
-    hasLicense: records.filter(r=>r.hasLicense===true).length,
-    noLicense:  records.filter(r=>r.hasLicense===false).length,
-    pending:    records.filter(r=>r.hasLicense===null).length,
-  };
+  const stats = { all: recs.length, yes: recs.filter(r => r.hasLicense === true).length, no: recs.filter(r => r.hasLicense === false).length };
+  stats.none = stats.all - stats.yes - stats.no;
+  const shown = recs.filter(r => (!q || r.name.includes(q)) && (flt === "all" || licStatus(r).k === flt));
+  const avColor = n => ["#0f766e", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#0891b2"][(n || "").length % 6];
+  const img = cur ? imgs[cur.id] : null;
 
   return (
-    <div dir="rtl" className="max-w-3xl mx-auto px-3 py-4 space-y-4" style={{fontFamily:"'Cairo',sans-serif"}}>
-      {/* ── Header ── */}
-      <div className="rounded-2xl p-5 text-white shadow-xl"
-        style={{background:"linear-gradient(135deg,#1e3a5f,#1d4ed8,#7c3aed)"}}>
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="text-4xl">🏅</div>
-            <div>
-              <h2 className="font-black text-xl">الرخصة المهنية للمعلمين</h2>
-              <p className="opacity-70 text-xs">تتبع البرامج التدريبية وحالة الرخصة</p>
+    <div className="lic px-3 md:px-6 py-4" dir="rtl">
+      <style>{LIC_CSS}</style>
+
+      {/* رأس الصفحة */}
+      <div className="lic-card mb-4" style={{ overflow: "hidden" }}>
+        <div style={{ background: "linear-gradient(135deg,#0b3d3a,#0f766e 60%,#14b8a6)", color: "#fff", padding: "20px 24px", position: "relative" }}>
+          <div style={{ position: "absolute", inset: 0, opacity: .12, backgroundImage: "radial-gradient(circle at 20% 20%,#fff 0 2px,transparent 3px),radial-gradient(circle at 80% 60%,#fff 0 2px,transparent 3px)", backgroundSize: "38px 38px" }} />
+          <div className="flex items-center justify-between gap-4 flex-wrap" style={{ position: "relative" }}>
+            <div className="flex items-center gap-3">
+              <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,.18)", border: "2px solid rgba(255,255,255,.35)", display: "grid", placeItems: "center", fontSize: 28 }}>🪪</div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>سجل متابعة الرخصة المهنية</div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black cursor-pointer border border-white/30 bg-white/15 hover:bg-white/25">
-              {importing ? "⏳ جاري..." : "📥 استيراد Excel"}
-              <input type="file" accept=".xlsx,.xls" className="hidden"
-                onChange={e=>{const f=e.target.files?.[0];if(f)handleImportExcel(f);e.target.value="";}} />
-            </label>
-            <button onClick={addManual}
-              className="px-3 py-2 rounded-xl text-xs font-black border border-white/30 bg-white/15 hover:bg-white/25">
-              ➕ إضافة يدوي
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span style={{ fontSize: 12.5, fontWeight: 800 }}>العام الدراسي</span>
+              <select value={year} onChange={e => setYearSave(e.target.value)} style={{ height: 40, borderRadius: 12, border: "1px solid rgba(255,255,255,.4)", background: "rgba(255,255,255,.15)", color: "#fff", fontFamily: "inherit", fontWeight: 900, padding: "0 12px" }}>
+                {LIC_YEARS.map(y => <option key={y} value={y} style={{ color: "#000" }}>{licToAr(y)} هـ</option>)}
+              </select>
+              <button className="lic-btn gold" disabled={busy || !recs.length} onClick={() => printDocs(recs, true)}>🖨 طباعة السجل كاملاً</button>
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            {v:stats.total,     l:"إجمالي",      c:"#93c5fd"},
-            {v:stats.hasLicense,l:"حاصل",        c:"#86efac"},
-            {v:stats.noLicense, l:"لم يحصل",     c:"#fca5a5"},
-            {v:stats.pending,   l:"غير محدد",    c:"#fbbf24"},
-          ].map(s=>(
-            <div key={s.l} className="bg-white/15 rounded-xl py-2 text-center">
-              <div className="text-xl font-black" style={{color:s.c}}>{s.v}</div>
-              <div className="text-xs opacity-75">{s.l}</div>
-            </div>
+        <div className="grid gap-3 p-4" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
+          {[["all", "إجمالي المعلمين", "#0f766e", "👥"], ["yes", "حاصلون على الرخصة", "#15803d", "✅"], ["no", "غير حاصلين", "#b91c1c", "⏳"], ["none", "لم يُستكمل", "#64748b", "•"]].map(([k, l, c, ic]) => (
+            <button key={k} onClick={() => setFlt(k)} style={{ border: `2px solid ${flt === k ? c : "#eef2f6"}`, background: flt === k ? c + "10" : "#fff", borderRadius: 16, padding: "10px 14px", textAlign: "right", cursor: "pointer", fontFamily: "inherit" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: c }}>{licToAr(stats[k])}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>{ic} {l}</div>
+            </button>
           ))}
         </div>
       </div>
 
-      {/* ── بحث ── */}
-      <input value={search} onChange={e=>setSearch(e.target.value)}
-        placeholder="🔍 بحث باسم المعلم..."
-        className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm" />
+      <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+          {/* قائمة المعلمين */}
+          <div className="lic-card p-3 self-start">
+            <div className="flex gap-2 mb-2">
+              <input className="lic-inp" placeholder="🔍 بحث عن معلم…" value={q} onChange={e => setQ(e.target.value)} />
+            </div>
+            <div className="flex gap-2 mb-2">
+              <button className="lic-btn pri" style={{ flex: 1, justifyContent: "center" }} onClick={addTeacher}>＋ إضافة معلم</button>
+              <button className="lic-btn red" onClick={delAll} disabled={busy || !recs.length} title="حذف جميع المعلمين">🗑 حذف الجميع</button>
+            </div>
+            <div style={{ maxHeight: "62vh", overflowY: "auto" }}>
+              {shown.map(r => { const s = licStatus(r); return (
+                <button key={r.id} className={`lic-row ${sel === r.id ? "on" : ""}`} onClick={() => setSel(r.id)}>
+                  <span className="lic-av" style={{ background: avColor(r.name) }}>{(r.name || "?").trim().charAt(0)}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 900, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</span>
+                    <span style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{r.spec || "بدون تخصص"}{r.years ? ` • ${licToAr(r.years)} سنة` : ""}</span>
+                  </span>
+                  <span style={{ fontSize: 10.5, fontWeight: 900, padding: "3px 8px", borderRadius: 999, background: s.bg, color: s.c, whiteSpace: "nowrap" }}>{s.ic} {s.k === "yes" ? "حاصل" : s.k === "no" ? "غير حاصل" : "—"}</span>
+                </button>); })}
+              {!shown.length && <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>{recs.length ? "لا نتائج" : "لا يوجد معلمون — أضف معلماً"}</div>}
+            </div>
+          </div>
 
-      {/* ── القائمة ── */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <div className="text-5xl mb-3">👨‍🏫</div>
-          <p className="font-bold mb-2">لا يوجد معلمون</p>
-          <p className="text-sm">استورد ملف Excel أو أضف يدوياً</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((rec, i) => {
-            const realIdx = records.indexOf(rec);
-            const pct = getCompletePct(rec);
-            const highNeeds = PROGRAMS.filter(p => rec.programs?.[p.id]?.need === "high");
-            return (
-              <button key={i} onClick={()=>setSelected(realIdx)}
-                className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all text-right">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
-                    style={{background: rec.hasLicense===true?"#d1fae5":rec.hasLicense===false?"#fee2e2":"#f3f4f6"}}>
-                    {rec.hasLicense===true?"🏅":rec.hasLicense===false?"❌":"⏳"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-black text-sm text-gray-800 truncate">{rec.name}</span>
-                      {rec.specialization && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-bold flex-shrink-0"
-                          style={{background:"#dbeafe",color:"#1d4ed8"}}>{rec.specialization}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      {rec.yearsService && <span>📅 {rec.yearsService}</span>}
-                      {rec.trainingHours && <span>🎓 {rec.trainingHours}</span>}
-                      {highNeeds.length > 0 && (
-                        <span className="text-red-500 font-bold">⚠️ {highNeeds.length} احتياج عالي</span>
-                      )}
-                    </div>
-                    <div className="mt-1.5 bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full rounded-full transition-all"
-                        style={{width:pct+"%", background: pct===100?"#059669":"#1d4ed8"}} />
-                    </div>
-                  </div>
-                  <span className="text-gray-300 flex-shrink-0">◄</span>
+          {/* بطاقة المعلم */}
+          {cur ? (
+            <div className="lic-card p-5">
+              <div className="flex items-center gap-3 flex-wrap mb-4 pb-4" style={{ borderBottom: "1px solid #eef2f6" }}>
+                <span className="lic-av" style={{ width: 54, height: 54, fontSize: 22, borderRadius: 18, background: avColor(cur.name) }}>{cur.name.trim().charAt(0)}</span>
+                <input className="lic-inp" style={{ flex: "1 1 220px", fontSize: 18, fontWeight: 900, background: "transparent", border: "1px solid transparent" }} value={cur.name} onChange={e => upd({ name: e.target.value })} title="تعديل الاسم" />
+                <button className="lic-btn" onClick={() => printDocs([cur], false)} disabled={busy}>🖨 طباعة صفحة المعلم</button>
+                <button className="lic-btn red" onClick={() => delTeacher(cur)}>🗑 حذف المعلم</button>
+              </div>
+
+              {/* ١) التخصص وسنوات الخبرة */}
+              <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
+                <div>
+                  <div className="lic-lbl"><span className="lic-step">١</span> تخصص المعلم</div>
+                  <input className="lic-inp" list="lic-specs" value={cur.spec || ""} placeholder="اختر أو اكتب التخصص" onChange={e => upd({ spec: e.target.value })} />
+                  <datalist id="lic-specs">{LIC_SPECS.map(s => <option key={s} value={s} />)}</datalist>
                 </div>
-              </button>
-            );
-          })}
+                <div>
+                  <div className="lic-lbl"><span className="lic-step">٢</span> عدد سنوات الخبرة</div>
+                  <input className="lic-inp" type="number" min="0" max="45" value={cur.years || ""} placeholder="مثال: 12" onChange={e => upd({ years: e.target.value })} />
+                </div>
+              </div>
+
+              {/* ٢) السؤال */}
+              <div className="lic-lbl"><span className="lic-step">٣</span> هل لديك رخصة مهنية سارية؟</div>
+              <div className="flex gap-3 mb-5 flex-wrap">
+                <button className="lic-yn" onClick={() => upd({ hasLicense: true })} style={cur.hasLicense === true ? { borderColor: "#22c55e", background: "#f0fdf4", color: "#15803d", boxShadow: "0 8px 20px -12px #16a34a" } : undefined}>✅ نعم، لديّ رخصة</button>
+                <button className="lic-yn" onClick={() => upd({ hasLicense: false })} style={cur.hasLicense === false ? { borderColor: "#f87171", background: "#fef2f2", color: "#b91c1c", boxShadow: "0 8px 20px -12px #dc2626" } : undefined}>⏳ لا، لم أحصل عليها بعد</button>
+              </div>
+
+              {/* ٣أ) رفع الرخصة */}
+              {cur.hasLicense === true && (
+                <div>
+                  <div className="lic-lbl"><span className="lic-step">٤</span> ارفع نسخة واضحة من الرخصة المهنية</div>
+                  <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden onChange={onFile} />
+                  {cur.hasImg && img ? (
+                    <div style={{ border: "1.5px solid #86efac", borderRadius: 18, padding: 12, background: "#f7fef9" }}>
+                      {String(img).startsWith("data:image") ? <img src={img} alt="الرخصة المهنية" style={{ display: "block", maxWidth: "100%", maxHeight: 420, margin: "0 auto", borderRadius: 12 }} />
+                        : <a href={img} download={`رخصة_${cur.name}.pdf`} className="lic-btn" style={{ margin: "10px auto", display: "flex", width: "fit-content" }}>📄 فتح ملف PDF</a>}
+                      <div className="flex gap-2 justify-center mt-3">
+                        <button className="lic-btn" onClick={() => fileRef.current?.click()} disabled={busy}>🔄 استبدال</button>
+                        <button className="lic-btn red" onClick={removeImg}>🗑 حذف النسخة</button>
+                      </div>
+                    </div>
+                  ) : cur.hasImg && img === undefined ? (
+                    <div className="lic-drop">⏳ جاري تحميل النسخة…</div>
+                  ) : (
+                    <div className="lic-drop" onClick={() => !busy && fileRef.current?.click()}>
+                      <div style={{ fontSize: 38 }}>{busy ? "⏳" : "📤"}</div>
+                      <div style={{ fontWeight: 900, fontSize: 15, color: "#0f766e" }}>{busy ? "جاري الرفع…" : "اضغط لرفع صورة الرخصة أو ملف PDF"}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginTop: 4 }}>تأكد أن البيانات مقروءة بوضوح — تُضغط الصورة تلقائياً مع الحفاظ على وضوحها</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ٣ب) الأسباب */}
+              {cur.hasLicense === false && (
+                <div>
+                  <div className="lic-lbl"><span className="lic-step">٤</span> أسباب عدم الحصول على الرخصة</div>
+                  <div className="flex gap-2 flex-wrap mb-3">
+                    {LIC_REASONS.map(x => { const on = (cur.reasons || []).includes(x); return (
+                      <button key={x} className={`lic-chip ${on ? "on" : ""}`} onClick={() => upd({ reasons: on ? cur.reasons.filter(y => y !== x) : [...(cur.reasons || []), x] })}>{on ? "✓" : "＋"} {x}</button>); })}
+                  </div>
+                  <textarea className="lic-inp" rows={4} style={{ lineHeight: 1.9, resize: "vertical" }} value={cur.reasonText || ""} placeholder="اكتب الأسباب بالتفصيل…" onChange={e => upd({ reasonText: e.target.value })} />
+                  <div className="lic-lbl mt-4"><span className="lic-step">٥</span> متى تتوقع الحصول عليها؟</div>
+                  <input className="lic-inp" style={{ maxWidth: 360 }} value={cur.expected || ""} placeholder="مثال: الفصل الدراسي الثاني ١٤٤٨هـ" onChange={e => upd({ expected: e.target.value })} list="lic-exp" />
+                  <datalist id="lic-exp">{["نهاية الفصل الدراسي الأول", "الفصل الدراسي الثاني", "الفصل الدراسي الثالث", "خلال شهر", "خلال ثلاثة أشهر", "العام الدراسي القادم"].map(x => <option key={x} value={x} />)}</datalist>
+                </div>
+              )}
+              {cur.hasLicense == null && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800, background: "#f8fafc", borderRadius: 16 }}>اختر الإجابة أعلاه لإكمال البيانات</div>}
+              <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700, marginTop: 14 }}>💾 تُحفظ البيانات تلقائياً</div>
+            </div>
+          ) : (
+            <div className="lic-card p-10 text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>اختر معلماً من القائمة أو أضف معلماً جديداً</div>
+          )}
         </div>
-      )}
+      </div>
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 500, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, fontSize: 13.5 }}>{msg}</div>}
     </div>
   );
 }
 
-
-
-// ================================================================
-// ===== تبويب الرخصة المهنية داخل بوابة المعلم =====
-// ================================================================
-
-// ── مكوّن رابط مشاركة صفحة الرخصة المهنية ──
 function LicenseShareLink() {
   const [copied, setCopied] = React.useState(false);
   const [showQR, setShowQR]   = React.useState(false);
@@ -29665,7 +29587,7 @@ function SchoolWebsiteInner() {
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["formative"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
