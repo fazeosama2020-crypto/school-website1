@@ -28563,6 +28563,10 @@ const FG_GROUP_COLORS = ["#0d9488","#7c3aed","#ea580c","#2563eb","#db2777"];
 const FG_SEMESTERS = ["الفترة الأولى","الفترة الثانية","الفترة الثالثة"];
 const FG_LEVELS = ["الصف الأول المتوسط","الصف الثاني المتوسط","الصف الثالث المتوسط"];
 const fgId = () => Math.random().toString(36).slice(2, 9);
+// معلمو المدرسة (من تقرير الحضور والانصراف) — يمكن تحديثها من داخل الصفحة
+const FG_TEACHERS_DEFAULT = ["عبدالرحيم رضوان", "علي الغامدي", "فازع القرني", "احمد الشهري", "محمد الجوفي", "رمضان الزهراني", "فايز الزلفي", "وليد الزايدي", "يحي الزبيدي", "عبدالعزيز الزهراني", "هادي المقاطي العتيبي", "فارس البشري", "عادل الغامدي", "عبدالله السهيمي", "سعد العتيبي", "عمر العمشاني", "محمد القارحى", "ماجد الهذلي", "حاتم الشمراني", "محمد الحربي", "فهد ال رده", "عبدالعزيز الذبياني", "حسن العيسى", "أحمد عزي", "فيصل العتيبى", "صاطي الحارثي", "محمد الشهري", "مجاهد الزهراني", "طارق الزهراني", "جابر الشهري", "محمد وراد الحربي", "عوض العماري", "اسامه السفري"];
+// فصول كل صف
+const FG_SECTIONS = { "الصف الأول المتوسط": ["1","2","3","4","5","6","7","8"], "الصف الثاني المتوسط": ["1","2","3","4","5","6"], "الصف الثالث المتوسط": ["1","2","3","4","5","6"] };
 
 // توزيع الدرجة داخل كل مكوّن من مكونات النموذج
 function fgSplitPart(label, total) {
@@ -28593,7 +28597,7 @@ function fgBuildColumns(modelKey) {
 function fgNewSheet(defaults = {}) {
   const model = defaults.model || "4";
   return {
-    id: "fg-" + Date.now(), teacher: "", subject: "", level: FG_LEVELS[0], section: "أ",
+    id: "fg-" + Date.now(), teacher: "", subject: "", level: FG_LEVELS[0], section: "1",
     semester: FG_SEMESTERS[0], year: "١٤٤٧هـ", edu: "الإدارة العامة للتعليم",
     school: "مدرسة الأمير عبدالمجيد المتوسطة", model, ...fgBuildColumns(model),
     students: Array.from({ length: 5 }, () => ({ id: fgId(), name: "", scores: {} })),
@@ -28639,7 +28643,7 @@ const FG_CSS = `
 .fg-ch input.l:focus{background:#f1f5f9}
 .fg-ch .mx{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:3px;font-size:10.5px;font-weight:800;color:#64748b}
 .fg-ch .mx input{width:42px;height:22px;border:1px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-weight:900;font-size:11px;outline:none}
-.fg-ch .tools{display:flex;justify-content:center;gap:4px;margin-top:5px;opacity:.35;transition:opacity .2s}
+.fg-ch .tools{display:flex;justify-content:center;gap:4px;margin-top:5px;opacity:.8;transition:opacity .2s}
 .fg-ch:hover .tools{opacity:1}
 .fg-ch .tools button{border:none;background:#f1f5f9;border-radius:6px;width:22px;height:20px;cursor:pointer;font-size:11px}
 .fg-ch .tools button.del:hover{background:#fee2e2}
@@ -28744,6 +28748,10 @@ function FormativeGradebookPage({ classList = [] }) {
   const [pasteText, setPasteText] = useState("");
   const [xl, setXl] = useState(null); // {sheets, sheet, col, target, adv}
   const [toast, setToast] = useState("");
+  const [teachersList, setTeachersList] = useState(FG_TEACHERS_DEFAULT);
+  const staffRef = useRef(null);
+  useEffect(() => { (async () => { try { const t = await DB.get("formative-teachers", null); if (Array.isArray(t) && t.length) setTeachersList(t); } catch {} })(); }, []);
+  const saveTeachers = (list) => { const u = [...new Set(list.map(x => String(x).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ar")); setTeachersList(u); try { DB.set("formative-teachers", u); } catch {} return u; };
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(""), 3500); return () => clearTimeout(t); }, [toast]);
   const fileRef = useRef(null);
   const saveT = useRef(null);
@@ -28919,6 +28927,44 @@ function FormativeGradebookPage({ classList = [] }) {
       setModal("excel");
     } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); }
   };
+  // تحديث قائمة المعلمين من تقرير الحضور والانصراف (يأخذ من مسمّاه «معلم»)
+  const onStaffFile = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    try {
+      const XLSX = await loadXLSX();
+      const wb = XLSX.read(await f.arrayBuffer());
+      const found = [];
+      wb.SheetNames.forEach(n => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" });
+        let hi = -1, nc = -1, jc = -1;
+        for (let i = 0; i < Math.min(rows.length, 40) && hi < 0; i++) {
+          const r = rows[i].map(x => String(x ?? "").trim());
+          const a = r.findIndex(x => /^(الإسم|الاسم|اسم الموظف|اسم المعلم)$/.test(x));
+          if (a >= 0) { hi = i; nc = a; jc = r.findIndex(x => /المسمى|الوظيفة/.test(x)); }
+        }
+        if (hi < 0) return;
+        rows.slice(hi + 1).forEach(r => { const nm = String(r[nc] ?? "").trim(); const job = jc >= 0 ? String(r[jc] ?? "") : "معلم"; if (nm && /معلم/.test(job)) found.push(nm); });
+      });
+      const uniq = [...new Set(found)];
+      if (!uniq.length) { alert("لم أجد معلمين في الملف — تأكد أنه تقرير الحضور والانصراف (عمود «الإسم» و«المسمى الوظيفي»)"); return; }
+      const before = new Set(teachersList);
+      const merged = saveTeachers([...teachersList, ...uniq]);
+      setToast(`✅ قائمة المعلمين: ${merged.length} معلم (${uniq.filter(x => !before.has(x)).length} جديد)`);
+    } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); }
+  };
+  const onTeacherPick = (v) => {
+    if (v === "__add") { const n = window.prompt("اسم المعلم:"); if (n && n.trim()) { saveTeachers([...teachersList, n.trim()]); set("teacher", n.trim()); } return; }
+    set("teacher", v);
+  };
+  const onLevel = (lv) => update(s => ({ ...s, level: lv, section: (FG_SECTIONS[lv] || []).includes(String(s.section)) ? s.section : "1" }));
+  const distribute = (gid) => update(s => {
+    const g = s.groups.find(x => x.id === gid); const cs = s.cols.filter(c => c.groupId === gid);
+    if (!g || !cs.length) return s;
+    const base = Math.floor((+g.max || 0) / cs.length * 2) / 2; let rest = (+g.max || 0) - base * cs.length;
+    const ids = cs.map(c => c.id);
+    return { ...s, cols: s.cols.map(c => { const i = ids.indexOf(c.id); if (i < 0) return c; let v = base; if (i === ids.length - 1) v = +(base + rest).toFixed(2); return { ...c, max: v }; }) };
+  });
   const exportExcel = async () => {
     const XLSX = await loadXLSX();
     const head1 = ["م", "اسم الطالب"], head2 = ["", ""];
@@ -29042,13 +29088,23 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
 
         {/* بيانات المعلم والمادة */}
         <div className="p-4 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", background: "linear-gradient(180deg,#f0fdfa,#fff)" }}>
-          <div><span className="fg-lbl">👨‍🏫 اسم المعلم</span><input className="fg-inp" value={sheet.teacher} placeholder="اكتب اسم المعلم" onChange={e => set("teacher", e.target.value)} /></div>
+          <div>
+            <span className="fg-lbl flex items-center justify-between">👨‍🏫 المعلم
+              <button onClick={() => staffRef.current?.click()} title="تحديث قائمة المعلمين من تقرير الحضور والانصراف" style={{ background: "none", border: "none", color: "#0d9488", fontWeight: 800, fontSize: 10.5, cursor: "pointer", fontFamily: "inherit" }}>📥 تحديث القائمة</button>
+            </span>
+            <input ref={staffRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={onStaffFile} />
+            <select className="fg-inp" value={sheet.teacher || ""} onChange={e => onTeacherPick(e.target.value)}>
+              <option value="">— اختر المعلم ({teachersList.length}) —</option>
+              {[...new Set([...(sheet.teacher && !teachersList.includes(sheet.teacher) ? [sheet.teacher] : []), ...teachersList])].map(t => <option key={t} value={t}>{t}</option>)}
+              <option value="__add">➕ إضافة معلم آخر…</option>
+            </select>
+          </div>
           <div><span className="fg-lbl">📚 المادة</span>
             <input className="fg-inp" list="fg-subjects" value={sheet.subject} placeholder="اختر أو اكتب المادة" onChange={e => onSubject(e.target.value)} />
             <datalist id="fg-subjects">{Object.keys(subjects).map(s => <option key={s} value={s} />)}</datalist>
           </div>
-          <div><span className="fg-lbl">🎓 الصف</span><select className="fg-inp" value={sheet.level} onChange={e => set("level", e.target.value)}>{FG_LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
-          <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => set("section", e.target.value)}>{[...new Set(["أ","ب","ج","د","هـ","و","ز","ح","1","2","3","4","5","6","7","8","9","10", String(sheet.section || "أ")])].map(l => <option key={l}>{l}</option>)}</select></div>
+          <div><span className="fg-lbl">🎓 الصف</span><select className="fg-inp" value={sheet.level} onChange={e => onLevel(e.target.value)}>{FG_LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
+          <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => set("section", e.target.value)}>{[...new Set([...(FG_SECTIONS[sheet.level] || ["1"]), String(sheet.section || "1")])].map(l => <option key={l} value={l}>{sheet.level.replace("الصف ", "")} / {l}</option>)}</select></div>
           <div><span className="fg-lbl">🗓 الفترة الدراسية</span><select className="fg-inp" value={sheet.semester} onChange={e => set("semester", e.target.value)}>{FG_SEMESTERS.map(l => <option key={l}>{l}</option>)}</select></div>
           <div><span className="fg-lbl">📐 نموذج التوزيع</span><button className="fg-inp text-right" style={{ cursor: "pointer" }} onClick={() => setModal("model")}>{modelInfo ? `${modelInfo.name} — ${modelInfo.type}` : "مخصص"} ▾</button></div>
         </div>
@@ -29091,10 +29147,10 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
                     <th key={g.id} colSpan={n} className="fg-grp" style={{ background: `linear-gradient(135deg, ${g.color}, ${g.color}cc)` }}>
                       <span className="gx">
                         <input value={g.label} onChange={e => setGroup(g.id, "label", e.target.value)} style={{ background: "transparent", border: "none", color: "#fff", fontFamily: "inherit", fontWeight: 900, fontSize: 13, outline: "none", width: Math.max(90, g.label.length * 8.5), textAlign: "center" }} />
-                        <span className="pill">{g.max}</span>
-                        {sum !== +g.max && <span className="warn" title="مجموع درجات الأعمدة لا يطابق درجة المكوّن في اللائحة">⚠ {sum}/{g.max}</span>}
-                        <button className="addc" style={{ color: g.color }} title="إضافة عمود" onClick={() => addCol(g.id)}>＋</button>
-                        {!modelInfo || !Object.keys(modelInfo.parts).includes(g.label) ? <button className="addc" style={{ color: "#dc2626" }} title="حذف المكوّن" onClick={() => delGroup(g.id)}>×</button> : null}
+                        <input type="number" min="0" value={g.max} title="درجة المكوّن" onChange={e => setGroup(g.id, "max", e.target.value === "" ? "" : +e.target.value)} style={{ width: 46, height: 24, borderRadius: 999, border: "1px solid rgba(255,255,255,.5)", background: "rgba(255,255,255,.22)", color: "#fff", textAlign: "center", fontFamily: "inherit", fontWeight: 900, fontSize: 12, outline: "none" }} />
+                        {sum !== +g.max && <><span className="warn" title="مجموع درجات الأعمدة لا يطابق درجة المكوّن">⚠ {sum}/{g.max}</span><button className="addc" style={{ color: g.color, width: "auto", padding: "0 6px", fontSize: 11 }} title="توزيع درجة المكوّن بالتساوي على أعمدته" onClick={() => distribute(g.id)}>⚖ توزيع</button></>}
+                        <button className="addc" style={{ color: g.color, width: "auto", padding: "0 7px", fontSize: 11.5 }} title="إضافة عمود" onClick={() => addCol(g.id)}>＋ عمود</button>
+                        <button className="addc" style={{ color: "#dc2626" }} title="حذف المكوّن بكل أعمدته" onClick={() => delGroup(g.id)}>🗑</button>
                       </span>
                     </th>
                   );
