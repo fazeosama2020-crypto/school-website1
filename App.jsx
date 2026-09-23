@@ -35,12 +35,13 @@ const dbQueue = {
 // ── الإرسال لـ Firebase مع إعادة المحاولة ──
 async function dbFirebasePut(key, value) {
   try {
+    const body = JSON.stringify(value);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
+    const timer = setTimeout(() => controller.abort(), Math.max(15000, Math.min(180000, body.length / 15)));
     const r = await fetch(`${FIREBASE_URL}/school/${key}.json`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(value),
+      body,
       signal: controller.signal,
     });
     clearTimeout(timer);
@@ -1081,10 +1082,70 @@ function AnnDatePicker({ ann, setAnn }) {
   );
 }
 
+// ══════════════════════════════════════════════════════════
+// تخزين الإعلانات: كل إعلان في عقدة مستقلة  school/school-ann-items/{id}
+// (سابقاً كانت كل الإعلانات تُرفع دفعة واحدة، فتفشل عند وجود صور كبيرة ولا تصل للأجهزة الأخرى)
+// ══════════════════════════════════════════════════════════
+const ANN_NODE = "school-ann-items";
+async function annPut(id, value) {
+  const ok = await dbFirebasePut(`${ANN_NODE}/${id}`, value);
+  if (!ok) { try { dbQueue.add(`${ANN_NODE}/${id}`, value); } catch {} }
+  return ok;
+}
+async function annDelete(id) {
+  try { const r = await fetch(`${FIREBASE_URL}/school/${ANN_NODE}/${id}.json`, { method: "DELETE" }); return r.ok; } catch { return false; }
+}
+async function annFetchOne(id) {
+  try {
+    const r = await fetch(`${FIREBASE_URL}/school/${ANN_NODE}/${id}.json`);
+    const d = await r.json();
+    if (d && typeof d === "object") return d;
+  } catch {}
+  try {
+    const r = await fetch(`${FIREBASE_URL}/school/school-announcements.json`);
+    const d = await r.json();
+    const arr = Array.isArray(d) ? d : (d && typeof d === "object" ? Object.values(d) : []);
+    return arr.find(a => a && String(a.id) === String(id)) || null;
+  } catch { return null; }
+}
+// تصغير الصور المضمّنة داخل نص الإعلان (base64) قبل الحفظ
+async function annCompressHtml(html) {
+  if (!html || typeof html !== "string" || !html.includes("data:image")) return html;
+  const re = /data:image\/(png|jpe?g|webp|gif|bmp);base64,[A-Za-z0-9+/=]+/g;
+  const found = [...new Set(html.match(re) || [])].filter(u => u.length > 200000 && !u.startsWith("data:image/gif"));
+  let out = html;
+  for (const src of found) {
+    try {
+      const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+      const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * scale); cv.height = Math.round(img.naturalHeight * scale);
+      const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+      const small = cv.toDataURL("image/jpeg", 0.82);
+      if (small.length < src.length) out = out.split(src).join(small);
+    } catch {}
+  }
+  return out;
+}
+
 function SingleAnnouncementPage({ announcements, siteFont, annId }) {
   const cIcons = { "تعاميم": "📜", "إعلانات": "📢", "تدريب": "🎓", "اجتماعات": "🤝" };
   const priorityColor = { "عاجل": "bg-red-100 text-red-700", "مهم": "bg-amber-100 text-amber-700", "عادي": "bg-gray-100 text-gray-600" };
-  const ann = announcements.find(a => String(a.id) === String(annId));
+  const fromList = (announcements || []).find(a => a && String(a.id) === String(annId));
+  const [fetched, setFetched] = React.useState(null);
+  const [tries, setTries] = React.useState(fromList ? 2 : 0);
+  React.useEffect(() => {
+    if (fromList || tries >= 2) return;
+    let alive = true;
+    (async () => { const d = await annFetchOne(annId); if (!alive) return; if (d) setFetched(d); else setTimeout(() => alive && setTries(t => t + 1), 1500); if (d) setTries(2); })();
+    return () => { alive = false; };
+  }, [annId, tries, fromList]);
+  const ann = fromList || fetched;
+  if (!ann && tries < 2) return (
+    <div dir="rtl" className="min-h-screen flex items-center justify-center" style={{ fontFamily: siteFont, background: "linear-gradient(135deg, #0d9488 0%, #065f46 50%, #064e3b 100%)" }}>
+      <div className="bg-white rounded-3xl p-8 text-center shadow-2xl"><div className="text-4xl mb-2 animate-pulse">📢</div><div className="font-bold text-gray-500">جاري تحميل الإعلان…</div></div>
+    </div>
+  );
   return (
     <div dir="rtl" className="min-h-screen"
       style={{ fontFamily: siteFont, background: "linear-gradient(135deg, #0d9488 0%, #065f46 50%, #064e3b 100%)" }}>
@@ -11314,18 +11375,31 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
   const filtered = filter === "الكل" ? announcements : announcements.filter(a => a.category === filter);
   const [creativeMode, setCreativeMode] = React.useState(false);
 
-  const add = () => {
+  const [annSaving, setAnnSaving] = React.useState("");
+  const afterSave = (p, okMsg) => {
+    setAnnSaving("⏳ جاري الحفظ على الخادم…");
+    Promise.resolve(p).then(ok => {
+      if (ok === false) { setAnnSaving(""); alert("⚠️ تم حفظ الإعلان على هذا الجهاز لكن تعذّر رفعه للخادم الآن (الاتصال ضعيف أو الصورة كبيرة).\nسيُعاد رفعه تلقائياً — لا تغلق الصفحة قبل ظهور رسالة النجاح."); }
+      else { setAnnSaving(okMsg || "✅ تم الحفظ على الخادم — الرابط يعمل من أي جهاز"); setTimeout(() => setAnnSaving(""), 3500); }
+    });
+  };
+  const add = async () => {
     if (!newAnn.title || !newAnn.content) return;
-    const u = [{ ...newAnn, id: Date.now(), date: newAnn.date || new Date().toLocaleDateString("ar-SA-u-nu-arab", { year: "numeric", month: "2-digit", day: "2-digit" }), pinned: false }, ...announcements];
-    setAnnouncements(u); saveAnnouncements(u);
+    setAnnSaving("⏳ جاري تجهيز الإعلان…");
+    const content = await annCompressHtml(newAnn.content);
+    const item = { ...newAnn, content, id: Date.now(), date: newAnn.date || new Date().toLocaleDateString("ar-SA-u-nu-arab", { year: "numeric", month: "2-digit", day: "2-digit" }), pinned: false };
+    if (JSON.stringify(item).length > 9000000) { setAnnSaving(""); alert("⚠️ حجم الإعلان كبير جداً (الصور). صغّر الصورة أو استخدم صورة أقل دقة ثم أعد المحاولة."); return; }
+    const u = [item, ...announcements];
+    setAnnouncements(u); afterSave(saveAnnouncements(u), "✅ تم نشر الإعلان وحفظه على الخادم — الرابط جاهز للإرسال");
     setNewAnn({ title: "", content: "", category: "إعلانات", priority: "عادي", bgColor: "", titleColor: "#1f2937", titleSize: "text-xl", titleAlign: "right" }); setShowForm(false);
   };
-  const del = (id) => { const u = announcements.filter(a => a.id !== id); setAnnouncements(u); saveAnnouncements(u); };
+  const del = (id) => { if (!window.confirm("حذف هذا الإعلان؟")) return; const u = announcements.filter(a => a.id !== id); setAnnouncements(u); afterSave(saveAnnouncements(u), "🗑️ تم الحذف"); };
   const pin = (id) => { const u = announcements.map(a => a.id === id ? { ...a, pinned: !a.pinned } : a); setAnnouncements(u); saveAnnouncements(u); };
   const startEdit = (ann) => { setEditId(ann.id); setEditAnn({ ...ann }); };
-  const saveEdit = () => {
-    const u = announcements.map(a => a.id === editId ? { ...editAnn } : a);
-    setAnnouncements(u); saveAnnouncements(u); setEditId(null); setEditAnn(null);
+  const saveEdit = async () => {
+    const content = await annCompressHtml(editAnn.content);
+    const u = announcements.map(a => a.id === editId ? { ...editAnn, content } : a);
+    setAnnouncements(u); afterSave(saveAnnouncements(u)); setEditId(null); setEditAnn(null);
   };
 
   const printAnn = (ann) => {
@@ -11367,6 +11441,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
   if (viewMode === "mobile") {
     return (
       <div dir="rtl" style={{ fontFamily:"'Cairo','Noto Naskh Arabic',sans-serif", minHeight:"100%", background:"#f8fafc" }}>
+        {annSaving && <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:500, background:"#0f172a", color:"#fff", padding:"12px 20px", borderRadius:14, fontWeight:800, fontSize:13.5, boxShadow:"0 14px 30px -10px rgba(0,0,0,.5)", fontFamily:"'Cairo',sans-serif", maxWidth:"92vw", textAlign:"center" }}>{annSaving}</div>}
 
         {/* رأس الصفحة */}
         <div style={{
@@ -11617,6 +11692,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
   ══════════════════════════════════════════ */
   return (
     <div>
+      {annSaving && <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:500, background:"#0f172a", color:"#fff", padding:"12px 20px", borderRadius:14, fontWeight:800, fontSize:13.5, boxShadow:"0 14px 30px -10px rgba(0,0,0,.5)", fontFamily:"'Cairo',sans-serif", maxWidth:"92vw", textAlign:"center" }}>{annSaving}</div>}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <h2 className="text-2xl font-black text-teal-900">الإعلانات والتعاميم</h2>
@@ -11751,10 +11827,10 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
               /* وضع العرض */
               <div className="p-5">
                 <AnnAudience ann={ann} />
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-start justify-between gap-3 mb-1 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap" style={{ flex: "1 1 260px", minWidth: 0 }}>
                     <span className="text-xl">{cIcons[ann.category] || "📌"}</span>
-                    <h3 className={"font-bold " + (ann.titleSize||"text-lg")} style={{color: ann.titleColor||"#1f2937"}}>{ann.title}</h3>
+                    <h3 className={"font-bold ann-title-r " + (ann.titleSize||"text-lg")} style={{color: ann.titleColor||"#1f2937", lineHeight: 1.5, minWidth: 0, flex: "1 1 200px", overflowWrap: "break-word"}}>{ann.title}</h3>
                     {ann.pinned && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">📌 مثبّت</span>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
@@ -29614,7 +29690,18 @@ function SchoolWebsiteInner() {
           DB.get("school-teachers", DEFAULT_TEACHERS),
           DB.get("school-week", DEFAULT_WEEK),
           DB.get("school-attendance", {}),
-          DB.get("school-announcements", DEFAULT_ANNOUNCEMENTS),
+          (async () => {
+            let items = null;
+            try { const r = await fetch(`${FIREBASE_URL}/school/${ANN_NODE}.json`); items = await r.json(); } catch {}
+            const legacy = await DB.get("school-announcements", DEFAULT_ANNOUNCEMENTS);
+            const legacyArr = Array.isArray(legacy) ? legacy : (legacy && typeof legacy === "object" ? Object.values(legacy) : []);
+            const itemsArr = items && typeof items === "object" ? Object.values(items).filter(x => x && x.id != null) : [];
+            // دمج: العقد المستقلة هي الأحدث، ويُضاف أي إعلان قديم غير موجود فيها (مع ترحيله)
+            const byId = new Map(itemsArr.map(a => [String(a.id), a]));
+            const toMigrate = legacyArr.filter(a => a && a.id != null && !byId.has(String(a.id)));
+            toMigrate.forEach(a => { byId.set(String(a.id), a); annPut(a.id, a); });
+            return [...byId.values()].sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+          })(),
           DB.get("school-activities", DEFAULT_ACTIVITIES),
           DB.get("school-font", "'Noto Naskh Arabic', serif"),
           DB.get("school-class-list", []),
@@ -29781,7 +29868,19 @@ function SchoolWebsiteInner() {
     // حفظ عبر DB (يتعامل مع queue + Firebase + إشعار UI)
     DB.set("school-attendance", v);
   };
-  const saveAnnouncements = (v) => DB.set("school-announcements", v);
+  // حفظ الإعلانات: يُرفع فقط الإعلان الذي تغيّر (أو يُحذف) — سريع ولا يفشل بسبب حجم باقي الإعلانات
+  const annSavedRef = useRef(null);
+  const saveAnnouncements = async (v) => {
+    const list = Array.isArray(v) ? v.filter(a => a && a.id != null) : [];
+    if (!annSavedRef.current) annSavedRef.current = Object.fromEntries((announcements || []).filter(a => a && a.id != null).map(a => [String(a.id), JSON.stringify(a)]));
+    const prev = annSavedRef.current, next = {}, jobs = [];
+    list.forEach(a => { const js = JSON.stringify(a); next[String(a.id)] = js; if (prev[String(a.id)] !== js) jobs.push(annPut(a.id, a)); });
+    Object.keys(prev).forEach(id => { if (!(id in next)) jobs.push(annDelete(id)); });
+    annSavedRef.current = next;
+    try { localStorage.setItem(DB_CACHE_PREFIX + "school-announcements", JSON.stringify(list)); } catch {}
+    const res = await Promise.all(jobs);
+    return res.every(Boolean);
+  };
   const saveActivities = (v) => DB.set("school-activities", v);
   const saveSiteFont = (v) => DB.set("school-font", v);
   const saveClass = (cls) => DB.set(`school-cls-${cls.id}`, cls);
@@ -29957,6 +30056,7 @@ function SchoolWebsiteInner() {
         background: #ede9fe; border-color: #c4b5fd;
       }
       .nav-pill-icon { font-size: 16px; }
+      @media (max-width: 640px) { .ann-title-r { font-size: 18px !important; line-height: 1.6 !important; } }
       .annhtml { overflow-x:hidden; max-width:100%; }
       .annhtml, .annhtml * { max-width:100% !important; width:auto !important; min-width:0 !important; box-sizing:border-box !important; white-space:normal !important; overflow-wrap:anywhere !important; word-break:break-word !important; float:none !important; text-indent:0 !important; }
       .annhtml img, .annhtml video, .annhtml iframe { height:auto !important; }
