@@ -1739,7 +1739,7 @@ const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
     tools:[{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
-    tools:[{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
+    tools:[{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
     tools:[{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
@@ -28284,7 +28284,7 @@ const NAV_TOOL_DESC = {
   attendance:"رصد حضور المعلمين يومياً", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم",
   attendancereport:"تحليل بيانات الحضور", "student-absence":"تسجيل غياب الطلاب", studentexcuses:"استقبال أعذار الغياب",
   absencestats:"مؤشرات وإحصاءات الغياب",
-  students:"رصد تقييم الطلاب", gradeanalysis:"تحليل النتائج والدرجات", assessment:"بطاقة تشخيص المستوى",
+  students:"رصد تقييم الطلاب", formative:"جدول عرضي ملوّن وفق اللائحة", gradeanalysis:"تحليل النتائج والدرجات", assessment:"بطاقة تشخيص المستوى",
   lessonrecommend:"خطط علاجية مقترحة", quiz:"بناء اختبارات الطلاب", dailyquiz:"سؤال يومي تفاعلي",
   honorboard:"تكريم المتميزين", certificates:"إصدار شهادات رقمية", raffle:"سحب عشوائي للطلاب", luckywheel:"عجلة تحفيزية للفصل",
   teacherperfeval:"استمارة الأداء الوظيفي", perfresults:"نتائج تقويم الأداء", teachereval:"قياس الأداء بالمعايير",
@@ -28529,6 +28529,613 @@ function StickerDrawerNav({ groups, pageById, page, onNavigate }) {
   );
 }
 
+// ── نماذج توزيع الدرجات (لائحة تقويم الطالب) ──
+const GA_CC = ["#2dd4bf","#f472b6","#818cf8","#fb923c","#34d399","#f87171","#a78bfa","#fbbf24","#38bdf8","#e879f9","#84cc16","#06b6d4"];
+const GA_MODELS = {
+  "1":{ name:"نموذج 1", type:"تكويني",  cw:100, fe:0,  round2:"يحتفظ بـ40 ويختبر من 60 (15 شفهي + 45 تحريري)", parts:{"المهام الأدائية والمشاركة":40,"تقويمات شفهية وتحريرية":60} },
+  "2":{ name:"نموذج 2", type:"ختامي",   cw:60,  fe:40, round2:"يحتفظ بـ40 ويختبر من 60 اختبار تحريري",        parts:{"المهام الأدائية والمشاركة":40,"تقويمات تحريرية":20,"اختبار نهاية الفترة":40} },
+  "3":{ name:"نموذج 3", type:"ختامي",   cw:60,  fe:40, round2:"يحتفظ بـ40 ويختبر من 60 (30 شفهي + 30 تحريري)",parts:{"المهام الأدائية والمشاركة":40,"تقويمات شفهية وتحريرية":20,"اختبار نهاية الفترة":40} },
+  "4":{ name:"نموذج 4", type:"تكويني",  cw:100, fe:0,  round2:"يحتفظ بـ40 ويختبر من 60 درجة",                parts:{"المهام الأدائية والمشاركة":40,"تقويمات تحريرية":60} },
+  "5":{ name:"نموذج 5", type:"تكويني",  cw:100, fe:0,  round2:"يحتفظ بـ40 ويختبر من 60 (شفهي وتطبيقات عملية)",parts:{"المهام الأدائية والمشاركة":40,"تقويمات وأدوات متنوعة":60} },
+  "6":{ name:"نموذج 6", type:"تكويني",  cw:100, fe:0,  round2:"يحتفظ بـ40 ويختبر من 60 (35 تطبيقات + 25 تحريري)",parts:{"المهام الأدائية والمشاركة":40,"تقويمات وتطبيقات عملية":60} },
+  "7":{ name:"نموذج 7", type:"ختامي",   cw:60,  fe:40, round2:"يحتفظ بـ40 ويختبر من 60 (20 تطبيقات + 40 تحريري)",parts:{"المهام الأدائية والمشاركة":40,"تقويمات وتطبيقات عملية":20,"اختبار نهاية الفترة":40} },
+};
+const GA_SUBJECTS = {
+  "ابتدائي":{"القرآن الكريم والدراسات الإسلامية":"1","اللغة العربية":"3","الرياضيات":"2","العلوم":"2","اللغة الإنجليزية":"3","الدراسات الاجتماعية":"4","المهارات الرقمية":"6","التربية الفنية":"5","التربية البدنية والدفاع عن النفس":"5","المهارات الحياتية والأسرية":"5"},
+  "متوسط":{"القرآن الكريم والدراسات الإسلامية":"1","اللغة العربية":"3","الرياضيات":"2","العلوم":"2","اللغة الإنجليزية":"3","الدراسات الاجتماعية":"4","المهارات الرقمية":"6","التفكير الناقد":"4","التربية الفنية":"5","التربية البدنية والدفاع عن النفس":"5","المهارات الحياتية والأسرية":"5"},
+  "ثانوي":{"القرآن الكريم وتفسيره":"1","الكفايات اللغوية":"3","اللغة الإنجليزية":"3","الرياضيات":"2","الفيزياء":"7","الكيمياء":"7","الأحياء":"7","الدراسات الاجتماعية":"4","التقنية الرقمية":"6","التفكير الناقد":"4","التربية الصحية والبدنية":"5","المهارات الحياتية":"4"},
+};
+const GA_RULES = [
+  "يُنفذ التقويم التكويني باستمرار بعد كل وحدة دراسية في جميع المواد",
+  "يتم إجراء اختبارات تحريرية قصيرة من (20) درجة مرتين على الأقل خلال الفترة الدراسية",
+  "المواد المُقوَّمة ختامياً: الرياضيات والعربية + الإنجليزية والعلوم (باقي الصفوف)",
+  "تُطبق النسبة الشرطية (20%) من درجة الاختبار التحريري في المواد المُقوَّمة ختامياً",
+  "عند إخفاق الطالب يحتفظ بـ (40) درجة ويُختبر الدور الثاني من (60) درجة",
+  "لا يُمنح الطالب درجة كاملة في المشاركة في المقرر الذي غاب فيه بدون عذر",
+  "لا يُعاد للطالب المتغيب بدون عذر عن الاختبارات القصيرة",
+];
+
+// ══════════════════════════════════════════════════════════
+// سجل رصد التقويم التكويني — جدول عرضي بأعمدة ملونة وفق لائحة تقويم الطالب
+// ══════════════════════════════════════════════════════════
+const FG_PALETTE = ["#0d9488","#2563eb","#7c3aed","#db2777","#ea580c","#ca8a04","#16a34a","#0891b2","#dc2626","#4f46e5","#9333ea","#475569"];
+const FG_GROUP_COLORS = ["#0d9488","#7c3aed","#ea580c","#2563eb","#db2777"];
+const FG_SEMESTERS = ["الفترة الأولى","الفترة الثانية","الفترة الثالثة"];
+const FG_LEVELS = ["الصف الأول المتوسط","الصف الثاني المتوسط","الصف الثالث المتوسط"];
+const fgId = () => Math.random().toString(36).slice(2, 9);
+
+// توزيع الدرجة داخل كل مكوّن من مكونات النموذج
+function fgSplitPart(label, total) {
+  if (label.includes("المهام الأدائية")) {
+    const q = total / 4;
+    return [["المشاركة والتفاعل الصفي", q], ["الواجبات", q], ["المهام الأدائية", q], ["المشروع / البحث", q]];
+  }
+  if (label.includes("اختبار نهاية")) return [["اختبار نهاية الفترة", total]];
+  if (total <= 20) return [["اختبار قصير ١", total / 2], ["اختبار قصير ٢", total / 2]];
+  if (label.includes("شفهية وتحريرية")) return [["تقويم شفهي", 15], ["اختبار قصير ١", 15], ["اختبار قصير ٢", 15], ["تقويم تحريري", total - 45]];
+  if (label.includes("تطبيقات")) return [["تطبيقات عملية ١", 20], ["تطبيقات عملية ٢", 15], ["اختبار قصير", total - 35]];
+  if (label.includes("متنوعة")) return [["تطبيقات عملية", 20], ["تقويم شفهي", 20], ["اختبار قصير", total - 40]];
+  return [["اختبار قصير ١", 20], ["اختبار قصير ٢", 20], ["تقويم تحريري", total - 40]];
+}
+
+function fgBuildColumns(modelKey) {
+  const m = (typeof GA_MODELS !== "undefined" && GA_MODELS[modelKey]) || { parts: { "المهام الأدائية والمشاركة": 40, "تقويمات تحريرية": 60 } };
+  const groups = [], cols = [];
+  let ci = 0;
+  Object.entries(m.parts).forEach(([label, max], gi) => {
+    const g = { id: fgId(), label, max, color: FG_GROUP_COLORS[gi % FG_GROUP_COLORS.length], exam: label.includes("اختبار نهاية") };
+    groups.push(g);
+    fgSplitPart(label, max).forEach(([l, mx]) => cols.push({ id: fgId(), label: l, max: mx, groupId: g.id, color: FG_PALETTE[ci++ % FG_PALETTE.length] }));
+  });
+  return { groups, cols };
+}
+
+function fgNewSheet(defaults = {}) {
+  const model = defaults.model || "4";
+  return {
+    id: "fg-" + Date.now(), teacher: "", subject: "", level: FG_LEVELS[0], section: "أ",
+    semester: FG_SEMESTERS[0], year: "١٤٤٧هـ", edu: "الإدارة العامة للتعليم",
+    school: "مدرسة الأمير عبدالمجيد المتوسطة", model, ...fgBuildColumns(model),
+    students: Array.from({ length: 5 }, () => ({ id: fgId(), name: "", scores: {} })),
+    ...defaults, updated: Date.now(),
+  };
+}
+
+const FG_CSS = `
+.fg{font-family:'Cairo','Noto Naskh Arabic',sans-serif;color:#0f172a}
+.fg-card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 10px 30px -18px rgba(15,23,42,.25)}
+.fg-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:800;font-size:12.5px;color:#334155;cursor:pointer;transition:all .18s;white-space:nowrap}
+.fg-btn:hover{border-color:#94a3b8;transform:translateY(-1px);box-shadow:0 6px 14px -8px rgba(15,23,42,.35)}
+.fg-btn.pri{background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border-color:transparent}
+.fg-btn.vio{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border-color:transparent}
+.fg-btn.grn{background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;border-color:transparent}
+.fg-btn.red{color:#dc2626;border-color:#fecaca;background:#fff5f5}
+.fg-inp{width:100%;height:38px;border-radius:11px;border:1px solid #e2e8f0;background:#f8fafc;padding:0 10px;font-family:inherit;font-size:13px;font-weight:700;outline:none;transition:all .15s}
+.fg-inp:focus{border-color:#2dd4bf;background:#fff;box-shadow:0 0 0 3px rgba(45,212,191,.18)}
+.fg-lbl{font-size:11px;font-weight:800;color:#64748b;margin-bottom:4px;display:block}
+.fg-klish{position:relative;overflow:hidden;border-radius:22px 22px 0 0;background:linear-gradient(135deg,#0f3b4c 0%,#0f766e 55%,#14b8a6 100%);color:#fff;padding:18px 24px}
+.fg-klish::after{content:'';position:absolute;inset:auto -60px -90px auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%)}
+.fg-klish .col{font-size:12.5px;font-weight:800;line-height:1.9}
+.fg-klish input{background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,.35);color:#fff;font-family:inherit;font-weight:800;font-size:12.5px;outline:none;width:100%}
+.fg-klish input:focus{border-bottom-color:#fff}
+.fg-title{font-size:21px;font-weight:900;text-align:center;letter-spacing:-.3px}
+.fg-wrap{overflow:auto;max-height:68vh;border-top:1px solid #e2e8f0}
+.fg-tbl{border-collapse:separate;border-spacing:0;min-width:100%;font-size:12.5px}
+.fg-tbl th,.fg-tbl td{border-left:1px solid #eef2f6;border-bottom:1px solid #eef2f6;text-align:center;white-space:nowrap}
+.fg-tbl thead th{position:sticky;z-index:3;background:#fff}
+.fg-tbl thead tr.r1 th{top:0;height:44px}
+.fg-tbl thead tr.r2 th{top:44px;height:78px;vertical-align:top}
+.fg-tbl .stk1{position:sticky;right:0;z-index:4;background:#fff}
+.fg-tbl .stk2{position:sticky;right:44px;z-index:4;background:#fff;box-shadow:-6px 0 10px -8px rgba(15,23,42,.25)}
+.fg-tbl thead .stk1,.fg-tbl thead .stk2{z-index:6}
+.fg-grp{color:#fff;font-weight:900;font-size:13px;padding:0 10px}
+.fg-grp .gx{display:inline-flex;align-items:center;gap:6px}
+.fg-grp .pill{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:1px 9px;font-size:11px}
+.fg-grp .warn{background:#fef08a;color:#854d0e;border-radius:999px;padding:1px 8px;font-size:10.5px}
+.fg-grp .addc{background:#fff;color:inherit;border:none;border-radius:8px;width:24px;height:24px;font-weight:900;cursor:pointer;font-size:15px;line-height:1}
+.fg-ch{min-width:86px;padding:6px 6px 4px;position:relative}
+.fg-ch .bar{height:4px;border-radius:4px;margin:0 6px 6px}
+.fg-ch input.l{width:100%;border:none;background:transparent;text-align:center;font-family:inherit;font-weight:900;font-size:12px;color:#0f172a;outline:none;border-radius:6px;padding:2px}
+.fg-ch input.l:focus{background:#f1f5f9}
+.fg-ch .mx{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:3px;font-size:10.5px;font-weight:800;color:#64748b}
+.fg-ch .mx input{width:42px;height:22px;border:1px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-weight:900;font-size:11px;outline:none}
+.fg-ch .tools{display:flex;justify-content:center;gap:4px;margin-top:5px;opacity:.35;transition:opacity .2s}
+.fg-ch:hover .tools{opacity:1}
+.fg-ch .tools button{border:none;background:#f1f5f9;border-radius:6px;width:22px;height:20px;cursor:pointer;font-size:11px}
+.fg-ch .tools button.del:hover{background:#fee2e2}
+.fg-sw{position:absolute;top:100%;right:50%;transform:translateX(50%);z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:8px;display:grid;grid-template-columns:repeat(6,20px);gap:5px;box-shadow:0 14px 30px -12px rgba(15,23,42,.4)}
+.fg-sw span{width:20px;height:20px;border-radius:6px;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #e2e8f0}
+.fg-cell input{width:100%;min-width:52px;height:36px;border:none;background:transparent;text-align:center;font-family:inherit;font-weight:800;font-size:13px;outline:none}
+.fg-cell input:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--c)}
+.fg-cell.bad input{color:#dc2626;background:#fee2e2}
+.fg-name input{width:100%;min-width:165px;height:36px;border:none;background:transparent;padding:0 10px;font-family:inherit;font-weight:800;font-size:13px;outline:none}
+.fg-name input:focus{background:#f0fdfa}
+.fg-tbl tbody tr:hover td{filter:brightness(.97)}
+.fg-tbl tbody tr:hover .stk1,.fg-tbl tbody tr:hover .stk2{background:#f8fafc}
+.fg-tot{font-weight:900;font-size:14px;min-width:74px}
+.fg-badge{display:inline-block;border-radius:999px;padding:3px 10px;font-weight:900;font-size:11px}
+.fg-rowdel{border:none;background:transparent;color:#cbd5e1;cursor:pointer;font-size:13px}
+.fg-rowdel:hover{color:#dc2626}
+.fg-foot td{background:#f8fafc;font-weight:900;color:#334155;height:38px}
+.fg-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.fg-kpi div{border-radius:16px;padding:12px 14px;color:#fff}
+.fg-kpi b{display:block;font-size:22px;font-weight:900;line-height:1.1}
+.fg-kpi small{font-size:11px;font-weight:700;opacity:.9}
+.fg-modal{position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.45);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.fg-modal>div{background:#fff;border-radius:22px;width:min(560px,100%);max-height:88vh;overflow:auto;padding:22px;box-shadow:0 30px 70px -20px rgba(0,0,0,.45)}
+.fg-sheets{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.fg-sheet{flex-shrink:0;border:1px solid #e2e8f0;background:#fff;border-radius:14px;padding:8px 12px;cursor:pointer;text-align:right;font-family:inherit;min-width:170px;transition:all .15s}
+.fg-sheet.on{border-color:#0d9488;background:#f0fdfa;box-shadow:0 0 0 3px rgba(13,148,136,.12)}
+.fg-sheet b{display:block;font-size:12.5px;font-weight:900}
+.fg-sheet small{font-size:10.5px;color:#64748b;font-weight:700}
+@media (max-width:768px){.fg-kpi{grid-template-columns:repeat(2,1fr)}.fg-title{font-size:17px}}
+`;
+
+function FormativeGradebookPage({ classList = [] }) {
+  const [sheets, setSheets] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [swatch, setSwatch] = useState(null);
+  const [modal, setModal] = useState(null); // paste | excel | classes | model
+  const [pasteText, setPasteText] = useState("");
+  const [xl, setXl] = useState(null); // {headers, rows, col}
+  const fileRef = useRef(null);
+  const saveT = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      let list = [];
+      try { list = (await DB.get("formative-sheets", [])) || []; } catch {}
+      if (!Array.isArray(list) || !list.length) list = [fgNewSheet()];
+      setSheets(list); setActiveId(list[0].id); setLoaded(true);
+    })();
+  }, []);
+
+  const persist = (list) => {
+    if (saveT.current) clearTimeout(saveT.current);
+    saveT.current = setTimeout(() => { try { DB.set("formative-sheets", list); } catch {} }, 700);
+  };
+  const sheet = sheets.find(s => s.id === activeId) || sheets[0];
+  const update = (fn) => setSheets(prev => {
+    const next = prev.map(s => s.id === sheet.id ? { ...fn(s), updated: Date.now() } : s);
+    persist(next); return next;
+  });
+  const set = (k, v) => update(s => ({ ...s, [k]: v }));
+
+  if (!loaded || !sheet) return <div className="fg p-10 text-center font-bold text-gray-400">جاري تحميل السجل…</div>;
+
+  const modelInfo = (typeof GA_MODELS !== "undefined" && GA_MODELS[sheet.model]) || null;
+  const subjects = (typeof GA_SUBJECTS !== "undefined" && GA_SUBJECTS["متوسط"]) || {};
+  const examGroup = sheet.groups.find(g => g.exam);
+  const examCols = examGroup ? sheet.cols.filter(c => c.groupId === examGroup.id) : [];
+  const maxTotal = sheet.cols.reduce((a, c) => a + (+c.max || 0), 0);
+
+  // ── العمليات على الأعمدة
+  const addCol = (groupId) => update(s => {
+    const g = s.groups.find(x => x.id === groupId);
+    const idx = s.cols.map(c => c.groupId).lastIndexOf(groupId);
+    const col = { id: fgId(), label: "عمود جديد", max: 5, groupId, color: FG_PALETTE[s.cols.length % FG_PALETTE.length] || g.color };
+    const cols = [...s.cols]; cols.splice(idx + 1, 0, col);
+    return { ...s, cols };
+  });
+  const delCol = (id) => {
+    const c = sheet.cols.find(x => x.id === id);
+    if (!window.confirm(`حذف عمود «${c.label}» وجميع درجاته؟`)) return;
+    update(s => ({ ...s, cols: s.cols.filter(x => x.id !== id), students: s.students.map(st => { const sc = { ...st.scores }; delete sc[id]; return { ...st, scores: sc }; }) }));
+  };
+  const setCol = (id, k, v) => update(s => ({ ...s, cols: s.cols.map(c => c.id === id ? { ...c, [k]: v } : c) }));
+  const moveCol = (id, dir) => update(s => {
+    const cols = [...s.cols]; const i = cols.findIndex(c => c.id === id); const j = i + dir;
+    if (j < 0 || j >= cols.length || cols[j].groupId !== cols[i].groupId) return s;
+    [cols[i], cols[j]] = [cols[j], cols[i]]; return { ...s, cols };
+  });
+  const addGroup = () => update(s => {
+    const g = { id: fgId(), label: "مكوّن إضافي", max: 10, color: FG_GROUP_COLORS[s.groups.length % FG_GROUP_COLORS.length] };
+    return { ...s, groups: [...s.groups, g], cols: [...s.cols, { id: fgId(), label: "عمود جديد", max: 10, groupId: g.id, color: g.color }] };
+  });
+  const setGroup = (id, k, v) => update(s => ({ ...s, groups: s.groups.map(g => g.id === id ? { ...g, [k]: v } : g) }));
+  const delGroup = (id) => {
+    if (!window.confirm("حذف هذا المكوّن بكل أعمدته ودرجاته؟")) return;
+    update(s => ({ ...s, groups: s.groups.filter(g => g.id !== id), cols: s.cols.filter(c => c.groupId !== id) }));
+  };
+  const applyModel = (key) => {
+    const hasScores = sheet.students.some(st => Object.keys(st.scores || {}).length);
+    if (hasScores && !window.confirm("تطبيق النموذج سيعيد بناء الأعمدة ويمسح الدرجات المرصودة. متابعة؟")) return;
+    update(s => ({ ...s, model: key, ...fgBuildColumns(key), students: s.students.map(st => ({ ...st, scores: {} })) }));
+    setModal(null);
+  };
+  const onSubject = (sub) => {
+    const key = subjects[sub];
+    update(s => {
+      const hasScores = s.students.some(st => Object.keys(st.scores || {}).length);
+      if (key && key !== s.model && !hasScores) return { ...s, subject: sub, model: key, ...fgBuildColumns(key) };
+      return { ...s, subject: sub };
+    });
+  };
+
+  // ── الطلاب
+  const addStudents = (names) => update(s => {
+    const clean = s.students.filter(st => st.name.trim() || Object.keys(st.scores || {}).length);
+    const existing = new Set(clean.map(st => st.name.trim()));
+    const add = names.map(n => String(n).trim()).filter(n => n && !existing.has(n)).map(name => ({ id: fgId(), name, scores: {} }));
+    return { ...s, students: [...clean, ...add] };
+  });
+  const addBlank = (n = 1) => update(s => ({ ...s, students: [...s.students, ...Array.from({ length: n }, () => ({ id: fgId(), name: "", scores: {} }))] }));
+  const setName = (id, name) => update(s => ({ ...s, students: s.students.map(st => st.id === id ? { ...st, name } : st) }));
+  const delStudent = (id) => update(s => ({ ...s, students: s.students.filter(st => st.id !== id) }));
+  const setScore = (sid, cid, v) => update(s => ({ ...s, students: s.students.map(st => {
+    if (st.id !== sid) return st;
+    const sc = { ...st.scores };
+    if (v === "") delete sc[cid]; else sc[cid] = v;
+    return { ...st, scores: sc };
+  }) }));
+  const sortByName = () => update(s => ({ ...s, students: [...s.students].sort((a, b) => (a.name || "ي").localeCompare(b.name || "ي", "ar")) }));
+
+  // ── الحسابات
+  const num = v => { const n = parseFloat(String(v ?? "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))); return isNaN(n) ? null : n; };
+  const rowCalc = (st) => {
+    let t = 0, any = false;
+    sheet.cols.forEach(c => { const n = num(st.scores?.[c.id]); if (n != null) { t += Math.min(n, +c.max || 0); any = true; } });
+    const pct = maxTotal ? (t / maxTotal) * 100 : 0;
+    let cond = true;
+    if (examCols.length) {
+      const exMax = examCols.reduce((a, c) => a + (+c.max || 0), 0);
+      const exGot = examCols.reduce((a, c) => a + (num(st.scores?.[c.id]) || 0), 0);
+      const exAny = examCols.some(c => num(st.scores?.[c.id]) != null);
+      cond = !exAny || exGot >= exMax * 0.2;
+    }
+    return { t: Math.round(t * 100) / 100, pct, any, cond };
+  };
+  const named = sheet.students.filter(st => st.name.trim());
+  const calcs = named.map(rowCalc).filter(r => r.any);
+  const avg = calcs.length ? calcs.reduce((a, r) => a + r.pct, 0) / calcs.length : 0;
+  const excellent = calcs.filter(r => r.pct >= 90).length;
+  const weak = calcs.filter(r => r.pct < 50 || !r.cond).length;
+  const colAvg = (c) => { const v = named.map(st => num(st.scores?.[c.id])).filter(n => n != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : "—"; };
+
+  // تنقل بالأسهم و Enter
+  const onKey = (e, r, c) => {
+    const go = (rr, cc) => { const el = document.querySelector(`[data-fg="${rr}-${cc}"]`); if (el) { e.preventDefault(); el.focus(); el.select?.(); } };
+    if (e.key === "Enter" || e.key === "ArrowDown") go(r + 1, c);
+    else if (e.key === "ArrowUp") go(r - 1, c);
+    else if (e.key === "ArrowLeft" && e.target.selectionStart === e.target.value.length) go(r, c + 1);
+    else if (e.key === "ArrowRight" && e.target.selectionStart === 0) go(r, c - 1);
+  };
+
+  // ── Excel
+  const onExcel = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    const XLSX = await loadXLSX();
+    const wb = XLSX.read(await f.arrayBuffer());
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" }).filter(r => r.some(x => String(x).trim()));
+    if (!rows.length) { alert("الملف فارغ"); return; }
+    const width = Math.max(...rows.map(r => r.length));
+    const ar = /[؀-ۿ]{2,}/;
+    let best = 0, bestScore = -1;
+    for (let c = 0; c < width; c++) {
+      const sc = rows.filter(r => ar.test(String(r[c] || "")) && String(r[c]).trim().split(/\s+/).length >= 2).length;
+      if (sc > bestScore) { bestScore = sc; best = c; }
+    }
+    const headerLike = !/^\d+$/.test(String(rows[0][0])) && rows[0].some(x => /اسم|الطالب/.test(String(x)));
+    setXl({ rows: headerLike ? rows.slice(1) : rows, headers: headerLike ? rows[0] : Array.from({ length: width }, (_, i) => `العمود ${i + 1}`), col: best, fname: f.name });
+    setModal("excel");
+  };
+  const exportExcel = async () => {
+    const XLSX = await loadXLSX();
+    const head1 = ["م", "اسم الطالب"], head2 = ["", ""];
+    sheet.groups.forEach(g => sheet.cols.filter(c => c.groupId === g.id).forEach((c, i) => { head1.push(i === 0 ? `${g.label} (${g.max})` : ""); head2.push(`${c.label} (${c.max})`); }));
+    head1.push("المجموع", "النسبة", "التقدير"); head2.push(`من ${maxTotal}`, "%", "");
+    const aoa = [
+      ["المملكة العربية السعودية — وزارة التعليم — " + sheet.edu],
+      [sheet.school + " — سجل رصد التقويم التكويني"],
+      [`المعلم: ${sheet.teacher || "—"}   المادة: ${sheet.subject || "—"}   الصف: ${sheet.level} / ${sheet.section}   ${sheet.semester}   العام: ${sheet.year}`],
+      [], head1, head2,
+      ...named.map((st, i) => { const r = rowCalc(st); return [i + 1, st.name, ...sheet.cols.map(c => num(st.scores?.[c.id]) ?? ""), r.any ? r.t : "", r.any ? Math.round(r.pct) : "", r.any ? gaGradeLabel(r.pct).l : ""]; }),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 5 }, { wch: 30 }, ...sheet.cols.map(() => ({ wch: 14 })), { wch: 10 }, { wch: 8 }, { wch: 12 }];
+    ws["!rtl"] = true;
+    const wb = XLSX.utils.book_new(); wb.Workbook = { Views: [{ RTL: true }] };
+    XLSX.utils.book_append_sheet(wb, ws, "التقويم التكويني");
+    XLSX.writeFile(wb, `التقويم_التكويني_${sheet.subject || "مادة"}_${sheet.level}_${sheet.section}.xlsx`);
+  };
+  const downloadTemplate = async () => {
+    const XLSX = await loadXLSX();
+    const ws = XLSX.utils.aoa_to_sheet([["م", "اسم الطالب"], [1, "محمد عبدالله أحمد"], [2, "فهد سعد علي"]]);
+    ws["!cols"] = [{ wch: 5 }, { wch: 32 }];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "الطلاب");
+    XLSX.writeFile(wb, "نموذج_أسماء_الطلاب.xlsx");
+  };
+
+  // ── طباعة ملونة
+  const print = () => {
+    const logo = typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" style="width:62px;height:62px">` : "";
+    const gh = sheet.groups.map(g => { const n = sheet.cols.filter(c => c.groupId === g.id).length; return n ? `<th colspan="${n}" style="background:${g.color};color:#fff">${g.label} (${g.max})</th>` : ""; }).join("");
+    const ch = sheet.cols.map(c => `<th style="background:${c.color}22;border-top:3px solid ${c.color}">${c.label}<br><small>${c.max}</small></th>`).join("");
+    const body = named.map((st, i) => { const r = rowCalc(st); const gl = gaGradeLabel(r.pct);
+      return `<tr><td>${i + 1}</td><td style="text-align:right;padding-right:8px;font-weight:700">${st.name}</td>${sheet.cols.map(c => `<td style="background:${c.color}0f">${st.scores?.[c.id] ?? ""}</td>`).join("")}<td style="font-weight:900">${r.any ? r.t : ""}</td><td style="background:${r.any ? gl.bg : "#fff"};color:${gl.c};font-weight:900">${r.any ? gl.l : ""}${r.any && !r.cond ? "<br><small style='color:#dc2626'>لم يحقق النسبة الشرطية</small>" : ""}</td></tr>`; }).join("");
+    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>سجل التقويم التكويني</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Cairo,Tahoma,sans-serif;margin:0;color:#0f172a}
+.k{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;border-bottom:3px solid #0f766e;padding-bottom:8px;margin-bottom:8px;font-size:12px;font-weight:700;line-height:1.8}
+.k .l{text-align:left}h1{text-align:center;font-size:18px;margin:4px 0;color:#0f766e}
+.info{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:12px;font-weight:700;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:6px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #cbd5e1;padding:4px;text-align:center}th small{font-weight:400;color:#475569}
+.sig{display:flex;justify-content:space-around;margin-top:26px;font-weight:700;font-size:12px}</style></head><body>
+<div class="k"><div>المملكة العربية السعودية<br>وزارة التعليم<br>${sheet.edu}<br>${sheet.school}</div><div>${logo}</div><div class="l">العام الدراسي: ${sheet.year}<br>${sheet.semester}<br>المادة: ${sheet.subject || "—"}</div></div>
+<h1>سجل رصد التقويم التكويني</h1>
+<div class="info"><span>المعلم: ${sheet.teacher || "—"}</span><span>المادة: ${sheet.subject || "—"}</span><span>الصف: ${sheet.level}</span><span>الفصل: ${sheet.section}</span><span>عدد الطلاب: ${named.length}</span>${modelInfo ? `<span>${modelInfo.name} (${modelInfo.type})</span>` : ""}</div>
+<table><thead><tr><th rowspan="2">م</th><th rowspan="2" style="min-width:160px">اسم الطالب</th>${gh}<th rowspan="2">المجموع<br><small>${maxTotal}</small></th><th rowspan="2">التقدير</th></tr><tr>${ch}</tr></thead><tbody>${body}</tbody></table>
+<div class="sig"><span>معلم المادة: ${sheet.teacher || "............"}</span><span>التوقيع: ............</span><span>مدير المدرسة: ............</span></div>
+<script>setTimeout(()=>print(),600)</script></body></html>`);
+  };
+
+  // ── إدارة السجلات
+  const newSheet = () => {
+    const s = fgNewSheet({ teacher: sheet.teacher, subject: sheet.subject, model: sheet.model, semester: sheet.semester, edu: sheet.edu });
+    const next = [s, ...sheets]; setSheets(next); setActiveId(s.id); persist(next);
+  };
+  const dupSheet = () => {
+    const s = { ...JSON.parse(JSON.stringify(sheet)), id: "fg-" + Date.now(), section: sheet.section, students: sheet.students.map(st => ({ ...st, id: fgId(), scores: {} })) };
+    s.students = s.students.map(st => ({ ...st, scores: {} }));
+    const next = [s, ...sheets]; setSheets(next); setActiveId(s.id); persist(next);
+  };
+  const deleteSheet = () => {
+    if (!window.confirm("حذف هذا السجل نهائياً؟")) return;
+    let next = sheets.filter(s => s.id !== sheet.id);
+    if (!next.length) next = [fgNewSheet()];
+    setSheets(next); setActiveId(next[0].id); persist(next);
+  };
+
+  const groupSum = (g) => sheet.cols.filter(c => c.groupId === g.id).reduce((a, c) => a + (+c.max || 0), 0);
+  let colIndex = -1;
+
+  return (
+    <div className="fg px-3 md:px-6 py-4" dir="rtl">
+      <style>{FG_CSS}</style>
+
+      {/* شريط السجلات */}
+      <div className="fg-card p-3 mb-4">
+        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span style={{ width: 38, height: 38, borderRadius: 12, display: "grid", placeItems: "center", fontSize: 20, background: "linear-gradient(135deg,#2dd4bf,#0f766e)", boxShadow: "0 6px 14px -6px #0f766e" }}>📘</span>
+            <div><div className="font-black" style={{ fontSize: 16 }}>سجلات التقويم التكويني</div><div className="text-xs font-bold text-gray-400">وفق لائحة تقويم الطالب — سجل لكل مادة وفصل</div></div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button className="fg-btn pri" onClick={newSheet}>＋ سجل جديد</button>
+            <button className="fg-btn" onClick={dupSheet}>⧉ نسخ لفصل آخر</button>
+            <button className="fg-btn red" onClick={deleteSheet}>🗑 حذف السجل</button>
+          </div>
+        </div>
+        <div className="fg-sheets">
+          {sheets.map(s => (
+            <button key={s.id} className={`fg-sheet ${s.id === sheet.id ? "on" : ""}`} onClick={() => setActiveId(s.id)}>
+              <b>📚 {s.subject || "مادة غير محددة"}</b>
+              <small>{s.level.replace("الصف ", "")} / {s.section} • {s.students.filter(x => x.name.trim()).length} طالب</small>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="fg-card">
+        {/* الكليشة */}
+        <div className="fg-klish">
+          <div className="grid items-center gap-4" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
+            <div className="col">
+              <div>المملكة العربية السعودية</div>
+              <div>وزارة التعليم</div>
+              <input value={sheet.edu} onChange={e => set("edu", e.target.value)} />
+              <input value={sheet.school} onChange={e => set("school", e.target.value)} />
+            </div>
+            <div className="text-center" style={{ position: "relative", zIndex: 1 }}>
+              {typeof SCHOOL_LOGO !== "undefined" && <img src={SCHOOL_LOGO} alt="" style={{ width: 64, height: 64, margin: "0 auto 4px", filter: "drop-shadow(0 4px 10px rgba(0,0,0,.3))" }} />}
+              <div className="fg-title">سجل رصد التقويم التكويني</div>
+              {modelInfo && <div style={{ fontSize: 11, fontWeight: 800, opacity: .85 }}>{modelInfo.name} • تقويم {modelInfo.type} • {maxTotal} درجة</div>}
+            </div>
+            <div className="col" style={{ textAlign: "left" }}>
+              <div className="flex gap-1 items-center justify-end">العام الدراسي: <input style={{ width: 70, textAlign: "center" }} value={sheet.year} onChange={e => set("year", e.target.value)} /></div>
+              <div>{sheet.semester}</div>
+              <div>المادة: {sheet.subject || "—"}</div>
+              <div>{sheet.level} / {sheet.section}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* بيانات المعلم والمادة */}
+        <div className="p-4 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", background: "linear-gradient(180deg,#f0fdfa,#fff)" }}>
+          <div><span className="fg-lbl">👨‍🏫 اسم المعلم</span><input className="fg-inp" value={sheet.teacher} placeholder="اكتب اسم المعلم" onChange={e => set("teacher", e.target.value)} /></div>
+          <div><span className="fg-lbl">📚 المادة</span>
+            <input className="fg-inp" list="fg-subjects" value={sheet.subject} placeholder="اختر أو اكتب المادة" onChange={e => onSubject(e.target.value)} />
+            <datalist id="fg-subjects">{Object.keys(subjects).map(s => <option key={s} value={s} />)}</datalist>
+          </div>
+          <div><span className="fg-lbl">🎓 الصف</span><select className="fg-inp" value={sheet.level} onChange={e => set("level", e.target.value)}>{FG_LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
+          <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => set("section", e.target.value)}>{["أ","ب","ج","د","هـ","و","ز","ح"].map(l => <option key={l}>{l}</option>)}</select></div>
+          <div><span className="fg-lbl">🗓 الفترة الدراسية</span><select className="fg-inp" value={sheet.semester} onChange={e => set("semester", e.target.value)}>{FG_SEMESTERS.map(l => <option key={l}>{l}</option>)}</select></div>
+          <div><span className="fg-lbl">📐 نموذج التوزيع</span><button className="fg-inp text-right" style={{ cursor: "pointer" }} onClick={() => setModal("model")}>{modelInfo ? `${modelInfo.name} — ${modelInfo.type}` : "مخصص"} ▾</button></div>
+        </div>
+
+        {/* مؤشرات */}
+        <div className="px-4 pb-3 fg-kpi">
+          <div style={{ background: "linear-gradient(135deg,#14b8a6,#0f766e)" }}><b>{named.length}</b><small>عدد الطلاب</small></div>
+          <div style={{ background: "linear-gradient(135deg,#60a5fa,#2563eb)" }}><b>{calcs.length ? avg.toFixed(1) + "%" : "—"}</b><small>متوسط الفصل</small></div>
+          <div style={{ background: "linear-gradient(135deg,#34d399,#16a34a)" }}><b>{excellent}</b><small>ممتاز (٩٠٪ فأكثر)</small></div>
+          <div style={{ background: "linear-gradient(135deg,#fb7185,#dc2626)" }}><b>{weak}</b><small>بحاجة لخطة علاجية</small></div>
+        </div>
+
+        {/* الأدوات */}
+        <div className="px-4 pb-3 flex gap-2 flex-wrap items-center">
+          <button className="fg-btn grn" onClick={() => fileRef.current?.click()}>📥 استيراد الطلاب من Excel</button>
+          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={onExcel} />
+          <button className="fg-btn" onClick={() => { setPasteText(""); setModal("paste"); }}>📋 لصق الأسماء</button>
+          {classList.length > 0 && <button className="fg-btn" onClick={() => setModal("classes")}>🏫 من فصول الموقع</button>}
+          <button className="fg-btn" onClick={() => addBlank(1)}>＋ طالب</button>
+          <button className="fg-btn" onClick={sortByName}>↕ ترتيب أبجدي</button>
+          <span style={{ flex: 1 }} />
+          <button className="fg-btn" onClick={addGroup}>＋ مكوّن تقويم</button>
+          <button className="fg-btn vio" onClick={exportExcel}>📤 تصدير Excel</button>
+          <button className="fg-btn pri" onClick={print}>🖨 طباعة ملونة</button>
+        </div>
+
+        {/* الجدول العرضي */}
+        <div className="fg-wrap">
+          <table className="fg-tbl">
+            <thead>
+              <tr className="r1">
+                <th rowSpan={2} className="stk1" style={{ width: 44, minWidth: 44 }}>م</th>
+                <th rowSpan={2} className="stk2" style={{ minWidth: 175 }}>اسم الطالب</th>
+                {sheet.groups.map(g => {
+                  const n = sheet.cols.filter(c => c.groupId === g.id).length;
+                  if (!n) return null;
+                  const sum = groupSum(g);
+                  return (
+                    <th key={g.id} colSpan={n} className="fg-grp" style={{ background: `linear-gradient(135deg, ${g.color}, ${g.color}cc)` }}>
+                      <span className="gx">
+                        <input value={g.label} onChange={e => setGroup(g.id, "label", e.target.value)} style={{ background: "transparent", border: "none", color: "#fff", fontFamily: "inherit", fontWeight: 900, fontSize: 13, outline: "none", width: Math.max(90, g.label.length * 8.5), textAlign: "center" }} />
+                        <span className="pill">{g.max}</span>
+                        {sum !== +g.max && <span className="warn" title="مجموع درجات الأعمدة لا يطابق درجة المكوّن في اللائحة">⚠ {sum}/{g.max}</span>}
+                        <button className="addc" style={{ color: g.color }} title="إضافة عمود" onClick={() => addCol(g.id)}>＋</button>
+                        {!modelInfo || !Object.keys(modelInfo.parts).includes(g.label) ? <button className="addc" style={{ color: "#dc2626" }} title="حذف المكوّن" onClick={() => delGroup(g.id)}>×</button> : null}
+                      </span>
+                    </th>
+                  );
+                })}
+                <th rowSpan={2} style={{ minWidth: 80, background: "#0f172a", color: "#fff", fontWeight: 900 }}>المجموع<div style={{ fontSize: 11, opacity: .7 }}>من {maxTotal}</div></th>
+                <th rowSpan={2} style={{ minWidth: 110, background: "#0f172a", color: "#fff", fontWeight: 900 }}>التقدير</th>
+                <th rowSpan={2} style={{ width: 34, background: "#0f172a" }}></th>
+              </tr>
+              <tr className="r2">
+                {sheet.groups.flatMap(g => sheet.cols.filter(c => c.groupId === g.id)).map(c => (
+                  <th key={c.id} className="fg-ch" style={{ background: c.color + "10" }}>
+                    <div className="bar" style={{ background: c.color }} />
+                    <input className="l" value={c.label} onChange={e => setCol(c.id, "label", e.target.value)} />
+                    <div className="mx">من <input type="number" min="0" value={c.max} onChange={e => setCol(c.id, "max", e.target.value === "" ? "" : +e.target.value)} /></div>
+                    <div className="tools">
+                      <button title="نقل يميناً" onClick={() => moveCol(c.id, -1)}>→</button>
+                      <button title="اللون" onClick={() => setSwatch(swatch === c.id ? null : c.id)} style={{ background: c.color }}>&nbsp;</button>
+                      <button title="نقل يساراً" onClick={() => moveCol(c.id, 1)}>←</button>
+                      <button className="del" title="حذف العمود" onClick={() => delCol(c.id)}>🗑</button>
+                    </div>
+                    {swatch === c.id && (
+                      <div className="fg-sw" onMouseLeave={() => setSwatch(null)}>
+                        {FG_PALETTE.map(p => <span key={p} style={{ background: p }} onClick={() => { setCol(c.id, "color", p); setSwatch(null); }} />)}
+                      </div>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sheet.students.map((st, ri) => {
+                const r = rowCalc(st); const gl = gaGradeLabel(r.pct);
+                colIndex = -1;
+                const orderedCols = sheet.groups.flatMap(g => sheet.cols.filter(c => c.groupId === g.id));
+                return (
+                  <tr key={st.id}>
+                    <td className="stk1" style={{ fontWeight: 900, color: "#94a3b8" }}>{ri + 1}</td>
+                    <td className="stk2 fg-name"><input data-fg={`${ri}-n`} value={st.name} placeholder="اسم الطالب…" onChange={e => setName(st.id, e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (ri === sheet.students.length - 1) addBlank(1); setTimeout(() => document.querySelector(`[data-fg="${ri + 1}-n"]`)?.focus(), 30); } }} /></td>
+                    {orderedCols.map((c, ci) => {
+                      const v = st.scores?.[c.id] ?? ""; const n = num(v);
+                      const bad = n != null && (n > (+c.max || 0) || n < 0);
+                      return (
+                        <td key={c.id} className={`fg-cell ${bad ? "bad" : ""}`} style={{ background: c.color + (n != null ? "1f" : "0a"), "--c": c.color }}>
+                          <input data-fg={`${ri}-${ci}`} inputMode="decimal" value={v} onChange={e => setScore(st.id, c.id, e.target.value.replace(/[^\d.٠-٩]/g, ""))} onKeyDown={e => onKey(e, ri, ci)} title={bad ? `الحد الأعلى ${c.max}` : ""} />
+                        </td>
+                      );
+                    })}
+                    <td className="fg-tot" style={{ color: "#0f172a" }}>{r.any ? r.t : ""}</td>
+                    <td>{r.any && <><span className="fg-badge" style={{ background: gl.bg, color: gl.c }}>{gl.l}</span>{!r.cond && <div style={{ fontSize: 9.5, fontWeight: 800, color: "#dc2626", marginTop: 2 }}>لم يحقق النسبة الشرطية</div>}</>}</td>
+                    <td><button className="fg-rowdel" title="حذف الطالب" onClick={() => { if (!st.name || window.confirm(`حذف ${st.name}؟`)) delStudent(st.id); }}>✕</button></td>
+                  </tr>
+                );
+              })}
+              {!sheet.students.length && <tr><td colSpan={sheet.cols.length + 5} style={{ padding: 40, color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب — استورد من Excel أو الصق الأسماء</td></tr>}
+            </tbody>
+            <tfoot>
+              <tr className="fg-foot">
+                <td className="stk1"></td>
+                <td className="stk2" style={{ textAlign: "right", paddingRight: 10 }}>📊 متوسط العمود</td>
+                {sheet.groups.flatMap(g => sheet.cols.filter(c => c.groupId === g.id)).map(c => <td key={c.id} style={{ color: c.color }}>{colAvg(c)}</td>)}
+                <td>{calcs.length ? (calcs.reduce((a, r) => a + r.t, 0) / calcs.length).toFixed(1) : "—"}</td>
+                <td colSpan={2}>{calcs.length ? avg.toFixed(1) + "%" : ""}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="p-3 flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-gray-500">
+          <button className="fg-btn" onClick={() => addBlank(5)}>＋ ٥ صفوف</button>
+          <span>💡 Enter للانتقال للطالب التالي • الأسهم للتنقل • الخلية الحمراء تتجاوز الدرجة • يُحفظ تلقائياً</span>
+        </div>
+      </div>
+
+      {/* نافذة: لصق الأسماء */}
+      {modal === "paste" && (
+        <div className="fg-modal" onClick={() => setModal(null)}><div onClick={e => e.stopPropagation()}>
+          <h3 className="font-black text-lg mb-1">📋 لصق أسماء الطلاب</h3>
+          <p className="text-xs text-gray-500 font-bold mb-3">اسم في كل سطر (يمكن النسخ من نور أو Excel مباشرة)</p>
+          <textarea className="fg-inp" style={{ height: 260, padding: 12, lineHeight: 1.9 }} value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder={"محمد عبدالله أحمد\nفهد سعد علي\n..."} />
+          <div className="flex gap-2 mt-3 justify-end">
+            <button className="fg-btn" onClick={() => setModal(null)}>إلغاء</button>
+            <button className="fg-btn pri" onClick={() => { addStudents(pasteText.split(/\n/).map(l => l.replace(/^\s*\d+[\s.\-)]*/, "").split("\t").find(x => /[؀-ۿ]/.test(x)) || "")); setModal(null); }}>إضافة {pasteText.split(/\n/).filter(l => l.trim()).length} طالب</button>
+          </div>
+        </div></div>
+      )}
+
+      {/* نافذة: Excel */}
+      {modal === "excel" && xl && (
+        <div className="fg-modal" onClick={() => setModal(null)}><div onClick={e => e.stopPropagation()}>
+          <h3 className="font-black text-lg mb-1">📥 استيراد من Excel</h3>
+          <p className="text-xs text-gray-500 font-bold mb-3">{xl.fname} — {xl.rows.length} صف</p>
+          <span className="fg-lbl">عمود أسماء الطلاب</span>
+          <select className="fg-inp mb-3" value={xl.col} onChange={e => setXl({ ...xl, col: +e.target.value })}>
+            {xl.headers.map((h, i) => <option key={i} value={i}>{String(h || `العمود ${i + 1}`)}</option>)}
+          </select>
+          <div style={{ maxHeight: 240, overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+            {xl.rows.slice(0, 40).map((r, i) => <div key={i} style={{ padding: "6px 12px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 13 }}><span style={{ color: "#94a3b8", marginLeft: 8 }}>{i + 1}</span>{String(r[xl.col] || "")}</div>)}
+          </div>
+          <div className="flex gap-2 mt-3 justify-between items-center">
+            <button className="fg-btn" onClick={downloadTemplate}>⬇ نموذج فارغ</button>
+            <div className="flex gap-2">
+              <button className="fg-btn" onClick={() => setModal(null)}>إلغاء</button>
+              <button className="fg-btn grn" onClick={() => { addStudents(xl.rows.map(r => r[xl.col]).filter(v => /[؀-ۿa-zA-Z]/.test(String(v)))); setModal(null); }}>استيراد الأسماء</button>
+            </div>
+          </div>
+        </div></div>
+      )}
+
+      {/* نافذة: من فصول الموقع */}
+      {modal === "classes" && (
+        <div className="fg-modal" onClick={() => setModal(null)}><div onClick={e => e.stopPropagation()}>
+          <h3 className="font-black text-lg mb-3">🏫 استيراد من فصول الموقع</h3>
+          <div className="grid gap-2">
+            {classList.map(c => { const n = (c.students || []).filter(s => s.name).length; return (
+              <button key={c.id} className="fg-sheet" style={{ minWidth: 0 }} onClick={() => { addStudents((c.students || []).map(s => s.name)); setModal(null); }}>
+                <b>{c.name || `${c.level} / ${c.section}`}</b><small>{n} طالب {c.teacher ? "• " + c.teacher : ""}</small>
+              </button>); })}
+          </div>
+        </div></div>
+      )}
+
+      {/* نافذة: نموذج اللائحة */}
+      {modal === "model" && (
+        <div className="fg-modal" onClick={() => setModal(null)}><div onClick={e => e.stopPropagation()}>
+          <h3 className="font-black text-lg mb-1">📐 نموذج توزيع الدرجات</h3>
+          <p className="text-xs text-gray-500 font-bold mb-3">اختيار نموذج يبني الأعمدة تلقائياً حسب مكوناته (يمكنك بعدها الإضافة والحذف)</p>
+          <div className="grid gap-2">
+            {typeof GA_MODELS !== "undefined" && Object.entries(GA_MODELS).map(([k, m]) => (
+              <button key={k} className={`fg-sheet ${sheet.model === k ? "on" : ""}`} style={{ minWidth: 0 }} onClick={() => applyModel(k)}>
+                <b>{m.name} — تقويم {m.type}</b>
+                <small>{Object.entries(m.parts).map(([p, v]) => `${p} (${v})`).join(" + ")}</small>
+                <small style={{ display: "block", color: "#94a3b8" }}>الدور الثاني: {m.round2}</small>
+              </button>
+            ))}
+          </div>
+        </div></div>
+      )}
+    </div>
+  );
+}
+
 export default function SchoolWebsite() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -28616,7 +29223,7 @@ export default function SchoolWebsite() {
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["formative"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -28886,6 +29493,7 @@ export default function SchoolWebsite() {
 
   // ── أدوات الفصل والتعليم
   const classToolPages = [
+    { id: "formative",      label: "التقويم التكويني",    icon: "📘" },
     { id: "strategies",     label: "الاستراتيجيات",      icon: "🧠" },
     { id: "broadcast",      label: "الإذاعة المدرسية",   icon: "🎙️" },
     { id: "quiz",           label: "اختبارات الطلاب",    icon: "📝" },
@@ -28925,7 +29533,7 @@ export default function SchoolWebsite() {
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["students","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["students","formative","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
@@ -29205,6 +29813,7 @@ export default function SchoolWebsite() {
                 {page === "student-absence" && <StudentAbsencePage />}
                 {page === "admin-attendance"&& <AdminAttendancePage />}
                 {page === "attendance"     && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
+                {page === "formative"      && <FormativeGradebookPage classList={classList} />}
                 {page === "students"       && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />}
                 {page === "announcements"  && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} viewMode="mobile" />}
                 {page === "activities"     && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
@@ -29367,6 +29976,7 @@ export default function SchoolWebsite() {
         {page === "student-absence" && <StudentAbsencePage />}
         {page === "admin-attendance" && <AdminAttendancePage />}
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
+        {page === "formative"     && <FormativeGradebookPage classList={classList} />}
         {page === "students"      && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
         {page === "activities"    && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
