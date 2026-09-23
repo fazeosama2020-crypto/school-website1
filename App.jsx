@@ -28584,15 +28584,22 @@ function fgSplitPart(label, total) {
 }
 
 function fgBuildColumns(modelKey) {
-  const m = (typeof GA_MODELS !== "undefined" && GA_MODELS[modelKey]) || { parts: { "المهام الأدائية والمشاركة": 40, "تقويمات تحريرية": 60 } };
-  const groups = [], cols = [];
-  let ci = 0;
-  Object.entries(m.parts).forEach(([label, max], gi) => {
-    const g = { id: fgId(), label, max, color: FG_GROUP_COLORS[gi % FG_GROUP_COLORS.length], exam: label.includes("اختبار نهاية") };
-    groups.push(g);
-    fgSplitPart(label, max).forEach(([l, mx, en]) => cols.push({ id: fgId(), label: l, max: mx, entries: en || 1, groupId: g.id, color: FG_PALETTE[ci++ % FG_PALETTE.length] }));
-  });
-  return { groups, cols };
+  const m = (typeof GA_MODELS !== "undefined" && GA_MODELS[modelKey]) || { parts: { "المهام الأدائية والمشاركة": 40 } };
+  const perf = Object.entries(m.parts).find(([l]) => l.includes("المهام الأدائية"));
+  const perfMax = perf ? perf[1] : 40;
+  const g1 = { id: fgId(), label: "المهام الأدائية والمشاركة", max: perfMax, color: FG_GROUP_COLORS[0] };
+  const g2 = { id: fgId(), label: "الاختبارات", max: 100 - perfMax, color: FG_GROUP_COLORS[1] };
+  const q = perfMax / 4;
+  const cols = [
+    { label: "المشاركة", max: q, entries: 5, groupId: g1.id, color: "#0d9488" },
+    { label: "الواجبات", max: q, entries: 5, groupId: g1.id, color: "#2563eb" },
+    { label: "المهام الأدائية", max: q, entries: 5, groupId: g1.id, color: "#7c3aed" },
+    { label: "المشروع / البحث", max: q, entries: 4, groupId: g1.id, color: "#db2777" },
+    { label: "فترة أولى", max: 20, weight: 0.5, groupId: g2.id, color: "#ea580c" },
+    { label: "فترة ثانية", max: 20, weight: 0.5, groupId: g2.id, color: "#ca8a04" },
+    { label: "اختبار نهائي", max: 40, exam: true, groupId: g2.id, color: "#dc2626" },
+  ].map(c => ({ id: fgId(), entries: 1, weight: 1, ...c }));
+  return { groups: [g1, g2], cols, v: 3 };
 }
 
 function fgNewSheet(defaults = {}) {
@@ -28629,8 +28636,8 @@ const FG_CSS = `
 .fg-tbl th,.fg-tbl td{border-left:1px solid #eef2f6;border-bottom:1px solid #eef2f6;text-align:center;white-space:nowrap}
 .fg-tbl thead th{position:sticky;z-index:3;background:#fff}
 .fg-tbl thead tr.r1 th{top:0;height:44px}
-.fg-tbl thead tr.r2 th{top:44px;height:92px;vertical-align:top}
-.fg-tbl thead tr.r3 th{top:136px;height:26px;font-size:11px;font-weight:900;color:#475569;padding:0 4px}
+.fg-tbl thead tr.r2 th{top:44px;height:104px;vertical-align:top}
+.fg-tbl thead tr.r3 th{top:148px;height:26px;font-size:11px;font-weight:900;color:#475569;padding:0 4px}
 .fg-avg{font-weight:900;font-size:13.5px;min-width:58px;border-right:2px solid var(--c)!important}
 .fg-sub input{min-width:38px!important}
 .fg-tbl .stk1{position:sticky;right:0;z-index:4;background:#fff}
@@ -28752,6 +28759,7 @@ function FormativeGradebookPage({ classList = [] }) {
   const [pasteText, setPasteText] = useState("");
   const [xl, setXl] = useState(null); // {sheets, sheet, col, target, adv}
   const [toast, setToast] = useState("");
+  const [showStyle, setShowStyle] = useState(false);
   const [teachersList, setTeachersList] = useState(FG_TEACHERS_DEFAULT);
   const staffRef = useRef(null);
   useEffect(() => { (async () => { try { const t = await DB.get("formative-teachers", null); if (Array.isArray(t) && t.length) setTeachersList(t); } catch {} })(); }, []);
@@ -28767,7 +28775,7 @@ function FormativeGradebookPage({ classList = [] }) {
       if (!Array.isArray(list) || !list.length) list = [fgNewSheet()];
       // ترقية السجلات القديمة (بدون درجات) إلى التقسيم الجديد: أعمدة رئيسية بخانات + أسماء الاختبارات
       list = list.map(sh => {
-        const old = (sh.cols || []).some(c => c.label === "المشاركة والتفاعل الصفي" || c.label === "اختبار نهاية الفترة" || c.label === "اختبار قصير ١");
+        const old = (sh.v || 0) < 3;
         const hasScores = (sh.students || []).some(st => Object.keys(st.scores || {}).length);
         return old && !hasScores ? { ...sh, ...fgBuildColumns(sh.model || "4") } : sh;
       });
@@ -28790,9 +28798,11 @@ function FormativeGradebookPage({ classList = [] }) {
 
   const modelInfo = (typeof GA_MODELS !== "undefined" && GA_MODELS[sheet.model]) || null;
   const subjects = (typeof GA_SUBJECTS !== "undefined" && GA_SUBJECTS["متوسط"]) || {};
+  const wOf = c => (+c.weight > 0 ? +c.weight : 1);
   const examGroup = sheet.groups.find(g => g.exam);
-  const examCols = examGroup ? sheet.cols.filter(c => c.groupId === examGroup.id) : [];
-  const maxTotal = sheet.cols.reduce((a, c) => a + (+c.max || 0), 0);
+  // النسبة الشرطية تُطبق على الاختبار النهائي في المواد المقوّمة ختامياً
+  const examCols = modelInfo?.type === "ختامي" ? sheet.cols.filter(c => c.exam || (examGroup && c.groupId === examGroup.id)) : [];
+  const maxTotal = Math.round(sheet.cols.reduce((a, c) => a + (+c.max || 0) * wOf(c), 0) * 100) / 100;
 
   // ── العمليات على الأعمدة
   const addCol = (groupId) => update(s => {
@@ -28891,13 +28901,17 @@ function FormativeGradebookPage({ classList = [] }) {
   const num = v => { const n = parseFloat(String(v ?? "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))); return isNaN(n) ? null : n; };
   const nEntries = c => Math.max(1, Math.min(10, parseInt(c.entries) || 1));
   const keysOf = c => nEntries(c) > 1 ? Array.from({ length: nEntries(c) }, (_, k) => `${c.id}#${k}`) : [c.id];
-  // قيمة العمود: خانة واحدة = قيمتها ، عدة خانات = معدّلها
-  const colValue = (st, c) => {
-    const mx = +c.max || 0;
-    const vals = keysOf(c).map(k => num(st.scores?.[k])).filter(n => n != null).map(n => Math.min(Math.max(n, 0), mx));
+  // حد الخانة: درجة العمود ÷ عدد الخانات (مثال ١٠ ÷ ٥ = ٢)
+  const entryMax = c => Math.round((+c.max || 0) / nEntries(c) * 100) / 100;
+  // قيمة العمود الخام: مجموع خاناته (بحد أقصى درجة العمود)
+  const colRaw = (st, c) => {
+    const em = entryMax(c);
+    const vals = keysOf(c).map(k => num(st.scores?.[k])).filter(n => n != null).map(n => Math.min(Math.max(n, 0), em));
     if (!vals.length) return null;
-    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 100) / 100;
+    return Math.round(Math.min(vals.reduce((a, b) => a + b, 0), +c.max || 0) * 100) / 100;
   };
+  // القيمة المحتسبة في المجموع (فترة أولى وثانية ÷٢)
+  const colValue = (st, c) => { const v = colRaw(st, c); return v == null ? null : Math.round(v * wOf(c) * 100) / 100; };
   const rowCalc = (st) => {
     let t = 0, any = false;
     sheet.cols.forEach(c => { const n = colValue(st, c); if (n != null) { t += n; any = true; } });
@@ -28905,8 +28919,8 @@ function FormativeGradebookPage({ classList = [] }) {
     let cond = true;
     if (examCols.length) {
       const exMax = examCols.reduce((a, c) => a + (+c.max || 0), 0);
-      const exGot = examCols.reduce((a, c) => a + (colValue(st, c) || 0), 0);
-      const exAny = examCols.some(c => colValue(st, c) != null);
+      const exGot = examCols.reduce((a, c) => a + (colRaw(st, c) || 0), 0);
+      const exAny = examCols.some(c => colRaw(st, c) != null);
       cond = !exAny || exGot >= exMax * 0.2;
     }
     return { t: Math.round(t * 100) / 100, pct, any, cond };
@@ -28916,9 +28930,9 @@ function FormativeGradebookPage({ classList = [] }) {
   const avg = calcs.length ? calcs.reduce((a, r) => a + r.pct, 0) / calcs.length : 0;
   const excellent = calcs.filter(r => r.pct >= 90).length;
   const weak = calcs.filter(r => r.pct < 50 || !r.cond).length;
-  const colAvg = (c) => { const v = named.map(st => colValue(st, c)).filter(n => n != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : "—"; };
+  const colAvg = (c) => { const v = named.map(st => colRaw(st, c)).filter(n => n != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : "—"; };
   const keyAvg = (k) => { const v = named.map(st => num(st.scores?.[k])).filter(n => n != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : ""; };
-  const spanOf = c => nEntries(c) > 1 ? nEntries(c) + 1 : 1;
+  const spanOf = c => nEntries(c);
   const orderedColsAll = sheet.groups.flatMap(g => sheet.cols.filter(c => c.groupId === g.id));
   const anyMulti = orderedColsAll.some(c => nEntries(c) > 1);
 
@@ -28980,6 +28994,10 @@ function FormativeGradebookPage({ classList = [] }) {
     if (v === "__add") { const n = window.prompt("اسم المعلم:"); if (n && n.trim()) { saveTeachers([...teachersList, n.trim()]); set("teacher", n.trim()); } return; }
     set("teacher", v);
   };
+  const ST = { line: "#94a3b8", lineW: 1, vline: "#e2e8f0", cells: "tint", tint: 14, zebra: "#f1f5f9", head: "#0f172a", ...(sheet.style || {}) };
+  const setStyle = (k, v) => update(s => ({ ...s, style: { ...(s.style || {}), [k]: v } }));
+  const hexA = (hex, a) => { const h = String(hex || "#000").replace("#", ""); const n = parseInt(h.length === 3 ? h.split("").map(x => x + x).join("") : h.slice(0, 6), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
+  const cellBg = (c, ri, filled) => ST.cells === "white" ? (ri % 2 && ST.zebraOn ? ST.zebra : "#fff") : ST.cells === "zebra" ? (ri % 2 ? ST.zebra : "#fff") : hexA(c.color, (ST.tint / 100) * (filled ? 1.3 : .6));
   const onLevel = (lv) => update(s => ({ ...s, level: lv, section: (FG_SECTIONS[lv] || []).includes(String(s.section)) ? s.section : "1" }));
   const distribute = (gid) => update(s => {
     const g = s.groups.find(x => x.id === gid); const cs = s.cols.filter(c => c.groupId === gid);
@@ -28997,18 +29015,18 @@ function FormativeGradebookPage({ classList = [] }) {
       for (let k = 0; k < span; k++) {
         h1.push(first && k === 0 ? `${g.label} (${g.max})` : "");
         h2.push(k === 0 ? `${c.label} (${c.max})` : "");
-        h3.push(span > 1 ? (k < span - 1 ? String(k + 1) : "المعدل") : "");
+        h3.push(span > 1 ? `${k + 1} (/${entryMax(c)})` : (wOf(c) === 0.5 ? "÷٢" : ""));
       }
     });
     h1.push("المجموع"); h2.push(`من ${maxTotal}`); h3.push("");
     const rows = named.map((st, i) => { const r = rowCalc(st); const out = [i + 1, st.name];
-      orderedColsAll.forEach(c => { if (nEntries(c) > 1) { keysOf(c).forEach(k => out.push(num(st.scores?.[k]) ?? "")); } out.push(colValue(st, c) ?? ""); });
+      orderedColsAll.forEach(c => { keysOf(c).forEach(k => out.push(num(st.scores?.[k]) ?? "")); });
       out.push(r.any ? r.t : ""); return out; });
     const aoa = [
       ["المملكة العربية السعودية — وزارة التعليم — " + sheet.edu],
       [sheet.school + " — سجل رصد التقويم التكويني"],
       [`المعلم: ${sheet.teacher || "—"}   المادة: ${sheet.subject || "—"}   الصف: ${sheet.level} / ${sheet.section}   ${sheet.semester}   العام: ${sheet.year}`],
-      [], h1, h2, ...(anyMulti ? [h3] : []), ...rows,
+      [], h1, h2, h3, ...rows,
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = [{ wch: 5 }, { wch: 30 }, ...h1.slice(2).map(() => ({ wch: 9 }))];
@@ -29030,12 +29048,11 @@ function FormativeGradebookPage({ classList = [] }) {
     const logo = typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" style="width:62px;height:62px">` : "";
     const HR = anyMulti ? 3 : 2;
     const gh = sheet.groups.map(g => { const n = sheet.cols.filter(c => c.groupId === g.id).reduce((a, c) => a + spanOf(c), 0); return n ? `<th colspan="${n}" style="background:${g.color};color:#fff">${g.label} (${g.max})</th>` : ""; }).join("");
-    const ch = orderedColsAll.map(c => `<th colspan="${spanOf(c)}" ${spanOf(c) === 1 && anyMulti ? 'rowspan="2"' : ""} style="background:${c.color}22;border-top:3px solid ${c.color}">${c.label}<br><small>${c.max}</small></th>`).join("");
-    const sh3 = orderedColsAll.filter(c => nEntries(c) > 1).map(c => keysOf(c).map((_, k) => `<th style="background:${c.color}10;font-size:9px">${k + 1}</th>`).join("") + `<th style="background:${c.color}33;font-size:9px">المعدل</th>`).join("");
+    const ch = orderedColsAll.map(c => `<th colspan="${spanOf(c)}" ${spanOf(c) === 1 && anyMulti ? 'rowspan="2"' : ""} style="background:${hexA(c.color, .15)};border-top:3px solid ${c.color}">${c.label}<br><small>${c.max}${wOf(c) === 0.5 ? " ÷٢" : ""}</small></th>`).join("");
+    const sh3 = orderedColsAll.filter(c => nEntries(c) > 1).map(c => keysOf(c).map((_, k) => `<th style="background:${hexA(c.color, .1)};font-size:9px">${k + 1}</th>`).join("")).join("");
     const body = named.map((st, i) => { const r = rowCalc(st);
       const cells = orderedColsAll.map(c => { const v = colValue(st, c);
-        if (nEntries(c) > 1) return keysOf(c).map(k => `<td style="background:${c.color}0a">${st.scores?.[k] ?? ""}</td>`).join("") + `<td style="background:${c.color}22;font-weight:900">${v ?? ""}</td>`;
-        return `<td style="background:${c.color}0f">${v ?? ""}</td>`; }).join("");
+        return keysOf(c).map(k => `<td style="background:${cellBg(c, i, true)}">${st.scores?.[k] ?? ""}</td>`).join(""); }).join("");
       return `<tr><td>${i + 1}</td><td style="text-align:right;padding-right:8px;font-weight:700;white-space:nowrap">${st.name}</td>${cells}<td style="font-weight:900">${r.any ? r.t : ""}${r.any && !r.cond ? "<br><small style='color:#dc2626'>لم يحقق النسبة الشرطية</small>" : ""}</td></tr>`; }).join("");
     printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>سجل التقويم التكويني</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
@@ -29043,7 +29060,7 @@ function FormativeGradebookPage({ classList = [] }) {
 .k{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;border-bottom:3px solid #0f766e;padding-bottom:8px;margin-bottom:8px;font-size:12px;font-weight:700;line-height:1.8}
 .k .l{text-align:left}h1{text-align:center;font-size:18px;margin:4px 0;color:#0f766e}
 .info{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:12px;font-weight:700;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:6px;margin-bottom:8px}
-table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #cbd5e1;padding:4px;text-align:center}th small{font-weight:400;color:#475569}
+table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid ${ST.vline};border-bottom:${ST.lineW}px solid ${ST.line};padding:4px;text-align:center}th small{font-weight:400;color:#475569}
 .sig{display:flex;justify-content:space-around;margin-top:26px;font-weight:700;font-size:12px}</style></head><body>
 <div class="k"><div>المملكة العربية السعودية<br>وزارة التعليم<br>${sheet.edu}<br>${sheet.school}</div><div>${logo}</div><div class="l">العام الدراسي: ${sheet.year}<br>${sheet.semester}<br>المادة: ${sheet.subject || "—"}</div></div>
 <h1>سجل رصد التقويم التكويني</h1>
@@ -29070,7 +29087,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
     setSheets(next); setActiveId(next[0].id); persist(next);
   };
 
-  const groupSum = (g) => sheet.cols.filter(c => c.groupId === g.id).reduce((a, c) => a + (+c.max || 0), 0);
+  const groupSum = (g) => Math.round(sheet.cols.filter(c => c.groupId === g.id).reduce((a, c) => a + (+c.max || 0) * wOf(c), 0) * 100) / 100;
   let colIndex = -1;
 
   return (
@@ -29165,13 +29182,61 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
           <button className="fg-btn" onClick={sortByName}>↕ ترتيب أبجدي</button>
           <button className="fg-btn red" onClick={() => { if (window.confirm(`مسح جميع الطلاب (${named.length}) ودرجاتهم من هذا السجل؟`)) update(s => ({ ...s, students: Array.from({ length: 5 }, () => ({ id: fgId(), name: "", scores: {} })) })); }}>🧹 مسح الطلاب</button>
           <span style={{ flex: 1 }} />
+          <button className="fg-btn" onClick={() => setShowStyle(v => !v)} style={showStyle ? { borderColor: "#0d9488", color: "#0d9488" } : undefined}>🎨 الألوان والخطوط</button>
           <button className="fg-btn" onClick={addGroup}>＋ مكوّن تقويم</button>
           <button className="fg-btn vio" onClick={exportExcel}>📤 تصدير Excel</button>
           <button className="fg-btn pri" onClick={print}>🖨 طباعة ملونة</button>
         </div>
 
+        {showStyle && (
+          <div className="mx-4 mb-3 p-4 rounded-2xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))" }}>
+              <div>
+                <div className="fg-lbl">➖ الخطوط الأفقية (بين الطلاب)</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input type="color" value={ST.line} onChange={e => setStyle("line", e.target.value)} style={{ width: 38, height: 32, border: "none", background: "none" }} />
+                  {["#94a3b8", "#475569", "#0f172a", "#0d9488", "#2563eb", "#dc2626"].map(c => <span key={c} onClick={() => setStyle("line", c)} style={{ width: 22, height: 22, borderRadius: 6, background: c, cursor: "pointer", outline: ST.line === c ? "2px solid #0f172a" : "none", outlineOffset: 2 }} />)}
+                </div>
+                <div className="flex items-center gap-2 mt-2 text-xs font-bold text-gray-500">السُّمك
+                  {[1, 2, 3].map(w => <button key={w} className="fg-btn" style={{ padding: "4px 10px", borderColor: ST.lineW === w ? "#0d9488" : undefined, color: ST.lineW === w ? "#0d9488" : undefined }} onClick={() => setStyle("lineW", w)}>{w === 1 ? "رفيع" : w === 2 ? "متوسط" : "عريض"}</button>)}
+                </div>
+                <div className="fg-lbl mt-3">┃ الخطوط العمودية</div>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={ST.vline} onChange={e => setStyle("vline", e.target.value)} style={{ width: 38, height: 32, border: "none", background: "none" }} />
+                  {["#e2e8f0", "#cbd5e1", "#94a3b8", "#475569"].map(c => <span key={c} onClick={() => setStyle("vline", c)} style={{ width: 22, height: 22, borderRadius: 6, background: c, cursor: "pointer", outline: ST.vline === c ? "2px solid #0f172a" : "none", outlineOffset: 2 }} />)}
+                </div>
+              </div>
+              <div>
+                <div className="fg-lbl">▦ خلفية الخلايا</div>
+                <div className="flex gap-2 flex-wrap">
+                  {[["tint", "بلون العمود"], ["zebra", "مخططة"], ["white", "بيضاء"]].map(([k, l]) => <button key={k} className="fg-btn" style={{ padding: "6px 12px", borderColor: ST.cells === k ? "#0d9488" : undefined, color: ST.cells === k ? "#0d9488" : undefined }} onClick={() => setStyle("cells", k)}>{l}</button>)}
+                </div>
+                {ST.cells === "tint" && <div className="mt-2 text-xs font-bold text-gray-500">درجة اللون <input type="range" min="4" max="40" value={ST.tint} onChange={e => setStyle("tint", +e.target.value)} style={{ verticalAlign: "middle", accentColor: "#0d9488" }} /></div>}
+                {ST.cells === "zebra" && <div className="mt-2 flex items-center gap-2 text-xs font-bold text-gray-500">لون الصف المخطط <input type="color" value={ST.zebra} onChange={e => setStyle("zebra", e.target.value)} style={{ width: 38, height: 30, border: "none", background: "none" }} /></div>}
+                <div className="fg-lbl mt-3">⬛ رأس المجموع</div>
+                <input type="color" value={ST.head} onChange={e => setStyle("head", e.target.value)} style={{ width: 38, height: 32, border: "none", background: "none" }} />
+              </div>
+              <div>
+                <div className="fg-lbl">🎨 ألوان المكوّنات والأعمدة</div>
+                <div style={{ maxHeight: 190, overflow: "auto" }}>
+                  {sheet.groups.map(g => (
+                    <div key={g.id} className="mb-2">
+                      <label className="flex items-center gap-2 font-black text-xs"><input type="color" value={g.color} onChange={e => setGroup(g.id, "color", e.target.value)} style={{ width: 30, height: 26, border: "none", background: "none" }} />{g.label}</label>
+                      <div className="flex gap-1 flex-wrap pr-6">
+                        {sheet.cols.filter(c => c.groupId === g.id).map(c => <label key={c.id} className="flex items-center gap-1 text-xs font-bold" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "1px 6px 1px 2px" }}><input type="color" value={c.color} onChange={e => setCol(c.id, "color", e.target.value)} style={{ width: 22, height: 22, border: "none", background: "none" }} />{c.label}</label>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end mt-2"><button className="fg-btn" style={{ padding: "5px 12px" }} onClick={() => update(s => ({ ...s, style: {} }))}>↺ الألوان الافتراضية</button></div>
+          </div>
+        )}
+
         {/* الجدول العرضي */}
         <div className="fg-wrap">
+          <style>{`.fg-tbl td,.fg-tbl th{border-bottom:${ST.lineW}px solid ${ST.line}!important;border-left:1px solid ${ST.vline}!important}.fg-tbl thead th{border-bottom:${Math.max(ST.lineW, 1.5)}px solid ${ST.line}!important}`}</style>
           <table className="fg-tbl">
             <thead>
               <tr className="r1">
@@ -29194,8 +29259,8 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
                     </th>
                   );
                 })}
-                <th rowSpan={anyMulti ? 3 : 2} style={{ minWidth: 80, background: "#0f172a", color: "#fff", fontWeight: 900 }}>المجموع<div style={{ fontSize: 11, opacity: .7 }}>من {maxTotal}</div></th>
-                <th rowSpan={anyMulti ? 3 : 2} style={{ width: 34, background: "#0f172a" }}></th>
+                <th rowSpan={anyMulti ? 3 : 2} style={{ minWidth: 80, background: ST.head, color: "#fff", fontWeight: 900 }}>المجموع<div style={{ fontSize: 11, opacity: .7 }}>من {maxTotal}</div></th>
+                <th rowSpan={anyMulti ? 3 : 2} style={{ width: 34, background: ST.head }}></th>
               </tr>
               <tr className="r2">
                 {orderedColsAll.map(c => {
@@ -29213,11 +29278,14 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
                       <button title="نقل يميناً" onClick={() => moveCol(c.id, -1)}>→</button>
                       <button title="اللون" onClick={() => setSwatch(swatch === c.id ? null : c.id)} style={{ background: c.color }}>&nbsp;</button>
                       <button title="نقل يساراً" onClick={() => moveCol(c.id, 1)}>←</button>
+                      <button title={wOf(c) === 0.5 ? "تُحسب ÷٢ — اضغط لإلغاء القسمة" : "اضغط لاحتساب هذا العمود ÷٢"} onClick={() => setCol(c.id, "weight", wOf(c) === 0.5 ? 1 : 0.5)} style={{ width: "auto", padding: "0 4px", fontWeight: 900, background: wOf(c) === 0.5 ? c.color : "#f1f5f9", color: wOf(c) === 0.5 ? "#fff" : "#475569" }}>÷٢</button>
                       <button className="del" title="حذف العمود" onClick={() => delCol(c.id)}>🗑</button>
                     </div>
+                    {wOf(c) === 0.5 && <div style={{ fontSize: 9.5, fontWeight: 800, color: c.color }}>يُحتسب {Math.round((+c.max || 0) / 2 * 100) / 100} في المجموع</div>}
                     {swatch === c.id && (
                       <div className="fg-sw" onMouseLeave={() => setSwatch(null)}>
                         {FG_PALETTE.map(p => <span key={p} style={{ background: p }} onClick={() => { setCol(c.id, "color", p); setSwatch(null); }} />)}
+                        <input type="color" value={c.color} onChange={e => setCol(c.id, "color", e.target.value)} title="لون مخصص" style={{ width: 20, height: 20, border: "none", padding: 0, background: "none", gridColumn: "span 1" }} />
                       </div>
                     )}
                   </th>);
@@ -29225,10 +29293,9 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
               </tr>
               {anyMulti && (
                 <tr className="r3">
-                  {orderedColsAll.filter(c => nEntries(c) > 1).flatMap(c => [
-                    ...keysOf(c).map((k, i) => <th key={k} style={{ background: c.color + "0c" }}>{i + 1}</th>),
-                    <th key={c.id + "avg"} style={{ background: c.color + "30", color: c.color }}>المعدل</th>,
-                  ])}
+                  {orderedColsAll.filter(c => nEntries(c) > 1).flatMap(c =>
+                    keysOf(c).map((k, i) => <th key={k} style={{ background: hexA(c.color, .1) }}>{i + 1}<span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700 }}> /{entryMax(c)}</span></th>)
+                  )}
                 </tr>
               )}
             </thead>
@@ -29245,14 +29312,14 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
                       const cells = keysOf(c).map(k => {
                         ci++; const idx = ci;
                         const v = st.scores?.[k] ?? ""; const n = num(v);
-                        const bad = n != null && (n > (+c.max || 0) || n < 0);
+                        const lim = entryMax(c);
+                        const bad = n != null && (n > lim || n < 0);
                         return (
-                          <td key={k} className={`fg-cell ${multi ? "fg-sub" : ""} ${bad ? "bad" : ""}`} style={{ background: c.color + (n != null ? "1a" : "08"), "--c": c.color }}>
-                            <input data-fg={`${ri}-${idx}`} inputMode="decimal" value={v} onChange={e => setScore(st.id, k, e.target.value.replace(/[^\d.٠-٩]/g, ""))} onKeyDown={e => onKey(e, ri, idx)} title={bad ? `الحد الأعلى ${c.max}` : ""} />
+                          <td key={k} className={`fg-cell ${multi ? "fg-sub" : ""} ${bad ? "bad" : ""}`} style={{ background: cellBg(c, ri, n != null), "--c": c.color }}>
+                            <input data-fg={`${ri}-${idx}`} inputMode="decimal" value={v} onChange={e => setScore(st.id, k, e.target.value.replace(/[^\d.٠-٩]/g, ""))} onKeyDown={e => onKey(e, ri, idx)} title={bad ? `الحد الأعلى ${lim}` : ""} />
                           </td>
                         );
                       });
-                      if (multi) { const av = colValue(st, c); cells.push(<td key={c.id + "avg"} className="fg-avg" style={{ background: c.color + "26", color: c.color, "--c": c.color }}>{av ?? ""}</td>); }
                       return cells;
                     })}
                     <td className="fg-tot" style={{ color: "#0f172a" }}>{r.any ? r.t : ""}{r.any && !r.cond && <div style={{ fontSize: 9, fontWeight: 800, color: "#dc2626" }}>لم يحقق النسبة الشرطية</div>}</td>
@@ -29267,7 +29334,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
                 <td className="stk1"></td>
                 <td className="stk2" style={{ textAlign: "right", paddingRight: 10 }}>📊 متوسط العمود</td>
                 {orderedColsAll.flatMap(c => nEntries(c) > 1
-                  ? [...keysOf(c).map(k => <td key={k} style={{ color: c.color, fontSize: 11 }}>{keyAvg(k)}</td>), <td key={c.id + "a"} style={{ color: c.color }}>{colAvg(c)}</td>]
+                  ? keysOf(c).map(k => <td key={k} style={{ color: c.color, fontSize: 11 }}>{keyAvg(k)}</td>)
                   : [<td key={c.id} style={{ color: c.color }}>{colAvg(c)}</td>])}
                 <td>{calcs.length ? (calcs.reduce((a, r) => a + r.t, 0) / calcs.length).toFixed(1) : "—"}</td>
                 <td></td>
