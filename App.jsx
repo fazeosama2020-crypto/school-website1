@@ -28671,6 +28671,70 @@ const FG_CSS = `
 @media (max-width:768px){.fg-kpi{grid-template-columns:repeat(2,1fr)}.fg-title{font-size:17px}}
 `;
 
+// ── تحليل ملفات Excel (نور وغيرها): إيجاد صف العناوين وعمود الاسم
+const FG_NAME_HDR = /^(اسم الطالب|اسم الطالبة|الاسم|الإسم|الاسم الرباعي|الاسم الكامل|اسم الطالب رباعي|اسم الطالب الرباعي|student ?name|name)$/i;
+const FG_NOT_NAME = /المسمى|الوظيف|التاريخ|تاريخ|حالة|مكان|توقيت|ساعات|الصف|الفصل|الجنس|الجنسية|الهوية|السجل|رقم|جوال|هاتف|المرحلة|الشعبة|ملاحظ/;
+function fgParseRows(raw) {
+  const rows = (raw || []).filter(r => Array.isArray(r) && r.some(x => String(x ?? "").trim()));
+  let hi = -1, col = -1;
+  for (let i = 0; i < Math.min(rows.length, 40) && col < 0; i++) {
+    const j = rows[i].findIndex(x => FG_NAME_HDR.test(String(x ?? "").trim()));
+    if (j >= 0) { hi = i; col = j; }
+  }
+  if (col < 0) for (let i = 0; i < Math.min(rows.length, 40) && col < 0; i++) {
+    const j = rows[i].findIndex(x => { const t = String(x ?? "").trim(); return /اسم/.test(t) && t.length < 30 && !FG_NOT_NAME.test(t); });
+    if (j >= 0) { hi = i; col = j; }
+  }
+  const headerRow = hi >= 0 ? rows[hi] : null;
+  const body = hi >= 0 ? rows.slice(hi + 1) : rows;
+  if (col < 0) {
+    // لا يوجد عنوان واضح: العمود الذي فيه أكثر أسماء عربية (كلمتان فأكثر) غير مكررة
+    const width = Math.max(0, ...body.map(r => r.length));
+    let bestScore = -1;
+    for (let c = 0; c < width; c++) { const sc = fgUniqueNames(body, c).length; if (sc > bestScore) { bestScore = sc; col = c; } }
+    if (col < 0) col = 0;
+  }
+  const staff = !!(headerRow && headerRow.some(x => /المسمى الوظيفي|الانصراف|ساعات الدوام|حالة التحضير/.test(String(x ?? ""))));
+  const meta = fgDetectMeta(rows.slice(0, hi >= 0 ? hi : Math.min(rows.length, 25)));
+  // الأعمدة التي فيها بيانات فعلاً (لإخفاء الأعمدة الفارغة في ملفات نور)
+  const used = [];
+  const width = Math.max(0, ...(headerRow ? [headerRow.length] : []), ...body.map(r => r.length));
+  for (let c = 0; c < width; c++) if (body.some(r => String(r[c] ?? "").trim())) used.push(c);
+  return { headerRow, body, col, staff, meta, used };
+}
+// قراءة بيانات الكليشة في ملف نور: «الصف : الثالث المتوسط» ، «الفصل : 2» ...
+function fgDetectMeta(top) {
+  const LABELS = { level: /^(الصف|الصف الدراسي)$/, section: /^(الفصل|الشعبة)$/, school: /^المدرسة$/, teacher: /^(المعلم|اسم المعلم)$/, subject: /^(المادة|المقرر)$/ };
+  const isLabel = t => Object.values(LABELS).some(r => r.test(t)) || /^(القسم|النظام الدراسي|الفترة|العام الدراسي)$/.test(t);
+  const meta = {};
+  (top || []).forEach(r => {
+    (r || []).forEach((x, ci) => {
+      const t = String(x ?? "").trim().replace(/[:：]$/, "").trim();
+      const key = Object.keys(LABELS).find(k => LABELS[k].test(t));
+      if (!key || meta[key]) return;
+      const pick = (dir) => { for (let k = ci + dir; k >= 0 && k < r.length; k += dir) { const v = String(r[k] ?? "").trim(); if (!v || v === ":" ) continue; if (isLabel(v.replace(/[:：]$/, "").trim())) return ""; return v; } return ""; };
+      const v = pick(-1) || pick(1);
+      if (v) meta[key] = v;
+    });
+  });
+  if (meta.level) {
+    const L = meta.level;
+    const idx = /الأول|الاول|1/.test(L) ? 0 : /الثاني|2/.test(L) ? 1 : /الثالث|3/.test(L) ? 2 : -1;
+    meta.levelNorm = idx >= 0 && /متوسط|المتوسط/.test(L + " متوسط") ? FG_LEVELS[idx] : "";
+  }
+  return meta;
+}
+
+function fgUniqueNames(body, col) {
+  const seen = new Set(), out = [];
+  (body || []).forEach(r => {
+    const t = String((r || [])[col] ?? "").trim().replace(/\s+/g, " ");
+    if (!t || !/[\u0600-\u06FFa-zA-Z]{2,}/.test(t) || /^\d+$/.test(t) || FG_NAME_HDR.test(t) || t.length > 80) return;
+    if (!seen.has(t)) { seen.add(t); out.push(t); }
+  });
+  return out;
+}
+
 function FormativeGradebookPage({ classList = [] }) {
   const [sheets, setSheets] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -28678,7 +28742,9 @@ function FormativeGradebookPage({ classList = [] }) {
   const [swatch, setSwatch] = useState(null);
   const [modal, setModal] = useState(null); // paste | excel | classes | model
   const [pasteText, setPasteText] = useState("");
-  const [xl, setXl] = useState(null); // {headers, rows, col}
+  const [xl, setXl] = useState(null); // {sheets, sheet, col, target, adv}
+  const [toast, setToast] = useState("");
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(""), 3500); return () => clearTimeout(t); }, [toast]);
   const fileRef = useRef(null);
   const saveT = useRef(null);
 
@@ -28754,10 +28820,42 @@ function FormativeGradebookPage({ classList = [] }) {
   };
 
   // ── الطلاب
+  const mergeNames = (students, names) => {
+    const clean = students.filter(st => st.name.trim() || Object.keys(st.scores || {}).length);
+    const existing = new Set(clean.map(st => st.name.trim().replace(/\s+/g, " ")));
+    const add = [];
+    names.forEach(n => { const name = String(n ?? "").trim().replace(/\s+/g, " "); if (name && !existing.has(name)) { existing.add(name); add.push({ id: fgId(), name, scores: {} }); } });
+    return { list: [...clean, ...add], added: add.length };
+  };
+  // استيراد إلى سجل محدد (الحالي / المطابق للفصل / جديد) مع تعبئة بيانات الفصل
+  const importTo = (target, names, meta) => {
+    const info = {};
+    if (meta?.levelNorm) info.level = meta.levelNorm;
+    if (meta?.section) info.section = meta.section;
+    if (meta?.teacher) info.teacher = meta.teacher;
+    if (meta?.subject) info.subject = meta.subject;
+    let added = 0, targetId = sheet.id;
+    {
+      const prev = sheets; let next;
+      if (target === "new") {
+        const base = fgNewSheet({ teacher: sheet.teacher, subject: sheet.subject, model: sheet.model, semester: sheet.semester, edu: sheet.edu, school: sheet.school, ...info });
+        const m = mergeNames([], names); added = m.added;
+        const ns = { ...base, students: m.list }; targetId = ns.id;
+        next = [ns, ...prev];
+      } else {
+        targetId = target === "current" ? sheet.id : target;
+        next = prev.map(sh => { if (sh.id !== targetId) return sh; const m = mergeNames(sh.students, names); added = m.added; return { ...sh, ...(target === "current" ? info : {}), students: m.list, updated: Date.now() }; });
+      }
+      setSheets(next); persist(next);
+    }
+    setActiveId(targetId);
+    setTimeout(() => setToast(`✅ تم استيراد ${added} طالب${meta?.levelNorm ? ` — ${meta.levelNorm} / ${meta.section || ""}` : ""}`), 50);
+  };
   const addStudents = (names) => update(s => {
     const clean = s.students.filter(st => st.name.trim() || Object.keys(st.scores || {}).length);
-    const existing = new Set(clean.map(st => st.name.trim()));
-    const add = names.map(n => String(n).trim()).filter(n => n && !existing.has(n)).map(name => ({ id: fgId(), name, scores: {} }));
+    const existing = new Set(clean.map(st => st.name.trim().replace(/\s+/g, " ")));
+    const add = [];
+    names.forEach(n => { const name = String(n ?? "").trim().replace(/\s+/g, " "); if (name && !existing.has(name)) { existing.add(name); add.push({ id: fgId(), name, scores: {} }); } });
     return { ...s, students: [...clean, ...add] };
   });
   const addBlank = (n = 1) => update(s => ({ ...s, students: [...s.students, ...Array.from({ length: n }, () => ({ id: fgId(), name: "", scores: {} }))] }));
@@ -28806,20 +28904,20 @@ function FormativeGradebookPage({ classList = [] }) {
   const onExcel = async (e) => {
     const f = e.target.files?.[0]; e.target.value = "";
     if (!f) return;
-    const XLSX = await loadXLSX();
-    const wb = XLSX.read(await f.arrayBuffer());
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" }).filter(r => r.some(x => String(x).trim()));
-    if (!rows.length) { alert("الملف فارغ"); return; }
-    const width = Math.max(...rows.map(r => r.length));
-    const ar = /[؀-ۿ]{2,}/;
-    let best = 0, bestScore = -1;
-    for (let c = 0; c < width; c++) {
-      const sc = rows.filter(r => ar.test(String(r[c] || "")) && String(r[c]).trim().split(/\s+/).length >= 2).length;
-      if (sc > bestScore) { bestScore = sc; best = c; }
-    }
-    const headerLike = !/^\d+$/.test(String(rows[0][0])) && rows[0].some(x => /اسم|الطالب/.test(String(x)));
-    setXl({ rows: headerLike ? rows.slice(1) : rows, headers: headerLike ? rows[0] : Array.from({ length: width }, (_, i) => `العمود ${i + 1}`), col: best, fname: f.name });
-    setModal("excel");
+    try {
+      const XLSX = await loadXLSX();
+      const wb = XLSX.read(await f.arrayBuffer());
+      const sheetsParsed = wb.SheetNames.map(n => ({ name: n, ...fgParseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" })) }));
+      const usable = sheetsParsed.filter(x => x.body.length);
+      if (!usable.length) { alert("الملف فارغ"); return; }
+      const bestSheet = usable.reduce((a, b) => fgUniqueNames(b.body, b.col).length > fgUniqueNames(a.body, a.col).length ? b : a);
+      const m = bestSheet.meta || {};
+      const match = m.levelNorm ? sheets.find(sh => sh.level === m.levelNorm && String(sh.section) === String(m.section || "")) : null;
+      const curEmpty = !sheet.students.some(st => st.name.trim());
+      const target = match ? match.id : (curEmpty ? "current" : (m.levelNorm ? "new" : "current"));
+      setXl({ fname: f.name, sheets: usable, sheet: bestSheet.name, col: bestSheet.col, target, adv: false });
+      setModal("excel");
+    } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); }
   };
   const exportExcel = async () => {
     const XLSX = await loadXLSX();
@@ -28950,7 +29048,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
             <datalist id="fg-subjects">{Object.keys(subjects).map(s => <option key={s} value={s} />)}</datalist>
           </div>
           <div><span className="fg-lbl">🎓 الصف</span><select className="fg-inp" value={sheet.level} onChange={e => set("level", e.target.value)}>{FG_LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
-          <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => set("section", e.target.value)}>{["أ","ب","ج","د","هـ","و","ز","ح"].map(l => <option key={l}>{l}</option>)}</select></div>
+          <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => set("section", e.target.value)}>{[...new Set(["أ","ب","ج","د","هـ","و","ز","ح","1","2","3","4","5","6","7","8","9","10", String(sheet.section || "أ")])].map(l => <option key={l}>{l}</option>)}</select></div>
           <div><span className="fg-lbl">🗓 الفترة الدراسية</span><select className="fg-inp" value={sheet.semester} onChange={e => set("semester", e.target.value)}>{FG_SEMESTERS.map(l => <option key={l}>{l}</option>)}</select></div>
           <div><span className="fg-lbl">📐 نموذج التوزيع</span><button className="fg-inp text-right" style={{ cursor: "pointer" }} onClick={() => setModal("model")}>{modelInfo ? `${modelInfo.name} — ${modelInfo.type}` : "مخصص"} ▾</button></div>
         </div>
@@ -28971,6 +29069,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
           {classList.length > 0 && <button className="fg-btn" onClick={() => setModal("classes")}>🏫 من فصول الموقع</button>}
           <button className="fg-btn" onClick={() => addBlank(1)}>＋ طالب</button>
           <button className="fg-btn" onClick={sortByName}>↕ ترتيب أبجدي</button>
+          <button className="fg-btn red" onClick={() => { if (window.confirm(`مسح جميع الطلاب (${named.length}) ودرجاتهم من هذا السجل؟`)) update(s => ({ ...s, students: Array.from({ length: 5 }, () => ({ id: fgId(), name: "", scores: {} })) })); }}>🧹 مسح الطلاب</button>
           <span style={{ flex: 1 }} />
           <button className="fg-btn" onClick={addGroup}>＋ مكوّن تقويم</button>
           <button className="fg-btn vio" onClick={exportExcel}>📤 تصدير Excel</button>
@@ -29082,26 +29181,82 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
       )}
 
       {/* نافذة: Excel */}
-      {modal === "excel" && xl && (
-        <div className="fg-modal" onClick={() => setModal(null)}><div onClick={e => e.stopPropagation()}>
-          <h3 className="font-black text-lg mb-1">📥 استيراد من Excel</h3>
-          <p className="text-xs text-gray-500 font-bold mb-3">{xl.fname} — {xl.rows.length} صف</p>
-          <span className="fg-lbl">عمود أسماء الطلاب</span>
-          <select className="fg-inp mb-3" value={xl.col} onChange={e => setXl({ ...xl, col: +e.target.value })}>
-            {xl.headers.map((h, i) => <option key={i} value={i}>{String(h || `العمود ${i + 1}`)}</option>)}
-          </select>
-          <div style={{ maxHeight: 240, overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-            {xl.rows.slice(0, 40).map((r, i) => <div key={i} style={{ padding: "6px 12px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 13 }}><span style={{ color: "#94a3b8", marginLeft: 8 }}>{i + 1}</span>{String(r[xl.col] || "")}</div>)}
+      {modal === "excel" && xl && (() => {
+        const sh = xl.sheets.find(x => x.name === xl.sheet) || xl.sheets[0];
+        const names = fgUniqueNames(sh.body, xl.col);
+        const m = sh.meta || {};
+        const hdrs = sh.headerRow || [];
+        const match = m.levelNorm ? sheets.find(x => x.level === m.levelNorm && String(x.section) === String(m.section || "")) : null;
+        const chip = (icon, label, val) => (
+          <div style={{ flex: "1 1 130px", background: val ? "#f0fdfa" : "#f8fafc", border: `1px solid ${val ? "#99f6e4" : "#e2e8f0"}`, borderRadius: 14, padding: "8px 12px" }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: "#64748b" }}>{icon} {label}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 900, color: val ? "#0f766e" : "#cbd5e1" }}>{val || "غير محدد"}</div>
           </div>
-          <div className="flex gap-2 mt-3 justify-between items-center">
+        );
+        const opt = (value, title, sub) => (
+          <label key={value} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: 14, cursor: "pointer", border: `1.5px solid ${xl.target === value ? "#0d9488" : "#e2e8f0"}`, background: xl.target === value ? "#f0fdfa" : "#fff" }}>
+            <input type="radio" checked={xl.target === value} onChange={() => setXl({ ...xl, target: value })} style={{ marginTop: 4, accentColor: "#0d9488" }} />
+            <div><div style={{ fontWeight: 900, fontSize: 13 }}>{title}</div><div style={{ fontSize: 11, fontWeight: 700, color: "#64748b" }}>{sub}</div></div>
+          </label>
+        );
+        return (
+        <div className="fg-modal" onClick={() => setModal(null)}><div onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-black text-lg">📥 استيراد الطلاب</h3>
+            <span className="fg-badge" style={{ background: names.length ? "#dcfce7" : "#fee2e2", color: names.length ? "#15803d" : "#b91c1c", fontSize: 12.5 }}>👨‍🎓 {names.length} طالب</span>
+          </div>
+          {sh.staff && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: 12, padding: "10px 12px", fontSize: 12.5, fontWeight: 800, marginBottom: 10, lineHeight: 1.8 }}>
+              ⚠️ هذا الملف يبدو <u>تقرير حضور موظفين</u> وليس كشف طلاب. من نور صدّر «كشف بأسماء الطلاب» للفصل.
+            </div>
+          )}
+
+          {/* ١) الفصل المكتشف */}
+          <div className="fg-lbl">الفصل المكتشف من الملف</div>
+          <div className="flex gap-2 flex-wrap mb-3">
+            {chip("🎓", "الصف", m.levelNorm || m.level)}
+            {chip("🚪", "الفصل", m.section)}
+            {chip("🏫", "المدرسة", m.school)}
+          </div>
+
+          {/* ٢) الطلاب */}
+          <div style={{ maxHeight: 210, overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 14, marginBottom: 6 }}>
+            {names.slice(0, 80).map((n, i) => <div key={i} style={{ padding: "6px 12px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 13, background: i % 2 ? "#fafafa" : "#fff" }}><span style={{ color: "#94a3b8", marginLeft: 10, display: "inline-block", width: 20 }}>{i + 1}</span>{n}</div>)}
+            {!names.length && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800, fontSize: 13 }}>لم أجد أسماء — اضغط «تغيير عمود الأسماء» أدناه</div>}
+          </div>
+          <button onClick={() => setXl({ ...xl, adv: !xl.adv })} style={{ background: "none", border: "none", color: "#64748b", fontWeight: 800, fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", marginBottom: 8 }}>{xl.adv ? "▲ إخفاء" : "⚙ تغيير عمود الأسماء"}</button>
+          {xl.adv && (
+            <div className="grid gap-2 mb-3" style={{ gridTemplateColumns: xl.sheets.length > 1 ? "1fr 1fr" : "1fr" }}>
+              {xl.sheets.length > 1 && <select className="fg-inp" value={xl.sheet} onChange={e => { const n = xl.sheets.find(x => x.name === e.target.value); setXl({ ...xl, sheet: n.name, col: n.col }); }}>{xl.sheets.map(x => <option key={x.name} value={x.name}>📄 {x.name}</option>)}</select>}
+              <select className="fg-inp" value={xl.col} onChange={e => setXl({ ...xl, col: +e.target.value })}>
+                {(sh.used || []).map(i => { const ex = String((sh.body.find(r => String(r[i] ?? "").trim()) || [])[i] ?? "").slice(0, 24); return <option key={i} value={i}>{String(hdrs[i] ?? "").trim() || "بدون عنوان"} — {ex}</option>; })}
+              </select>
+            </div>
+          )}
+
+          {/* ٣) الوجهة */}
+          <div className="fg-lbl">أين تُضاف الأسماء؟</div>
+          <div className="grid gap-2 mb-3">
+            {match && opt(match.id, `سجل ${match.level} / ${match.section} الموجود`, `${match.subject || "بدون مادة"} • ${match.students.filter(x => x.name.trim()).length} طالب حالياً — تُضاف الأسماء الجديدة فقط`)}
+            {opt("current", "السجل المفتوح الآن", `${sheet.subject || "بدون مادة"} • ${sheet.level} / ${sheet.section}${m.levelNorm ? " ← يُحدَّث إلى " + m.levelNorm + " / " + (m.section || "") : ""}`)}
+            {opt("new", "سجل جديد لهذا الفصل", `${m.levelNorm || sheet.level} / ${m.section || sheet.section} — بنفس المادة والأعمدة`)}
+          </div>
+
+          <div className="flex gap-2 justify-between items-center flex-wrap">
             <button className="fg-btn" onClick={downloadTemplate}>⬇ نموذج فارغ</button>
             <div className="flex gap-2">
               <button className="fg-btn" onClick={() => setModal(null)}>إلغاء</button>
-              <button className="fg-btn grn" onClick={() => { addStudents(xl.rows.map(r => r[xl.col]).filter(v => /[؀-ۿa-zA-Z]/.test(String(v)))); setModal(null); }}>استيراد الأسماء</button>
+              <button className="fg-btn grn" disabled={!names.length} style={{ opacity: names.length ? 1 : .5 }} onClick={() => {
+                if (names.length > 70 && !window.confirm(`سيتم إضافة ${names.length} اسماً — عدد كبير لفصل واحد. متابعة؟`)) return;
+                importTo(xl.target, names, m); setModal(null);
+              }}>✔ استيراد {names.length} طالب</button>
             </div>
           </div>
         </div></div>
-      )}
+        );
+      })()}
+
+      {toast && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 300, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, fontSize: 13.5, boxShadow: "0 14px 30px -10px rgba(0,0,0,.5)" }}>{toast}</div>}
 
       {/* نافذة: من فصول الموقع */}
       {modal === "classes" && (
@@ -29136,7 +29291,37 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
   );
 }
 
-export default function SchoolWebsite() {
+// ── حارس الأخطاء: يعرض رسالة الخطأ بدل الصفحة البيضاء ──
+class SiteErrorBoundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err, info) { this.setState({ stack: (info && info.componentStack || "").split("\n").slice(0, 6).join("\n") }); try { console.error(err); } catch {} }
+  componentDidUpdate(prev) { if (prev.resetKey !== this.props.resetKey && this.state.err) this.setState({ err: null, stack: null }); }
+  render() {
+    if (!this.state.err) return this.props.children;
+    const msg = String(this.state.err && (this.state.err.message || this.state.err));
+    const box = { maxWidth: 720, margin: "40px auto", background: "#fff", border: "2px solid #fecaca", borderRadius: 20, padding: 24, fontFamily: "Cairo, Tahoma, sans-serif", direction: "rtl", boxShadow: "0 20px 50px -20px rgba(0,0,0,.25)" };
+    const btn = { padding: "10px 18px", borderRadius: 12, border: "none", fontFamily: "inherit", fontWeight: 800, cursor: "pointer", marginLeft: 8 };
+    return (
+      <div style={box}>
+        <div style={{ fontSize: 38 }}>⚠️</div>
+        <h2 style={{ fontWeight: 900, fontSize: 20, color: "#b91c1c", margin: "6px 0" }}>حدث خطأ في {this.props.where || "الموقع"}</h2>
+        <p style={{ color: "#475569", fontWeight: 700, fontSize: 13 }}>صوّر هذه الرسالة وأرسلها للدعم الفني لإصلاحها:</p>
+        <pre dir="ltr" style={{ background: "#0f172a", color: "#fca5a5", padding: 14, borderRadius: 12, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-word", textAlign: "left" }}>{msg}{this.state.stack ? "\n" + this.state.stack : ""}</pre>
+        <div style={{ marginTop: 14 }}>
+          <button style={{ ...btn, background: "#0d9488", color: "#fff" }} onClick={() => { window.location.hash = "home"; window.location.reload(); }}>🏡 العودة للرئيسية</button>
+          <button style={{ ...btn, background: "#f1f5f9", color: "#334155" }} onClick={() => { try { Object.keys(localStorage).filter(k => k.startsWith("db_cache") || k === "school-view-mode").forEach(k => localStorage.removeItem(k)); } catch {} window.location.hash = ""; window.location.reload(); }}>🧹 مسح الذاكرة المؤقتة وإعادة التحميل</button>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default function SchoolWebsite(props) {
+  return <SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary>;
+}
+
+function SchoolWebsiteInner() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [parentPortal,        setParentPortal]        = useState(false);
@@ -29313,15 +29498,21 @@ export default function SchoolWebsite() {
             if (cached && Object.keys(cached).length > 0) finalAtt = cached;
           } catch {}
         }
-        setTeachers(t); setWeek(validWeek); setAttendance(finalAtt); setAnnouncements(ann);
-        setActivities(act); setSiteFont(font);
+        // Firebase يحذف المصفوفات الفارغة ويحوّل المتقطعة إلى كائنات — نوحّد الشكل
+        const asArr = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === "object" ? Object.values(v).filter(x => x != null) : []);
+        setTeachers(asArr(t)); setWeek(validWeek); setAttendance(finalAtt || {}); setAnnouncements(asArr(ann));
+        setActivities(asArr(act)); setSiteFont(font);
         setMessages(Array.isArray(msgs) ? msgs : []);
         setSurveys(Array.isArray(survs) ? survs : []);
         setWeekArchive(Array.isArray(wArch) ? wArch : []);
         // تحميل بيانات كل فصل
-        if (clsListMeta && clsListMeta.length > 0) {
-          const classDataArr = await Promise.all(clsListMeta.map(m => DB.get(`school-cls-${m.id}`, { ...m, students: [] })));
-          setClassList(classDataArr);
+        const metaArr = asArr(clsListMeta).filter(m => m && m.id);
+        if (metaArr.length > 0) {
+          const classDataArr = await Promise.all(metaArr.map(m => DB.get(`school-cls-${m.id}`, { ...m, students: [] })));
+          setClassList(classDataArr.map((d, i) => {
+            const c = { ...metaArr[i], ...(d && typeof d === "object" ? d : {}) };
+            return { ...c, students: asArr(c.students).map(st => ({ ...st, name: st.name || "", grades: st.grades || {} })) };
+          }));
         } else {
           // أول تشغيل — حمّل الفصل المُدرج من ملف الإكسل تلقائياً
           const meta = [{ id: PRELOADED_CLASS.id, name: PRELOADED_CLASS.name, level: PRELOADED_CLASS.level, section: PRELOADED_CLASS.section, teacher: PRELOADED_CLASS.teacher, semester: PRELOADED_CLASS.semester }];
@@ -29808,7 +29999,7 @@ export default function SchoolWebsite() {
 
             {/* ── محتوى الصفحة (قابل للتمرير) ── */}
             <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", background:"#f8fafc" }}>
-              <div style={{ direction:"rtl" }}>
+              <div style={{ direction:"rtl" }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
                 {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} />}
                 {page === "student-absence" && <StudentAbsencePage />}
                 {page === "admin-attendance"&& <AdminAttendancePage />}
@@ -29864,7 +30055,7 @@ export default function SchoolWebsite() {
                 {page === "assessment"     && <AssessmentPage teachers={teachers} />}
                 {page === "studentexcuses" && <StudentExcusePortal isAdmin={true} siteFont={siteFont} />}
                 {page === "settings"       && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} weekArchive={weekArchive} archiveCurrentWeek={archiveCurrentWeek} />}
-              </div>
+              </SiteErrorBoundary></div>
             </div>
 
             {/* ══ شريط التنقل — قائمتان يمين ويسار ══ */}
@@ -29971,7 +30162,7 @@ export default function SchoolWebsite() {
           )}
         </div>
       </nav>
-      <main className="w-full py-3">
+      <main className="w-full py-3"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
         {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} />}
         {page === "student-absence" && <StudentAbsencePage />}
         {page === "admin-attendance" && <AdminAttendancePage />}
@@ -30015,7 +30206,7 @@ export default function SchoolWebsite() {
                 {page === "assessment"     && <AssessmentPage teachers={teachers} />}
                 {page === "studentexcuses" && <StudentExcusePortal isAdmin={true} siteFont={siteFont} />}
         {page === "settings"      && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} weekArchive={weekArchive} archiveCurrentWeek={archiveCurrentWeek} />}
-      </main>
+      </SiteErrorBoundary></main>
       <footer className="relative text-center py-6 text-xs border-t bg-white mt-8 overflow-hidden" style={{borderColor:"rgba(13,148,136,.15)"}}>
         <div className="absolute inset-0 opacity-5" style={{background:"linear-gradient(135deg,#0d9488,transparent)"}} />
         <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة الأمير عبدالمجيد المتوسطة الأولى — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
