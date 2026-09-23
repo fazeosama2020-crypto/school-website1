@@ -24267,6 +24267,192 @@ const LIC_CSS = `
 .lic-drop:hover{background:#ccfbf1}
 `;
 
+// ── السجل المدني: يُحفظ مشفّراً (بصمة SHA-256) + آخر ٤ أرقام فقط — لا يُخزَّن الرقم كاملاً
+const licNormId = v => String(v ?? "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/\D/g, "");
+async function licHash(nid) {
+  const d = new TextEncoder().encode("pam-lic:" + licNormId(nid));
+  const b = await crypto.subtle.digest("SHA-256", d);
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+// قراءة تقرير الحضور والانصراف (أو أي ملف فيه «السجل المدني» و«الاسم»)
+async function licParseStaffFile(file) {
+  const XLSX = await loadXLSX();
+  const wb = XLSX.read(await file.arrayBuffer());
+  const out = new Map();
+  wb.SheetNames.forEach(n => {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" });
+    let hi = -1, ic = -1, nc = -1, jc = -1;
+    for (let i = 0; i < Math.min(rows.length, 40) && hi < 0; i++) {
+      const r = rows[i].map(x => String(x ?? "").trim());
+      const a = r.findIndex(x => /^(الإسم|الاسم|اسم الموظف|اسم المعلم|الاسم الرباعي)$/.test(x));
+      const b = r.findIndex(x => /السجل المدني|رقم الهوية|الهوية الوطنية|رقم السجل/.test(x));
+      if (a >= 0 && b >= 0) { hi = i; nc = a; ic = b; jc = r.findIndex(x => /المسمى|الوظيفة/.test(x)); }
+    }
+    if (hi < 0) return;
+    rows.slice(hi + 1).forEach(r => {
+      const nid = licNormId(r[ic]); const name = String(r[nc] ?? "").trim();
+      if (nid.length < 8 || !name) return;
+      if (!out.has(nid)) out.set(nid, { nid, name, job: jc >= 0 ? String(r[jc] ?? "").trim() : "" });
+    });
+  });
+  return [...out.values()];
+}
+
+// ══════════════════════════════════════════════════════════
+// بوابة المعلم: يدخل بسجله المدني ويعبّئ بيانات رخصته
+// الرابط:  https://…/#license
+// ══════════════════════════════════════════════════════════
+function LicenseTeacherPortal({ siteFont, onBack }) {
+  const [step, setStep] = useState("login"); // login | form | done
+  const [nid, setNid] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [rec, setRec] = useState(null);
+  const [img, setImg] = useState(null);
+  const [year, setYear] = useState("1448");
+  const fileRef = useRef(null);
+
+  useEffect(() => { licGet("school-license2-meta").then(m => m && m.year && setYear(String(m.year))); }, []);
+
+  const login = async () => {
+    const n = licNormId(nid);
+    if (n.length !== 10) { setErr("أدخل رقم السجل المدني كاملاً (١٠ أرقام)"); return; }
+    setBusy(true); setErr("");
+    const h = await licHash(n);
+    const items = await licGet(LIC_NODE);
+    const list = items && typeof items === "object" ? Object.values(items).filter(Boolean) : [];
+    const r = list.find(x => x.idHash === h);
+    setBusy(false);
+    if (!r) { setErr("رقم السجل المدني غير مسجّل في النظام — يرجى مراجعة وكيل شؤون المعلمين"); return; }
+    setRec({ reasons: [], ...r });
+    if (r.hasImg) licGet(`${LIC_IMG_NODE}/${r.id}`).then(d => setImg(typeof d === "string" ? d : null));
+    setStep("form");
+  };
+  const set = (patch) => setRec(p => ({ ...p, ...patch }));
+  const onFile = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    if (f.size > 12 * 1024 * 1024) { alert("الملف كبير جداً (الحد ١٢ ميجا)"); return; }
+    setBusy(true);
+    const data = await licCompressImage(f);
+    if (data.length > 9000000) { setBusy(false); alert("الملف كبير — ارفع صورة بدقة أقل"); return; }
+    const ok = await dbFirebasePut(`${LIC_IMG_NODE}/${rec.id}`, data);
+    setBusy(false);
+    if (!ok) { alert("⚠️ تعذّر رفع الملف — تحقق من الاتصال وأعد المحاولة"); return; }
+    setImg(data); set({ hasImg: true, imgType: f.type.startsWith("image/") ? "image" : "pdf" });
+  };
+  const submit = async () => {
+    if (!rec.spec) { alert("اختر تخصصك"); return; }
+    if (rec.years === "" || rec.years == null) { alert("أدخل عدد سنوات الخبرة"); return; }
+    if (rec.hasLicense == null) { alert("أجب على سؤال: هل لديك رخصة مهنية؟"); return; }
+    if (rec.hasLicense === true && !rec.hasImg) { alert("ارفع نسخة واضحة من الرخصة المهنية"); return; }
+    if (rec.hasLicense === false && !(rec.reasons || []).length && !String(rec.reasonText || "").trim()) { alert("اذكر أسباب عدم الحصول على الرخصة"); return; }
+    setBusy(true);
+    const out = { ...rec, filledBy: "teacher", filledAt: Date.now(), updated: Date.now() };
+    const ok = await dbFirebasePut(`${LIC_NODE}/${rec.id}`, out);
+    setBusy(false);
+    if (!ok) { alert("⚠️ تعذّر الحفظ — تحقق من الاتصال وأعد المحاولة"); return; }
+    setRec(out); setStep("done");
+  };
+
+  const shell = (children) => (
+    <div dir="rtl" className="lic" style={{ minHeight: "100vh", fontFamily: siteFont || "'Cairo',sans-serif", background: "radial-gradient(900px 400px at 90% -10%,rgba(45,212,191,.35),transparent 60%),linear-gradient(160deg,#06302b,#0b4f45 50%,#0f766e)", padding: "20px 14px 40px" }}>
+      <style>{LIC_CSS}</style>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, color: "#fff", marginBottom: 18 }}>
+          <img src={SCHOOL_LOGO} alt="" style={{ width: 64, height: 64, borderRadius: "50%", background: "#fff", padding: 4, boxShadow: "0 0 0 3px #d4a017" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, opacity: .8 }}>وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div>
+            <div style={{ fontSize: 20, fontWeight: 900 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#fde68a" }}>🪪 سجل متابعة الرخصة المهنية للعام الدراسي {licToAr(year)} هـ</div>
+          </div>
+          {onBack && <button onClick={onBack} style={{ background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.3)", borderRadius: 12, padding: "8px 12px", fontFamily: "inherit", fontWeight: 800, cursor: "pointer" }}>← الرئيسية</button>}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+
+  if (step === "login") return shell(
+    <div className="lic-card" style={{ padding: 26, textAlign: "center" }}>
+      <div style={{ fontSize: 46 }}>🔐</div>
+      <h2 style={{ fontSize: 20, fontWeight: 900, margin: "6px 0 4px" }}>دخول المعلم</h2>
+      <p style={{ color: "#64748b", fontWeight: 700, fontSize: 13.5, marginBottom: 16 }}>أدخل رقم سجلك المدني لتحديث بيانات رخصتك المهنية</p>
+      <input className="lic-inp" inputMode="numeric" maxLength={10} value={nid} onChange={e => { setNid(licNormId(e.target.value).slice(0, 10)); setErr(""); }} onKeyDown={e => e.key === "Enter" && login()} placeholder="رقم السجل المدني (١٠ أرقام)" style={{ maxWidth: 340, textAlign: "center", fontSize: 20, letterSpacing: 3, margin: "0 auto", display: "block" }} />
+      {err && <div style={{ color: "#b91c1c", fontWeight: 800, fontSize: 13, marginTop: 10 }}>{err}</div>}
+      <button className="lic-btn pri" onClick={login} disabled={busy} style={{ marginTop: 16, padding: "12px 34px", fontSize: 15 }}>{busy ? "⏳ جاري التحقق…" : "دخول ←"}</button>
+      <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700, marginTop: 14 }}>🔒 لا يُعرض رقم السجل المدني ولا يُحفظ كاملاً</div>
+    </div>
+  );
+
+  if (step === "done") { const s = licStatus(rec); return shell(
+    <div className="lic-card" style={{ padding: 28, textAlign: "center" }}>
+      <div style={{ fontSize: 56 }}>✅</div>
+      <h2 style={{ fontSize: 21, fontWeight: 900, margin: "6px 0" }}>شكراً أ. {rec.name}</h2>
+      <p style={{ color: "#475569", fontWeight: 700 }}>تم حفظ بياناتك بنجاح ووصلت إلى إدارة المدرسة</p>
+      <div style={{ display: "inline-flex", gap: 10, flexWrap: "wrap", justifyContent: "center", margin: "14px 0" }}>
+        <span style={{ background: "#f1f5f9", padding: "6px 12px", borderRadius: 999, fontWeight: 800, fontSize: 13 }}>📚 {rec.spec}</span>
+        <span style={{ background: "#f1f5f9", padding: "6px 12px", borderRadius: 999, fontWeight: 800, fontSize: 13 }}>⏳ {licToAr(rec.years)} سنة</span>
+        <span style={{ background: s.bg, color: s.c, padding: "6px 12px", borderRadius: 999, fontWeight: 900, fontSize: 13 }}>{s.ic} {s.l}</span>
+      </div>
+      <div><button className="lic-btn" onClick={() => setStep("form")}>✏️ تعديل بياناتي</button></div>
+    </div>
+  ); }
+
+  // النموذج
+  return shell(
+    <div className="lic-card" style={{ padding: 22 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 14, marginBottom: 16, borderBottom: "1px solid #eef2f6" }}>
+        <span className="lic-av" style={{ width: 50, height: 50, fontSize: 22, borderRadius: 16, background: "linear-gradient(135deg,#14b8a6,#0f766e)" }}>{rec.name.trim().charAt(0)}</span>
+        <div><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>مرحباً</div><div style={{ fontSize: 19, fontWeight: 900 }}>أ. {rec.name}</div></div>
+      </div>
+      <div className="grid gap-3 mb-5" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12, marginBottom: 20 }}>
+        <div>
+          <div className="lic-lbl"><span className="lic-step">١</span> التخصص</div>
+          <input className="lic-inp" list="lic-specs-p" value={rec.spec || ""} placeholder="اختر أو اكتب تخصصك" onChange={e => set({ spec: e.target.value })} />
+          <datalist id="lic-specs-p">{LIC_SPECS.map(s => <option key={s} value={s} />)}</datalist>
+        </div>
+        <div>
+          <div className="lic-lbl"><span className="lic-step">٢</span> عدد سنوات الخبرة</div>
+          <input className="lic-inp" type="number" inputMode="numeric" min="0" max="45" value={rec.years || ""} placeholder="مثال: 12" onChange={e => set({ years: e.target.value })} />
+        </div>
+      </div>
+      <div className="lic-lbl"><span className="lic-step">٣</span> هل لديك رخصة مهنية سارية؟</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+        <button className="lic-yn" onClick={() => set({ hasLicense: true })} style={rec.hasLicense === true ? { borderColor: "#22c55e", background: "#f0fdf4", color: "#15803d" } : undefined}>✅ نعم</button>
+        <button className="lic-yn" onClick={() => set({ hasLicense: false })} style={rec.hasLicense === false ? { borderColor: "#f87171", background: "#fef2f2", color: "#b91c1c" } : undefined}>⏳ لا</button>
+      </div>
+      {rec.hasLicense === true && (<div style={{ marginBottom: 20 }}>
+        <div className="lic-lbl"><span className="lic-step">٤</span> ارفع نسخة واضحة من الرخصة</div>
+        <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden onChange={onFile} />
+        {rec.hasImg && img ? (
+          <div style={{ border: "1.5px solid #86efac", borderRadius: 18, padding: 10, background: "#f7fef9", textAlign: "center" }}>
+            {String(img).startsWith("data:image") ? <img src={img} alt="" style={{ maxWidth: "100%", maxHeight: 360, borderRadius: 12 }} /> : <div style={{ padding: 14, fontWeight: 800 }}>📄 تم رفع ملف PDF</div>}
+            <div><button className="lic-btn" style={{ marginTop: 8 }} onClick={() => fileRef.current?.click()} disabled={busy}>🔄 استبدال</button></div>
+          </div>
+        ) : (
+          <div className="lic-drop" onClick={() => !busy && fileRef.current?.click()}>
+            <div style={{ fontSize: 36 }}>{busy ? "⏳" : "📷"}</div>
+            <div style={{ fontWeight: 900, color: "#0f766e" }}>{busy ? "جاري الرفع…" : "اضغط لتصوير الرخصة أو رفعها"}</div>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>تأكد أن الاسم ورقم الرخصة وتاريخها واضحة</div>
+          </div>
+        )}
+      </div>)}
+      {rec.hasLicense === false && (<div style={{ marginBottom: 20 }}>
+        <div className="lic-lbl"><span className="lic-step">٤</span> أسباب عدم الحصول على الرخصة</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          {LIC_REASONS.map(x => { const on = (rec.reasons || []).includes(x); return <button key={x} className={`lic-chip ${on ? "on" : ""}`} onClick={() => set({ reasons: on ? rec.reasons.filter(y => y !== x) : [...(rec.reasons || []), x] })}>{on ? "✓" : "＋"} {x}</button>; })}
+        </div>
+        <textarea className="lic-inp" rows={4} style={{ lineHeight: 1.9 }} value={rec.reasonText || ""} placeholder="اكتب الأسباب بالتفصيل…" onChange={e => set({ reasonText: e.target.value })} />
+        <div className="lic-lbl" style={{ marginTop: 14 }}><span className="lic-step">٥</span> متى تتوقع الحصول عليها؟</div>
+        <input className="lic-inp" list="lic-exp-p" value={rec.expected || ""} placeholder="مثال: الفصل الدراسي الثاني ١٤٤٨هـ" onChange={e => set({ expected: e.target.value })} />
+        <datalist id="lic-exp-p">{["نهاية الفصل الدراسي الأول", "الفصل الدراسي الثاني", "الفصل الدراسي الثالث", "خلال شهر", "خلال ثلاثة أشهر", "العام الدراسي القادم"].map(x => <option key={x} value={x} />)}</datalist>
+      </div>)}
+      <button className="lic-btn pri" onClick={submit} disabled={busy} style={{ width: "100%", justifyContent: "center", padding: "14px", fontSize: 16 }}>{busy ? "⏳ جاري الحفظ…" : "💾 حفظ وإرسال البيانات"}</button>
+    </div>
+  );
+}
+
 function ProfessionalLicensePage() {
   const [recs, setRecs] = useState([]);
   const [imgs, setImgs] = useState({});        // id -> dataURL (تُحمَّل عند الحاجة)
@@ -24279,6 +24465,10 @@ function ProfessionalLicensePage() {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
   const saveT = useRef({});
+  const xlsRef = useRef(null);
+  const [imp, setImp] = useState(null); // { list, onlyT }
+  const [showLink, setShowLink] = useState(false);
+  const portalUrl = (typeof window !== "undefined" ? window.location.origin + window.location.pathname : "") + "#license";
 
   const toast = (t) => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
 
@@ -24354,6 +24544,43 @@ function ProfessionalLicensePage() {
     if (!window.confirm("حذف نسخة الرخصة المرفوعة؟")) return;
     await licDel(`${LIC_IMG_NODE}/${cur.id}`); setImgs(p => ({ ...p, [cur.id]: null })); upd({ hasImg: false });
   };
+
+  // ── استيراد المعلمين من Excel (السجل المدني + الاسم)
+  const onXls = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    try {
+      const list = await licParseStaffFile(f);
+      if (!list.length) { alert("لم أجد عمودَي «السجل المدني» و«الإسم» في الملف"); return; }
+      setImp({ list, onlyT: true });
+    } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); }
+  };
+  const doImport = async () => {
+    const list = imp.list.filter(x => !imp.onlyT || /معلم/.test(x.job));
+    setBusy(true);
+    const next = [...recs]; let added = 0, linked = 0;
+    for (const x of list) {
+      const h = await licHash(x.nid);
+      let r = next.find(y => y.idHash === h) || next.find(y => !y.idHash && y.name === x.name);
+      if (r) { if (r.idHash !== h) { r = { ...r, idHash: h, id4: x.nid.slice(-4) }; next[next.findIndex(y => y.id === r.id)] = r; await dbFirebasePut(`${LIC_NODE}/${r.id}`, r); linked++; } }
+      else { r = { id: licId(), name: x.name, spec: "", years: "", hasLicense: null, reasons: [], reasonText: "", expected: "", hasImg: false, idHash: h, id4: x.nid.slice(-4) }; next.push(r); await dbFirebasePut(`${LIC_NODE}/${r.id}`, r); added++; }
+    }
+    next.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
+    setRecs(next); if (!sel && next[0]) setSel(next[0].id);
+    setBusy(false); setImp(null);
+    toast(`✅ تمت إضافة ${added} معلم${linked ? ` وربط السجل المدني لـ ${linked}` : ""}`);
+  };
+  const setNid = async () => {
+    const v = window.prompt(`رقم السجل المدني للمعلم «${cur.name}» (١٠ أرقام):`);
+    if (v == null) return;
+    const n = licNormId(v);
+    if (n.length !== 10) { alert("الرقم يجب أن يكون ١٠ أرقام"); return; }
+    const h = await licHash(n);
+    const other = recs.find(r => r.idHash === h && r.id !== cur.id);
+    if (other) { alert(`هذا الرقم مسجّل للمعلم «${other.name}»`); return; }
+    upd({ idHash: h, id4: n.slice(-4) }); toast("✅ تم ربط السجل المدني");
+  };
+  const copyLink = () => { try { navigator.clipboard.writeText(portalUrl); toast("✅ تم نسخ رابط المعلمين"); } catch { } setShowLink(true); };
 
   // ── الطباعة
   const loadAllImgs = async (list) => {
@@ -24464,13 +24691,29 @@ ul{margin:0 0 10px;padding-right:20px;font-weight:700;font-size:13.5px;line-heig
               <button className="lic-btn pri" style={{ flex: 1, justifyContent: "center" }} onClick={addTeacher}>＋ إضافة معلم</button>
               <button className="lic-btn red" onClick={delAll} disabled={busy || !recs.length} title="حذف جميع المعلمين">🗑 حذف الجميع</button>
             </div>
+            <div className="flex gap-2 mb-2">
+              <input ref={xlsRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={onXls} />
+              <button className="lic-btn" style={{ flex: 1, justifyContent: "center", borderColor: "#86efac", color: "#15803d" }} onClick={() => xlsRef.current?.click()} disabled={busy}>📥 استيراد من Excel</button>
+              <button className="lic-btn" style={{ flex: 1, justifyContent: "center", borderColor: "#fcd34d", color: "#a16207" }} onClick={copyLink}>🔗 رابط المعلمين</button>
+            </div>
+            {showLink && (
+              <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 14, padding: 10, marginBottom: 8, fontSize: 12, fontWeight: 700, color: "#78350f", lineHeight: 1.8 }}>
+                أرسل هذا الرابط للمعلمين — يدخل كل معلم بسجله المدني ويعبّئ بياناته:
+                <div dir="ltr" style={{ background: "#fff", border: "1px solid #fde68a", borderRadius: 10, padding: "6px 8px", marginTop: 6, fontSize: 11.5, wordBreak: "break-all", userSelect: "all" }}>{portalUrl}</div>
+                <div className="flex gap-2 mt-2">
+                  <a className="lic-btn" style={{ padding: "5px 10px", fontSize: 12 }} href={`https://wa.me/?text=${encodeURIComponent("السلام عليكم ورحمة الله\nنأمل تحديث بيانات الرخصة المهنية عبر الرابط التالي (الدخول برقم السجل المدني):\n" + portalUrl)}`} target="_blank" rel="noreferrer">💬 واتساب</a>
+                  <button className="lic-btn" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => setShowLink(false)}>إخفاء</button>
+                </div>
+                <div style={{ marginTop: 6, color: "#92400e" }}>ℹ️ المعلمون بدون سجل مدني ({licToAr(recs.filter(r => !r.idHash).length)}) لا يستطيعون الدخول — استورد ملف Excel أو أضف الرقم من بطاقة المعلم.</div>
+              </div>
+            )}
             <div style={{ maxHeight: "62vh", overflowY: "auto" }}>
               {shown.map(r => { const s = licStatus(r); return (
                 <button key={r.id} className={`lic-row ${sel === r.id ? "on" : ""}`} onClick={() => setSel(r.id)}>
                   <span className="lic-av" style={{ background: avColor(r.name) }}>{(r.name || "?").trim().charAt(0)}</span>
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: "block", fontWeight: 900, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</span>
-                    <span style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{r.spec || "بدون تخصص"}{r.years ? ` • ${licToAr(r.years)} سنة` : ""}</span>
+                    <span style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b" }}>{r.spec || "بدون تخصص"}{r.years ? ` • ${licToAr(r.years)} سنة` : ""}{r.filledBy === "teacher" ? " • 👤 عبّأه المعلم" : ""}{!r.idHash ? " • ⚠ بلا سجل مدني" : ""}</span>
                   </span>
                   <span style={{ fontSize: 10.5, fontWeight: 900, padding: "3px 8px", borderRadius: 999, background: s.bg, color: s.c, whiteSpace: "nowrap" }}>{s.ic} {s.k === "yes" ? "حاصل" : s.k === "no" ? "غير حاصل" : "—"}</span>
                 </button>); })}
@@ -24486,6 +24729,14 @@ ul{margin:0 0 10px;padding-right:20px;font-weight:700;font-size:13.5px;line-heig
                 <input className="lic-inp" style={{ flex: "1 1 220px", fontSize: 18, fontWeight: 900, background: "transparent", border: "1px solid transparent" }} value={cur.name} onChange={e => upd({ name: e.target.value })} title="تعديل الاسم" />
                 <button className="lic-btn" onClick={() => printDocs([cur], false)} disabled={busy}>🖨 طباعة صفحة المعلم</button>
                 <button className="lic-btn red" onClick={() => delTeacher(cur)}>🗑 حذف المعلم</button>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap mb-4" style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>
+                <span style={{ background: cur.idHash ? "#f0fdfa" : "#fff7ed", border: `1px solid ${cur.idHash ? "#99f6e4" : "#fed7aa"}`, color: cur.idHash ? "#0f766e" : "#c2410c", borderRadius: 999, padding: "5px 12px" }}>
+                  🪪 السجل المدني: {cur.idHash ? <span dir="ltr">••••••{cur.id4}</span> : "غير مسجّل — لن يتمكن المعلم من الدخول بالرابط"}
+                </span>
+                <button className="lic-btn" style={{ padding: "5px 12px", fontSize: 12 }} onClick={setNid}>{cur.idHash ? "تغيير الرقم" : "＋ تعيين الرقم"}</button>
+                {cur.filledBy === "teacher" && <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "5px 12px" }}>👤 عبّأه المعلم {cur.filledAt ? "في " + new Date(cur.filledAt).toLocaleDateString("ar-SA") : ""}</span>}
               </div>
 
               {/* ١) التخصص وسنوات الخبرة */}
@@ -24556,6 +24807,25 @@ ul{margin:0 0 10px;padding-right:20px;font-weight:700;font-size:13.5px;line-heig
           )}
         </div>
       </div>
+      {imp && (() => { const list = imp.list.filter(x => !imp.onlyT || /معلم/.test(x.job)); return (
+        <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setImp(null)}>
+          <div className="lic-card" style={{ width: "min(560px,100%)", maxHeight: "86vh", overflow: "auto", padding: 22 }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3"><h3 style={{ fontWeight: 900, fontSize: 18 }}>📥 استيراد المعلمين</h3><span style={{ background: "#dcfce7", color: "#15803d", padding: "4px 12px", borderRadius: 999, fontWeight: 900 }}>{licToAr(list.length)} معلم</span></div>
+            <label className="flex items-center gap-2 mb-3" style={{ fontWeight: 800, fontSize: 13, cursor: "pointer" }}><input type="checkbox" checked={imp.onlyT} onChange={e => setImp({ ...imp, onlyT: e.target.checked })} style={{ accentColor: "#0f766e", width: 18, height: 18 }} /> المعلمون فقط (استبعاد الإداريين والمستخدمين) — {licToAr(imp.list.length - imp.list.filter(x => /معلم/.test(x.job)).length)} مستبعد</label>
+            <div style={{ maxHeight: 300, overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 14 }}>
+              {list.map((x, i) => { const exists = recs.some(r => r.name === x.name); return (
+                <div key={x.nid} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "7px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 13, fontWeight: 700, background: i % 2 ? "#fafafa" : "#fff" }}>
+                  <span>{licToAr(i + 1)}. {x.name} <span style={{ color: "#94a3b8", fontSize: 11 }}>({x.job || "—"})</span></span>
+                  <span dir="ltr" style={{ color: "#64748b", fontSize: 11.5 }}>••••••{x.nid.slice(-4)} {exists ? "🔗" : "＋"}</span>
+                </div>); })}
+            </div>
+            <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700, margin: "10px 0" }}>🔒 يُحفظ رقم السجل المدني مشفّراً (لا يُخزَّن كاملاً) ويُستخدم فقط لدخول المعلم. 🔗 = اسم موجود سيُربط برقمه، ＋ = معلم جديد.</div>
+            <div className="flex gap-2 justify-end">
+              <button className="lic-btn" onClick={() => setImp(null)} disabled={busy}>إلغاء</button>
+              <button className="lic-btn pri" onClick={doImport} disabled={busy || !list.length}>{busy ? "⏳ جاري الاستيراد…" : `✔ استيراد ${licToAr(list.length)} معلم`}</button>
+            </div>
+          </div>
+        </div>); })()}
       {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 500, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, fontSize: 13.5 }}>{msg}</div>}
     </div>
   );
@@ -29548,6 +29818,7 @@ function SchoolWebsiteInner() {
   const [surveys, setSurveys] = useState([]);
   const [weekArchive, setWeekArchive] = useState([]);
 
+  const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [directAnnId, setDirectAnnId] = useState(() => {
     const h = window.location.hash.replace("#","");
     return h.startsWith("ann-") ? h.replace("ann-","") : null;
@@ -29855,6 +30126,7 @@ function SchoolWebsiteInner() {
     </div>
   );
 
+  if (licPortal) return <LicenseTeacherPortal siteFont={siteFont} onBack={() => { setLicPortal(false); window.location.hash = ""; }} />;
   if (directAnnId) return <SingleAnnouncementPage announcements={announcements} siteFont={siteFont} annId={directAnnId} />;
   if (excuseFromHash || (!user && excusePortal)) return <StudentExcusePortal onBack={() => { setExcusePortal(false); setExcuseFromHash(false); window.location.hash = ""; }} siteFont={siteFont} isAdmin={false} />;
   if (!user && publicAnnouncements) return <PublicAnnouncementsPage announcements={announcements} siteFont={siteFont} onBack={() => setPublicAnnouncements(false)} onSuggestions={() => setSuggestionsPortal(true)} onLogin={setUser} onTeacherPortal={() => setPerfStandardsPortal(true)} onParentPortal={() => setParentPortal(true)} onStudentRaffle={() => setStudentRaffle(true)} />;
