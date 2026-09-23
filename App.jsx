@@ -29343,15 +29343,21 @@ function SchoolWebsiteInner() {
             if (cached && Object.keys(cached).length > 0) finalAtt = cached;
           } catch {}
         }
-        setTeachers(t); setWeek(validWeek); setAttendance(finalAtt); setAnnouncements(ann);
-        setActivities(act); setSiteFont(font);
+        // Firebase يحذف المصفوفات الفارغة ويحوّل المتقطعة إلى كائنات — نوحّد الشكل
+        const asArr = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === "object" ? Object.values(v).filter(x => x != null) : []);
+        setTeachers(asArr(t)); setWeek(validWeek); setAttendance(finalAtt || {}); setAnnouncements(asArr(ann));
+        setActivities(asArr(act)); setSiteFont(font);
         setMessages(Array.isArray(msgs) ? msgs : []);
         setSurveys(Array.isArray(survs) ? survs : []);
         setWeekArchive(Array.isArray(wArch) ? wArch : []);
         // تحميل بيانات كل فصل
-        if (clsListMeta && clsListMeta.length > 0) {
-          const classDataArr = await Promise.all(clsListMeta.map(m => DB.get(`school-cls-${m.id}`, { ...m, students: [] })));
-          setClassList(classDataArr);
+        const metaArr = asArr(clsListMeta).filter(m => m && m.id);
+        if (metaArr.length > 0) {
+          const classDataArr = await Promise.all(metaArr.map(m => DB.get(`school-cls-${m.id}`, { ...m, students: [] })));
+          setClassList(classDataArr.map((d, i) => {
+            const c = { ...metaArr[i], ...(d && typeof d === "object" ? d : {}) };
+            return { ...c, students: asArr(c.students).map(st => ({ ...st, name: st.name || "", grades: st.grades || {} })) };
+          }));
         } else {
           // أول تشغيل — حمّل الفصل المُدرج من ملف الإكسل تلقائياً
           const meta = [{ id: PRELOADED_CLASS.id, name: PRELOADED_CLASS.name, level: PRELOADED_CLASS.level, section: PRELOADED_CLASS.section, teacher: PRELOADED_CLASS.teacher, semester: PRELOADED_CLASS.semester }];
