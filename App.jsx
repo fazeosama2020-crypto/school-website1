@@ -29136,37 +29136,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
   );
 }
 
-// ── حارس الأخطاء: يعرض رسالة الخطأ بدل الصفحة البيضاء ──
-class SiteErrorBoundary extends React.Component {
-  constructor(p) { super(p); this.state = { err: null }; }
-  static getDerivedStateFromError(err) { return { err }; }
-  componentDidCatch(err, info) { this.setState({ stack: (info && info.componentStack || "").split("\n").slice(0, 6).join("\n") }); try { console.error(err); } catch {} }
-  componentDidUpdate(prev) { if (prev.resetKey !== this.props.resetKey && this.state.err) this.setState({ err: null, stack: null }); }
-  render() {
-    if (!this.state.err) return this.props.children;
-    const msg = String(this.state.err && (this.state.err.message || this.state.err));
-    const box = { maxWidth: 720, margin: "40px auto", background: "#fff", border: "2px solid #fecaca", borderRadius: 20, padding: 24, fontFamily: "Cairo, Tahoma, sans-serif", direction: "rtl", boxShadow: "0 20px 50px -20px rgba(0,0,0,.25)" };
-    const btn = { padding: "10px 18px", borderRadius: 12, border: "none", fontFamily: "inherit", fontWeight: 800, cursor: "pointer", marginLeft: 8 };
-    return (
-      <div style={box}>
-        <div style={{ fontSize: 38 }}>⚠️</div>
-        <h2 style={{ fontWeight: 900, fontSize: 20, color: "#b91c1c", margin: "6px 0" }}>حدث خطأ في {this.props.where || "الموقع"}</h2>
-        <p style={{ color: "#475569", fontWeight: 700, fontSize: 13 }}>صوّر هذه الرسالة وأرسلها للدعم الفني لإصلاحها:</p>
-        <pre dir="ltr" style={{ background: "#0f172a", color: "#fca5a5", padding: 14, borderRadius: 12, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-word", textAlign: "left" }}>{msg}{this.state.stack ? "\n" + this.state.stack : ""}</pre>
-        <div style={{ marginTop: 14 }}>
-          <button style={{ ...btn, background: "#0d9488", color: "#fff" }} onClick={() => { window.location.hash = "home"; window.location.reload(); }}>🏡 العودة للرئيسية</button>
-          <button style={{ ...btn, background: "#f1f5f9", color: "#334155" }} onClick={() => { try { Object.keys(localStorage).filter(k => k.startsWith("db_cache") || k === "school-view-mode").forEach(k => localStorage.removeItem(k)); } catch {} window.location.hash = ""; window.location.reload(); }}>🧹 مسح الذاكرة المؤقتة وإعادة التحميل</button>
-        </div>
-      </div>
-    );
-  }
-}
-
-export default function SchoolWebsite(props) {
-  return <SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary>;
-}
-
-function SchoolWebsiteInner() {
+export default function SchoolWebsite() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [parentPortal,        setParentPortal]        = useState(false);
@@ -29343,21 +29313,15 @@ function SchoolWebsiteInner() {
             if (cached && Object.keys(cached).length > 0) finalAtt = cached;
           } catch {}
         }
-        // Firebase يحذف المصفوفات الفارغة ويحوّل المتقطعة إلى كائنات — نوحّد الشكل
-        const asArr = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === "object" ? Object.values(v).filter(x => x != null) : []);
-        setTeachers(asArr(t)); setWeek(validWeek); setAttendance(finalAtt || {}); setAnnouncements(asArr(ann));
-        setActivities(asArr(act)); setSiteFont(font);
+        setTeachers(t); setWeek(validWeek); setAttendance(finalAtt); setAnnouncements(ann);
+        setActivities(act); setSiteFont(font);
         setMessages(Array.isArray(msgs) ? msgs : []);
         setSurveys(Array.isArray(survs) ? survs : []);
         setWeekArchive(Array.isArray(wArch) ? wArch : []);
         // تحميل بيانات كل فصل
-        const metaArr = asArr(clsListMeta).filter(m => m && m.id);
-        if (metaArr.length > 0) {
-          const classDataArr = await Promise.all(metaArr.map(m => DB.get(`school-cls-${m.id}`, { ...m, students: [] })));
-          setClassList(classDataArr.map((d, i) => {
-            const c = { ...metaArr[i], ...(d && typeof d === "object" ? d : {}) };
-            return { ...c, students: asArr(c.students).map(st => ({ ...st, name: st.name || "", grades: st.grades || {} })) };
-          }));
+        if (clsListMeta && clsListMeta.length > 0) {
+          const classDataArr = await Promise.all(clsListMeta.map(m => DB.get(`school-cls-${m.id}`, { ...m, students: [] })));
+          setClassList(classDataArr);
         } else {
           // أول تشغيل — حمّل الفصل المُدرج من ملف الإكسل تلقائياً
           const meta = [{ id: PRELOADED_CLASS.id, name: PRELOADED_CLASS.name, level: PRELOADED_CLASS.level, section: PRELOADED_CLASS.section, teacher: PRELOADED_CLASS.teacher, semester: PRELOADED_CLASS.semester }];
@@ -29844,7 +29808,7 @@ function SchoolWebsiteInner() {
 
             {/* ── محتوى الصفحة (قابل للتمرير) ── */}
             <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", background:"#f8fafc" }}>
-              <div style={{ direction:"rtl" }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
+              <div style={{ direction:"rtl" }}>
                 {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} />}
                 {page === "student-absence" && <StudentAbsencePage />}
                 {page === "admin-attendance"&& <AdminAttendancePage />}
@@ -29900,7 +29864,7 @@ function SchoolWebsiteInner() {
                 {page === "assessment"     && <AssessmentPage teachers={teachers} />}
                 {page === "studentexcuses" && <StudentExcusePortal isAdmin={true} siteFont={siteFont} />}
                 {page === "settings"       && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} weekArchive={weekArchive} archiveCurrentWeek={archiveCurrentWeek} />}
-              </SiteErrorBoundary></div>
+              </div>
             </div>
 
             {/* ══ شريط التنقل — قائمتان يمين ويسار ══ */}
@@ -30007,7 +29971,7 @@ function SchoolWebsiteInner() {
           )}
         </div>
       </nav>
-      <main className="w-full py-3"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
+      <main className="w-full py-3">
         {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} />}
         {page === "student-absence" && <StudentAbsencePage />}
         {page === "admin-attendance" && <AdminAttendancePage />}
@@ -30051,7 +30015,7 @@ function SchoolWebsiteInner() {
                 {page === "assessment"     && <AssessmentPage teachers={teachers} />}
                 {page === "studentexcuses" && <StudentExcusePortal isAdmin={true} siteFont={siteFont} />}
         {page === "settings"      && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} weekArchive={weekArchive} archiveCurrentWeek={archiveCurrentWeek} />}
-      </SiteErrorBoundary></main>
+      </main>
       <footer className="relative text-center py-6 text-xs border-t bg-white mt-8 overflow-hidden" style={{borderColor:"rgba(13,148,136,.15)"}}>
         <div className="absolute inset-0 opacity-5" style={{background:"linear-gradient(135deg,#0d9488,transparent)"}} />
         <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة الأمير عبدالمجيد المتوسطة الأولى — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
