@@ -9301,7 +9301,7 @@ function StudentEvalCard({ student, onUpdate, onDelete, onSendNote, messages }) 
   const [noteAttachments, setNoteAttachments] = useState([]);
   const [lightbox, setLightbox] = useState(null); // {src, name}
 
-  const siteUrl = "https://school-website1.vercel.app";
+  const siteUrl = (typeof window !== "undefined" ? window.location.origin : "https://school-website1-sigma.vercel.app");
   const shareUrl = student.nationalId ? `${siteUrl}/#parent-${student.nationalId}` : "";
 
   const copyShareLink = () => {
@@ -9359,7 +9359,7 @@ ${shareUrl}
     if (onSendNote) await onSendNote(student, noteText.trim(), noteAttachments);
     setNoteText(""); setNoteAttachments([]); setShowNoteForm(false);
     setNoteSent(true); setTimeout(() => setNoteSent(false), 4000);
-    const parentLink = shareUrl || "https://school-website1.vercel.app";
+    const parentLink = shareUrl || (typeof window !== "undefined" ? window.location.origin : "https://school-website1-sigma.vercel.app");
     const waMsg = encodeURIComponent(
       `السلام عليكم ورحمة الله وبركاته
 ولي أمر الطالب / ${student.name}
@@ -9388,7 +9388,7 @@ ${parentLink}
       return;
     }
     const phone = student.parentPhone.trim().replace(/^0/, "966");
-    const link = shareUrl || "https://school-website1.vercel.app";
+    const link = shareUrl || (typeof window !== "undefined" ? window.location.origin : "https://school-website1-sigma.vercel.app");
     const msg = encodeURIComponent(
       `السلام عليكم ورحمة الله وبركاته
 ولي أمر الطالب / ${student.name}
@@ -10653,7 +10653,7 @@ function MessagesPage({ messages, setMessages, saveMessages, isParent, parentNam
             {/* زر دعوة أولياء الأمور */}
             {!isParent && (
               <button onClick={() => {
-                const link = "https://school-website1.vercel.app";
+                const link = (typeof window !== "undefined" ? window.location.origin : "https://school-website1-sigma.vercel.app");
                 const msg = encodeURIComponent(
                   `🏫 *مدرسة الأمير عبدالمجيد المتوسطة الأولى*\n\n` +
                   `✉️ *بوابة التواصل مع الأسرة*\n\n` +
@@ -28277,6 +28277,258 @@ body {
   );
 }
 
+// ══════════════════════════════════════════════════════════
+// شريط التنقل العصري — قوائم منبثقة بملصقات (Mega Menu)
+// ══════════════════════════════════════════════════════════
+const NAV_TOOL_DESC = {
+  attendance:"رصد حضور المعلمين يومياً", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم",
+  attendancereport:"تحليل بيانات الحضور", "student-absence":"تسجيل غياب الطلاب", studentexcuses:"استقبال أعذار الغياب",
+  absencestats:"مؤشرات وإحصاءات الغياب",
+  students:"رصد تقييم الطلاب", gradeanalysis:"تحليل النتائج والدرجات", assessment:"بطاقة تشخيص المستوى",
+  lessonrecommend:"خطط علاجية مقترحة", quiz:"بناء اختبارات الطلاب", dailyquiz:"سؤال يومي تفاعلي",
+  honorboard:"تكريم المتميزين", certificates:"إصدار شهادات رقمية", raffle:"سحب عشوائي للطلاب", luckywheel:"عجلة تحفيزية للفصل",
+  teacherperfeval:"استمارة الأداء الوظيفي", perfresults:"نتائج تقويم الأداء", teachereval:"قياس الأداء بالمعايير",
+  poll:"تصويت المعلم المتميز", teacherreports:"ملفات وتقارير المعلمين", prolicense:"متابعة الرخصة المهنية",
+  aiteacher:"مساعد ذكي للمعلم", lessonprep:"تحضير الدروس بالذكاء", strategies:"استراتيجيات التدريس",
+  announcements:"إعلانات وتعاميم المدرسة", messages:"التواصل مع أولياء الأمور", sms:"إرسال رسائل نصية",
+  broadcast:"برامج الإذاعة الصباحية", suggestions:"آراء ومقترحات المجتمع",
+  activities:"خطة الأنشطة والبرامج", gallery:"صور ومعرض الأنشطة", meetings:"محاضر الاجتماعات", committeemeeting:"اجتماعات اللجان المدرسية",
+  monthlyreport:"التقرير الشهري الشامل", report:"توثيق تقارير البرامج", qiyas:"قياس أثر البرامج",
+  surveys:"استبيانات ونماذج رأي", officialforms:"نماذج رسمية جاهزة", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
+};
+
+const NAV_GROUP_STYLE = {
+  "الحضور والدوام":           { short:"الحضور", grad:["#14b8a6","#0f766e"], soft:"#ccfbf1", desc:"الحضور والغياب والتقارير اليومية" },
+  "الطلاب":                   { grad:["#60a5fa","#2563eb"], soft:"#dbeafe", desc:"التقييم والاختبارات والتحفيز" },
+  "المعلمون":                 { grad:["#a78bfa","#6d28d9"], soft:"#ede9fe", desc:"الأداء المهني وأدوات المعلم" },
+  "التواصل والإعلام":         { short:"التواصل", grad:["#f472b6","#be185d"], soft:"#fce7f3", desc:"الإعلانات والرسائل والإذاعة" },
+  "الأنشطة والفعاليات":       { short:"الأنشطة", grad:["#fbbf24","#d97706"], soft:"#fef3c7", desc:"الأنشطة والمعارض والاجتماعات" },
+  "التقارير والأدوات العامة": { short:"التقارير والأدوات", grad:["#94a3b8","#334155"], soft:"#e2e8f0", desc:"التقارير والنماذج والإعدادات" },
+};
+const navStyleOf = g => NAV_GROUP_STYLE[g.title] || { grad:[g.color, g.color], soft:g.color+"22", desc:"" };
+const toArNum = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+
+const MNAV_CSS = `
+.mnav{font-family:'Cairo','Noto Naskh Arabic',sans-serif;position:relative}
+.mnav-bar{display:flex;align-items:center;gap:6px;padding:8px 0}
+.mnav-home{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 8px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-weight:900;font-size:13px;color:#0f766e;transition:all .2s;flex-shrink:0}
+.mnav-home:hover{border-color:#5eead4;box-shadow:0 6px 18px -8px rgba(13,148,136,.5);transform:translateY(-1px)}
+.mnav-home .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#2dd4bf,#0f766e);font-size:15px;box-shadow:0 4px 10px -4px rgba(13,148,136,.7)}
+.mnav-groups{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;flex-wrap:wrap}
+.mnav-trg{position:relative;display:flex;align-items:center;gap:7px;padding:6px 10px 6px 8px;border-radius:14px;border:1px solid transparent;background:transparent;cursor:pointer;font-weight:800;font-size:13px;color:#334155;transition:all .2s;white-space:nowrap}
+.mnav-trg:hover,.mnav-trg.open{background:#fff;border-color:#e2e8f0;box-shadow:0 8px 22px -12px rgba(15,23,42,.35)}
+.mnav-trg .gico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:15px;color:#fff;transition:transform .25s}
+.mnav-trg:hover .gico,.mnav-trg.open .gico{transform:rotate(-8deg) scale(1.08)}
+.mnav-trg .chev{font-size:9px;opacity:.5;transition:transform .25s}
+.mnav-trg.open .chev{transform:rotate(180deg);opacity:.9}
+.mnav-trg .cnt{font-size:10px;font-weight:900;min-width:20px;height:18px;padding:0 5px;border-radius:999px;display:grid;place-items:center}
+.mnav-trg.cur::after{content:'';position:absolute;bottom:-9px;right:14px;left:14px;height:3px;border-radius:3px;background:var(--gc)}
+.mnav-search{position:relative;flex-shrink:0}
+.mnav-search input{width:170px;height:40px;border-radius:14px;border:1px solid #e2e8f0;background:#f8fafc;padding:0 36px 0 12px;font-family:inherit;font-size:12.5px;font-weight:700;color:#0f172a;outline:none;transition:all .25s}
+.mnav-search input:focus{width:230px;background:#fff;border-color:#5eead4;box-shadow:0 0 0 4px rgba(45,212,191,.18)}
+.mnav-search .s-ico{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.55;pointer-events:none}
+.mnav-crumb{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:#64748b;padding:0 4px 8px}
+.mnav-crumb b{color:#0f172a}
+.mnav-crumb .dot{width:6px;height:6px;border-radius:50%}
+.mnav-panel{position:absolute;top:calc(100% + 6px);right:0;left:0;margin:0 auto;max-width:1120px;z-index:80;background:rgba(255,255,255,.97);backdrop-filter:blur(14px);border:1px solid #e2e8f0;border-radius:24px;box-shadow:0 30px 70px -20px rgba(15,23,42,.35),0 0 0 1px rgba(255,255,255,.6) inset;display:flex;overflow:hidden;animation:mnavIn .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes mnavIn{from{opacity:0;transform:translateY(-8px) scale(.985)}to{opacity:1;transform:none}}
+.mnav-side{width:230px;flex-shrink:0;padding:24px 20px;color:#fff;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px}
+.mnav-side::before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12);top:-80px;left:-90px}
+.mnav-side::after{content:'';position:absolute;width:140px;height:140px;border-radius:50%;border:18px solid rgba(255,255,255,.1);bottom:-50px;right:-40px}
+.mnav-side .big{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;font-size:32px;background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.45);transform:rotate(-6deg);box-shadow:0 10px 24px -8px rgba(0,0,0,.35);position:relative;z-index:1}
+.mnav-side h3{font-size:19px;font-weight:900;margin:6px 0 0;position:relative;z-index:1}
+.mnav-side p{font-size:12px;font-weight:600;opacity:.88;line-height:1.7;margin:0;position:relative;z-index:1}
+.mnav-side .pill{align-self:flex-start;margin-top:auto;font-size:11px;font-weight:900;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);padding:4px 12px;border-radius:999px;position:relative;z-index:1}
+.mnav-grid{flex:1;padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;align-content:start;max-height:70vh;overflow-y:auto}
+.mnav-tool{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;border:1px solid transparent;background:transparent;cursor:pointer;text-align:right;font-family:inherit;transition:all .2s;position:relative}
+.mnav-tool:hover{background:var(--soft);border-color:var(--gc2)}
+.mnav-tool.active{background:var(--soft);border-color:var(--gc)}
+.mnav-tool.active::before{content:'●';position:absolute;left:12px;top:10px;font-size:8px;color:var(--gc)}
+.stk{position:relative;width:46px;height:46px;flex-shrink:0;border-radius:15px;display:grid;place-items:center;font-size:23px;border:3px solid #fff;box-shadow:0 6px 14px -6px rgba(15,23,42,.45),0 0 0 1px rgba(15,23,42,.06);transform:rotate(var(--rot,-4deg));transition:transform .3s cubic-bezier(.3,1.6,.5,1),box-shadow .3s}
+.stk::after{content:'';position:absolute;top:-3px;left:-3px;width:14px;height:14px;border-radius:15px 0 10px 0;background:linear-gradient(135deg,#fff 50%,rgba(15,23,42,.10) 50%);}
+.stk span{filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+.mnav-tool:hover .stk,.drw-tool:hover .stk{transform:rotate(0) scale(1.12) translateY(-2px);box-shadow:0 12px 22px -8px rgba(15,23,42,.5)}
+.mnav-tool .tt{display:flex;flex-direction:column;min-width:0}
+.mnav-tool .tt b{font-size:13.5px;font-weight:900;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mnav-tool .tt small{font-size:11px;font-weight:600;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mnav-empty{padding:40px;text-align:center;color:#94a3b8;font-weight:800;font-size:13px;grid-column:1/-1}
+.mnav-panel.search .mnav-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.mnav-tag{font-size:10px;font-weight:900;padding:1px 8px;border-radius:999px;margin-top:2px;align-self:flex-start}
+/* الدرج / الجوال */
+.drw-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 8px 6px}
+.drw-tabs::-webkit-scrollbar{display:none}
+.drw-tab{display:flex;align-items:center;gap:6px;flex-shrink:0;padding:6px 12px 6px 8px;border-radius:999px;border:1px solid #e2e8f0;background:#fff;font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:800;color:#475569;cursor:pointer;transition:all .2s}
+.drw-tab .gi{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;font-size:12px}
+.drw-tab.on{color:#fff;border-color:transparent;box-shadow:0 6px 14px -6px rgba(15,23,42,.45)}
+.drw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 8px 12px}
+.drw-tool{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:16px;border:1px solid #eef2f6;background:#fff;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s}
+.drw-tool.active{background:var(--soft);border-color:var(--gc)}
+.drw-tool .stk{width:42px;height:42px;font-size:20px;border-radius:14px}
+.drw-tool b{font-size:10.5px;font-weight:800;color:#1e293b;text-align:center;line-height:1.35}
+`;
+
+function Sticker({ icon, grad, rot }) {
+  return (
+    <div className="stk" style={{ "--rot": rot, background:`linear-gradient(135deg, ${grad[0]}33, ${grad[1]}40), #fff` }}>
+      <span>{icon}</span>
+    </div>
+  );
+}
+const stickerRot = i => ["-5deg","4deg","-2deg","6deg","-6deg","3deg"][i % 6];
+
+function AdminMegaNav({ groups, pageById, page, onNavigate }) {
+  const [open, setOpen] = useState(null);
+  const [q, setQ] = useState("");
+  const wrapRef = useRef(null);
+  const tRef = useRef(null);
+
+  useEffect(() => {
+    const onDown = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(null); };
+    const onKey = e => { if (e.key === "Escape") { setOpen(null); setQ(""); } };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, []);
+  useEffect(() => { setOpen(null); setQ(""); }, [page]);
+
+  const clearT = () => { if (tRef.current) { clearTimeout(tRef.current); tRef.current = null; } };
+  const hoverOpen = title => { clearT(); if (open && open !== "__search") setOpen(title); else tRef.current = setTimeout(() => setOpen(title), 140); };
+  const hoverLeave = () => { clearT(); if (open !== "__search") tRef.current = setTimeout(() => setOpen(null), 260); };
+  const go = id => { clearT(); setOpen(null); setQ(""); onNavigate(id); };
+
+  const curGroup = groups.find(g => g.ids.includes(page));
+  const curPage = pageById[page];
+  const openGroup = groups.find(g => g.title === open);
+
+  const allTools = groups.flatMap(g => g.ids.map(id => pageById[id]).filter(Boolean).map(p => ({ ...p, g })));
+  const term = q.trim();
+  const results = term ? allTools.filter(p => p.label.includes(term) || (NAV_TOOL_DESC[p.id] || "").includes(term) || p.g.title.includes(term)) : [];
+
+  const renderTool = (p, g, i, showTag) => {
+    const s = navStyleOf(g);
+    return (
+      <button key={p.id} onClick={() => go(p.id)}
+        className={`mnav-tool ${page === p.id ? "active" : ""}`}
+        style={{ "--soft": s.soft + "99", "--gc": s.grad[1], "--gc2": s.grad[0] + "55" }}>
+        <Sticker icon={p.icon} grad={s.grad} rot={stickerRot(i)} />
+        <div className="tt">
+          <b>{p.label}</b>
+          <small>{NAV_TOOL_DESC[p.id] || g.title}</small>
+          {showTag && <span className="mnav-tag" style={{ background:s.soft, color:s.grad[1] }}>{g.icon} {g.title}</span>}
+        </div>
+      </button>
+    );
+  };
+
+  return (
+    <div className="mnav" ref={wrapRef} onMouseLeave={hoverLeave} onMouseEnter={clearT}>
+      <style>{MNAV_CSS}</style>
+      <div className="mnav-bar">
+        <button className="mnav-home" onClick={() => go("home")}>
+          <span className="ico">🏡</span>الرئيسية
+        </button>
+
+        <div className="mnav-groups">
+          {groups.map(g => {
+            const s = navStyleOf(g);
+            const isOpen = open === g.title;
+            const isCur = curGroup && curGroup.title === g.title;
+            return (
+              <button key={g.title}
+                className={`mnav-trg ${isOpen ? "open" : ""} ${isCur ? "cur" : ""}`}
+                style={{ "--gc": `linear-gradient(90deg, ${s.grad[0]}, ${s.grad[1]})`, color: isCur ? s.grad[1] : undefined }}
+                onMouseEnter={() => hoverOpen(g.title)}
+                onClick={() => { clearT(); setOpen(isOpen ? null : g.title); }}
+                aria-expanded={isOpen}>
+                <span className="gico" style={{ background:`linear-gradient(135deg, ${s.grad[0]}, ${s.grad[1]})`, boxShadow:`0 5px 12px -5px ${s.grad[1]}` }}>{g.icon}</span>
+                {s.short || g.title}
+                <span className="cnt" style={{ background:s.soft, color:s.grad[1] }}>{toArNum(g.ids.length)}</span>
+                <span className="chev">▼</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mnav-search">
+          <span className="s-ico">🔍</span>
+          <input value={q} placeholder="ابحث عن أداة…"
+            onChange={e => { setQ(e.target.value); setOpen(e.target.value.trim() ? "__search" : null); }}
+            onFocus={() => { if (q.trim()) setOpen("__search"); }}
+            onKeyDown={e => { if (e.key === "Enter" && results[0]) go(results[0].id); }} />
+        </div>
+      </div>
+
+      {curPage && page !== "home" && (
+        <div className="mnav-crumb">
+          <span>🏡 الرئيسية</span><span>‹</span>
+          {curGroup && <><span className="dot" style={{ background:navStyleOf(curGroup).grad[1] }}></span><span>{curGroup.title}</span><span>‹</span></>}
+          <b>{curPage.icon} {curPage.label}</b>
+        </div>
+      )}
+
+      {openGroup && (() => {
+        const s = navStyleOf(openGroup);
+        const tools = openGroup.ids.map(id => pageById[id]).filter(Boolean);
+        return (
+          <div className="mnav-panel" key={openGroup.title}>
+            <div className="mnav-side" style={{ background:`linear-gradient(160deg, ${s.grad[0]}, ${s.grad[1]})` }}>
+              <div className="big">{openGroup.icon}</div>
+              <h3>{openGroup.title}</h3>
+              <p>{s.desc}</p>
+              <span className="pill">{toArNum(tools.length)} أدوات</span>
+            </div>
+            <div className="mnav-grid">
+              {tools.map((p, i) => renderTool(p, openGroup, i, false))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {open === "__search" && term && (
+        <div className="mnav-panel search">
+          <div className="mnav-grid">
+            {results.length ? results.map((p, i) => renderTool(p, p.g, i, true))
+              : <div className="mnav-empty">لا توجد أداة تطابق «{term}»</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── درج التنقل للشاشات الصغيرة ووضع الجوال: تبويبات مجموعات + شبكة ملصقات
+function StickerDrawerNav({ groups, pageById, page, onNavigate }) {
+  const initial = (groups.find(g => g.ids.includes(page)) || groups[0]).title;
+  const [sel, setSel] = useState(initial);
+  const g = groups.find(x => x.title === sel) || groups[0];
+  const s = navStyleOf(g);
+  return (
+    <div style={{ fontFamily:"'Cairo',sans-serif" }}>
+      <style>{MNAV_CSS}</style>
+      <div className="drw-tabs">
+        {groups.map(x => {
+          const xs = navStyleOf(x); const on = x.title === sel;
+          return (
+            <button key={x.title} className={`drw-tab ${on ? "on" : ""}`} onClick={() => setSel(x.title)}
+              style={on ? { background:`linear-gradient(135deg, ${xs.grad[0]}, ${xs.grad[1]})` } : undefined}>
+              <span className="gi" style={{ background: on ? "rgba(255,255,255,.25)" : xs.soft }}>{x.icon}</span>{x.title}
+            </button>
+          );
+        })}
+      </div>
+      <div className="drw-grid">
+        {g.ids.map(id => pageById[id]).filter(Boolean).map((p, i) => (
+          <button key={p.id} className={`drw-tool ${page === p.id ? "active" : ""}`} onClick={() => onNavigate(p.id)}
+            style={{ "--soft": s.soft, "--gc": s.grad[1] }}>
+            <Sticker icon={p.icon} grad={s.grad} rot={stickerRot(i)} />
+            <b>{p.label}</b>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function SchoolWebsite() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -29036,37 +29288,9 @@ export default function SchoolWebsite() {
                 })}
               </div>
 
-              {/* ─ الأدوات مصنّفة ─ */}
-              <div style={{ background:"#fafbfc", padding:"6px" }}>
-                {navGroups.map(g => (
-                  <div key={g.title} style={{ marginBottom:8 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 6px", fontFamily:"'Cairo',sans-serif" }}>
-                      <span style={{fontSize:13}}>{g.icon}</span>
-                      <span style={{fontSize:11, fontWeight:900, color:g.color}}>{g.title}</span>
-                      <div style={{flex:1, height:1, background:g.color+"33"}}></div>
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px" }}>
-                      {g.ids.map(id => pageById[id]).filter(Boolean).map(p => {
-                        const active = page === p.id;
-                        return (
-                          <button key={p.id} onClick={() => navigate(p.id)} style={{
-                            display:"flex", flexDirection:"row", alignItems:"center", gap:6,
-                            padding:"8px 10px", cursor:"pointer",
-                            background: active ? g.color+"14" : "#fff",
-                            borderRadius:8, transition:"all .15s", textAlign:"right",
-                            fontFamily:"'Cairo',sans-serif",
-                            border: active ? ("1px solid "+g.color) : "1px solid #eef1f4",
-                          }}>
-                            <span style={{ fontSize:15, flexShrink:0 }}>{p.icon}</span>
-                            <span style={{ fontSize:10.5, fontWeight:700, whiteSpace:"nowrap",
-                              overflow:"hidden", textOverflow:"ellipsis",
-                              color: active ? g.color : "#374151" }}>{p.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+              {/* ─ الأدوات مصنّفة — تبويبات وملصقات ─ */}
+              <div style={{ background:"#fafbfc" }}>
+                <StickerDrawerNav groups={navGroups} pageById={pageById} page={page} onNavigate={navigate} />
               </div>
 
             </div>
@@ -29101,29 +29325,10 @@ export default function SchoolWebsite() {
             </div>
           </div>
 
-          {/* - صف ثانٍ: أزرار التنقل (desktop) - */}
+          {/* - صف ثانٍ: شريط تنقل عصري بقوائم منبثقة (desktop) - */}
           {page !== "home" && (
-          <div className="hidden lg:block py-2 space-y-2">
-            <button onClick={() => { navigate("home"); setShowExtra(false); }} className={`nav-pill-main ${page === "home" ? "active" : ""}`}>
-              <span className="nav-pill-icon">🏡</span>الرئيسية
-            </button>
-            {navGroups.map(g => (
-              <div key={g.title} className="rounded-2xl px-3 py-2" style={{ background:g.color+"0d", border:`1px solid ${g.color}22` }}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-sm">{g.icon}</span>
-                  <span className="text-xs font-black" style={{color:g.color}}>{g.title}</span>
-                  <div className="flex-1 h-px" style={{background:g.color+"22"}}></div>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
-                    <button key={p.id} onClick={() => { navigate(p.id); setShowExtra(false); }} className={`nav-pill-extra ${page === p.id ? "active" : ""}`}>
-                      <span className="nav-pill-icon">{p.icon}</span>
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="hidden lg:block">
+            <AdminMegaNav groups={navGroups} pageById={pageById} page={page} onNavigate={id => { navigate(id); setShowExtra(false); }} />
           </div>
           )}
 
@@ -29145,26 +29350,10 @@ export default function SchoolWebsite() {
                   </button>
                 ))}
               </div>
-              {/* الأقسام المصنّفة */}
-              {navGroups.map(g => (
-                <div key={g.title} className="mb-3">
-                  <div className="text-xs font-black px-2 mb-1.5 flex items-center gap-1.5" style={{color:g.color}}>{g.icon} {g.title}</div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {g.ids.map(id => pageById[id]).filter(Boolean).map(p => (
-                      <button key={p.id} onClick={() => { navigate(p.id); setMenuOpen(false); }}
-                        style={{
-                          padding:"8px 10px", borderRadius:"14px", fontSize:"11px", fontWeight:"700",
-                          fontFamily:"'Cairo',sans-serif", textAlign:"right",
-                          background: page===p.id ? g.color : g.color+"12",
-                          color: page===p.id ? "#fff" : g.color,
-                          border: `1.5px solid ${g.color}33`,
-                        }}>
-                        <span style={{marginLeft:"3px"}}>{p.icon}</span>{p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              {/* الأقسام المصنّفة — ملصقات */}
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 mb-3 overflow-hidden">
+                <StickerDrawerNav groups={navGroups} pageById={pageById} page={page} onNavigate={id => { navigate(id); setMenuOpen(false); }} />
+              </div>
               <div className="border-t border-gray-100 pt-3 flex items-center justify-between px-2">
                 <span className="text-sm font-black text-gray-700">{user.name} — {user.role}</span>
                 <button onClick={() => setUser(null)} className="text-xs text-red-500 font-black px-3 py-2 rounded-full bg-red-50 border border-red-100">🚪 خروج</button>
