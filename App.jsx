@@ -990,11 +990,43 @@ function annDateLabel(iso) {
   const d = new Date(iso + "T12:00:00Z");
   const h = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", { day:"numeric", month:"long", year:"numeric", timeZone:"UTC" }).format(d).replace(/\s*هـ$/, "");
   const g = new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-arab", { day:"numeric", month:"long", year:"numeric", timeZone:"UTC" }).format(d);
-  return `${h} هـ — ${g} م`;
+  const w = new Intl.DateTimeFormat("ar-SA", { weekday:"long", timeZone:"UTC" }).format(d);
+  return `${w} ${h} هـ — ${g} م`;
 }
 function annTodayISO() {
   const n = new Date();
   return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
+}
+const ANN_AUDIENCES = [
+  { v:"أولياء الأمور", icon:"👨‍👩‍👦", c:"#0f766e" },
+  { v:"المعلمون",     icon:"👨‍🏫",   c:"#1d4ed8" },
+  { v:"الطلاب",       icon:"🎒",     c:"#b45309" },
+  { v:"الجميع",       icon:"🏫",     c:"#7c3aed" },
+];
+// شارة الفئة المستهدفة — تظهر أعلى الإعلان
+function AnnAudience({ ann, size = "md" }) {
+  if (!ann || !ann.audience) return null;
+  const a = ANN_AUDIENCES.find(x => x.v === ann.audience) || { icon:"📢", c:"#0f766e", v:ann.audience };
+  const big = size === "lg", small = size === "sm";
+  return (
+    <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:a.c, color:"#fff", borderRadius:999,
+      padding: big ? "7px 18px" : small ? "2px 10px" : "4px 14px", fontWeight:900,
+      fontSize: big ? 16 : small ? 11 : 13, marginBottom: big ? 12 : 6, fontFamily:"'Cairo',sans-serif" }}>
+      <span>{a.icon}</span><span>موجّه إلى: {a.v}</span>
+    </div>
+  );
+}
+// سطر اليوم والتاريخ — يظهر تحت عنوان الإعلان
+function AnnDateLine({ ann, size = "md", dark = false }) {
+  if (!ann || !ann.date) return null;
+  const big = size === "lg", small = size === "sm";
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", fontWeight:800,
+      fontSize: big ? 18 : small ? 11.5 : 14, color: dark ? "#e2e8f0" : "#0f766e",
+      marginTop: small ? 3 : 6, marginBottom: big ? 12 : 8, lineHeight:1.6, fontFamily:"'Cairo',sans-serif" }}>
+      <span>📅</span><span>{ann.date}</span>
+    </div>
+  );
 }
 function AnnDatePicker({ ann, setAnn }) {
   const [mode, setMode] = React.useState("hijri");
@@ -1012,6 +1044,14 @@ function AnnDatePicker({ ann, setAnn }) {
   const years = []; for (let y = 1420; y <= 1470; y++) years.push(y);
   return (
     <div dir="rtl" style={{ background:"#f8fafc", border:"1.5px solid #e2e8f0", borderRadius:12, padding:10, marginBottom:10 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:8 }}>
+        <span style={{ fontWeight:800, fontSize:12, color:"#0d3b6e" }}>🎯 الفئة المستهدفة:</span>
+        <select value={ann.audience || ""} onChange={e => setAnn(p => ({ ...p, audience: e.target.value }))}
+          style={{ ...box, fontWeight:700, minWidth:150 }}>
+          <option value="">— اختر —</option>
+          {ANN_AUDIENCES.map(a => <option key={a.v} value={a.v}>{a.icon} {a.v}</option>)}
+        </select>
+      </div>
       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:8 }}>
         <span style={{ fontWeight:800, fontSize:12, color:"#0d3b6e" }}>📅 تاريخ الإعلان:</span>
         <button type="button" style={tab(mode==="hijri")} onClick={()=>setMode("hijri")}>هجري</button>
@@ -1068,15 +1108,16 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
             style={{ backgroundColor: ann.bgColor || "#ffffff" }}>
             {/* رأس الإعلان */}
             <div className="px-8 pt-8 pb-4">
+              <AnnAudience ann={ann} size="lg" />
               <div className="flex items-start gap-3 mb-3 flex-wrap">
                 <span className="text-3xl">{cIcons[ann.category] || "📢"}</span>
                 <h1 className={"font-black flex-1 leading-snug " + (ann.titleSize||"text-2xl")} style={{color: ann.titleColor||"#1f2937", textAlign: ann.titleAlign||"right"}}>{ann.title}</h1>
                 {ann.pinned && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">📌 مثبت</span>}
               </div>
+              <AnnDateLine ann={ann} size="lg" />
               <div className="flex gap-2 flex-wrap">
                 <span className={"text-xs px-3 py-1 rounded-full font-bold " + (priorityColor[ann.priority] || "bg-gray-100 text-gray-600")}>{ann.priority}</span>
                 <span className="text-xs px-3 py-1 rounded-full font-bold bg-teal-50 text-teal-700">{ann.category}</span>
-                <span className="text-xs px-3 py-1 rounded-full font-bold bg-gray-50 text-gray-500">{ann.date}</span>
               </div>
             </div>
             {/* فاصل */}
@@ -1192,12 +1233,14 @@ const ANN_TEMPLATES = [
                 <span style={{background:pColor,color:"#fff",borderRadius:20,padding:"2px 12px",fontSize:11,fontWeight:900}}>{ann.priority}</span>
                 {ann.pinned&&<span style={{background:"rgba(251,191,36,.2)",color:"#fbbf24",borderRadius:20,padding:"2px 10px",fontSize:10,fontWeight:700}}>📌 مثبت</span>}
               </div>
-              <h3 style={{fontSize:18,fontWeight:900,color:"#f1f5f9",lineHeight:1.4,marginBottom:10,textShadow:"0 2px 8px rgba(0,0,0,.4)"}}>{ann.title}</h3>
+              <AnnAudience ann={ann} size="sm" />
+              <h3 style={{fontSize:18,fontWeight:900,color:"#f1f5f9",lineHeight:1.4,marginBottom:4,textShadow:"0 2px 8px rgba(0,0,0,.4)"}}>{ann.title}</h3>
+              <AnnDateLine ann={ann} size="sm" dark />
               <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7,maxHeight:56,overflow:"hidden"}}
                 dangerouslySetInnerHTML={{__html:ann.content?.replace(/<[^>]*>/g," ").substring(0,120)+"…"}}/>
             </div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:14}}>
-              <span style={{fontSize:10,color:"#64748b",fontWeight:700}}>{ann.date}</span>
+              <span />
               <span style={{fontSize:11,color:pColor,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>اقرأ المزيد ◄</span>
             </div>
           </div>
@@ -1227,11 +1270,11 @@ const ANN_TEMPLATES = [
           <div style={{padding:"16px 18px"}}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
               <span style={{background:catColor,color:"#fff",padding:"2px 10px",borderRadius:4,fontSize:10,fontWeight:900,letterSpacing:".05em"}}>{ann.category}</span>
-              <span style={{width:4,height:4,borderRadius:"50%",background:"#cbd5e1",display:"inline-block"}}/>
-              <span style={{fontSize:10,color:"#94a3b8",fontWeight:700}}>{ann.date}</span>
               {ann.pinned&&<span style={{fontSize:10,color:"#f59e0b"}}>📌</span>}
             </div>
-            <h3 style={{fontSize:16,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:8}}>{ann.title}</h3>
+            <AnnAudience ann={ann} size="sm" />
+            <h3 style={{fontSize:16,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:2}}>{ann.title}</h3>
+            <AnnDateLine ann={ann} size="sm" />
             <div style={{fontSize:12,color:"#64748b",lineHeight:1.8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}
               dangerouslySetInnerHTML={{__html:ann.content?.replace(/<[^>]*>/g," ")}}/>
           </div>
@@ -1270,14 +1313,16 @@ const ANN_TEMPLATES = [
                 {ann.pinned&&<span style={{fontSize:10,color:"#fbbf24"}}>📌 مثبت</span>}
               </div>
             </div>
+            <AnnAudience ann={ann} size="sm" />
             <h3 style={{fontSize:16,fontWeight:900,color:"#fff",lineHeight:1.4,textShadow:"0 1px 4px rgba(0,0,0,.3)"}}>{ann.title}</h3>
+            <AnnDateLine ann={ann} size="sm" dark />
           </div>
           {/* جسم البطاقة */}
           <div style={{background:"#fff",padding:"14px 18px"}}>
             <div style={{fontSize:12,color:"#475569",lineHeight:1.8,marginBottom:10,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}
               dangerouslySetInnerHTML={{__html:ann.content?.replace(/<[^>]*>/g," ")}}/>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:10,color:"#94a3b8"}}>{ann.date}</span>
+              <span />
               <span style={{fontSize:11,color:pColor,fontWeight:900}}>◄ تفاصيل</span>
             </div>
           </div>
@@ -1305,10 +1350,12 @@ const ANN_TEMPLATES = [
           <div style={{position:"absolute",top:0,right:0,width:3,height:"100%",background:pColor}}/>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,paddingRight:10}}>
             <span style={{fontSize:18}}>{cIcons[ann.category]||"📢"}</span>
-            <span style={{fontSize:11,color:"#94a3b8",fontWeight:700,flex:1}}>{ann.category} · {ann.date}</span>
+            <span style={{fontSize:11,color:"#94a3b8",fontWeight:700,flex:1}}>{ann.category}</span>
             {ann.priority!=="عادي"&&<span style={{background:pColor+"15",color:pColor,borderRadius:20,padding:"1px 10px",fontSize:10,fontWeight:900}}>{ann.priority}</span>}
           </div>
-          <h3 style={{fontSize:15,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:6,paddingRight:10}}>{ann.title}</h3>
+          <div style={{paddingRight:10}}><AnnAudience ann={ann} size="sm" /></div>
+          <h3 style={{fontSize:15,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:2,paddingRight:10}}>{ann.title}</h3>
+          <div style={{paddingRight:10}}><AnnDateLine ann={ann} size="sm" /></div>
           <div style={{fontSize:12,color:"#64748b",lineHeight:1.7,paddingRight:10,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}
             dangerouslySetInnerHTML={{__html:ann.content?.replace(/<[^>]*>/g," ")}}/>
         </div>
@@ -11291,6 +11338,8 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
       .school{font-size:13px;color:#555;margin-bottom:6px}
       .title{font-size:22px;font-weight:900;color:${ann.titleColor||"#1f2937"};margin-bottom:8px}
       .meta{display:flex;gap:12px;justify-content:center;font-size:11px;color:#888;flex-wrap:wrap}
+      .aud{display:inline-block;background:#0f766e;color:#fff;border-radius:999px;padding:5px 16px;font-size:14px;font-weight:900;margin-bottom:10px}
+      .adate{font-size:15px;font-weight:800;color:#0f766e;margin-bottom:10px}
       .badge{background:${prioColor}22;color:${prioColor};border-radius:20px;padding:2px 10px;font-weight:700}
       .body{font-size:15px;line-height:2;color:#222;margin-top:20px;background:${ann.bgColor||"#fff"};padding:16px;border-radius:8px;border:1px solid #eee}
       .footer{text-align:center;margin-top:28px;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:12px}
@@ -11298,11 +11347,12 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
     </style></head><body>
     <div class="header">
       <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+      ${ann.audience ? `<div class="aud">موجّه إلى: ${ann.audience}</div>` : ""}
       <div class="title">${cIcons[ann.category]||"📌"} ${ann.title}</div>
+      <div class="adate">📅 ${ann.date}</div>
       <div class="meta">
         <span class="badge">${ann.priority}</span>
         <span>${ann.category}</span>
-        <span>${ann.date}</span>
       </div>
     </div>
     <div class="body">${ann.content}</div>
@@ -11477,10 +11527,11 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                             <span style={{ fontSize:10, background: pBg[ann.priority]||"#f0fdfa", color:borderClr, borderRadius:10, padding:"1px 7px", fontWeight:800, border:`1px solid ${borderClr}33` }}>{ann.priority}</span>
                             <span style={{ fontSize:10, color:"#94a3b8", fontWeight:600 }}>{cIcons[ann.category]} {ann.category}</span>
                           </div>
+                          <AnnAudience ann={ann} size="sm" />
                           <div style={{ fontSize:14, fontWeight:900, color:ann.titleColor||"#1f2937", lineHeight:1.3 }}>
                             {ann.title}
                           </div>
-                          <div style={{ fontSize:10, color:"#94a3b8", marginTop:3 }}>{ann.date}</div>
+                          <AnnDateLine ann={ann} size="sm" />
                         </div>
                         <div style={{ fontSize:18, color:"#cbd5e1", flexShrink:0, marginTop:2 }}>
                           {isExpanded ? "▴" : "▾"}
@@ -11699,7 +11750,8 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
             ) : (
               /* وضع العرض */
               <div className="p-5">
-                <div className="flex items-start justify-between gap-3 mb-3">
+                <AnnAudience ann={ann} />
+                <div className="flex items-start justify-between gap-3 mb-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xl">{cIcons[ann.category] || "📌"}</span>
                     <h3 className={"font-bold " + (ann.titleSize||"text-lg")} style={{color: ann.titleColor||"#1f2937"}}>{ann.title}</h3>
@@ -11713,9 +11765,10 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                     <button onClick={() => del(ann.id)} className="text-xs px-2 py-1.5 rounded-lg hover:bg-red-50 text-red-500 font-bold border border-red-100">🗑️</button>
                   </div>
                 </div>
+                <AnnDateLine ann={ann} />
                 <div className="text-gray-700 text-sm leading-relaxed mb-3 annhtml" dangerouslySetInnerHTML={{ __html: ann.content }}></div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>{ann.date}</span>
+                  <span />
                   <div className="flex gap-2"><Badge color="gray">{ann.category}</Badge><Badge color={pColors[ann.priority]}>{ann.priority}</Badge></div>
                 </div>
                 {/* ── قسم الردود والتعليقات (ديسكتوب) ── */}
