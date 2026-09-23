@@ -963,6 +963,84 @@ function PublicComments({ itemKey, itemTitle }) {
   );
 }
 
+// ══════════════════════════════════════════════════════════
+// AnnDatePicker — اختيار تاريخ الإعلان (هجري أم القرى / ميلادي)
+// يسمح بأي تاريخ حتى لو كان سابقًا. يحفظ:
+//   dateG : التاريخ الميلادي بصيغة yyyy-mm-dd
+//   date  : النص المعروض "هجري — ميلادي"
+// ══════════════════════════════════════════════════════════
+const ANN_HIJRI_MONTHS = ["محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
+const _annHijriFmt = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { day:"numeric", month:"numeric", year:"numeric", timeZone:"UTC" });
+function annGToHijri(iso) {
+  const d = new Date(iso + "T12:00:00Z");
+  const p = {}; _annHijriFmt.formatToParts(d).forEach(x => { p[x.type] = x.value; });
+  return { y: parseInt(p.year), m: parseInt(p.month), d: parseInt(p.day) };
+}
+function annHijriToG(hy, hm, hd) {
+  // تقدير أولي ثم بحث دقيق حول التقدير
+  const approx = Date.UTC(622, 6, 16) + ((hy - 1) * 354.367 + (hm - 1) * 29.5306 + (hd - 1)) * 86400000;
+  for (let off = -30; off <= 30; off++) {
+    const iso = new Date(approx + off * 86400000).toISOString().slice(0, 10);
+    const h = annGToHijri(iso);
+    if (h.y === hy && h.m === hm && h.d === hd) return iso;
+  }
+  return null; // اليوم غير موجود (مثل ٣٠ في شهر من ٢٩ يومًا)
+}
+function annDateLabel(iso) {
+  const d = new Date(iso + "T12:00:00Z");
+  const h = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", { day:"numeric", month:"long", year:"numeric", timeZone:"UTC" }).format(d).replace(/\s*هـ$/, "");
+  const g = new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-arab", { day:"numeric", month:"long", year:"numeric", timeZone:"UTC" }).format(d);
+  return `${h} هـ — ${g} م`;
+}
+function annTodayISO() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
+}
+function AnnDatePicker({ ann, setAnn }) {
+  const [mode, setMode] = React.useState("hijri");
+  const [err, setErr] = React.useState("");
+  const iso = ann.dateG || "";
+  const h = iso ? annGToHijri(iso) : annGToHijri(annTodayISO());
+  const apply = (newIso) => { setErr(""); setAnn(p => ({ ...p, dateG: newIso, date: annDateLabel(newIso) })); };
+  const setHijri = (y, m, d) => {
+    const g = annHijriToG(y, m, d);
+    if (!g) { setErr(`لا يوجد يوم ${d} في شهر ${ANN_HIJRI_MONTHS[m-1]} ${y}هـ`); return; }
+    apply(g);
+  };
+  const box = { padding:"7px 8px", borderRadius:8, border:"1.5px solid #e2e8f0", fontSize:12, fontFamily:"'Cairo',sans-serif", outline:"none", background:"#fff" };
+  const tab = (on) => ({ padding:"5px 14px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:700, fontSize:12, fontFamily:"'Cairo',sans-serif", background: on ? "#0d9488" : "#f1f5f9", color: on ? "#fff" : "#475569" });
+  const years = []; for (let y = 1420; y <= 1470; y++) years.push(y);
+  return (
+    <div dir="rtl" style={{ background:"#f8fafc", border:"1.5px solid #e2e8f0", borderRadius:12, padding:10, marginBottom:10 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:8 }}>
+        <span style={{ fontWeight:800, fontSize:12, color:"#0d3b6e" }}>📅 تاريخ الإعلان:</span>
+        <button type="button" style={tab(mode==="hijri")} onClick={()=>setMode("hijri")}>هجري</button>
+        <button type="button" style={tab(mode==="greg")} onClick={()=>setMode("greg")}>ميلادي</button>
+        <button type="button" style={{ ...tab(false), background:"#fff", border:"1.5px solid #e2e8f0" }} onClick={()=>apply(annTodayISO())}>اليوم</button>
+      </div>
+      {mode === "greg" ? (
+        <input type="date" value={iso} onChange={e => e.target.value && apply(e.target.value)} style={{ ...box, width:"100%" }} />
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns:"70px 1fr 90px", gap:6 }}>
+          <select value={h.d} onChange={e => setHijri(h.y, h.m, +e.target.value)} style={box}>
+            {Array.from({length:30},(_,i)=>i+1).map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select value={h.m} onChange={e => setHijri(h.y, +e.target.value, Math.min(h.d, 29))} style={box}>
+            {ANN_HIJRI_MONTHS.map((n,i) => <option key={i} value={i+1}>{n}</option>)}
+          </select>
+          <select value={h.y} onChange={e => setHijri(+e.target.value, h.m, Math.min(h.d, 29))} style={box}>
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      )}
+      {err && <div style={{ color:"#dc2626", fontSize:11, marginTop:6, fontWeight:700 }}>{err}</div>}
+      <div style={{ fontSize:12, color:"#0f766e", marginTop:8, fontWeight:700 }}>
+        {iso ? annDateLabel(iso) : (ann.date ? `التاريخ الحالي: ${ann.date}` : "لم يُحدد — سيُستخدم تاريخ اليوم")}
+      </div>
+    </div>
+  );
+}
+
 function SingleAnnouncementPage({ announcements, siteFont, annId }) {
   const cIcons = { "تعاميم": "📜", "إعلانات": "📢", "تدريب": "🎓", "اجتماعات": "🤝" };
   const priorityColor = { "عاجل": "bg-red-100 text-red-700", "مهم": "bg-amber-100 text-amber-700", "عادي": "bg-gray-100 text-gray-600" };
@@ -11191,7 +11269,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
 
   const add = () => {
     if (!newAnn.title || !newAnn.content) return;
-    const u = [{ ...newAnn, id: Date.now(), date: new Date().toLocaleDateString("ar-SA-u-nu-arab", { year: "numeric", month: "2-digit", day: "2-digit" }), pinned: false }, ...announcements];
+    const u = [{ ...newAnn, id: Date.now(), date: newAnn.date || new Date().toLocaleDateString("ar-SA-u-nu-arab", { year: "numeric", month: "2-digit", day: "2-digit" }), pinned: false }, ...announcements];
     setAnnouncements(u); saveAnnouncements(u);
     setNewAnn({ title: "", content: "", category: "إعلانات", priority: "عادي", bgColor: "", titleColor: "#1f2937", titleSize: "text-xl", titleAlign: "right" }); setShowForm(false);
   };
@@ -11291,6 +11369,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                        fontSize:13, lineHeight:1.8, resize:"vertical", fontFamily:"'Cairo',sans-serif",
                        boxSizing:"border-box", outline:"none", marginBottom:8 }} />
 
+            <AnnDatePicker ann={newAnn} setAnn={setNewAnn} />
             {/* التصنيف والأولوية */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
               <select value={newAnn.category} onChange={e=>setNewAnn(p=>({...p,category:e.target.value}))}
@@ -11369,6 +11448,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                     <textarea value={editAnn.content.replace(/<[^>]*>/g,'')}
                       onChange={e=>setEditAnn(p=>({...p,content:e.target.value}))} rows={3}
                       style={{ width:"100%", padding:"8px 10px", borderRadius:10, border:"1.5px solid #e2e8f0", fontSize:12, resize:"vertical", fontFamily:"'Cairo',sans-serif", boxSizing:"border-box", outline:"none", marginBottom:8, lineHeight:1.8 }} />
+                    <AnnDatePicker ann={editAnn} setAnn={setEditAnn} />
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:8 }}>
                       <select value={editAnn.category} onChange={e=>setEditAnn(p=>({...p,category:e.target.value}))}
                         style={{ padding:"7px 8px", borderRadius:8, border:"1.5px solid #e2e8f0", fontSize:12, fontFamily:"'Cairo',sans-serif", outline:"none" }}>
@@ -11533,6 +11613,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
               ))}
             </div>
             <RichEditor value={newAnn.content} onChange={v => setNewAnn(p => ({...p, content: v}))} />
+            <AnnDatePicker ann={newAnn} setAnn={setNewAnn} />
             <div className="flex gap-3 flex-wrap items-center">
               <select value={newAnn.category} onChange={e => setNewAnn(p => ({...p, category: e.target.value}))}
                 className="px-4 py-2.5 rounded-xl border-2 border-gray-200 text-sm focus:outline-none">
@@ -11591,6 +11672,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                   ))}
                 </div>
                 <RichEditor value={editAnn.content} onChange={v => setEditAnn(p => ({...p, content: v}))} />
+                <AnnDatePicker ann={editAnn} setAnn={setEditAnn} />
                 <div className="flex gap-2 flex-wrap items-center">
                   <select value={editAnn.category} onChange={e => setEditAnn(p => ({...p, category: e.target.value}))}
                     className="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white">
