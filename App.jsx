@@ -1798,7 +1798,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
 // ===== لوحة الأقسام: بطاقات مصنّفة + لوحة أدوات جانبية =====
 const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
-    tools:[{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
+    tools:[{id:"morningattend",label:"التحضير الصباحي",icon:"📋"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
     tools:[{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
@@ -1913,7 +1913,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
           </div>
         </div>
         <div className="hr-quick">
-          {[["attendance", "الحضور اليومي", "📅", "#ccfbf1"], ["announcements", "الإعلانات", "📣", "#fce7f3"], ["formative", "التقويم التكويني", "📘", "#dbeafe"], ["prolicense", "الرخصة المهنية", "🪪", "#fef3c7"], ["student-absence", "غياب الطلاب", "🎒", "#ede9fe"]].map(([id, l, ic, bg]) => (
+          {[["morningattend", "التحضير الصباحي", "📋", "#dcfce7"], ["attendance", "الحضور اليومي", "📅", "#ccfbf1"], ["announcements", "الإعلانات", "📣", "#fce7f3"], ["formative", "التقويم التكويني", "📘", "#dbeafe"], ["prolicense", "الرخصة المهنية", "🪪", "#fef3c7"], ["student-absence", "غياب الطلاب", "🎒", "#ede9fe"]].map(([id, l, ic, bg]) => (
             <button key={id} className="hr-q" onClick={() => navigate(id)}><span style={{ background: bg }}>{ic}</span>{l}</button>
           ))}
         </div>
@@ -28549,7 +28549,7 @@ body {
 // شريط التنقل العصري — قوائم منبثقة بملصقات (Mega Menu)
 // ══════════════════════════════════════════════════════════
 const NAV_TOOL_DESC = {
-  attendance:"رصد حضور المعلمين يومياً", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم",
+  attendance:"رصد حضور المعلمين يومياً", morningattend:"تحضير الطلاب — الحصة الثانية", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم",
   attendancereport:"تحليل بيانات الحضور", "student-absence":"تسجيل غياب الطلاب", studentexcuses:"استقبال أعذار الغياب",
   absencestats:"مؤشرات وإحصاءات الغياب",
   students:"رصد تقييم الطلاب", formative:"جدول عرضي ملوّن وفق اللائحة", gradeanalysis:"تحليل النتائج والدرجات", assessment:"بطاقة تشخيص المستوى",
@@ -29740,6 +29740,844 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
   );
 }
 
+// ══════════════════════════════════════════════════════════
+// التحضير الصباحي — الحصة الثانية
+// الفصول: school-mroster/{ck}   التحضير: school-mattend/{YYYY-MM-DD}/{ck}   الفهرس: school-mattend-index/{date}
+// ══════════════════════════════════════════════════════════
+const MA_ROSTER = "school-mroster", MA_ATT = "school-mattend", MA_IDX = "school-mattend-index", MA_META = "school-mattend-meta";
+const MA_LV = [{ n: "الأول المتوسط", s: "أول", c: "#0d9488", soft: "#ccfbf1" }, { n: "الثاني المتوسط", s: "ثاني", c: "#2563eb", soft: "#dbeafe" }, { n: "الثالث المتوسط", s: "ثالث", c: "#7c3aed", soft: "#ede9fe" }];
+const maId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const maPad = n => String(n).padStart(2, "0");
+const maKey = d => `${d.getFullYear()}-${maPad(d.getMonth() + 1)}-${maPad(d.getDate())}`;
+const maDate = k => { const [y, m, d] = String(k).split("-").map(Number); return new Date(y, m - 1, d, 12); };
+const maDay = d => d.toLocaleDateString("ar-SA", { weekday: "long" });
+const maHijri = d => { try { return d.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long", year: "numeric" }).replace(/\s*هـ\s*$/, "") + " هـ"; } catch { return ""; } };
+const maGreg = d => d.toLocaleDateString("ar-EG-u-nu-arab", { day: "numeric", month: "long", year: "numeric" }) + " م";
+const maAr = n => String(n ?? "").replace(/\d/g, x => "٠١٢٣٤٥٦٧٨٩"[x]);
+const maClassName = ck => { const [l, s] = String(ck).split("-"); return `${MA_LV[+l - 1]?.s || ""} متوسط / ${maAr(s)}`; };
+const maClasses = (counts) => counts.flatMap((n, li) => Array.from({ length: n }, (_, i) => ({ ck: `${li + 1}-${i + 1}`, lv: li, sec: i + 1 })));
+async function maGet(path) { try { const r = await fetch(`${FIREBASE_URL}/school/${path}.json`); return await r.json(); } catch { return null; } }
+async function maPut(path, v) { return dbFirebasePut(path, v); }
+
+const MA_CSS = `
+.ma{font-family:'Cairo','Noto Naskh Arabic',sans-serif;color:#0f172a}
+.ma{max-width:100%;overflow-x:hidden}
+.ma .grid>*,.ma .flex>*{min-width:0}
+.ma-card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 12px 30px -22px rgba(15,23,42,.35)}
+.ma-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 15px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:800;font-size:13px;color:#334155;cursor:pointer;transition:all .18s;white-space:nowrap}
+.ma-btn:hover{transform:translateY(-1px);box-shadow:0 8px 16px -10px rgba(15,23,42,.45)}
+.ma-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.ma-btn.pri{background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;border-color:transparent}
+.ma-btn.grn{background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;border-color:transparent}
+.ma-btn.gold{background:linear-gradient(135deg,#d4a017,#a16207);color:#fff;border-color:transparent}
+.ma-btn.red{color:#dc2626;border-color:#fecaca;background:#fff5f5}
+.ma-inp{width:100%;height:42px;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;padding:0 12px;font-family:inherit;font-size:14px;font-weight:700;outline:none}
+.ma-inp:focus{border-color:#14b8a6;background:#fff;box-shadow:0 0 0 3px rgba(20,184,166,.18)}
+.ma-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:6px;background:#f1f5f9;border-radius:16px}
+.ma-tab{flex:1;min-width:130px;padding:10px 14px;border-radius:12px;border:none;background:transparent;font-family:inherit;font-weight:900;font-size:13.5px;color:#475569;cursor:pointer;transition:all .2s}
+.ma-tab.on{background:#fff;color:#0f766e;box-shadow:0 6px 16px -10px rgba(15,23,42,.5)}
+.ma-cls{position:relative;border:2px solid #eef2f6;background:#fff;border-radius:16px;padding:10px 12px;cursor:pointer;text-align:right;font-family:inherit;transition:all .18s;min-width:112px}
+.ma-cls:hover{transform:translateY(-2px);box-shadow:0 10px 18px -14px rgba(15,23,42,.6)}
+.ma-cls b{display:block;font-size:14px;font-weight:900}
+.ma-cls small{font-size:11px;font-weight:800}
+.ma-st{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid #eef2f6;cursor:pointer;transition:background .12s;user-select:none}
+.ma-st:hover{background:#f8fafc}
+.ma-st.ab{background:#fef2f2}
+.ma-st .no{width:30px;text-align:center;font-weight:900;color:#94a3b8;font-size:13px}
+.ma-st .nm{flex:1;font-weight:800;font-size:14.5px}
+.ma-pill{min-width:92px;text-align:center;padding:7px 12px;border-radius:999px;font-weight:900;font-size:13px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.ma-pill.p{background:#dcfce7;color:#15803d}
+.ma-pill.a{background:#dc2626;color:#fff;box-shadow:0 6px 14px -8px #dc2626}
+.ma-kpi{border-radius:18px;padding:14px 16px;color:#fff}
+.ma-kpi b{display:block;font-size:26px;font-weight:900;line-height:1.1}
+.ma-kpi small{font-size:12px;font-weight:800;opacity:.92}
+@keyframes maPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
+.ma-late{border-color:#f87171!important;background:#fff5f5!important;animation:maPulse 1.8s infinite}
+.ma-alert{display:flex;gap:12px;align-items:flex-start;border-radius:18px;padding:14px 16px;font-weight:800}
+.ma-bar{display:grid;grid-template-columns:92px 1fr 64px;align-items:center;gap:10px;padding:7px 0}
+.ma-bar .tr{height:22px;border-radius:8px;background:#f1f5f9;overflow:hidden;position:relative}
+.ma-bar .fl{height:100%;border-radius:8px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.ma-wd{border:1.5px solid #eef2f6;border-radius:18px;padding:12px;background:#fff;text-align:center}
+.ma-heat td{padding:8px 6px;text-align:center;font-weight:900;border-bottom:1px solid #eef2f6;font-size:13px}
+.ma-heat th{padding:8px 6px;background:#0f766e;color:#fff;font-weight:900;font-size:12px;white-space:nowrap}
+@media (max-width:640px){
+ .ma-bar{grid-template-columns:70px 1fr 54px;gap:8px}
+ .ma-kpi b{font-size:22px}
+ .ma-tab{min-width:0;flex:1 1 45%;font-size:12.5px;padding:9px 8px}
+ .ma-wk-days{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important}
+ .ma-wd{padding:8px 4px;border-radius:14px}
+ .ma-wd .dn{font-size:11px!important}
+ .ma-wd .dv{font-size:20px!important}
+}
+`;
+
+function MorningAttendancePage({ mode = "admin", onBack }) {
+  const isT = mode === "teacher";
+  const [tab, setTab] = useState("take");
+  const [counts, setCounts] = useState([6, 4, 4]);
+  const [rosters, setRosters] = useState({});        // ck -> {students:[{id,name}]}
+  const [dateK, setDateK] = useState(maKey(new Date()));
+  const [day, setDay] = useState({});                 // ck -> record for dateK
+  const [ck, setCk] = useState(null);
+  const [absent, setAbsent] = useState({});           // working set: id -> true
+  const [teacher, setTeacher] = useState("");
+  const [teachers, setTeachers] = useState(typeof FG_TEACHERS_DEFAULT !== "undefined" ? FG_TEACHERS_DEFAULT : []);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [idx, setIdx] = useState(null);               // archive index
+  const [imp, setImp] = useState(null);               // import preview
+  const [mgCk, setMgCk] = useState(null);
+  const [archQ, setArchQ] = useState("");
+  const fileRef = useRef(null);
+  const [tick, setTick] = useState(Date.now());
+  const [me, setMe] = useState(null);                 // المعلم الداخل بسجله المدني {name, hash}
+  const [nidIn, setNidIn] = useState("");
+  const [loginErr, setLoginErr] = useState("");
+  const [editing, setEditing] = useState(null);       // {reason} عند فتح التعديل
+  const [editAsk, setEditAsk] = useState(null);       // نافذة سبب التعديل {r, other}
+  const [staffImp, setStaffImp] = useState(null);
+  const staffRef = useRef(null);
+  const [deadline, setDeadline] = useState("08:30");
+  const [wkStart, setWkStart] = useState(null);       // مفتاح يوم الأحد
+  const [wk, setWk] = useState(null);                 // { dk: {ck: rec} }
+  const notified = useRef({});
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
+  const classes = maClasses(counts);
+  const D = maDate(dateK);
+
+  useEffect(() => {
+    (async () => {
+      const [meta, ros, ft] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), maGet("formative-teachers")]);
+      if (meta && Array.isArray(meta.counts)) setCounts(meta.counts.map(n => +n || 0));
+      if (meta && meta.deadline) setDeadline(meta.deadline);
+      setRosters(ros && typeof ros === "object" ? ros : {});
+      if (Array.isArray(ft) && ft.length) setTeachers(ft);
+      try { const t = localStorage.getItem("ma-teacher"); if (t) setTeacher(t); } catch {}
+      try { const m = JSON.parse(localStorage.getItem("ma-me") || "null"); if (m && m.day === maKey(new Date()) && m.name) setMe(m); } catch {}
+      const lic = await maGet(LIC_NODE);
+      const licNames = lic && typeof lic === "object" ? Object.values(lic).filter(r => r && r.name).map(r => r.name) : [];
+      if (licNames.length) setTeachers(p => [...new Set([...licNames, ...p])].sort((a, b) => a.localeCompare(b, "ar")));
+      setLoading(false);
+    })();
+  }, []);
+  useEffect(() => { (async () => { const d = await maGet(`${MA_ATT}/${dateK}`); setDay(d && typeof d === "object" ? d : {}); })(); }, [dateK]);
+  const followToday = useRef(true);
+  useEffect(() => {
+    const t = setInterval(async () => {
+      setTick(Date.now());
+      const today = maKey(new Date());
+      // الرابط نفسه كل يوم: يتحول التاريخ تلقائياً لليوم الجديد
+      if (followToday.current && today !== dateK) { setDateK(today); setCk(null); return; }
+      if (dateK === today && !isT) { const d = await maGet(`${MA_ATT}/${dateK}`); if (d && typeof d === "object") setDay(p => JSON.stringify(p) === JSON.stringify(d) ? p : d); }
+    }, 30000);
+    return () => clearInterval(t);
+  }, [dateK, isT]);
+  // عند اختيار فصل: تحميل التحضير المحفوظ أو البدء بالجميع حاضر
+  useEffect(() => {
+    if (!ck) return;
+    const rec = day[ck];
+    setAbsent(rec ? Object.fromEntries((rec.absent || []).map(a => [a.id, true])) : {});
+    setEditing(null);
+  }, [ck, dateK, day[ck]?.savedAt]);
+
+  const studentsOf = k => { const r = rosters[k]; const arr = r && r.students ? (Array.isArray(r.students) ? r.students : Object.values(r.students)) : []; return arr.filter(Boolean); };
+  const cur = ck ? studentsOf(ck) : [];
+  const absCount = Object.keys(absent).filter(id => absent[id] && cur.some(s => s.id === id)).length;
+
+  // ── الحفظ والاعتماد
+  const approver = isT ? (me?.name || "") : teacher;
+  const saveAttendance = async () => {
+    if (!approver) { alert(isT ? "سجّل دخولك بالسجل المدني" : "اختر اسم المعتمِد"); return; }
+    if (!cur.length) { alert("لا يوجد طلاب في هذا الفصل"); return; }
+    const prev = day[ck];
+    if (prev && !editing) { alert("التحضير معتمد — اضغط «تعديل الغياب» واذكر السبب"); return; }
+    setBusy(true);
+    const now = new Date();
+    const tm = now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" });
+    const absList = cur.filter(s => absent[s.id]).map(s => ({ id: s.id, name: s.name }));
+    const rec = prev
+      ? { ...prev, total: cur.length, absent: absList, savedAt: now.getTime(), lastEditBy: approver, lastEditTime: tm,
+          edits: [...(Array.isArray(prev.edits) ? prev.edits : []), { by: approver, role: isT ? "معلم" : "الإدارة", reason: editing.reason, at: now.getTime(), time: tm, before: (prev.absent || []).length, after: absList.length }] }
+      : { ck, date: dateK, dayName: maDay(D), hijri: maHijri(D), total: cur.length, absent: absList, teacher: approver, byId: isT && me?.hash ? me.hash.slice(0, 12) : "", savedAt: now.getTime(), time: tm };
+    const ok = await maPut(`${MA_ATT}/${dateK}/${ck}`, rec);
+    if (ok) {
+      const nd = { ...day, [ck]: rec }; setDay(nd);
+      const vals = Object.values(nd);
+      await maPut(`${MA_IDX}/${dateK}`, { date: dateK, hijri: maHijri(D), dayName: maDay(D), classes: vals.length, total: vals.reduce((a, r) => a + (r.total || 0), 0), absent: vals.reduce((a, r) => a + (r.absent || []).length, 0), names: vals.flatMap(r => (r.absent || []).map(a => ({ n: a.name, c: r.ck }))) });
+      setIdx(null);
+      if (!isT) { try { localStorage.setItem("ma-teacher", teacher); } catch {} }
+      setEditing(null);
+      toast(prev ? `✏️ تم حفظ التعديل (${editing?.reason || ""}) — الغائبون: ${maAr(rec.absent.length)}` : `✅ تم اعتماد تحضير ${maClassName(ck)} — الغائبون: ${maAr(rec.absent.length)}`);
+    } else alert("⚠️ تعذّر الحفظ — تحقق من الاتصال وأعد المحاولة");
+    setBusy(false);
+  };
+
+  // ── دخول المعلم بالسجل المدني (نفس بصمة سجل الرخصة المهنية)
+  const loginT = async () => {
+    const n = licNormId(nidIn);
+    if (n.length !== 10) { setLoginErr("أدخل رقم السجل المدني كاملاً (١٠ أرقام)"); return; }
+    setBusy(true); setLoginErr("");
+    const h = await licHash(n);
+    const lic = await maGet(LIC_NODE);
+    const r = lic && typeof lic === "object" ? Object.values(lic).find(x => x && x.idHash === h) : null;
+    setBusy(false);
+    if (!r) { setLoginErr("رقم السجل المدني غير مسجّل — يرجى مراجعة وكيل شؤون الطلاب"); return; }
+    const m = { name: r.name, hash: h, day: maKey(new Date()) };
+    setMe(m); setNidIn("");
+    try { localStorage.setItem("ma-me", JSON.stringify(m)); } catch {}
+  };
+  const logoutT = () => { setMe(null); setCk(null); try { localStorage.removeItem("ma-me"); } catch {} };
+  // استيراد المعلمين (السجل المدني) من تقرير الحضور — يُحفظ في نفس سجل الرخصة المهنية
+  const onStaff = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    try { const list = (await licParseStaffFile(f)).filter(x => /معلم/.test(x.job) || !x.job); if (!list.length) { alert("لم أجد عمودَي «السجل المدني» و«الإسم»"); return; } setStaffImp(list); }
+    catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); }
+  };
+  const doStaffImport = async () => {
+    setBusy(true);
+    const lic = await maGet(LIC_NODE);
+    const recs = lic && typeof lic === "object" ? Object.values(lic).filter(Boolean) : [];
+    let added = 0, linked = 0;
+    for (const x of staffImp) {
+      const h = await licHash(x.nid);
+      let r = recs.find(y => y.idHash === h) || recs.find(y => !y.idHash && y.name === x.name);
+      if (r) { if (r.idHash !== h) { r.idHash = h; r.id4 = x.nid.slice(-4); await dbFirebasePut(`${LIC_NODE}/${r.id}`, r); linked++; } }
+      else { r = { id: licId(), name: x.name, spec: "", years: "", hasLicense: null, reasons: [], reasonText: "", expected: "", hasImg: false, idHash: h, id4: x.nid.slice(-4) }; recs.push(r); await dbFirebasePut(`${LIC_NODE}/${r.id}`, r); added++; }
+    }
+    await dbFirebasePut("school-license2-meta", { year: "1448", migrated: true, ...(await maGet("school-license2-meta") || {}) });
+    setTeachers(p => [...new Set([...recs.map(r => r.name), ...p])].sort((a, b) => a.localeCompare(b, "ar")));
+    setBusy(false); setStaffImp(null);
+    toast(`✅ المعلمون المسجّلون بالسجل المدني: ${maAr(recs.filter(r => r.idHash).length)} (${maAr(added)} جديد، ${maAr(linked)} رُبط)`);
+  };
+
+  // ── إدارة الفصول
+  const saveRoster = async (k, students) => {
+    const r = { ck: k, students, updated: Date.now() };
+    setRosters(p => ({ ...p, [k]: r }));
+    const ok = await maPut(`${MA_ROSTER}/${k}`, r);
+    if (!ok) toast("⚠️ تعذّر حفظ الفصل");
+    return ok;
+  };
+  const onFiles = async (e) => {
+    const files = [...(e.target.files || [])]; e.target.value = "";
+    if (!files.length) return;
+    setBusy(true);
+    const XLSX = await loadXLSX();
+    const out = [];
+    for (const f of files) {
+      try {
+        const wb = XLSX.read(await f.arrayBuffer());
+        let best = null;
+        wb.SheetNames.forEach(n => { const p = fgParseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" })); const names = fgUniqueNames(p.body, p.col); if (!best || names.length > best.names.length) best = { ...p, names }; });
+        let k = "";
+        const m = best?.meta || {};
+        const li = m.levelNorm ? FG_LEVELS.indexOf(m.levelNorm) : -1;
+        const sec = parseInt(String(m.section || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+        if (li >= 0 && sec > 0) k = `${li + 1}-${sec}`;
+        out.push({ file: f.name, names: best ? best.names : [], ck: k, detected: !!k });
+      } catch (err) { out.push({ file: f.name, names: [], ck: "", err: String(err?.message || err) }); }
+    }
+    setBusy(false); setImp(out);
+  };
+  const doImport = async () => {
+    const bad = imp.filter(x => x.names.length && !x.ck);
+    if (bad.length) { alert("حدّد الفصل لكل ملف قبل التثبيت"); return; }
+    setBusy(true);
+    for (const x of imp.filter(x => x.names.length)) await saveRoster(x.ck, x.names.map(n => ({ id: maId(), name: n })));
+    setBusy(false); setImp(null);
+    toast(`✅ تم تثبيت ${maAr(imp.filter(x => x.names.length).length)} فصل`);
+  };
+  const moveStudent = async (s, from, to) => {
+    if (!to || to === from) return;
+    await saveRoster(from, studentsOf(from).filter(x => x.id !== s.id));
+    await saveRoster(to, [...studentsOf(to), s].sort((a, b) => a.name.localeCompare(b.name, "ar")));
+    toast(`↔ نُقل ${s.name} إلى ${maClassName(to)}`);
+  };
+  const saveCounts = (c) => { setCounts(c); maPut(MA_META, { counts: c, deadline }); };
+  const saveDeadline = (d) => { setDeadline(d); maPut(MA_META, { counts, deadline: d }); };
+
+  // ── الطباعة
+  const header = (title) => {
+    const logo = typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : "";
+    return `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة</b></div><div class="c">${logo}</div><div class="l">اليوم: <b>${maDay(D)}</b><br>التاريخ: <b>${maHijri(D)}</b><br>الموافق: ${maGreg(D)}</div></div><div class="tt"><span>${title}</span></div>`;
+  };
+  const css = `@page{size:A4;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}
+.pg{page-break-after:always;border:2px solid #0f766e;border-radius:16px;padding:14px 16px;position:relative}.pg:last-child{page-break-after:auto}
+.pg::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,#0f766e,#14b8a6,#d4a017)}
+.hd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:12.5px;line-height:1.85;padding:8px 0 10px;border-bottom:2px solid #e2e8f0}.hd .l{text-align:left}.lg{width:70px;height:70px}
+.tt{text-align:center;margin:12px 0}.tt span{display:inline-block;background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;font-weight:900;font-size:17px;padding:8px 26px;border-radius:999px}
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.kp div{border:1.5px solid var(--c);color:var(--c);border-radius:12px;padding:6px;text-align:center;font-weight:800;font-size:11.5px}.kp b{display:block;font-size:20px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e;color:#fff;padding:7px;font-weight:900}td{border-bottom:1px solid #cbd5e1;padding:6px 8px;text-align:center}tr:nth-child(even) td{background:#f8fafc}.nm{text-align:right;font-weight:800}
+.ab td{background:#fee2e2!important;color:#991b1b;font-weight:900}.gh td{background:#ecfeff!important;font-weight:900;color:#0f766e;text-align:right}
+.sg{display:flex;justify-content:space-around;margin-top:26px;font-weight:800;font-size:13px;text-align:center}.sg span{display:block;margin-top:16px;color:#94a3b8}`;
+  const open = (body, title) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${css}</style></head><body>${body}<script>setTimeout(()=>print(),800)</script></body></html>`);
+  const printClass = (k) => {
+    const st = studentsOf(k), rec = day[k];
+    const ab = new Set(rec ? (rec.absent || []).map(a => a.id) : (k === ck ? Object.keys(absent).filter(i => absent[i]) : []));
+    const nAb = st.filter(s => ab.has(s.id)).length;
+    open(`<section class="pg">${header(`كشف تحضير الحصة الثانية — ${maClassName(k)}`)}
+      <div class="kp"><div style="--c:#0f766e"><b>${maAr(st.length)}</b>عدد الطلاب</div><div style="--c:#15803d"><b>${maAr(st.length - nAb)}</b>الحاضرون</div><div style="--c:#b91c1c"><b>${maAr(nAb)}</b>الغائبون</div><div style="--c:#a16207"><b>${maAr(st.length ? Math.round((st.length - nAb) / st.length * 100) : 0)}٪</b>نسبة الحضور</div></div>
+      <table><thead><tr><th style="width:40px">م</th><th>اسم الطالب</th><th style="width:110px">الحالة</th></tr></thead><tbody>
+      ${st.map((s, i) => `<tr class="${ab.has(s.id) ? "ab" : ""}"><td>${maAr(i + 1)}</td><td class="nm">${s.name}</td><td>${ab.has(s.id) ? "✗ غائب" : "✓ حاضر"}</td></tr>`).join("")}</tbody></table>
+      ${rec && Array.isArray(rec.edits) && rec.edits.length ? `<div style="margin-top:10px;font-size:11.5px;border:1px dashed #f59e0b;border-radius:10px;padding:6px 10px;background:#fffbeb"><b>سجل التعديلات:</b> ${rec.edits.map(e => `${e.time} — ${e.by} (${e.reason})`).join(" ، ")}</div>` : ""}
+      <div class="sg"><div>المعلم المعتمد<br><b>${rec ? "أ. " + rec.teacher : "............"}</b>${rec ? `<span>${rec.time || ""}</span>` : "<span>............</span>"}</div><div>وكيل شؤون الطلاب<br><span>............................</span></div><div>مدير المدرسة<br><span>............................</span></div></div></section>`, "كشف تحضير " + maClassName(k));
+  };
+  const printDay = () => {
+    const vals = classes.filter(c => day[c.ck]);
+    const totalAb = vals.reduce((a, c) => a + (day[c.ck].absent || []).length, 0);
+    const totalSt = vals.reduce((a, c) => a + (day[c.ck].total || 0), 0);
+    let i = 0;
+    const rows = vals.filter(c => (day[c.ck].absent || []).length).map(c => `<tr class="gh"><td colspan="3">🚪 ${maClassName(c.ck)} — الغائبون: ${maAr(day[c.ck].absent.length)} من ${maAr(day[c.ck].total)} • المعتمد: أ. ${day[c.ck].teacher}</td></tr>` + day[c.ck].absent.map(a => `<tr><td>${maAr(++i)}</td><td class="nm">${a.name}</td><td>${maClassName(c.ck)}</td></tr>`).join("")).join("");
+    const stat = classes.map(c => { const r = day[c.ck]; return `<tr><td class="nm">${maClassName(c.ck)}</td><td>${r ? maAr(r.total) : "—"}</td><td>${r ? maAr(r.total - r.absent.length) : "—"}</td><td style="color:#b91c1c;font-weight:900">${r ? maAr(r.absent.length) : "—"}</td><td>${r ? "أ. " + r.teacher : "<span style='color:#dc2626'>لم يُحضَّر</span>"}</td></tr>`; }).join("");
+    open(`<section class="pg">${header(`كشف غياب يوم ${maDay(D)} ${maHijri(D)}`)}
+      <div class="kp"><div style="--c:#0f766e"><b>${maAr(vals.length)}/${maAr(classes.length)}</b>فصول مُحضَّرة</div><div style="--c:#334155"><b>${maAr(totalSt)}</b>الطلاب</div><div style="--c:#b91c1c"><b>${maAr(totalAb)}</b>إجمالي الغائبين</div><div style="--c:#15803d"><b>${maAr(totalSt ? Math.round((totalSt - totalAb) / totalSt * 100) : 0)}٪</b>نسبة الحضور</div></div>
+      <table><thead><tr><th style="width:40px">م</th><th>اسم الطالب الغائب</th><th style="width:140px">الفصل</th></tr></thead><tbody>${rows || `<tr><td colspan="3">لا يوجد غياب مسجّل</td></tr>`}</tbody></table>
+      <div class="sg"><div>وكيل شؤون الطلاب<br><span>............................</span></div><div>مدير المدرسة<br><span>............................</span></div></div></section>
+      <section class="pg">${header(`إحصائية الغياب لجميع الفصول — ${maDay(D)} ${maHijri(D)}`)}
+      <table><thead><tr><th>الفصل</th><th>الطلاب</th><th>الحاضرون</th><th>الغائبون</th><th>المعلم المعتمد</th></tr></thead><tbody>${stat}</tbody></table></section>`, `كشف غياب ${dateK}`);
+  };
+
+  // ── الأرشيف
+  const loadIdx = async () => { const d = await maGet(MA_IDX); setIdx(d && typeof d === "object" ? Object.values(d).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date)) : []); };
+  useEffect(() => { if (tab === "arch" && idx === null) loadIdx(); }, [tab]);
+
+  useEffect(() => {
+    if (isT || loading) return;
+    const today = maKey(new Date());
+    const nm = new Date(tick); const past = dateK === today && nm.getHours() * 60 + nm.getMinutes() >= dlMin;
+    const miss = classes.filter(c => studentsOf(c.ck).length && !day[c.ck]);
+    if (past && miss.length && !notified.current[today] && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      notified.current[today] = true;
+      try { new Notification("⚠️ فصول لم تُحضَّر بعد", { body: `تجاوزت الساعة ${String(deadline)} — ${miss.length} فصل لم يعتمد: ` + miss.map(c => maClassName(c.ck)).join("، "), icon: typeof SCHOOL_LOGO !== "undefined" ? SCHOOL_LOGO : undefined }); } catch {}
+    }
+  }, [tick, day, loading]);
+
+  // ── الحصر الأسبوعي (الأحد–الخميس)
+  const weekOf = (k) => { const d = maDate(k); d.setDate(d.getDate() - d.getDay()); return maKey(d); };
+  const wkS = wkStart || weekOf(dateK);
+  const wkDays = Array.from({ length: 5 }, (_, i) => { const d = maDate(wkS); d.setDate(d.getDate() + i); return maKey(d); });
+  useEffect(() => {
+    if (tab !== "weekly" || isT) return;
+    let alive = true; setWk(null);
+    Promise.all(wkDays.map(k => maGet(`${MA_ATT}/${k}`))).then(res => { if (alive) setWk(Object.fromEntries(wkDays.map((k, i) => [k, res[i] && typeof res[i] === "object" ? res[i] : {}]))); });
+    return () => { alive = false; };
+  }, [tab, wkS]);
+  const shiftWeek = (n) => { const d = maDate(wkS); d.setDate(d.getDate() + 7 * n); setWkStart(maKey(d)); };
+
+  if (loading) return <div className="ma p-10 text-center font-bold text-gray-400">جاري التحميل…</div>;
+  if (isT && !me) return (
+    <div className="ma px-3 py-6" dir="rtl" style={{ minHeight: "100vh", background: "radial-gradient(900px 400px at 90% -10%,rgba(45,212,191,.35),transparent 60%),linear-gradient(160deg,#06302b,#0b4f45 50%,#0f766e)" }}>
+      <style>{MA_CSS}</style>
+      <div style={{ maxWidth: 460, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", color: "#fff", marginBottom: 16 }}>
+          <img src={SCHOOL_LOGO} alt="" style={{ width: 84, height: 84, borderRadius: "50%", background: "#fff", padding: 4, boxShadow: "0 0 0 3px #d4a017", margin: "0 auto" }} />
+          <div style={{ fontSize: 20, fontWeight: 900, marginTop: 8 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: "#fde68a" }}>📋 التحضير الصباحي — الحصة الثانية</div>
+          <div style={{ fontSize: 13, fontWeight: 800, opacity: .9, marginTop: 4 }}>{maDay(new Date())} • {maHijri(new Date())} • {maGreg(new Date())}</div>
+        </div>
+        <div className="ma-card" style={{ padding: 24, textAlign: "center" }}>
+          <div style={{ fontSize: 44 }}>🔐</div>
+          <div style={{ fontSize: 18, fontWeight: 900, margin: "4px 0" }}>دخول المعلم</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#64748b", marginBottom: 14 }}>أدخل رقم سجلك المدني — يُعتمد التحضير باسمك تلقائياً</div>
+          <input className="ma-inp" inputMode="numeric" maxLength={10} value={nidIn} onChange={e => { setNidIn(licNormId(e.target.value).slice(0, 10)); setLoginErr(""); }} onKeyDown={e => e.key === "Enter" && loginT()} placeholder="رقم السجل المدني (١٠ أرقام)" style={{ textAlign: "center", fontSize: 20, letterSpacing: 3, height: 52 }} />
+          {loginErr && <div style={{ color: "#b91c1c", fontWeight: 800, fontSize: 13, marginTop: 10 }}>{loginErr}</div>}
+          <button className="ma-btn pri" onClick={loginT} disabled={busy} style={{ marginTop: 16, padding: "12px 34px", fontSize: 15, width: "100%", justifyContent: "center" }}>{busy ? "⏳ جاري التحقق…" : "دخول ←"}</button>
+          <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700, marginTop: 12 }}>🔒 لا يُحفظ رقم السجل المدني ولا يُعرض</div>
+        </div>
+      </div>
+    </div>
+  );
+  const recNow = ck ? day[ck] : null;
+  const locked = !!recNow && !editing;
+  const EDIT_REASONS = ["خطأ في الرصد", "أسماء لم تُرصد", "خطأ في اسم طالب", "أخرى"];
+  const portalLink = window.location.origin + window.location.pathname + "#attend";
+
+  const savedToday = classes.filter(c => day[c.ck]).length;
+  const dayAb = classes.reduce((a, c) => a + (day[c.ck]?.absent?.length || 0), 0);
+  const daySt = classes.reduce((a, c) => a + (day[c.ck]?.total || 0), 0);
+  const totalStudents = classes.reduce((a, c) => a + studentsOf(c.ck).length, 0);
+  const shownCur = q ? cur.filter(s => s.name.includes(q)) : cur;
+  const isToday = dateK === maKey(new Date());
+  const nowD = new Date(tick);
+  const [dlH, dlM] = String(deadline || "08:30").split(":").map(Number);
+  const nowMin = nowD.getHours() * 60 + nowD.getMinutes(), dlMin = (dlH || 8) * 60 + (dlM || 0);
+  const pastDeadline = isToday && nowMin >= dlMin;
+  const missing = classes.filter(c => studentsOf(c.ck).length && !day[c.ck]);
+  const dlLabel = maAr(`${dlH}:${maPad(dlM || 0)}`);
+
+  const ClassPicker = ({ onPick, selected, showDay }) => (
+    <div className="grid gap-3">
+      {MA_LV.map((L, li) => counts[li] > 0 && (
+        <div key={li}>
+          <div style={{ fontSize: 12.5, fontWeight: 900, color: L.c, marginBottom: 6 }}>● الصف {L.n}</div>
+          <div className="flex gap-2 flex-wrap">
+            {classes.filter(c => c.lv === li).map(c => { const r = day[c.ck]; const n = studentsOf(c.ck).length; const on = selected === c.ck; return (
+              <button key={c.ck} className={`ma-cls ${showDay && !isT && pastDeadline && !r && n ? "ma-late" : ""}`} onClick={() => onPick(c.ck)} style={{ borderColor: on ? L.c : r && showDay ? "#86efac" : "#eef2f6", background: on ? L.soft : "#fff" }}>
+                <b style={{ color: L.c }}>{L.s} / {maAr(c.sec)}</b>
+                <small style={{ color: "#64748b" }}>{maAr(n)} طالب</small>
+                {showDay && r && <span style={{ position: "absolute", top: -8, left: -6, background: r.absent.length ? "#dc2626" : "#16a34a", color: "#fff", borderRadius: 999, fontSize: 10.5, fontWeight: 900, padding: "2px 8px" }}>{r.absent.length ? `غ ${maAr(r.absent.length)}` : "✓"}</span>}
+                {showDay && !isT && pastDeadline && !r && n > 0 && <span style={{ display: "block", fontSize: 10.5, fontWeight: 900, color: "#dc2626" }}>⚠ لم يُعتمد</span>}
+              </button>); })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="ma px-3 md:px-6 py-4" dir="rtl">
+      <style>{MA_CSS}</style>
+
+      {!isT && (
+        <div className="ma-card mb-3" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "linear-gradient(90deg,#fffbeb,#fff)", borderColor: "#fcd34d", position: "sticky", top: 0, zIndex: 30 }}>
+          <span style={{ fontWeight: 900, fontSize: 13.5, color: "#92400e" }}>🔗 رابط التحضير للمعلمين (ثابت — يتجدد تاريخه يومياً):</span>
+          <span dir="ltr" style={{ flex: "1 1 220px", minWidth: 0, background: "#fff", border: "1px solid #fde68a", borderRadius: 10, padding: "6px 10px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", userSelect: "all" }}>{portalLink}</span>
+          <button className="ma-btn" style={{ padding: "6px 12px" }} onClick={() => { try { navigator.clipboard.writeText(portalLink); toast("✅ تم نسخ الرابط"); } catch {} }}>📋 نسخ</button>
+          <a className="ma-btn gold" style={{ padding: "6px 12px" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`🔔 تذكير التحضير — ${maDay(new Date())} ${maHijri(new Date())} الموافق ${maGreg(new Date())}\nنأمل إدخال غياب الحصة الثانية واعتماده قبل الساعة ${deadline} صباحاً (الدخول برقم السجل المدني):\n` + portalLink)}`}>💬 إرسال تذكير اليوم</a>
+        </div>
+      )}
+
+      {/* رأس الصفحة */}
+      <div className="ma-card mb-4" style={{ overflow: "hidden" }}>
+        <div style={{ position: "relative", color: "#fff", padding: "20px 24px", background: "radial-gradient(700px 260px at 90% -20%,rgba(45,212,191,.45),transparent 60%),linear-gradient(135deg,#06302b,#0b4f45 55%,#0f766e)" }}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <img src={SCHOOL_LOGO} alt="" style={{ width: 58, height: 58, borderRadius: "50%", background: "#fff", padding: 3, boxShadow: "0 0 0 3px #d4a017" }} />
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>📋 التحضير الصباحي — الحصة الثانية</div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+              </div>
+            </div>
+            <div style={{ background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 18, padding: "10px 16px", textAlign: "center", minWidth: 220 }}>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>{maDay(D)}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#fde68a" }}>🌙 {maHijri(D)}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, opacity: .8 }}>📅 {maGreg(D)}</div>
+              {!isT && <input type="date" value={dateK} onChange={e => { if (!e.target.value) return; followToday.current = e.target.value === maKey(new Date()); setDateK(e.target.value); }} style={{ marginTop: 6, borderRadius: 10, border: "none", padding: "3px 8px", fontFamily: "inherit", fontWeight: 800, fontSize: 12 }} />}
+              {!isToday && <div style={{ fontSize: 11, fontWeight: 900, color: "#fca5a5", marginTop: 4 }}>⚠ ليس تاريخ اليوم</div>}
+              {isT && me && <div style={{ marginTop: 8, fontSize: 12.5, fontWeight: 900 }}>👤 أ. {me.name} <button onClick={logoutT} style={{ marginRight: 6, background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.35)", borderRadius: 999, padding: "1px 10px", fontFamily: "inherit", fontWeight: 800, fontSize: 11, cursor: "pointer" }}>خروج</button></div>}
+            </div>
+          </div>
+        </div>
+        {!isT && (
+          <div className="p-3">
+            <div className="ma-tabs">
+              {[["take", "📝 التحضير"], ["stats", "📊 إحصائية اليوم"], ["weekly", "📈 الحصر الأسبوعي"], ["arch", "🗂 الأرشيف"], ["manage", "👥 الفصول والطلاب"]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!isT && isToday && tab !== "manage" && (
+        missing.length === 0 && savedToday > 0 ? (
+          <div className="ma-alert mb-4" style={{ background: "#f0fdf4", border: "1.5px solid #86efac", color: "#15803d" }}>✅ تم تحضير واعتماد جميع الفصول لهذا اليوم</div>
+        ) : pastDeadline && missing.length ? (
+          <div className="ma-alert mb-4" style={{ background: "#fef2f2", border: "1.5px solid #fca5a5", color: "#991b1b", animation: "maPulse 2s infinite" }}>
+            <span style={{ fontSize: 26 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 900 }}>تجاوزت الساعة {dlLabel} — {maAr(missing.length)} فصل لم يُدخل التحضير ولم يُعتمد</div>
+              <div className="flex gap-2 flex-wrap mt-2">{missing.map(c => <button key={c.ck} onClick={() => { setTab("take"); setCk(c.ck); }} style={{ background: "#fff", border: "1.5px solid #f87171", color: "#b91c1c", borderRadius: 999, padding: "4px 12px", fontWeight: 900, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>{maClassName(c.ck)}</button>)}</div>
+            </div>
+            {typeof Notification !== "undefined" && Notification.permission !== "granted" && <button className="ma-btn" onClick={() => Notification.requestPermission().then(() => setTick(Date.now()))}>🔔 تنبيه على الجهاز</button>}
+          </div>
+        ) : missing.length ? (
+          <div className="ma-alert mb-4" style={{ background: "#fffbeb", border: "1.5px solid #fcd34d", color: "#92400e" }}>
+            <span style={{ fontSize: 22 }}>⏳</span>
+            <div style={{ flex: 1 }}>موعد اعتماد التحضير الساعة <b>{dlLabel}</b> صباحاً — متبقٍ <b>{maAr(Math.max(0, dlMin - nowMin))}</b> دقيقة — لم يُعتمد بعد: <b>{maAr(missing.length)}</b> فصل</div>
+            {typeof Notification !== "undefined" && Notification.permission === "default" && <button className="ma-btn" onClick={() => Notification.requestPermission().then(() => setTick(Date.now()))}>🔔 نبّهني عند {dlLabel}</button>}
+          </div>
+        ) : null
+      )}
+
+      {/* ═══ التحضير ═══ */}
+      {(tab === "take" || isT) && (
+        <div className="grid gap-4">
+          <div className="ma-card p-4">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <div style={{ fontWeight: 900, fontSize: 15 }}>🚪 اختر الفصل</div>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>تم تحضير <b style={{ color: "#0f766e" }}>{maAr(savedToday)}</b> من {maAr(classes.length)} فصل</div>
+            </div>
+            <ClassPicker onPick={k => { setCk(k); setQ(""); }} selected={ck} showDay />
+          </div>
+
+          {ck && (
+            <div className="ma-card" style={{ overflow: "hidden" }}>
+              <div className="flex items-center justify-between flex-wrap gap-3 p-4" style={{ borderBottom: "1px solid #eef2f6", background: MA_LV[+ck.split("-")[0] - 1].soft + "66" }}>
+                <div>
+                  <div style={{ fontSize: 19, fontWeight: 900 }}>الصف {maClassName(ck)}</div>
+                  <div className="flex gap-2 mt-1 flex-wrap" style={{ fontSize: 12.5, fontWeight: 900 }}>
+                    <span style={{ background: "#fff", borderRadius: 999, padding: "3px 10px" }}>👥 {maAr(cur.length)}</span>
+                    <span style={{ background: "#dcfce7", color: "#15803d", borderRadius: 999, padding: "3px 10px" }}>✓ حاضر {maAr(cur.length - absCount)}</span>
+                    <span style={{ background: "#fee2e2", color: "#b91c1c", borderRadius: 999, padding: "3px 10px" }}>✗ غائب {maAr(absCount)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <input className="ma-inp" style={{ width: 180 }} placeholder="🔍 بحث" value={q} onChange={e => setQ(e.target.value)} />
+                  <button className="ma-btn grn" disabled={locked} onClick={() => setAbsent({})}>✅ حاضر للجميع</button>
+                  <button className="ma-btn" onClick={() => printClass(ck)}>🖨 طباعة الفصل</button>
+                </div>
+              </div>
+              {cur.length ? (
+                <div style={{ maxHeight: "58vh", overflowY: "auto" }}>
+                  {shownCur.map((s) => { const a = !!absent[s.id]; return (
+                    <div key={s.id} className={`ma-st ${a ? "ab" : ""}`} style={locked ? { cursor: "default" } : undefined} onClick={() => { if (locked) { toast("🔒 التحضير معتمد — اضغط «تعديل الغياب» لفتح التعديل"); return; } setAbsent(p => ({ ...p, [s.id]: !a })); }}>
+                      <span className="no">{maAr(cur.indexOf(s) + 1)}</span>
+                      <span className="nm" style={{ color: a ? "#991b1b" : undefined }}>{s.name}</span>
+                      <button className={`ma-pill ${a ? "a" : "p"}`}>{a ? "✗ غائب" : "✓ حاضر"}</button>
+                    </div>); })}
+                </div>
+              ) : <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب في هذا الفصل{!isT && " — استورد كشف الفصل من «الفصول والطلاب»"}</div>}
+
+              {/* الاعتماد */}
+              <div className="p-4" style={{ background: locked ? "linear-gradient(180deg,#f0fdf4,#fff)" : editing ? "linear-gradient(180deg,#fffbeb,#fff)" : "linear-gradient(180deg,#f8fafc,#f0fdfa)", borderTop: "1px solid #eef2f6" }}>
+                {locked ? (<>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: 15, color: "#15803d" }}>🔒 معتمد من أ. {recNow.teacher}</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>الساعة {recNow.time} • الغائبون: {maAr(recNow.absent.length)} من {maAr(recNow.total)}</div>
+                    </div>
+                    <button className="ma-btn" style={{ borderColor: "#fcd34d", color: "#a16207" }} onClick={() => setEditAsk({ r: "", other: "" })}>✏️ تعديل الغياب</button>
+                  </div>
+                  {Array.isArray(recNow.edits) && recNow.edits.length > 0 && (
+                    <div style={{ marginTop: 10, borderTop: "1px dashed #e2e8f0", paddingTop: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 900, color: "#64748b", marginBottom: 4 }}>📝 سجل التعديلات</div>
+                      {recNow.edits.map((e, i) => <div key={i} style={{ fontSize: 12, fontWeight: 700, color: "#475569", padding: "2px 0" }}>• {e.time} — {e.role === "الإدارة" ? "" : "أ. "}{e.by} ({e.role}): <b style={{ color: "#a16207" }}>{e.reason}</b> — الغياب {maAr(e.before)} ← {maAr(e.after)}</div>)}
+                    </div>
+                  )}
+                </>) : (<>
+                  {editing && <div style={{ background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 12, padding: "8px 12px", fontSize: 12.5, fontWeight: 900, color: "#92400e", marginBottom: 10 }}>✏️ وضع التعديل مفتوح — السبب: {editing.reason} <button onClick={() => { setEditing(null); setAbsent(Object.fromEntries((recNow?.absent || []).map(a => [a.id, true]))); }} style={{ marginRight: 8, background: "none", border: "none", color: "#b91c1c", fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>إلغاء</button></div>}
+                  <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 8 }}>✍️ الاعتماد</div>
+                  <div className="flex gap-2 flex-wrap items-center">
+                    {isT ? (
+                      <div style={{ flex: "1 1 240px", display: "flex", alignItems: "center", gap: 10, background: "#fff", border: "1.5px solid #99f6e4", borderRadius: 14, padding: "8px 14px" }}>
+                        <span style={{ width: 36, height: 36, borderRadius: 12, background: "linear-gradient(135deg,#14b8a6,#0f766e)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 900 }}>{me.name.trim().charAt(0)}</span>
+                        <div><div style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>المعلم المعتمِد (بالسجل المدني)</div><div style={{ fontWeight: 900, fontSize: 15 }}>أ. {me.name}</div></div>
+                      </div>
+                    ) : (
+                      <select className="ma-inp" style={{ flex: "1 1 240px", maxWidth: 380 }} value={teacher} onChange={e => setTeacher(e.target.value)}>
+                        <option value="">— اختر المعتمِد —</option>
+                        <option value="الإدارة">الإدارة (مدير المدرسة / الوكيل)</option>
+                        {teachers.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    )}
+                    <button className="ma-btn pri" style={{ padding: "12px 24px", fontSize: 14.5 }} disabled={busy || !cur.length} onClick={saveAttendance}>{busy ? "⏳ جاري الحفظ…" : editing ? "💾 حفظ التعديل" : "💾 اعتماد وحفظ"}</button>
+                  </div>
+                </>)}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ إحصائية اليوم ═══ */}
+      {tab === "stats" && !isT && (
+        <div className="grid gap-4">
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))" }}>
+            <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#14b8a6,#0f766e)" }}><b>{maAr(savedToday)}/{maAr(classes.length)}</b><small>فصول مُحضَّرة</small></div>
+            <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#64748b,#334155)" }}><b>{maAr(daySt)}</b><small>طلاب الفصول المحضّرة</small></div>
+            <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#f87171,#b91c1c)" }}><b>{maAr(dayAb)}</b><small>إجمالي الغائبين</small></div>
+            <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#4ade80,#15803d)" }}><b>{maAr(daySt ? Math.round((daySt - dayAb) / daySt * 100) : 0)}٪</b><small>نسبة الحضور</small></div>
+          </div>
+          <div className="ma-card p-4">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <div style={{ fontWeight: 900, fontSize: 15 }}>🚪 الغياب حسب الفصل</div>
+              <button className="ma-btn gold" onClick={printDay} disabled={!savedToday}>🖨 طباعة كشف غياب اليوم</button>
+            </div>
+            <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))" }}>
+              {classes.map(c => { const r = day[c.ck]; const L = MA_LV[c.lv]; const pct = r && r.total ? r.absent.length / r.total : 0; return (
+                <div key={c.ck} style={{ border: `1.5px solid ${r ? L.c + "55" : "#eef2f6"}`, borderRadius: 16, padding: "10px 12px", background: r ? "#fff" : "#f8fafc" }}>
+                  <div style={{ fontWeight: 900, color: L.c }}>{L.s} / {maAr(c.sec)}</div>
+                  {r ? (<>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: r.absent.length ? "#b91c1c" : "#15803d" }}>{maAr(r.absent.length)} <small style={{ fontSize: 11, color: "#64748b" }}>غائب من {maAr(r.total)}</small></div>
+                    <div style={{ height: 6, background: "#f1f5f9", borderRadius: 6, overflow: "hidden" }}><div style={{ width: `${Math.min(100, pct * 100 * 3)}%`, height: "100%", background: "#ef4444" }} /></div>
+                    <div style={{ fontSize: 10.5, color: "#64748b", fontWeight: 700, marginTop: 4 }}>أ. {r.teacher} • {r.time}</div>
+                  </>) : <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 800, marginTop: 6 }}>⏳ لم يُحضَّر</div>}
+                </div>); })}
+            </div>
+          </div>
+          <div className="ma-card p-4">
+            <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 10 }}>📄 أسماء الغائبين — {maDay(D)} {maHijri(D)}</div>
+            {dayAb ? classes.filter(c => day[c.ck]?.absent?.length).map(c => (
+              <div key={c.ck} className="mb-3">
+                <div style={{ fontWeight: 900, fontSize: 13, color: MA_LV[c.lv].c, marginBottom: 4 }}>● {maClassName(c.ck)} ({maAr(day[c.ck].absent.length)})</div>
+                <div className="flex gap-2 flex-wrap">{day[c.ck].absent.map(a => <span key={a.id} style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", borderRadius: 999, padding: "4px 12px", fontWeight: 800, fontSize: 13 }}>{a.name}</span>)}</div>
+              </div>)) : <div style={{ color: "#94a3b8", fontWeight: 800, textAlign: "center", padding: 20 }}>لا يوجد غياب مسجّل لهذا اليوم</div>}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ الحصر الأسبوعي ═══ */}
+      {tab === "weekly" && !isT && (() => {
+        const dayRecs = k => (wk && wk[k]) || {};
+        const byClass = classes.map(c => {
+          const recs = wkDays.map(k => dayRecs(k)[c.ck]).filter(Boolean);
+          const ab = recs.reduce((a, r) => a + (r.absent || []).length, 0);
+          const poss = recs.reduce((a, r) => a + (r.total || 0), 0);
+          return { ...c, ab, poss, days: recs.length, rate: poss ? ab / poss : 0 };
+        });
+        const maxAb = Math.max(1, ...byClass.map(x => x.ab));
+        const perDay = wkDays.map(k => { const v = Object.values(dayRecs(k)); return { k, ab: v.reduce((a, r) => a + (r.absent || []).length, 0), cls: v.length, tot: v.reduce((a, r) => a + (r.total || 0), 0) }; });
+        const maxDay = Math.max(1, ...perDay.map(d => d.ab));
+        const weekAb = perDay.reduce((a, d) => a + d.ab, 0), weekTot = perDay.reduce((a, d) => a + d.tot, 0);
+        const stu = {}; wkDays.forEach(k => Object.values(dayRecs(k)).forEach(r => (r.absent || []).forEach(a => { const key = a.name + "|" + r.ck; (stu[key] = stu[key] || { n: a.name, ck: r.ck, days: [] }).days.push(k); })));
+        const topStu = Object.values(stu).sort((a, b) => b.days.length - a.days.length);
+        const sorted = [...byClass].filter(x => x.days).sort((a, b) => b.ab - a.ab);
+        const worst = sorted[0], worstDay = [...perDay].sort((a, b) => b.ab - a.ab)[0];
+        const wA = maDate(wkDays[0]), wB = maDate(wkDays[4]);
+        const heat = (n) => n === 0 ? "#f0fdf4" : n <= 1 ? "#fef9c3" : n <= 3 ? "#fed7aa" : n <= 5 ? "#fca5a5" : "#ef4444";
+        const printWeek = () => {
+          const rows = classes.map(c => { const b = byClass.find(x => x.ck === c.ck); return `<tr><td class="nm">${maClassName(c.ck)}</td>${wkDays.map(k => { const r = dayRecs(k)[c.ck]; const n = r ? r.absent.length : null; return `<td style="background:${n == null ? "#f8fafc" : heat(n)}">${n == null ? "—" : maAr(n)}</td>`; }).join("")}<td style="font-weight:900;color:#b91c1c">${maAr(b.ab)}</td><td>${b.poss ? maAr(Math.round(b.rate * 1000) / 10) + "٪" : "—"}</td></tr>`; }).join("");
+          const top = topStu.filter(x => x.days.length >= 2).slice(0, 30).map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${x.n}</td><td>${maClassName(x.ck)}</td><td style="font-weight:900;color:#b91c1c">${maAr(x.days.length)}</td><td style="font-size:11px">${x.days.map(k => maDay(maDate(k))).join("، ")}</td></tr>`).join("");
+          open(`<section class="pg">${header(`الحصر الأسبوعي للغياب — من ${maHijri(wA)} إلى ${maHijri(wB)}`)}
+            <div class="kp"><div style="--c:#b91c1c"><b>${maAr(weekAb)}</b>إجمالي الغياب</div><div style="--c:#334155"><b>${maAr(Math.round(weekAb / Math.max(1, perDay.filter(d => d.cls).length) * 10) / 10)}</b>متوسط الغياب اليومي</div><div style="--c:#a16207"><b>${worst ? maClassName(worst.ck) : "—"}</b>الأعلى غياباً</div><div style="--c:#15803d"><b>${maAr(weekTot ? Math.round((weekTot - weekAb) / weekTot * 100) : 0)}٪</b>نسبة الحضور</div></div>
+            <table><thead><tr><th>الفصل</th>${wkDays.map(k => `<th>${maDay(maDate(k))}</th>`).join("")}<th>المجموع</th><th>نسبة الغياب</th></tr></thead><tbody>${rows}
+            <tr style="background:#ecfeff"><td class="nm">المجموع اليومي</td>${perDay.map(d => `<td style="font-weight:900">${maAr(d.ab)}</td>`).join("")}<td style="font-weight:900;color:#b91c1c">${maAr(weekAb)}</td><td></td></tr></tbody></table>
+            ${top ? `<div class="tt"><span style="font-size:14px">الطلاب المتكرر غيابهم (يومان فأكثر)</span></div><table><thead><tr><th>م</th><th>اسم الطالب</th><th>الفصل</th><th>أيام الغياب</th><th>الأيام</th></tr></thead><tbody>${top}</tbody></table>` : ""}
+            <div class="sg"><div>وكيل شؤون الطلاب<br><span>............................</span></div><div>مدير المدرسة<br><span>............................</span></div></div></section>`, "الحصر الأسبوعي");
+        };
+        return (
+          <div className="grid gap-4">
+            <div className="ma-card p-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <button className="ma-btn" onClick={() => shiftWeek(-1)}>→ الأسبوع السابق</button>
+                <div style={{ textAlign: "center", flex: "1 1 200px" }}>
+                  <div style={{ fontWeight: 900, fontSize: 16 }}>📈 الحصر الأسبوعي</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>من {maHijri(wA)} إلى {maHijri(wB)}</div>
+                </div>
+                <button className="ma-btn" onClick={() => shiftWeek(1)} disabled={wkDays[0] > maKey(new Date())}>الأسبوع التالي ←</button>
+              </div>
+            </div>
+            {!wk ? <div className="ma-card p-10 text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>جاري تحميل الأسبوع…</div> : (<>
+              <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
+                <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#f87171,#b91c1c)" }}><b>{maAr(weekAb)}</b><small>إجمالي الغياب في الأسبوع</small></div>
+                <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#64748b,#334155)" }}><b>{maAr(Math.round(weekAb / Math.max(1, perDay.filter(d => d.cls).length) * 10) / 10)}</b><small>متوسط الغياب اليومي</small></div>
+                <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#fbbf24,#b45309)" }}><b style={{ fontSize: 20 }}>{worst && worst.ab ? maClassName(worst.ck) : "—"}</b><small>الفصل الأعلى غياباً {worst && worst.ab ? `(${maAr(worst.ab)})` : ""}</small></div>
+                <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#4ade80,#15803d)" }}><b>{maAr(weekTot ? Math.round((weekTot - weekAb) / weekTot * 100) : 0)}٪</b><small>نسبة الحضور الأسبوعية</small></div>
+              </div>
+
+              {/* الأيام */}
+              <div className="ma-card p-4">
+                <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 10 }}>📅 الغياب حسب اليوم {worstDay && worstDay.ab ? <small style={{ color: "#b91c1c" }}>— الأعلى: {maDay(maDate(worstDay.k))}</small> : null}</div>
+                <div className="ma-wk-days" style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 10 }}>
+                  {perDay.map(d => (
+                    <button key={d.k} className="ma-wd" style={{ cursor: "pointer", fontFamily: "inherit", borderColor: d.k === maKey(new Date()) ? "#14b8a6" : undefined }} onClick={() => { setDateK(d.k); followToday.current = d.k === maKey(new Date()); setTab("stats"); }}>
+                      <div className="dn" style={{ fontSize: 12.5, fontWeight: 900, color: "#475569" }}>{maDay(maDate(d.k))}</div>
+                      <div style={{ height: 70, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "6px 0" }}>
+                        <div style={{ width: "46%", minHeight: 4, height: `${d.ab / maxDay * 100}%`, borderRadius: "8px 8px 3px 3px", background: d.cls ? "linear-gradient(180deg,#f87171,#dc2626)" : "#e2e8f0" }} />
+                      </div>
+                      <div className="dv" style={{ fontSize: 24, fontWeight: 900, color: d.cls ? "#b91c1c" : "#cbd5e1" }}>{d.cls ? maAr(d.ab) : "—"}</div>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: "#94a3b8" }}>{d.cls ? `${maAr(d.cls)} فصل` : "لا تحضير"}</div>
+                    </button>))}
+                </div>
+              </div>
+
+              {/* مقارنة الفصول */}
+              <div className="ma-card p-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                  <div style={{ fontWeight: 900, fontSize: 15 }}>🏁 مقارنة الغياب بين الفصول</div>
+                  <button className="ma-btn gold" onClick={printWeek}>🖨 طباعة الحصر الأسبوعي</button>
+                </div>
+                {sorted.length ? sorted.map((x, i) => { const L = MA_LV[x.lv]; return (
+                  <div key={x.ck} className="ma-bar">
+                    <div style={{ fontWeight: 900, fontSize: 13, color: L.c, whiteSpace: "nowrap" }}>{i < 3 && x.ab ? ["🥇", "🥈", "🥉"][i] : ""} {L.s} / {maAr(x.sec)}</div>
+                    <div className="tr"><div className="fl" style={{ width: `${Math.max(2, x.ab / maxAb * 100)}%`, background: `linear-gradient(90deg,${L.c},${L.c}aa)` }} /></div>
+                    <div style={{ textAlign: "left", lineHeight: 1.1 }}><b style={{ fontSize: 16, color: "#b91c1c" }}>{maAr(x.ab)}</b><div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8" }}>{maAr(Math.round(x.rate * 1000) / 10)}٪</div></div>
+                  </div>); }) : <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد تحضير في هذا الأسبوع</div>}
+                <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, marginTop: 6 }}>النسبة = أيام غياب الفصل ÷ (عدد طلابه × أيام التحضير)</div>
+              </div>
+
+              {/* الخريطة الحرارية */}
+              <div className="ma-card p-4">
+                <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 10 }}>🌡 الفصول × الأيام</div>
+                <div style={{ overflowX: "auto", borderRadius: 14, border: "1px solid #eef2f6" }}>
+                  <table className="ma-heat" style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
+                    <thead><tr><th style={{ position: "sticky", right: 0 }}>الفصل</th>{wkDays.map(k => <th key={k}>{maDay(maDate(k))}</th>)}<th>المجموع</th></tr></thead>
+                    <tbody>{classes.map(c => { const b = byClass.find(x => x.ck === c.ck); return (
+                      <tr key={c.ck}><td style={{ position: "sticky", right: 0, background: "#fff", color: MA_LV[c.lv].c, textAlign: "right", whiteSpace: "nowrap" }}>{MA_LV[c.lv].s} / {maAr(c.sec)}</td>
+                        {wkDays.map(k => { const r = dayRecs(k)[c.ck]; const n = r ? r.absent.length : null; return <td key={k} style={{ background: n == null ? "#f8fafc" : heat(n), color: n == null ? "#cbd5e1" : n > 5 ? "#fff" : "#7f1d1d" }}>{n == null ? "—" : maAr(n)}</td>; })}
+                        <td style={{ color: "#b91c1c" }}>{maAr(b.ab)}</td></tr>); })}</tbody>
+                  </table>
+                </div>
+                <div className="flex gap-2 flex-wrap mt-2" style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>{[[0, "لا غياب"], [1, "١"], [3, "٢–٣"], [5, "٤–٥"], [6, "٦+"]].map(([n, l]) => <span key={l} className="flex items-center gap-1"><i style={{ width: 14, height: 14, borderRadius: 4, background: heat(n), display: "inline-block" }} />{l}</span>)}<span className="flex items-center gap-1"><i style={{ width: 14, height: 14, borderRadius: 4, background: "#f8fafc", border: "1px solid #e2e8f0", display: "inline-block" }} />لم يُحضَّر</span></div>
+              </div>
+
+              {/* الطلاب المتكرر غيابهم */}
+              <div className="ma-card p-4">
+                <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 10 }}>🎯 الطلاب الأكثر غياباً هذا الأسبوع</div>
+                {topStu.length ? topStu.slice(0, 40).map((x, i) => (
+                  <div key={x.n + x.ck} className="flex items-center gap-3" style={{ padding: "9px 4px", borderBottom: "1px solid #f1f5f9" }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 12, display: "grid", placeItems: "center", fontWeight: 900, color: "#fff", background: x.days.length >= 3 ? "#dc2626" : x.days.length === 2 ? "#f97316" : "#94a3b8", flexShrink: 0 }}>{maAr(x.days.length)}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 900, fontSize: 14 }}>{x.n}</div>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>{maClassName(x.ck)} • {x.days.map(k => maDay(maDate(k))).join("، ")}</div>
+                    </div>
+                    <div className="flex gap-1">{wkDays.map(k => <i key={k} title={maDay(maDate(k))} style={{ width: 10, height: 10, borderRadius: 3, display: "inline-block", background: x.days.includes(k) ? "#dc2626" : "#e2e8f0" }} />)}</div>
+                  </div>)) : <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد غياب هذا الأسبوع 🎉</div>}
+              </div>
+            </>)}
+          </div>
+        );
+      })()}
+
+      {/* ═══ الأرشيف ═══ */}
+      {tab === "arch" && !isT && (
+        <div className="ma-card p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div style={{ fontWeight: 900, fontSize: 15 }}>🗂 أرشيف التحضير اليومي</div>
+            <input className="ma-inp" style={{ maxWidth: 280 }} placeholder="🔍 بحث عن طالب في الأرشيف" value={archQ} onChange={e => setArchQ(e.target.value)} />
+          </div>
+          {idx === null ? <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>جاري التحميل…</div> : archQ.trim() ? (() => {
+            const hits = idx.flatMap(d => (d.names || []).filter(x => x.n.includes(archQ.trim())).map(x => ({ ...x, d })));
+            const by = {}; hits.forEach(h => { (by[h.n] = by[h.n] || []).push(h); });
+            return Object.keys(by).length ? Object.entries(by).map(([n, hs]) => (
+              <div key={n} style={{ border: "1px solid #fecaca", borderRadius: 14, padding: 10, marginBottom: 8, background: "#fffafa" }}>
+                <div style={{ fontWeight: 900 }}>{n} <span style={{ color: "#b91c1c" }}>— غاب {maAr(hs.length)} يوم</span> <small style={{ color: "#64748b" }}>({maClassName(hs[0].c)})</small></div>
+                <div className="flex gap-1 flex-wrap mt-1">{hs.map((h, i) => <button key={i} className="ma-btn" style={{ padding: "3px 10px", fontSize: 11.5 }} onClick={() => { setDateK(h.d.date); setTab("stats"); }}>{h.d.dayName} {h.d.hijri}</button>)}</div>
+              </div>)) : <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد غياب مسجّل لهذا الاسم</div>;
+          })() : idx.length ? (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+                <thead><tr style={{ background: "#0f766e", color: "#fff" }}>{["اليوم", "التاريخ الهجري", "الميلادي", "فصول", "الغائبون", ""].map(h => <th key={h} style={{ padding: 9, fontWeight: 900 }}>{h}</th>)}</tr></thead>
+                <tbody>{idx.map((d, i) => (
+                  <tr key={d.date} style={{ background: i % 2 ? "#f8fafc" : "#fff", borderBottom: "1px solid #eef2f6" }}>
+                    <td style={{ padding: 8, fontWeight: 900 }}>{d.dayName}</td><td style={{ padding: 8 }}>{d.hijri}</td><td style={{ padding: 8, color: "#64748b" }}>{maGreg(maDate(d.date))}</td>
+                    <td style={{ padding: 8, textAlign: "center" }}>{maAr(d.classes)}/{maAr(classes.length)}</td>
+                    <td style={{ padding: 8, textAlign: "center", fontWeight: 900, color: "#b91c1c" }}>{maAr(d.absent)}</td>
+                    <td style={{ padding: 8 }}><button className="ma-btn" style={{ padding: "5px 12px" }} onClick={() => { setDateK(d.date); setTab("stats"); }}>عرض ←</button></td>
+                  </tr>))}</tbody>
+              </table>
+            </div>) : <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا توجد أيام مؤرشفة بعد — تُحفظ تلقائياً عند اعتماد التحضير</div>}
+          <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700, marginTop: 10 }}>💾 يُحفظ كل يوم في سجل مستقل على الخادم ويبقى محفوظاً للأعوام القادمة</div>
+        </div>
+      )}
+
+      {/* ═══ الفصول والطلاب ═══ */}
+      {tab === "manage" && !isT && (
+        <div className="grid gap-4">
+          <div className="ma-card p-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 15 }}>📥 استيراد كشوف الفصول من نور</div>
+                <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>اختر ملفاً أو عدة ملفات دفعة واحدة (حتى ١٤ فصلاً) — يُتعرَّف على الصف والفصل تلقائياً من الكشف</div>
+              </div>
+              <input ref={fileRef} type="file" multiple accept=".xlsx,.xls,.csv" hidden onChange={onFiles} />
+              <button className="ma-btn grn" disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? "⏳ جاري القراءة…" : "📥 استيراد ملفات Excel"}</button>
+            </div>
+            <div className="flex gap-4 flex-wrap mt-4" style={{ fontSize: 12.5, fontWeight: 800 }}>
+              {MA_LV.map((L, li) => <label key={li} className="flex items-center gap-2" style={{ color: L.c }}>عدد فصول {L.n}: <input type="number" min="0" max="12" value={counts[li]} onChange={e => { const c = [...counts]; c[li] = Math.max(0, Math.min(12, +e.target.value || 0)); saveCounts(c); }} className="ma-inp" style={{ width: 64, height: 34 }} /></label>)}
+              <label className="flex items-center gap-2" style={{ color: "#b91c1c" }}>⏰ موعد تنبيه عدم الاعتماد: <input type="time" value={deadline} onChange={e => e.target.value && saveDeadline(e.target.value)} className="ma-inp" style={{ width: 120, height: 34 }} /></label>
+              <span style={{ color: "#64748b" }}>إجمالي الطلاب المثبّتين: {maAr(totalStudents)}</span>
+            </div>
+          </div>
+          <div className="ma-card p-4">
+            <ClassPicker onPick={setMgCk} selected={mgCk} />
+          </div>
+          {mgCk && (() => { const st = studentsOf(mgCk); return (
+            <div className="ma-card" style={{ overflow: "hidden" }}>
+              <div className="flex items-center justify-between flex-wrap gap-2 p-4" style={{ borderBottom: "1px solid #eef2f6" }}>
+                <div style={{ fontWeight: 900, fontSize: 17 }}>الصف {maClassName(mgCk)} <small style={{ color: "#64748b" }}>({maAr(st.length)} طالب)</small></div>
+                <div className="flex gap-2 flex-wrap">
+                  <button className="ma-btn pri" onClick={async () => { const n = window.prompt("اسم الطالب الجديد:"); if (n && n.trim()) { await saveRoster(mgCk, [...st, { id: maId(), name: n.trim() }].sort((a, b) => a.name.localeCompare(b.name, "ar"))); toast("✅ تمت إضافة الطالب"); } }}>＋ إضافة طالب</button>
+                  <button className="ma-btn red" disabled={!st.length} onClick={async () => { if (window.confirm(`حذف جميع طلاب ${maClassName(mgCk)} (${st.length})؟`)) { await saveRoster(mgCk, []); toast("🗑 تم إفراغ الفصل"); } }}>🗑 إفراغ الفصل</button>
+                </div>
+              </div>
+              <div style={{ maxHeight: "56vh", overflowY: "auto" }}>
+                {st.map((s, i) => (
+                  <div key={s.id} className="flex items-center gap-3 flex-wrap" style={{ padding: "8px 14px", borderBottom: "1px solid #f1f5f9" }}>
+                    <span style={{ width: 28, textAlign: "center", fontWeight: 900, color: "#94a3b8" }}>{maAr(i + 1)}</span>
+                    <span style={{ flex: "1 1 200px", fontWeight: 800 }}>{s.name}</span>
+                    <select className="ma-inp" style={{ width: 170, height: 34, fontSize: 12.5 }} value="" onChange={e => moveStudent(s, mgCk, e.target.value)}>
+                      <option value="">↔ نقل إلى فصل…</option>
+                      {classes.filter(c => c.ck !== mgCk).map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}
+                    </select>
+                    <button className="ma-btn red" style={{ padding: "5px 10px" }} onClick={async () => { if (window.confirm(`حذف ${s.name}؟`)) await saveRoster(mgCk, st.filter(x => x.id !== s.id)); }}>🗑</button>
+                  </div>))}
+                {!st.length && <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>الفصل فارغ — استورد كشفه من نور أو أضف الطلاب</div>}
+              </div>
+            </div>); })()}
+          <div className="ma-card p-4" style={{ background: "#fffbeb", borderColor: "#fcd34d" }}>
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3" style={{ paddingBottom: 10, borderBottom: "1px dashed #fcd34d" }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "#78350f" }}>👤 دخول المعلمين بالسجل المدني — استورد تقرير الحضور والانصراف (نفس ملف سجل الرخصة المهنية)</div>
+              <input ref={staffRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={onStaff} />
+              <button className="ma-btn grn" onClick={() => staffRef.current?.click()} disabled={busy}>📥 استيراد المعلمين</button>
+            </div>
+            <div style={{ fontWeight: 900, marginBottom: 6 }}>🔗 رابط التحضير للمعلمين</div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#78350f", marginBottom: 8, lineHeight: 1.9 }}>رابط <b>ثابت</b> يُرسل مرة واحدة ويعمل كل يوم — يفتح تلقائياً على <b>تاريخ اليوم</b> (الهجري والميلادي)، يختار المعلم الفصل ويحضّر ويعتمد باسمه. يمكنك أيضاً إرسال رسالة التذكير اليومية بزر «تذكير اليوم».</div>
+            <div dir="ltr" style={{ background: "#fff", border: "1px solid #fde68a", borderRadius: 10, padding: "8px 10px", fontSize: 12.5, wordBreak: "break-all", userSelect: "all" }}>{window.location.origin + window.location.pathname}#attend</div>
+            <div className="flex gap-2 mt-2">
+              <button className="ma-btn" onClick={() => { try { navigator.clipboard.writeText(window.location.origin + window.location.pathname + "#attend"); toast("✅ تم نسخ الرابط"); } catch {} }}>📋 نسخ</button>
+              <a className="ma-btn" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent("رابط التحضير الصباحي (الحصة الثانية):\n" + window.location.origin + window.location.pathname + "#attend")}`}>💬 واتساب</a>
+              <a className="ma-btn gold" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`🔔 تذكير التحضير — ${maDay(new Date())} ${maHijri(new Date())} الموافق ${maGreg(new Date())}\nنأمل إدخال غياب الحصة الثانية واعتماده قبل الساعة ${deadline} صباحاً:\n` + window.location.origin + window.location.pathname + "#attend")}`}>🔔 تذكير اليوم</a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* معاينة الاستيراد */}
+      {imp && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setImp(null)}>
+          <div className="ma-card" style={{ width: "min(640px,100%)", maxHeight: "86vh", overflow: "auto", padding: 22 }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontWeight: 900, fontSize: 18, marginBottom: 4 }}>📥 تثبيت الفصول ({maAr(imp.length)} ملف)</h3>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, marginBottom: 12 }}>تأكد من الفصل لكل ملف — التثبيت يستبدل طلاب الفصل الحاليين</div>
+            {imp.map((x, i) => (
+              <div key={i} className="flex items-center gap-3 flex-wrap" style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: "10px 12px", marginBottom: 8, background: x.names.length ? "#fff" : "#fef2f2" }}>
+                <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>📄 {x.file}</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: x.names.length ? "#15803d" : "#b91c1c" }}>{x.names.length ? `👥 ${maAr(x.names.length)} طالب` : "لم أجد أسماء"}{x.detected ? " • ✓ تم التعرف على الفصل" : ""}</div>
+                </div>
+                <select className="ma-inp" style={{ width: 180, borderColor: x.names.length && !x.ck ? "#f87171" : undefined }} value={x.ck} onChange={e => setImp(imp.map((y, j) => j === i ? { ...y, ck: e.target.value } : y))} disabled={!x.names.length}>
+                  <option value="">— اختر الفصل —</option>
+                  {classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}{studentsOf(c.ck).length ? ` (${maAr(studentsOf(c.ck).length)} حالياً)` : ""}</option>)}
+                </select>
+              </div>))}
+            <div className="flex gap-2 justify-end mt-3">
+              <button className="ma-btn" onClick={() => setImp(null)} disabled={busy}>إلغاء</button>
+              <button className="ma-btn pri" onClick={doImport} disabled={busy || !imp.some(x => x.names.length)}>{busy ? "⏳ جاري التثبيت…" : "📌 تثبيت الفصول"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editAsk && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 450, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => setEditAsk(null)}>
+          <div className="ma-card" style={{ width: "min(440px,100%)", padding: 22 }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 4 }}>✏️ تعديل غياب {ck && maClassName(ck)}</div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b", marginBottom: 12 }}>اختر سبب التعديل — يُحفظ في سجل التعديلات باسمك</div>
+            <div className="grid gap-2">
+              {EDIT_REASONS.map(r => (
+                <label key={r} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, border: `1.5px solid ${editAsk.r === r ? "#f59e0b" : "#e2e8f0"}`, background: editAsk.r === r ? "#fffbeb" : "#fff", cursor: "pointer", fontWeight: 800 }}>
+                  <input type="radio" checked={editAsk.r === r} onChange={() => setEditAsk({ ...editAsk, r })} style={{ accentColor: "#d97706" }} />{r}
+                </label>))}
+              {editAsk.r === "أخرى" && <input className="ma-inp" autoFocus placeholder="اكتب السبب…" value={editAsk.other} onChange={e => setEditAsk({ ...editAsk, other: e.target.value })} />}
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button className="ma-btn" onClick={() => setEditAsk(null)}>إلغاء</button>
+              <button className="ma-btn gold" disabled={!editAsk.r || (editAsk.r === "أخرى" && !editAsk.other.trim())} onClick={() => { setEditing({ reason: editAsk.r === "أخرى" ? "أخرى: " + editAsk.other.trim() : editAsk.r }); setEditAsk(null); toast("✏️ تم فتح التعديل — عدّل ثم اضغط «حفظ التعديل»"); }}>فتح التعديل ←</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {staffImp && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 450, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setStaffImp(null)}>
+          <div className="ma-card" style={{ width: "min(520px,100%)", maxHeight: "84vh", overflow: "auto", padding: 22 }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 8 }}>📥 تسجيل المعلمين بالسجل المدني ({maAr(staffImp.length)})</div>
+            <div style={{ maxHeight: 280, overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+              {staffImp.map((x, i) => <div key={x.nid} style={{ display: "flex", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 13, fontWeight: 700 }}><span>{maAr(i + 1)}. {x.name}</span><span dir="ltr" style={{ color: "#94a3b8" }}>••••••{x.nid.slice(-4)}</span></div>)}
+            </div>
+            <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700, margin: "10px 0" }}>🔒 يُحفظ الرقم مشفّراً ويُستخدم لدخول المعلم فقط — هي نفس قائمة سجل الرخصة المهنية.</div>
+            <div className="flex gap-2 justify-end"><button className="ma-btn" onClick={() => setStaffImp(null)} disabled={busy}>إلغاء</button><button className="ma-btn pri" onClick={doStaffImport} disabled={busy}>{busy ? "⏳ جاري التسجيل…" : "✔ تسجيل المعلمين"}</button></div>
+          </div>
+        </div>
+      )}
+
+      {isT && onBack && <div className="text-center mt-4"><button className="ma-btn" onClick={onBack}>← الرئيسية</button></div>}
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 500, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, fontSize: 13.5, maxWidth: "92vw", textAlign: "center" }}>{msg}</div>}
+    </div>
+  );
+}
+
 // ── حارس الأخطاء: يعرض رسالة الخطأ بدل الصفحة البيضاء ──
 class SiteErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
@@ -29819,6 +30657,7 @@ function SchoolWebsiteInner() {
   const [weekArchive, setWeekArchive] = useState([]);
 
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
+  const [attPortal, setAttPortal] = useState(() => window.location.hash.replace("#", "") === "attend");
   const [directAnnId, setDirectAnnId] = useState(() => {
     const h = window.location.hash.replace("#","");
     return h.startsWith("ann-") ? h.replace("ann-","") : null;
@@ -29858,7 +30697,7 @@ function SchoolWebsiteInner() {
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["morningattend","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -30126,6 +30965,7 @@ function SchoolWebsiteInner() {
     </div>
   );
 
+  if (attPortal) return <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f0fdfa 40%,#f8fafc)" }}><MorningAttendancePage mode="teacher" onBack={() => { setAttPortal(false); window.location.hash = ""; }} /></div>;
   if (licPortal) return <LicenseTeacherPortal siteFont={siteFont} onBack={() => { setLicPortal(false); window.location.hash = ""; }} />;
   if (directAnnId) return <SingleAnnouncementPage announcements={announcements} siteFont={siteFont} annId={directAnnId} />;
   if (excuseFromHash || (!user && excusePortal)) return <StudentExcusePortal onBack={() => { setExcusePortal(false); setExcuseFromHash(false); window.location.hash = ""; }} siteFont={siteFont} isAdmin={false} />;
@@ -30159,6 +30999,7 @@ function SchoolWebsiteInner() {
   // ── أدوات الفصل والتعليم
   const classToolPages = [
     { id: "formative",      label: "التقويم التكويني",    icon: "📘" },
+    { id: "morningattend",  label: "التحضير الصباحي",     icon: "📋" },
     { id: "strategies",     label: "الاستراتيجيات",      icon: "🧠" },
     { id: "broadcast",      label: "الإذاعة المدرسية",   icon: "🎙️" },
     { id: "quiz",           label: "اختبارات الطلاب",    icon: "📝" },
@@ -30197,7 +31038,7 @@ function SchoolWebsiteInner() {
   const extraPages = [...classToolPages, ...reportPages];
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
-    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
+    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["morningattend","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["students","formative","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["announcements","messages","sms","broadcast","suggestions"] },
@@ -30480,6 +31321,7 @@ function SchoolWebsiteInner() {
                 {page === "admin-attendance"&& <AdminAttendancePage />}
                 {page === "attendance"     && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
                 {page === "formative"      && <FormativeGradebookPage classList={classList} />}
+                {page === "morningattend"  && <MorningAttendancePage />}
                 {page === "students"       && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />}
                 {page === "announcements"  && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} viewMode="mobile" />}
                 {page === "activities"     && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
@@ -30643,6 +31485,7 @@ function SchoolWebsiteInner() {
         {page === "admin-attendance" && <AdminAttendancePage />}
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
         {page === "formative"     && <FormativeGradebookPage classList={classList} />}
+        {page === "morningattend" && <MorningAttendancePage />}
         {page === "students"      && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
         {page === "activities"    && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
