@@ -1727,72 +1727,49 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
     if (u) { onLogin(u); setError(""); } else setError("اسم المستخدم أو كلمة المرور غير صحيحة");
   };
 
+  const [adm, setAdm] = useState(false);
+  const goHash = h => { window.location.hash = h; window.location.reload(); };
+  const card = (h, ic, t, items, c, c2, cta, idTag, onClick) => (
+    <div className="gt-card" style={{ "--c": c, "--c2": c2 }} onClick={onClick} role="button">
+      <div className="flex items-center justify-between"><div className="gt-ic">{ic}</div>{idTag && <span className="gt-id">🪪 {idTag}</span>}</div>
+      <h3>{t}</h3>
+      <ul>{items.map(x => <li key={x}>{x}</li>)}</ul>
+      <div className="gt-go"><span>{cta}</span><span>←</span></div>
+    </div>
+  );
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4"
-      style={{ fontFamily: siteFont, background: "linear-gradient(135deg, #0d9488 0%, #065f46 50%, #064e3b 100%)" }}>
-      <div className="relative w-full max-w-sm">
-        <div className="text-center text-white mb-8">
-          <div className="flex justify-center mb-5">
-            <SchoolLogo size="lg" animate={true} />
-          </div>
-          <h1 className="text-xl font-black mb-1 mt-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
-          <p className="opacity-70 text-sm">بوابة الإدارة المدرسية الإلكترونية</p>
+    <div dir="rtl" className="gt" style={{ fontFamily: siteFont }}>
+      <style>{PT_GATE_CSS}</style>
+      <div className="gt-in">
+        <div className="gt-hd">
+          <SchoolLogo size="lg" animate={true} />
+          <div><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1><p>البوابة الإلكترونية — اختر فئتك للدخول</p></div>
         </div>
-        <div className="bg-white rounded-3xl p-6 shadow-2xl">
-          <h2 className="text-center font-bold text-gray-800 mb-5">تسجيل الدخول</h2>
-          <div className="space-y-4">
-            <div>
-              <label className={cx.label}>اسم المستخدم</label>
-              <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="أدخل اسم المستخدم"
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm" onKeyDown={e => e.key === "Enter" && handleLogin()} />
-            </div>
-            <div>
-              <label className={cx.label}>كلمة المرور</label>
-              <div className="relative">
-                <input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="أدخل كلمة المرور"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none text-sm" onKeyDown={e => e.key === "Enter" && handleLogin()} />
-                <button onClick={() => setShowPass(!showPass)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{showPass ? "🙈" : "👁️"}</button>
-              </div>
-            </div>
-            {error && <div className="bg-red-50 text-red-600 text-xs font-bold p-3 rounded-xl text-center">{error}</div>}
-            <button onClick={handleLogin} className="w-full py-3 rounded-xl bg-gradient-to-l from-teal-500 to-emerald-600 text-white font-bold hover:shadow-lg transition-all">دخول — الإدارة</button>
+        <div className="gt-grid">
+          <div className="gt-card" style={{ "--c": "#14b8a6", "--c2": "#0f766e", cursor: adm ? "default" : "pointer" }} onClick={() => !adm && setAdm(true)}>
+            <div className="flex items-center justify-between"><div className="gt-ic">🏫</div><span className="gt-id">🔑 كلمة مرور</span></div>
+            <h3>مدير المدرسة</h3>
+            {!adm ? <>
+              <ul><li>لوحة متابعة كل ما يجري</li><li>التصنيف والغياب والتأخر</li><li>متابعة المعلمين والإعلانات</li><li>الصلاحيات وأولياء الأمور</li></ul>
+              <div className="gt-go"><span>دخول الإدارة</span><span>←</span></div>
+            </> : <div className="gt-form" onClick={e => e.stopPropagation()}>
+              <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="اسم المستخدم" autoFocus onKeyDown={e => e.key === "Enter" && handleLogin()} />
+              <div style={{ position: "relative" }}><input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="كلمة المرور" onKeyDown={e => e.key === "Enter" && handleLogin()} /><button type="button" onClick={() => setShowPass(!showPass)} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer" }}>{showPass ? "🙈" : "👁️"}</button></div>
+              {error && <div style={{ background: "#fee2e2", color: "#b91c1c", fontSize: 12, fontWeight: 800, padding: 8, borderRadius: 10, textAlign: "center" }}>{error}</div>}
+              <button type="button" onClick={handleLogin} className="gt-go" style={{ border: "none", color: "#fff", fontFamily: "inherit", cursor: "pointer" }}><span>دخول — الإدارة</span><span>←</span></button>
+            </div>}
           </div>
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <button onClick={onTeacherPortal}
-              className="w-full py-3 rounded-xl font-bold hover:shadow-lg transition-all text-sm text-white mb-2"
-              style={{ background: "linear-gradient(135deg, #1e3a5f, #2563eb)" }}>
-              📊 التقويم الذاتي لمعايير الأداء الوظيفي
-            </button>
-            <button onClick={onParentPortal}
-              className="w-full py-3 rounded-xl bg-gradient-to-l from-blue-500 to-indigo-600 text-white font-bold hover:shadow-lg transition-all text-sm">
-              👨‍👦 بوابة أولياء الأمور — متابعة مستوى الطالب
-            </button>
-            <button onClick={onStudentRaffle}
-              className="w-full py-3 rounded-xl font-bold hover:shadow-lg transition-all text-sm text-white mt-2"
-              style={{ background: "linear-gradient(135deg,#7c3aed,#db2777,#f59e0b)" }}>
-              🎰 سحب الجوائز — تسجيل الطلاب
-            </button>
-            <button onClick={onPublicAnnouncements}
-              className="w-full py-3 rounded-xl font-bold hover:shadow-lg transition-all text-sm text-white mt-2"
-              style={{ background: "linear-gradient(135deg,#0d9488,#065f46)" }}>
-              📢 إعلانات المدرسة — للطلاب وأولياء الأمور
-            </button>
-            <button onClick={onExcusePortal}
-              className="w-full py-3 rounded-xl font-bold hover:shadow-lg transition-all text-sm text-white mt-2"
-              style={{ background: "linear-gradient(135deg,#1e3a5f,#1d4ed8)" }}>
-              📋 بوابة الأعذار — تقديم عذر غياب طالب
-            </button>
-            <button onClick={onAbsenceAdmin}
-              className="w-full py-3 rounded-xl font-bold hover:shadow-lg transition-all text-sm text-white mt-2"
-              style={{ background: "linear-gradient(135deg,#065f46,#047857)" }}>
-              🎒 بوابة إداري الغياب — تسجيل غياب الطلاب
-            </button>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <button type="button" onClick={() => { window.location.hash = "attend"; window.location.reload(); }} className="py-3 rounded-xl font-bold text-sm text-white hover:shadow-lg transition-all" style={{ background: "linear-gradient(135deg,#0f766e,#115e59)" }}>📋 غياب الطلاب (للمعلمين)</button>
-              <button type="button" onClick={() => { window.location.hash = "classify"; window.location.reload(); }} className="py-3 rounded-xl font-bold text-sm text-white hover:shadow-lg transition-all" style={{ background: "linear-gradient(135deg,#7c3aed,#4c1d95)" }}>🏷️ تصنيف الطلاب (للمعلمين)</button>
-            </div>
-          </div>
-
+          {card("teacher", "👨‍🏫", "المعلمون", ["غياب الحصة الثانية", "تصنيف الطلاب", "التقويم التكويني", "أداء الطلاب"], "#8b5cf6", "#6d28d9", "بوابة المعلمين", "الهوية الوطنية", () => goHash("teacher"))}
+          {card("staff", "🗂️", "الإداريون والمرشد الطلابي", ["إدخال التأخر الصباحي", "إحصائية الغياب اليومية والأسبوعية", "خلاصة تصنيف الطلاب", "أعذار وملاحظات أولياء الأمور"], "#f59e0b", "#ea580c", "بوابة الإداريين", "الهوية الوطنية", () => goHash("staff"))}
+          {card("parent", "👪", "أولياء الأمور", ["المستوى الدراسي والملاحظات", "الغياب والتأخر", "الإعلانات والتعليق عليها", "رفع الأعذار والملاحظات"], "#38bdf8", "#2563eb", "بوابة أولياء الأمور", "هوية الطالب", () => goHash("parent"))}
+        </div>
+        <div className="gt-more">
+          <button onClick={onPublicAnnouncements}>📢 إعلانات المدرسة</button>
+          <button onClick={onTeacherPortal}>📊 التقويم الذاتي لمعايير الأداء</button>
+          <button onClick={onStudentRaffle}>🎰 سحب الجوائز</button>
+          <button onClick={onExcusePortal}>📋 بوابة الأعذار (السابقة)</button>
+          <button onClick={onParentPortal}>👨‍👦 متابعة مستوى الطالب (السابقة)</button>
+          <button onClick={onAbsenceAdmin}>🎒 بوابة إداري الغياب (السابقة)</button>
         </div>
       </div>
     </div>
@@ -1808,7 +1785,7 @@ const HUB_GROUPS = [
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
     tools:[{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
-    tools:[{id:"announcements",label:"الإعلانات",icon:"📣"},{id:"messages",label:"رسائل الأهالي",icon:"💌"},{id:"sms",label:"رسائل SMS",icon:"📲"},{id:"broadcast",label:"الإذاعة المدرسية",icon:"🎙️"},{id:"suggestions",label:"آراء ومقترحات",icon:"💬"}] },
+    tools:[{id:"parentinbox",label:"طلبات أولياء الأمور",icon:"📨"},{id:"portals",label:"بوابات الدخول والصلاحيات",icon:"🔐"},{id:"announcements",label:"الإعلانات",icon:"📣"},{id:"messages",label:"رسائل الأهالي",icon:"💌"},{id:"sms",label:"رسائل SMS",icon:"📲"},{id:"broadcast",label:"الإذاعة المدرسية",icon:"🎙️"},{id:"suggestions",label:"آراء ومقترحات",icon:"💬"}] },
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
@@ -1922,6 +1899,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
           ))}
         </div>
       </div>
+      <AdminLiveBoard navigate={navigate} />
 
       {/* ── الأقسام: بطاقات (وسط) + لوحة الأدوات (يمين) ── */}
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] mb-4">
@@ -28553,7 +28531,7 @@ body {
 // شريط التنقل العصري — قوائم منبثقة بملصقات (Mega Menu)
 // ══════════════════════════════════════════════════════════
 const NAV_TOOL_DESC = {
-  attendance:"رصد حضور المعلمين يومياً", studentclassify:"تصنيف الطلاب دراسياً وسلوكياً وحضوراً", morningattend:"تحضير المعلمين للحصة الثانية ورابطهم", attendstats:"للإدارة: الإحصائية والتأخر الصباحي", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم",
+  attendance:"رصد حضور المعلمين يومياً", parentinbox:"أعذار وملاحظات أولياء الأمور وتعليقاتهم", portals:"روابط الدخول بالهوية وصلاحيات الإداريين", studentclassify:"تصنيف الطلاب دراسياً وسلوكياً وحضوراً", morningattend:"تحضير المعلمين للحصة الثانية ورابطهم", attendstats:"للإدارة: الإحصائية والتأخر الصباحي", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم",
   attendancereport:"تحليل بيانات الحضور", "student-absence":"تسجيل غياب الطلاب", studentexcuses:"استقبال أعذار الغياب",
   absencestats:"مؤشرات وإحصاءات الغياب",
   students:"رصد تقييم الطلاب", formative:"جدول عرضي ملوّن وفق اللائحة", gradeanalysis:"تحليل النتائج والدرجات", assessment:"بطاقة تشخيص المستوى",
@@ -29899,7 +29877,7 @@ const scCSS = `
 @media (max-width:640px){.sc-dims{padding:12px}.sc-opts.n4{grid-template-columns:1fr 1fr}.sc-head{padding:12px 14px}.sc-opt{font-size:12px;padding:9px 8px;gap:6px}.sc-opt span{white-space:normal;line-height:1.35}}
 `;
 
-function StudentClassifyPage({ mode = "admin", onBack }) {
+function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   const isT = mode === "teacher";
   const [tab, setTab] = useState(isT ? "cls" : "sum");
   const [counts, setCounts] = useState([6, 4, 4]);
@@ -29991,7 +29969,7 @@ function StudentClassifyPage({ mode = "admin", onBack }) {
         wb.SheetNames.forEach(n => { const p = fgParseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" })); const names = fgUniqueNames(p.body, p.col); if (!best || names.length > best.names.length) best = { ...p, names }; });
         const m = best?.meta || {}; const li = m.levelNorm ? FG_LEVELS.indexOf(m.levelNorm) : -1;
         const sec = parseInt(String(m.section || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-        out.push({ file: f.name, names: best ? best.names : [], ck: li >= 0 && sec > 0 ? `${li + 1}-${sec}` : "" });
+        out.push({ file: f.name, names: best ? best.names : [], list: best ? await ptStudentsFromParsed(best, best.names) : [], ck: li >= 0 && sec > 0 ? `${li + 1}-${sec}` : "" });
       } catch { out.push({ file: f.name, names: [], ck: "" }); }
     }
     setBusy(false); setImp(out);
@@ -30000,8 +29978,7 @@ function StudentClassifyPage({ mode = "admin", onBack }) {
     if (imp.some(x => x.names.length && !x.ck)) { alert("حدّد الفصل لكل ملف"); return; }
     setBusy(true);
     for (const x of imp.filter(x => x.names.length)) {
-      const old = studentsOf(x.ck); // الإبقاء على معرّفات الطلاب الموجودين (حتى لا يضيع تصنيفهم)
-      const students = x.names.map(n => old.find(o => o.name === n) || { id: maId(), name: n });
+      const students = ptMergeRoster(studentsOf(x.ck), x.list && x.list.length ? x.list : x.names.map(n => ({ name: n }))); // الإبقاء على معرّفات الطلاب + ربط الهوية
       const r = { ck: x.ck, students, updated: Date.now() }; await maPut(`${MA_ROSTER}/${x.ck}`, r); setRosters(p => ({ ...p, [x.ck]: r }));
     }
     setBusy(false); setImp(null); toast("📌 تم تثبيت الفصول");
@@ -30097,7 +30074,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
     <div className="ma px-3 md:px-6 py-4" dir="rtl" style={isT ? { minHeight: "100vh", background: "linear-gradient(160deg,#f5f3ff,#f8fafc)" } : undefined}>
       <style>{MA_CSS + scCSS}</style>
 
-      {!isT && (
+      {!isT && !viewOnly && (
         <div className="ma-card mb-3" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "linear-gradient(90deg,#f5f3ff,#fff)", borderColor: "#c4b5fd" }}>
           <span style={{ fontWeight: 900, fontSize: 13.5, color: "#5b21b6" }}>🔗 رابط التصنيف للمعلمين (الدخول بالسجل المدني):</span>
           <span dir="ltr" style={{ flex: "1 1 220px", minWidth: 0, background: "#fff", border: "1px solid #ddd6fe", borderRadius: 10, padding: "6px 10px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", userSelect: "all" }}>{portal}</span>
@@ -30120,7 +30097,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
             </div>
           </div>
         </div>
-        {!isT && <div className="p-3"><div className="ma-tabs">{[["sum", "📊 الخلاصة"], ["cls", "🏷️ التصنيف"], ["rost", "👥 الفصول"]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div></div>}
+        {!isT && <div className="p-3"><div className="ma-tabs">{(viewOnly ? [["sum", "📊 الخلاصة"]] : [["sum", "📊 الخلاصة"], ["cls", "🏷️ التصنيف"], ["rost", "👥 الفصول"]]).map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div></div>}
       </div>
 
       {/* ═══ التصنيف ═══ */}
@@ -30204,7 +30181,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
           <div className="ma-card p-4" style={{ background: "linear-gradient(90deg,#faf5ff,#fff)", borderColor: "#ddd6fe" }}>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div><div style={{ fontWeight: 900, fontSize: 15 }}>🗓️ نموذج تصنيف الطلاب — الفترة</div><div style={{ fontSize: 13, fontWeight: 800, color: "#6d28d9", marginTop: 2 }}>{periodTxt || "لم تُحدَّد الفترة بعد"} • مدير المدرسة: {per.principal}</div></div>
-              {!perEd && <button className="ma-btn" onClick={() => setPerEd({ ...per })}>✏️ تحديد الفترة</button>}
+              {!perEd && !viewOnly && <button className="ma-btn" onClick={() => setPerEd({ ...per })}>✏️ تحديد الفترة</button>}
             </div>
             {perEd && (
               <div className="grid gap-3 mt-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", alignItems: "end" }}>
@@ -30312,10 +30289,552 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
 }
 
 
-function MorningAttendancePage({ mode = "admin", onBack, section = "take" }) {
+// ══════════════════════════════════════════════════════════
+// بوابات الدخول بالهوية: المعلمون • الإداريون والمرشد • أولياء الأمور
+// ══════════════════════════════════════════════════════════
+const PT_STAFF = "school-staff2";     // الإداريون والمرشدون وغيرهم {id:{id,name,idHash,id4,job,role}}
+const PT_ROLES = "school-roles";      // تعديل صلاحية معلم من سجل الرخصة {licId: role}
+const PT_EXC = "school-pexcuses";     // أعذار أولياء الأمور
+const PT_NOTES = "school-pnotes";     // ملاحظات أولياء الأمور
+const PT_COMM = "school-ann-comments";// تعليقات الإعلانات {annId:{cid:{...}}}
+const PT_ROLE_LBL = { teacher: "معلم", admin: "إداري", counselor: "مرشد طلابي", deputy: "وكيل", principal: "مدير" };
+const PT_STAFF_ROLES = ["admin", "counselor", "deputy", "principal"];
+const ptGuessRole = t => { t = String(t || ""); return /مرشد|موجه طلابي|توجيه/.test(t) ? "counselor" : /وكيل/.test(t) ? "deputy" : /مدير/.test(t) ? "principal" : /معلم/.test(t) ? "teacher" : /إدار|ادار|مساعد|سكرتير|كاتب|محضر|أمين|امين|مراقب|حارس|مستخدم/.test(t) ? "admin" : "teacher"; };
+async function stuHash(n) { const d = new TextEncoder().encode("pam-stu:" + licNormId(n)); const b = await crypto.subtle.digest("SHA-256", d); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
+const ptId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const ptEsc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ptWhen = ms => { try { const d = new Date(ms); return d.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" }) + " • " + d.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
+const ptObj = v => (v && typeof v === "object" ? v : {});
+const ptVals = v => Object.values(ptObj(v)).filter(x => x && typeof x === "object");
+
+// ── ربط أرقام السجل المدني للطلاب من كشف نور (عمود «رقم السجل المدني»)
+function ptIdCol(headerRow) { return headerRow ? headerRow.findIndex(x => /السجل المدني|رقم الهوية|الهوية|الإقامة|رقم السجل/.test(String(x ?? ""))) : -1; }
+async function ptStudentsFromParsed(p, names) {
+  const ic = ptIdCol(p && p.headerRow); const map = {}; const nrm = s => String(s ?? "").trim().replace(/\s+/g, " ");
+  if (ic >= 0) (p.body || []).forEach(r => { const nm = nrm(r[p.col]); const id = licNormId(r[ic]); if (nm && id.length >= 9) map[nm] = id; });
+  const out = [];
+  for (const n of names || []) { const id = map[nrm(n)]; out.push(id ? { name: n, nh: await stuHash(id), n4: id.slice(-4) } : { name: n }); }
+  return out;
+}
+function ptMergeRoster(old, list) { const o = maArr(old); return (list || []).map(x => { const e = o.find(y => y && y.name === x.name); return { ...(e || { id: maId() }), name: x.name, ...(x.nh ? { nh: x.nh, n4: x.n4 } : {}) }; }); }
+
+// ── دخول الموظف بالسجل المدني
+async function ptStaffLogin(nid) {
+  const n = licNormId(nid);
+  if (n.length !== 10) return { err: "أدخل رقم السجل المدني كاملاً (١٠ أرقام)" };
+  const h = await licHash(n);
+  const [staff, lic, roles] = await Promise.all([maGet(PT_STAFF), maGet(LIC_NODE), maGet(PT_ROLES)]);
+  const s = ptVals(staff).find(x => x.idHash === h);
+  if (s) return { name: s.name, hash: h, role: s.role || ptGuessRole(s.job), rid: s.id, src: "staff", day: maKey(new Date()) };
+  const e = Object.entries(ptObj(lic)).find(([, x]) => x && x.idHash === h);
+  if (e) { const [rid, r] = e; return { name: r.name, hash: h, role: ptObj(roles)[rid] || "teacher", rid, src: "lic", day: maKey(new Date()) }; }
+  return { err: "رقم السجل المدني غير مسجّل — يرجى مراجعة الإدارة" };
+}
+
+const PT_CSS = `
+.pt{font-family:Cairo,Tahoma,sans-serif}
+.pt-hero{border-radius:26px;color:#fff;padding:22px 24px;position:relative;overflow:hidden}
+.pt-hero::after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.08);left:-60px;top:-110px}
+.pt-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.pt-tile{position:relative;text-align:right;border:1px solid #eef2f6;background:#fff;border-radius:22px;padding:18px;cursor:pointer;font-family:inherit;transition:transform .15s,box-shadow .2s;overflow:hidden}
+.pt-tile:hover{transform:translateY(-3px);box-shadow:0 20px 34px -24px var(--c)}
+.pt-tile::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--c),var(--c2))}
+.pt-tile i{font-style:normal;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:linear-gradient(135deg,var(--c),var(--c2));box-shadow:0 12px 20px -12px var(--c);margin-bottom:12px}
+.pt-tile b{display:block;font-size:16px;font-weight:900;color:#0f172a}
+.pt-tile small{display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-top:4px;line-height:1.7}
+.pt-tile .bd{position:absolute;top:14px;left:14px;background:#fee2e2;color:#b91c1c;border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:900}
+.pt-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.pt-kpi{border-radius:18px;padding:12px 14px;background:#fff;border:1px solid #eef2f6;text-align:right;cursor:pointer;font-family:inherit}
+.pt-kpi b{display:block;font-size:24px;font-weight:900;color:var(--c)}
+.pt-kpi small{font-size:12px;font-weight:800;color:#64748b}
+.pt-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid #eef2f6;border-radius:18px;padding:10px 14px;margin-bottom:14px}
+.pt-item{border:1px solid #eef2f6;border-radius:18px;background:#fff;padding:14px 16px}
+.pt-st{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:900;font-size:11.5px}
+.pt-login{max-width:440px;margin:0 auto}
+`;
+const ptTile = (id, ic, t, d, c, c2, onClick, badge) => (
+  <button key={id} type="button" className="pt-tile" style={{ "--c": c, "--c2": c2 }} onClick={onClick}>
+    {badge ? <span className="bd">{badge}</span> : null}
+    <i>{ic}</i><b>{t}</b><small>{d}</small>
+  </button>
+);
+
+// شاشة الدخول بالهوية (مشتركة)
+function PtLoginCard({ title, sub, icon, grad, onLogin, onBack, hint, placeholder = "رقم السجل المدني (١٠ أرقام)" }) {
+  const [v, setV] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const go = async () => { setBusy(true); setErr(""); const e = await onLogin(v); setBusy(false); if (e) setErr(e); };
+  return (
+    <div className="ma pt px-3 py-6" dir="rtl" style={{ minHeight: "100vh", background: grad }}>
+      <style>{MA_CSS + PT_CSS}</style>
+      <div className="pt-login">
+        <div style={{ textAlign: "center", color: "#fff", marginBottom: 16 }}>
+          <img src={SCHOOL_LOGO} alt="" style={{ width: 84, height: 84, borderRadius: "50%", background: "#fff", padding: 4, boxShadow: "0 0 0 3px #fbbf24", margin: "0 auto" }} />
+          <div style={{ fontSize: 19, fontWeight: 900, marginTop: 8 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+          <div style={{ fontSize: 17, fontWeight: 900, color: "#fde68a" }}>{icon} {title}</div>
+          <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{sub}</div>
+        </div>
+        <div className="ma-card" style={{ padding: 24, textAlign: "center" }}>
+          <div style={{ fontSize: 44 }}>🔐</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#64748b", margin: "6px 0 14px" }}>{hint}</div>
+          <input className="ma-inp" inputMode="numeric" maxLength={10} value={v} onChange={e => { setV(licNormId(e.target.value).slice(0, 10)); setErr(""); }} onKeyDown={e => e.key === "Enter" && go()} placeholder={placeholder} style={{ textAlign: "center", fontSize: 20, letterSpacing: 3, height: 52 }} />
+          {err && <div style={{ color: "#b91c1c", fontWeight: 800, fontSize: 13, marginTop: 10 }}>{err}</div>}
+          <button className="ma-btn" onClick={go} disabled={busy} style={{ marginTop: 16, padding: 12, fontSize: 15, width: "100%", justifyContent: "center", background: grad, color: "#fff", border: "none" }}>{busy ? "⏳ جاري التحقق…" : "دخول ←"}</button>
+          {onBack && <button className="ma-btn" style={{ marginTop: 10 }} onClick={onBack}>← الصفحة الرئيسية</button>}
+          <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, marginTop: 12 }}>🔒 لا يُحفظ رقم الهوية — يُستخدم للتحقق فقط</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════ بوابة المعلمين / الإداريين ══════════
+function StaffHub({ kind = "teacher", onBack, classList = [], setClassList, saveClass, messages = [], onSendNote }) {
+  const isStaff = kind === "staff";
+  const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-staff") || "null"); return m && m.day === maKey(new Date()) && m.name ? m : null; } catch { return null; } });
+  const [view, setView] = useState(null);
+  const [sum, setSum] = useState(null);
+  const grad = isStaff ? "linear-gradient(160deg,#7c2d12,#c2410c 50%,#f59e0b)" : "linear-gradient(160deg,#134e4a,#0f766e 50%,#14b8a6)";
+  const login = async (v) => {
+    const r = await ptStaffLogin(v); if (r.err) return r.err;
+    setMe(r); const m = { name: r.name, hash: r.hash, day: r.day };
+    try { localStorage.setItem("pam-staff", JSON.stringify(r)); localStorage.setItem("ma-me", JSON.stringify(m)); localStorage.setItem("sc-me", JSON.stringify(m)); } catch {}
+    return "";
+  };
+  const logout = () => { setMe(null); setView(null); try { ["pam-staff", "ma-me", "sc-me"].forEach(k => localStorage.removeItem(k)); } catch {} };
+  useEffect(() => {
+    if (!me || !isStaff) return;
+    (async () => {
+      const t = maKey(new Date());
+      const [idx, meta, late, exc, notes] = await Promise.all([maGet(`${MA_IDX}/${t}`), maGet(MA_META), maGet(`${MA_LATE}/${t}`), maGet(PT_EXC), maGet(PT_NOTES)]);
+      const cnt = meta && Array.isArray(meta.counts) ? meta.counts.reduce((a, b) => a + (+b || 0), 0) : 14;
+      setSum({ absent: idx?.absent || 0, total: idx?.total || 0, classes: idx?.classes || 0, allCls: cnt, late: ptVals(late).length, exc: ptVals(exc).filter(x => !x.status || x.status === "new").length, notes: ptVals(notes).filter(x => !x.reply).length });
+    })();
+  }, [me, isStaff, view]);
+
+  if (!me) return <PtLoginCard title={isStaff ? "بوابة الإداريين والمرشد الطلابي" : "بوابة المعلمين"} sub={isStaff ? "التأخر الصباحي • إحصائيات الغياب • أعذار أولياء الأمور" : "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني"} icon={isStaff ? "🗂️" : "👨‍🏫"} grad={grad} onLogin={login} onBack={onBack} hint="أدخل رقم سجلك المدني المسجّل لدى المدرسة" />;
+  const allowed = !isStaff || PT_STAFF_ROLES.includes(me.role);
+  const back = () => setView(null);
+  const Bar = ({ t }) => (
+    <div className="pt-bar" dir="rtl">
+      <button className="ma-btn" onClick={back}>→ البوابة</button>
+      <b style={{ fontSize: 15 }}>{t}</b>
+      <span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span>
+    </div>
+  );
+  const wrap = (t, node) => <div className="pt px-2 md:px-5 py-4" dir="rtl" style={{ minHeight: "100vh", background: "#f8fafc" }}><style>{MA_CSS + PT_CSS}</style><Bar t={t} />{node}</div>;
+  if (view === "attend") return wrap("📋 غياب الحصة الثانية", <MorningAttendancePage mode="teacher" />);
+  if (view === "classify") return wrap("🏷️ تصنيف الطلاب", <StudentClassifyPage mode="teacher" />);
+  if (view === "formative") return wrap("📘 التقويم التكويني", <FormativeGradebookPage classList={classList} />);
+  if (view === "students") return wrap("🎓 أداء الطلاب", <StudentsPage classList={classList} setClassList={setClassList || (() => {})} saveClass={saveClass || (() => {})} deleteClass={() => alert("الحذف متاح للإدارة فقط")} onSendNote={onSendNote || (() => {})} messages={messages} />);
+  if (view === "late" && allowed) return wrap("🌅 التأخر الصباحي", <MorningAttendancePage key="st-late" section="stats" initTab="late" />);
+  if (view === "stats" && allowed) return wrap("📊 إحصائيات الغياب", <MorningAttendancePage key="st-stats" section="stats" initTab="stats" />);
+  if (view === "weekly" && allowed) return wrap("📈 الحصر الأسبوعي", <MorningAttendancePage key="st-week" section="stats" initTab="weekly" />);
+  if (view === "clsum" && allowed) return wrap("🏷️ خلاصة تصنيف الطلاب", <StudentClassifyPage mode="admin" viewOnly />);
+  if (view === "inbox" && allowed) return wrap("📨 أعذار وملاحظات أولياء الأمور", <ParentInbox by={me.name} />);
+
+  return (
+    <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f1f5f9,#f8fafc)" }}>
+      <style>{MA_CSS + PT_CSS}</style>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }} className="grid gap-5">
+        <div className="pt-hero" style={{ background: grad }}>
+          <div className="flex items-center gap-3 flex-wrap" style={{ position: "relative", zIndex: 1 }}>
+            <img src={SCHOOL_LOGO} alt="" style={{ width: 60, height: 60, borderRadius: "50%", background: "#fff", padding: 3, boxShadow: "0 0 0 3px #fde68a" }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{isStaff ? "🗂️ بوابة الإداريين والمرشد الطلابي" : "👨‍🏫 بوابة المعلمين"}</div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>مرحباً أ. {me.name}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{PT_ROLE_LBL[me.role] || "معلم"} • {maDay(new Date())} {maHijri(new Date())}</div>
+            </div>
+            <div className="flex gap-2"><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={logout}>خروج</button>{onBack && <button className="ma-btn" onClick={onBack}>🏠 الرئيسية</button>}</div>
+          </div>
+        </div>
+
+        {!allowed ? (
+          <div className="ma-card p-6 text-center"><div style={{ fontSize: 40 }}>⛔</div><div style={{ fontWeight: 900, fontSize: 17, margin: "6px 0" }}>هذه البوابة خاصة بالإداريين والمرشد الطلابي</div><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>صلاحيتك المسجّلة: {PT_ROLE_LBL[me.role] || "معلم"} — يمكن للمدير تعديلها من «بوابات الدخول والصلاحيات»</div><button className="ma-btn pri" style={{ marginTop: 14 }} onClick={() => { window.location.hash = "teacher"; window.location.reload(); }}>👨‍🏫 الذهاب لبوابة المعلمين</button></div>
+        ) : isStaff ? (
+          <>
+            {sum && <div className="pt-kpis">
+              <button className="pt-kpi" style={{ "--c": "#dc2626" }} onClick={() => setView("stats")}><b>{maAr(sum.absent)}</b><small>غائب اليوم من {maAr(sum.total)}</small></button>
+              <button className="pt-kpi" style={{ "--c": "#0d9488" }} onClick={() => setView("stats")}><b>{maAr(sum.classes)} من {maAr(sum.allCls)}</b><small>فصول رصدت الغياب</small></button>
+              <button className="pt-kpi" style={{ "--c": "#ea580c" }} onClick={() => setView("late")}><b>{maAr(sum.late)}</b><small>متأخر صباحاً اليوم</small></button>
+              <button className="pt-kpi" style={{ "--c": "#7c3aed" }} onClick={() => setView("inbox")}><b>{maAr(sum.exc)}</b><small>عذر جديد</small></button>
+              <button className="pt-kpi" style={{ "--c": "#2563eb" }} onClick={() => setView("inbox")}><b>{maAr(sum.notes)}</b><small>ملاحظة بلا رد</small></button>
+            </div>}
+            <div className="pt-tiles">
+              {ptTile("late", "🌅", "التأخر الصباحي", "تسجيل الطلاب المتأخرين ووقت الحضور وسبب التأخر", "#ea580c", "#f59e0b", () => setView("late"))}
+              {ptTile("stats", "📊", "الإحصائية اليومية", "غياب الحصة الثانية كما رصده المعلمون: الأسماء والفصول والمجموع", "#dc2626", "#f43f5e", () => setView("stats"))}
+              {ptTile("weekly", "📈", "الحصر الأسبوعي", "مقارنة الفصول وأكثر الطلاب غياباً خلال الأسبوع", "#0d9488", "#14b8a6", () => setView("weekly"))}
+              {ptTile("clsum", "🏷️", "خلاصة تصنيف الطلاب", "المستوى الدراسي والسلوك والحضور — والطلاب المحتاجون للمتابعة", "#7c3aed", "#a855f7", () => setView("clsum"))}
+              {ptTile("inbox", "📨", "أعذار وملاحظات أولياء الأمور", "مراجعة الأعذار وقبولها أو رفضها والرد على الملاحظات", "#2563eb", "#3b82f6", () => setView("inbox"), sum && sum.exc + sum.notes ? maAr(sum.exc + sum.notes) : "")}
+            </div>
+          </>
+        ) : (
+          <div className="pt-tiles">
+            {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
+            {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
+            {ptTile("formative", "📘", "التقويم التكويني", "إعداد سجلك الخاص للدرجات وطباعته", "#2563eb", "#3b82f6", () => setView("formative"))}
+            {ptTile("students", "🎓", "أداء الطلاب", "رصد تقييم الطلاب ومتابعة مستوياتهم", "#d97706", "#f59e0b", () => setView("students"))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══════════ بوابة أولياء الأمور ══════════
+function GuardianPortal({ onBack }) {
+  const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-parent") || "null"); return m && m.nh ? m : null; } catch { return null; } });
+  const [d, setD] = useState(null);
+  const [tab, setTab] = useState("level");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [openAnn, setOpenAnn] = useState(null);
+  const [cm, setCm] = useState("");
+  const [exc, setExc] = useState({ from: maKey(new Date()), to: maKey(new Date()), type: "مرضي", text: "", img: "" });
+  const [note, setNote] = useState("");
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
+  const grad = "linear-gradient(160deg,#1e3a8a,#2563eb 50%,#38bdf8)";
+  const findStudent = async (h) => {
+    const ros = await maGet(MA_ROSTER);
+    for (const [ck, r] of Object.entries(ptObj(ros))) { const s = maArr(r && r.students).find(x => x && x.nh === h); if (s) return { ck, sid: s.id, name: s.name, nh: h }; }
+    return null;
+  };
+  const login = async (v) => {
+    const n = licNormId(v); if (n.length !== 10) return "أدخل رقم السجل المدني للطالب كاملاً (١٠ أرقام)";
+    const s = await findStudent(await stuHash(n));
+    if (!s) return "لم يُعثر على الطالب — تأكد من رقم هوية الطالب أو راجع المدرسة";
+    setMe(s); try { localStorage.setItem("pam-parent", JSON.stringify(s)); } catch {} return "";
+  };
+  const load = async () => {
+    if (!me) return;
+    const [sc, att, late, ann, comm, ex, nt, pm] = await Promise.all([maGet(`${SC_NODE}/${me.ck}`), maGet(MA_ATT), maGet(MA_LATE), maGet(ANN_NODE), maGet(PT_COMM), maGet(PT_EXC), maGet(PT_NOTES), maGet(SC_META)]);
+    const cls = ptVals(sc).filter(r => r.items && r.items[me.sid]).map(r => ({ ...r, it: r.items[me.sid] })).sort((a, b) => (a.subject || "").localeCompare(b.subject || "", "ar"));
+    const abs = [], lat = [];
+    Object.entries(ptObj(att)).forEach(([dk, day]) => { const r = ptObj(day)[me.ck]; if (r && maArr(r.absent).some(a => a && a.id === me.sid)) abs.push(dk); });
+    Object.entries(ptObj(late)).forEach(([dk, day]) => { const r = ptObj(day)[me.sid]; if (r) lat.push({ dk, ...r }); });
+    abs.sort().reverse(); lat.sort((a, b) => b.dk.localeCompare(a.dk));
+    const anns = ptVals(ann).filter(a => a.title).sort((a, b) => String(b.date || b.createdAt || b.id).localeCompare(String(a.date || a.createdAt || a.id)));
+    setD({ cls, abs, lat, anns, comm: ptObj(comm), exc: ptVals(ex).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at), notes: ptVals(nt).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at), per: pm || {} });
+  };
+  useEffect(() => { load(); }, [me]);
+  if (!me) return <PtLoginCard title="بوابة أولياء الأمور" sub="المستوى الدراسي • الغياب والتأخر • الإعلانات • الأعذار" icon="👪" grad={grad} onLogin={login} onBack={onBack} hint="أدخل رقم السجل المدني (الهوية) للطالب" placeholder="رقم هوية الطالب (١٠ أرقام)" />;
+  const logout = () => { setMe(null); setD(null); try { localStorage.removeItem("pam-parent"); } catch {} };
+  const first = String(me.name || "").split(" ")[0];
+  // الخلاصة (الأكثر تكراراً، والأشد عند التساوي)
+  const summ = d ? SC_DIMS.map(dm => ({ dm, v: scSummary(d.cls.map(r => r.it[dm.k]).filter(v => v != null).map(Number)) })) : [];
+  const badge = (dk, i) => { if (i == null) return <span className="sc-badge" style={{ background: "#f1f5f9", color: "#94a3b8" }}>—</span>; const [l, c, bg] = scLv(dk, i); return <span className="sc-badge" style={{ background: bg, color: c }}>{l}</span>; };
+  const addComment = async (a) => {
+    const t = cm.trim(); if (!t) return; setBusy(true);
+    const id = ptId(); const v = { id, text: t.slice(0, 600), by: `ولي أمر الطالب ${first}`, sname: me.name, ck: me.ck, nh: me.nh, at: Date.now() };
+    const ok = await maPut(`${PT_COMM}/${a.id}/${id}`, v); setBusy(false);
+    if (!ok) { alert("⚠️ تعذّر الإرسال"); return; }
+    setD(p => ({ ...p, comm: { ...p.comm, [a.id]: { ...ptObj(p.comm[a.id]), [id]: v } } })); setCm(""); toast("✅ تم إرسال تعليقك");
+  };
+  const sendExc = async () => {
+    if (!exc.text.trim() && exc.type === "أخرى") { alert("اكتب تفاصيل العذر"); return; }
+    if (exc.to < exc.from) { alert("تاريخ النهاية قبل البداية"); return; }
+    setBusy(true); const id = ptId();
+    const v = { id, nh: me.nh, sname: me.name, ck: me.ck, sid: me.sid, from: exc.from, to: exc.to, type: exc.type, text: exc.text.trim().slice(0, 800), img: exc.img || "", status: "new", at: Date.now() };
+    const ok = await maPut(`${PT_EXC}/${id}`, v); setBusy(false);
+    if (!ok) { alert("⚠️ تعذّر الإرسال — قد يكون المرفق كبيراً"); return; }
+    setD(p => ({ ...p, exc: [v, ...p.exc] })); setExc({ from: maKey(new Date()), to: maKey(new Date()), type: "مرضي", text: "", img: "" }); toast("✅ تم رفع العذر للمدرسة");
+  };
+  const sendNote = async () => {
+    const t = note.trim(); if (!t) return; setBusy(true); const id = ptId();
+    const v = { id, nh: me.nh, sname: me.name, ck: me.ck, text: t.slice(0, 1000), at: Date.now() };
+    const ok = await maPut(`${PT_NOTES}/${id}`, v); setBusy(false);
+    if (!ok) { alert("⚠️ تعذّر الإرسال"); return; }
+    setD(p => ({ ...p, notes: [v, ...p.notes] })); setNote(""); toast("✅ وصلت ملاحظتك للمدرسة");
+  };
+  const excSt = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
+  const tabs = [["level", "📊 المستوى"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
+  return (
+    <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eff6ff,#f8fafc)" }}>
+      <style>{MA_CSS + PT_CSS + (typeof scCSS !== "undefined" ? scCSS : "")}</style>
+      <div style={{ maxWidth: 980, margin: "0 auto" }} className="grid gap-4">
+        <div className="pt-hero" style={{ background: grad }}>
+          <div className="flex items-center gap-3 flex-wrap" style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ width: 60, height: 60, borderRadius: 20, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", fontSize: 30 }}>👦</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>👪 بوابة أولياء الأمور</div>
+              <div style={{ fontSize: 21, fontWeight: 900 }}>{me.name}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>الصف {maClassName(me.ck)} • مدرسة الأمير عبدالمجيد المتوسطة</div>
+            </div>
+            <div className="flex gap-2"><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={logout}>خروج</button>{onBack && <button className="ma-btn" onClick={onBack}>🏠</button>}</div>
+          </div>
+          {d && <div className="pt-kpis" style={{ marginTop: 16, position: "relative", zIndex: 1 }}>
+            {summ.map(({ dm, v }) => <div key={dm.k} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{dm.ic} {dm.t}</div><div style={{ marginTop: 4 }}>{badge(dm.k, v)}</div></div>)}
+            <div style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>🚫 أيام الغياب / ⏰ التأخر</div><div style={{ fontSize: 20, fontWeight: 900 }}>{maAr(d.abs.length)} / {maAr(d.lat.length)}</div></div>
+          </div>}
+        </div>
+        <div className="ma-tabs">{tabs.map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+        {!d ? <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div> : (
+          <div className="grid gap-3">
+            {tab === "level" && (d.cls.length ? d.cls.map((r, i) => (
+              <div key={i} className="pt-item">
+                <div className="flex items-center justify-between flex-wrap gap-2"><b style={{ fontSize: 15 }}>📚 {r.subject || "تقييم عام"}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>👤 {r.teacher}{r.at ? " • " + ptWhen(r.at) : ""}</span></div>
+                <div className="grid gap-2 mt-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
+                  {SC_DIMS.map(dm => <div key={dm.k} style={{ background: dm.soft, borderRadius: 14, padding: "8px 10px" }}><div style={{ fontSize: 12, fontWeight: 900, color: dm.ac }}>{dm.ic} {dm.t}</div><div style={{ marginTop: 4 }}>{badge(dm.k, r.it[dm.k])}</div>{r.it[SC_NK[dm.k]] && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", marginTop: 6 }}>📝 {r.it[SC_NK[dm.k]]}</div>}</div>)}
+                </div>
+              </div>)) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لم يُسجَّل تصنيف للطالب بعد</div>)}
+            {tab === "abs" && <div className="pt-item">{d.abs.length ? <div className="grid gap-2">{d.abs.map(k => <div key={k} className="flex items-center gap-3" style={{ padding: "8px 10px", borderRadius: 12, background: "#fef2f2" }}><span style={{ fontSize: 18 }}>🚫</span><b style={{ fontSize: 14 }}>{maDay(maDate(k))}</b><span style={{ fontSize: 13, fontWeight: 700, color: "#64748b" }}>{maHijri(maDate(k))} • {maGreg(maDate(k))}</span></div>)}</div> : <div className="text-center" style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا يوجد غياب مسجّل — بارك الله فيه</div>}</div>}
+            {tab === "late" && <div className="pt-item">{d.lat.length ? <div className="grid gap-2">{d.lat.map((x, i) => <div key={i} className="flex items-center gap-3 flex-wrap" style={{ padding: "8px 10px", borderRadius: 12, background: "#fff7ed" }}><span style={{ fontSize: 18 }}>⏰</span><b style={{ fontSize: 14 }}>{maDay(maDate(x.dk))} {maHijri(maDate(x.dk))}</b><span style={{ fontSize: 13, fontWeight: 800, color: "#c2410c" }}>الحضور {x.time || ""}{x.mins ? ` (تأخر ${maAr(x.mins)} دقيقة)` : ""}</span>{x.reason && <span style={{ fontSize: 12.5, color: "#64748b", fontWeight: 700 }}>السبب: {x.reason}</span>}</div>)}</div> : <div className="text-center" style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا يوجد تأخر مسجّل</div>}</div>}
+            {tab === "ann" && (d.anns.length ? d.anns.map(a => { const cs = ptVals(d.comm[a.id]).sort((x, y) => x.at - y.at); const on = openAnn === a.id; return (
+              <div key={a.id} className="pt-item">
+                <button type="button" onClick={() => { setOpenAnn(on ? null : a.id); setCm(""); }} style={{ all: "unset", cursor: "pointer", display: "block", width: "100%" }}>
+                  <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15, flex: 1 }}>📣 {a.title}</b>{a.priority === "عاجل" && <span className="pt-st" style={{ background: "#fee2e2", color: "#b91c1c" }}>عاجل</span>}<span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{a.date || ""} • 💬 {maAr(cs.length)}</span></div>
+                </button>
+                {on && <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 14, lineHeight: 1.9, overflowWrap: "anywhere" }} className="ann-body" dangerouslySetInnerHTML={{ __html: a.content || "" }} />
+                  <div style={{ borderTop: "1px solid #eef2f6", marginTop: 12, paddingTop: 10 }} className="grid gap-2">
+                    {cs.map(c => <div key={c.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "8px 12px" }}><div style={{ fontSize: 12, fontWeight: 900, color: "#2563eb" }}>{c.by} <span style={{ color: "#94a3b8", fontWeight: 700 }}>{ptWhen(c.at)}</span></div><div style={{ fontSize: 13.5, fontWeight: 700 }}>{c.text}</div>{c.reply && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f766e", marginTop: 4 }}>↩ المدرسة: {c.reply}</div>}</div>)}
+                    <div className="flex gap-2"><input className="ma-inp" value={cm} maxLength={600} onChange={e => setCm(e.target.value)} placeholder="✍️ اكتب تعليقك…" onKeyDown={e => e.key === "Enter" && addComment(a)} /><button className="ma-btn pri" disabled={busy || !cm.trim()} onClick={() => addComment(a)}>إرسال</button></div>
+                  </div>
+                </div>}
+              </div>); }) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد إعلانات</div>)}
+            {tab === "exc" && <>
+              <div className="pt-item grid gap-3">
+                <b style={{ fontSize: 15 }}>📝 رفع عذر غياب</b>
+                <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
+                  <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>من تاريخ<input type="date" className="ma-inp" value={exc.from} onChange={e => setExc({ ...exc, from: e.target.value, to: exc.to < e.target.value ? e.target.value : exc.to })} /><small style={{ color: "#2563eb" }}>{exc.from ? maHijri(maDate(exc.from)) : ""}</small></label>
+                  <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>إلى تاريخ<input type="date" className="ma-inp" value={exc.to} onChange={e => setExc({ ...exc, to: e.target.value })} /><small style={{ color: "#2563eb" }}>{exc.to ? maHijri(maDate(exc.to)) : ""}</small></label>
+                  <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>نوع العذر<select className="ma-inp" value={exc.type} onChange={e => setExc({ ...exc, type: e.target.value })}>{["مرضي", "موعد مستشفى", "ظرف أسري", "سفر", "أخرى"].map(x => <option key={x}>{x}</option>)}</select></label>
+                </div>
+                <textarea className="ma-inp" rows={3} style={{ height: "auto", padding: 10 }} maxLength={800} value={exc.text} onChange={e => setExc({ ...exc, text: e.target.value })} placeholder="تفاصيل العذر (اختياري)…" />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <label className="ma-btn" style={{ cursor: "pointer" }}>📎 إرفاق صورة (تقرير طبي…)<input type="file" accept="image/*" hidden onChange={async e => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; const u = await licCompressImage(f); setExc(x => ({ ...x, img: u })); }} /></label>
+                  {exc.img && <><img src={exc.img} alt="" style={{ height: 56, borderRadius: 10, border: "1px solid #e2e8f0" }} /><button className="ma-btn" onClick={() => setExc({ ...exc, img: "" })}>✕</button></>}
+                  <button className="ma-btn pri" style={{ marginRight: "auto", padding: "10px 22px" }} disabled={busy} onClick={sendExc}>{busy ? "⏳" : "📤 رفع العذر"}</button>
+                </div>
+              </div>
+              {d.exc.map(x => { const [l, bg, c] = excSt(x.status); return <div key={x.id} className="pt-item"><div className="flex items-center gap-2 flex-wrap"><b>📝 {x.type}</b><span style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>{maHijri(maDate(x.from))}{x.to !== x.from ? " — " + maHijri(maDate(x.to)) : ""}</span><span className="pt-st" style={{ background: bg, color: c, marginRight: "auto" }}>{l}</span></div>{x.text && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>{x.text}</div>}{x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ رد المدرسة: {x.reply}</div>}</div>; })}
+            </>}
+            {tab === "note" && <>
+              <div className="pt-item grid gap-3">
+                <b style={{ fontSize: 15 }}>💬 ملاحظة أو استفسار للمدرسة</b>
+                <textarea className="ma-inp" rows={4} style={{ height: "auto", padding: 10 }} maxLength={1000} value={note} onChange={e => setNote(e.target.value)} placeholder="اكتب ملاحظتك أو استفسارك عن الطالب…" />
+                <div><button className="ma-btn pri" style={{ padding: "10px 22px" }} disabled={busy || !note.trim()} onClick={sendNote}>📤 إرسال</button></div>
+              </div>
+              {d.notes.map(x => <div key={x.id} className="pt-item"><div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>{ptWhen(x.at)}</div><div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 4 }}>{x.text}</div>{x.reply ? <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ رد المدرسة ({x.replyBy || "الإدارة"}): {x.reply}</div> : <div style={{ fontSize: 12, fontWeight: 800, color: "#b45309", marginTop: 6 }}>⏳ بانتظار الرد</div>}</div>)}
+            </>}
+          </div>
+        )}
+      </div>
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 500, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, fontSize: 13.5 }}>{msg}</div>}
+    </div>
+  );
+}
+
+// ══════════ صندوق أولياء الأمور (للمدير والإداريين) ══════════
+function ParentInbox({ by = "الإدارة" }) {
+  const [tab, setTab] = useState("exc");
+  const [d, setD] = useState(null);
+  const [rep, setRep] = useState({});
+  const [img, setImg] = useState(null);
+  const load = async () => {
+    const [ex, nt, cm, ann] = await Promise.all([maGet(PT_EXC), maGet(PT_NOTES), maGet(PT_COMM), maGet(ANN_NODE)]);
+    const titles = {}; ptVals(ann).forEach(a => { if (a.id) titles[a.id] = a.title; });
+    const comms = []; Object.entries(ptObj(cm)).forEach(([aid, o]) => ptVals(o).forEach(c => comms.push({ ...c, aid, atitle: titles[aid] || "إعلان" })));
+    setD({ exc: ptVals(ex).sort((a, b) => b.at - a.at), notes: ptVals(nt).sort((a, b) => b.at - a.at), comms: comms.sort((a, b) => b.at - a.at) });
+  };
+  useEffect(() => { load(); }, []);
+  const upd = async (path, patch, key, id) => {
+    const cur = d[key].find(x => x.id === id); const v = { ...cur, ...patch }; delete v.aid; delete v.atitle;
+    const ok = await maPut(path, v); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; }
+    setD(p => ({ ...p, [key]: p[key].map(x => x.id === id ? { ...x, ...patch } : x) })); setRep(r => ({ ...r, [id]: "" }));
+  };
+  const del = async (path, key, id) => { if (!window.confirm("حذف نهائياً؟")) return; try { await fetch(`${FIREBASE_URL}/school/${path}.json`, { method: "DELETE" }); } catch {} setD(p => ({ ...p, [key]: p[key].filter(x => x.id !== id) })); };
+  if (!d) return <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div>;
+  const nNew = d.exc.filter(x => !x.status || x.status === "new").length, nN = d.notes.filter(x => !x.reply).length;
+  const who = x => <span style={{ fontSize: 12.5, fontWeight: 800, color: "#2563eb" }}>👦 {x.sname} • {x.ck ? maClassName(x.ck) : ""}</span>;
+  const repBox = (id, onSend, label = "رد") => <div className="flex gap-2 mt-2"><input className="ma-inp" value={rep[id] || ""} onChange={e => setRep({ ...rep, [id]: e.target.value })} placeholder="✍️ اكتب الرد…" /><button className="ma-btn pri" disabled={!(rep[id] || "").trim()} onClick={onSend}>{label}</button></div>;
+  return (
+    <div className="ma pt" dir="rtl">
+      <style>{MA_CSS + PT_CSS}</style>
+      <div className="ma-tabs mb-3">{[["exc", `📝 الأعذار (${maAr(nNew)} جديد)`], ["notes", `💬 الملاحظات (${maAr(nN)} بلا رد)`], ["comms", `📣 تعليقات الإعلانات (${maAr(d.comms.length)})`]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}<button className="ma-tab" onClick={load}>🔄 تحديث</button></div>
+      <div className="grid gap-3">
+        {tab === "exc" && (d.exc.length ? d.exc.map(x => { const st = x.status || "new"; return (
+          <div key={x.id} className="pt-item" style={{ borderRight: `4px solid ${st === "ok" ? "#16a34a" : st === "no" ? "#dc2626" : "#f59e0b"}` }}>
+            <div className="flex items-center gap-2 flex-wrap">{who(x)}<b>📝 {x.type}</b><span style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>{maHijri(maDate(x.from))}{x.to !== x.from ? " — " + maHijri(maDate(x.to)) : ""}</span><span style={{ marginRight: "auto", fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(x.at)}</span></div>
+            {x.text && <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6 }}>{x.text}</div>}
+            {x.img && <img src={x.img} alt="" onClick={() => setImg(x.img)} style={{ height: 80, borderRadius: 10, marginTop: 8, cursor: "zoom-in", border: "1px solid #e2e8f0" }} />}
+            {x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ {x.replyBy}: {x.reply}</div>}
+            <div className="flex gap-2 flex-wrap mt-2">
+              <button className="ma-btn grn" onClick={() => upd(`${PT_EXC}/${x.id}`, { status: "ok", by, reply: (rep[x.id] || "").trim() || x.reply || "تم قبول العذر", replyBy: by }, "exc", x.id)}>✅ قبول</button>
+              <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => upd(`${PT_EXC}/${x.id}`, { status: "no", by, reply: (rep[x.id] || "").trim() || x.reply || "لم يُقبل العذر", replyBy: by }, "exc", x.id)}>❌ رفض</button>
+              <input className="ma-inp" style={{ flex: "1 1 200px" }} value={rep[x.id] || ""} onChange={e => setRep({ ...rep, [x.id]: e.target.value })} placeholder="✍️ رد لولي الأمر (اختياري)…" />
+              <button className="ma-btn" onClick={() => del(`${PT_EXC}/${x.id}`, "exc", x.id)}>🗑</button>
+            </div>
+          </div>); }) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد أعذار</div>)}
+        {tab === "notes" && (d.notes.length ? d.notes.map(x => (
+          <div key={x.id} className="pt-item" style={{ borderRight: `4px solid ${x.reply ? "#16a34a" : "#2563eb"}` }}>
+            <div className="flex items-center gap-2 flex-wrap">{who(x)}<span style={{ marginRight: "auto", fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(x.at)}</span><button className="ma-btn" style={{ padding: "3px 10px" }} onClick={() => del(`${PT_NOTES}/${x.id}`, "notes", x.id)}>🗑</button></div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6 }}>{x.text}</div>
+            {x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ {x.replyBy}: {x.reply}</div>}
+            {repBox(x.id, () => upd(`${PT_NOTES}/${x.id}`, { reply: rep[x.id].trim(), replyBy: by, replyAt: Date.now() }, "notes", x.id), x.reply ? "تعديل الرد" : "رد")}
+          </div>)) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد ملاحظات</div>)}
+        {tab === "comms" && (d.comms.length ? d.comms.map(x => (
+          <div key={x.aid + x.id} className="pt-item">
+            <div className="flex items-center gap-2 flex-wrap"><span style={{ fontSize: 12.5, fontWeight: 900, color: "#db2777" }}>📣 {x.atitle}</span>{who(x)}<span style={{ marginRight: "auto", fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(x.at)}</span><button className="ma-btn" style={{ padding: "3px 10px" }} onClick={() => del(`${PT_COMM}/${x.aid}/${x.id}`, "comms", x.id)}>🗑</button></div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6 }}>{x.text}</div>
+            {x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ {x.replyBy}: {x.reply}</div>}
+            {repBox(x.id, () => upd(`${PT_COMM}/${x.aid}/${x.id}`, { reply: rep[x.id].trim(), replyBy: by }, "comms", x.id))}
+          </div>)) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد تعليقات</div>)}
+      </div>
+      {img && <div onClick={() => setImg(null)} style={{ position: "fixed", inset: 0, zIndex: 600, background: "rgba(15,23,42,.8)", display: "grid", placeItems: "center", padding: 20 }}><img src={img} alt="" style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: 14 }} /></div>}
+    </div>
+  );
+}
+
+// ══════════ صفحة المدير: بوابات الدخول والصلاحيات ══════════
+function PortalsAdminPage() {
+  const [lic, setLic] = useState([]); const [staff, setStaff] = useState([]); const [roles, setRoles] = useState({});
+  const [cov, setCov] = useState({ t: 0, n: 0 }); const [q, setQ] = useState(""); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
+  const [add, setAdd] = useState({ name: "", nid: "", role: "counselor" }); const fileRef = useRef(null);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
+  const load = async () => {
+    const [l, s, r, ros] = await Promise.all([maGet(LIC_NODE), maGet(PT_STAFF), maGet(PT_ROLES), maGet(MA_ROSTER)]);
+    setLic(ptVals(l).filter(x => x.name).sort((a, b) => a.name.localeCompare(b.name, "ar"))); setStaff(ptVals(s).sort((a, b) => a.name.localeCompare(b.name, "ar"))); setRoles(ptObj(r));
+    let t = 0, n = 0; ptVals(ros).forEach(x => maArr(x.students).forEach(st => { if (st) { t++; if (st.nh) n++; } })); setCov({ t, n });
+  };
+  useEffect(() => { load(); }, []);
+  const base = window.location.origin + window.location.pathname;
+  const links = [["teacher", "👨‍🏫", "بوابة المعلمين", "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني • أداء الطلاب", "#0d9488", "🔔 نأمل الدخول إلى بوابة المعلمين برقم السجل المدني:"], ["staff", "🗂️", "بوابة الإداريين والمرشد", "التأخر الصباحي • الإحصائيات • الأعذار", "#ea580c", "🔔 بوابة الإداريين والمرشد الطلابي (الدخول بالسجل المدني):"], ["parent", "👪", "بوابة أولياء الأمور", "المستوى • الغياب • التأخر • الإعلانات • الأعذار", "#2563eb", "👪 أولياء الأمور الكرام: يمكنكم متابعة أبنائكم عبر البوابة التالية بإدخال رقم هوية الطالب:"]];
+  const setRoleLic = async (id, role) => { setRoles(p => ({ ...p, [id]: role })); await maPut(`${PT_ROLES}/${id}`, role); toast("✅ تم تحديث الصلاحية"); };
+  const setRoleStaff = async (x, role) => { const v = { ...x, role }; setStaff(p => p.map(y => y.id === x.id ? v : y)); await maPut(`${PT_STAFF}/${x.id}`, v); toast("✅ تم تحديث الصلاحية"); };
+  const delStaff = async (x) => { if (!window.confirm(`حذف ${x.name}؟`)) return; try { await fetch(`${FIREBASE_URL}/school/${PT_STAFF}/${x.id}.json`, { method: "DELETE" }); } catch {} setStaff(p => p.filter(y => y.id !== x.id)); };
+  const addOne = async () => {
+    const n = licNormId(add.nid); if (!add.name.trim() || n.length !== 10) { alert("أدخل الاسم ورقم السجل المدني (١٠ أرقام)"); return; }
+    setBusy(true); const h = await licHash(n); const ex = staff.find(y => y.idHash === h);
+    const v = { ...(ex || { id: ptId() }), name: add.name.trim(), idHash: h, id4: n.slice(-4), job: ex?.job || PT_ROLE_LBL[add.role], role: add.role };
+    await maPut(`${PT_STAFF}/${v.id}`, v); setStaff(p => [...p.filter(y => y.id !== v.id), v]); setAdd({ name: "", nid: "", role: "counselor" }); setBusy(false); toast("✅ تمت الإضافة");
+  };
+  const onFile = async e => {
+    const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+    setBusy(true);
+    try {
+      const list = await licParseStaffFile(f); const licH = new Set(lic.map(x => x.idHash)); let added = 0;
+      const next = [...staff];
+      for (const x of list) {
+        const role = ptGuessRole(x.job); if (role === "teacher") continue; // المعلمون يدخلون من سجل الرخصة
+        const h = await licHash(x.nid); if (licH.has(h) && !PT_STAFF_ROLES.includes(role)) continue;
+        const ex = next.find(y => y.idHash === h); const v = { ...(ex || { id: ptId() }), name: x.name, idHash: h, id4: x.nid.slice(-4), job: x.job, role: ex?.role || role };
+        await maPut(`${PT_STAFF}/${v.id}`, v); if (ex) next[next.indexOf(ex)] = v; else { next.push(v); added++; }
+      }
+      setStaff(next.sort((a, b) => a.name.localeCompare(b.name, "ar"))); toast(`✅ تمت إضافة ${maAr(added)} من الإداريين`);
+    } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); }
+    setBusy(false);
+  };
+  const flt = x => !q || x.name.includes(q);
+  const roleSel = (val, onCh) => <select className="ma-inp" style={{ width: 150, height: 36 }} value={val} onChange={e => onCh(e.target.value)}>{Object.entries(PT_ROLE_LBL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>;
+  return (
+    <div className="ma pt px-3 md:px-6 py-4" dir="rtl">
+      <style>{MA_CSS + PT_CSS}</style>
+      <div className="grid gap-4">
+        <div className="pt-hero" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a8a 55%,#0f766e)" }}><div style={{ position: "relative", zIndex: 1 }}><div style={{ fontSize: 22, fontWeight: 900 }}>🔐 بوابات الدخول والصلاحيات</div><div style={{ fontSize: 13, fontWeight: 700, opacity: .85 }}>روابط الدخول بالهوية الوطنية لكل فئة، وتحديد من هو الإداري والمرشد الطلابي</div></div></div>
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
+          {links.map(([h, ic, t, ds, c, wa]) => { const u = `${base}#${h}`; return (
+            <div key={h} className="pt-item" style={{ borderTop: `4px solid ${c}` }}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: c }}>{ic} {t}</div><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", margin: "4px 0 8px" }}>{ds}</div>
+              <div dir="ltr" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "6px 10px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", userSelect: "all" }}>{u}</div>
+              <div className="flex gap-2 mt-2"><button className="ma-btn" onClick={() => { try { navigator.clipboard.writeText(u); toast("✅ تم النسخ"); } catch {} }}>📋 نسخ</button><a className="ma-btn" style={{ background: c, color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(wa + "\n" + u)}`}>💬 واتساب</a><a className="ma-btn" href={u} target="_blank" rel="noreferrer">↗ فتح</a></div>
+            </div>); })}
+        </div>
+        <div className="pt-item" style={{ background: cov.t && cov.n === cov.t ? "#f0fdf4" : "#fffbeb", borderColor: cov.t && cov.n === cov.t ? "#bbf7d0" : "#fde68a" }}>
+          <b>👪 جاهزية دخول أولياء الأمور:</b> <span style={{ fontWeight: 900 }}>{maAr(cov.n)} من {maAr(cov.t)} طالب</span> مربوطون برقم الهوية.
+          {cov.n < cov.t && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#92400e", marginTop: 4 }}>لتفعيل البقية: أعد استيراد كشوف نور (التي فيها عمود «رقم السجل المدني») من صفحة «غياب الطلاب ← الفصول والطلاب» أو «تصنيف الطلاب ← الفصول». لن يضيع الغياب أو التصنيف المسجّل.</div>}
+        </div>
+        <div className="ma-card p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div><div style={{ fontWeight: 900, fontSize: 15 }}>🗂️ الإداريون والمرشد الطلابي</div><div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>يدخلون «بوابة الإداريين» — استورد ملف الموظفين من نور (يُتعرّف على المسمى الوظيفي) أو أضف يدوياً</div></div>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={onFile} />
+            <button className="ma-btn grn" disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? "⏳" : "📥 استيراد ملف الموظفين"}</button>
+          </div>
+          <div className="flex gap-2 flex-wrap mb-3">
+            <input className="ma-inp" style={{ flex: "1 1 200px" }} placeholder="الاسم" value={add.name} onChange={e => setAdd({ ...add, name: e.target.value })} />
+            <input className="ma-inp" style={{ flex: "1 1 160px" }} inputMode="numeric" placeholder="رقم السجل المدني" value={add.nid} onChange={e => setAdd({ ...add, nid: licNormId(e.target.value).slice(0, 10) })} />
+            {roleSel(add.role, r => setAdd({ ...add, role: r }))}
+            <button className="ma-btn pri" disabled={busy} onClick={addOne}>＋ إضافة</button>
+          </div>
+          {staff.length ? staff.map(x => <div key={x.id} className="flex items-center gap-2 flex-wrap" style={{ padding: "8px 4px", borderTop: "1px solid #f1f5f9" }}><b style={{ flex: "1 1 200px" }}>{x.name} <small style={{ color: "#94a3b8" }}>({x.job || "—"}) • ***{x.id4}</small></b>{roleSel(x.role || "admin", r => setRoleStaff(x, r))}<button className="ma-btn" onClick={() => delStaff(x)}>🗑</button></div>) : <div style={{ color: "#94a3b8", fontWeight: 800, textAlign: "center", padding: 12 }}>لم يُضف إداريون بعد</div>}
+        </div>
+        <div className="ma-card p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3"><div><div style={{ fontWeight: 900, fontSize: 15 }}>👨‍🏫 المعلمون ({maAr(lic.length)})</div><div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>من «سجل الرخصة المهنية» — يمكن منح معلم صلاحية المرشد أو الوكيل لدخول بوابة الإداريين أيضاً</div></div><input className="ma-inp" style={{ maxWidth: 220 }} placeholder="🔍 بحث" value={q} onChange={e => setQ(e.target.value)} /></div>
+          {lic.filter(flt).map(x => <div key={x.id} className="flex items-center gap-2 flex-wrap" style={{ padding: "7px 4px", borderTop: "1px solid #f1f5f9" }}><b style={{ flex: "1 1 200px" }}>{x.name} {x.idHash ? <small style={{ color: "#15803d" }}>✓ مربوط بالهوية</small> : <small style={{ color: "#dc2626" }}>✕ بلا هوية</small>}</b>{roleSel(roles[x.id] || "teacher", r => setRoleLic(x.id, r))}</div>)}
+        </div>
+      </div>
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 500, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+    </div>
+  );
+}
+
+// ══════════ لوحة المدير: كل ما يجري اليوم ══════════
+function AdminLiveBoard({ navigate }) {
+  const [s, setS] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const t = maKey(new Date());
+      const [att, meta, late, ros, sc, ex, nt, cm, pm] = await Promise.all([maGet(`${MA_ATT}/${t}`), maGet(MA_META), maGet(`${MA_LATE}/${t}`), maGet(MA_ROSTER), maGet(SC_NODE), maGet(PT_EXC), maGet(PT_NOTES), maGet(PT_COMM), maGet(SC_META)]);
+      const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4];
+      const cls = maClasses(counts); const day = maNormDay(att);
+      const done = cls.filter(c => day[c.ck]); const missing = cls.filter(c => !day[c.ck] && maArr(ptObj(ros)[c.ck]?.students).length);
+      const absent = done.reduce((a, c) => a + day[c.ck].absent.length, 0), present = done.reduce((a, c) => a + (day[c.ck].total || 0), 0);
+      let tot = 0, clsd = 0, flag = 0;
+      cls.forEach(c => { const st = maArr(ptObj(ros)[c.ck]?.students).filter(Boolean); const recs = ptVals(ptObj(sc)[c.ck]); st.forEach(x => { tot++; const its = recs.map(r => r.items && r.items[x.id]).filter(Boolean); if (its.length) { clsd++; const a = scSummary(its.map(i => i.a).filter(v => v != null)), b = scSummary(its.map(i => i.b).filter(v => v != null)), tt = scSummary(its.map(i => i.t).filter(v => v != null)); if ((a != null && a >= 2) || (b != null && b >= 2) || (tt != null && tt >= 1)) flag++; } }); });
+      const since = Date.now() - 86400000; let nc = 0; Object.values(ptObj(cm)).forEach(o => ptVals(o).forEach(c => { if (c.at > since) nc++; }));
+      const lateL = ptVals(late);
+      if (alive) setS({ done: done.length, all: cls.length, missing, absent, present, late: lateL.length, lateNames: lateL.slice(0, 6), tot, clsd, flag, exc: ptVals(ex).filter(x => !x.status || x.status === "new").length, notes: ptVals(nt).filter(x => !x.reply).length, nc, dl: meta?.deadline || "08:30" });
+    })();
+    return () => { alive = false; };
+  }, []);
+  if (!s) return null;
+  const card = (c, ic, v, l, go, sub) => <button type="button" className="pt-kpi" style={{ "--c": c }} onClick={() => navigate(go)}><div style={{ fontSize: 20 }}>{ic}</div><b>{v}</b><small>{l}</small>{sub && <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginTop: 2 }}>{sub}</div>}</button>;
+  return (
+    <div className="pt" dir="rtl" style={{ margin: "14px 0" }}>
+      <style>{PT_CSS}</style>
+      <div className="ma-card" style={{ padding: 16, borderRadius: 22, background: "#fff", border: "1px solid #eef2f6", boxShadow: "0 14px 30px -26px rgba(15,23,42,.5)" }}>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3"><div style={{ fontWeight: 900, fontSize: 16 }}>🛰️ لوحة المتابعة — كل ما يجري اليوم</div><button className="ma-btn" style={{ fontSize: 12 }} onClick={() => navigate("portals")}>🔐 بوابات الدخول</button></div>
+        <div className="pt-kpis">
+          {card("#0d9488", "📋", `${maAr(s.done)} من ${maAr(s.all)}`, "فصول رصدت غياب الحصة الثانية", "attendstats", s.missing.length ? `متبقٍّ ${maAr(s.missing.length)} — الموعد ${s.dl}` : "✓ اكتمل الرصد")}
+          {card("#dc2626", "🚫", maAr(s.absent), "غائب اليوم", "attendstats", s.present ? `من ${maAr(s.present)} طالب (${maAr(Math.round(s.absent / s.present * 100))}٪)` : "")}
+          {card("#ea580c", "🌅", maAr(s.late), "متأخر صباحاً", "attendstats", s.lateNames.map(x => x.name?.split(" ")[0]).join("، "))}
+          {card("#7c3aed", "🏷️", `${maAr(s.clsd)} من ${maAr(s.tot)}`, "طالب مصنَّف", "studentclassify", s.flag ? `${maAr(s.flag)} يحتاجون متابعة` : "")}
+          {card("#2563eb", "📨", maAr(s.exc + s.notes), "طلبات أولياء الأمور", "parentinbox", `${maAr(s.exc)} عذر • ${maAr(s.notes)} ملاحظة • ${maAr(s.nc)} تعليق`)}
+        </div>
+        {s.missing.length > 0 && <div className="flex gap-1 flex-wrap mt-3" style={{ fontSize: 12, fontWeight: 800, color: "#b45309" }}>⏳ لم تُرصد بعد: {s.missing.map(c => <span key={c.ck} className="sc-badge" style={{ background: "#fef3c7", color: "#92400e" }}>{maClassName(c.ck)}</span>)}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ══════════ البوابة الرئيسية (شاشة الدخول) ══════════
+const PT_GATE_CSS = `
+.gt{min-height:100vh;font-family:Cairo,Tahoma,sans-serif;background:radial-gradient(1200px 500px at 85% -10%,rgba(45,212,191,.35),transparent 60%),radial-gradient(900px 500px at 0% 110%,rgba(251,191,36,.18),transparent 60%),linear-gradient(160deg,#042f2e,#064e3b 45%,#0f172a);color:#fff;padding:28px 16px 40px}
+.gt-in{max-width:1120px;margin:0 auto}
+.gt-hd{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;text-align:center;margin-bottom:26px}
+.gt-hd h1{font-size:26px;font-weight:900;margin:0}.gt-hd p{margin:2px 0 0;opacity:.75;font-weight:700;font-size:13.5px}
+.gt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.gt-card{position:relative;border-radius:26px;padding:20px 18px 18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:10px;overflow:hidden;transition:transform .2s,background .2s;text-align:right;color:#fff;font-family:inherit;cursor:pointer}
+.gt-card:hover{transform:translateY(-4px);background:rgba(255,255,255,.11)}
+.gt-card::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:linear-gradient(90deg,var(--c),var(--c2))}
+.gt-ic{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:28px;background:linear-gradient(135deg,var(--c),var(--c2));box-shadow:0 14px 26px -14px var(--c)}
+.gt-card h3{margin:0;font-size:18px;font-weight:900}
+.gt-card ul{margin:0;padding:0 16px 0 0;font-size:12.5px;font-weight:700;opacity:.82;line-height:1.9}
+.gt-go{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(135deg,var(--c),var(--c2));border-radius:14px;padding:10px 14px;font-weight:900;font-size:13.5px}
+.gt-id{font-size:11px;font-weight:800;background:rgba(255,255,255,.14);border-radius:999px;padding:2px 10px;align-self:flex-start}
+.gt-form{display:grid;gap:8px;margin-top:4px}
+.gt-form input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.95);color:#0f172a;font-family:inherit;font-weight:700;font-size:13.5px;outline:none}
+.gt-more{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.gt-more button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:999px;padding:8px 14px;font-family:inherit;font-weight:800;font-size:12.5px;cursor:pointer}
+.gt-more button:hover{background:rgba(255,255,255,.16)}
+@media (max-width:1000px){.gt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.gt-grid{grid-template-columns:1fr}.gt-hd h1{font-size:20px}}
+`;
+
+function MorningAttendancePage({ mode = "admin", onBack, section = "take", initTab }) {
   const isT = mode === "teacher";
   const isStats = !isT && section === "stats";
-  const [tab, setTab] = useState(isStats ? "stats" : "take");
+  const [tab, setTab] = useState(isStats ? (initTab || "stats") : "take");
   const [counts, setCounts] = useState([6, 4, 4]);
   const [rosters, setRosters] = useState({});        // ck -> {students:[{id,name}]}
   const [dateK, setDateK] = useState(maKey(new Date()));
@@ -30486,7 +31005,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take" }) {
         const li = m.levelNorm ? FG_LEVELS.indexOf(m.levelNorm) : -1;
         const sec = parseInt(String(m.section || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
         if (li >= 0 && sec > 0) k = `${li + 1}-${sec}`;
-        out.push({ file: f.name, names: best ? best.names : [], ck: k, detected: !!k });
+        out.push({ file: f.name, names: best ? best.names : [], list: best ? await ptStudentsFromParsed(best, best.names) : [], ck: k, detected: !!k });
       } catch (err) { out.push({ file: f.name, names: [], ck: "", err: String(err?.message || err) }); }
     }
     setBusy(false); setImp(out);
@@ -30495,7 +31014,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take" }) {
     const bad = imp.filter(x => x.names.length && !x.ck);
     if (bad.length) { alert("حدّد الفصل لكل ملف قبل التثبيت"); return; }
     setBusy(true);
-    for (const x of imp.filter(x => x.names.length)) await saveRoster(x.ck, x.names.map(n => ({ id: maId(), name: n })));
+    for (const x of imp.filter(x => x.names.length)) await saveRoster(x.ck, ptMergeRoster(rosters[x.ck] && rosters[x.ck].students, x.list && x.list.length ? x.list : x.names.map(n => ({ name: n }))));
     setBusy(false); setImp(null);
     toast(`✅ تم تثبيت ${maAr(imp.filter(x => x.names.length).length)} فصل`);
   };
@@ -31311,6 +31830,7 @@ function SchoolWebsiteInner() {
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [attPortal, setAttPortal] = useState(() => window.location.hash.replace("#", "") === "attend");
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
+  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent"].includes(h) ? h : ""; });
   const [directAnnId, setDirectAnnId] = useState(() => {
     const h = window.location.hash.replace("#","");
     return h.startsWith("ann-") ? h.replace("ann-","") : null;
@@ -31350,7 +31870,7 @@ function SchoolWebsiteInner() {
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["studentclassify","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["portals","parentinbox","studentclassify","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -31618,6 +32138,9 @@ function SchoolWebsiteInner() {
     </div>
   );
 
+  const hubBack = () => { setHubPortal(""); window.location.hash = ""; };
+  if (hubPortal === "parent") return <GuardianPortal onBack={hubBack} />;
+  if (hubPortal) return <StaffHub kind={hubPortal} onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
   if (clsPortal) return <div style={{ minHeight: "100vh" }}><StudentClassifyPage mode="teacher" onBack={() => { setClsPortal(false); window.location.hash = ""; }} /></div>;
   if (attPortal) return <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f0fdfa 40%,#f8fafc)" }}><MorningAttendancePage mode="teacher" onBack={() => { setAttPortal(false); window.location.hash = ""; }} /></div>;
   if (licPortal) return <LicenseTeacherPortal siteFont={siteFont} onBack={() => { setLicPortal(false); window.location.hash = ""; }} />;
@@ -31654,6 +32177,8 @@ function SchoolWebsiteInner() {
   const classToolPages = [
     { id: "formative",      label: "التقويم التكويني",    icon: "📘" },
     { id: "studentclassify", label: "تصنيف الطلاب", icon: "🏷️" },
+    { id: "portals", label: "بوابات الدخول والصلاحيات", icon: "🔐" },
+    { id: "parentinbox", label: "طلبات أولياء الأمور", icon: "📨" },
     { id: "morningattend",  label: "غياب الطلاب — المعلمون", icon: "📋" },
     { id: "attendstats",    label: "إحصائيات الغياب والتأخر", icon: "📊" },
     { id: "strategies",     label: "الاستراتيجيات",      icon: "🧠" },
@@ -31697,7 +32222,7 @@ function SchoolWebsiteInner() {
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["morningattend","attendstats","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["students","formative","studentclassify","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
-    { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["announcements","messages","sms","broadcast","suggestions"] },
+    { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
     { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","officialforms","timetable","settings"] },
   ];
@@ -31978,6 +32503,8 @@ function SchoolWebsiteInner() {
                 {page === "attendance"     && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
                 {page === "formative"      && <FormativeGradebookPage classList={classList} />}
                 {page === "studentclassify" && <StudentClassifyPage />}
+                {page === "portals" && <PortalsAdminPage />}
+                {page === "parentinbox" && <div className="px-3 md:px-6 py-4"><ParentInbox by={user?.name || "الإدارة"} /></div>}
                 {page === "morningattend"  && <MorningAttendancePage />}
                 {page === "attendstats"    && <MorningAttendancePage section="stats" />}
                 {page === "students"       && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />}
@@ -32144,6 +32671,8 @@ function SchoolWebsiteInner() {
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
         {page === "formative"     && <FormativeGradebookPage classList={classList} />}
         {page === "studentclassify" && <StudentClassifyPage />}
+        {page === "portals" && <PortalsAdminPage />}
+        {page === "parentinbox" && <div className="px-3 md:px-6 py-4"><ParentInbox by={user?.name || "الإدارة"} /></div>}
         {page === "morningattend" && <MorningAttendancePage key="ma-take" />}
         {page === "attendstats"   && <MorningAttendancePage key="ma-stats" section="stats" />}
         {page === "students"      && <StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />}
