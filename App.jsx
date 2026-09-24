@@ -29825,6 +29825,8 @@ const MA_CSS = `
 // الفصول: نفس كشوف school-mroster (المثبّتة من نور)
 // ══════════════════════════════════════════════════════════
 const SC_NODE = "school-sclass";
+const SC_META = "school-sclass-meta";
+const scFmtD = (iso, cal) => { if (!iso) return ""; const d = maDate(iso); return cal === "g" ? maGreg(d) : maHijri(d); };
 const SC_DIMS = [
   { k: "a", t: "المستوى الدراسي", ic: "📚", ac: "#4f46e5", ac2: "#7c3aed", soft: "#eef2ff", lv: [["مميز", "#15803d", "#dcfce7"], ["متوسط", "#2563eb", "#dbeafe"], ["متدنٍ", "#c2410c", "#ffedd5"], ["يحتاج متابعة عاجلة", "#b91c1c", "#fee2e2"]] },
   { k: "b", t: "السلوك", ic: "🤝", ac: "#d97706", ac2: "#ea580c", soft: "#fffbeb", lv: [["متميز", "#15803d", "#dcfce7"], ["جيد", "#2563eb", "#dbeafe"], ["يحتاج متابعة", "#c2410c", "#ffedd5"], ["يحتاج تدخلاً عاجلاً", "#b91c1c", "#fee2e2"]] },
@@ -29865,6 +29867,31 @@ const scCSS = `
 .sc-allbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
 .sc-all{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);background:var(--soft);color:var(--ac);font-family:inherit;font-weight:900;font-size:12px;cursor:pointer}
 .sc-all:hover{background:var(--ac);color:#fff}
+.sc-pick-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:16px 18px 4px;font-weight:900;font-size:16px;color:#0f172a}.sc-pick-h small{font-size:12px;color:#94a3b8;font-weight:800}
+.sc-stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:12px 16px 18px}
+.sc-stage{border-radius:22px;background:linear-gradient(180deg,var(--soft),#fff 70%);border:1px solid color-mix(in srgb,var(--c) 22%,transparent);overflow:hidden;min-width:0}
+.sc-stage-h{display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 60%,#0f172a));position:relative}
+.sc-stage-h::after{content:"";position:absolute;inset:auto -20px -30px auto;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.12)}
+.sc-stage-h b{display:block;font-size:14.5px;font-weight:900}.sc-stage-h small{font-size:11.5px;font-weight:700;opacity:.88}
+.sc-stage-n{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:22px;font-weight:900;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);flex:none}
+.sc-stage-p{margin-right:auto;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:900;white-space:nowrap;position:relative;z-index:1}
+.sc-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px;padding:12px}
+.sc-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px 10px;border-radius:18px;background:#fff;border:1.5px solid color-mix(in srgb,var(--c) 16%,#e2e8f0);cursor:pointer;font-family:inherit;transition:transform .15s,box-shadow .15s,background .15s}
+.sc-tile:hover{transform:translateY(-3px);box-shadow:0 14px 22px -16px var(--c)}
+.sc-tile-sec{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:19px;font-weight:900;color:var(--c);background:var(--soft);border:2px solid color-mix(in srgb,var(--c) 30%,transparent)}
+.sc-tile-t{font-size:12.5px;font-weight:900;color:#0f172a}
+.sc-tile-c{font-size:11px;font-weight:800;color:#64748b}
+.sc-tile-st{font-size:10.5px;font-weight:900;padding:2px 8px;border-radius:999px;background:#f1f5f9;color:#94a3b8;margin-top:2px}
+.sc-tile-st.ok{background:#dcfce7;color:#15803d}
+.sc-tile.empty{opacity:.55}
+.sc-tile.on{background:linear-gradient(160deg,var(--c),color-mix(in srgb,var(--c) 62%,#0f172a));border-color:transparent;box-shadow:0 16px 26px -14px var(--c);transform:translateY(-2px)}
+.sc-tile.on .sc-tile-sec{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.5)}
+.sc-tile.on .sc-tile-t,.sc-tile.on .sc-tile-c{color:#fff}
+.sc-tile.on .sc-tile-st{background:rgba(255,255,255,.22);color:#fff}
+.sc-info{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sc-info span{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #ede9fe;border-radius:12px;padding:6px 12px;font-size:12.5px;font-weight:800;color:#334155}
+.sc-info span b{color:#6d28d9}
+@media (max-width:1100px){.sc-stages{grid-template-columns:1fr}}
 .sc-nt{font-size:11.5px;font-weight:700;color:#475569;background:#f8fafc;border-right:3px solid #c4b5fd;border-radius:6px;padding:3px 8px;margin-top:4px}
 .sc-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:900;font-size:11.5px;white-space:nowrap}
 .sc-stack{display:flex;height:14px;border-radius:8px;overflow:hidden;background:#f1f5f9}
@@ -29890,9 +29917,13 @@ function StudentClassifyPage({ mode = "admin", onBack }) {
   const [flt, setFlt] = useState({ d: "any", i: -1, ck: "" });
   const [openCk, setOpenCk] = useState(null);
   const [imp, setImp] = useState(null);
+  const [per, setPer] = useState({ from: "", to: "", cal: "h", principal: "فازع القرني" });
+  const [perEd, setPerEd] = useState(null);
   const fileRef = useRef(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
   const classes = maClasses(counts);
+  const periodTxt = per.from && per.to ? `من ${scFmtD(per.from, per.cal)} إلى ${scFmtD(per.to, per.cal)}` : per.from ? `من ${scFmtD(per.from, per.cal)}` : "";
+  const savePer = async () => { const v = { ...perEd, principal: (perEd.principal || "").trim() || "فازع القرني" }; if (v.from && v.to && v.to < v.from) { alert("تاريخ النهاية قبل تاريخ البداية"); return; } setBusy(true); const ok = await maPut(SC_META, v); setBusy(false); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; } setPer(v); setPerEd(null); toast("✅ تم حفظ فترة التصنيف"); };
   const studentsOf = k => maArr(rosters[k] && rosters[k].students).filter(x => x && x.id && x.name);
   const tKey = isT ? (me ? me.hash.slice(0, 16) : "") : "admin";
   const tName = isT ? (me ? me.name : "") : "الإدارة";
@@ -29900,7 +29931,8 @@ function StudentClassifyPage({ mode = "admin", onBack }) {
   const recKey = isT ? (tKey && sIdx >= 0 ? `${tKey}_${sIdx}` : "") : (sIdx >= 0 ? `admin_${sIdx}` : "admin");
 
   const loadAll = async () => {
-    const [meta, ros, sc] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), maGet(SC_NODE)]);
+    const [meta, ros, sc, pm] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), maGet(SC_NODE), maGet(SC_META)]);
+    if (pm && typeof pm === "object") setPer(p => ({ ...p, ...pm, principal: pm.principal || "فازع القرني" }));
     if (meta && Array.isArray(meta.counts)) setCounts(meta.counts.map(n => +n || 0));
     setRosters(ros && typeof ros === "object" ? ros : {});
     const d = {}; if (sc && typeof sc === "object") Object.entries(sc).forEach(([k, v]) => { d[k] = {}; if (v && typeof v === "object") Object.entries(v).forEach(([tk, r]) => { if (r && typeof r === "object") d[k][tk] = { ...r, items: r.items && typeof r.items === "object" ? r.items : {} }; }); });
@@ -29919,6 +29951,7 @@ function StudentClassifyPage({ mode = "admin", onBack }) {
     const r = data[ck] && data[ck][recKey];
     setDraft(r ? JSON.parse(JSON.stringify(r.items || {})) : {}); setDirty(false);
   }, [ck, recKey]);
+  const isMine = (k) => !!(data[k] && Object.keys(data[k]).some(x => isT ? x.startsWith(tKey + "_") : x.startsWith("admin")));
   const changeSubject = (v) => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة، هل تريد تركها؟")) return; setSubject(v); };
   const setNote = (sid, dk, txt) => { setDraft(p => ({ ...p, [sid]: { ...(p[sid] || {}), [SC_NK[dk]]: txt } })); setDirty(true); };
 
@@ -29983,7 +30016,9 @@ function StudentClassifyPage({ mode = "admin", onBack }) {
   const badge = (dk, i) => { if (i == null) return <span className="sc-badge" style={{ background: "#f1f5f9", color: "#94a3b8" }}>—</span>; const [l, c, bg] = scLv(dk, i); return <span className="sc-badge" style={{ background: bg, color: c }}>{l}</span>; };
 
   // ── الطباعة
-  const header = (title) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة</b></div><div class="c">${typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : ""}</div><div class="l">${maDay(new Date())}<br>${maHijri(new Date())}<br>${maGreg(new Date())}</div></div><div class="tt"><span>${title}</span></div>`;
+  const header = (title) => hdr(title) + (periodTxt ? `<div class="per">🗓️ فترة التصنيف: ${periodTxt}</div>` : "");
+  const sigP = () => `<div>مدير المدرسة<br><b class="pn">${per.principal || "فازع القرني"}</b><span>............</span></div>`;
+  const hdr = (title) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة</b></div><div class="c">${typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : ""}</div><div class="l">${maDay(new Date())}<br>${maHijri(new Date())}<br>${maGreg(new Date())}</div></div><div class="tt"><span>${title}</span></div>`;
   const pb = (dk, i) => { if (i == null) return `<span class="b" style="background:#f1f5f9;color:#94a3b8">—</span>`; const [l, c, bg] = scLv(dk, i); return `<span class="b" style="background:${bg};color:${c}">${l}</span>`; };
   const css = `@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}
 .pg{page-break-after:always;border:2px solid #0f766e;border-radius:16px;padding:14px 16px;position:relative}.pg:last-child{page-break-after:auto}
@@ -29994,11 +30029,26 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
 .ntc{text-align:right;max-width:220px}.nt{font-size:9.5px;font-weight:700;color:#334155;line-height:1.5}.nt i{color:#94a3b8;font-style:normal}
 .b{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:900;font-size:10.5px;white-space:nowrap}
 .lg2{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;font-size:10.5px;margin:6px 0 10px}
-.sg{display:flex;justify-content:space-around;margin-top:22px;font-weight:800;font-size:12.5px;text-align:center}.sg span{display:block;margin-top:14px;color:#94a3b8}`;
+.sg{display:flex;justify-content:space-around;margin-top:22px;font-weight:800;font-size:12.5px;text-align:center}.sg span{display:block;margin-top:14px;color:#94a3b8}.sg .pn{display:block;margin-top:4px;color:#0f766e;font-size:13.5px}
+.per{text-align:center;font-weight:900;font-size:12px;color:#6d28d9;margin:-4px 0 8px}
+.inf{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}.inf div{border:1.5px solid #e2e8f0;border-radius:12px;padding:6px 10px;font-size:11px;color:#64748b;font-weight:700}.inf b{display:block;color:#0f172a;font-size:13px;font-weight:900}
+.st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.st>div{border-radius:12px;padding:7px 9px;border:1.5px solid #e2e8f0}.st h4{margin:0 0 5px;font-size:11.5px;font-weight:900}.st .r{display:flex;gap:4px;flex-wrap:wrap}
+.by{font-size:9.5px;color:#475569;font-weight:700;line-height:1.5}`;
   const open = (body, title) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${css}</style></head><body>${body}<script>setTimeout(()=>print(),800)</script></body></html>`);
   const legend = () => `<div class="lg2">${SC_DIMS.map(d => `<b>${d.t}:</b>${d.lv.map((l, i) => pb(d.k, i)).join("")}`).join(" &nbsp; ")}</div>`;
-  const classTable = (k) => { const rows = allRows.filter(r => r.ck === k); return `<table><thead><tr><th style="width:32px">م</th><th>اسم الطالب</th><th>📚 المستوى الدراسي</th><th>🤝 السلوك</th><th>🕒 الحضور</th><th>📝 الملاحظات</th><th style="width:60px">المصنِّفون</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${r.name}</td><td>${pb("a", r.sum.a)}</td><td>${pb("b", r.sum.b)}</td><td>${pb("t", r.sum.t)}</td><td class="ntc">${notesHTML(r)}</td><td>${maAr(r.sum.n)}</td></tr>`).join("")}</tbody></table>`; };
-  const printClass = (k) => { const tchs = Object.values(data[k] || {}).map(r => r.teacher + (r.subject ? ` (${r.subject})` : "")).join("، "); open(`<section class="pg">${header(`تصنيف طلاب ${maClassName(k)}`)}${legend()}${classTable(k)}<div style="font-size:11px;margin-top:8px;color:#475569"><b>المعلمون المصنِّفون:</b> ${tchs || "—"}</div><div class="sg"><div>رائد الفصل<br><span>............</span></div><div>الموجه الطلابي<br><span>............</span></div><div>مدير المدرسة<br><span>............</span></div></div></section>`, "تصنيف " + maClassName(k)); };
+  const classTable = (k) => { const rows = allRows.filter(r => r.ck === k); return `<table><thead><tr><th style="width:32px">م</th><th>اسم الطالب</th><th>📚 المستوى الدراسي</th><th>🤝 السلوك</th><th>🕒 الحضور</th><th>📝 الملاحظات</th><th>👤 المصنِّفون</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${r.name}</td><td>${pb("a", r.sum.a)}</td><td>${pb("b", r.sum.b)}</td><td>${pb("t", r.sum.t)}</td><td class="ntc">${notesHTML(r)}</td><td class="by">${r.sum.by.map(x => x.teacher + (x.subject ? " – " + x.subject : "")).join("<br>") || "—"}</td></tr>`).join("")}</tbody></table>`; };
+  const printClass = (k) => { const tchs = Object.values(data[k] || {}).map(r => r.teacher + (r.subject ? ` (${r.subject})` : "")).join("، "); open(`<section class="pg">${header(`تصنيف طلاب ${maClassName(k)}`)}${legend()}${classTable(k)}<div style="font-size:11px;margin-top:8px;color:#475569"><b>المعلمون المصنِّفون:</b> ${tchs || "—"}</div><div class="sg"><div>رائد الفصل<br><span>............</span></div><div>الموجه الطلابي<br><span>............</span></div>${sigP()}</div></section>`, "تصنيف " + maClassName(k)); };
+  const printMine = () => {
+    const st = studentsOf(ck); const val = (sid, k) => { const v = draft[sid]; return v && v[k] != null ? v[k] : null; };
+    const stats = SC_DIMS.map(d => `<div style="border-color:${d.ac}33;background:${d.soft}"><h4 style="color:${d.ac}">${d.ic} ${d.t}</h4><div class="r">${d.lv.map((l, i) => { const n = st.filter(x => val(x.id, d.k) === i).length; return `<span class="b" style="background:${l[2]};color:${l[1]}">${l[0]}: ${maAr(n)}</span>`; }).join("")}</div></div>`).join("");
+    const esc = t => String(t || "").replace(/</g, "&lt;");
+    const rows = st.map((x, i) => { const v = draft[x.id] || {}; const nts = SC_DIMS.map(d => v[SC_NK[d.k]] ? `<div class="nt">${d.ic} ${esc(v[SC_NK[d.k]])}</div>` : "").join(""); return `<tr><td>${maAr(i + 1)}</td><td class="nm">${x.name}</td><td>${pb("a", val(x.id, "a"))}</td><td>${pb("b", val(x.id, "b"))}</td><td>${pb("t", val(x.id, "t"))}</td><td class="ntc">${nts}</td></tr>`; }).join("");
+    open(`<section class="pg">${header("نموذج تصنيف الطلاب")}
+      <div class="inf"><div>الفصل<b>${maClassName(ck)}</b></div><div>المادة<b>${subject || "—"}</b></div><div>المعلم المصنِّف<b>${isT ? "أ. " : ""}${tName}</b></div><div>عدد الطلاب<b>${maAr(st.length)}</b></div></div>
+      <div class="st">${stats}</div>
+      <table><thead><tr><th style="width:32px">م</th><th>اسم الطالب</th><th>📚 المستوى الدراسي</th><th>🤝 السلوك</th><th>🕒 الحضور</th><th>📝 الملاحظات</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="sg"><div>معلم المادة<br><b class="pn">${isT ? "أ. " : ""}${tName}</b><span>............</span></div>${sigP()}</div></section>`, "نموذج تصنيف " + maClassName(ck));
+  };
   const printAll = () => {
     const flagged = allRows.filter(isFlag);
     const sumRows = classes.filter(c => studentsOf(c.ck).length).map(c => { const rows = allRows.filter(r => r.ck === c.ck); const cnt = (dk, i) => rows.filter(r => r.sum[dk] === i).length; return `<tr><td class="nm">${maClassName(c.ck)}</td><td>${maAr(rows.length)}</td><td>${maAr(rows.filter(r => r.sum.n).length)}</td>${SC_DIMS.map(d => d.lv.map((l, i) => `<td style="background:${cnt(d.k, i) ? l[2] : "#fff"};color:${l[1]};font-weight:900">${cnt(d.k, i) ? maAr(cnt(d.k, i)) : "·"}</td>`).join("")).join("")}</tr>`; }).join("");
@@ -30007,8 +30057,8 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
       <table><thead><tr><th rowspan="2">الفصل</th><th rowspan="2">الطلاب</th><th rowspan="2">المصنَّفون</th>${SC_DIMS.map(d => `<th colspan="${d.lv.length}">${d.ic} ${d.t}</th>`).join("")}</tr><tr>${head2}</tr></thead><tbody>${sumRows}</tbody></table>
       <div class="tt"><span style="font-size:14px;background:linear-gradient(135deg,#dc2626,#991b1b)">الطلاب الذين يحتاجون متابعة (${maAr(flagged.length)})</span></div>
       <table><thead><tr><th>م</th><th>اسم الطالب</th><th>الفصل</th><th>📚 المستوى</th><th>🤝 السلوك</th><th>🕒 الحضور</th><th>📝 الملاحظات</th></tr></thead><tbody>${flagged.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${r.name}</td><td>${maClassName(r.ck)}</td><td>${pb("a", r.sum.a)}</td><td>${pb("b", r.sum.b)}</td><td>${pb("t", r.sum.t)}</td><td class="ntc">${notesHTML(r)}</td></tr>`).join("") || `<tr><td colspan="7">لا يوجد</td></tr>`}</tbody></table>
-      <div class="sg"><div>الموجه الطلابي<br><span>............</span></div><div>وكيل شؤون الطلاب<br><span>............</span></div><div>مدير المدرسة<br><span>............</span></div></div></section>
-      ${classes.filter(c => studentsOf(c.ck).length).map(c => `<section class="pg">${header(`تصنيف طلاب ${maClassName(c.ck)}`)}${legend()}${classTable(c.ck)}</section>`).join("")}`, "خلاصة تصنيف الطلاب");
+      <div class="sg"><div>الموجه الطلابي<br><span>............</span></div><div>وكيل شؤون الطلاب<br><span>............</span></div>${sigP()}</div></section>
+      ${classes.filter(c => studentsOf(c.ck).length).map(c => `<section class="pg">${header(`تصنيف طلاب ${maClassName(c.ck)}`)}${legend()}${classTable(c.ck)}<div class="sg"><div>رائد الفصل<br><span>............</span></div>${sigP()}</div></section>`).join("")}`, "خلاصة تصنيف الطلاب");
   };
 
   if (loading) return <div className="ma p-10 text-center font-bold text-gray-400">جاري التحميل…</div>;
@@ -30076,20 +30126,22 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
       {/* ═══ التصنيف ═══ */}
       {tab === "cls" && (
         <div className="grid gap-4">
-          <div className="ma-card p-4">
-            <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 10 }}>🚪 اختر الفصل</div>
-            <div className="grid gap-3">
-              {MA_LV.map((L, li) => counts[li] > 0 && (
-                <div key={li}>
-                  <div style={{ fontSize: 12.5, fontWeight: 900, color: L.c, marginBottom: 6 }}>● الصف {L.n}</div>
-                  <div className="flex gap-2 flex-wrap">
-                    {classes.filter(c => c.lv === li).map(c => { const n = studentsOf(c.ck).length; const mine = data[c.ck] && Object.keys(data[c.ck]).some(k => isT ? k.startsWith(tKey + "_") : k.startsWith("admin")); const on = ck === c.ck; return (
-                      <button key={c.ck} className="ma-cls" onClick={() => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة، هل تريد تركها؟")) return; setCk(c.ck); }} style={{ borderColor: on ? L.c : mine ? "#c4b5fd" : "#eef2f6", background: on ? L.soft : "#fff" }}>
-                        <b style={{ color: L.c }}>{L.s} / {maAr(c.sec)}</b><small style={{ color: "#64748b" }}>{maAr(n)} طالب</small>
-                        {mine && <span style={{ position: "absolute", top: -8, left: -6, background: "#7c3aed", color: "#fff", borderRadius: 999, fontSize: 10.5, fontWeight: 900, padding: "2px 8px" }}>✓</span>}
+          <div className="ma-card" style={{ overflow: "hidden" }}>
+            <div className="sc-pick-h">🚪 اختر الفصل <small>اضغط على الفصل لبدء التصنيف</small></div>
+            <div className="sc-stages">
+              {MA_LV.map((L, li) => { if (!(counts[li] > 0)) return null; const cl = classes.filter(c => c.lv === li); const tot = cl.reduce((a, c) => a + studentsOf(c.ck).length, 0); const dn = cl.filter(c => isMine(c.ck)).length; return (
+                <div key={li} className="sc-stage" style={{ "--c": L.c, "--soft": L.soft }}>
+                  <div className="sc-stage-h"><div className="sc-stage-n">{maAr(li + 1)}</div><div style={{ minWidth: 0 }}><b>الصف {L.n}</b><small>{maAr(cl.length)} فصول • {maAr(tot)} طالب</small></div><div className="sc-stage-p">✓ {maAr(dn)} / {maAr(cl.length)}</div></div>
+                  <div className="sc-tiles">
+                    {cl.map(c => { const n = studentsOf(c.ck).length; const mine = isMine(c.ck); const on = ck === c.ck; return (
+                      <button key={c.ck} type="button" className={`sc-tile ${on ? "on" : ""} ${n ? "" : "empty"}`} onClick={() => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة، هل تريد تركها؟")) return; setCk(c.ck); }}>
+                        <span className="sc-tile-sec">{maAr(c.sec)}</span>
+                        <span className="sc-tile-t">{L.s} / {maAr(c.sec)}</span>
+                        <span className="sc-tile-c">👥 {maAr(n)} طالب</span>
+                        <span className={`sc-tile-st ${mine ? "ok" : ""}`}>{mine ? "✓ صُنِّف" : n ? "لم يُصنَّف" : "لا يوجد طلاب"}</span>
                       </button>); })}
                   </div>
-                </div>))}
+                </div>); })}
             </div>
           </div>
 
@@ -30097,11 +30149,17 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
             <div className="ma-card" style={{ overflow: "hidden" }}>
               <div className="p-4" style={{ borderBottom: "1px solid #eef2f6", background: "#faf5ff" }}>
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div style={{ fontSize: 19, fontWeight: 900 }}>الصف {maClassName(ck)} <small style={{ fontSize: 12.5, color: "#7c3aed" }}>— أكملت {maAr(doneN)} من {maAr(cur.length)}</small></div>
+                  <div><div style={{ fontSize: 12, fontWeight: 900, color: "#7c3aed" }}>🏷️ نموذج تصنيف الطلاب</div><div style={{ fontSize: 19, fontWeight: 900 }}>الصف {maClassName(ck)} <small style={{ fontSize: 12.5, color: "#7c3aed" }}>— أكملت {maAr(doneN)} من {maAr(cur.length)}</small></div></div>
                   <select className="ma-inp" style={{ maxWidth: 240, borderColor: !subject && isT ? "#f59e0b" : undefined, fontWeight: 800 }} value={subject} onChange={e => changeSubject(e.target.value)}>
                     <option value="">{isT ? "📚 اختر المادة…" : "📚 المادة (اختياري)"}</option>
                     {SC_SUBJECTS.map((x, i) => <option key={x} value={x}>{x}{data[ck] && data[ck][(isT ? tKey : "admin") + "_" + i] ? " ✓" : ""}</option>)}
                   </select>
+                </div>
+                <div className="sc-info">
+                  <span>👤 المعلم المصنِّف: <b>{isT ? "أ. " + tName : tName}</b></span>
+                  {subject && <span>📚 المادة: <b>{subject}</b></span>}
+                  <span>🗓️ الفترة: <b>{periodTxt || "لم تُحدَّد"}</b></span>
+                  <button className="ma-btn gold" style={{ padding: "6px 14px" }} disabled={!recKey || !cur.length} onClick={printMine}>🖨 طباعة النموذج</button>
                 </div>
                 <div style={{ height: 8, background: "#ede9fe", borderRadius: 8, overflow: "hidden", marginTop: 10 }}><div style={{ width: `${cur.length ? doneN / cur.length * 100 : 0}%`, height: "100%", background: "linear-gradient(90deg,#8b5cf6,#6d28d9)", transition: "width .3s" }} /></div>
                 <div className="sc-allbar"><span style={{ fontSize: 12, fontWeight: 900, color: "#64748b" }}>⚡ تطبيق على الجميع:</span>
@@ -30143,6 +30201,20 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
       {/* ═══ الخلاصة (الإدارة) ═══ */}
       {tab === "sum" && !isT && (
         <div className="grid gap-4">
+          <div className="ma-card p-4" style={{ background: "linear-gradient(90deg,#faf5ff,#fff)", borderColor: "#ddd6fe" }}>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div><div style={{ fontWeight: 900, fontSize: 15 }}>🗓️ نموذج تصنيف الطلاب — الفترة</div><div style={{ fontSize: 13, fontWeight: 800, color: "#6d28d9", marginTop: 2 }}>{periodTxt || "لم تُحدَّد الفترة بعد"} • مدير المدرسة: {per.principal}</div></div>
+              {!perEd && <button className="ma-btn" onClick={() => setPerEd({ ...per })}>✏️ تحديد الفترة</button>}
+            </div>
+            {perEd && (
+              <div className="grid gap-3 mt-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", alignItems: "end" }}>
+                <label style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>من تاريخ<input type="date" className="ma-inp" value={perEd.from || ""} onChange={e => setPerEd({ ...perEd, from: e.target.value })} /><small style={{ color: "#7c3aed" }}>{scFmtD(perEd.from, perEd.cal)}</small></label>
+                <label style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>إلى تاريخ<input type="date" className="ma-inp" value={perEd.to || ""} onChange={e => setPerEd({ ...perEd, to: e.target.value })} /><small style={{ color: "#7c3aed" }}>{scFmtD(perEd.to, perEd.cal)}</small></label>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>التقويم<div className="ma-tabs" style={{ marginTop: 4 }}>{[["h", "هجري"], ["g", "ميلادي"]].map(([k, l]) => <button key={k} type="button" className={`ma-tab ${perEd.cal === k ? "on" : ""}`} onClick={() => setPerEd({ ...perEd, cal: k })}>{l}</button>)}</div></div>
+                <label style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>اسم مدير المدرسة<input className="ma-inp" value={perEd.principal || ""} onChange={e => setPerEd({ ...perEd, principal: e.target.value })} /></label>
+                <div className="flex gap-2"><button className="ma-btn pri" disabled={busy} onClick={savePer}>💾 حفظ</button><button className="ma-btn" onClick={() => setPerEd(null)}>إلغاء</button></div>
+              </div>)}
+          </div>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))" }}>
             <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#8b5cf6,#4c1d95)" }}><b>{maAr(allRows.filter(r => r.sum.n).length)}/{maAr(allRows.length)}</b><small>طلاب مصنَّفون</small></div>
             <div className="ma-kpi" style={{ background: "linear-gradient(135deg,#f87171,#b91c1c)" }}><b>{maAr(flagged.length)}</b><small>يحتاجون متابعة</small></div>
@@ -30171,6 +30243,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
               {classes.map(c => { const rows = allRows.filter(r => r.ck === c.ck); if (!rows.length) return null; const L = MA_LV[c.lv]; const nT = Object.keys(data[c.ck] || {}).length; return (
                 <div key={c.ck} style={{ border: `1.5px solid ${openCk === c.ck ? L.c : "#eef2f6"}`, borderRadius: 18, padding: 12, background: "#fff" }}>
                   <div className="flex items-center justify-between"><b style={{ color: L.c, fontSize: 15 }}>{maClassName(c.ck)}</b><span style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>مصنَّف {maAr(rows.filter(r => r.sum.n).length)} من {maAr(rows.length)} | {maAr(nT)} تصنيف</span></div>
+                  {nT > 0 && <div className="flex gap-1 flex-wrap mt-2">{Object.values(data[c.ck]).map((r, i) => <span key={i} className="sc-badge" style={{ background: "#f5f3ff", color: "#6d28d9", fontSize: 10.5 }}>👤 {r.teacher}{r.subject ? " – " + r.subject : ""}</span>)}</div>}
                   {SC_DIMS.map(d => <div key={d.k} className="flex items-center gap-2 mt-2"><span style={{ width: 20 }}>{d.ic}</span><div className="sc-stack" style={{ flex: 1, height: 10 }}>{d.lv.map(([l, col], i) => { const n = rows.filter(r => r.sum[d.k] === i).length; return n ? <div key={l} style={{ width: `${n / rows.length * 100}%`, background: col }} /> : null; })}</div><span style={{ fontSize: 11, fontWeight: 900, color: "#b91c1c", minWidth: 18 }}>{maAr(rows.filter(r => r.sum[d.k] != null && r.sum[d.k] >= (d.k === "t" ? 1 : 2)).length) || ""}</span></div>)}
                   <div className="flex gap-2 mt-3">
                     <button className="ma-btn" style={{ padding: "5px 10px", fontSize: 12, flex: 1, justifyContent: "center" }} onClick={() => setOpenCk(openCk === c.ck ? null : c.ck)}>{openCk === c.ck ? "▲ إخفاء" : "👁 الأسماء"}</button>
@@ -30181,6 +30254,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
                       <div style={{ fontWeight: 900, fontSize: 13 }}>{r.name}</div>
                       <div className="flex gap-1 flex-wrap mt-1">{badge("a", r.sum.a)}{badge("b", r.sum.b)}{badge("t", r.sum.t)}</div>
                       {notesJSX(r)}
+                      {r.sum.by.length > 0 && <div style={{ fontSize: 11, fontWeight: 800, color: "#6d28d9", marginTop: 3 }}>👤 {r.sum.by.map(x => x.teacher + (x.subject ? ` (${x.subject})` : "")).join("، ")}</div>}
                     </div>))}</div>}
                 </div>); })}
             </div>
@@ -30197,7 +30271,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
             </div>
             {filtered.length ? filtered.map(r => (
               <div key={r.ck + r.id} className="flex items-center gap-3 flex-wrap" style={{ padding: "9px 4px", borderBottom: "1px solid #f1f5f9" }}>
-                <div style={{ flex: "1 1 180px", minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 14 }}>{r.name}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: MA_LV[r.lv].c }}>{maClassName(r.ck)} • {maAr(r.sum.n)} تصنيف</div>{notesJSX(r)}</div>
+                <div style={{ flex: "1 1 180px", minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 14 }}>{r.name}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: MA_LV[r.lv].c }}>{maClassName(r.ck)} • 👤 {r.sum.by.map(x => x.teacher + (x.subject ? ` (${x.subject})` : "")).join("، ")}</div>{notesJSX(r)}</div>
                 <div className="flex gap-1 flex-wrap">{badge("a", r.sum.a)}{badge("b", r.sum.b)}{badge("t", r.sum.t)}</div>
               </div>)) : <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب في هذا التصنيف</div>}
           </div>
