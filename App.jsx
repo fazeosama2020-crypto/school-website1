@@ -29826,9 +29826,9 @@ const MA_CSS = `
 // ══════════════════════════════════════════════════════════
 const SC_NODE = "school-sclass";
 const SC_DIMS = [
-  { k: "a", t: "المستوى الدراسي", ic: "📚", lv: [["مميز", "#15803d", "#dcfce7"], ["متوسط", "#2563eb", "#dbeafe"], ["متدنٍ", "#c2410c", "#ffedd5"], ["يحتاج متابعة عاجلة", "#b91c1c", "#fee2e2"]] },
-  { k: "b", t: "السلوك", ic: "🤝", lv: [["متميز", "#15803d", "#dcfce7"], ["جيد", "#2563eb", "#dbeafe"], ["يحتاج متابعة", "#c2410c", "#ffedd5"], ["يحتاج تدخلاً عاجلاً", "#b91c1c", "#fee2e2"]] },
-  { k: "t", t: "الحضور", ic: "🕒", lv: [["منتظم", "#15803d", "#dcfce7"], ["تأخر متكرر", "#c2410c", "#ffedd5"], ["غياب متكرر", "#b91c1c", "#fee2e2"]] },
+  { k: "a", t: "المستوى الدراسي", ic: "📚", ac: "#4f46e5", ac2: "#7c3aed", soft: "#eef2ff", lv: [["مميز", "#15803d", "#dcfce7"], ["متوسط", "#2563eb", "#dbeafe"], ["متدنٍ", "#c2410c", "#ffedd5"], ["يحتاج متابعة عاجلة", "#b91c1c", "#fee2e2"]] },
+  { k: "b", t: "السلوك", ic: "🤝", ac: "#d97706", ac2: "#ea580c", soft: "#fffbeb", lv: [["متميز", "#15803d", "#dcfce7"], ["جيد", "#2563eb", "#dbeafe"], ["يحتاج متابعة", "#c2410c", "#ffedd5"], ["يحتاج تدخلاً عاجلاً", "#b91c1c", "#fee2e2"]] },
+  { k: "t", t: "الحضور", ic: "🕒", ac: "#0891b2", ac2: "#0d9488", soft: "#ecfeff", lv: [["منتظم", "#15803d", "#dcfce7"], ["تأخر متكرر", "#c2410c", "#ffedd5"], ["غياب متكرر", "#b91c1c", "#fee2e2"]] },
 ];
 const SC_SUBJECTS = ["الرياضيات", "العلوم", "اللغة الإنجليزية", "لغتي", "الدراسات الإسلامية", "القرآن الكريم (الحفظ)", "الدراسات الاجتماعية", "التفكير الناقد", "المهارات الرقمية"];
 const SC_NK = { a: "na", b: "nb", t: "nt" };
@@ -29836,19 +29836,40 @@ const scLv = (dk, i) => SC_DIMS.find(d => d.k === dk).lv[i];
 // الخلاصة: الأكثر تكراراً بين المعلمين، وعند التساوي الأشد
 const scSummary = (vals) => { if (!vals.length) return null; const c = {}; vals.forEach(v => c[v] = (c[v] || 0) + 1); return +Object.keys(c).sort((x, y) => c[y] - c[x] || y - x)[0]; };
 const scCSS = `
-.sc-seg{display:flex;gap:6px;flex-wrap:wrap}
-.sc-opt{flex:1 1 auto;min-width:0;padding:8px 10px;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:900;font-size:12.5px;cursor:pointer;transition:all .15s;color:#475569;white-space:nowrap}
-.sc-opt:hover{transform:translateY(-1px)}
-.sc-stu{border:1.5px solid #eef2f6;border-radius:18px;padding:12px 14px;background:#fff;transition:border-color .2s}
-.sc-stu.done{border-color:#99f6e4;background:linear-gradient(180deg,#f0fdfa,#fff)}
-.sc-row{display:grid;grid-template-columns:118px 1fr minmax(150px,220px);gap:8px;align-items:center;margin-top:8px}
-.sc-note{width:100%;min-width:0;border:1.5px dashed #cbd5e1;border-radius:12px;padding:7px 10px;font-family:inherit;font-size:12.5px;font-weight:700;background:#fcfcfd;outline:none}
-.sc-note:focus{border-style:solid;border-color:#8b5cf6;background:#fff}
-.sc-note.has{border-style:solid;border-color:#c4b5fd;background:#faf5ff}
+.sc-stu{position:relative;border:1px solid #e9edf3;border-radius:22px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -22px rgba(15,23,42,.35);overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.sc-stu::before{content:"";position:absolute;inset:0 0 0 auto;width:5px;background:#e2e8f0;transition:background .3s}
+.sc-stu.done::before{background:linear-gradient(180deg,#10b981,#0d9488)}
+.sc-stu:hover{box-shadow:0 1px 2px rgba(15,23,42,.05),0 18px 34px -22px rgba(79,70,229,.45)}
+.sc-head{display:flex;align-items:center;gap:12px;padding:14px 18px 12px 16px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.sc-av{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,#6366f1,#7c3aed);box-shadow:0 8px 16px -10px #6d28d9;flex:none}
+.sc-stu.done .sc-av{background:linear-gradient(135deg,#10b981,#0d9488);box-shadow:0 8px 16px -10px #0d9488}
+.sc-name{font-weight:900;font-size:16px;color:#0f172a;flex:1 1 180px;min-width:0}
+.sc-sum{display:flex;gap:6px;flex-wrap:wrap}
+.sc-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-weight:900;font-size:11.5px;white-space:nowrap;border:1px solid transparent}
+.sc-dims{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px 16px 16px}
+.sc-dim{position:relative;border-radius:18px;padding:12px;background:var(--soft);border:1px solid color-mix(in srgb,var(--ac) 18%,transparent);display:flex;flex-direction:column;gap:10px;min-width:0}
+.sc-dim::after{content:"";position:absolute;top:0;right:16px;left:16px;height:3px;border-radius:0 0 6px 6px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.sc-dt{display:flex;align-items:center;gap:8px;font-weight:900;font-size:13.5px;color:var(--ac)}
+.sc-dt i{font-style:normal;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:#fff;box-shadow:0 4px 10px -6px var(--ac);font-size:15px}
+.sc-opts{display:grid;gap:7px}.sc-opts.n4{grid-template-columns:1fr 1fr}.sc-opts.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sc-opt{display:flex;align-items:center;gap:7px;min-width:0;padding:9px 10px;border-radius:12px;border:1.5px solid #fff;background:#fff;font-family:inherit;font-weight:800;font-size:12.5px;cursor:pointer;transition:transform .12s,box-shadow .15s,background .15s;color:#334155;text-align:right;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.sc-opt .dt{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent);background:var(--c)}
+.sc-opt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-opt:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--c) 45%,transparent)}
+.sc-opt.on{background:var(--c);border-color:var(--c);color:#fff;box-shadow:0 10px 18px -10px var(--c)}
+.sc-opt.on .dt{background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.35)}
+.sc-note{width:100%;min-width:0;border:1.5px solid transparent;border-radius:12px;padding:8px 10px;font-family:inherit;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.7);outline:none;color:#334155;margin-top:auto}
+.sc-note::placeholder{color:#94a3b8}
+.sc-note:focus{background:#fff;border-color:var(--ac)}
+.sc-note.has{background:#fff;border-color:color-mix(in srgb,var(--ac) 40%,transparent)}
+.sc-allbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.sc-all{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);background:var(--soft);color:var(--ac);font-family:inherit;font-weight:900;font-size:12px;cursor:pointer}
+.sc-all:hover{background:var(--ac);color:#fff}
 .sc-nt{font-size:11.5px;font-weight:700;color:#475569;background:#f8fafc;border-right:3px solid #c4b5fd;border-radius:6px;padding:3px 8px;margin-top:4px}
 .sc-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:900;font-size:11.5px;white-space:nowrap}
 .sc-stack{display:flex;height:14px;border-radius:8px;overflow:hidden;background:#f1f5f9}
-@media (max-width:640px){.sc-row{grid-template-columns:1fr;gap:6px}.sc-opt{font-size:12px;padding:8px 6px}}
+@media (max-width:1100px){.sc-dims{grid-template-columns:1fr}.sc-opts.n4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:640px){.sc-dims{padding:12px}.sc-opts.n4{grid-template-columns:1fr 1fr}.sc-head{padding:12px 14px}.sc-opt{font-size:12px;padding:9px 8px;gap:6px}.sc-opt span{white-space:normal;line-height:1.35}}
 `;
 
 function StudentClassifyPage({ mode = "admin", onBack }) {
@@ -30083,21 +30104,29 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
                   </select>
                 </div>
                 <div style={{ height: 8, background: "#ede9fe", borderRadius: 8, overflow: "hidden", marginTop: 10 }}><div style={{ width: `${cur.length ? doneN / cur.length * 100 : 0}%`, height: "100%", background: "linear-gradient(90deg,#8b5cf6,#6d28d9)", transition: "width .3s" }} /></div>
-                <div className="flex gap-2 flex-wrap mt-3" style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>⚡ تطبيق على الجميع:
-                  {SC_DIMS.map(d => <button key={d.k} className="ma-btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => setAll(d.k, 0)}>{d.ic} {d.lv[0][0]}</button>)}
+                <div className="sc-allbar"><span style={{ fontSize: 12, fontWeight: 900, color: "#64748b" }}>⚡ تطبيق على الجميع:</span>
+                  {SC_DIMS.map(d => <button key={d.k} className="sc-all" style={{ "--ac": d.ac, "--soft": d.soft }} onClick={() => setAll(d.k, 0)}>{d.ic} {d.lv[0][0]}</button>)}
                 </div>
               </div>
               {!recKey ? <div style={{ padding: 34, textAlign: "center", color: "#b45309", fontWeight: 900, fontSize: 15 }}>📚 اختر المادة من القائمة أعلاه لبدء التصنيف</div> :
               <div className="p-3 grid gap-3">
                 {cur.map((s, idx) => { const v = draft[s.id] || {}; const done = ["a", "b", "t"].every(k => v[k] != null); return (
                   <div key={s.id} className={`sc-stu ${done ? "done" : ""}`}>
-                    <div style={{ fontWeight: 900, fontSize: 15 }}><span style={{ color: "#94a3b8", marginLeft: 8 }}>{maAr(idx + 1)}</span>{s.name} {done && <span style={{ color: "#0f766e", fontSize: 13 }}>✓</span>}</div>
-                    {SC_DIMS.map(d => (
-                      <div key={d.k} className="sc-row">
-                        <div style={{ fontSize: 12.5, fontWeight: 900, color: "#475569" }}>{d.ic} {d.t}</div>
-                        <div className="sc-seg">{d.lv.map(([l, c, bg], i) => { const on = v[d.k] === i; return <button key={l} className="sc-opt" onClick={() => setVal(s.id, d.k, i)} style={on ? { background: c, borderColor: c, color: "#fff", boxShadow: `0 6px 14px -8px ${c}` } : { borderColor: bg, color: c }}>{l}</button>; })}</div>
-                        <input className={`sc-note ${v[SC_NK[d.k]] ? "has" : ""}`} placeholder={`📝 ملاحظة ${d.t === "الحضور" ? "الحضور" : d.t === "السلوك" ? "السلوك" : "المستوى"}…`} value={v[SC_NK[d.k]] || ""} maxLength={300} onChange={e => setNote(s.id, d.k, e.target.value)} />
-                      </div>))}
+                    <div className="sc-head">
+                      <div className="sc-av">{done ? "✓" : maAr(idx + 1)}</div>
+                      <div className="sc-name">{s.name}<div style={{ fontSize: 11.5, fontWeight: 800, color: done ? "#0d9488" : "#94a3b8", marginTop: 2 }}>{done ? "اكتمل التصنيف" : `${maAr(["a", "b", "t"].filter(k => v[k] != null).length)} من ٣ تصنيفات`}</div></div>
+                      <div className="sc-sum">{SC_DIMS.map(d => { const i = v[d.k]; if (i == null) return <span key={d.k} className="sc-chip" style={{ background: "#f8fafc", color: "#94a3b8", borderColor: "#eef2f6" }}>{d.ic} —</span>; const [l, c, bg] = d.lv[i]; return <span key={d.k} className="sc-chip" style={{ background: bg, color: c }}>{d.ic} {l}</span>; })}</div>
+                    </div>
+                    <div className="sc-dims">
+                      {SC_DIMS.map(d => (
+                        <div key={d.k} className="sc-dim" style={{ "--ac": d.ac, "--ac2": d.ac2, "--soft": d.soft }}>
+                          <div className="sc-dt"><i>{d.ic}</i>{d.t}</div>
+                          <div className={`sc-opts n${d.lv.length}`}>
+                            {d.lv.map(([l, c], i) => <button key={l} type="button" title={l} className={`sc-opt ${v[d.k] === i ? "on" : ""}`} style={{ "--c": c }} onClick={() => setVal(s.id, d.k, i)}><b className="dt" /><span>{l}</span></button>)}
+                          </div>
+                          <input className={`sc-note ${v[SC_NK[d.k]] ? "has" : ""}`} placeholder={`📝 ملاحظة على ${d.t}…`} value={v[SC_NK[d.k]] || ""} maxLength={300} onChange={e => setNote(s.id, d.k, e.target.value)} />
+                        </div>))}
+                    </div>
                   </div>); })}
                 {!cur.length && <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب في هذا الفصل — تواصل مع الإدارة</div>}
               </div>}
