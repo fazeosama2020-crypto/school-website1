@@ -32292,20 +32292,40 @@ table.n{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:8px}tabl
 // ══════════════════════════════════════════════════════════
 const SD_NODE = "school-sdaily", SD_PC = "school-sdaily-pc";
 const SD_CR = [
-  { k: "p", t: "المشاركة", ic: "🙋", lv: [["ممتازة", "#15803d", "#dcfce7"], ["جيدة", "#2563eb", "#dbeafe"], ["ضعيفة", "#c2410c", "#ffedd5"]] },
-  { k: "h", t: "الواجب", ic: "📚", lv: [["منجز", "#15803d", "#dcfce7"], ["ناقص", "#c2410c", "#ffedd5"], ["لم يُحل", "#b91c1c", "#fee2e2"]] },
-  { k: "t", t: "الأدوات", ic: "🎒", lv: [["مكتملة", "#15803d", "#dcfce7"], ["ناقصة", "#c2410c", "#ffedd5"]] },
-  { k: "b", t: "السلوك", ic: "🤝", lv: [["متميز", "#15803d", "#dcfce7"], ["مقبول", "#2563eb", "#dbeafe"], ["يحتاج متابعة", "#b91c1c", "#fee2e2"]] },
+  { k: "p", t: "المشاركة", ic: "🙋", ac: "#4f46e5", ac2: "#818cf8", soft: "#eef2ff", lv: [["ممتازة", "#15803d", "#dcfce7", "😀"], ["جيدة", "#2563eb", "#dbeafe", "🙂"], ["ضعيفة", "#c2410c", "#ffedd5", "😟"]] },
+  { k: "h", t: "الواجبات", ic: "📚", ac: "#d97706", ac2: "#fbbf24", soft: "#fffbeb", lv: [["منجز", "#15803d", "#dcfce7", "✅"], ["ناقص", "#c2410c", "#ffedd5", "⚠️"], ["لم يُحل", "#b91c1c", "#fee2e2", "❌"]] },
+  { k: "t", t: "الكتاب والأدوات", ic: "🎒", ac: "#0891b2", ac2: "#22d3ee", soft: "#ecfeff", lv: [["مكتملة", "#15803d", "#dcfce7", "📘"], ["ناقصة", "#b91c1c", "#fee2e2", "📕"]] },
+  { k: "b", t: "السلوك", ic: "🤝", ac: "#db2777", ac2: "#f472b6", soft: "#fdf2f8", lv: [["متميز", "#15803d", "#dcfce7", "🌟"], ["مقبول", "#2563eb", "#dbeafe", "🙂"], ["يحتاج متابعة", "#b91c1c", "#fee2e2", "😟"]] },
 ];
+const SD_COL = ["#0f172a", "#15803d", "#2563eb", "#c2410c", "#b91c1c", "#7c3aed"];
+const SD_EMO = ["⭐", "👍", "👏", "✅", "🎯", "💡", "📌", "⚠️", "❗", "😊", "😐", "😟"];
+const sdHasNotes = v => v && (v.n || SD_CR.some(c => v[c.k + "n"]));
 const sdRange = async (ck, f, t) => { try { const r = await fetch(`${FIREBASE_URL}/school/${SD_NODE}/${ck}.json?orderBy=${encodeURIComponent('"$key"')}&startAt=${encodeURIComponent(`"${f}"`)}&endAt=${encodeURIComponent(`"${t}"`)}`); const d = await r.json(); if (d && !d.error) return d; } catch {} const all = await maGet(`${SD_NODE}/${ck}`); const o = {}; Object.entries(all && typeof all === "object" ? all : {}).forEach(([k, v]) => { if (k >= f && k <= t) o[k] = v; }); return o; };
 const sdPeriod = (kind, from, to) => { const t = new Date(); const k = maKey(t); if (kind === "day") return [k, k]; if (kind === "week") { const s = new Date(t); s.setDate(t.getDate() - t.getDay()); return [maKey(s), k]; } if (kind === "month") { const s = new Date(t); s.setDate(t.getDate() - 29); return [maKey(s), k]; } if (kind === "year") { const y = t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1; return [`${y}-08-01`, k]; } return [from || k, to || k]; };
 const SD_CSS = `
-.sd-row{display:grid;grid-template-columns:minmax(160px,1.1fr) repeat(4,minmax(0,1fr)) minmax(140px,1fr);gap:8px;align-items:center;padding:8px 10px;border-radius:14px;border:1px solid #eef2f6;background:#fff}
-.sd-row:nth-child(even){background:#fcfcfd}
+.sc-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:900;font-size:11.5px;white-space:nowrap}
+.sd-card{border:1px solid #e9edf3;border-radius:22px;background:#fff;overflow:hidden;box-shadow:0 12px 26px -24px rgba(15,23,42,.45)}
+.sd-card.nt{border-color:#fcd34d}
+.sd-top{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.sd-av{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-weight:900;color:#fff;background:linear-gradient(135deg,#14b8a6,#0f766e);flex:none}
+.sd-dims{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px}
+.sd-dim{border-radius:16px;padding:10px;background:var(--soft);border:1px solid color-mix(in srgb,var(--ac) 20%,transparent);position:relative;display:flex;flex-direction:column;gap:8px;min-width:0}
+.sd-dim::before{content:"";position:absolute;top:0;right:14px;left:14px;height:3px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.sd-dt{font-weight:900;font-size:12.5px;color:var(--ac);display:flex;align-items:center;gap:6px}
 .sd-ch{display:flex;gap:4px;flex-wrap:wrap}
-.sd-b{border:1.5px solid #e2e8f0;background:#fff;border-radius:10px;padding:5px 8px;font-family:inherit;font-weight:800;font-size:11.5px;cursor:pointer;color:#64748b;white-space:nowrap}
-.sd-hd{display:grid;grid-template-columns:minmax(160px,1.1fr) repeat(4,minmax(0,1fr)) minmax(140px,1fr);gap:8px;padding:6px 10px;font-size:12px;font-weight:900;color:#475569}
-@media (max-width:980px){.sd-row,.sd-hd{grid-template-columns:1fr 1fr}.sd-row>b{grid-column:1/-1}.sd-hd{display:none}.sd-row .sd-cr-l{display:block!important}}
+.sd-b{display:inline-flex;align-items:center;gap:4px;border:1.5px solid #fff;background:#fff;border-radius:11px;padding:5px 8px;font-family:inherit;font-weight:800;font-size:11.5px;cursor:pointer;color:#475569;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,.06);transition:transform .1s}
+.sd-b:active{transform:scale(.95)}
+.sd-b.on{color:#fff;box-shadow:0 8px 14px -8px var(--c)}
+.sd-nt{width:100%;min-width:0;border:1.5px solid transparent;border-radius:11px;padding:6px 9px;font-family:inherit;font-size:12.5px;font-weight:800;background:rgba(255,255,255,.75);outline:none}
+.sd-nt:focus{background:#fff;border-color:var(--ac)}
+.sd-nt.has{background:#fff;border-color:color-mix(in srgb,var(--ac) 35%,transparent)}
+.sd-tb{display:flex;gap:3px;flex-wrap:wrap;align-items:center;background:#fff;border-radius:10px;padding:4px;border:1px solid #eef2f6}
+.sd-tb button{border:none;background:none;cursor:pointer;font-size:15px;padding:2px 3px;border-radius:6px}
+.sd-tb button:hover{background:#f1f5f9}
+.sd-tb i{display:inline-block;width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1}
+.sd-tb i.on{box-shadow:0 0 0 2px #0f172a}
+@media (max-width:1100px){.sd-dims{grid-template-columns:1fr 1fr}}
+@media (max-width:600px){.sd-dims{grid-template-columns:1fr;padding:10px}}
 `;
 
 function StudentDailyPage({ by = "الإدارة", legacy = null }) {
@@ -32316,6 +32336,7 @@ function StudentDailyPage({ by = "الإدارة", legacy = null }) {
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
   const [rp, setRp] = useState({ ck: "", kind: "week", from: "", to: "", q: "", nh: "", data: null });
   const [pcs, setPcs] = useState(null); const [rep, setRep] = useState({});
+  const [fx, setFx] = useState(""); const [np, setNp] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
   const classes = maClasses(counts);
   const studentsOf = k => maArr(rosters[k] && rosters[k].students).filter(x => x && x.id && x.name);
@@ -32327,11 +32348,11 @@ function StudentDailyPage({ by = "الإدارة", legacy = null }) {
   useEffect(() => { const r = dayRecs[tkey]; setDraft(r && r.items ? JSON.parse(JSON.stringify(r.items)) : {}); setDirty(false); }, [dayRecs, tkey]);
   useEffect(() => { if (tab === "pc") (async () => { const d = await maGet(SD_PC); setPcs(ptVals(d).sort((a, b) => b.at - a.at)); })(); }, [tab]);
   const setV = (sid, k, i) => { setDraft(p => { const c = { ...(p[sid] || {}) }; if (c[k] === i) delete c[k]; else c[k] = i; return { ...p, [sid]: c }; }); setDirty(true); };
-  const setN = (sid, n) => { setDraft(p => ({ ...p, [sid]: { ...(p[sid] || {}), n } })); setDirty(true); };
+  const setN = (sid, n, key = "n") => { setDraft(p => ({ ...p, [sid]: { ...(p[sid] || {}), [key]: n } })); setDirty(true); };
   const allBest = () => { const o = { ...draft }; studentsOf(ck).forEach(s => { o[s.id] = { p: 0, h: 0, t: 0, b: 0, ...(o[s.id] || {}) }; }); setDraft(o); setDirty(true); };
   const save = async () => {
     if (!tkey) { alert("اختر المادة"); return; }
-    const items = {}; studentsOf(ck).forEach(s => { const v = draft[s.id]; if (v) { const o = {}; ["p", "h", "t", "b"].forEach(k => { if (v[k] != null) o[k] = v[k]; }); const n = String(v.n || "").trim(); if (n) o.n = n.slice(0, 300); if (Object.keys(o).length) items[s.id] = o; } });
+    const items = {}; studentsOf(ck).forEach(s => { const v = draft[s.id]; if (v) { const o = {}; ["p", "h", "t", "b"].forEach(k => { if (v[k] != null) o[k] = v[k]; const t = String(v[k + "n"] || "").trim(); if (t) { o[k + "n"] = t.slice(0, 200); if (v[k + "c"]) o[k + "c"] = +v[k + "c"]; } }); const n = String(v.n || "").trim(); if (n) o.n = n.slice(0, 300); if (Object.keys(o).length) items[s.id] = o; } });
     setBusy(true); const rec = { by, subject, at: Date.now(), items }; const ok = await maPut(`${SD_NODE}/${ck}/${dateK}/${tkey}`, rec); setBusy(false);
     if (!ok) { alert("⚠️ تعذّر الحفظ"); return; }
     setDayRecs(p => ({ ...p, [tkey]: rec })); setDirty(false); toast(`✅ حُفظت متابعة ${maClassName(ck)} — ${subject}`);
@@ -32349,8 +32370,8 @@ function StudentDailyPage({ by = "الإدارة", legacy = null }) {
   const stuName = (k, sid) => (studentsOf(k).find(x => x.id === sid) || {}).name || "—";
   const stuNh = (k, sid) => (studentsOf(k).find(x => x.id === sid) || {}).nh || "";
   const rowsF = (rp.data || []).filter(r => { const t = rp.q.trim(); if (!t) return true; if (licNormId(t).length === 10) return rp.nh && stuNh(r.ck, r.sid) === rp.nh; return stuName(r.ck, r.sid).startsWith(t) || stuName(r.ck, r.sid).includes(t); });
-  const agg = (() => { const o = {}; rowsF.forEach(r => { const key = r.ck + "|" + r.sid; const x = o[key] = o[key] || { ck: r.ck, sid: r.sid, name: stuName(r.ck, r.sid), n: 0, c: { p: [0, 0, 0], h: [0, 0, 0], t: [0, 0], b: [0, 0, 0] }, notes: [] }; x.n++; SD_CR.forEach(c => { if (r[c.k] != null && x.c[c.k][r[c.k]] != null) x.c[c.k][r[c.k]]++; }); if (r.n) x.notes.push({ dk: r.dk, subject: r.subject, n: r.n }); }); return Object.values(o).map(x => { const hw = x.c.h[0] + x.c.h[1] + x.c.h[2]; const bad = x.c.h[2] + x.c.b[2] + x.c.p[2] + x.c.t[1]; return { ...x, hwPct: hw ? Math.round(x.c.h[0] / hw * 100) : null, bad }; }).sort((a, b) => b.bad - a.bad || a.name.localeCompare(b.name, "ar")); })();
-  const pb = (k, i) => { const c = SD_CR.find(x => x.k === k); const l = c && c.lv[i]; return l ? `<span class="b" style="background:${l[2]};color:${l[1]}">${l[0]}</span>` : "—"; };
+  const agg = (() => { const o = {}; rowsF.forEach(r => { const key = r.ck + "|" + r.sid; const x = o[key] = o[key] || { ck: r.ck, sid: r.sid, name: stuName(r.ck, r.sid), n: 0, c: { p: [0, 0, 0], h: [0, 0, 0], t: [0, 0], b: [0, 0, 0] }, notes: [] }; x.n++; SD_CR.forEach(c => { if (r[c.k] != null && x.c[c.k][r[c.k]] != null) x.c[c.k][r[c.k]]++; }); if (sdHasNotes(r)) x.notes.push({ dk: r.dk, subject: r.subject, by: r.by, n: r.n || "", r }); }); return Object.values(o).map(x => { const hw = x.c.h[0] + x.c.h[1] + x.c.h[2]; const bad = x.c.h[2] + x.c.b[2] + x.c.p[2] + x.c.t[1]; return { ...x, hwPct: hw ? Math.round(x.c.h[0] / hw * 100) : null, bad }; }).sort((a, b) => b.bad - a.bad || a.name.localeCompare(b.name, "ar")); })();
+  const pb = (k, i) => { const c = SD_CR.find(x => x.k === k); const l = c && c.lv[i]; return l ? `<span class="b" style="background:${l[2]};color:${l[1]}">${l[3]} ${l[0]}</span>` : "—"; };
   const pcss = `@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}.pg{page-break-after:always;border:2px solid #0d9488;border-radius:16px;padding:14px 16px;position:relative}.pg:last-child{page-break-after:auto}.pg::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,#0f766e,#14b8a6,#d4a017)}
 .hd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:12px;line-height:1.85;padding:8px 0 10px;border-bottom:2px solid #ccfbf1}.hd .l{text-align:left}.lg{width:64px;height:64px}.tt{text-align:center;margin:10px 0}.tt span{display:inline-block;background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;font-weight:900;font-size:16px;padding:8px 24px;border-radius:999px}
 table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;color:#fff;padding:6px;font-weight:900}td{border-bottom:1px solid #e2e8f0;padding:5px;text-align:center}tr:nth-child(even) td{background:#f8fafc}.nm{text-align:right;font-weight:800}.b{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:900;font-size:10px}
@@ -32358,12 +32379,23 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
   const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
   const sig = `<div class="sg"><div>المعلم / المسجّل<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>الموجه الطلابي<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`;
   const openP = (b, t) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${pcss}</style></head><body>${b}<script>setTimeout(()=>print(),800)</script></body></html>`);
-  const printDay = () => { const st = studentsOf(ck); openP(`<section class="pg">${hdr("المتابعة اليومية للطلاب", `${maClassName(ck)} • ${ptEsc(subject)}<br>${maDay(maDate(dateK))} ${maHijri(maDate(dateK))}<br>${maGreg(maDate(dateK))}`)}<table><thead><tr><th>م</th><th>اسم الطالب</th>${SD_CR.map(c => `<th>${c.ic} ${c.t}</th>`).join("")}<th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => { const v = draft[s.id] || {}; return `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(s.name)}</td>${SD_CR.map(c => `<td>${pb(c.k, v[c.k])}</td>`).join("")}<td>${ptEsc(v.n || "")}</td></tr>`; }).join("")}</tbody></table>${sig}</section>`, "المتابعة اليومية"); };
+  const printDay = () => { const st = studentsOf(ck); openP(`<section class="pg">${hdr("المتابعة اليومية للطلاب", `${maClassName(ck)} • ${ptEsc(subject)}<br>${maDay(maDate(dateK))} ${maHijri(maDate(dateK))}<br>${maGreg(maDate(dateK))}`)}<table><thead><tr><th>م</th><th>اسم الطالب</th>${SD_CR.map(c => `<th>${c.ic} ${c.t}</th>`).join("")}<th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => { const v = draft[s.id] || {}; return `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(s.name)}</td>${SD_CR.map(c => `<td>${pb(c.k, v[c.k])}</td>`).join("")}<td style="text-align:right;font-size:10px">${[...SD_CR.filter(c => v[c.k + "n"]).map(c => `<span style="color:${SD_COL[+v[c.k + "c"] || 0]}">${c.ic} ${ptEsc(v[c.k + "n"])}</span>`), v.n ? "📝 " + ptEsc(v.n) : ""].filter(Boolean).join("<br>")}</td></tr>`; }).join("")}</tbody></table>${sig}</section>`, "المتابعة اليومية"); };
   const printArc = () => { const kl = { day: "اليوم", week: "الأسبوع", month: "آخر ٣٠ يوماً", year: "العام الدراسي", custom: "فترة مخصصة" }[rp.kind];
     const one = agg.length === 1 ? agg[0] : null;
     openP(`<section class="pg">${hdr(one ? "تقرير المتابعة اليومية للطالب" : "تقرير المتابعة اليومية", `${one ? ptEsc(one.name) + " • " + maClassName(one.ck) : rp.ck ? maClassName(rp.ck) : "جميع الفصول"}<br>${kl}: من ${maHijri(maDate(rp.f))}<br>إلى ${maHijri(maDate(rp.t))}`)}
       <table><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>مرات المتابعة</th><th>🙋 مشاركة ممتازة/جيدة/ضعيفة</th><th>📚 الواجب منجز</th><th>🎒 أدوات ناقصة</th><th>🤝 يحتاج متابعة</th></tr></thead><tbody>${agg.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(x.name)}</td><td>${maClassName(x.ck)}</td><td>${maAr(x.n)}</td><td>${maAr(x.c.p[0])} / ${maAr(x.c.p[1])} / <b style="color:#c2410c">${maAr(x.c.p[2])}</b></td><td>${x.hwPct == null ? "—" : maAr(x.hwPct) + "٪"}</td><td style="color:#c2410c;font-weight:900">${maAr(x.c.t[1])}</td><td style="color:#b91c1c;font-weight:900">${maAr(x.c.b[2])}</td></tr>`).join("") || `<tr><td colspan="8">لا توجد بيانات</td></tr>`}</tbody></table>
-      ${one && one.notes.length ? `<h3 style="font-size:13px;color:#0f766e">📝 ملاحظات المعلمين</h3><table><thead><tr><th>التاريخ</th><th>المادة</th><th>الملاحظة</th></tr></thead><tbody>${one.notes.map(n => `<tr><td>${maHijri(maDate(n.dk))}</td><td>${ptEsc(n.subject)}</td><td class="nm">${ptEsc(n.n)}</td></tr>`).join("")}</tbody></table>` : ""}${sig}</section>`, "تقرير المتابعة"); };
+      ${one && one.notes.length ? `<h3 style="font-size:13px;color:#0f766e">📝 ملاحظات المعلمين</h3><table><thead><tr><th>التاريخ</th><th>المادة</th><th>الملاحظة</th></tr></thead><tbody>${one.notes.map(n => `<tr><td>${maHijri(maDate(n.dk))}</td><td>${ptEsc(n.subject)}</td><td class="nm">${[...SD_CR.filter(c => n.r[c.k + "n"]).map(c => c.ic + " " + ptEsc(n.r[c.k + "n"])), n.n ? "📝 " + ptEsc(n.n) : ""].filter(Boolean).join(" • ")}</td></tr>`).join("")}</tbody></table>` : ""}${sig}</section>`, "تقرير المتابعة"); };
+  // ── طباعة الملاحظات (فردي / مجمّع)
+  const noteCard = (name, ck2, entries, solo) => `<div class="nc${solo ? " solo" : ""}"><div class="nch"><div class="nav">${ptEsc((name || "؟")[0])}</div><div><b>${ptEsc(name)}</b><small>${maClassName(ck2)}</small></div><span class="ncn">${maAr(entries.length)} ${entries.length > 2 && entries.length < 11 ? "ملاحظات" : "ملاحظة"}</span></div>${entries.map(e => `<div class="ne"><div class="ned">📅 ${maDay(maDate(e.dk))} ${maHijri(maDate(e.dk))} • 📚 ${ptEsc(e.subject || "")}${e.by ? " • 👤 " + ptEsc(e.by) : ""}</div><div class="neg">${SD_CR.map(c => { const lv = e.r[c.k] != null ? c.lv[e.r[c.k]] : null; const t = e.r[c.k + "n"]; if (!lv && !t) return ""; return `<div class="nb" style="--ac:${c.ac};--soft:${c.soft}"><div class="nbt">${c.ic} ${c.t}${lv ? `<span style="background:${lv[2]};color:${lv[1]}">${lv[3]} ${lv[0]}</span>` : ""}</div>${t ? `<div class="nbx" style="color:${SD_COL[+e.r[c.k + "c"] || 0]}">${ptEsc(t)}</div>` : ""}</div>`; }).join("")}</div>${e.r.n ? `<div class="nge">📝 ${ptEsc(e.r.n)}</div>` : ""}</div>`).join("")}${solo ? `<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(entries[0]?.by || by)}</b><span>............</span></div><div>ولي أمر الطالب (اطّلعت)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>` : ""}</div>`;
+  const ncss = `.nc{border:1.5px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:10px;page-break-inside:avoid}.nch{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(90deg,#f0fdfa,#fff);border-bottom:1px solid #e2e8f0}.nch b{display:block;font-size:14px}.nch small{font-size:11px;color:#0f766e;font-weight:800}.nav{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#14b8a6,#0f766e);color:#fff;display:grid;place-items:center;font-weight:900}.ncn{margin-right:auto;background:#fef3c7;color:#92400e;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:900}.ne{padding:8px 12px;border-bottom:1px dashed #e2e8f0}.ne:last-child{border-bottom:0}.ned{font-size:10.5px;font-weight:800;color:#64748b;margin-bottom:6px}.neg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.nb{border-radius:10px;padding:6px 8px;background:var(--soft);border-top:3px solid var(--ac)}.nbt{font-size:10.5px;font-weight:900;color:var(--ac);display:flex;flex-wrap:wrap;gap:4px;align-items:center}.nbt span{border-radius:999px;padding:1px 7px;font-size:9.5px}.nbx{font-size:11.5px;font-weight:800;margin-top:4px;line-height:1.6}.nge{margin-top:6px;font-size:11.5px;font-weight:800;background:#fffbeb;border-radius:8px;padding:5px 8px}.nc.solo{border:0}`;
+  const printNotes = (list, mode, sub) => {
+    if (!list.length) { alert("لا توجد ملاحظات للطباعة"); return; }
+    const css0 = pcss + ncss;
+    const body = mode === "solo" ? list.map(x => `<section class="pg">${hdr("ملاحظات المتابعة اليومية للطالب", sub)}${noteCard(x.name, x.ck, x.entries, true)}</section>`).join("") : `<section class="pg">${hdr("ملاحظات المتابعة اليومية", sub + `<br>عدد الطلاب: ${maAr(list.length)}`)}${list.map(x => noteCard(x.name, x.ck, x.entries, false)).join("")}${sig}</section>`;
+    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>ملاحظات الطلاب</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${css0}</style></head><body>${body}<script>setTimeout(()=>print(),800)</script></body></html>`);
+  };
+  const openNpDay = () => { const L = studentsOf(ck).filter(s => sdHasNotes(draft[s.id])).map(s => ({ key: s.id, name: s.name, ck, entries: [{ dk: dateK, subject, by, r: draft[s.id] }] })); setNp({ list: L, sel: Object.fromEntries(L.map(x => [x.key, true])), mode: "group", sub: `${maClassName(ck)} • ${ptEsc(subject)}<br>${maDay(maDate(dateK))} ${maHijri(maDate(dateK))}` }); };
+  const openNpArc = () => { const L = agg.filter(x => x.notes.length).map(x => ({ key: x.ck + x.sid, name: x.name, ck: x.ck, entries: x.notes })); setNp({ list: L, sel: Object.fromEntries(L.map(x => [x.key, true])), mode: "group", sub: `${rp.ck ? maClassName(rp.ck) : "جميع الفصول"}<br>من ${maHijri(maDate(rp.f))} إلى ${maHijri(maDate(rp.t))}` }); };
   const pcUpd = async (x, patch) => { const v = { ...x, ...patch }; const ok = await maPut(`${SD_PC}/${x.id}`, v); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; } setPcs(p => p.map(y => y.id === x.id ? v : y)); setRep(r => ({ ...r, [x.id]: "" })); };
   const pcDel = async (x) => { if (!window.confirm("حذف ملاحظة ولي الأمر؟")) return; try { await fetch(`${FIREBASE_URL}/school/${SD_PC}/${x.id}.json`, { method: "DELETE" }); } catch {} setPcs(p => p.filter(y => y.id !== x.id)); };
 
@@ -32389,16 +32421,24 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
               <select className="ma-inp" style={{ width: 210, fontWeight: 800, borderColor: subject ? undefined : "#f59e0b" }} value={subject} onChange={e => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة")) return; setSubject(e.target.value); }}><option value="">📚 اختر المادة…</option>{SC_SUBJECTS.map((x, i) => <option key={x} value={x}>{x}{dayRecs[`${i}_${byKey}`] ? " ✓" : ""}</option>)}</select>
               <input type="date" className="ma-inp" style={{ width: 165 }} value={dateK} max={maKey(new Date())} onChange={e => e.target.value && setDateK(e.target.value)} />
               {tkey && <button className="ma-btn" onClick={allBest}>⚡ الأفضل للجميع</button>}
-              {tkey && <button className="ma-btn gold" onClick={printDay}>🖨</button>}
+              {tkey && <button className="ma-btn gold" onClick={printDay}>🖨 الكشف</button>}
+              {tkey && <button className="ma-btn" style={{ borderColor: "#fcd34d", color: "#92400e" }} onClick={openNpDay}>📝 طباعة الملاحظات</button>}
             </div>
             {Object.keys(dayRecs).length > 0 && <div style={{ padding: "6px 14px", fontSize: 12, fontWeight: 800, color: "#0f766e", background: "#f0fdfa" }}>📌 مرصود اليوم: {Object.values(dayRecs).map(r => `${r.subject} (${r.by})`).join("، ")}</div>}
             {!tkey ? <div style={{ padding: 30, textAlign: "center", color: "#b45309", fontWeight: 900 }}>📚 اختر المادة لبدء المتابعة</div> : <div className="p-3 grid gap-2">
-              <div className="sd-hd"><span>الطالب</span>{SD_CR.map(c => <span key={c.k}>{c.ic} {c.t}</span>)}<span>📝 ملاحظة</span></div>
-              {st.map((s, i) => { const v = draft[s.id] || {}; return (
-                <div key={s.id} className="sd-row">
-                  <b style={{ fontSize: 13.5 }}><span style={{ color: "#94a3b8", marginLeft: 6 }}>{maAr(i + 1)}</span>{s.name}</b>
-                  {SD_CR.map(c => <div key={c.k}><span className="sd-cr-l" style={{ display: "none", fontSize: 11, fontWeight: 900, color: "#64748b" }}>{c.ic} {c.t}</span><div className="sd-ch">{c.lv.map(([l, col, bg], j) => <button key={l} type="button" className="sd-b" onClick={() => setV(s.id, c.k, j)} style={v[c.k] === j ? { background: col, borderColor: col, color: "#fff" } : { borderColor: bg, color: col }}>{l}</button>)}</div></div>)}
-                  <input className="ma-inp" style={{ height: 34, fontSize: 12.5 }} value={v.n || ""} onChange={e => setN(s.id, e.target.value)} placeholder="ملاحظة…" />
+              {st.map((s, i) => { const v = draft[s.id] || {}; const has = sdHasNotes(v); return (
+                <div key={s.id} className={`sd-card ${has ? "nt" : ""}`}>
+                  <div className="sd-top"><div className="sd-av">{maAr(i + 1)}</div><b style={{ fontSize: 15, flex: "1 1 160px" }}>{s.name}</b>
+                    <div className="flex gap-1 flex-wrap">{SD_CR.map(c => v[c.k] != null ? <span key={c.k} className="sc-badge" style={{ background: c.lv[v[c.k]][2], color: c.lv[v[c.k]][1] }}>{c.lv[v[c.k]][3]} {c.lv[v[c.k]][0]}</span> : null)}{has && <span className="sc-badge" style={{ background: "#fef3c7", color: "#92400e" }}>📝</span>}</div>
+                    <input className="ma-inp" style={{ flex: "1 1 200px", height: 34, fontSize: 12.5 }} value={v.n || ""} onChange={e => setN(s.id, e.target.value)} placeholder="📝 ملاحظة عامة (اختياري)…" />
+                  </div>
+                  <div className="sd-dims">{SD_CR.map(c => { const fk = s.id + "|" + c.k; const nt = v[c.k + "n"] || ""; const col = SD_COL[+v[c.k + "c"] || 0]; return (
+                    <div key={c.k} className="sd-dim" style={{ "--ac": c.ac, "--ac2": c.ac2, "--soft": c.soft }}>
+                      <div className="sd-dt">{c.ic} {c.t}</div>
+                      <div className="sd-ch">{c.lv.map(([l, cl, bg, fc], j) => <button key={l} type="button" className={`sd-b ${v[c.k] === j ? "on" : ""}`} onClick={() => setV(s.id, c.k, j)} style={v[c.k] === j ? { background: cl, borderColor: cl, "--c": cl } : { color: cl }}>{fc} {l}</button>)}</div>
+                      <input className={`sd-nt ${nt ? "has" : ""}`} style={{ color: col }} value={nt} onFocus={() => setFx(fk)} onChange={e => setN(s.id, e.target.value, c.k + "n")} placeholder={`✍️ ملاحظة ${c.t}…`} />
+                      {fx === fk && <div className="sd-tb" onMouseDown={e => e.preventDefault()}>{SD_EMO.map(em => <button key={em} type="button" onClick={() => setN(s.id, (nt ? nt + " " : "") + em, c.k + "n")}>{em}</button>)}<span style={{ width: 6 }} />{SD_COL.map((cc, ci) => <i key={cc} className={(+v[c.k + "c"] || 0) === ci ? "on" : ""} style={{ background: cc }} onClick={() => setN(s.id, ci, c.k + "c")} />)}</div>}
+                    </div>); })}</div>
                 </div>); })}
               {!st.length && <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب — ارفع كشف الفصل من «سجل التأخر الصباحي ← الفصول»</div>}
             </div>}
@@ -32415,11 +32455,12 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
             {rp.kind === "custom" && <><input type="date" className="ma-inp" style={{ width: 150 }} value={rp.from} onChange={e => setRp({ ...rp, from: e.target.value })} /><input type="date" className="ma-inp" style={{ width: 150 }} value={rp.to} onChange={e => setRp({ ...rp, to: e.target.value })} /><button className="ma-btn pri" onClick={runRep}>عرض</button></>}
             <select className="ma-inp" style={{ width: 170 }} value={rp.ck} onChange={e => setRp({ ...rp, ck: e.target.value })}><option value="">جميع الفصول</option>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select>
             <input className="ma-inp" style={{ flex: "1 1 200px" }} value={rp.q} onChange={e => setRp({ ...rp, q: e.target.value })} placeholder="🔍 الطالب: رقم الهوية أو الاسم" />
-            <button className="ma-btn gold" disabled={!rp.data} onClick={printArc}>🖨 طباعة</button>
+            <button className="ma-btn gold" disabled={!rp.data} onClick={printArc}>🖨 التقرير</button>
+            <button className="ma-btn" style={{ borderColor: "#fcd34d", color: "#92400e" }} disabled={!rp.data} onClick={openNpArc}>📝 ملاحظات الفترة</button>
           </div>
           {!rp.data ? <div className="p-8 text-center font-bold text-gray-400">جاري التحميل…</div> : <div className="ma-card p-3" style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 760 }}><thead><tr style={{ background: "#0f766e", color: "#fff" }}>{["الطالب", "الفصل", "مرات المتابعة", "🙋 المشاركة", "📚 الواجب منجز", "🎒 أدوات ناقصة", "🤝 يحتاج متابعة", "📝 ملاحظات"].map(h => <th key={h} style={{ padding: 8, fontWeight: 900 }}>{h}</th>)}</tr></thead>
-              <tbody>{agg.map(x => <tr key={x.ck + x.sid} style={{ borderBottom: "1px solid #f1f5f9", background: x.bad >= 3 ? "#fff7ed" : undefined }}><td style={{ padding: 8, fontWeight: 900 }}>{x.name}</td><td style={{ textAlign: "center" }}>{maClassName(x.ck)}</td><td style={{ textAlign: "center" }}>{maAr(x.n)}</td><td style={{ textAlign: "center", fontWeight: 800 }}><span style={{ color: "#15803d" }}>{maAr(x.c.p[0])}</span> / <span style={{ color: "#2563eb" }}>{maAr(x.c.p[1])}</span> / <span style={{ color: "#c2410c" }}>{maAr(x.c.p[2])}</span></td><td style={{ textAlign: "center", fontWeight: 900, color: x.hwPct != null && x.hwPct < 70 ? "#b91c1c" : "#15803d" }}>{x.hwPct == null ? "—" : maAr(x.hwPct) + "٪"}</td><td style={{ textAlign: "center", color: "#c2410c", fontWeight: 900 }}>{maAr(x.c.t[1])}</td><td style={{ textAlign: "center", color: "#b91c1c", fontWeight: 900 }}>{maAr(x.c.b[2])}</td><td style={{ fontSize: 12, color: "#475569" }}>{x.notes.slice(-2).map(n => `${n.subject}: ${n.n}`).join(" • ")}</td></tr>)}</tbody></table>
+              <tbody>{agg.map(x => <tr key={x.ck + x.sid} style={{ borderBottom: "1px solid #f1f5f9", background: x.bad >= 3 ? "#fff7ed" : undefined }}><td style={{ padding: 8, fontWeight: 900 }}>{x.name}</td><td style={{ textAlign: "center" }}>{maClassName(x.ck)}</td><td style={{ textAlign: "center" }}>{maAr(x.n)}</td><td style={{ textAlign: "center", fontWeight: 800 }}><span style={{ color: "#15803d" }}>{maAr(x.c.p[0])}</span> / <span style={{ color: "#2563eb" }}>{maAr(x.c.p[1])}</span> / <span style={{ color: "#c2410c" }}>{maAr(x.c.p[2])}</span></td><td style={{ textAlign: "center", fontWeight: 900, color: x.hwPct != null && x.hwPct < 70 ? "#b91c1c" : "#15803d" }}>{x.hwPct == null ? "—" : maAr(x.hwPct) + "٪"}</td><td style={{ textAlign: "center", color: "#c2410c", fontWeight: 900 }}>{maAr(x.c.t[1])}</td><td style={{ textAlign: "center", color: "#b91c1c", fontWeight: 900 }}>{maAr(x.c.b[2])}</td><td style={{ fontSize: 12, color: "#475569" }}>{x.notes.length ? <span className="sc-badge" style={{ background: "#fef3c7", color: "#92400e" }}>📝 {maAr(x.notes.length)}</span> : ""}</td></tr>)}</tbody></table>
             {!agg.length && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا توجد متابعات في هذه الفترة</div>}
           </div>}
         </div>}
@@ -32435,6 +32476,17 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
         </div>}
         {tab === "old" && legacy}
       </div>
+      {np && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 14 }} onClick={() => setNp(null)}>
+        <div className="ma-card" style={{ width: "min(560px,100%)", maxHeight: "88vh", overflow: "auto", padding: 20 }} onClick={e => e.stopPropagation()}>
+          <b style={{ fontSize: 17 }}>📝 طباعة ملاحظات الطلاب</b>
+          {!np.list.length ? <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب عليهم ملاحظات</div> : <>
+            <div className="ma-tabs" style={{ margin: "12px 0" }}>{[["group", "📄 مجمّعة في كشف واحد"], ["solo", "👤 فردية — صفحة لكل طالب"]].map(([k, l]) => <button key={k} className={`ma-tab ${np.mode === k ? "on" : ""}`} onClick={() => setNp({ ...np, mode: k })}>{l}</button>)}</div>
+            <div className="flex gap-2 mb-2"><button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => setNp({ ...np, sel: Object.fromEntries(np.list.map(x => [x.key, true])) })}>تحديد الكل</button><button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => setNp({ ...np, sel: {} })}>إلغاء التحديد</button></div>
+            <div className="grid gap-1">{np.list.map(x => <label key={x.key} className="flex items-center gap-2" style={{ padding: "7px 10px", borderRadius: 12, background: np.sel[x.key] ? "#f0fdfa" : "#f8fafc", cursor: "pointer", fontWeight: 800, fontSize: 13.5 }}><input type="checkbox" checked={!!np.sel[x.key]} onChange={e => setNp({ ...np, sel: { ...np.sel, [x.key]: e.target.checked } })} />{x.name}<span style={{ marginRight: "auto", fontSize: 11.5, color: "#64748b" }}>{maClassName(x.ck)} • 📝 {maAr(x.entries.length)}</span></label>)}</div>
+          </>}
+          <div className="flex gap-2 justify-end mt-3"><button className="ma-btn" onClick={() => setNp(null)}>إغلاق</button><button className="ma-btn gold" disabled={!np.list.some(x => np.sel[x.key])} onClick={() => printNotes(np.list.filter(x => np.sel[x.key]), np.mode, np.sub)}>🖨 طباعة ({maAr(np.list.filter(x => np.sel[x.key]).length)})</button></div>
+        </div>
+      </div>}
       {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
     </div>
   );
@@ -32446,7 +32498,7 @@ function GuardianDaily({ me }) {
   const load = async () => { const t = new Date(); const s = new Date(t); s.setDate(t.getDate() - days); const [r, p] = await Promise.all([sdRange(me.ck, maKey(s), maKey(t)), maGet(SD_PC)]); const rows = []; Object.entries(r || {}).forEach(([dk, recs]) => Object.entries(recs || {}).forEach(([tk, rec]) => { const v = rec && rec.items && rec.items[me.sid]; if (v) rows.push({ dk, tk, subject: rec.subject, by: rec.by, ...v }); })); rows.sort((a, b) => b.dk.localeCompare(a.dk)); setD(rows); setPc(ptVals(p).filter(x => x.nh === me.nh)); };
   useEffect(() => { load(); }, [days]);
   const send = async (r) => { const t = txt.trim(); if (!t) return; setBusy(true); const id = ptId(); const v = { id, nh: me.nh, sname: me.name, ck: me.ck, sid: me.sid, date: r.dk, subject: r.subject, tkey: r.tk, text: t.slice(0, 600), at: Date.now(), status: "new" }; const ok = await maPut(`${SD_PC}/${id}`, v); setBusy(false); if (!ok) { alert("⚠️ تعذّر الإرسال"); return; } setPc(p => [v, ...p]); setTxt(""); setOpen(null); };
-  const chip = (c, i) => { const l = c.lv[i]; return l ? <span key={c.k} className="sc-badge" style={{ background: l[2], color: l[1] }}>{c.ic} {l[0]}</span> : null; };
+  const chip = (c, i) => { const l = c.lv[i]; return l ? <span key={c.k} className="sc-badge" style={{ background: l[2], color: l[1] }}>{l[3]} {c.t}: {l[0]}</span> : null; };
   if (!d) return <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div>;
   const tot = d.length, hw = d.filter(r => r.h != null), hwOk = hw.filter(r => r.h === 0).length;
   return (
@@ -32462,6 +32514,7 @@ function GuardianDaily({ me }) {
         <div key={k} className="pt-item">
           <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14 }}>📚 {r.subject}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maDay(maDate(r.dk))} {maHijri(maDate(r.dk))} • 👤 {r.by}</span></div>
           <div className="flex gap-1 flex-wrap mt-2">{SD_CR.map(c => r[c.k] != null ? chip(c, r[c.k]) : null)}</div>
+          {SD_CR.filter(c => r[c.k + "n"]).map(c => <div key={c.k} style={{ fontSize: 13, fontWeight: 800, marginTop: 6, background: c.soft, borderRight: `3px solid ${c.ac}`, borderRadius: 10, padding: "6px 10px" }}><span style={{ color: c.ac }}>{c.ic} {c.t}:</span> <span style={{ color: SD_COL[+r[c.k + "c"] || 0] }}>{r[c.k + "n"]}</span></div>)}
           {r.n && <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6, background: "#fffbeb", borderRadius: 10, padding: "6px 10px" }}>📝 {r.n}</div>}
           {mine.map(x => <div key={x.id} style={{ marginTop: 6, fontSize: 13, fontWeight: 700, background: "#f0f9ff", borderRadius: 10, padding: "6px 10px" }}>💬 {x.text} <span style={{ color: x.status === "ok" ? "#15803d" : "#b45309", fontWeight: 900 }}>— {x.status === "ok" ? "✅ تم قبول ملاحظتك" : "⏳ بانتظار الاطلاع"}</span>{x.reply && <div style={{ color: "#0f766e", fontWeight: 800 }}>↩ {x.reply}</div>}</div>)}
           {open === k ? <div className="flex gap-2 mt-2"><input className="ma-inp" autoFocus value={txt} maxLength={600} onChange={e => setTxt(e.target.value)} placeholder="✍️ ملاحظتك للمعلم…" /><button className="ma-btn pri" disabled={busy || !txt.trim()} onClick={() => send(r)}>إرسال</button></div> : <button className="ma-btn" style={{ marginTop: 8, padding: "4px 12px", fontSize: 12 }} onClick={() => { setOpen(k); setTxt(""); }}>💬 إضافة ملاحظة</button>}
