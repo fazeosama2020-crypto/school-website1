@@ -30923,6 +30923,9 @@ const PT_GATE_CSS = `
 // ══════════════════════════════════════════════════════════
 const WP_NODE = "school-wplan";
 const WP_PG = "school-wplan-pg";
+const WP_COV = "school-wplan-cover";
+const wpMode = w => w.mode || (w.pages > 0 ? "book" : wpDrive(w.pdfUrl) ? "drive" : "book");
+const wpOpenUrl = u => { const m = String(u || "").match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]{20,})/); return m ? `https://drive.google.com/file/d/${m[1]}/view` : u; };
 const WP_DAYS = ["", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const WP_THEMES = [
   { k: "teal", n: "زمردي", a: "#0f766e", b: "#14b8a6", s: "#f0fdfa" },
@@ -31010,6 +31013,24 @@ const WP_CSS = `
 .wp-q-o{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
 .wp-q-o button{padding:10px 12px;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;text-align:right;color:#334155}
 .wp-q-o button.ok{background:#dcfce7;border-color:#22c55e;color:#15803d}.wp-q-o button.no{background:#fee2e2;border-color:#ef4444;color:#b91c1c}
+/* بطاقة Google Drive */
+.wd{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:stretch}
+.wd-cov{position:relative;border-radius:22px;overflow:hidden;background:linear-gradient(135deg,var(--s),#fff);border:1px solid color-mix(in srgb,var(--a) 18%,transparent);min-height:220px;box-shadow:0 24px 40px -30px var(--a);cursor:pointer}
+.wd-cov img{display:block;width:100%;height:100%;object-fit:cover;max-height:460px;transition:transform .5s}
+.wd-cov:hover img{transform:scale(1.03)}
+.wd-rib{position:absolute;top:14px;right:14px;background:linear-gradient(135deg,var(--a),var(--b));color:#fff;border-radius:14px;padding:8px 14px;font-weight:900;font-size:15px;box-shadow:0 10px 18px -10px var(--a)}
+.wd-zoom{position:absolute;bottom:12px;left:12px;background:rgba(15,23,42,.65);color:#fff;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;backdrop-filter:blur(4px)}
+.wd-empty{height:100%;min-height:220px;display:grid;place-items:center;text-align:center;color:var(--a);font-weight:900}
+.wd-empty span{font-size:64px;display:block}
+.wd-txt{display:flex;flex-direction:column;gap:14px;justify-content:center}
+.wd-wk{font-size:30px;font-weight:900;line-height:1.2;background:linear-gradient(135deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.wd-desc{font-size:15px;line-height:2.1;font-weight:600;color:#334155;white-space:pre-wrap;background:var(--s);border-radius:16px;padding:12px 16px;border-right:4px solid var(--a)}
+.wd-go{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:18px;text-decoration:none;color:#fff;font-weight:900;font-size:16px;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 18px 30px -18px var(--a);transition:transform .15s}
+.wd-go:hover{transform:translateY(-2px)}
+.wd-go i{font-style:normal;width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:24px}
+.wd-go small{display:block;font-size:11.5px;font-weight:700;opacity:.85}
+.wd-pv{align-self:flex-start;border:1.5px solid color-mix(in srgb,var(--a) 30%,transparent);background:#fff;color:var(--a);border-radius:999px;padding:7px 14px;font-family:inherit;font-weight:900;font-size:12.5px;cursor:pointer}
+@media (max-width:760px){.wd{grid-template-columns:1fr}.wd-wk{font-size:24px}}
 /* الكتاب المتحرك */
 .fb{position:relative;overflow:hidden;min-width:0;width:100%;box-sizing:border-box;border-radius:22px;background:radial-gradient(600px 200px at 50% 0,color-mix(in srgb,var(--a) 14%,transparent),transparent),#f8fafc;padding:18px 10px 12px;border:1px solid #eef2f6;user-select:none}
 .fb-stage{position:relative;margin:0 auto;perspective:2200px;display:flex;justify-content:center}
@@ -31101,10 +31122,14 @@ function WpBlocks({ blocks }) {
 function WpWeekPage({ w, idx, isNew, preview }) {
   const th = wpTheme(w.theme); const dt = wpDates(w.date); const ref = useRef(null);
   const [pages, setPages] = useState(preview && w._imgs ? w._imgs : null); const [vis, setVis] = useState(!!preview);
-  const [pdfErr, setPdfErr] = useState(false);
+  const [pdfErr, setPdfErr] = useState(false); const [cover, setCover] = useState(preview ? w._cover || "" : ""); const [frame, setFrame] = useState(false); const [zoom, setZoom] = useState(false);
+  const mode = wpMode(w);
+  useEffect(() => { if (preview) setCover(w._cover || ""); }, [preview, w._cover]);
+  useEffect(() => { if (vis && !preview && w.hasCover) maGet(`${WP_COV}/${w.id}`).then(c => typeof c === "string" && setCover(c)); }, [vis]);
   useEffect(() => { if (preview) { setPages(w._imgs || null); return; } const el = ref.current; if (!el || vis) return; const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { setVis(true); io.disconnect(); } }, { rootMargin: "600px" }); io.observe(el); return () => io.disconnect(); }, [preview, w._imgs]);
   useEffect(() => {
     if (!vis || preview) return;
+    if (mode === "drive") return;
     if (w.pages > 0) (async () => { const d = await maGet(`${WP_PG}/${w.id}`); setPages(maArr(d)); })();
     else if (w.pdfUrl && !wpDrive(w.pdfUrl) && /\.pdf(\?|#|$)/i.test(w.pdfUrl)) wpPdfToImages(w.pdfUrl).then(setPages).catch(() => setPdfErr(true));
   }, [vis]);
@@ -31126,11 +31151,30 @@ function WpWeekPage({ w, idx, isNew, preview }) {
         </div>
       </div>
       <div className="wp-body">
+        {mode === "drive" ? <>
+          <div className="wd">
+            <div className="wd-cov" onClick={() => cover ? setZoom(true) : w.pdfUrl && window.open(wpOpenUrl(w.pdfUrl), "_blank")}>
+              {cover ? <img src={cover} alt="" /> : <div className="wd-empty"><div><span>🗓️</span>الخطة الأسبوعية</div></div>}
+              <div className="wd-rib">الأسبوع {w.num && WP_ORD[w.num - 1] ? WP_ORD[w.num - 1] : maAr(idx + 1)}</div>
+              {cover && <div className="wd-zoom">🔍 اضغط للتكبير</div>}
+            </div>
+            <div className="wd-txt">
+              <div className="wd-wk">خطة الأسبوع {w.num && WP_ORD[w.num - 1] ? WP_ORD[w.num - 1] : maAr(idx + 1)}</div>
+              {w.desc && <div className="wd-desc">{w.desc}</div>}
+              {w.pdfUrl ? <a className="wd-go" href={wpOpenUrl(w.pdfUrl)} target="_blank" rel="noreferrer"><i>📂</i><div style={{ flex: 1 }}>فتح الخطة كاملة<small>{drive ? "Google Drive" : "رابط الخطة"}</small></div><span>←</span></a> : null}
+              {drive && <button type="button" className="wd-pv" onClick={() => setFrame(!frame)}>{frame ? "▲ إخفاء المعاينة" : "👁 معاينة داخل الصفحة"}</button>}
+            </div>
+          </div>
+          {frame && drive && <iframe className="wp-frame" src={drive} title={w.title} allow="autoplay" />}
+          {zoom && <div className="fb-full" onClick={() => setZoom(false)}><img src={cover} alt="" /><div className="fb-ctl"><button className="z" onClick={() => setZoom(false)}>✕ إغلاق</button></div></div>}
+        </> : <>
+        {w.desc && <div className="wd-desc">{w.desc}</div>}
         {pages && pages.length > 0 ? <WpFlipBook pages={pages} />
           : drive ? <iframe className="wp-frame" src={drive} title={w.title} allow="autoplay" />
           : w.pdfUrl && (pdfErr || !/\.pdf(\?|#|$)/i.test(w.pdfUrl)) ? <iframe className="wp-frame" src={w.pdfUrl} title={w.title} />
           : (w.pages > 0 || (w.pdfUrl && !pdfErr)) ? <div style={{ height: 300, borderRadius: 18, background: "#f1f5f9", display: "grid", placeItems: "center", color: "#94a3b8", fontWeight: 800 }}>⏳ جاري تحميل الخطة…</div> : null}
         {w.pdfUrl && <a className="wp-b-l" href={w.pdfUrl} target="_blank" rel="noreferrer"><i>📄</i><div style={{ flex: 1 }}>فتح ملف الخطة / تحميله</div><span>←</span></a>}
+        </>}
         <WpBlocks blocks={w.blocks} />
       </div>
     </article>
@@ -31179,13 +31223,13 @@ const wpSort = arr => [...arr].sort((a, b) => String(b.date || "").localeCompare
 function WeeklyPlanPage() {
   const [list, setList] = useState([]); const [ed, setEd] = useState(null); const [busy, setBusy] = useState(""); const [msg, setMsg] = useState(""); const [prev, setPrev] = useState(false);
   const [meta, setMeta] = useState({ title: "الخطة الأسبوعية", sub: "" }); const [metaEd, setMetaEd] = useState(false);
-  const fileRef = useRef(null);
+  const fileRef = useRef(null); const covRef = useRef(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
   const load = async () => { const [d, m] = await Promise.all([maGet(WP_NODE), maGet(WP_NODE + "-meta")]); setList(wpSort(maArr(d).filter(x => x && x.id))); if (m) setMeta(p => ({ ...p, ...m })); };
   useEffect(() => { load(); }, []);
   const link = window.location.origin + window.location.pathname + "#weekly";
-  const blank = () => { const nx = (Math.max(0, ...list.map(x => +x.num || 0)) || list.length) + 1; return { id: wpId(), num: nx, title: `الخطة الأسبوعية — الأسبوع ${WP_ORD[nx - 1] || maAr(nx)}`, date: maKey(new Date()), day: "", sub: "", theme: WP_THEMES[nx % WP_THEMES.length].k, pdfUrl: "", pages: 0, blocks: [], _new: true }; };
-  const edit = async (w) => { setBusy("load"); let imgs = null; if (w.pages > 0) imgs = maArr(await maGet(`${WP_PG}/${w.id}`)); setEd({ ...JSON.parse(JSON.stringify(w)), blocks: maArr(w.blocks).map(b => ({ ...b, opts: b.t === "q" ? maArr(b.opts) : undefined })), _imgs: imgs }); setBusy(""); setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50); };
+  const blank = () => { const nx = (Math.max(0, ...list.map(x => +x.num || 0)) || list.length) + 1; return { id: wpId(), num: nx, title: `الخطة الأسبوعية — الأسبوع ${WP_ORD[nx - 1] || maAr(nx)}`, date: maKey(new Date()), day: "", sub: "", theme: WP_THEMES[nx % WP_THEMES.length].k, pdfUrl: "", pages: 0, blocks: [], mode: "book", desc: "", _new: true }; };
+  const edit = async (w) => { setBusy("load"); let imgs = null; if (w.pages > 0) imgs = maArr(await maGet(`${WP_PG}/${w.id}`)); let cov = ""; if (w.hasCover) { const c = await maGet(`${WP_COV}/${w.id}`); if (typeof c === "string") cov = c; } setEd({ ...JSON.parse(JSON.stringify(w)), mode: wpMode(w), desc: w.desc || "", _cover: cov, blocks: maArr(w.blocks).map(b => ({ ...b, opts: b.t === "q" ? maArr(b.opts) : undefined })), _imgs: imgs }); setBusy(""); setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50); };
   const setB = (k, patch) => setEd(e => ({ ...e, blocks: e.blocks.map((b, j) => j === k ? { ...b, ...patch } : b) }));
   const addB = t => setEd(e => ({ ...e, blocks: [...e.blocks, t === "q" ? { t, v: "", opts: ["", "", ""], ok: 0 } : { t, v: "", url: "" }] }));
   const mvB = (k, d) => setEd(e => { const b = [...e.blocks]; const j = k + d; if (j < 0 || j >= b.length) return e; [b[k], b[j]] = [b[j], b[k]]; return { ...e, blocks: b }; });
@@ -31208,18 +31252,21 @@ function WeeklyPlanPage() {
   const save = async () => {
     if (!ed.title.trim()) { alert("اكتب عنوان الأسبوع"); return; }
     setBusy("حفظ…");
-    const imgs = ed._imgs || [];
-    if (ed._imgDirty) {
+    if (ed.mode === "drive" && !String(ed.pdfUrl || "").trim()) { alert("ضع رابط Google Drive للخطة"); return; }
+    const imgs = ed.mode === "drive" ? [] : (ed._imgs || []);
+    if (ed._coverDirty) { if (ed._cover) { setBusy("رفع الصورة…"); const ok = await maPut(`${WP_COV}/${ed.id}`, ed._cover); if (!ok) { setBusy(""); alert("⚠️ تعذّر رفع الصورة"); return; } } else { try { await fetch(`${FIREBASE_URL}/school/${WP_COV}/${ed.id}.json`, { method: "DELETE" }); } catch {} } }
+    if (ed.mode === "drive" && (ed.pages > 0)) { try { await fetch(`${FIREBASE_URL}/school/${WP_PG}/${ed.id}.json`, { method: "DELETE" }); } catch {} }
+    if (ed._imgDirty && ed.mode !== "drive") {
       try { await fetch(`${FIREBASE_URL}/school/${WP_PG}/${ed.id}.json`, { method: "DELETE" }); } catch {}
       for (let k = 0; k < imgs.length; k++) { setBusy(`رفع الصفحة ${maAr(k + 1)} من ${maAr(imgs.length)}…`); const ok = await maPut(`${WP_PG}/${ed.id}/${k}`, imgs[k]); if (!ok) { setBusy(""); alert("⚠️ تعذّر رفع صفحة — تحقق من الاتصال وأعد الحفظ"); return; } }
     }
-    const rec = { id: ed.id, num: +ed.num || 0, title: ed.title.trim(), date: ed.date || "", day: ed.day || "", sub: (ed.sub || "").trim(), theme: ed.theme, pdfUrl: (ed.pdfUrl || "").trim(), pages: imgs.length, hidden: !!ed.hidden, at: ed.at || Date.now(), upd: Date.now(),
+    const rec = { id: ed.id, num: +ed.num || 0, title: ed.title.trim(), date: ed.date || "", day: ed.day || "", sub: (ed.sub || "").trim(), theme: ed.theme, pdfUrl: (ed.pdfUrl || "").trim(), pages: imgs.length, mode: ed.mode || "book", desc: (ed.desc || "").trim(), hasCover: !!ed._cover, hidden: !!ed.hidden, at: ed.at || Date.now(), upd: Date.now(),
       blocks: ed.blocks.filter(b => (b.v && String(b.v).trim()) || b.url).map(b => b.t === "q" ? { t: "q", v: b.v, opts: maArr(b.opts).filter(o => String(o).trim()), ok: +b.ok || 0 } : b.t === "l" ? { t: "l", v: b.v || "", url: b.url || "" } : { t: b.t, v: b.v }) };
     const ok = await maPut(`${WP_NODE}/${ed.id}`, rec); setBusy("");
     if (!ok) { alert("⚠️ تعذّر الحفظ"); return; }
     setList(p => wpSort([...p.filter(x => x.id !== rec.id), rec])); setEd(null); setPrev(false); toast("✅ تم نشر الأسبوع — يظهر فوراً على نفس الرابط");
   };
-  const del = async (w) => { if (!window.confirm(`حذف «${w.title}»؟`)) return; try { await fetch(`${FIREBASE_URL}/school/${WP_NODE}/${w.id}.json`, { method: "DELETE" }); await fetch(`${FIREBASE_URL}/school/${WP_PG}/${w.id}.json`, { method: "DELETE" }); } catch {} setList(p => p.filter(x => x.id !== w.id)); toast("🗑 تم الحذف"); };
+  const del = async (w) => { if (!window.confirm(`حذف «${w.title}»؟`)) return; try { await fetch(`${FIREBASE_URL}/school/${WP_NODE}/${w.id}.json`, { method: "DELETE" }); await fetch(`${FIREBASE_URL}/school/${WP_PG}/${w.id}.json`, { method: "DELETE" }); await fetch(`${FIREBASE_URL}/school/${WP_COV}/${w.id}.json`, { method: "DELETE" }); } catch {} setList(p => p.filter(x => x.id !== w.id)); toast("🗑 تم الحذف"); };
   const toggleHide = async (w) => { const v = { ...w, hidden: !w.hidden }; await maPut(`${WP_NODE}/${w.id}`, v); setList(p => p.map(x => x.id === w.id ? v : x)); };
   const saveMeta = async () => { await maPut(WP_NODE + "-meta", meta); setMetaEd(false); toast("✅ تم"); };
   const BT = { h: "🔠 عنوان", p: "📝 نص", ul: "📋 قائمة نقاط", l: "🔗 رابط", q: "❓ سؤال اختيار من متعدد" };
@@ -31255,16 +31302,39 @@ function WeeklyPlanPage() {
               <button className="ma-btn pri" style={{ padding: "10px 22px" }} disabled={!!busy} onClick={save}>{busy || "🚀 حفظ ونشر"}</button>
             </div>
             <div className="p-4 grid gap-4">
+              <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
+                {[["book", "📖", "كتاب يُتصفَّح", "ارفع ملف PDF فيتحول إلى كتاب تُقلَّب صفحاته"], ["drive", "📂", "رابط Google Drive", "صورة توضيحية وشرح في الأعلى وزر يفتح الخطة من درايف"]].map(([k, ic, t, d]) => { const on = (ed.mode || "book") === k; return (
+                  <button key={k} type="button" onClick={() => setEd({ ...ed, mode: k })} style={{ display: "flex", gap: 12, alignItems: "center", textAlign: "right", padding: 14, borderRadius: 18, border: `2px solid ${on ? th.a : "#e2e8f0"}`, background: on ? `linear-gradient(135deg,${th.s},#fff)` : "#fff", cursor: "pointer", fontFamily: "inherit", boxShadow: on ? `0 14px 24px -18px ${th.a}` : "none" }}>
+                    <span style={{ width: 52, height: 52, borderRadius: 16, display: "grid", placeItems: "center", fontSize: 26, background: on ? `linear-gradient(135deg,${th.a},${th.b})` : "#f1f5f9", flex: "none" }}>{ic}</span>
+                    <span><b style={{ display: "block", fontSize: 15.5, color: on ? th.a : "#0f172a" }}>{on ? "✓ " : ""}{t}</b><small style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{d}</small></span>
+                  </button>); })}
+              </div>
               <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>
                 <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", gridColumn: "1/-1" }}>عنوان الأسبوع<input {...inp} value={ed.title} onChange={e => setEd({ ...ed, title: e.target.value })} /></label>
-                <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>رقم الأسبوع<select {...inp} value={ed.num || ""} onChange={e => setEd({ ...ed, num: +e.target.value })}><option value="">—</option>{WP_ORD.map((o, k) => <option key={k} value={k + 1}>{maAr(k + 1)} — {o}</option>)}</select></label>
-                <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>التاريخ (ولو قديماً)<input type="date" {...inp} value={ed.date || ""} onChange={e => setEd({ ...ed, date: e.target.value })} /><small style={{ color: th.a }}>{dt ? `${dt.h} • ${dt.g}` : ""}</small></label>
+                <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>رقم الأسبوع<select {...inp} value={ed.num || ""} style={{ fontWeight: 900, fontSize: 15 }} onChange={e => { const n = +e.target.value; const auto = !ed.title || /^الخطة الأسبوعية — الأسبوع/.test(ed.title); setEd({ ...ed, num: n, title: auto && n ? `الخطة الأسبوعية — الأسبوع ${WP_ORD[n - 1] || maAr(n)}` : ed.title }); }}><option value="">—</option>{WP_ORD.map((o, k) => <option key={k} value={k + 1}>{maAr(k + 1)} — {o}</option>)}</select></label>
+                <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>التاريخ (اختياري — ولو قديماً)<div className="flex gap-1"><input type="date" {...inp} value={ed.date || ""} onChange={e => setEd({ ...ed, date: e.target.value })} />{ed.date && <button type="button" className="ma-btn" style={{ padding: "4px 10px" }} title="بدون تاريخ" onClick={() => setEd({ ...ed, date: "" })}>✕</button>}</div><small style={{ color: th.a }}>{dt ? `${dt.h} • ${dt.g}` : "بدون تاريخ"}</small></label>
                 <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>اليوم (اختياري)<select {...inp} value={ed.day || ""} onChange={e => setEd({ ...ed, day: e.target.value })}>{WP_DAYS.map(d => <option key={d} value={d}>{d || "— بدون —"}</option>)}{dt && !WP_DAYS.includes(dt.dn) ? null : null}</select>{dt && <small style={{ color: "#94a3b8", cursor: "pointer" }} onClick={() => setEd({ ...ed, day: dt.dn })}>اضغط لاستخدام «{dt.dn}»</small>}</label>
                 <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>وسم (اختياري)<input {...inp} value={ed.sub || ""} onChange={e => setEd({ ...ed, sub: e.target.value })} placeholder="مثال: الصف الأول" /></label>
               </div>
               <div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", marginBottom: 6 }}>🎨 لون الصفحة</div><div className="flex gap-2 flex-wrap">{WP_THEMES.map(t => <button key={t.k} type="button" onClick={() => setEd({ ...ed, theme: t.k })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: `2px solid ${ed.theme === t.k ? t.a : "#e2e8f0"}`, background: ed.theme === t.k ? t.s : "#fff", fontFamily: "inherit", fontWeight: 800, fontSize: 12.5, cursor: "pointer", color: t.a }}><span style={{ width: 18, height: 18, borderRadius: "50%", background: `linear-gradient(135deg,${t.a},${t.b})` }} />{t.n}</button>)}</div></div>
 
-              <div style={{ border: "1.5px dashed #cbd5e1", borderRadius: 18, padding: 14, background: "#f8fafc" }} className="grid gap-3">
+              <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>📝 شرح / توضيح يظهر أعلى الخطة (اختياري)<textarea className="ma-inp" rows={3} style={{ height: "auto", padding: 10, marginTop: 4 }} value={ed.desc || ""} onChange={e => setEd({ ...ed, desc: e.target.value })} placeholder="مثال: خطة الأسبوع الخامس لجميع المواد — نأمل متابعة الواجبات والاختبارات القصيرة…" /></label>
+              {ed.mode === "drive" && <div style={{ border: `2px dashed ${th.b}`, borderRadius: 18, padding: 14, background: th.s }} className="grid gap-3">
+                <b style={{ fontSize: 14.5, color: th.a }}>📂 رابط Google Drive + صورة توضيحية</b>
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input {...inp} dir="ltr" style={{ flex: "1 1 300px" }} value={ed.pdfUrl || ""} onChange={e => setEd({ ...ed, pdfUrl: e.target.value })} placeholder="https://drive.google.com/file/d/…" />
+                  {ed.pdfUrl && <span className="pt-st" style={{ background: wpDrive(ed.pdfUrl) ? "#dcfce7" : "#fef3c7", color: wpDrive(ed.pdfUrl) ? "#15803d" : "#b45309" }}>{wpDrive(ed.pdfUrl) ? "✓ رابط درايف صحيح" : "رابط عادي (سيفتح كما هو)"}</span>}
+                </div>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>💡 في درايف: مشاركة ← «أي شخص لديه الرابط» ← نسخ الرابط</div>
+                <div className="flex gap-3 items-center flex-wrap">
+                  <input ref={covRef} type="file" accept="image/*,application/pdf" hidden onChange={async e => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; setBusy("ضغط الصورة…"); try { let u; if (f.type === "application/pdf") { u = (await wpPdfToImages(f))[0]; } else u = await licCompressImage(f); setEd(x => ({ ...x, _cover: u, _coverDirty: true })); } catch { alert("تعذّر قراءة الصورة"); } setBusy(""); }} />
+                  {ed._cover ? <img src={ed._cover} alt="" style={{ height: 120, borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 10px 20px -14px rgba(0,0,0,.4)" }} /> : <div onClick={() => covRef.current?.click()} style={{ width: 170, height: 120, borderRadius: 14, border: `2px dashed ${th.b}`, display: "grid", placeItems: "center", color: th.a, fontWeight: 900, cursor: "pointer", background: "#fff", textAlign: "center", fontSize: 12.5 }}>🖼️<br />صورة من الخطة</div>}
+                  <div className="grid gap-2"><button className="ma-btn grn" disabled={!!busy} onClick={() => covRef.current?.click()}>{ed._cover ? "🔄 تغيير الصورة" : "🖼️ إضافة صورة توضيحية"}</button>{ed._cover && <button className="ma-btn" onClick={() => setEd(x => ({ ...x, _cover: "", _coverDirty: true }))}>🗑 إزالة الصورة</button>}</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", flex: "1 1 200px" }}>لقطة شاشة من الخطة (صورة أو أول صفحة من PDF) — تظهر كبيرة أعلى الأسبوع، ويكبّرها ولي الأمر بالضغط عليها</div>
+                </div>
+                {busy && busy !== "load" && <div style={{ fontWeight: 900, color: "#0f766e" }}>⏳ {busy}</div>}
+              </div>}
+              {ed.mode !== "drive" && <div style={{ border: "1.5px dashed #cbd5e1", borderRadius: 18, padding: 14, background: "#f8fafc" }} className="grid gap-3">
                 <b style={{ fontSize: 14.5 }}>📄 ملف الخطة (PDF) — يتحول إلى كتاب متحرك تُقلَّب صفحاته</b>
                 <div className="flex gap-2 flex-wrap items-center">
                   <input ref={fileRef} type="file" accept="application/pdf,image/*" hidden onChange={onPdf} />
@@ -31275,7 +31345,7 @@ function WeeklyPlanPage() {
                 </div>
                 {busy && busy !== "load" && <div style={{ fontWeight: 900, color: "#0f766e" }}>⏳ {busy}</div>}
                 {ed._imgs && ed._imgs.length > 0 && <div className="flex gap-2 flex-wrap items-center">{ed._imgs.map((u, k) => <div key={k} style={{ position: "relative" }}><img src={u} alt="" style={{ height: 90, borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff" }} /><button type="button" onClick={() => setEd(x => ({ ...x, _imgs: x._imgs.filter((_, j) => j !== k), _imgDirty: true }))} style={{ position: "absolute", top: -6, left: -6, width: 22, height: 22, borderRadius: "50%", border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontSize: 12 }}>✕</button><div style={{ textAlign: "center", fontSize: 11, fontWeight: 800, color: "#64748b" }}>{maAr(k + 1)}</div></div>)}<button className="ma-btn" onClick={() => { if (window.confirm("إزالة كل الصفحات؟")) setEd(x => ({ ...x, _imgs: [], _imgDirty: true })); }}>🗑 إزالة الكل</button></div>}
-              </div>
+              </div>}
 
               <div className="grid gap-3">
                 <b style={{ fontSize: 14.5 }}>🧩 محتوى إضافي</b>
@@ -31301,7 +31371,7 @@ function WeeklyPlanPage() {
           {list.map((w, k) => { const th = wpTheme(w.theme); const dt = wpDates(w.date); return (
             <div key={w.id} className="flex items-center gap-3 flex-wrap" style={{ background: "#fff", border: "1px solid #eef2f6", borderRight: `6px solid ${th.a}`, borderRadius: 18, padding: "12px 14px", opacity: w.hidden ? .55 : 1 }}>
               <div style={{ width: 52, height: 52, borderRadius: 16, display: "grid", placeItems: "center", background: `linear-gradient(135deg,${th.a},${th.b})`, color: "#fff", fontWeight: 900, fontSize: 20 }}>{w.num ? maAr(w.num) : "•"}</div>
-              <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 15 }}>{w.title} {k === 0 && !w.hidden && <span className="pt-st" style={{ background: "#fef3c7", color: "#b45309", fontSize: 11 }}>الأحدث</span>} {w.hidden && <span style={{ fontSize: 11, color: "#94a3b8" }}>(مخفي)</span>}</div><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{w.day ? w.day + " • " : ""}{dt ? `${dt.h} • ${dt.g}` : ""} • {w.pages ? `📖 ${maAr(w.pages)} صفحة` : w.pdfUrl ? "🔗 رابط" : "بدون ملف"} • {maAr(maArr(w.blocks).length)} عنصر</div></div>
+              <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 15 }}>{w.title} {k === 0 && !w.hidden && <span className="pt-st" style={{ background: "#fef3c7", color: "#b45309", fontSize: 11 }}>الأحدث</span>} {w.hidden && <span style={{ fontSize: 11, color: "#94a3b8" }}>(مخفي)</span>}</div><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{w.day ? w.day + " • " : ""}{dt ? `${dt.h} • ${dt.g}` : ""} • {wpMode(w) === "drive" ? `📂 درايف${w.hasCover ? " + صورة" : ""}` : w.pages ? `📖 ${maAr(w.pages)} صفحة` : w.pdfUrl ? "🔗 رابط" : "بدون ملف"} • {maAr(maArr(w.blocks).length)} عنصر</div></div>
               <button className="ma-btn" onClick={() => edit(w)}>✏️ تعديل</button>
               <button className="ma-btn" onClick={() => toggleHide(w)}>{w.hidden ? "👁 إظهار" : "🙈 إخفاء"}</button>
               <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => del(w)}>🗑</button>
