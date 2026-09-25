@@ -31341,6 +31341,11 @@ const ML_CSS = `
 .ml-rs{display:flex;gap:6px;flex-wrap:wrap}
 .ml-r{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:999px;border:1.5px solid #fed7aa;background:#fff;font-family:inherit;font-weight:800;font-size:12.5px;color:#9a3412;cursor:pointer}
 .ml-r.on{background:#ea580c;border-color:#ea580c;color:#fff}
+.ml-go{border:none;border-radius:14px;padding:10px 16px;font-family:inherit;font-weight:900;font-size:13.5px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#f97316,#c2410c);box-shadow:0 10px 18px -10px #c2410c;white-space:nowrap;transition:transform .12s}
+.ml-go:active{transform:scale(.94)}
+.ml-x{width:34px;height:34px;border-radius:50%;border:1.5px solid #fecaca;background:#fff;color:#dc2626;font-weight:900;cursor:pointer}
+.ml-gs{position:relative}.ml-gr{position:absolute;inset:100% 0 auto 0;z-index:40;background:#fff;border:1px solid #fed7aa;border-radius:16px;box-shadow:0 20px 40px -20px rgba(15,23,42,.5);margin-top:6px;overflow:hidden}
+.ml-gr>div{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #fff1e6}
 .ml-dur{display:inline-flex;align-items:center;gap:6px;border-radius:12px;padding:6px 12px;font-weight:900;font-size:13px}
 .ml-bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12.5px;font-weight:800}
 .ml-bar i{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 55%,#fff))}
@@ -31394,9 +31399,19 @@ function MorningLatePage({ by = "الإدارة", canConfig = true, admin = fals
     setCk(k); setWork(w); setEditing(!dayCls[k]); setDirty(false); setQ("");
   };
   const approved = ck && dayCls[ck] && !editing;
+  const [openDet, setOpenDet] = useState(null); const [gq, setGq] = useState("");
   const toggle = (s) => {
     if (approved) return;
+    const was = !!work[s.id];
     setWork(p => { const o = { ...p }; if (o[s.id]) delete o[s.id]; else o[s.id] = { time: isToday ? mlNow() : cfg.p1, reason: "", note: "" }; return o; }); setDirty(true);
+    setOpenDet(was ? null : s.id);
+  };
+  const pickReason = (sid, r, cur) => { const nr = cur === r ? "" : r; upd(sid, { reason: nr }); if (nr && nr !== "أخرى") setTimeout(() => setOpenDet(o => o === sid ? null : o), 180); };
+  const markFrom = (k, s) => {
+    if (ck !== k) { if (dirty && !window.confirm("لديك تغييرات غير محفوظة في فصل آخر، هل تريد تركها؟")) return; setDirty(false); openCls(k); }
+    setEditing(true);
+    setWork(p => p[s.id] ? p : { ...p, [s.id]: { time: isToday ? mlNow() : cfg.p1, reason: "", note: "" } }); setDirty(true); setOpenDet(s.id); setGq("");
+    setTimeout(() => { const el = document.getElementById(`mls-${s.id}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 250);
   };
   const upd = (sid, patch) => { setWork(p => ({ ...p, [sid]: { ...p[sid], ...patch } })); setDirty(true); };
   const save = async () => {
@@ -31605,6 +31620,12 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
         <div className="ma-tabs">{[["rec", `📝 الرصد اليومي${totalDay ? ` (${maAr(totalDay)})` : ""}`], ["rep", "📊 التقارير"], ...(admin ? [["cls", "📥 الفصول (١٤)"], ["staff", "👥 الإداريون المصرّح لهم"]] : [])].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
         {tab === "rec" && <>
+          <div className="ml-gs">
+            <input className="ma-inp" style={{ height: 50, fontSize: 15, borderColor: "#fdba74", borderWidth: 2, borderRadius: 16 }} value={gq} onChange={e => setGq(e.target.value)} placeholder="⚡ رصد سريع: اكتب اسم الطالب المتأخر من أي فصل…" />
+            {gq.trim().length >= 2 && (() => { const t = gq.trim(); const res = []; classes.forEach(c => studentsOf(c.ck).forEach(x => { if (res.length < 10 && x.name.includes(t)) res.push([c.ck, x]); })); return (
+              <div className="ml-gr">{res.length ? res.map(([k, x]) => { const already = Object.values(dayLate).some(r => r && r.id === x.id && r.ck === k) || (ck === k && work[x.id]); return (
+                <div key={k + x.id}><div style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 14 }}>{x.name}</b><div style={{ fontSize: 12, fontWeight: 800, color: MA_LV[+k[0] - 1]?.c }}>{maClassName(k)}</div></div>{already ? <span className="pt-st" style={{ background: "#ffedd5", color: "#9a3412" }}>⏰ مسجّل</span> : <button type="button" className="ml-go" onClick={() => markFrom(k, x)}>⏰ متأخر</button>}</div>); }) : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا يوجد طالب بهذا الاسم</div>}</div>); })()}
+          </div>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
             {MA_LV.map((L, li) => { if (!(counts[li] > 0)) return null; const cl = classes.filter(c => c.lv === li); const n = cl.reduce((a, c) => a + nLate(c.ck), 0); return (
               <div key={li} className="ml-lv" style={{ "--c": L.c, "--soft": L.soft }}>
@@ -31627,16 +31648,18 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
             </div>
             <div className="p-3 grid gap-2">
               {cur.map((s, i) => { const w = work[s.id]; const on = !!w; const m = on ? minsOf(w.time) : 0; const p1 = on && afterP1(w.time); return (
-                <div key={s.id} className={`ml-stu ${on ? "on" : ""}`} onClick={() => !on && toggle(s)} style={approved ? { cursor: "default" } : null}>
+                <div key={s.id} id={`mls-${s.id}`} className={`ml-stu ${on ? "on" : ""}`} onClick={() => { if (!on) toggle(s); else if (!approved) setOpenDet(openDet === s.id ? null : s.id); }} style={approved ? { cursor: "default" } : null}>
                   <div className="ml-lock" onClick={e => { if (on) { e.stopPropagation(); toggle(s); } }} title={on ? "إلغاء" : ""}>{on ? "⏰" : "🔒"}</div>
-                  <div style={{ minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 14.5 }}><span style={{ color: "#94a3b8", marginLeft: 6 }}>{maAr(i + 1)}</span>{s.name}</div>{on && <div style={{ fontSize: 12, fontWeight: 800, color: "#9a3412" }}>حضر {mlFmtT(w.time)} • {w.reason || "اختر السبب"}</div>}</div>
+                  <div style={{ minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 14.5 }}><span style={{ color: "#94a3b8", marginLeft: 6 }}>{maAr(i + 1)}</span>{s.name}</div>{on && <div style={{ fontSize: 12, fontWeight: 800, color: "#9a3412" }}>حضر {mlFmtT(w.time)} • {w.reason ? `${(ML_REASONS.find(x => x[0] === w.reason) || ["", "📝"])[1]} ${w.reason}` : <span style={{ color: "#dc2626" }}>اختر السبب ↓</span>}{!approved && openDet !== s.id && <span style={{ color: "#94a3b8", marginRight: 8 }}>✏️ تعديل</span>}</div>}</div>
                   <div className="ml-mini flex gap-2 items-center" onClick={e => e.stopPropagation()}>
                     {on && <span className="ml-dur" style={{ background: p1 ? "#fee2e2" : "#ffedd5", color: p1 ? "#b91c1c" : "#9a3412" }}>⏱ {mlDur(m)}{p1 ? " • بعد الحصة الأولى" : ""}</span>}
-                    {!on && !approved && <button className="ma-btn" style={{ padding: "3px 9px", fontSize: 11.5 }} onClick={() => setStuEd({ id: s.id, name: s.name })}>✏️</button>}
+                    {!on && !approved && <button className="ma-btn" style={{ padding: "3px 9px", fontSize: 11.5 }} title="تعديل الاسم" onClick={() => setStuEd({ id: s.id, name: s.name })}>✏️</button>}
+                    {!on && !approved && <button type="button" className="ml-go" onClick={() => toggle(s)}>⏰ متأخر</button>}
+                    {on && !approved && <button type="button" className="ml-x" title="إلغاء التأخر" onClick={() => toggle(s)}>✕</button>}
                   </div>
-                  {on && !approved && <div className="ml-det" onClick={e => e.stopPropagation()}>
+                  {on && !approved && (openDet === s.id || !w.reason) && <div className="ml-det" onClick={e => e.stopPropagation()}>
                     <div className="flex gap-2 items-center flex-wrap"><span style={{ fontSize: 12.5, fontWeight: 900, color: "#475569" }}>🕒 وقت الحضور</span><input type="time" className="ma-inp" style={{ width: 130, height: 36 }} value={w.time} onChange={e => upd(s.id, { time: e.target.value })} />{isToday && <button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => upd(s.id, { time: mlNow() })}>الآن</button>}</div>
-                    <div className="ml-rs">{ML_REASONS.map(([r, ic]) => <button key={r} type="button" className={`ml-r ${w.reason === r ? "on" : ""}`} onClick={() => upd(s.id, { reason: w.reason === r ? "" : r })}>{ic} {r}</button>)}</div>
+                    <div className="ml-rs">{ML_REASONS.map(([r, ic]) => <button key={r} type="button" className={`ml-r ${w.reason === r ? "on" : ""}`} onClick={() => pickReason(s.id, r, w.reason)}>{ic} {r}</button>)}</div>
                     {(w.reason === "أخرى" || w.note) && <input className="ma-inp" value={w.note || ""} onChange={e => upd(s.id, { note: e.target.value })} placeholder="✍️ اكتب السبب أو ملاحظة (اختياري)…" />}
                     {w.reason !== "أخرى" && !w.note && <button type="button" style={{ all: "unset", cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#94a3b8" }} onClick={() => upd(s.id, { note: " " })}>＋ ملاحظة اختيارية</button>}
                   </div>}
