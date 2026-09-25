@@ -29963,16 +29963,7 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   // ── استيراد كشوف الفصول (نفس كشوف التحضير)
   const onFiles = async (e) => {
     const files = [...(e.target.files || [])]; e.target.value = ""; if (!files.length) return;
-    setBusy(true); const XLSX = await loadXLSX(); const out = [];
-    for (const f of files) {
-      try {
-        const wb = XLSX.read(await f.arrayBuffer()); let best = null;
-        wb.SheetNames.forEach(n => { const p = fgParseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" })); const names = fgUniqueNames(p.body, p.col); if (!best || names.length > best.names.length) best = { ...p, names }; });
-        const m = best?.meta || {}; const li = m.levelNorm ? FG_LEVELS.indexOf(m.levelNorm) : -1;
-        const sec = parseInt(String(m.section || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-        out.push({ file: f.name, names: best ? best.names : [], list: best ? await ptStudentsFromParsed(best, best.names) : [], ck: li >= 0 && sec > 0 ? `${li + 1}-${sec}` : "" });
-      } catch { out.push({ file: f.name, names: [], ck: "" }); }
-    }
+    setBusy(true); const out = await ptReadRosters(files);
     setBusy(false); setImp(out);
   };
   const doImport = async () => {
@@ -30319,6 +30310,33 @@ async function ptStudentsFromParsed(p, names) {
 }
 function ptMergeRoster(old, list) { const o = maArr(old); return (list || []).map(x => { const e = o.find(y => y && y.name === x.name); return { ...(e || { id: maId() }), name: x.name, ...(x.nh ? { nh: x.nh, n4: x.n4 } : {}) }; }); }
 
+// ── قراءة كشوف نور: كل الأوراق وكل الملفات، ودمج أوراق الفصل الواحد (مثل Sheet1 + Sheet2) مع حذف المكرر
+async function ptReadRosters(files) {
+  const XLSX = await loadXLSX(); const parts = [];
+  for (const f of files) {
+    try {
+      const wb = XLSX.read(await f.arrayBuffer()); let lastCk = "";
+      for (const n of wb.SheetNames) {
+        const pr = fgParseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" })); const names = fgUniqueNames(pr.body, pr.col);
+        if (!names.length || pr.staff) continue;
+        const m = pr.meta || {}; const li = m.levelNorm ? FG_LEVELS.indexOf(m.levelNorm) : -1;
+        const sec = parseInt(String(m.section || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+        let ck = li >= 0 && sec > 0 ? `${li + 1}-${sec}` : ""; const auto = !!ck;
+        if (!ck && lastCk) ck = lastCk; // ورقة تكملة بلا ترويسة
+        if (ck) lastCk = ck;
+        parts.push({ file: f.name, sheet: wb.SheetNames.length > 1 ? n : "", names, list: await ptStudentsFromParsed(pr, names), ck, auto });
+      }
+    } catch (err) { parts.push({ file: f.name, sheet: "", names: [], list: [], ck: "", err: String(err?.message || err) }); }
+  }
+  const out = []; const byCk = {};
+  for (const x of parts) {
+    if (!x.ck || !x.names.length) { out.push({ ...x, n: 1 }); continue; }
+    let g = byCk[x.ck]; if (!g) { g = byCk[x.ck] = { file: x.file + (x.sheet ? " • " + x.sheet : ""), names: [], list: [], ck: x.ck, auto: x.auto, n: 0, dup: 0 }; out.push(g); } else g.file += " + " + (x.sheet || x.file);
+    g.n++; g.auto = g.auto || x.auto;
+    x.list.forEach(st => { const exists = g.list.some(y => (st.nh && y.nh === st.nh) || y.name === st.name); if (exists) { g.dup++; return; } g.list.push(st); g.names.push(st.name); });
+  }
+  return out;
+}
 // ── دخول الموظف بالسجل المدني
 async function ptStaffLogin(nid) {
   const n = licNormId(nid);
@@ -31562,31 +31580,27 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
   };
 
   // ── استيراد كشوف الفصول (ملفات متعددة أو ملف واحد بعدة أوراق)
-  const [imp, setImp] = useState(null); const impRef = useRef(null);
+  const [imp, setImp] = useState(null); const impRef = useRef(null); const [impCk, setImpCk] = useState("");
+  const [rEd, setREd] = useState(null); const [rQ, setRQ] = useState(""); const [rAdd, setRAdd] = useState({ name: "", nid: "" });
+  const saveRoster = async (k, students) => { const r = { ...(rosters[k] || {}), ck: k, students, updated: Date.now() }; setBusy(true); const ok = await maPut(`${MA_ROSTER}/${k}`, r); setBusy(false); if (!ok) { alert("⚠️ تعذّر الحفظ"); return false; } setRosters(p => ({ ...p, [k]: r })); return true; };
+  const rRename = async (st) => { const v = window.prompt("تعديل اسم الطالب:", st.name); if (!v || !v.trim() || v.trim() === st.name) return; if (await saveRoster(rEd, studentsOf(rEd).map(x => x.id === st.id ? { ...x, name: v.trim() } : x))) toast("✅ تم تعديل الاسم"); };
+  const rSetId = async (st) => { const v = window.prompt(`رقم السجل المدني للطالب «${st.name}» (١٠ أرقام):`, ""); if (v == null) return; const n = licNormId(v); if (n.length !== 10) { alert("الرقم يجب أن يكون ١٠ أرقام"); return; } const h = await stuHash(n); if (await saveRoster(rEd, studentsOf(rEd).map(x => x.id === st.id ? { ...x, nh: h, n4: n.slice(-4) } : x))) toast("🪪 تم ربط الهوية"); };
+  const rDel = async (st) => { if (!window.confirm(`حذف «${st.name}» من ${maClassName(rEd)}؟`)) return; if (await saveRoster(rEd, studentsOf(rEd).filter(x => x.id !== st.id))) toast("🗑 تم حذف الطالب"); };
+  const rDelAll = async () => { if (!window.confirm(`حذف جميع طلاب ${maClassName(rEd)} (${maAr(studentsOf(rEd).length)} طالب)؟\nلن يُحذف التأخر أو الغياب المسجّل سابقاً.`)) return; if (await saveRoster(rEd, [])) toast("🗑 تم إفراغ الفصل"); };
+  const rAddOne = async () => { const nm = rAdd.name.trim(); if (!nm) return; const n = licNormId(rAdd.nid); const st = { id: maId(), name: nm }; if (n.length === 10) { st.nh = await stuHash(n); st.n4 = n.slice(-4); } if (await saveRoster(rEd, [...studentsOf(rEd), st])) { setRAdd({ name: "", nid: "" }); toast("✅ تمت إضافة الطالب"); } };
   const onImpFiles = async (e) => {
     const files = [...(e.target.files || [])]; e.target.value = ""; if (!files.length) return;
-    setBusy(true); const XLSX = await loadXLSX(); const out = [];
-    for (const f of files) {
-      try {
-        const wb = XLSX.read(await f.arrayBuffer());
-        for (const n of wb.SheetNames) {
-          const pr = fgParseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" })); const names = fgUniqueNames(pr.body, pr.col);
-          if (names.length < 2 || pr.staff) continue;
-          const m = pr.meta || {}; const li = m.levelNorm ? FG_LEVELS.indexOf(m.levelNorm) : -1;
-          const sec = parseInt(String(m.section || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-          out.push({ file: f.name + (wb.SheetNames.length > 1 ? " • " + n : ""), names, list: await ptStudentsFromParsed(pr, names), ck: li >= 0 && sec > 0 ? `${li + 1}-${sec}` : "", auto: li >= 0 && sec > 0 });
-        }
-      } catch (err) { out.push({ file: f.name, names: [], list: [], ck: "", err: String(err?.message || err) }); }
-    }
+    setBusy(true); const out = (await ptReadRosters(files)).map(x => impCk ? { ...x, ck: impCk } : x);
     setBusy(false); setImp(out);
   };
   const doImp = async () => {
     const ok = imp.filter(x => x.names.length);
     if (ok.some(x => !x.ck)) { alert("حدّد الفصل لكل كشف"); return; }
-    const dup = ok.map(x => x.ck).filter((c, i, a) => a.indexOf(c) !== i); if (dup.length && !window.confirm(`الفصل ${maClassName(dup[0])} مكرر — سيُعتمد آخر كشف. متابعة؟`)) return;
+    const byC = {}; ok.forEach(x => { const g = byC[x.ck]; if (!g) byC[x.ck] = { ...x, list: [...x.list] }; else x.list.forEach(st => { if (!g.list.some(y => (st.nh && y.nh === st.nh) || y.name === st.name)) g.list.push(st); }); });
+    const merged = Object.values(byC); setImpCk("");
     setBusy(true);
-    for (const x of ok) { const students = ptMergeRoster(studentsOf(x.ck), x.list.length ? x.list : x.names.map(n => ({ name: n }))); const r = { ...(rosters[x.ck] || {}), ck: x.ck, students, updated: Date.now() }; const good = await maPut(`${MA_ROSTER}/${x.ck}`, r); if (good) setRosters(p => ({ ...p, [x.ck]: r })); }
-    setBusy(false); setImp(null); toast(`📌 تم تثبيت ${maAr(ok.length)} فصل`);
+    for (const x of merged) { const students = ptMergeRoster(studentsOf(x.ck), x.list.length ? x.list : x.names.map(n => ({ name: n }))); const r = { ...(rosters[x.ck] || {}), ck: x.ck, students, updated: Date.now() }; const good = await maPut(`${MA_ROSTER}/${x.ck}`, r); if (good) setRosters(p => ({ ...p, [x.ck]: r })); }
+    setBusy(false); setImp(null); toast(`📌 تم تثبيت ${maAr(merged.length)} فصل`);
   };
   const cur = ck ? studentsOf(ck).filter(s => !q || s.name.includes(q)) : [];
   const nLate = k => Object.values(dayLate).filter(r => r && r.ck === k).length;
@@ -31681,17 +31695,42 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div><div style={{ fontWeight: 900, fontSize: 16 }}>📥 رفع كشوف الفصول من نور</div><div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>ارفع ١٤ ملفاً دفعة واحدة أو ملفاً واحداً فيه ورقة لكل فصل — يُتعرّف على الصف والفصل من الكشف تلقائياً، ويُربط رقم هوية الطالب</div></div>
             <input ref={impRef} type="file" multiple accept=".xlsx,.xls,.csv" hidden onChange={onImpFiles} />
-            <button className="ma-btn grn" style={{ padding: "10px 18px" }} disabled={busy} onClick={() => impRef.current?.click()}>{busy ? "⏳ جاري القراءة…" : "📥 اختيار الملفات"}</button>
+            <button className="ma-btn grn" style={{ padding: "10px 18px" }} disabled={busy} onClick={() => { setImpCk(""); impRef.current?.click(); }}>{busy ? "⏳ جاري القراءة…" : "📥 اختيار الملفات"}</button>
           </div>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
-            {MA_LV.map((L, li) => counts[li] > 0 && <div key={li} className="ml-lv" style={{ "--c": L.c, "--soft": L.soft }}><div className="ml-lv-h">الصف {L.n}</div><div className="ml-tiles">{classes.filter(c => c.lv === li).map(c => { const st = studentsOf(c.ck); const idn = st.filter(x => x.nh).length; return <div key={c.ck} className="ml-tile" style={{ cursor: "default" }}><span className="n">{maAr(c.sec)}</span><b>{L.s} / {maAr(c.sec)}</b><small style={{ color: st.length ? "#15803d" : "#dc2626" }}>{st.length ? `👥 ${maAr(st.length)}` : "لم يُرفع"}</small>{st.length > 0 && <small style={{ fontSize: 10, color: idn === st.length ? "#15803d" : "#b45309" }}>🪪 {maAr(idn)}/{maAr(st.length)}</small>}</div>; })}</div></div>)}
+            {MA_LV.map((L, li) => counts[li] > 0 && <div key={li} className="ml-lv" style={{ "--c": L.c, "--soft": L.soft }}><div className="ml-lv-h">الصف {L.n}</div><div className="ml-tiles">{classes.filter(c => c.lv === li).map(c => { const st = studentsOf(c.ck); const idn = st.filter(x => x.nh).length; return <div key={c.ck} className={`ml-tile ${rEd === c.ck ? "on" : ""}`} role="button" title="إدارة طلاب الفصل" onClick={() => { setREd(rEd === c.ck ? null : c.ck); setRQ(""); }}><span className="n">{maAr(c.sec)}</span><b>{L.s} / {maAr(c.sec)}</b><small style={{ color: st.length ? "#15803d" : "#dc2626" }}>{st.length ? `👥 ${maAr(st.length)}` : "لم يُرفع"}</small>{st.length > 0 && <small style={{ fontSize: 10, color: idn === st.length ? "#15803d" : "#b45309" }}>🪪 {maAr(idn)}/{maAr(st.length)}</small>}</div>; })}</div></div>)}
           </div>
-          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>🪪 = عدد الطلاب المربوطين برقم الهوية (للبحث بالهوية وبوابة ولي الأمر) • الكشوف مشتركة مع صفحة غياب الحصة الثانية وتصنيف الطلاب، ولا يضيع التأخر المسجّل عند إعادة الرفع</div>
+          {rEd && (() => { const st = studentsOf(rEd); const L2 = st.filter(x => !rQ || x.name.includes(rQ)); return (
+            <div style={{ border: "2px solid #fdba74", borderRadius: 20, overflow: "hidden" }}>
+              <div className="flex items-center gap-2 flex-wrap" style={{ padding: "12px 14px", background: "linear-gradient(90deg,#fff7ed,#fff)" }}>
+                <b style={{ fontSize: 16, flex: "1 1 200px" }}>👥 طلاب {maClassName(rEd)} ({maAr(st.length)}) <small style={{ color: "#64748b" }}>• 🪪 {maAr(st.filter(x => x.nh).length)}</small></b>
+                <input className="ma-inp" style={{ flex: "1 1 150px", maxWidth: 220 }} placeholder="🔍 بحث" value={rQ} onChange={e => setRQ(e.target.value)} />
+                <button className="ma-btn grn" disabled={busy} onClick={() => { setImpCk(rEd); impRef.current?.click(); }}>📥 رفع كشف لهذا الفصل</button>
+                <button className="ma-btn" style={{ color: "#b91c1c" }} disabled={busy || !st.length} onClick={rDelAll}>🗑 حذف جميع الطلاب</button>
+                <button className="ma-btn" onClick={() => setREd(null)}>✕</button>
+              </div>
+              <div className="flex gap-2 flex-wrap" style={{ padding: "10px 14px", borderTop: "1px solid #fed7aa", background: "#fffaf5" }}>
+                <input className="ma-inp" style={{ flex: "2 1 220px" }} placeholder="＋ اسم طالب جديد" value={rAdd.name} onChange={e => setRAdd({ ...rAdd, name: e.target.value })} onKeyDown={e => e.key === "Enter" && rAddOne()} />
+                <input className="ma-inp" style={{ flex: "1 1 150px" }} inputMode="numeric" placeholder="رقم الهوية (اختياري)" value={rAdd.nid} onChange={e => setRAdd({ ...rAdd, nid: licNormId(e.target.value).slice(0, 10) })} />
+                <button className="ma-btn pri" disabled={busy || !rAdd.name.trim()} onClick={rAddOne}>＋ إضافة</button>
+              </div>
+              <div style={{ maxHeight: 420, overflowY: "auto" }}>{L2.map((x, i) => (
+                <div key={x.id} className="flex items-center gap-2" style={{ padding: "8px 14px", borderTop: "1px solid #f1f5f9", background: i % 2 ? "#fff" : "#fcfcfd" }}>
+                  <span style={{ width: 28, color: "#94a3b8", fontWeight: 800, fontSize: 12 }}>{maAr(i + 1)}</span>
+                  <b style={{ flex: 1, minWidth: 0, fontSize: 14 }}>{x.name}</b>
+                  {x.nh ? <span className="pt-st" style={{ background: "#dcfce7", color: "#15803d" }}>🪪 ***{x.n4}</span> : <button className="ma-btn" style={{ padding: "3px 9px", fontSize: 11.5, color: "#b45309" }} onClick={() => rSetId(x)}>🪪 ربط الهوية</button>}
+                  <button className="ma-btn" style={{ padding: "3px 9px" }} title="تعديل الاسم" onClick={() => rRename(x)}>✏️</button>
+                  <button className="ma-btn" style={{ padding: "3px 9px", color: "#b91c1c" }} title="حذف" onClick={() => rDel(x)}>🗑</button>
+                </div>))}
+                {!st.length && <div style={{ padding: 24, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>الفصل فارغ — ارفع كشفه أو أضف الطلاب يدوياً</div>}
+              </div>
+            </div>); })()}
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>💡 اضغط على أي فصل لعرض طلابه وتعديل الأسماء أو حذفها أو ربط الهوية • 🪪 = عدد الطلاب المربوطين برقم الهوية (للبحث بالهوية وبوابة ولي الأمر) • الكشوف مشتركة مع صفحة غياب الحصة الثانية وتصنيف الطلاب، ولا يضيع التأخر المسجّل عند إعادة الرفع</div>
         </div>}
         {imp && <div style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setImp(null)}>
           <div className="ma-card" style={{ width: "min(640px,100%)", maxHeight: "86vh", overflow: "auto", padding: 20 }} onClick={e => e.stopPropagation()}>
             <b style={{ fontSize: 17 }}>📥 تثبيت الكشوف ({maAr(imp.length)})</b>
-            <div className="grid gap-2 mt-3">{imp.map((x, i) => <div key={i} className="flex items-center gap-2 flex-wrap" style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: "8px 12px" }}><div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontWeight: 800, fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {x.file}</div><div style={{ fontSize: 12, fontWeight: 800, color: x.names.length ? "#15803d" : "#b91c1c" }}>{x.names.length ? `👥 ${maAr(x.names.length)} طالب • 🪪 ${maAr(x.list.filter(y => y.nh).length)}` : (x.err || "لم أجد أسماء")}{x.auto ? " • ✓ تعرّف تلقائي" : ""}</div></div><select className="ma-inp" style={{ width: 160 }} value={x.ck} disabled={!x.names.length} onChange={e => setImp(imp.map((y, j) => j === i ? { ...y, ck: e.target.value } : y))}><option value="">— الفصل —</option>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select></div>)}</div>
+            <div className="grid gap-2 mt-3">{imp.map((x, i) => <div key={i} className="flex items-center gap-2 flex-wrap" style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: "8px 12px" }}><div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontWeight: 800, fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {x.file}</div><div style={{ fontSize: 12, fontWeight: 800, color: x.names.length ? "#15803d" : "#b91c1c" }}>{x.names.length ? `👥 ${maAr(x.names.length)} طالب • 🪪 ${maAr(x.list.filter(y => y.nh).length)}` : (x.err || "لم أجد أسماء")}{x.auto ? " • ✓ تعرّف تلقائي" : ""}{x.n > 1 ? ` • دُمجت ${maAr(x.n)} أوراق` : ""}{x.dup ? ` • حُذف ${maAr(x.dup)} مكرر` : ""}</div></div><select className="ma-inp" style={{ width: 160 }} value={x.ck} disabled={!x.names.length} onChange={e => setImp(imp.map((y, j) => j === i ? { ...y, ck: e.target.value } : y))}><option value="">— الفصل —</option>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select></div>)}</div>
             <div className="flex gap-2 justify-end mt-3"><button className="ma-btn" onClick={() => setImp(null)} disabled={busy}>إلغاء</button><button className="ma-btn pri" onClick={doImp} disabled={busy}>{busy ? "⏳" : "📌 تثبيت الفصول"}</button></div>
           </div>
         </div>}
@@ -32297,21 +32336,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
     const files = [...(e.target.files || [])]; e.target.value = "";
     if (!files.length) return;
     setBusy(true);
-    const XLSX = await loadXLSX();
-    const out = [];
-    for (const f of files) {
-      try {
-        const wb = XLSX.read(await f.arrayBuffer());
-        let best = null;
-        wb.SheetNames.forEach(n => { const p = fgParseRows(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: "" })); const names = fgUniqueNames(p.body, p.col); if (!best || names.length > best.names.length) best = { ...p, names }; });
-        let k = "";
-        const m = best?.meta || {};
-        const li = m.levelNorm ? FG_LEVELS.indexOf(m.levelNorm) : -1;
-        const sec = parseInt(String(m.section || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-        if (li >= 0 && sec > 0) k = `${li + 1}-${sec}`;
-        out.push({ file: f.name, names: best ? best.names : [], list: best ? await ptStudentsFromParsed(best, best.names) : [], ck: k, detected: !!k });
-      } catch (err) { out.push({ file: f.name, names: [], ck: "", err: String(err?.message || err) }); }
-    }
+    const out = (await ptReadRosters(files)).map(x => ({ ...x, detected: x.auto }));
     setBusy(false); setImp(out);
   };
   const doImport = async () => {
