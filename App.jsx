@@ -1128,6 +1128,58 @@ async function annCompressHtml(html) {
   return out;
 }
 
+// ── تهيئة نص الإعلان للعرض على الجوال: تصغير الخطوط الكبيرة، إزالة العروض الثابتة والمسافات الزائدة، ومنع انكسار التواريخ
+function annFit(html) {
+  if (!html || typeof html !== "string") return html || "";
+  try {
+    const doc = new DOMParser().parseFromString(`<div id="annr">${html}</div>`, "text/html");
+    const root = doc.getElementById("annr"); if (!root) return html;
+    root.querySelectorAll("*").forEach(el => {
+      const st = el.style; const tag = el.tagName;
+      if (st) {
+        const fs = st.fontSize;
+        if (fs) { let px = parseFloat(fs); if (/pt$/.test(fs)) px *= 1.333; else if (/r?em$/.test(fs)) px *= 16; else if (/%$/.test(fs)) px = px / 100 * 16; else if (!/px$/.test(fs)) px = 0; if (px > 0) { const cap = /^H[1-3]$/.test(tag) ? 26 : 21; st.fontSize = Math.round(Math.min(Math.max(px, 13), cap)) + "px"; } else st.fontSize = ""; }
+        if (st.lineHeight) { const v = parseFloat(st.lineHeight); if (/px$/.test(st.lineHeight) ? v > 42 : v > 2.2) st.lineHeight = "1.9"; }
+        ["width", "minWidth", "maxWidth", "textIndent", "letterSpacing", "wordSpacing", "whiteSpace", "position", "left", "right", "top", "bottom", "float"].forEach(k => { if (!(tag === "IMG" && k === "maxWidth")) st[k] = ""; });
+        if (tag !== "IMG") st.height = "";
+        ["marginLeft", "marginRight", "paddingLeft", "paddingRight"].forEach(k => { if (parseFloat(st[k]) > 18) st[k] = ""; });
+      }
+      if (tag === "IMG") { el.removeAttribute("width"); el.removeAttribute("height"); el.style.maxWidth = "100%"; el.style.height = "auto"; }
+      else el.removeAttribute("width");
+      if (tag === "FONT" && +el.getAttribute("size") > 4) el.setAttribute("size", "4");
+      if ((el.getAttribute("dir") || "").toLowerCase() === "ltr" && /[؀-ۿ]/.test(el.textContent || "")) el.setAttribute("dir", "auto");
+    });
+    const tw = doc.createTreeWalker(root, 4); const nodes = []; while (tw.nextNode()) nodes.push(tw.currentNode);
+    const re = /(\d{1,4}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{1,4}\s*(?:هـ|ه|م)?)/;
+    nodes.forEach(t => {
+      let v = t.nodeValue.replace(/ {2,}/g, " ").replace(/[ \t]{3,}/g, " ");
+      if (re.test(v)) { const frag = doc.createDocumentFragment(); v.split(re).forEach((part, i) => { if (i % 2) { const sp = doc.createElement("span"); sp.className = "ann-nw"; sp.textContent = part; frag.appendChild(sp); } else if (part) frag.appendChild(doc.createTextNode(part)); }); t.parentNode.replaceChild(frag, t); }
+      else if (v !== t.nodeValue) t.nodeValue = v;
+    });
+    return root.innerHTML;
+  } catch { return html; }
+}
+const ANN_HTML_CSS = `
+.annhtml{font-size:16px;line-height:1.95;overflow-wrap:anywhere;word-break:normal;text-align:right}
+.annhtml,.annhtml *{max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;float:none!important;text-indent:0!important;letter-spacing:normal!important;word-spacing:normal!important}
+.annhtml p,.annhtml div,.annhtml li{margin-top:0;margin-bottom:.5em}
+.annhtml p:empty,.annhtml div:empty{display:none}
+.annhtml br+br{display:none}
+.annhtml img,.annhtml video,.annhtml iframe{height:auto!important;border-radius:14px;display:block;margin:10px auto}
+.annhtml table{display:block!important;overflow-x:auto!important;width:100%!important}
+.annhtml .ann-nw{white-space:nowrap!important;unicode-bidi:isolate}
+@media (max-width:640px){
+ .annhtml{font-size:15.5px!important;line-height:1.9!important}
+ .annhtml [style*="font-size"],.annhtml font{font-size:clamp(14px,4.3vw,19px)!important}
+ .annhtml h1,.annhtml h2,.annhtml h1 *,.annhtml h2 *{font-size:clamp(17px,5.2vw,22px)!important;line-height:1.6!important}
+ .annhtml h3,.annhtml h3 *{font-size:clamp(16px,4.8vw,20px)!important}
+ .annhtml [style*="line-height"]{line-height:1.9!important}
+ .annhtml [style*="padding"]{padding-left:6px!important;padding-right:6px!important}
+ .annhtml [style*="margin"]{margin-left:0!important;margin-right:0!important}
+ .annhtml [style*="text-align: center"],.annhtml [align="center"]{text-align:center!important}
+}
+`;
+
 function SingleAnnouncementPage({ announcements, siteFont, annId }) {
   const cIcons = { "تعاميم": "📜", "إعلانات": "📢", "تدريب": "🎓", "اجتماعات": "🤝" };
   const priorityColor = { "عاجل": "bg-red-100 text-red-700", "مهم": "bg-amber-100 text-amber-700", "عادي": "bg-gray-100 text-gray-600" };
@@ -1184,8 +1236,9 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
             {/* فاصل */}
             <div className="border-t border-gray-100 mx-8"></div>
             {/* محتوى الإعلان */}
+            <style>{ANN_HTML_CSS}</style>
             <div className="px-4 sm:px-8 py-6 text-gray-700 leading-loose text-base annhtml"
-              dangerouslySetInnerHTML={{ __html: ann.content }}>
+              dangerouslySetInnerHTML={{ __html: annFit(ann.content) }}>
             </div>
             {/* عداد الزوار + التعليقات */}
             <div className="px-8 pb-8">
@@ -1506,7 +1559,8 @@ function CreativeAnnouncementsView({ announcements }) {
             <div style={{
               fontSize:15,lineHeight:2,color:"#cbd5e1",
               fontFamily:"'Cairo',sans-serif",
-            }} className="annhtml" dangerouslySetInnerHTML={{__html:selected.content}}/>
+            }} className="annhtml" dangerouslySetInnerHTML={{__html:annFit(selected.content)}}/>
+            <style>{ANN_HTML_CSS}</style>
 
             {/* التعليقات */}
             <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid #1e293b"}}>
@@ -11683,7 +11737,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                         <div style={{ borderTop:"1px solid rgba(0,0,0,0.05)", margin:"0 12px" }} />
                         <div style={{ padding:"10px 12px" }}
                           className="text-sm leading-loose text-gray-700 annhtml"
-                          dangerouslySetInnerHTML={{ __html: ann.content }} />
+                          dangerouslySetInnerHTML={{ __html: annFit(ann.content) }} />
                         {/* أزرار الإجراءات */}
                         <div style={{ display:"flex", gap:6, padding:"0 12px 8px", flexWrap:"wrap" }}>
                           <button onClick={()=>startEdit(ann)} style={{ flex:"1 1 auto", padding:"8px 6px", borderRadius:10, border:"1.5px solid #dbeafe", background:"#eff6ff", color:"#2563eb", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>✏️ تعديل</button>
@@ -11905,7 +11959,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                   </div>
                 </div>
                 <AnnDateLine ann={ann} />
-                <div className="text-gray-700 text-sm leading-relaxed mb-3 annhtml" dangerouslySetInnerHTML={{ __html: ann.content }}></div>
+                <div className="text-gray-700 text-sm leading-relaxed mb-3 annhtml" dangerouslySetInnerHTML={{ __html: annFit(ann.content) }}></div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span />
                   <div className="flex gap-2"><Badge color="gray">{ann.category}</Badge><Badge color={pColors[ann.priority]}>{ann.priority}</Badge></div>
@@ -30629,7 +30683,7 @@ function GuardianPortal({ onBack }) {
                   <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15, flex: 1 }}>📣 {a.title}</b>{a.priority === "عاجل" && <span className="pt-st" style={{ background: "#fee2e2", color: "#b91c1c" }}>عاجل</span>}<span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{a.date || ""} • 💬 {maAr(cs.length)}</span></div>
                 </button>
                 {on && <div style={{ marginTop: 10 }}>
-                  <div style={{ fontSize: 14, lineHeight: 1.9, overflowWrap: "anywhere" }} className="ann-body" dangerouslySetInnerHTML={{ __html: a.content || "" }} />
+                  <style>{ANN_HTML_CSS}</style><div style={{ fontSize: 14, lineHeight: 1.9, overflowWrap: "anywhere" }} className="ann-body annhtml" dangerouslySetInnerHTML={{ __html: annFit(a.content || "") }} />
                   <div style={{ borderTop: "1px solid #eef2f6", marginTop: 12, paddingTop: 10 }} className="grid gap-2">
                     {cs.map(c => <div key={c.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "8px 12px" }}><div style={{ fontSize: 12, fontWeight: 900, color: "#2563eb" }}>{c.by} <span style={{ color: "#94a3b8", fontWeight: 700 }}>{ptWhen(c.at)}</span></div><div style={{ fontSize: 13.5, fontWeight: 700 }}>{c.text}</div>{c.reply && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f766e", marginTop: 4 }}>↩ المدرسة: {c.reply}</div>}</div>)}
                     <div className="flex gap-2"><input className="ma-inp" value={cm} maxLength={600} onChange={e => setCm(e.target.value)} placeholder="✍️ اكتب تعليقك…" onKeyDown={e => e.key === "Enter" && addComment(a)} /><button className="ma-btn pri" disabled={busy || !cm.trim()} onClick={() => addComment(a)}>إرسال</button></div>
@@ -33993,6 +34047,7 @@ function SchoolWebsiteInner() {
       .nav-pill-icon { font-size: 16px; }
       @media (max-width: 640px) { .ann-title-r { font-size: 18px !important; line-height: 1.6 !important; } }
       .annhtml { overflow-x:hidden; max-width:100%; }
+      ${ANN_HTML_CSS}
       .annhtml, .annhtml * { max-width:100% !important; width:auto !important; min-width:0 !important; box-sizing:border-box !important; white-space:normal !important; overflow-wrap:anywhere !important; word-break:break-word !important; float:none !important; text-indent:0 !important; }
       .annhtml img, .annhtml video, .annhtml iframe { height:auto !important; }
       .annhtml table { display:block !important; overflow-x:auto !important; width:100% !important; }
