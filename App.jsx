@@ -30382,7 +30382,7 @@ async function ptStudentsFromParsed(p, names) {
   for (const n of names || []) { const id = map[nrm(n)]; out.push(id ? { name: n, nh: await stuHash(id), n4: id.slice(-4) } : { name: n }); }
   return out;
 }
-function ptMergeRoster(old, list) { const o = maArr(old); return (list || []).map(x => { const e = o.find(y => y && y.name === x.name); return { ...(e || { id: maId() }), name: x.name, ...(x.nh ? { nh: x.nh, n4: x.n4 } : {}) }; }); }
+function ptMergeRoster(old, list) { const o = maArr(old); const nn = v => String(v || "").replace(/[\u064B-\u0652\u0640]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim(); return (list || []).map(x => { const e = o.find(y => y && ((x.nh && y.nh === x.nh) || y.name === x.name || nn(y.name) === nn(x.name))); return { ...(e || { id: maId() }), name: x.name, ...(x.nh ? { nh: x.nh, n4: x.n4 } : {}) }; }); }
 
 // ── قراءة كشوف نور: كل الأوراق وكل الملفات، ودمج أوراق الفصل الواحد (مثل Sheet1 + Sheet2) مع حذف المكرر
 async function ptReadRosters(files) {
@@ -30876,6 +30876,19 @@ function StaffPermsPanel({ focus }) {
 }
 const PT_PREP = "school-preports"; // تقارير مرسلة لبوابة ولي الأمر
 
+function IdChecker() {
+  const [v, setV] = useState(""); const [r, setR] = useState(null); const [busy, setBusy] = useState(false);
+  const check = async () => { const n = licNormId(v); if (n.length !== 10) { setR({ err: "أدخل ١٠ أرقام" }); return; } setBusy(true); const h = await stuHash(n); const ros = await maGet(MA_ROSTER); let hit = null; Object.entries(ptObj(ros)).forEach(([ck, x]) => maArr(x && x.students).forEach(st => { if (st && st.nh === h) hit = { ck, name: st.name }; })); setBusy(false); setR(hit ? { ok: hit } : { no: true }); };
+  return (
+    <div className="pt-item flex gap-2 flex-wrap items-center">
+      <b style={{ fontSize: 14 }}>🔍 فحص هوية طالب:</b>
+      <input className="ma-inp" style={{ width: 200 }} inputMode="numeric" value={v} onChange={e => { setV(licNormId(e.target.value).slice(0, 10)); setR(null); }} onKeyDown={e => e.key === "Enter" && check()} placeholder="رقم هوية الطالب" />
+      <button className="ma-btn pri" disabled={busy} onClick={check}>فحص</button>
+      {r && (r.ok ? <span className="pt-st" style={{ background: "#dcfce7", color: "#15803d" }}>✅ مربوط: {r.ok.name} — {maClassName(r.ok.ck)} (يستطيع ولي الأمر الدخول)</span> : r.no ? <span className="pt-st" style={{ background: "#fee2e2", color: "#b91c1c" }}>❌ غير مربوط بأي طالب — أعد رفع كشف فصله من نور أو اربطه يدوياً</span> : <span style={{ color: "#b91c1c", fontWeight: 800 }}>{r.err}</span>)}
+    </div>
+  );
+}
+
 // ══════════ صفحة المدير: بوابات الدخول والصلاحيات ══════════
 function PortalsAdminPage() {
   const [lic, setLic] = useState([]); const [staff, setStaff] = useState([]); const [roles, setRoles] = useState({});
@@ -30930,6 +30943,7 @@ function PortalsAdminPage() {
               <div className="flex gap-2 mt-2"><button className="ma-btn" onClick={() => { try { navigator.clipboard.writeText(u); toast("✅ تم النسخ"); } catch {} }}>📋 نسخ</button><a className="ma-btn" style={{ background: c, color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(wa + "\n" + u)}`}>💬 واتساب</a><a className="ma-btn" href={u} target="_blank" rel="noreferrer">↗ فتح</a></div>
             </div>); })}
         </div>
+        <IdChecker />
         <div className="pt-item" style={{ background: cov.t && cov.n === cov.t ? "#f0fdf4" : "#fffbeb", borderColor: cov.t && cov.n === cov.t ? "#bbf7d0" : "#fde68a" }}>
           <b>👪 جاهزية دخول أولياء الأمور:</b> <span style={{ fontWeight: 900 }}>{maAr(cov.n)} من {maAr(cov.t)} طالب</span> مربوطون برقم الهوية.
           {cov.n < cov.t && <button className="ma-btn" style={{ marginRight: 8, padding: "4px 12px", fontSize: 12 }} disabled={busy} onClick={async () => {
@@ -31901,6 +31915,7 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
             <input ref={impRef} type="file" multiple accept=".xlsx,.xls,.csv" hidden onChange={onImpFiles} />
             <button className="ma-btn grn" style={{ padding: "10px 18px" }} disabled={busy} onClick={() => { setImpCk(""); impRef.current?.click(); }}>{busy ? "⏳ جاري القراءة…" : "📥 اختيار الملفات"}</button>
           </div>
+          {(() => { const bad = classes.filter(c => { const st = studentsOf(c.ck); return st.length && st.filter(x => x.nh).length < st.length; }); return bad.length ? <div style={{ background: "#fff7ed", border: "1.5px solid #fdba74", borderRadius: 16, padding: "10px 14px", fontSize: 13, fontWeight: 800, color: "#9a3412" }}>⚠️ فصول طلابها غير مربوطين بالهوية (لن يستطيع أولياء أمورهم الدخول): {bad.map(c => { const st = studentsOf(c.ck); return <span key={c.ck} className="pt-st" style={{ background: "#ffedd5", color: "#9a3412", margin: "2px 4px", display: "inline-block" }}>{maClassName(c.ck)} ({maAr(st.filter(x => x.nh).length)}/{maAr(st.length)})</span>; })}<div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>الحل: اضغط «📥 اختيار الملفات» وأعد رفع كشوف نور لهذه الفصول (التي فيها عمود رقم السجل المدني) — تُربط الهويات ولا يضيع شيء من السجلات</div></div> : null; })()}
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
             {MA_LV.map((L, li) => counts[li] > 0 && <div key={li} className="ml-lv" style={{ "--c": L.c, "--soft": L.soft }}><div className="ml-lv-h">الصف {L.n}</div><div className="ml-tiles">{classes.filter(c => c.lv === li).map(c => { const st = studentsOf(c.ck); const idn = st.filter(x => x.nh).length; return <div key={c.ck} className={`ml-tile ${rEd === c.ck ? "on" : ""}`} role="button" title="إدارة طلاب الفصل" onClick={() => { setREd(rEd === c.ck ? null : c.ck); setRQ(""); }}><span className="n">{maAr(c.sec)}</span><b>{L.s} / {maAr(c.sec)}</b><small style={{ color: st.length ? "#15803d" : "#dc2626" }}>{st.length ? `👥 ${maAr(st.length)}` : "لم يُرفع"}</small>{st.length > 0 && <small style={{ fontSize: 10, color: idn === st.length ? "#15803d" : "#b45309" }}>🪪 {maAr(idn)}/{maAr(st.length)}</small>}</div>; })}</div></div>)}
           </div>
