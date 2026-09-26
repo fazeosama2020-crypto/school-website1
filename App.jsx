@@ -1823,7 +1823,6 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
           <button onClick={onTeacherPortal}>📊 التقويم الذاتي لمعايير الأداء</button>
           <button onClick={onStudentRaffle}>🎰 سحب الجوائز</button>
           <button onClick={onExcusePortal}>📋 بوابة الأعذار (السابقة)</button>
-          <button onClick={onParentPortal}>👨‍👦 متابعة مستوى الطالب (السابقة)</button>
           <button onClick={onAbsenceAdmin}>🎒 بوابة إداري الغياب (السابقة)</button>
         </div>
       </div>
@@ -30412,6 +30411,20 @@ async function ptReadRosters(files) {
   }
   return out;
 }
+// ── مطابقة الأسماء (لربط الهوية من السجلات السابقة بكشوف الفصول)
+const ptNameN = n => String(n || "").replace(/[\u064B-\u0652\u0640]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
+// ربط هوية بطالب في الكشوف المشتركة عبر السجلات السابقة (قائمة الأعذار القديمة) — يُحدِّث الكشف تلقائياً
+async function ptLinkLegacy(nid, ros) {
+  const n = licNormId(nid); const legacy = await maGet("school-excuse-students");
+  const L = maArr(legacy).find(x => licNormId(x && (x.nationalId || x.id)) === n); if (!L || !L.name) return null;
+  const want = ptNameN(L.name); let hit = null;
+  Object.entries(ptObj(ros)).forEach(([ck, r]) => maArr(r && r.students).forEach(st => { if (!hit && st && ptNameN(st.name) === want) hit = { ck, st }; }));
+  if (!hit) return null;
+  const h = await stuHash(n); const r = ros[hit.ck]; const students = maArr(r.students).map(x => x.id === hit.st.id ? { ...x, nh: h, n4: n.slice(-4) } : x);
+  await maPut(`${MA_ROSTER}/${hit.ck}`, { ...r, students });
+  return { ck: hit.ck, sid: hit.st.id, name: hit.st.name, nh: h };
+}
+
 // ── دخول الموظف بالسجل المدني
 async function ptStaffLogin(nid) {
   const n = licNormId(nid);
@@ -30597,12 +30610,17 @@ function GuardianPortal({ onBack }) {
   };
   const login = async (v) => {
     const n = licNormId(v); if (n.length !== 10) return "أدخل رقم السجل المدني للطالب كاملاً (١٠ أرقام)";
-    const s = await findStudent(await stuHash(n));
+    let s = await findStudent(await stuHash(n));
+    if (!s) { const ros = await maGet(MA_ROSTER); s = await ptLinkLegacy(n, ros); }
     if (!s) return "لم يُعثر على الطالب — تأكد من رقم هوية الطالب أو راجع المدرسة";
     setMe(s); try { localStorage.setItem("pam-parent", JSON.stringify(s)); } catch {} return "";
   };
   const load = async () => {
     if (!me) return;
+    // تحديث بيانات الطالب من الكشوف المشتركة (الاسم/الفصل) عند أي تغيير
+    const fresh = await findStudent(me.nh);
+    if (!fresh) { alert("لم يعد رقم الهوية مرتبطاً بطالب في كشوف المدرسة — يرجى الدخول مجدداً أو مراجعة المدرسة"); setMe(null); setD(null); try { localStorage.removeItem("pam-parent"); } catch {} return; }
+    if (fresh.ck !== me.ck || fresh.sid !== me.sid || fresh.name !== me.name) { setMe(fresh); try { localStorage.setItem("pam-parent", JSON.stringify(fresh)); } catch {} return; }
     const [sc, att, late, ann, comm, ex, nt, pm, prep] = await Promise.all([maGet(`${SC_NODE}/${me.ck}`), maGet(MA_ATT), maGet(MA_LATE), maGet(ANN_NODE), maGet(PT_COMM), maGet(PT_EXC), maGet(PT_NOTES), maGet(SC_META), maGet(PT_PREP)]);
     const cls = ptVals(sc).filter(r => r.items && r.items[me.sid]).map(r => ({ ...r, it: r.items[me.sid] })).sort((a, b) => (a.subject || "").localeCompare(b.subject || "", "ar"));
     const abs = [], lat = [];
@@ -30914,6 +30932,11 @@ function PortalsAdminPage() {
         </div>
         <div className="pt-item" style={{ background: cov.t && cov.n === cov.t ? "#f0fdf4" : "#fffbeb", borderColor: cov.t && cov.n === cov.t ? "#bbf7d0" : "#fde68a" }}>
           <b>👪 جاهزية دخول أولياء الأمور:</b> <span style={{ fontWeight: 900 }}>{maAr(cov.n)} من {maAr(cov.t)} طالب</span> مربوطون برقم الهوية.
+          {cov.n < cov.t && <button className="ma-btn" style={{ marginRight: 8, padding: "4px 12px", fontSize: 12 }} disabled={busy} onClick={async () => {
+            setBusy(true); const [legacy, ros] = await Promise.all([maGet("school-excuse-students"), maGet(MA_ROSTER)]); const byName = {}; maArr(legacy).forEach(x => { const id = licNormId(x && (x.nationalId || x.id)); if (x && x.name && id.length === 10) byName[ptNameN(x.name)] = id; });
+            let linked = 0; for (const [ck, r] of Object.entries(ptObj(ros))) { let ch = false; const students = []; for (const st of maArr(r && r.students)) { if (st && !st.nh && byName[ptNameN(st.name)]) { const id = byName[ptNameN(st.name)]; students.push({ ...st, nh: await stuHash(id), n4: id.slice(-4) }); ch = true; linked++; } else students.push(st); } if (ch) await maPut(`${MA_ROSTER}/${ck}`, { ...r, students }); }
+            setBusy(false); toast(linked ? `🔗 رُبط ${maAr(linked)} طالب بالهوية من السجلات السابقة` : "لم أجد هويات مطابقة في السجلات السابقة — أعد رفع كشوف نور"); load();
+          }}>🔗 ربط تلقائي من السجلات السابقة</button>}
           {cov.n < cov.t && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#92400e", marginTop: 4 }}>لتفعيل البقية: أعد استيراد كشوف نور (التي فيها عمود «رقم السجل المدني») من صفحة «غياب الطلاب ← الفصول والطلاب» أو «تصنيف الطلاب ← الفصول». لن يضيع الغياب أو التصنيف المسجّل.</div>}
         </div>
         <StaffPermsPanel />
@@ -33916,7 +33939,7 @@ function SchoolWebsiteInner() {
   if (licPortal) return <LicenseTeacherPortal siteFont={siteFont} onBack={() => { setLicPortal(false); window.location.hash = ""; }} />;
   if (directAnnId) return <SingleAnnouncementPage announcements={announcements} siteFont={siteFont} annId={directAnnId} />;
   if (excuseFromHash || (!user && excusePortal)) return <StudentExcusePortal onBack={() => { setExcusePortal(false); setExcuseFromHash(false); window.location.hash = ""; }} siteFont={siteFont} isAdmin={false} />;
-  if (!user && publicAnnouncements) return <PublicAnnouncementsPage announcements={announcements} siteFont={siteFont} onBack={() => setPublicAnnouncements(false)} onSuggestions={() => setSuggestionsPortal(true)} onLogin={setUser} onTeacherPortal={() => setPerfStandardsPortal(true)} onParentPortal={() => setParentPortal(true)} onStudentRaffle={() => setStudentRaffle(true)} />;
+  if (!user && publicAnnouncements) return <PublicAnnouncementsPage announcements={announcements} siteFont={siteFont} onBack={() => setPublicAnnouncements(false)} onSuggestions={() => setSuggestionsPortal(true)} onLogin={setUser} onTeacherPortal={() => setPerfStandardsPortal(true)} onParentPortal={() => { window.location.hash = "parent"; window.location.reload(); }} onStudentRaffle={() => setStudentRaffle(true)} />;
   if (!user && studentRaffle) return <StudentRafflePortal siteFont={siteFont} onBack={() => setStudentRaffle(false)} />;
   if (!user && perfStandardsPortal) return <PerformanceStandardsPortal siteFont={siteFont} onBack={() => setPerfStandardsPortal(false)} />;
   if (suggestionsPortal) return <SuggestionsPortal siteFont={siteFont} onBack={() => setSuggestionsPortal(false)} classList={classList} />;
@@ -33926,7 +33949,7 @@ function SchoolWebsiteInner() {
   if (teacherProfilePortal) return <TeacherProfilePortal siteFont={siteFont} onBack={() => { setTeacherProfilePortal(false); window.location.hash = user ? "home" : ""; }} attendance={attendance} teachers={teachers} week={week} />;
   if (!user && parentPortal) return <ParentPortal classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} setMessages={setMessages} saveMessages={saveMessages} surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} siteFont={siteFont} initialStudentId={parentStudentId} onBack={() => { setParentPortal(false); setParentStudentId(null); window.location.hash = ""; }} onSuggestions={() => { setParentPortal(false); setSuggestionsPortal(true); }} />;
   if (!user && absenceAdminPortal) return <AbsenceAdminPortal onBack={() => setAbsenceAdminPortal(false)} />;
-  if (!user) return <LoginPage users={users} onLogin={setUser} siteFont={siteFont} onParentPortal={() => setParentPortal(true)} onTeacherPortal={() => setPerfStandardsPortal(true)} onTeacherProfile={() => setTeacherProfilePortal(true)} onStudentRaffle={() => setStudentRaffle(true)} onPublicAnnouncements={() => setPublicAnnouncements(true)} onExcusePortal={() => setExcusePortal(true)} onSuggestions={() => setSuggestionsPortal(true)} onAbsenceAdmin={() => setAbsenceAdminPortal(true)} />;
+  if (!user) return <LoginPage users={users} onLogin={setUser} siteFont={siteFont} onParentPortal={() => { window.location.hash = "parent"; window.location.reload(); }} onTeacherPortal={() => setPerfStandardsPortal(true)} onTeacherProfile={() => setTeacherProfilePortal(true)} onStudentRaffle={() => setStudentRaffle(true)} onPublicAnnouncements={() => setPublicAnnouncements(true)} onExcusePortal={() => setExcusePortal(true)} onSuggestions={() => setSuggestionsPortal(true)} onAbsenceAdmin={() => setAbsenceAdminPortal(true)} />;
 
   const pages = [
     { id: "home",            label: "الرئيسية",        icon: "🏡" },
