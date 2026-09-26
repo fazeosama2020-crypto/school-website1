@@ -31424,6 +31424,7 @@ function WeeklyPreview({ ed, onClose }) {
 const ML_CLS = "school-mlate-cls";
 const ML_CFG = "school-mlate-cfg";
 const ML_REP = "school-mlate-reports";
+const ML_DAY = "school-mlate-day"; // الاعتماد النهائي لليوم
 const ML_REASONS = [["الأسرة", "👨‍👩‍👦"], ["السائق", "🚗"], ["الباص", "🚌"], ["الزحام", "🚦"], ["بُعد المنزل", "🏠"], ["ظروف عائلية", "🤝"], ["أخرى", "✍️"]];
 const mlToMin = t => { const [h, m] = String(t || "").split(":").map(Number); return isNaN(h) ? null : h * 60 + (m || 0); };
 const mlNow = () => { const d = new Date(); return `${maPad(d.getHours())}:${maPad(d.getMinutes())}`; };
@@ -31474,9 +31475,11 @@ function MorningLatePage({ by = "الإدارة", canConfig = true, admin = fals
   const [dayLate, setDayLate] = useState({});   // sid -> rec (كل الفصول)
   const [dayCls, setDayCls] = useState({});     // ck -> اعتماد
   const [ck, setCk] = useState(null);
-  const [work, setWork] = useState({});         // sid -> {time, reason, note}
-  const [editing, setEditing] = useState(false);
+  const [dw, setDw] = useState({});             // ck -> {sid: {time, reason, note}} — حصر اليوم لكل الفصول
+  const [dayAp, setDayAp] = useState(null);     // الاعتماد النهائي لليوم
+  const [editing, setEditing] = useState(true);
   const [dirty, setDirty] = useState(false);
+  const [review, setReview] = useState(false);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(""); const [clock, setClock] = useState(mlNow());
   const [stuEd, setStuEd] = useState(null);
@@ -31487,6 +31490,8 @@ function MorningLatePage({ by = "الإدارة", canConfig = true, admin = fals
   const studentsOf = k => maArr(rosters[k] && rosters[k].students).filter(x => x && x.id && x.name);
   const minsOf = t => { const a = mlToMin(t), b = mlToMin(cfg.lineup); return a == null || b == null ? 0 : Math.max(0, a - b); };
   const afterP1 = t => { const a = mlToMin(t), b = mlToMin(cfg.p1); return a != null && b != null && a > b; };
+  const work = (ck && dw[ck]) || {};
+  const setWork = fn => setDw(p => { const cur = (ck && p[ck]) || {}; const nx = typeof fn === "function" ? fn(cur) : fn; return { ...p, [ck]: nx }; });
 
   useEffect(() => { const t = setInterval(() => setClock(mlNow()), 15000); return () => clearInterval(t); }, []);
   useEffect(() => { (async () => {
@@ -31495,61 +31500,68 @@ function MorningLatePage({ by = "الإدارة", canConfig = true, admin = fals
     setRosters(ros && typeof ros === "object" ? ros : {});
     setCfg({ lineup: (c && c.lineup) || (meta && meta.lateStart) || "06:45", p1: (c && c.p1) || "07:00" });
   })(); }, []);
+  const dKey = d => `ml-dday-${d}`;
+  const fromLate = l => { const o = {}; Object.values(l || {}).forEach(r => { if (r && r.ck && r.id) { (o[r.ck] = o[r.ck] || {})[r.id] = { time: r.time, reason: r.reason === "بدون سبب" ? "" : (r.reason || ""), note: r.note || "" }; } }); return o; };
   const loadDay = async (k) => {
-    const [l, c] = await Promise.all([maGet(`${MA_LATE}/${k}`), maGet(`${ML_CLS}/${k}`)]);
-    setDayLate(l && typeof l === "object" ? l : {}); setDayCls(c && typeof c === "object" ? c : {});
+    const [l, c, ap] = await Promise.all([maGet(`${MA_LATE}/${k}`), maGet(`${ML_CLS}/${k}`), maGet(`${ML_DAY}/${k}`)]);
+    const L = l && typeof l === "object" ? l : {}; setDayLate(L); setDayCls(c && typeof c === "object" ? c : {});
+    const A = ap && typeof ap === "object" ? ap : null; setDayAp(A);
+    let dr = null; try { dr = JSON.parse(localStorage.getItem(dKey(k)) || "null"); } catch {}
+    if (dr && dr.dw && (!A || dr.at > (A.at || 0)) && Object.values(dr.dw).some(x => x && Object.keys(x).length) && window.confirm("📝 توجد مسودة حصر غير معتمدة لهذا اليوم — هل تريد استعادتها؟")) { setDw(dr.dw); setDirty(true); setEditing(true); return; }
+    try { localStorage.removeItem(dKey(k)); } catch {}
+    setDw(fromLate(L)); setDirty(false); setEditing(!A);
   };
   useEffect(() => { loadDay(dateK); setCk(null); }, [dateK]);
-  const dKey = (d, k) => `ml-draft-${d}-${k}`;
-  useEffect(() => { if (!ck || !dirty) return; try { localStorage.setItem(dKey(dateK, ck), JSON.stringify({ work, at: Date.now() })); } catch {} }, [work, dirty, ck, dateK]);
-  const openCls = (k) => {
-    if (dirty && !window.confirm("لديك تغييرات غير محفوظة، هل تريد تركها؟")) return;
-    const w = {}; Object.values(dayLate).forEach(r => { if (r && r.ck === k) w[r.id] = { time: r.time, reason: r.reason || "", note: r.note || "" }; });
-    let dr = null; try { dr = JSON.parse(localStorage.getItem(dKey(dateK, k)) || "null"); } catch {}
-    if (dr && dr.work && (!dayCls[k] || dr.at > (dayCls[k].at || 0)) && window.confirm("📝 توجد مسودة غير محفوظة لهذا الفصل — هل تريد استعادتها؟")) { setCk(k); setWork(dr.work); setEditing(true); setDirty(true); setQ(""); return; }
-    try { localStorage.removeItem(dKey(dateK, k)); } catch {}
-    setCk(k); setWork(w); setEditing(!dayCls[k]); setDirty(false); setQ("");
-  };
-  const approved = ck && dayCls[ck] && !editing;
+  useEffect(() => { if (!dirty) return; try { localStorage.setItem(dKey(dateK), JSON.stringify({ dw, at: Date.now() })); } catch {} }, [dw, dirty, dateK]);
+  const openCls = (k) => { setCk(k); setQ(""); };
+  const approved = !!dayAp && !editing;
   const [openDet, setOpenDet] = useState(null); const [gq, setGq] = useState("");
+  const newW = () => ({ time: isToday ? mlNow() : cfg.p1, reason: "", note: "" });
   const toggle = (s) => {
     if (approved) return;
     const was = !!work[s.id];
-    setWork(p => { const o = { ...p }; if (o[s.id]) delete o[s.id]; else o[s.id] = { time: isToday ? mlNow() : cfg.p1, reason: "", note: "" }; return o; }); setDirty(true);
+    setWork(p => { const o = { ...p }; if (o[s.id]) delete o[s.id]; else o[s.id] = newW(); return o; }); setDirty(true);
     setOpenDet(was ? null : s.id);
   };
   const pickReason = (sid, r, cur) => { const nr = cur === r ? "" : r; upd(sid, { reason: nr }); if (nr && nr !== "أخرى") setTimeout(() => setOpenDet(o => o === sid ? null : o), 180); };
   const markFrom = (k, s) => {
-    if (ck !== k) { if (dirty && !window.confirm("لديك تغييرات غير محفوظة في فصل آخر، هل تريد تركها؟")) return; setDirty(false); openCls(k); }
-    setEditing(true);
-    setWork(p => p[s.id] ? p : { ...p, [s.id]: { time: isToday ? mlNow() : cfg.p1, reason: "", note: "" } }); setDirty(true); setOpenDet(s.id); setGq("");
+    if (approved) setEditing(true);
+    setCk(k); setDw(p => { const c = { ...(p[k] || {}) }; if (!c[s.id]) c[s.id] = newW(); return { ...p, [k]: c }; }); setDirty(true); setOpenDet(s.id); setGq("");
     setTimeout(() => { const el = document.getElementById(`mls-${s.id}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 250);
   };
   const upd = (sid, patch) => { setWork(p => ({ ...p, [sid]: { ...p[sid], ...patch } })); setDirty(true); };
-  const save = async () => {
-    const st = studentsOf(ck); const ids = Object.keys(work);
-    if (ids.some(id => !work[id].time)) { alert("أدخل وقت الحضور لكل طالب متأخر"); return; }
-    setBusy(true);
-    const old = Object.values(dayLate).filter(r => r && r.ck === ck);
-    for (const r of old) if (!work[r.id]) { try { await fetch(`${FIREBASE_URL}/school/${MA_LATE}/${dateK}/${r.id}.json`, { method: "DELETE" }); } catch {} }
-    const next = { ...dayLate }; old.forEach(r => { if (!work[r.id]) delete next[r.id]; });
-    for (const id of ids) {
-      const s = st.find(x => x.id === id); if (!s) continue; const w = work[id];
-      const rec = { id, name: s.name, ck, time: w.time, mins: minsOf(w.time), afterP1: afterP1(w.time), reason: w.reason || "بدون سبب", note: (w.note || "").trim(), home: s.home || "", by, at: (dayLate[id] && dayLate[id].at) || Date.now() };
-      const ok = await maPut(`${MA_LATE}/${dateK}/${id}`, rec); if (!ok) { setBusy(false); alert("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return; }
-      next[id] = rec;
+  const allMarked = () => { const out = []; classes.forEach(c => { const m = dw[c.ck] || {}; Object.entries(m).forEach(([sid, w]) => { const st = studentsOf(c.ck).find(x => x.id === sid); if (st) out.push({ ck: c.ck, sid, name: st.name, st, w }); }); }); return out; };
+  // ── الحفظ والاعتماد النهائي لكل الفصول
+  const saveAll = async () => {
+    const all = allMarked();
+    if (all.some(x => !x.w.time)) { alert("أدخل وقت الحضور لكل طالب متأخر"); return; }
+    setBusy(true); setReview(false);
+    const keep = new Set(all.map(x => x.sid));
+    const next = {};
+    for (const r of Object.values(dayLate)) if (r && r.id && !keep.has(r.id)) { try { await fetch(`${FIREBASE_URL}/school/${MA_LATE}/${dateK}/${r.id}.json`, { method: "DELETE" }); } catch {} }
+    for (const x of all) {
+      const old = dayLate[x.sid];
+      const rec = { id: x.sid, name: x.name, ck: x.ck, time: x.w.time, mins: minsOf(x.w.time), afterP1: afterP1(x.w.time), reason: x.w.reason || "بدون سبب", note: (x.w.note || "").trim(), home: x.st.home || "", by: old && old.by || by, at: (old && old.at) || Date.now() };
+      if (old && old.time === rec.time && old.reason === rec.reason && (old.note || "") === rec.note && old.ck === rec.ck) { next[x.sid] = old; continue; }
+      if (old) rec.editedBy = by;
+      const ok = await maPut(`${MA_LATE}/${dateK}/${x.sid}`, rec); if (!ok) { setBusy(false); alert("⚠️ تعذّر الحفظ — تحقق من الاتصال ثم أعد المحاولة (الحصر محفوظ كمسودة على الجهاز)"); return; }
+      next[x.sid] = rec;
     }
-    const prev = dayCls[ck];
     const tm = new Date().toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" });
-    const cr = { ck, by, at: Date.now(), time: tm, n: ids.length, edits: prev ? [...maArr(prev.edits), { by, time: tm, n: ids.length }] : [] };
-    await maPut(`${ML_CLS}/${dateK}/${ck}`, cr);
-    setDayLate(next); setDayCls(p => ({ ...p, [ck]: cr })); setEditing(false); setDirty(false);
-    try { localStorage.removeItem(dKey(dateK, ck)); } catch {}
-    const chk = await maGet(`${MA_LATE}/${dateK}`); const nSrv = Object.values(chk && typeof chk === "object" ? chk : {}).filter(r => r && r.ck === ck).length;
+    const byCk = {}; all.forEach(x => byCk[x.ck] = (byCk[x.ck] || 0) + 1);
+    const clsNext = {};
+    for (const c of classes) { const n = byCk[c.ck] || 0; const prev = dayCls[c.ck]; if (!n && !prev) continue; const cr = { ck: c.ck, by, at: Date.now(), time: tm, n, edits: prev ? [...maArr(prev.edits), { by, time: tm, n }].slice(-20) : [] }; clsNext[c.ck] = cr; }
+    await maPut(`${ML_CLS}/${dateK}`, clsNext);
+    const ap = { by: dayAp ? dayAp.by : by, time: dayAp ? dayAp.time : tm, at: Date.now(), n: all.length, cls: Object.keys(byCk).length, edits: dayAp ? [...maArr(dayAp.edits), { by, time: tm, n: all.length }].slice(-30) : [] };
+    await maPut(`${ML_DAY}/${dateK}`, ap);
+    const chk = await maGet(`${MA_LATE}/${dateK}`); const nSrv = Object.values(chk && typeof chk === "object" ? chk : {}).filter(r => r && r.id).length;
     setBusy(false);
-    if (nSrv !== ids.length) { alert(`⚠️ تحقق الحفظ: الخادم يحتوي ${nSrv} من ${ids.length} — أعد الحفظ`); setEditing(true); setDirty(true); return; }
-    toast(`✅ ${prev ? "تم تحديث" : "تم اعتماد"} سجل ${maClassName(ck)} — ${maAr(ids.length)} متأخر • تم التحقق من الحفظ`);
+    if (nSrv !== all.length) { alert(`⚠️ تحقق الحفظ: الخادم يحتوي ${nSrv} من ${all.length} — أعد الحفظ`); return; }
+    setDayLate(next); setDayCls(clsNext); setDayAp(ap); setEditing(false); setDirty(false);
+    try { localStorage.removeItem(dKey(dateK)); } catch {}
+    toast(`✅ ${dayAp ? "تم تحديث الاعتماد" : "تم الاعتماد النهائي"} — ${maAr(all.length)} متأخر في ${maAr(Object.keys(byCk).length)} فصل • تم التحقق من الحفظ`);
   };
+  const cancelEdit = () => { if (dirty && !window.confirm("إلغاء التعديلات والرجوع للسجل المعتمد؟")) return; try { localStorage.removeItem(dKey(dateK)); } catch {} setDw(fromLate(dayLate)); setDirty(false); setEditing(!dayAp); };
   const saveStu = async () => {
     const nm = stuEd.name.trim(); if (!nm) return;
     const list = studentsOf(ck); const nextL = stuEd.id ? list.map(x => x.id === stuEd.id ? { ...x, name: nm } : x) : [...list, { id: maId(), name: nm }];
@@ -31695,8 +31707,8 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
     setBusy(false); setImp(null); toast(`📌 تم تثبيت ${maAr(merged.length)} فصل`);
   };
   const cur = ck ? studentsOf(ck).filter(s => !q || s.name.includes(q)) : [];
-  const nLate = k => Object.values(dayLate).filter(r => r && r.ck === k).length;
-  const totalDay = Object.values(dayLate).filter(Boolean).length;
+  const nLate = k => Object.keys(dw[k] || {}).length;
+  const totalDay = Object.values(dw).reduce((a, m) => a + Object.keys(m || {}).length, 0);
   const nW = Object.keys(work).length;
   return (
     <div className="ma px-3 md:px-6 py-4" dir="rtl">
@@ -31740,19 +31752,19 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
                 <div className="ml-lv-h">الصف {L.n}<span style={{ marginRight: "auto", background: "rgba(255,255,255,.2)", borderRadius: 999, padding: "2px 10px", fontSize: 12 }}>⏰ {maAr(n)}</span></div>
                 <div className="ml-tiles">{cl.map(c => { const k = nLate(c.ck); return (
                   <button key={c.ck} type="button" className={`ml-tile ${ck === c.ck ? "on" : ""}`} onClick={() => openCls(c.ck)}>
-                    {k > 0 && <span className="bd">{maAr(k)}</span>}{dayCls[c.ck] && <span className="ok">✓</span>}
+                    {k > 0 && <span className="bd">{maAr(k)}</span>}{approved && <span className="ok">✓</span>}
                     <span className="n">{maAr(c.sec)}</span><b>{L.s} / {maAr(c.sec)}</b><small>👥 {maAr(studentsOf(c.ck).length)}</small>
                   </button>); })}</div>
               </div>); })}
           </div>
-          <div className="flex gap-2 flex-wrap"><button className="ma-btn gold" onClick={printDay}>🖨 طباعة سجل اليوم (كل الفصول)</button><span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b", alignSelf: "center" }}>✓ = فصل معتمد • الرقم البرتقالي = عدد المتأخرين</span></div>
+          <div className="flex gap-2 flex-wrap"><button className="ma-btn gold" onClick={printDay}>🖨 طباعة سجل اليوم (كل الفصول)</button><span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b", alignSelf: "center" }}>الرقم البرتقالي = عدد المتأخرين المحصورين • ✓ = اليوم معتمد</span></div>
 
           {ck && <div className="ma-card" style={{ overflow: "hidden" }}>
             <div style={{ padding: "14px 16px", background: "linear-gradient(90deg,#fff7ed,#fff)", borderBottom: "1px solid #fed7aa" }} className="flex items-center gap-3 flex-wrap">
-              <div style={{ flex: "1 1 240px", minWidth: 0 }}><div style={{ fontSize: 19, fontWeight: 900 }}>الصف {maClassName(ck)}</div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#9a3412" }}>{dayCls[ck] ? `✓ معتمد بواسطة ${dayCls[ck].by} الساعة ${dayCls[ck].time}${maArr(dayCls[ck].edits).length ? ` • عُدِّل ${maAr(maArr(dayCls[ck].edits).length)} مرة` : ""}` : "اضغط على الطالب المتأخر — يُسجَّل وقت حضوره تلقائياً"}</div></div>
+              <div style={{ flex: "1 1 240px", minWidth: 0 }}><div style={{ fontSize: 19, fontWeight: 900 }}>الصف {maClassName(ck)}</div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#9a3412" }}>{approved ? `✓ ضمن الحصر المعتمد — ${maAr(nW)} متأخر` : "اضغط «⏰ متأخر» أمام الطالب — ثم انتقل للفصل التالي، والاعتماد في النهاية لكل الفصول"}</div></div>
               <input className="ma-inp" style={{ flex: "1 1 140px", maxWidth: 220 }} placeholder="🔍 بحث" value={q} onChange={e => setQ(e.target.value)} />
               <button className="ma-btn" onClick={() => setStuEd({ id: "", name: "" })}>＋ طالب</button>
-              {approved && <button className="ma-btn gold" onClick={() => setEditing(true)}>✏️ تعديل / إضافة متأخر</button>}
+              {approved && <button className="ma-btn gold" onClick={() => setEditing(true)}>✏️ تعديل الحصر</button>}
             </div>
             <div className="p-3 grid gap-2">
               {cur.map((s, i) => { const w = work[s.id]; const on = !!w; const m = on ? minsOf(w.time) : 0; const p1 = on && afterP1(w.time); return (
@@ -31774,13 +31786,36 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
                 </div>); })}
               {!studentsOf(ck).length && <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب — استورد كشف نور من «غياب الطلاب ← الفصول والطلاب» أو أضف طالباً</div>}
             </div>
-            {!approved && <div style={{ position: "sticky", bottom: 0, padding: 12, background: "rgba(255,255,255,.96)", borderTop: "1px solid #fed7aa", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, fontSize: 13, fontWeight: 900, color: "#9a3412" }}>⏰ المتأخرون: {maAr(nW)}{dirty ? <span style={{ color: "#b45309", marginRight: 8 }}>● غير محفوظ</span> : null}</div>
-              {dayCls[ck] && <button className="ma-btn" onClick={() => openCls(ck)}>إلغاء</button>}
-              <button className="ma-btn" style={{ padding: "12px 26px", fontSize: 15, background: "linear-gradient(135deg,#ea580c,#9a3412)", color: "#fff", border: "none" }} disabled={busy} onClick={save}>{busy ? "⏳" : dayCls[ck] ? "💾 حفظ التعديل" : `✅ اعتماد وحفظ${nW ? "" : " (لا يوجد متأخر)"}`}</button>
-            </div>}
           </div>}
+          <div style={{ position: "sticky", bottom: 8, zIndex: 30, borderRadius: 20, padding: "12px 14px", background: approved ? "linear-gradient(135deg,#ecfdf5,#fff)" : "linear-gradient(135deg,#fff7ed,#fff)", border: `2px solid ${approved ? "#6ee7b7" : "#fdba74"}`, boxShadow: "0 18px 30px -20px rgba(15,23,42,.5)", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 900, color: approved ? "#047857" : "#9a3412" }}>{approved ? "✅ الحصر معتمد" : dayAp ? "✏️ تعديل الحصر المعتمد" : "📝 حصر اليوم (غير معتمد بعد)"} — ⏰ {maAr(totalDay)} متأخر في {maAr(classes.filter(c => nLate(c.ck)).length)} فصل</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{dayAp ? `اعتمده ${dayAp.by} الساعة ${dayAp.time}${maArr(dayAp.edits).length ? ` • عُدِّل ${maAr(maArr(dayAp.edits).length)} مرة (آخرها ${maArr(dayAp.edits).slice(-1)[0].by})` : ""}` : "تنقّل بين الفصول وسجّل المتأخرين، ثم اعتمد الحصر مرة واحدة في النهاية"}{dirty ? " • ● محفوظ مؤقتاً على الجهاز" : ""}</div>
+            </div>
+            <button className="ma-btn" onClick={() => setReview(true)}>📋 مراجعة الحصر</button>
+            {approved ? <button className="ma-btn gold" style={{ padding: "11px 20px" }} onClick={() => setEditing(true)}>✏️ تعديل / إضافة متأخر</button> : <>
+              {dayAp && <button className="ma-btn" onClick={cancelEdit}>إلغاء</button>}
+              <button className="ma-btn" style={{ padding: "12px 24px", fontSize: 15, background: "linear-gradient(135deg,#ea580c,#9a3412)", color: "#fff", border: "none" }} disabled={busy} onClick={() => setReview(true)}>{busy ? "⏳ جاري الحفظ…" : dayAp ? "💾 حفظ التعديل" : "✅ الحفظ والاعتماد النهائي"}</button>
+            </>}
+          </div>
         </>}
+
+        {review && (() => { const all = allMarked(); const noR = all.filter(x => !x.w.reason).length; return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 14 }} onClick={() => setReview(false)}>
+            <div className="ma-card" style={{ width: "min(640px,100%)", maxHeight: "88vh", overflow: "auto", padding: 0 }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: "14px 18px", background: "linear-gradient(135deg,#c2410c,#7c2d12)", color: "#fff" }}><div style={{ fontSize: 18, fontWeight: 900 }}>📋 مراجعة حصر التأخر الصباحي</div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{maDay(D)} {maHijri(D)} • {maAr(all.length)} متأخر في {maAr(new Set(all.map(x => x.ck)).size)} فصل</div></div>
+              <div className="p-4 grid gap-3">
+                {classes.filter(c => (dw[c.ck] && Object.keys(dw[c.ck]).length)).map(c => { const L = all.filter(x => x.ck === c.ck); return (
+                  <div key={c.ck} style={{ border: "1px solid #fed7aa", borderRadius: 16, overflow: "hidden" }}>
+                    <div className="flex items-center gap-2" style={{ padding: "8px 12px", background: "#fff7ed" }}><b style={{ color: MA_LV[c.lv].c }}>{maClassName(c.ck)}</b><span className="pt-st" style={{ background: "#ffedd5", color: "#9a3412" }}>⏰ {maAr(L.length)}</span><button className="ma-btn" style={{ marginRight: "auto", padding: "3px 10px", fontSize: 12 }} onClick={() => { setReview(false); openCls(c.ck); }}>فتح الفصل</button></div>
+                    {L.map(x => <div key={x.sid} className="flex items-center gap-2 flex-wrap" style={{ padding: "7px 12px", borderTop: "1px solid #fff1e6", fontSize: 13 }}><b style={{ flex: "1 1 160px" }}>{x.name}</b><span>🕒 {mlFmtT(x.w.time)}</span><span className="pt-st" style={{ background: afterP1(x.w.time) ? "#fee2e2" : "#ffedd5", color: afterP1(x.w.time) ? "#b91c1c" : "#9a3412" }}>⏱ {mlDur(minsOf(x.w.time))}</span>{x.w.reason ? <span style={{ color: "#64748b", fontWeight: 800 }}>{x.w.reason}</span> : <span style={{ color: "#dc2626", fontWeight: 900 }}>⚠️ بدون سبب</span>}</div>)}
+                  </div>); })}
+                {!all.length && <div style={{ padding: 20, textAlign: "center", color: "#15803d", fontWeight: 900 }}>🌟 لا يوجد متأخرون — يمكنك اعتماد اليوم بدون متأخرين</div>}
+                {noR > 0 && !approved && <div style={{ fontSize: 12.5, fontWeight: 900, color: "#b45309", background: "#fffbeb", borderRadius: 12, padding: "8px 12px" }}>⚠️ {maAr(noR)} طالب بدون سبب — سيُسجَّل «بدون سبب»، ويمكنك الرجوع وإضافته</div>}
+                <div className="flex gap-2 justify-end flex-wrap"><button className="ma-btn" onClick={() => setReview(false)}>{approved ? "إغلاق" : "رجوع للحصر"}</button>{!approved && <button className="ma-btn" style={{ padding: "11px 22px", background: "linear-gradient(135deg,#ea580c,#9a3412)", color: "#fff", border: "none" }} disabled={busy} onClick={saveAll}>{busy ? "⏳" : dayAp ? "💾 تأكيد حفظ التعديل" : "✅ تأكيد الاعتماد النهائي"}</button>}</div>
+              </div>
+            </div>
+          </div>); })()}
 
         {tab === "staff" && admin && <StaffPermsPanel focus="late" />}
         {tab === "cls" && admin && <div className="ma-card p-4 grid gap-3">
