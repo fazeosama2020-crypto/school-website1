@@ -28908,23 +28908,44 @@ function fgSplitPart(label, total) {
   return [["فترة أولى", 20], ["فترة ثالثة", 20], ["اختبار نهائي", total - 40]];
 }
 
-function fgBuildColumns(modelKey) {
+// نموذجا السجل وفق دليل تقويم الطالب:
+//  final   : مواد لها اختبار نهائي  → المهام الأدائية والمشاركة ٤٠ + اختبارات تحريرية قصيرة ٢٠ + اختبار نهاية الفترة ٤٠
+//  nofinal : مواد بلا اختبار نهائي  → المهام الأدائية والمشاركة ٤٠ + تقويمات تحريرية/شفهية/عملية ٦٠
+const FG_FORMS = {
+  final: { ic: "📝", t: "نموذج المواد ذات الاختبار النهائي", d: "٤٠ مهام أدائية ومشاركة + ٢٠ اختبارات قصيرة + ٤٠ اختبار نهائي", c: "#dc2626" },
+  nofinal: { ic: "📘", t: "نموذج المواد بدون اختبار نهائي", d: "٤٠ مهام أدائية ومشاركة + ٦٠ تقويمات تحريرية وشفهية وعملية", c: "#2563eb" },
+};
+const fgFormOf = (key) => { const m = (typeof GA_MODELS !== "undefined" && GA_MODELS[key]) || null; return m && m.fe > 0 ? "final" : "nofinal"; };
+function fgBuildColumns(modelKey, form) {
   const m = (typeof GA_MODELS !== "undefined" && GA_MODELS[modelKey]) || { parts: { "المهام الأدائية والمشاركة": 40 } };
-  const perf = Object.entries(m.parts).find(([l]) => l.includes("المهام الأدائية"));
-  const perfMax = perf ? perf[1] : 40;
-  const g1 = { id: fgId(), label: "المهام الأدائية والمشاركة", max: perfMax, color: FG_GROUP_COLORS[0] };
-  const g2 = { id: fgId(), label: "الاختبارات", max: 100 - perfMax, color: FG_GROUP_COLORS[1] };
-  const q = perfMax / 4;
-  const cols = [
-    { label: "المشاركة", max: q, entries: 5, groupId: g1.id, color: "#0d9488" },
-    { label: "الواجبات", max: q, entries: 5, groupId: g1.id, color: "#2563eb" },
-    { label: "المهام الأدائية", max: q, entries: 5, groupId: g1.id, color: "#7c3aed" },
-    { label: "المشروع / البحث", max: q, entries: 4, groupId: g1.id, color: "#db2777" },
-    { label: "فترة أولى", max: 20, weight: 0.5, groupId: g2.id, color: "#ea580c" },
-    { label: "فترة ثانية", max: 20, weight: 0.5, groupId: g2.id, color: "#ca8a04" },
-    { label: "اختبار نهائي", max: 40, exam: true, groupId: g2.id, color: "#dc2626" },
-  ].map(c => ({ id: fgId(), entries: 1, weight: 1, ...c }));
-  return { groups: [g1, g2], cols, v: 3 };
+  const f = form || fgFormOf(modelKey);
+  const g1 = { id: fgId(), label: "المهام الأدائية والمشاركة", max: 40, color: FG_GROUP_COLORS[0] };
+  const perf = [
+    { label: "المشاركة والتفاعل الصفي", max: 10, entries: 5, groupId: g1.id, color: "#0d9488" },
+    { label: "الواجبات", max: 10, entries: 5, groupId: g1.id, color: "#2563eb" },
+    { label: "المهام الأدائية", max: 10, entries: 5, groupId: g1.id, color: "#7c3aed" },
+    { label: "المشروع / البحث", max: 10, entries: 4, groupId: g1.id, color: "#db2777" },
+  ];
+  let groups, cols;
+  if (f === "final") {
+    const g2 = { id: fgId(), label: "الاختبارات التحريرية القصيرة", max: 20, color: FG_GROUP_COLORS[1] };
+    const g3 = { id: fgId(), label: "اختبار نهاية الفترة", max: 40, color: "#dc2626", exam: true };
+    groups = [g1, g2, g3];
+    cols = [...perf,
+      { label: "اختبار قصير (١)", max: 20, weight: 0.5, groupId: g2.id, color: "#ea580c" },
+      { label: "اختبار قصير (٢)", max: 20, weight: 0.5, groupId: g2.id, color: "#ca8a04" },
+      { label: "اختبار نهائي", max: 40, exam: true, groupId: g3.id, color: "#dc2626" }];
+  } else {
+    const p2 = Object.keys(m.parts || {}).find(l => !l.includes("المهام الأدائية")) || "تقويمات تحريرية";
+    const prac = /تطبيقات|متنوعة/.test(p2), oral = /شفهية|متنوعة/.test(p2);
+    const g2 = { id: fgId(), label: p2.includes("تقويم") ? p2 : "التقويمات التحريرية والشفهية", max: 60, color: FG_GROUP_COLORS[1] };
+    groups = [g1, g2];
+    cols = [...perf,
+      { label: "اختبار قصير (١)", max: 20, groupId: g2.id, color: "#ea580c" },
+      { label: "اختبار قصير (٢)", max: 20, groupId: g2.id, color: "#ca8a04" },
+      { label: prac ? "تطبيقات عملية" : oral ? "تقويم شفهي" : "اختبار قصير (٣)", max: 20, groupId: g2.id, color: "#16a34a" }];
+  }
+  return { groups, cols: cols.map(c => ({ id: fgId(), entries: 1, weight: 1, ...c })), form: f, v: 4 };
 }
 
 function fgNewSheet(defaults = {}) {
@@ -29100,7 +29121,7 @@ function FormativeGradebookPage({ classList = [] }) {
       if (!Array.isArray(list) || !list.length) list = [fgNewSheet()];
       // ترقية السجلات القديمة (بدون درجات) إلى التقسيم الجديد: أعمدة رئيسية بخانات + أسماء الاختبارات
       list = list.map(sh => {
-        const old = (sh.v || 0) < 3;
+        const old = (sh.v || 0) < 4;
         const hasScores = (sh.students || []).some(st => Object.keys(st.scores || {}).length);
         return old && !hasScores ? { ...sh, ...fgBuildColumns(sh.model || "4") } : sh;
       });
@@ -29126,7 +29147,8 @@ function FormativeGradebookPage({ classList = [] }) {
   const wOf = c => (+c.weight > 0 ? +c.weight : 1);
   const examGroup = sheet.groups.find(g => g.exam);
   // النسبة الشرطية تُطبق على الاختبار النهائي في المواد المقوّمة ختامياً
-  const examCols = modelInfo?.type === "ختامي" ? sheet.cols.filter(c => c.exam || (examGroup && c.groupId === examGroup.id)) : [];
+  const form = sheet.form || fgFormOf(sheet.model);
+  const examCols = form === "final" ? sheet.cols.filter(c => c.exam || (examGroup && c.groupId === examGroup.id)) : [];
   const maxTotal = Math.round(sheet.cols.reduce((a, c) => a + (+c.max || 0) * wOf(c), 0) * 100) / 100;
 
   // ── العمليات على الأعمدة
@@ -29162,6 +29184,13 @@ function FormativeGradebookPage({ classList = [] }) {
     if (hasScores && !window.confirm("تطبيق النموذج سيعيد بناء الأعمدة ويمسح الدرجات المرصودة. متابعة؟")) return;
     update(s => ({ ...s, model: key, ...fgBuildColumns(key), students: s.students.map(st => ({ ...st, scores: {} })) }));
     setModal(null);
+  };
+  const applyForm = (f) => {
+    if (f === form && (sheet.v || 0) >= 4) return;
+    const hasScores = sheet.students.some(st => Object.keys(st.scores || {}).length);
+    if (hasScores && !window.confirm("تغيير النموذج سيعيد بناء الأعمدة ويمسح الدرجات المرصودة في هذا السجل. متابعة؟")) return;
+    const mk = f === fgFormOf(sheet.model) ? sheet.model : (f === "final" ? "2" : "4");
+    update(s => ({ ...s, model: mk, ...fgBuildColumns(mk, f), students: s.students.map(st => ({ ...st, scores: {} })) }));
   };
   const onSubject = (sub) => {
     const key = subjects[sub];
@@ -29389,7 +29418,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
 .sig{display:flex;justify-content:space-around;margin-top:26px;font-weight:700;font-size:12px}</style></head><body>
 <div class="k"><div>المملكة العربية السعودية<br>وزارة التعليم<br>${sheet.edu}<br>${sheet.school}</div><div>${logo}</div><div class="l">العام الدراسي: ${sheet.year}<br>${sheet.semester}<br>المادة: ${sheet.subject || "—"}</div></div>
 <h1>سجل رصد التقويم التكويني</h1>
-<div class="info"><span>المعلم: ${sheet.teacher || "—"}</span><span>المادة: ${sheet.subject || "—"}</span><span>الصف: ${sheet.level}</span><span>الفصل: ${sheet.section}</span><span>عدد الطلاب: ${named.length}</span>${modelInfo ? `<span>${modelInfo.name} (${modelInfo.type})</span>` : ""}</div>
+<div class="info"><span>المعلم: ${sheet.teacher || "—"}</span><span>المادة: ${sheet.subject || "—"}</span><span>الصف: ${sheet.level}</span><span>الفصل: ${sheet.section}</span><span>عدد الطلاب: ${named.length}</span><span>${FG_FORMS[form].ic} ${FG_FORMS[form].t}</span></div>
 <table style="font-size:10px"><thead><tr><th rowspan="${HR}">م</th><th rowspan="${HR}" style="min-width:150px">اسم الطالب</th>${gh}<th rowspan="${HR}">المجموع<br><small>${maxTotal}</small></th></tr><tr>${ch}</tr>${anyMulti ? `<tr>${sh3}</tr>` : ""}</thead><tbody>${body}</tbody></table>
 <div class="sig"><span>معلم المادة: ${sheet.teacher || "............"}</span><span>التوقيع: ............</span><span>مدير المدرسة: ............</span></div>
 <script>setTimeout(()=>print(),600)</script></body></html>`);
@@ -29487,6 +29516,14 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
           <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => set("section", e.target.value)}>{[...new Set([...(FG_SECTIONS[sheet.level] || ["1"]), String(sheet.section || "1")])].map(l => <option key={l} value={l}>{sheet.level.replace("الصف ", "")} / {l}</option>)}</select></div>
           <div><span className="fg-lbl">🗓 الفترة الدراسية</span><select className="fg-inp" value={sheet.semester} onChange={e => set("semester", e.target.value)}>{FG_SEMESTERS.map(l => <option key={l}>{l}</option>)}</select></div>
           <div><span className="fg-lbl">📐 نموذج التوزيع</span><button className="fg-inp text-right" style={{ cursor: "pointer" }} onClick={() => setModal("model")}>{modelInfo ? `${modelInfo.name} — ${modelInfo.type}` : "مخصص"} ▾</button></div>
+        </div>
+        <div className="px-4 pb-3 grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
+          {Object.entries(FG_FORMS).map(([k, f]) => { const on = form === k; return (
+            <button key={k} type="button" onClick={() => applyForm(k)} style={{ textAlign: "right", fontFamily: "inherit", cursor: "pointer", borderRadius: 18, padding: "12px 14px", border: `2px solid ${on ? f.c : "#e2e8f0"}`, background: on ? `linear-gradient(135deg,${f.c}14,#fff)` : "#fff", boxShadow: on ? `0 8px 20px -12px ${f.c}` : "none", display: "flex", gap: 10, alignItems: "center" }}>
+              <span style={{ fontSize: 26 }}>{f.ic}</span>
+              <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14, fontWeight: 900, color: on ? f.c : "#0f172a" }}>{f.t}{on ? " ✓" : ""}</b><small style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>{f.d}</small></span>
+            </button>); })}
+          <div style={{ gridColumn: "1/-1", fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>ℹ️ {form === "final" ? "تُطبَّق النسبة الشرطية (٢٠٪ من درجة الاختبار النهائي = ٨ من ٤٠). الاختباران القصيران كل منهما من ٢٠ ويُحتسب نصفه." : "لا يوجد اختبار نهائي: التقويمات التحريرية والشفهية/العملية من ٦٠ (ثلاثة تقويمات كل منها من ٢٠)."} الدور الثاني: يحتفظ الطالب بـ٤٠ ويُختبر من ٦٠.</div>
         </div>
 
         {/* مؤشرات */}
