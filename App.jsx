@@ -29878,6 +29878,20 @@ const MA_CSS = `
 // الفصول: نفس كشوف school-mroster (المثبّتة من نور)
 // ══════════════════════════════════════════════════════════
 const SC_NODE = "school-sclass";
+// الفترات: عام/فصلي • يومي • أسبوعي (الأسبوع من الأحد إلى الخميس)
+const wkStart = k => { const d = maDate(String(k).slice(0, 10)); d.setDate(d.getDate() - d.getDay()); return maKey(d); };
+const wkEnd = k => { const d = maDate(wkStart(k)); d.setDate(d.getDate() + 4); return maKey(d); };
+const pLabel = (pm, pk) => pm === "day" && pk ? `📅 يومي • ${maDay(maDate(pk))} ${maHijri(maDate(pk))}` : pm === "week" && pk ? `🗓️ أسبوعي • ${maHijri(maDate(pk))} – ${maHijri(maDate(wkEnd(pk)))}` : "📌 عام / فصلي";
+function PeriodPicker({ pm, setPm, dateK, setDateK, allowTerm = true, ac = "#7c3aed" }) {
+  const opts = [...(allowTerm ? [["term", "📌 عام"]] : []), ["day", "📅 يومي"], ["week", "🗓️ أسبوعي"]];
+  return (
+    <div className="flex gap-2 items-center flex-wrap">
+      <div style={{ display: "flex", gap: 4, background: "#f1f5f9", borderRadius: 999, padding: 3 }}>{opts.map(([k, l]) => <button key={k} type="button" onClick={() => setPm(k)} style={{ border: "none", borderRadius: 999, padding: "6px 14px", fontFamily: "inherit", fontWeight: 900, fontSize: 12.5, cursor: "pointer", background: pm === k ? ac : "transparent", color: pm === k ? "#fff" : "#475569" }}>{l}</button>)}</div>
+      {pm !== "term" && <input type="date" className="ma-inp" style={{ width: 160, height: 36 }} value={dateK} max={maKey(new Date())} onChange={e => e.target.value && setDateK(e.target.value)} />}
+      {pm === "week" && <span style={{ fontSize: 12, fontWeight: 800, color: ac }}>من {maHijri(maDate(wkStart(dateK)))} إلى {maHijri(maDate(wkEnd(dateK)))}</span>}
+    </div>
+  );
+}
 const SC_META = "school-sclass-meta";
 const scFmtD = (iso, cal) => { if (!iso) return ""; const d = maDate(iso); return cal === "g" ? maGreg(d) : maHijri(d); };
 const SC_DIMS = [
@@ -29955,6 +29969,7 @@ const scCSS = `
 function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   const isT = mode === "teacher";
   const [tab, setTab] = useState(isT ? "cls" : "sum");
+  const [pm, setPm] = useState("term"); const [pDate, setPDate] = useState(maKey(new Date())); const [spf, setSpf] = useState("all");
   const [counts, setCounts] = useState([6, 4, 4]);
   const [rosters, setRosters] = useState({});
   const [data, setData] = useState({});             // ck -> {tk: rec}
@@ -29981,7 +29996,10 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   const tKey = isT ? (me ? me.hash.slice(0, 16) : "") : "admin";
   const tName = isT ? (me ? me.name : "") : "الإدارة";
   const sIdx = SC_SUBJECTS.indexOf(subject);
-  const recKey = isT ? (tKey && sIdx >= 0 ? `${tKey}_${sIdx}` : "") : (sIdx >= 0 ? `admin_${sIdx}` : "admin");
+  const pk = pm === "day" ? pDate : pm === "week" ? wkStart(pDate) : "";
+  const pSuf = pm === "term" ? "" : `__${pm === "day" ? "d" : "w"}${pk}`;
+  const recKey0 = isT ? (tKey && sIdx >= 0 ? `${tKey}_${sIdx}` : "") : (sIdx >= 0 ? `admin_${sIdx}` : "admin");
+  const recKey = recKey0 ? recKey0 + pSuf : "";
 
   const loadAll = async () => {
     const [meta, ros, sc, pm] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), maGet(SC_NODE), maGet(SC_META)]);
@@ -30026,7 +30044,7 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
     const items = {}; st.forEach(s => { const v = draft[s.id]; if (v) { const o = {}; ["a", "b", "t"].forEach(k => { if (v[k] != null) o[k] = v[k]; const nt = String(v[SC_NK[k]] || "").trim(); if (nt) o[SC_NK[k]] = nt.slice(0, 300); }); if (Object.keys(o).length) items[s.id] = o; } });
     if (!recKey) { alert("اختر المادة أولاً"); return; }
     setBusy(true);
-    const rec = { teacher: tName, subject: subject, at: Date.now(), items };
+    const rec = { teacher: tName, subject: subject, at: Date.now(), items, pm, pk };
     const ok = await maPut(`${SC_NODE}/${ck}/${recKey}`, rec);
     setBusy(false);
     if (!ok) { alert("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return; }
@@ -30051,7 +30069,8 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   };
 
   // ── الخلاصة
-  const sumOf = (k, sid) => { const recs = Object.values(data[k] || {}); const o = { n: 0, by: [] }; SC_DIMS.forEach(d => { const vals = recs.map(r => r.items && r.items[sid] ? r.items[sid][d.k] : undefined).filter(v => v != null).map(Number); o[d.k] = scSummary(vals); }); o.notes = []; recs.forEach(r => { const it = r.items && r.items[sid]; if (it) { o.n++; o.by.push(r); SC_DIMS.forEach(d => { const t = it[SC_NK[d.k]]; if (t) o.notes.push({ dk: d.k, text: String(t), by: r.subject || r.teacher }); }); } }); return o; };
+  const spPass = r => { if (spf === "all") return true; if (spf === "term") return !r.pm || r.pm === "term"; if (spf === "week") return r.pm === "week" && r.pk === wkStart(maKey(new Date())); if (spf === "today") return r.pm === "day" && r.pk === maKey(new Date()); if (spf === "lastweek") { const d = new Date(); d.setDate(d.getDate() - 7); return (r.pm === "week" && r.pk === wkStart(maKey(d))); } return true; };
+  const sumOf = (k, sid) => { const recs = Object.values(data[k] || {}).filter(spPass); const o = { n: 0, by: [] }; SC_DIMS.forEach(d => { const vals = recs.map(r => r.items && r.items[sid] ? r.items[sid][d.k] : undefined).filter(v => v != null).map(Number); o[d.k] = scSummary(vals); }); o.notes = []; recs.forEach(r => { const it = r.items && r.items[sid]; if (it) { o.n++; o.by.push(r); SC_DIMS.forEach(d => { const t = it[SC_NK[d.k]]; if (t) o.notes.push({ dk: d.k, text: String(t), by: r.subject || r.teacher }); }); } }); return o; };
   const notesJSX = (r) => r.sum.notes.length ? <div className="mt-1">{r.sum.notes.map((n, i) => <div key={i} className="sc-nt">{SC_DIMS.find(d => d.k === n.dk).ic} {n.text} <span style={{ color: "#94a3b8" }}>— {n.by}</span></div>)}</div> : null;
   const notesHTML = (r) => r.sum.notes.map(n => `<div class="nt">${SC_DIMS.find(d => d.k === n.dk).ic} ${String(n.text).replace(/</g, "&lt;")} <i>(${n.by})</i></div>`).join("");
   const allRows = classes.flatMap(c => studentsOf(c.ck).map(s => ({ ...s, ck: c.ck, lv: c.lv, sum: sumOf(c.ck, s.id) })));
@@ -30086,7 +30105,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
     const stats = SC_DIMS.map(d => `<div style="border-color:${d.ac}33;background:${d.soft}"><h4 style="color:${d.ac}">${d.ic} ${d.t}</h4><div class="r">${d.lv.map((l, i) => { const n = st.filter(x => val(x.id, d.k) === i).length; return `<span class="b" style="background:${l[2]};color:${l[1]}">${l[0]}: ${maAr(n)}</span>`; }).join("")}</div></div>`).join("");
     const esc = t => String(t || "").replace(/</g, "&lt;");
     const rows = st.map((x, i) => { const v = draft[x.id] || {}; const nts = SC_DIMS.map(d => v[SC_NK[d.k]] ? `<div class="nt">${d.ic} ${esc(v[SC_NK[d.k]])}</div>` : "").join(""); return `<tr><td>${maAr(i + 1)}</td><td class="nm">${x.name}</td><td>${pb("a", val(x.id, "a"))}</td><td>${pb("b", val(x.id, "b"))}</td><td>${pb("t", val(x.id, "t"))}</td><td class="ntc">${nts}</td></tr>`; }).join("");
-    open(`<section class="pg">${header("نموذج تصنيف الطلاب")}
+    open(`<section class="pg">${header("نموذج تصنيف الطلاب — " + pLabel(pm, pk).replace(/^\S+\s/, ""))}
       <div class="inf"><div>الفصل<b>${maClassName(ck)}</b></div><div>المادة<b>${subject || "—"}</b></div><div>المعلم المصنِّف<b>${isT ? "أ. " : ""}${tName}</b></div><div>عدد الطلاب<b>${maAr(st.length)}</b></div></div>
       <div class="st">${stats}</div>
       <table><thead><tr><th style="width:32px">م</th><th>اسم الطالب</th><th>📚 المستوى الدراسي</th><th>🤝 السلوك</th><th>🕒 الحضور</th><th>📝 الملاحظات</th></tr></thead><tbody>${rows}</tbody></table>
@@ -30195,10 +30214,12 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
                   <div><div style={{ fontSize: 12, fontWeight: 900, color: "#7c3aed" }}>🏷️ نموذج تصنيف الطلاب</div><div style={{ fontSize: 19, fontWeight: 900 }}>الصف {maClassName(ck)} <small style={{ fontSize: 12.5, color: "#7c3aed" }}>— أكملت {maAr(doneN)} من {maAr(cur.length)}</small></div></div>
                   <select className="ma-inp" style={{ maxWidth: 240, borderColor: !subject && isT ? "#f59e0b" : undefined, fontWeight: 800 }} value={subject} onChange={e => changeSubject(e.target.value)}>
                     <option value="">{isT ? "📚 اختر المادة…" : "📚 المادة (اختياري)"}</option>
-                    {SC_SUBJECTS.map((x, i) => <option key={x} value={x}>{x}{data[ck] && data[ck][(isT ? tKey : "admin") + "_" + i] ? " ✓" : ""}</option>)}
+                    {SC_SUBJECTS.map((x, i) => <option key={x} value={x}>{x}{data[ck] && data[ck][(isT ? tKey : "admin") + "_" + i + pSuf] ? " ✓" : ""}</option>)}
                   </select>
                 </div>
+                <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 16, background: "#fff", border: "1px dashed #c4b5fd" }}><div style={{ fontSize: 12, fontWeight: 900, color: "#6d28d9", marginBottom: 6 }}>⏱️ نوع التصنيف: عام للفصل الدراسي، أو ملاحظة يومية، أو أسبوعية</div><PeriodPicker pm={pm} setPm={v => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة، هل تريد تركها؟")) return; setPm(v); }} dateK={pDate} setDateK={v => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة، هل تريد تركها؟")) return; setPDate(v); }} /></div>
                 <div className="sc-info">
+                  <span>⏱️ <b>{pLabel(pm, pk)}</b></span>
                   <span>👤 المعلم المصنِّف: <b>{isT ? "أ. " + tName : tName}</b></span>
                   {subject && <span>📚 المادة: <b>{subject}</b></span>}
                   <span>🗓️ الفترة: <b>{periodTxt || "لم تُحدَّد"}</b></span>
@@ -30244,6 +30265,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
       {/* ═══ الخلاصة (الإدارة) ═══ */}
       {tab === "sum" && !isT && (
         <div className="grid gap-4">
+          <div className="ma-card p-3 flex gap-2 items-center flex-wrap"><b style={{ fontSize: 13.5 }}>⏱️ الخلاصة حسب:</b>{[["all", "الكل"], ["term", "📌 العام/الفصلي"], ["week", "🗓️ هذا الأسبوع"], ["lastweek", "الأسبوع الماضي"], ["today", "📅 اليوم"]].map(([k, l]) => <button key={k} className={`ma-tab ${spf === k ? "on" : ""}`} onClick={() => setSpf(k)}>{l}</button>)}</div>
           <div className="ma-card p-4" style={{ background: "linear-gradient(90deg,#faf5ff,#fff)", borderColor: "#ddd6fe" }}>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div><div style={{ fontWeight: 900, fontSize: 15 }}>🗓️ نموذج تصنيف الطلاب — الفترة</div><div style={{ fontSize: 13, fontWeight: 800, color: "#6d28d9", marginTop: 2 }}>{periodTxt || "لم تُحدَّد الفترة بعد"} • مدير المدرسة: {per.principal}</div></div>
@@ -30622,7 +30644,7 @@ function GuardianPortal({ onBack }) {
     if (!fresh) { alert("لم يعد رقم الهوية مرتبطاً بطالب في كشوف المدرسة — يرجى الدخول مجدداً أو مراجعة المدرسة"); setMe(null); setD(null); try { localStorage.removeItem("pam-parent"); } catch {} return; }
     if (fresh.ck !== me.ck || fresh.sid !== me.sid || fresh.name !== me.name) { setMe(fresh); try { localStorage.setItem("pam-parent", JSON.stringify(fresh)); } catch {} return; }
     const [sc, att, late, ann, comm, ex, nt, pm, prep] = await Promise.all([maGet(`${SC_NODE}/${me.ck}`), maGet(MA_ATT), maGet(MA_LATE), maGet(ANN_NODE), maGet(PT_COMM), maGet(PT_EXC), maGet(PT_NOTES), maGet(SC_META), maGet(PT_PREP)]);
-    const cls = ptVals(sc).filter(r => r.items && r.items[me.sid]).map(r => ({ ...r, it: r.items[me.sid] })).sort((a, b) => (a.subject || "").localeCompare(b.subject || "", "ar"));
+    const cls = ptVals(sc).filter(r => r.items && r.items[me.sid]).map(r => ({ ...r, it: r.items[me.sid] })).sort((a, b) => (b.at || 0) - (a.at || 0));
     const abs = [], lat = [];
     Object.entries(ptObj(att)).forEach(([dk, day]) => { const r = ptObj(day)[me.ck]; if (r && maArr(r.absent).some(a => a && a.id === me.sid)) abs.push(dk); });
     Object.entries(ptObj(late)).forEach(([dk, day]) => { const r = ptObj(day)[me.sid]; if (r) lat.push({ dk, ...r }); });
@@ -30686,7 +30708,7 @@ function GuardianPortal({ onBack }) {
           <div className="grid gap-3">
             {tab === "level" && (d.cls.length ? d.cls.map((r, i) => (
               <div key={i} className="pt-item">
-                <div className="flex items-center justify-between flex-wrap gap-2"><b style={{ fontSize: 15 }}>📚 {r.subject || "تقييم عام"}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>👤 {r.teacher}{r.at ? " • " + ptWhen(r.at) : ""}</span></div>
+                <div className="flex items-center justify-between flex-wrap gap-2"><b style={{ fontSize: 15 }}>📚 {r.subject || "تقييم عام"} <small style={{ fontSize: 12, color: "#7c3aed" }}>{pLabel(r.pm, r.pk)}</small></b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>👤 {r.teacher}{r.at ? " • " + ptWhen(r.at) : ""}</span></div>
                 <div className="grid gap-2 mt-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
                   {SC_DIMS.map(dm => <div key={dm.k} style={{ background: dm.soft, borderRadius: 14, padding: "8px 10px" }}><div style={{ fontSize: 12, fontWeight: 900, color: dm.ac }}>{dm.ic} {dm.t}</div><div style={{ marginTop: 4 }}>{badge(dm.k, r.it[dm.k])}</div>{r.it[SC_NK[dm.k]] && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", marginTop: 6 }}>📝 {r.it[SC_NK[dm.k]]}</div>}</div>)}
                 </div>
@@ -31516,6 +31538,7 @@ const ML_CLS = "school-mlate-cls";
 const ML_CFG = "school-mlate-cfg";
 const ML_REP = "school-mlate-reports";
 const ML_DAY = "school-mlate-day"; // الاعتماد النهائي لليوم
+const ML_DRAFT = "school-mlate-draft"; // مسودة الحصر على الخادم (حفظ تلقائي قبل الاعتماد)
 const ML_REASONS = [["الأسرة", "👨‍👩‍👦"], ["السائق", "🚗"], ["الباص", "🚌"], ["الزحام", "🚦"], ["بُعد المنزل", "🏠"], ["ظروف عائلية", "🤝"], ["أخرى", "✍️"]];
 const mlToMin = t => { const [h, m] = String(t || "").split(":").map(Number); return isNaN(h) ? null : h * 60 + (m || 0); };
 const mlNow = () => { const d = new Date(); return `${maPad(d.getHours())}:${maPad(d.getMinutes())}`; };
@@ -31594,16 +31617,27 @@ function MorningLatePage({ by = "الإدارة", canConfig = true, admin = fals
   const dKey = d => `ml-dday-${d}`;
   const fromLate = l => { const o = {}; Object.values(l || {}).forEach(r => { if (r && r.ck && r.id) { (o[r.ck] = o[r.ck] || {})[r.id] = { time: r.time, reason: r.reason === "بدون سبب" ? "" : (r.reason || ""), note: r.note || "" }; } }); return o; };
   const loadDay = async (k) => {
-    const [l, c, ap] = await Promise.all([maGet(`${MA_LATE}/${k}`), maGet(`${ML_CLS}/${k}`), maGet(`${ML_DAY}/${k}`)]);
+    const [l, c, ap, sdr] = await Promise.all([maGet(`${MA_LATE}/${k}`), maGet(`${ML_CLS}/${k}`), maGet(`${ML_DAY}/${k}`), maGet(`${ML_DRAFT}/${k}`)]);
     const L = l && typeof l === "object" ? l : {}; setDayLate(L); setDayCls(c && typeof c === "object" ? c : {});
     const A = ap && typeof ap === "object" ? ap : null; setDayAp(A);
     let dr = null; try { dr = JSON.parse(localStorage.getItem(dKey(k)) || "null"); } catch {}
+    const srv = sdr && typeof sdr === "object" && sdr.dw ? sdr : null;
+    if (srv && (!dr || (srv.at || 0) > (dr.at || 0))) dr = srv; // مسودة الخادم (من أي جهاز)
+    setDraftBak(dr && dr.dw && Object.values(dr.dw).some(x => x && Object.keys(x).length) ? dr : null);
     if (dr && dr.dw && (!A || dr.at > (A.at || 0)) && Object.values(dr.dw).some(x => x && Object.keys(x).length) && window.confirm("📝 توجد مسودة حصر غير معتمدة لهذا اليوم — هل تريد استعادتها؟")) { setDw(dr.dw); setDirty(true); setEditing(true); return; }
     try { localStorage.removeItem(dKey(k)); } catch {}
     setDw(fromLate(L)); setDirty(false); setEditing(!A);
   };
   useEffect(() => { loadDay(dateK); setCk(null); }, [dateK]);
-  useEffect(() => { if (!dirty) return; try { localStorage.setItem(dKey(dateK), JSON.stringify({ dw, at: Date.now() })); } catch {} }, [dw, dirty, dateK]);
+  const [draftBak, setDraftBak] = useState(null); const [draftSt, setDraftSt] = useState("");
+  const drTimer = useRef(null);
+  useEffect(() => {
+    if (!dirty) return; const snap = { dw, at: Date.now(), by: by || "" };
+    try { localStorage.setItem(dKey(dateK), JSON.stringify(snap)); localStorage.setItem("ml-dday-bak-" + dateK, JSON.stringify(snap)); } catch {}
+    clearTimeout(drTimer.current); setDraftSt("⏳");
+    drTimer.current = setTimeout(async () => { const ok = await maPut(`${ML_DRAFT}/${dateK}`, snap); setDraftSt(ok ? "☁️ محفوظ مؤقتاً على الخادم" : "📱 محفوظ على الجهاز فقط (لا اتصال)"); }, 1200);
+  }, [dw, dirty, dateK]);
+  const restoreBak = () => { let b = draftBak; try { const lb = JSON.parse(localStorage.getItem("ml-dday-bak-" + dateK) || "null"); if (lb && lb.dw && (!b || (lb.at || 0) > (b.at || 0))) b = lb; } catch {} if (!b || !b.dw) { alert("لا توجد مسودة محفوظة لهذا اليوم"); return; } const n = Object.values(b.dw).reduce((a, x) => a + Object.keys(x || {}).length, 0); if (!window.confirm(`استعادة المسودة (${n} متأخر) المحفوظة ${ptWhen(b.at)}؟`)) return; setDw(b.dw); setDirty(true); setEditing(true); };
   const openCls = (k) => { setCk(k); setQ(""); };
   const approved = !!dayAp && !editing;
   const [openDet, setOpenDet] = useState(null); const [gq, setGq] = useState("");
@@ -31626,31 +31660,39 @@ function MorningLatePage({ by = "الإدارة", canConfig = true, admin = fals
   const saveAll = async () => {
     const all = allMarked();
     if (all.some(x => !x.w.time)) { alert("أدخل وقت الحضور لكل طالب متأخر"); return; }
+    const nOld = Object.values(dayLate).filter(r => r && r.id).length;
+    if (dayAp && all.length < nOld && !window.confirm(`تنبيه: السجل المعتمد فيه ${nOld} متأخر والحصر الحالي ${all.length} — سيُحذف ${nOld - all.length} من السجل. متابعة؟`)) return;
     setBusy(true); setReview(false);
-    const keep = new Set(all.map(x => x.sid));
-    const next = {};
-    for (const r of Object.values(dayLate)) if (r && r.id && !keep.has(r.id)) { try { await fetch(`${FIREBASE_URL}/school/${MA_LATE}/${dateK}/${r.id}.json`, { method: "DELETE" }); } catch {} }
-    for (const x of all) {
-      const old = dayLate[x.sid];
-      const rec = { id: x.sid, name: x.name, ck: x.ck, time: x.w.time, mins: minsOf(x.w.time), afterP1: afterP1(x.w.time), reason: x.w.reason || "بدون سبب", note: (x.w.note || "").trim(), home: x.st.home || "", by: old && old.by || by, at: (old && old.at) || Date.now() };
-      if (old && old.time === rec.time && old.reason === rec.reason && (old.note || "") === rec.note && old.ck === rec.ck) { next[x.sid] = old; continue; }
-      if (old) rec.editedBy = by;
-      const ok = await maPut(`${MA_LATE}/${dateK}/${x.sid}`, rec); if (!ok) { setBusy(false); alert("⚠️ تعذّر الحفظ — تحقق من الاتصال ثم أعد المحاولة (الحصر محفوظ كمسودة على الجهاز)"); return; }
-      next[x.sid] = rec;
-    }
-    const tm = new Date().toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" });
-    const byCk = {}; all.forEach(x => byCk[x.ck] = (byCk[x.ck] || 0) + 1);
-    const clsNext = {};
-    for (const c of classes) { const n = byCk[c.ck] || 0; const prev = dayCls[c.ck]; if (!n && !prev) continue; const cr = { ck: c.ck, by, at: Date.now(), time: tm, n, edits: prev ? [...maArr(prev.edits), { by, time: tm, n }].slice(-20) : [] }; clsNext[c.ck] = cr; }
-    await maPut(`${ML_CLS}/${dateK}`, clsNext);
-    const ap = { by: dayAp ? dayAp.by : by, time: dayAp ? dayAp.time : tm, at: Date.now(), n: all.length, cls: Object.keys(byCk).length, edits: dayAp ? [...maArr(dayAp.edits), { by, time: tm, n: all.length }].slice(-30) : [] };
-    await maPut(`${ML_DAY}/${dateK}`, ap);
-    const chk = await maGet(`${MA_LATE}/${dateK}`); const nSrv = Object.values(chk && typeof chk === "object" ? chk : {}).filter(r => r && r.id).length;
-    setBusy(false);
-    if (nSrv !== all.length) { alert(`⚠️ تحقق الحفظ: الخادم يحتوي ${nSrv} من ${all.length} — أعد الحفظ`); return; }
-    setDayLate(next); setDayCls(clsNext); setDayAp(ap); setEditing(false); setDirty(false);
-    try { localStorage.removeItem(dKey(dateK)); } catch {}
-    toast(`✅ ${dayAp ? "تم تحديث الاعتماد" : "تم الاعتماد النهائي"} — ${maAr(all.length)} متأخر في ${maAr(Object.keys(byCk).length)} فصل • تم التحقق من الحفظ`);
+    try {
+      const next = {};
+      for (const x of all) {
+        const old = dayLate[x.sid];
+        const rec = { id: x.sid, name: x.name, ck: x.ck, time: x.w.time, mins: minsOf(x.w.time), afterP1: afterP1(x.w.time), reason: x.w.reason || "بدون سبب", note: String(x.w.note || "").trim(), home: (x.st && x.st.home) || "", by: (old && old.by) || by || "", at: (old && old.at) || Date.now() };
+        if (old && old.time === rec.time && old.reason === rec.reason && (old.note || "") === rec.note && old.ck === rec.ck) { next[x.sid] = old; continue; }
+        if (old) rec.editedBy = by || "";
+        next[x.sid] = rec;
+      }
+      // حفظ اليوم كاملاً دفعة واحدة (لا حذف متفرق)
+      const ok1 = await maPut(`${MA_LATE}/${dateK}`, next);
+      if (!ok1) { alert("⚠️ تعذّر الحفظ — تحقق من الاتصال ثم أعد المحاولة.\nالحصر لم يُفقد: محفوظ كمسودة على الجهاز والخادم."); return; }
+      const tm = new Date().toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" });
+      const byCk = {}; all.forEach(x => byCk[x.ck] = (byCk[x.ck] || 0) + 1);
+      const clsNext = {};
+      for (const c of classes) { const n = byCk[c.ck] || 0; const prev = dayCls[c.ck]; if (!n && !prev) continue; clsNext[c.ck] = { ck: c.ck, by: by || "", at: Date.now(), time: tm, n, edits: prev ? [...maArr(prev.edits), { by: by || "", time: tm, n }].slice(-20) : [] }; }
+      await maPut(`${ML_CLS}/${dateK}`, clsNext);
+      const ap = { by: dayAp ? dayAp.by : (by || ""), time: dayAp ? dayAp.time : tm, at: Date.now(), n: all.length, cls: Object.keys(byCk).length, edits: dayAp ? [...maArr(dayAp.edits), { by: by || "", time: tm, n: all.length }].slice(-30) : [] };
+      const ok3 = await maPut(`${ML_DAY}/${dateK}`, ap);
+      const chk = await maGet(`${MA_LATE}/${dateK}`); const nSrv = Object.values(chk && typeof chk === "object" ? chk : {}).filter(r => r && r.id).length;
+      if (nSrv !== all.length || !ok3) { alert(`⚠️ تحقق الحفظ: الخادم يحتوي ${nSrv} من ${all.length}${ok3 ? "" : " ولم يُسجّل الاعتماد"} — أعد الحفظ (الحصر ما زال محفوظاً كمسودة)`); return; }
+      setDayLate(next); setDayCls(clsNext); setDayAp(ap); setEditing(false); setDirty(false);
+      clearTimeout(drTimer.current);
+      try { localStorage.removeItem(dKey(dateK)); } catch {}
+      try { await fetch(`${FIREBASE_URL}/school/${ML_DRAFT}/${dateK}.json`, { method: "DELETE" }); } catch {}
+      setDraftSt("");
+      toast(`✅ ${dayAp ? "تم تحديث الاعتماد" : "تم الاعتماد النهائي"} — ${maAr(all.length)} متأخر في ${maAr(Object.keys(byCk).length)} فصل • تم التحقق من الحفظ`);
+    } catch (err) {
+      alert("⚠️ حدث خطأ أثناء الحفظ: " + (err && err.message || err) + "\nالحصر محفوظ كمسودة — أعد المحاولة");
+    } finally { setBusy(false); }
   };
   const cancelEdit = () => { if (dirty && !window.confirm("إلغاء التعديلات والرجوع للسجل المعتمد؟")) return; try { localStorage.removeItem(dKey(dateK)); } catch {} setDw(fromLate(dayLate)); setDirty(false); setEditing(!dayAp); };
   const saveStu = async () => {
@@ -31880,10 +31922,11 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
           </div>}
           <div style={{ position: "sticky", bottom: 8, zIndex: 30, borderRadius: 20, padding: "12px 14px", background: approved ? "linear-gradient(135deg,#ecfdf5,#fff)" : "linear-gradient(135deg,#fff7ed,#fff)", border: `2px solid ${approved ? "#6ee7b7" : "#fdba74"}`, boxShadow: "0 18px 30px -20px rgba(15,23,42,.5)", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 240px", minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 900, color: approved ? "#047857" : "#9a3412" }}>{approved ? "✅ الحصر معتمد" : dayAp ? "✏️ تعديل الحصر المعتمد" : "📝 حصر اليوم (غير معتمد بعد)"} — ⏰ {maAr(totalDay)} متأخر في {maAr(classes.filter(c => nLate(c.ck)).length)} فصل</div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: approved ? "#047857" : "#9a3412" }}>{approved ? "✅ الحصر معتمد" : dayAp ? "✏️ تعديل الحصر المعتمد" : "📝 حصر اليوم (غير معتمد بعد)"}{draftSt && !approved ? <span style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginRight: 6 }}> {draftSt}</span> : null} — ⏰ {maAr(totalDay)} متأخر في {maAr(classes.filter(c => nLate(c.ck)).length)} فصل</div>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{dayAp ? `اعتمده ${dayAp.by} الساعة ${dayAp.time}${maArr(dayAp.edits).length ? ` • عُدِّل ${maAr(maArr(dayAp.edits).length)} مرة (آخرها ${maArr(dayAp.edits).slice(-1)[0].by})` : ""}` : "تنقّل بين الفصول وسجّل المتأخرين، ثم اعتمد الحصر مرة واحدة في النهاية"}{dirty ? " • ● محفوظ مؤقتاً على الجهاز" : ""}</div>
             </div>
             <button className="ma-btn" onClick={() => setReview(true)}>📋 مراجعة الحصر</button>
+            <button className="ma-btn" title="استعادة آخر مسودة حصر محفوظة لهذا اليوم" onClick={restoreBak}>♻️ استعادة المسودة</button>
             {approved ? <button className="ma-btn gold" style={{ padding: "11px 20px" }} onClick={() => setEditing(true)}>✏️ تعديل / إضافة متأخر</button> : <>
               {dayAp && <button className="ma-btn" onClick={cancelEdit}>إلغاء</button>}
               <button className="ma-btn" style={{ padding: "12px 24px", fontSize: 15, background: "linear-gradient(135deg,#ea580c,#9a3412)", color: "#fff", border: "none" }} disabled={busy} onClick={() => setReview(true)}>{busy ? "⏳ جاري الحفظ…" : dayAp ? "💾 حفظ التعديل" : "✅ الحفظ والاعتماد النهائي"}</button>
@@ -32427,7 +32470,9 @@ const SD_CR = [
 const SD_COL = ["#0f172a", "#15803d", "#2563eb", "#c2410c", "#b91c1c", "#7c3aed"];
 const SD_EMO = ["⭐", "👍", "👏", "✅", "🎯", "💡", "📌", "⚠️", "❗", "😊", "😐", "😟"];
 const sdHasNotes = v => v && (v.n || SD_CR.some(c => v[c.k + "n"]));
-const sdRange = async (ck, f, t) => { try { const r = await fetch(`${FIREBASE_URL}/school/${SD_NODE}/${ck}.json?orderBy=${encodeURIComponent('"$key"')}&startAt=${encodeURIComponent(`"${f}"`)}&endAt=${encodeURIComponent(`"${t}"`)}`); const d = await r.json(); if (d && !d.error) return d; } catch {} const all = await maGet(`${SD_NODE}/${ck}`); const o = {}; Object.entries(all && typeof all === "object" ? all : {}).forEach(([k, v]) => { if (k >= f && k <= t) o[k] = v; }); return o; };
+const sdRange = async (ck, f, t) => { try { const r = await fetch(`${FIREBASE_URL}/school/${SD_NODE}/${ck}.json?orderBy=${encodeURIComponent('"$key"')}&startAt=${encodeURIComponent(`"${f}"`)}&endAt=${encodeURIComponent(`"${t}_W"`)}`); const d = await r.json(); if (d && !d.error) return d; } catch {} const all = await maGet(`${SD_NODE}/${ck}`); const o = {}; Object.entries(all && typeof all === "object" ? all : {}).forEach(([k, v]) => { if (k >= f && k <= t + "_W") o[k] = v; }); return o; };
+const sdDate = k => maDate(String(k || "").slice(0, 10));
+const sdPL = k => String(k || "").endsWith("_W") ? `🗓️ أسبوع ${maHijri(sdDate(k))} – ${maHijri(maDate(wkEnd(String(k).slice(0, 10))))}` : `${maDay(sdDate(k))} ${maHijri(sdDate(k))}`;
 const sdPeriod = (kind, from, to) => { const t = new Date(); const k = maKey(t); if (kind === "day") return [k, k]; if (kind === "week") { const s = new Date(t); s.setDate(t.getDate() - t.getDay()); return [maKey(s), k]; } if (kind === "month") { const s = new Date(t); s.setDate(t.getDate() - 29); return [maKey(s), k]; } if (kind === "year") { const y = t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1; return [`${y}-08-01`, k]; } return [from || k, to || k]; };
 const SD_CSS = `
 .sc-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:900;font-size:11.5px;white-space:nowrap}
@@ -32463,15 +32508,16 @@ function StudentDailyPage({ by = "الإدارة", legacy = null }) {
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
   const [rp, setRp] = useState({ ck: "", kind: "week", from: "", to: "", q: "", nh: "", data: null });
   const [pcs, setPcs] = useState(null); const [rep, setRep] = useState({});
-  const [fx, setFx] = useState(""); const [np, setNp] = useState(null);
+  const [fx, setFx] = useState(""); const [np, setNp] = useState(null); const [pm, setPm] = useState("day");
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
   const classes = maClasses(counts);
   const studentsOf = k => maArr(rosters[k] && rosters[k].students).filter(x => x && x.id && x.name);
   const byKey = String(by).replace(/[.#$/\[\]\s]/g, "").slice(0, 30) || "x";
   const sIdx = SC_SUBJECTS.indexOf(subject);
   const tkey = sIdx >= 0 ? `${sIdx}_${byKey}` : "";
+  const dk = pm === "week" ? wkStart(dateK) + "_W" : dateK;
   useEffect(() => { (async () => { const [meta, ros] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER)]); if (meta && Array.isArray(meta.counts)) setCounts(meta.counts.map(n => +n || 0)); setRosters(ros && typeof ros === "object" ? ros : {}); })(); }, []);
-  useEffect(() => { if (!ck) return; (async () => { const d = await maGet(`${SD_NODE}/${ck}/${dateK}`); setDayRecs(d && typeof d === "object" ? d : {}); })(); }, [ck, dateK]);
+  useEffect(() => { if (!ck) return; (async () => { const d = await maGet(`${SD_NODE}/${ck}/${dk}`); setDayRecs(d && typeof d === "object" ? d : {}); })(); }, [ck, dk]);
   useEffect(() => { const r = dayRecs[tkey]; setDraft(r && r.items ? JSON.parse(JSON.stringify(r.items)) : {}); setDirty(false); }, [dayRecs, tkey]);
   useEffect(() => { if (tab === "pc") (async () => { const d = await maGet(SD_PC); setPcs(ptVals(d).sort((a, b) => b.at - a.at)); })(); }, [tab]);
   const setV = (sid, k, i) => { setDraft(p => { const c = { ...(p[sid] || {}) }; if (c[k] === i) delete c[k]; else c[k] = i; return { ...p, [sid]: c }; }); setDirty(true); };
@@ -32480,7 +32526,7 @@ function StudentDailyPage({ by = "الإدارة", legacy = null }) {
   const save = async () => {
     if (!tkey) { alert("اختر المادة"); return; }
     const items = {}; studentsOf(ck).forEach(s => { const v = draft[s.id]; if (v) { const o = {}; ["p", "h", "t", "b"].forEach(k => { if (v[k] != null) o[k] = v[k]; const t = String(v[k + "n"] || "").trim(); if (t) { o[k + "n"] = t.slice(0, 200); if (v[k + "c"]) o[k + "c"] = +v[k + "c"]; } }); const n = String(v.n || "").trim(); if (n) o.n = n.slice(0, 300); if (Object.keys(o).length) items[s.id] = o; } });
-    setBusy(true); const rec = { by, subject, at: Date.now(), items }; const ok = await maPut(`${SD_NODE}/${ck}/${dateK}/${tkey}`, rec); setBusy(false);
+    setBusy(true); const rec = { by, subject, at: Date.now(), items, pm }; const ok = await maPut(`${SD_NODE}/${ck}/${dk}/${tkey}`, rec); setBusy(false);
     if (!ok) { alert("⚠️ تعذّر الحفظ"); return; }
     setDayRecs(p => ({ ...p, [tkey]: rec })); setDirty(false); toast(`✅ حُفظت متابعة ${maClassName(ck)} — ${subject}`);
   };
@@ -32506,14 +32552,14 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
   const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
   const sig = `<div class="sg"><div>المعلم / المسجّل<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>الموجه الطلابي<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`;
   const openP = (b, t) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${pcss}</style></head><body>${b}<script>setTimeout(()=>print(),800)</script></body></html>`);
-  const printDay = () => { const st = studentsOf(ck); openP(`<section class="pg">${hdr("المتابعة اليومية للطلاب", `${maClassName(ck)} • ${ptEsc(subject)}<br>${maDay(maDate(dateK))} ${maHijri(maDate(dateK))}<br>${maGreg(maDate(dateK))}`)}<table><thead><tr><th>م</th><th>اسم الطالب</th>${SD_CR.map(c => `<th>${c.ic} ${c.t}</th>`).join("")}<th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => { const v = draft[s.id] || {}; return `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(s.name)}</td>${SD_CR.map(c => `<td>${pb(c.k, v[c.k])}</td>`).join("")}<td style="text-align:right;font-size:10px">${[...SD_CR.filter(c => v[c.k + "n"]).map(c => `<span style="color:${SD_COL[+v[c.k + "c"] || 0]}">${c.ic} ${ptEsc(v[c.k + "n"])}</span>`), v.n ? "📝 " + ptEsc(v.n) : ""].filter(Boolean).join("<br>")}</td></tr>`; }).join("")}</tbody></table>${sig}</section>`, "المتابعة اليومية"); };
+  const printDay = () => { const st = studentsOf(ck); openP(`<section class="pg">${hdr("المتابعة اليومية للطلاب", `${maClassName(ck)} • ${ptEsc(subject)}<br>${pm === "week" ? sdPL(dk) : maDay(maDate(dateK)) + " " + maHijri(maDate(dateK)) + "<br>" + maGreg(maDate(dateK))}`)}<table><thead><tr><th>م</th><th>اسم الطالب</th>${SD_CR.map(c => `<th>${c.ic} ${c.t}</th>`).join("")}<th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => { const v = draft[s.id] || {}; return `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(s.name)}</td>${SD_CR.map(c => `<td>${pb(c.k, v[c.k])}</td>`).join("")}<td style="text-align:right;font-size:10px">${[...SD_CR.filter(c => v[c.k + "n"]).map(c => `<span style="color:${SD_COL[+v[c.k + "c"] || 0]}">${c.ic} ${ptEsc(v[c.k + "n"])}</span>`), v.n ? "📝 " + ptEsc(v.n) : ""].filter(Boolean).join("<br>")}</td></tr>`; }).join("")}</tbody></table>${sig}</section>`, "المتابعة اليومية"); };
   const printArc = () => { const kl = { day: "اليوم", week: "الأسبوع", month: "آخر ٣٠ يوماً", year: "العام الدراسي", custom: "فترة مخصصة" }[rp.kind];
     const one = agg.length === 1 ? agg[0] : null;
     openP(`<section class="pg">${hdr(one ? "تقرير المتابعة اليومية للطالب" : "تقرير المتابعة اليومية", `${one ? ptEsc(one.name) + " • " + maClassName(one.ck) : rp.ck ? maClassName(rp.ck) : "جميع الفصول"}<br>${kl}: من ${maHijri(maDate(rp.f))}<br>إلى ${maHijri(maDate(rp.t))}`)}
       <table><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>مرات المتابعة</th><th>🙋 مشاركة ممتازة/جيدة/ضعيفة</th><th>📚 الواجب منجز</th><th>🎒 أدوات ناقصة</th><th>🤝 يحتاج متابعة</th></tr></thead><tbody>${agg.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(x.name)}</td><td>${maClassName(x.ck)}</td><td>${maAr(x.n)}</td><td>${maAr(x.c.p[0])} / ${maAr(x.c.p[1])} / <b style="color:#c2410c">${maAr(x.c.p[2])}</b></td><td>${x.hwPct == null ? "—" : maAr(x.hwPct) + "٪"}</td><td style="color:#c2410c;font-weight:900">${maAr(x.c.t[1])}</td><td style="color:#b91c1c;font-weight:900">${maAr(x.c.b[2])}</td></tr>`).join("") || `<tr><td colspan="8">لا توجد بيانات</td></tr>`}</tbody></table>
-      ${one && one.notes.length ? `<h3 style="font-size:13px;color:#0f766e">📝 ملاحظات المعلمين</h3><table><thead><tr><th>التاريخ</th><th>المادة</th><th>الملاحظة</th></tr></thead><tbody>${one.notes.map(n => `<tr><td>${maHijri(maDate(n.dk))}</td><td>${ptEsc(n.subject)}</td><td class="nm">${[...SD_CR.filter(c => n.r[c.k + "n"]).map(c => c.ic + " " + ptEsc(n.r[c.k + "n"])), n.n ? "📝 " + ptEsc(n.n) : ""].filter(Boolean).join(" • ")}</td></tr>`).join("")}</tbody></table>` : ""}${sig}</section>`, "تقرير المتابعة"); };
+      ${one && one.notes.length ? `<h3 style="font-size:13px;color:#0f766e">📝 ملاحظات المعلمين</h3><table><thead><tr><th>التاريخ</th><th>المادة</th><th>الملاحظة</th></tr></thead><tbody>${one.notes.map(n => `<tr><td>${maHijri(sdDate(n.dk))}</td><td>${ptEsc(n.subject)}</td><td class="nm">${[...SD_CR.filter(c => n.r[c.k + "n"]).map(c => c.ic + " " + ptEsc(n.r[c.k + "n"])), n.n ? "📝 " + ptEsc(n.n) : ""].filter(Boolean).join(" • ")}</td></tr>`).join("")}</tbody></table>` : ""}${sig}</section>`, "تقرير المتابعة"); };
   // ── طباعة الملاحظات (فردي / مجمّع)
-  const noteCard = (name, ck2, entries, solo) => `<div class="nc${solo ? " solo" : ""}"><div class="nch"><div class="nav">${ptEsc((name || "؟")[0])}</div><div><b>${ptEsc(name)}</b><small>${maClassName(ck2)}</small></div><span class="ncn">${maAr(entries.length)} ${entries.length > 2 && entries.length < 11 ? "ملاحظات" : "ملاحظة"}</span></div>${entries.map(e => `<div class="ne"><div class="ned">📅 ${maDay(maDate(e.dk))} ${maHijri(maDate(e.dk))} • 📚 ${ptEsc(e.subject || "")}${e.by ? " • 👤 " + ptEsc(e.by) : ""}</div><div class="neg">${SD_CR.map(c => { const lv = e.r[c.k] != null ? c.lv[e.r[c.k]] : null; const t = e.r[c.k + "n"]; if (!lv && !t) return ""; return `<div class="nb" style="--ac:${c.ac};--soft:${c.soft}"><div class="nbt">${c.ic} ${c.t}${lv ? `<span style="background:${lv[2]};color:${lv[1]}">${lv[3]} ${lv[0]}</span>` : ""}</div>${t ? `<div class="nbx" style="color:${SD_COL[+e.r[c.k + "c"] || 0]}">${ptEsc(t)}</div>` : ""}</div>`; }).join("")}</div>${e.r.n ? `<div class="nge">📝 ${ptEsc(e.r.n)}</div>` : ""}</div>`).join("")}${solo ? `<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(entries[0]?.by || by)}</b><span>............</span></div><div>ولي أمر الطالب (اطّلعت)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>` : ""}</div>`;
+  const noteCard = (name, ck2, entries, solo) => `<div class="nc${solo ? " solo" : ""}"><div class="nch"><div class="nav">${ptEsc((name || "؟")[0])}</div><div><b>${ptEsc(name)}</b><small>${maClassName(ck2)}</small></div><span class="ncn">${maAr(entries.length)} ${entries.length > 2 && entries.length < 11 ? "ملاحظات" : "ملاحظة"}</span></div>${entries.map(e => `<div class="ne"><div class="ned">📅 ${sdPL(e.dk)} • 📚 ${ptEsc(e.subject || "")}${e.by ? " • 👤 " + ptEsc(e.by) : ""}</div><div class="neg">${SD_CR.map(c => { const lv = e.r[c.k] != null ? c.lv[e.r[c.k]] : null; const t = e.r[c.k + "n"]; if (!lv && !t) return ""; return `<div class="nb" style="--ac:${c.ac};--soft:${c.soft}"><div class="nbt">${c.ic} ${c.t}${lv ? `<span style="background:${lv[2]};color:${lv[1]}">${lv[3]} ${lv[0]}</span>` : ""}</div>${t ? `<div class="nbx" style="color:${SD_COL[+e.r[c.k + "c"] || 0]}">${ptEsc(t)}</div>` : ""}</div>`; }).join("")}</div>${e.r.n ? `<div class="nge">📝 ${ptEsc(e.r.n)}</div>` : ""}</div>`).join("")}${solo ? `<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(entries[0]?.by || by)}</b><span>............</span></div><div>ولي أمر الطالب (اطّلعت)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>` : ""}</div>`;
   const ncss = `.nc{border:1.5px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:10px;page-break-inside:avoid}.nch{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(90deg,#f0fdfa,#fff);border-bottom:1px solid #e2e8f0}.nch b{display:block;font-size:14px}.nch small{font-size:11px;color:#0f766e;font-weight:800}.nav{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#14b8a6,#0f766e);color:#fff;display:grid;place-items:center;font-weight:900}.ncn{margin-right:auto;background:#fef3c7;color:#92400e;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:900}.ne{padding:8px 12px;border-bottom:1px dashed #e2e8f0}.ne:last-child{border-bottom:0}.ned{font-size:10.5px;font-weight:800;color:#64748b;margin-bottom:6px}.neg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.nb{border-radius:10px;padding:6px 8px;background:var(--soft);border-top:3px solid var(--ac)}.nbt{font-size:10.5px;font-weight:900;color:var(--ac);display:flex;flex-wrap:wrap;gap:4px;align-items:center}.nbt span{border-radius:999px;padding:1px 7px;font-size:9.5px}.nbx{font-size:11.5px;font-weight:800;margin-top:4px;line-height:1.6}.nge{margin-top:6px;font-size:11.5px;font-weight:800;background:#fffbeb;border-radius:8px;padding:5px 8px}.nc.solo{border:0}`;
   const printNotes = (list, mode, sub) => {
     if (!list.length) { alert("لا توجد ملاحظات للطباعة"); return; }
@@ -32521,7 +32567,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
     const body = mode === "solo" ? list.map(x => `<section class="pg">${hdr("ملاحظات المتابعة اليومية للطالب", sub)}${noteCard(x.name, x.ck, x.entries, true)}</section>`).join("") : `<section class="pg">${hdr("ملاحظات المتابعة اليومية", sub + `<br>عدد الطلاب: ${maAr(list.length)}`)}${list.map(x => noteCard(x.name, x.ck, x.entries, false)).join("")}${sig}</section>`;
     printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>ملاحظات الطلاب</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${css0}</style></head><body>${body}<script>setTimeout(()=>print(),800)</script></body></html>`);
   };
-  const openNpDay = () => { const L = studentsOf(ck).filter(s => sdHasNotes(draft[s.id])).map(s => ({ key: s.id, name: s.name, ck, entries: [{ dk: dateK, subject, by, r: draft[s.id] }] })); setNp({ list: L, sel: Object.fromEntries(L.map(x => [x.key, true])), mode: "group", sub: `${maClassName(ck)} • ${ptEsc(subject)}<br>${maDay(maDate(dateK))} ${maHijri(maDate(dateK))}` }); };
+  const openNpDay = () => { const L = studentsOf(ck).filter(s => sdHasNotes(draft[s.id])).map(s => ({ key: s.id, name: s.name, ck, entries: [{ dk, subject, by, r: draft[s.id] }] })); setNp({ list: L, sel: Object.fromEntries(L.map(x => [x.key, true])), mode: "group", sub: `${maClassName(ck)} • ${ptEsc(subject)}<br>${sdPL(dk)}` }); };
   const openNpArc = () => { const L = agg.filter(x => x.notes.length).map(x => ({ key: x.ck + x.sid, name: x.name, ck: x.ck, entries: x.notes })); setNp({ list: L, sel: Object.fromEntries(L.map(x => [x.key, true])), mode: "group", sub: `${rp.ck ? maClassName(rp.ck) : "جميع الفصول"}<br>من ${maHijri(maDate(rp.f))} إلى ${maHijri(maDate(rp.t))}` }); };
   const pcUpd = async (x, patch) => { const v = { ...x, ...patch }; const ok = await maPut(`${SD_PC}/${x.id}`, v); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; } setPcs(p => p.map(y => y.id === x.id ? v : y)); setRep(r => ({ ...r, [x.id]: "" })); };
   const pcDel = async (x) => { if (!window.confirm("حذف ملاحظة ولي الأمر؟")) return; try { await fetch(`${FIREBASE_URL}/school/${SD_PC}/${x.id}.json`, { method: "DELETE" }); } catch {} setPcs(p => p.filter(y => y.id !== x.id)); };
@@ -32533,7 +32579,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
       <style>{MA_CSS + (typeof PT_CSS !== "undefined" ? PT_CSS : "") + (typeof ML_CSS !== "undefined" ? ML_CSS : "") + SD_CSS}</style>
       <div className="grid gap-4" style={{ maxWidth: 1250, margin: "0 auto" }}>
         <div className="pt-hero" style={{ background: "linear-gradient(135deg,#134e4a,#0f766e 55%,#0d9488)" }}><div style={{ position: "relative", zIndex: 1 }} className="flex items-center justify-between gap-3 flex-wrap">
-          <div><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style={{ fontSize: 24, fontWeight: 900 }}>📒 المتابعة اليومية للطلاب</div><div style={{ fontSize: 13.5, fontWeight: 800 }}>{maDay(maDate(dateK))} • {maHijri(maDate(dateK))} • {maGreg(maDate(dateK))}</div></div>
+          <div><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style={{ fontSize: 24, fontWeight: 900 }}>📒 المتابعة اليومية للطلاب</div><div style={{ fontSize: 13.5, fontWeight: 800 }}>{pm === "week" ? sdPL(dk) : `${maDay(maDate(dateK))} • ${maHijri(maDate(dateK))} • ${maGreg(maDate(dateK))}`}</div></div>
           <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>👤 {by}</div>
         </div></div>
         <div className="ma-tabs">{[["rec", "📝 الرصد اليومي"], ["arc", "🗂️ الأرشيف والتقارير"], ["pc", `💬 ملاحظات أولياء الأمور${nPc ? ` (${maAr(nPc)})` : ""}`], ...(legacy ? [["old", "📁 التقييم السابق"]] : [])].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
@@ -32546,12 +32592,12 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
             <div className="flex items-center gap-2 flex-wrap" style={{ padding: "12px 14px", background: "linear-gradient(90deg,#f0fdfa,#fff)", borderBottom: "1px solid #ccfbf1" }}>
               <b style={{ fontSize: 18, flex: "1 1 180px" }}>{maClassName(ck)}</b>
               <select className="ma-inp" style={{ width: 210, fontWeight: 800, borderColor: subject ? undefined : "#f59e0b" }} value={subject} onChange={e => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة")) return; setSubject(e.target.value); }}><option value="">📚 اختر المادة…</option>{SC_SUBJECTS.map((x, i) => <option key={x} value={x}>{x}{dayRecs[`${i}_${byKey}`] ? " ✓" : ""}</option>)}</select>
-              <input type="date" className="ma-inp" style={{ width: 165 }} value={dateK} max={maKey(new Date())} onChange={e => e.target.value && setDateK(e.target.value)} />
+              <PeriodPicker pm={pm} setPm={v => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة")) return; setPm(v); }} dateK={dateK} setDateK={v => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة")) return; setDateK(v); }} allowTerm={false} ac="#0f766e" />
               {tkey && <button className="ma-btn" onClick={allBest}>⚡ الأفضل للجميع</button>}
               {tkey && <button className="ma-btn gold" onClick={printDay}>🖨 الكشف</button>}
               {tkey && <button className="ma-btn" style={{ borderColor: "#fcd34d", color: "#92400e" }} onClick={openNpDay}>📝 طباعة الملاحظات</button>}
             </div>
-            {Object.keys(dayRecs).length > 0 && <div style={{ padding: "6px 14px", fontSize: 12, fontWeight: 800, color: "#0f766e", background: "#f0fdfa" }}>📌 مرصود اليوم: {Object.values(dayRecs).map(r => `${r.subject} (${r.by})`).join("، ")}</div>}
+            {Object.keys(dayRecs).length > 0 && <div style={{ padding: "6px 14px", fontSize: 12, fontWeight: 800, color: "#0f766e", background: "#f0fdfa" }}>📌 مرصود {pm === "week" ? "هذا الأسبوع" : "اليوم"}: {Object.values(dayRecs).map(r => `${r.subject} (${r.by})`).join("، ")}</div>}
             {!tkey ? <div style={{ padding: 30, textAlign: "center", color: "#b45309", fontWeight: 900 }}>📚 اختر المادة لبدء المتابعة</div> : <div className="p-3 grid gap-2">
               {st.map((s, i) => { const v = draft[s.id] || {}; const has = sdHasNotes(v); return (
                 <div key={s.id} className={`sd-card ${has ? "nt" : ""}`}>
@@ -32595,7 +32641,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
         {tab === "pc" && <div className="grid gap-3">
           {!pcs ? <div className="p-8 text-center font-bold text-gray-400">جاري التحميل…</div> : pcs.length ? pcs.map(x => (
             <div key={x.id} className="pt-item" style={{ borderRight: `4px solid ${x.status === "ok" ? "#16a34a" : "#2563eb"}` }}>
-              <div className="flex items-center gap-2 flex-wrap"><b>👦 {x.sname}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#0f766e" }}>{maClassName(x.ck)} • {x.subject} • {x.date ? maHijri(maDate(x.date)) : ""}</span><span className="pt-st" style={{ background: x.status === "ok" ? "#dcfce7" : "#dbeafe", color: x.status === "ok" ? "#15803d" : "#1d4ed8", marginRight: "auto" }}>{x.status === "ok" ? "✅ مقبولة" : "🆕 جديدة"}</span><span style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(x.at)}</span></div>
+              <div className="flex items-center gap-2 flex-wrap"><b>👦 {x.sname}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#0f766e" }}>{maClassName(x.ck)} • {x.subject} • {x.date ? maHijri(sdDate(x.date)) : ""}</span><span className="pt-st" style={{ background: x.status === "ok" ? "#dcfce7" : "#dbeafe", color: x.status === "ok" ? "#15803d" : "#1d4ed8", marginRight: "auto" }}>{x.status === "ok" ? "✅ مقبولة" : "🆕 جديدة"}</span><span style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(x.at)}</span></div>
               <div style={{ fontSize: 14, fontWeight: 700, marginTop: 6 }}>💬 {x.text}</div>
               {x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ {x.replyBy}: {x.reply}</div>}
               <div className="flex gap-2 flex-wrap mt-2"><input className="ma-inp" style={{ flex: "1 1 220px" }} value={rep[x.id] || ""} onChange={e => setRep({ ...rep, [x.id]: e.target.value })} placeholder="✍️ رد على ولي الأمر (اختياري)…" /><button className="ma-btn grn" onClick={() => pcUpd(x, { status: "ok", reply: (rep[x.id] || "").trim() || x.reply || "تم الاطلاع وقبول الملاحظة، شاكرين تعاونكم", replyBy: by, replyAt: Date.now() })}>✅ قبول الملاحظة</button><button className="ma-btn" onClick={() => pcDel(x)}>🗑</button></div>
@@ -32639,7 +32685,7 @@ function GuardianDaily({ me }) {
       <div className="flex gap-2">{[7, 30, 90].map(n => <button key={n} className={`ma-tab ${days === n ? "on" : ""}`} onClick={() => setDays(n)}>آخر {maAr(n)} يوماً</button>)}</div>
       {d.map((r, i) => { const mine = pc.filter(x => x.date === r.dk && x.tkey === r.tk); const k = r.dk + r.tk; return (
         <div key={k} className="pt-item">
-          <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14 }}>📚 {r.subject}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maDay(maDate(r.dk))} {maHijri(maDate(r.dk))} • 👤 {r.by}</span></div>
+          <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14 }}>📚 {r.subject}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{sdPL(r.dk)} • 👤 {r.by}</span></div>
           <div className="flex gap-1 flex-wrap mt-2">{SD_CR.map(c => r[c.k] != null ? chip(c, r[c.k]) : null)}</div>
           {SD_CR.filter(c => r[c.k + "n"]).map(c => <div key={c.k} style={{ fontSize: 13, fontWeight: 800, marginTop: 6, background: c.soft, borderRight: `3px solid ${c.ac}`, borderRadius: 10, padding: "6px 10px" }}><span style={{ color: c.ac }}>{c.ic} {c.t}:</span> <span style={{ color: SD_COL[+r[c.k + "c"] || 0] }}>{r[c.k + "n"]}</span></div>)}
           {r.n && <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6, background: "#fffbeb", borderRadius: 10, padding: "6px 10px" }}>📝 {r.n}</div>}
