@@ -29395,7 +29395,25 @@ function FormativeGradebookPage({ classList = [] }) {
     const students = L.map(x => { const o = bySid.get(x.id) || byName.get(nn(x.name)); return { id: o ? o.id : fgId(), sid: x.id, name: x.name, scores: o ? o.scores || {} : {} }; });
     update(s => ({ ...s, ck, students })); setToast(`✅ استُورد ${L.length} طالب من كشف ${maClassName(ck)} — مرتبطون ببوابة ولي الأمر`);
   };
-  const onLevel = (lv) => update(s => ({ ...s, level: lv, section: (FG_SECTIONS[lv] || []).includes(String(s.section)) ? s.section : "1" }));
+  // تغيير الصف/الفصل من الأعلى ← تُحمَّل أسماء الفصل الجديد من كشوف المدرسة تلقائياً
+  const changeClass = async (lv, sec) => {
+    const lvI = FG_LEVELS.indexOf(lv) + 1; const ck = `${lvI}-${sec}`; const curCk = `${FG_LEVELS.indexOf(sheet.level) + 1}-${sheet.section}`;
+    if (ck === curCk) return;
+    const ex = sheets.find(x => x.id !== sheet.id && x.level === lv && String(x.section) === String(sec) && (x.subject || "") === (sheet.subject || "") && (x.teacher || "") === (sheet.teacher || "") && x.semester === sheet.semester);
+    if (ex && window.confirm(`يوجد سجل محفوظ لفصل ${maClassName(ck)} في نفس المادة والفترة — فتحه؟`)) { setActiveId(ex.id); return; }
+    const ros = await maGet(MA_ROSTER); const L = maArr(ptObj(ros)[ck] && ptObj(ros)[ck].students).filter(x => x && x.id && x.name);
+    const studs = L.map(x => ({ id: fgId(), sid: x.id, name: x.name, scores: {} }));
+    const blank = Array.from({ length: 5 }, () => ({ id: fgId(), name: "", scores: {} }));
+    const hasScores = sheet.students.some(st => Object.keys(st.scores || {}).length);
+    const named = sheet.students.some(st => st.name.trim());
+    if (hasScores || (named && !L.length && !sheet.ck)) {
+      if (!window.confirm(`السجل الحالي (${maClassName(curCk)}) ${hasScores ? "فيه درجات مرصودة" : "فيه أسماء"} — سيُنشأ سجل جديد لفصل ${maClassName(ck)} بنفس الأعمدة والإعدادات، ويبقى السجل الحالي محفوظاً. متابعة؟`)) return;
+      const ns = { ...JSON.parse(JSON.stringify(sheet)), id: "fg-" + Date.now(), level: lv, section: sec, ck, pub: false, students: studs.length ? studs : blank, updated: Date.now() };
+      const next = [ns, ...sheets]; setSheets(next); setActiveId(ns.id); persist(next);
+    } else update(x => ({ ...x, level: lv, section: sec, ck, students: studs.length ? studs : blank }));
+    setToast(L.length ? `✅ ${maClassName(ck)}: تم تحميل ${L.length} طالب من كشوف المدرسة` : `⚠️ لا توجد أسماء لفصل ${maClassName(ck)} في كشوف المدرسة — ارفع كشف نور من «سجل التأخر الصباحي ← الفصول» أو أضف الأسماء يدوياً`);
+  };
+  const onLevel = (lv) => changeClass(lv, (FG_SECTIONS[lv] || []).includes(String(sheet.section)) ? sheet.section : "1");
   const distribute = (gid) => update(s => {
     const g = s.groups.find(x => x.id === gid); const cs = s.cols.filter(c => c.groupId === gid);
     if (!g || !cs.length) return s;
@@ -29556,7 +29574,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
             <datalist id="fg-subjects">{Object.keys(subjects).map(s => <option key={s} value={s} />)}</datalist>
           </div>
           <div><span className="fg-lbl">🎓 الصف</span><select className="fg-inp" value={sheet.level} onChange={e => onLevel(e.target.value)}>{FG_LEVELS.map(l => <option key={l}>{l}</option>)}</select></div>
-          <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => set("section", e.target.value)}>{[...new Set([...(FG_SECTIONS[sheet.level] || ["1"]), String(sheet.section || "1")])].map(l => <option key={l} value={l}>{sheet.level.replace("الصف ", "")} / {l}</option>)}</select></div>
+          <div><span className="fg-lbl">🚪 الفصل</span><select className="fg-inp" value={sheet.section} onChange={e => changeClass(sheet.level, e.target.value)}>{[...new Set([...(FG_SECTIONS[sheet.level] || ["1"]), String(sheet.section || "1")])].map(l => <option key={l} value={l}>{sheet.level.replace("الصف ", "")} / {l}</option>)}</select></div>
           <div><span className="fg-lbl">🗓 الفترة الدراسية</span><select className="fg-inp" value={sheet.semester} onChange={e => set("semester", e.target.value)}>{FG_SEMESTERS.map(l => <option key={l}>{l}</option>)}</select></div>
           <div><span className="fg-lbl">📐 نموذج التوزيع</span><button className="fg-inp text-right" style={{ cursor: "pointer" }} onClick={() => setModal("model")}>{modelInfo ? `${modelInfo.name} — ${modelInfo.type}` : "مخصص"} ▾</button></div>
         </div>
@@ -34610,18 +34628,7 @@ const CV_SEED = [[1,1,5,"2026-09-29","1448/4/18","عبدالرحيم رضوان"
 const CV_PLAN = "school-cv-plan", CV_EVAL = "school-cv-eval", CV_CFG = "school-cv-cfg", CV_MSG = "school-cv-msg";
 const CV_MT = [["note", "📝", "ملاحظة"], ["period", "🔁", "طلب تغيير الحصة أو الفصل"], ["extra", "➕", "طلب زيارة إضافية / تبادل زيارة مع زميل"], ["eval", "❓", "استفسار عن التقييم"], ["support", "🤝", "طلب دعم أو تدريب"], ["other", "📌", "أخرى"]];
 const cvMt = k => CV_MT.find(x => x[0] === k) || CV_MT[5];
-const CV_CRIT = [
-  { t: "التزام المعلم بحضور الحصة وبدئها في وقتها", ic: "⏰", tips: ["الحضور إلى الفصل مع بداية الحصة دون تأخير", "استثمار وقت الحصة كاملاً حتى نهايتها", "الانتقال المنظم بين الحصص"] },
-  { t: "تمكّن المعلم من المادة العلمية وقدرته على إيصال الدرس", ic: "🎓", tips: ["دقة المعلومات وسلامتها العلمية", "تبسيط المفاهيم وربطها بالواقع", "الإجابة الواثقة عن أسئلة الطلاب"] },
-  { t: "استخدام استراتيجيات التدريس المتنوعة والمناسبة للدرس", ic: "🧩", tips: ["تنويع الاستراتيجيات بحسب الهدف (تعاوني، حل مشكلات، لعب أدوار…)", "مراعاة الفروق الفردية", "إشراك الطلاب في بناء المعرفة"] },
-  { t: "توظيف الوسائل والتقنيات التعليمية", ic: "💻", tips: ["وسائل مرتبطة بالهدف ومُعدّة مسبقاً", "توظيف السبورة الذكية والمنصات الرقمية", "توظيف الوسيلة في وقتها المناسب"] },
-  { t: "تفعيل السبورة وكتابة عنوان الدرس والموضوع والتاريخ", ic: "🖊️", tips: ["كتابة التاريخ والمادة وعنوان الدرس", "تقسيم السبورة وتنظيمها", "وضوح الخط وتسلسل الأفكار"] },
-  { t: "القدرات اللغوية والتحدث باللغة العربية الفصحى", ic: "🗣️", tips: ["الالتزام بالفصحى أثناء الشرح", "سلامة اللغة ووضوح الصوت", "تعزيز لغة الطلاب وتصويب أخطائهم"] },
-  { t: "إدارة الصف وتوزيع الطلاب بشكل جيد داخل الحصة", ic: "🧭", tips: ["ضبط الصف بأسلوب تربوي إيجابي", "توزيع الأدوار والمجموعات بعدالة", "التعامل الحكيم مع المواقف الطارئة"] },
-  { t: "نظافة الفصل وتهيئة البيئة الصفية", ic: "✨", tips: ["نظافة الفصل وترتيب المقاعد", "بيئة محفزة (لوحات، إنجازات الطلاب)", "التهوية والإضاءة المناسبة"] },
-  { t: "وجود سجل التقويم وكشف المتابعة وتحديثهما", ic: "📒", tips: ["سجل التقويم محدّث بالدرجات", "كشف متابعة الواجبات والمشاركة", "توثيق الخطط العلاجية والإثرائية"] },
-  { t: "تفعيل مشاركة الطلاب والتقويم المستمر وغلق الدرس", ic: "🎯", tips: ["أسئلة تقويمية أثناء الدرس", "إشراك أكبر عدد من الطلاب", "غلق الدرس بتلخيص أو نشاط ختامي"] },
-];
+const CV_CRIT = [];
 const CV_COMP = [["2026-10-19", "1448/5/8"], ["2026-10-20", "1448/5/9"], ["2026-10-21", "1448/5/10"], ["2026-10-22", "1448/5/11"], ["2026-10-25", "1448/5/14"], ["2026-10-26", "1448/5/15"], ["2026-10-27", "1448/5/16"], ["2026-10-28", "1448/5/17"], ["2026-10-29", "1448/5/18"], ["2026-11-19", "1448/6/9"], ["2026-11-29", "1448/6/19"], ["2026-11-30", "1448/6/20"], ["2026-12-01", "1448/6/21"], ["2026-12-02", "1448/6/22"], ["2026-12-03", "1448/6/23"], ["2026-12-24", "1448/7/15"], ["2026-12-27", "1448/7/18"], ["2026-12-28", "1448/7/19"], ["2026-12-29", "1448/7/20"], ["2026-12-30", "1448/7/21"], ["2026-12-31", "1448/7/22"]];
 const CV_PD = ["الانضباط وإدارة الوقت الصفي", "التمكن العلمي والتنمية المهنية في التخصص", "استراتيجيات التعلم النشط", "التقنيات التعليمية والمنصات الرقمية", "تنظيم السبورة والعرض", "مهارات اللغة العربية الفصحى", "الإدارة الصفية الإيجابية", "البيئة الصفية المحفزة", "التقويم وأدوات المتابعة", "التقويم البنائي وغلق الدرس"];
 const CV_VN = ["الأولى", "الثانية", "الثالثة"];
@@ -34629,7 +34636,7 @@ const cvHij = h => maAr(String(h || "")) + (h ? "هـ" : ""); // يُعرض: ا�
 const cvTm = tm => { if (!tm) return ""; const [x, y] = String(tm).split("-").map(z => z.trim()); return y ? `${x} إلى ${y}` : x; };
 const cvCls = c => { const m = String(c || "").match(/^(\d)\/(\d)$/); return m ? maClassName(`${m[2]}-${m[1]}`) : c || "—"; };
 const cvGrade = t => t == null ? null : t >= 90 ? ["ممتاز", "#15803d", "#dcfce7"] : t >= 80 ? ["جيد جداً", "#0d9488", "#ccfbf1"] : t >= 70 ? ["جيد", "#2563eb", "#dbeafe"] : t >= 60 ? ["مقبول", "#b45309", "#fef3c7"] : ["يحتاج إلى دعم", "#b91c1c", "#fee2e2"];
-const cvTotal = e => { const a = maArr(e && e.sc).slice(0, 10); if (a.length < 10 || a.some(x => x == null || x === "")) return null; return a.reduce((s, x) => s + (+x || 0), 0); };
+const cvTotal = e => e && e.fin ? 1 : null; // «منفذة» = معتمدة
 const cvPart = e => maArr(e && e.sc).filter(x => x != null && x !== "").length;
 const cvNorm = s => String(s || "").replace(/[إأآا]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/\s+/g, " ").trim();
 const cvTok = s => cvNorm(s).split(" ").filter(w => w && w !== "ال").map(w => w.replace(/^ال(?=..)/, ""));
@@ -34647,7 +34654,7 @@ function cvSeedPlan() {
 async function cvLoad() {
   let [plan, ev, cfg, lic, msgs] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL), maGet(CV_CFG), maGet(LIC_NODE), maGet(CV_MSG)]);
   plan = ptObj(plan); cfg = ptObj(cfg);
-  return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: maArr(cfg.crit).length === 10 ? cfg.crit : CV_CRIT.map(c => c.t), links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
+  return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: [], gen: ptObj(cfg.gen), links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
 }
 const cvTeachers = plan => { const m = {}; Object.values(plan).forEach(r => { if (!r || !r.tk) return; const o = m[r.tk] = m[r.tk] || { tk: r.tk, name: r.t, s: r.s, vis: [] }; o.vis.push(r); }); Object.values(m).forEach(o => o.vis.sort((a, b) => a.v - b.v || a.date.localeCompare(b.date))); return Object.values(m).sort((a, b) => a.vis[0].n - b.vis[0].n); };
 const cvStatus = (r, e) => { const k = maKey(new Date()); const tot = cvTotal(e); if (tot != null) return ["done", "✅ نُفذت", "#15803d", "#dcfce7"]; if (r.date === k) return ["today", "📌 اليوم", "#7c3aed", "#ede9fe"]; if (r.date < k) return ["late", "🔄 لم تُنفَّذ — تحتاج تعويضاً", "#b91c1c", "#fee2e2"]; return ["soon", "⏳ قادمة", "#0369a1", "#e0f2fe"]; };
@@ -34666,40 +34673,17 @@ const CV_CSS = `
 .cv-cd{font-size:52px;font-weight:900;line-height:1;letter-spacing:-2px}
 @media (max-width:700px){.cv-tl{grid-template-columns:1fr}.cv-crit{grid-template-columns:24px 1fr}.cv-sc{grid-column:1/-1}.cv-sc button{width:30px;height:30px}}
 `;
-function CvRing({ v, size = 96, c }) {
+function CvRing({ v, size = 96, c, txt }) {
   const r = size / 2 - 8, L = 2 * Math.PI * r, p = v == null ? 0 : Math.max(0, Math.min(100, v)) / 100; const g = cvGrade(v);
-  return <div className="cv-ring" style={{ width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#eef2f6" strokeWidth="9" /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={c || (g ? g[1] : "#cbd5e1")} strokeWidth="9" strokeLinecap="round" strokeDasharray={L} strokeDashoffset={L * (1 - p)} style={{ transition: "stroke-dashoffset .8s" }} /></svg><b style={{ color: g ? g[1] : "#94a3b8", fontSize: size / 4.3 }}>{v == null ? "—" : maAr(v)}</b></div>;
+  return <div className="cv-ring" style={{ width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#eef2f6" strokeWidth="9" /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={c || (g ? g[1] : "#cbd5e1")} strokeWidth="9" strokeLinecap="round" strokeDasharray={L} strokeDashoffset={L * (1 - p)} style={{ transition: "stroke-dashoffset .8s" }} /></svg><b style={{ color: c || (g ? g[1] : "#94a3b8"), fontSize: txt ? size / 5.2 : size / 4.3 }}>{txt || (v == null ? "—" : maAr(v))}</b></div>;
 }
-// نموذج الطباعة (مطابق لنموذج المدرسة)
-function cvFormHTML(T, E, crit, i) {
-  const V = [0, 1, 2].map(k => T.vis.find(x => x.v === k + 1));
-  const ev = k => ptObj(E[k + 1]);
-  const tot = [0, 1, 2].map(k => cvTotal(ev(k)));
-  const txt = f => [0, 1, 2].map(k => ev(k)[f] ? `<div><b>الزيارة ${CV_VN[k]}:</b> ${ptEsc(ev(k)[f])}</div>` : "").join("");
-  return `<section class="pg">${inHdr("نموذج الزيارة الصفية ومعايير التقييم", `العام الدراسي ١٤٤٨هـ<br>الفصل الدراسي الأول`)}
-    <div style="font-size:10px;color:#64748b">رقم المعلم في الجدول: ${maAr(i + 1)} • كل معيار من ١٠ درجات والمجموع من ١٠٠</div>
-    <table><tr><th style="width:15%">اسم المعلم</th><td class="r"><b style="font-size:13px">${ptEsc(T.name)}</b></td><th style="width:12%">التخصص</th><td class="r">${ptEsc(T.s)}</td></tr></table>
-    <table style="margin-top:6px"><thead><tr><th>بيانات الزيارة</th>${CV_VN.map(v => `<th>الزيارة ${v}</th>`).join("")}</tr></thead><tbody>
-      <tr><td class="r"><b>الصف / الفصل</b></td>${V.map(r => `<td>${r ? ptEsc(cvCls(r.c)) : ""}</td>`).join("")}</tr>
-      <tr><td class="r"><b>تاريخ الزيارة</b></td>${V.map(r => `<td>${r ? cvHij(r.hij) : ""}</td>`).join("")}</tr>
-      <tr><td class="r"><b>اليوم</b></td>${V.map(r => `<td>${r ? maDay(maDate(r.date)) : ""}</td>`).join("")}</tr>
-      <tr><td class="r"><b>الحصة (الوقت)</b></td>${V.map(r => `<td>${r ? `${ptEsc(r.p)}${r.tm ? ` (${ptEsc(cvTm(r.tm))})` : ""}` : ""}</td>`).join("")}</tr></tbody></table>
-    <table style="margin-top:6px"><thead><tr><th>م</th><th>معايير التقييم</th><th>الدرجة العظمى</th>${CV_VN.map(v => `<th>الزيارة ${v}</th>`).join("")}</tr></thead><tbody>
-      ${crit.map((c, j) => `<tr><td>${maAr(j + 1)}</td><td class="r">${ptEsc(c)}</td><td>١٠</td>${[0, 1, 2].map(k => { const x = maArr(ev(k).sc)[j]; return `<td><b>${x != null && x !== "" ? maAr(x) : ""}</b></td>`; }).join("")}</tr>`).join("")}
-      <tr><th colspan="2">المجموع</th><th>١٠٠</th>${tot.map(t => `<th>${t != null ? maAr(t) : ""}</th>`).join("")}</tr>
-      <tr><td colspan="3" class="r"><b>التقدير</b></td>${tot.map(t => { const g = cvGrade(t); return `<td>${g ? `<span class="lv" style="background:${g[2]};color:${g[1]}">${g[0]}</span>` : ""}</td>`; }).join("")}</tr></tbody></table>
-    <table style="margin-top:6px"><tr><th style="width:18%">نقاط القوة</th><td class="r" style="height:50px;vertical-align:top">${txt("str")}</td></tr><tr><th>جوانب تحتاج إلى تحسين</th><td class="r" style="height:50px;vertical-align:top">${txt("imp")}</td></tr><tr><th>التوصيات والتوجيهات</th><td class="r" style="height:50px;vertical-align:top">${txt("rec")}</td></tr>${[0, 1, 2].some(k => ev(k).vnote) ? `<tr><th>ملاحظة الزائر</th><td class="r">${txt("vnote")}</td></tr>` : ""}${[0, 1, 2].some(k => ev(k).reply) ? `<tr><th>تعليق المعلم</th><td class="r">${txt("reply")}</td></tr>` : ""}</table>
-    <table style="margin-top:6px"><tr><th>المعلم</th><th>الزائر (مدير المدرسة / الوكيل)</th></tr><tr><td class="r">الاسم: ${ptEsc(T.name)}</td><td class="r">الاسم: ${ptEsc([0, 1, 2].map(k => ev(k).by).filter(Boolean)[0] || "")}</td></tr><tr><td class="r" style="height:28px">التوقيع: ${[0, 1, 2].some(k => ev(k).ack) ? `<small style="color:#15803d">✓ اطّلع إلكترونياً</small>` : ""}</td><td class="r">التوقيع:</td></tr></table>
-    <div style="font-size:9.5px;color:#64748b;margin-top:4px">سلم التقدير: ٩٠–١٠٠ ممتاز | ٨٠–٨٩ جيد جداً | ٧٠–٧٩ جيد | ٦٠–٦٩ مقبول | أقل من ٦٠ يحتاج إلى دعم</div></section>`;
-}
-const cvPrintCss = `.lv{display:inline-block;border-radius:999px;padding:1px 8px;font-weight:900;font-size:10px}`;
 
 // ══════════ صفحة الإدارة ══════════
 function ClassVisitsPage({ by = "الإدارة" }) {
   const [D, setD] = useState(null); const [tab, setTab] = useState("plan"); const [msg, setMsg] = useState("");
   const [tk, setTk] = useState(null); const [vn, setVn] = useState(1); const [f, setF] = useState({ q: "", v: "", st: "" }); const [mv, setMv] = useState(null);
   const toast = t => { setMsg(t); clearTimeout(toast.t); toast.t = setTimeout(() => setMsg(""), 3000); };
-  const load = async () => { const d = await cvLoad(); if (!Object.keys(d.plan).length) { const p = cvSeedPlan(); const ok = await maPut(CV_PLAN, p); if (ok) d.plan = p; const links = {}; cvTeachers(p).forEach(T => { const rid = cvMatch(T.name, d.lic); if (rid) links[T.tk] = rid; }); d.cfg.links = links; await maPut(CV_CFG, { crit: d.cfg.crit, links, comp: d.cfg.comp }); } setD(d); };
+  const load = async () => { const d = await cvLoad(); if (!Object.keys(d.plan).length) { const p = cvSeedPlan(); const ok = await maPut(CV_PLAN, p); if (ok) d.plan = p; const links = {}; cvTeachers(p).forEach(T => { const rid = cvMatch(T.name, d.lic); if (rid) links[T.tk] = rid; }); d.cfg.links = links; await cvPatch({ [`${CV_CFG}/links`]: links }); } setD(d); };
   useEffect(() => { load(); }, []);
   if (!D) return <div className="ma-card p-10 text-center font-bold text-gray-400">⏳ جاري تحميل الزيارات الصفية…</div>;
   const TS = cvTeachers(D.plan); const k = maKey(new Date());
@@ -34716,19 +34700,19 @@ function ClassVisitsPage({ by = "الإدارة" }) {
         <div className="in-hero" style={{ background: "linear-gradient(135deg,#064e3b,#0f766e 55%,#0891b2)" }}>
           <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
             <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.16)", display: "grid", placeItems: "center", fontSize: 30 }}>🎯</div>
-            <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 21, fontWeight: 900 }}>الزيارات الصفية — العام الدراسي ١٤٤٨هـ</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>الفصل الدراسي الأول • {maAr(TS.length)} معلماً × ٣ زيارات • ١٠ معايير من ١٠٠ درجة</div></div>
+            <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 21, fontWeight: 900 }}>رصد الملاحظات الصفية — ١٤٤٨هـ</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>الفصل الدراسي الأول • {maAr(TS.length)} معلماً × ٣ زيارات • رصد بطاقة الملاحظة الصفية (١٢ مؤشراً • ١٧ عنصراً)</div></div>
             <div className="flex gap-2 flex-wrap"><a className="ma-btn" style={{ textDecoration: "none", background: "#25d366", color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(shareTxt)}`}>💬 إرسال رابط المعلمين</a><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => { try { navigator.clipboard.writeText(cvLink()); toast("📋 نُسخ الرابط: " + cvLink()); } catch { window.prompt("انسخ الرابط:", cvLink()); } }}>🔗 نسخ الرابط</button></div>
           </div>
           <div className="pt-kpis" style={{ marginTop: 14, position: "relative", zIndex: 1 }}>
             {[["✅", `${maAr(done)} / ${maAr(all.length)}`, "زيارة منفذة"], ["📌", maAr(todayL.length), "زيارات اليوم"], ["🔄", maAr(late), "تحتاج تعويضاً"], ["📨", maAr(reqs.length + nMsg), "طلبات وملاحظات"], ["⏭️", next ? `${maDay(maDate(next.date))} ${cvHij(next.hij)}` : "—", next ? `القادمة: ${next.t}` : "لا زيارات قادمة"]].map((x, i) => <div key={i} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{x[0]} {x[2]}</div><div style={{ fontSize: i === 3 ? 14 : 22, fontWeight: 900 }}>{x[1]}</div></div>)}
           </div>
         </div>
-        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["eval", "📝 التقييم"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "📊 المؤشرات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
+        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["eval", "🔭 رصد الملاحظة"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "🏁 التقييم النهائي وأبرز الملاحظات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
         {tab === "plan" && reqs.length > 0 && <CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} />}
         {tab === "plan" && <CvPlan D={D} all={all} evOf={evOf} f={f} setF={setF} openEval={(r) => { setTk(r.tk); setVn(r.v); setTab("eval"); }} setMv={setMv} by={by} />}
-        {tab === "eval" && <CvEval D={D} setD={setD} TS={TS} T={T} setTk={setTk} vn={vn} setVn={setVn} by={by} toast={toast} />}
+        {tab === "eval" && <ObsEval D={D} setD={setD} TS={TS} T={T} setTk={setTk} vn={vn} setVn={setVn} by={by} toast={toast} />}
         {tab === "msg" && <><CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} /><CvMsgs D={D} setD={setD} toast={toast} /></>}
-        {tab === "ind" && <CvInd D={D} TS={TS} by={by} openT={t => { setTk(t); setTab("eval"); }} />}
+        {tab === "ind" && <ObsInd D={D} setD={setD} TS={TS} by={by} toast={toast} openT={t => { setTk(t); setTab("eval"); }} />}
         {tab === "cfg" && <CvCfg D={D} setD={setD} TS={TS} toast={toast} />}
       </div>
       {mv && <CvMove D={D} setD={setD} r={mv} close={() => setMv(null)} toast={toast} />}
@@ -34740,7 +34724,7 @@ function CvPlan({ D, all, evOf, f, setF, openEval, setMv, by }) {
   const L = all.filter(r => (!f.v || r.v === +f.v) && (!f.q || r.t.includes(f.q) || r.s.includes(f.q)) && (!f.st || cvStatus(r, evOf(r))[0] === f.st));
   const byWk = {}; L.forEach(r => (byWk[r.wk] = byWk[r.wk] || []).push(r));
   const k = maKey(new Date());
-  const print = () => inOpen(`<section class="pg">${inHdr("جدول الزيارات الصفية وفق التقويم الدراسي وجداول الحصص", "العام الدراسي ١٤٤٨هـ<br>الفصل الدراسي الأول")}<table><thead><tr><th>م</th><th>الأسبوع</th><th>اليوم</th><th>التاريخ الهجري</th><th>المعلم</th><th>التخصص</th><th>الحصة</th><th>الوقت</th><th>الصف</th><th>التنفيذ</th></tr></thead><tbody>${[1, 2, 3].map(v => `<tr><td colspan="10" class="r" style="background:#f0fdfa;font-weight:900">الزيارة ${CV_VN[v - 1]}</td></tr>` + L.filter(r => r.v === v).map(r => { const t = cvTotal(evOf(r)); return `<tr><td>${maAr(r.n)}</td><td>الأسبوع ${maAr(r.wk)}</td><td>${maDay(maDate(r.date))}</td><td>${cvHij(r.hij)}</td><td class="r"><b>${ptEsc(r.t)}</b></td><td>${ptEsc(r.s)}</td><td>${ptEsc(r.p)}</td><td>${ptEsc(cvTm(r.tm) || "—")}</td><td>${ptEsc(cvCls(r.c))}</td><td>${t != null ? `✓ ${maAr(t)}` : ""}</td></tr>`; }).join("")).join("")}</tbody></table><div style="font-size:10px;margin-top:6px"><b>أيام التعويض:</b> ${D.cfg.comp.map(c => `${maDay(maDate(c[0]))} ${cvHij(c[1])}`).join(" • ")}</div><div class="sg"><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "جدول الزيارات", `@page{size:A4 landscape;margin:7mm}`);
+  const print = () => inOpen(`<section class="pg">${inHdr("جدول الزيارات الصفية وفق التقويم الدراسي وجداول الحصص", "العام الدراسي ١٤٤٨هـ<br>الفصل الدراسي الأول")}<table><thead><tr><th>م</th><th>الأسبوع</th><th>اليوم</th><th>التاريخ الهجري</th><th>المعلم</th><th>التخصص</th><th>الحصة</th><th>الوقت</th><th>الصف</th><th>التنفيذ</th></tr></thead><tbody>${[1, 2, 3].map(v => `<tr><td colspan="10" class="r" style="background:#f0fdfa;font-weight:900">الزيارة ${CV_VN[v - 1]}</td></tr>` + L.filter(r => r.v === v).map(r => { const t = cvTotal(evOf(r)); const o = obOverall(evOf(r)); return `<tr><td>${maAr(r.n)}</td><td>الأسبوع ${maAr(r.wk)}</td><td>${maDay(maDate(r.date))}</td><td>${cvHij(r.hij)}</td><td class="r"><b>${ptEsc(r.t)}</b></td><td>${ptEsc(r.s)}</td><td>${ptEsc(r.p)}</td><td>${ptEsc(cvTm(r.tm) || "—")}</td><td>${ptEsc(cvCls(r.c))}</td><td>${t != null ? `✓ ${o ? o[0] : "منفذة"}` : ""}</td></tr>`; }).join("")).join("")}</tbody></table><div style="font-size:10px;margin-top:6px"><b>أيام التعويض:</b> ${D.cfg.comp.map(c => `${maDay(maDate(c[0]))} ${cvHij(c[1])}`).join(" • ")}</div><div class="sg"><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "جدول الزيارات", `@page{size:A4 landscape;margin:7mm}`);
   return (
     <div className="grid gap-3">
       <div className="ma-card p-3 flex gap-2 flex-wrap items-center">
@@ -34752,12 +34736,12 @@ function CvPlan({ D, all, evOf, f, setF, openEval, setMv, by }) {
       {Object.keys(byWk).sort((a, b) => a - b).map(w => (
         <div key={w} className="ma-card p-3">
           <div className="flex items-center gap-2 mb-2"><b style={{ fontSize: 14.5 }}>🗓️ الأسبوع {maAr(w)}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{cvHij(byWk[w][0].hij)} – {cvHij(byWk[w][byWk[w].length - 1].hij)}</span></div>
-          <div className="grid gap-2">{byWk[w].map(r => { const e = evOf(r); const st = cvStatus(r, e); const t = cvTotal(e); const g = cvGrade(t); return (
+          <div className="grid gap-2">{byWk[w].map(r => { const e = evOf(r); const st = cvStatus(r, e); const g = obOverall(e); const pg = obProg(e); return (
             <div key={r.id} className="in-row" style={{ borderRight: `5px solid ${st[2]}`, background: r.date === k ? "#faf5ff" : "#fff" }}>
               <div style={{ width: 86, textAlign: "center" }}><div style={{ fontSize: 12, fontWeight: 900, color: st[2] }}>{maDay(maDate(r.date))}</div><div style={{ fontSize: 12.5, fontWeight: 900 }}>{cvHij(r.hij)}</div></div>
               <div style={{ flex: "1 1 200px", minWidth: 0 }}><b style={{ fontSize: 14 }}>{r.t}</b><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{r.s} • الحصة {r.p}{r.tm ? ` (${cvTm(r.tm)})` : ""} • {cvCls(r.c)} • الزيارة {CV_VN[r.v - 1]}</div></div>
-              <span className="in-fl" style={{ background: st[3], color: st[2] }}>{st[1]}</span>{g && <span className="in-fl" style={{ background: g[2], color: g[1] }}>{maAr(t)} • {g[0]}</span>}{e.pub ? <span className="in-fl" style={{ background: "#dbeafe", color: "#1d4ed8" }}>👁 منشور</span> : null}{e.ack ? <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✍️ اطّلع</span> : null}{r.moved ? <span className="in-fl" style={{ background: "#ede9fe", color: "#6d28d9" }}>🔁 مؤجلة</span> : null}{r.req && r.req.st === "new" ? <span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>⏸️ طلب تأجيل</span> : null}{r.tn ? <span className="in-fl" title={r.tn} style={{ background: "#f0fdfa", color: "#0f766e" }}>🗒️ ملاحظة المعلم</span> : null}
-              <div className="flex gap-1"><button className="ma-btn pri" onClick={() => openEval(r)}>📝 تقييم</button><button className="ma-btn" onClick={() => setMv(r)}>📆 تعديل الموعد</button></div>
+              <span className="in-fl" style={{ background: st[3], color: st[2] }}>{st[1]}</span>{g && <span className="in-fl" style={{ background: g[2], color: g[1] }}>{g[3]} {g[0]}</span>}{!e.fin && pg > 0 && <span className="in-fl" style={{ background: "#ede9fe", color: "#6d28d9" }}>🔭 رُصد {maAr(pg)}/١٧</span>}{e.pub ? <span className="in-fl" style={{ background: "#dbeafe", color: "#1d4ed8" }}>👁 منشور</span> : null}{e.ack ? <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✍️ اطّلع</span> : null}{r.moved ? <span className="in-fl" style={{ background: "#ede9fe", color: "#6d28d9" }}>🔁 مؤجلة</span> : null}{r.req && r.req.st === "new" ? <span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>⏸️ طلب تأجيل</span> : null}{r.tn ? <span className="in-fl" title={r.tn} style={{ background: "#f0fdfa", color: "#0f766e" }}>🗒️ ملاحظة المعلم</span> : null}
+              <div className="flex gap-1"><button className="ma-btn pri" onClick={() => openEval(r)}>🔭 رصد</button><button className="ma-btn" onClick={() => setMv(r)}>📆 تعديل الموعد</button></div>
             </div>); })}</div>
         </div>))}
       {!L.length && <div className="ma-card p-8 text-center font-bold text-gray-400">لا توجد زيارات مطابقة</div>}
@@ -34858,97 +34842,291 @@ function CvThread({ tk, v, who, name, ev, onAdd }) {
   );
 }
 
-function CvEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
-  const [e, setE] = useState(null); const [st, setSt] = useState(""); const tm = useRef(null); const [pn, setPn] = useCvFlush();
-  const dKey = () => `cv-draft-${T.tk}-${vn}`;
-  useEffect(() => { if (!T) return; const x = ptObj(ptObj(D.ev[T.tk])[vn]); let n = { sc: Array.from({ length: 10 }, (_, j) => { const y = maArr(x.sc)[j]; return y === "" || y == null ? null : +y; }), str: x.str || "", imp: x.imp || "", rec: x.rec || "", vnote: x.vnote || "", pub: !!x.pub, fin: x.fin || null, ack: x.ack || null, reply: x.reply || "", by: x.by || "" };
+// ══════════════════════════════════════════════════════════════════════
+// 🔭 رصد بطاقة الملاحظة الصفية (هيئة تقويم التعليم والتدريب) — بدون درجات
+//   school-cv-eval/{tk}/{v} = { hd:{rank,topic,n,abs,gift,dis,spec,team}, obs:{i1:{e:{e0:1,..},lv,nt}}, str, imp, rec, vnote, pub, fin, by, ack, reply, thr }
+//   school-cv-eval/{tk}/final = { txt, lv, pub, at, by }  •  school-cv-cfg/gen = { txt, pub, at }
+// ══════════════════════════════════════════════════════════════════════
+const OB_FORM = [
+  { t: "توفر المدرسة فرصاً متكافئة للتعلم تلبي احتياجات المتعلمين بمن فيهم ذوي الإعاقة والموهوبين", ic: "⚖️", items: [
+    { n: 1, t: "يتوافر في بيئة التعلم مصادر، وأنشطة متنوعة تلبي احتياجات المتعلمين ومنهم ذوي الإعاقة والموهوبين.", ev: ["توافر مصادر متنوعة في بيئة التعلم (سمعية / بصرية / سمعية بصرية / حسية).", "توافر أنشطة تعلم متنوعة.", "تناسب خصائص المرحلة العمرية.", "تراعي الفروق الفردية بين المتعلمين.", "تحقق سهولة الوصول والاستخدام.", "منظمة.", "تلبي احتياجات ذوي الإعاقة.", "تلبي احتياجات سريعي التعلم والموهوبين."] },
+    { n: 2, t: "يدار الوقت في بيئة التعلم بفاعلية لدعم التعلم وتلبية احتياجات المتعلمين بمن فيهم ذوي الإعاقة والموهوبين.", ev: ["يوزع الوقت على أنشطة الدرس ومراحله (التهيئة - التنفيذ - التقويم).", "توزيع الوقت يراعي نوع المادة العلمية ومستوى التعقيد.", "يتوافق عدد الأنشطة وأسلوب تنفيذها مع الوقت المخصص.", "إتاحة الوقت الكافي للمتعلمين لتنفيذ الأنشطة والمناقشة.", "يراعي تنويع الأنشطة بما يتناسب مع مراعاة الفروق الفردية بين المتعلمين.", "توافر المرونة في إدارة الوقت وفقاً للموقف التعليمي.", "تخصيص أنشطة تلبي احتياجات ذوي الإعاقة (إن وجد).", "تخصيص أنشطة تلبي احتياجات سريعي التعلم."] },
+    { n: 3, t: "يتاح للمتعلمين فرص متكافئة في الأنشطة والمناقشة الصفية، واستخدام مصادر التعلم.", ev: ["توافر فرص متكافئة للمشاركة في تنفيذ الأنشطة.", "توافر فرص متكافئة في استخدام مصادر التعلم.", "توافر فرص متكافئة للمشاركة في المناقشة الصفية.", "يستخدم المعلم أساليب تحفيز لدعم مشاركة جميع المتعلمين في الأنشطة.", "يشجع ويدعم التعاون بين المتعلمين.", "يستخدم طرق وأساليب متنوعة لإتاحة الفرص."] }] },
+  { t: "تدعم المدرسة تنفيذ المناهج؛ لتحقيق نواتج التعلم المستهدفة وفق الخطة الدراسية", ic: "📘", items: [
+    { n: 4, one: true, t: "يتوافق تنفيذ محتوى المنهج المستهدف مع الخطة الزمنية لتوزيع المنهج.", ev: ["يتوافق تنفيذ محتوى المنهج مع الخطة الزمنية لتوزيع المنهج بنسبة أقل من ٥٠٪.", "نسبة التوافق (من ٥٠ - أقل من ٧٥٪).", "نسبة التوافق (من ٧٥ - أقل من ٩٠٪).", "نسبة التوافق ٩٠٪ فأعلى."] }] },
+  { t: "تنوع المدرسة في إستراتيجيات التدريس لتلبية احتياجات المتعلمين، ودعم تعلمهم", ic: "🧩", items: [
+    { n: 5, t: "يستخدم المعلمون إستراتيجيات تدريس تتسق مع نواتج التعلم المستهدفة، والمواقف التعليمية.", ev: ["تتسق إستراتيجيات التدريس مع الموقف التعليمي.", "تركز على المتعلم وتراعي طبيعته.", "تلائم خصائص المرحلة العمرية للمتعلمين.", "تتسق مع الأنشطة ومحتوى المادة العلمية (مادة نظرية، عملية).", "تتسق مع نواتج التعلم المستهدفة.", "التوجيه الفردي.", "تشجع على التعلم النشط.", "تتسم بالشمول.", "تتسم بالتمايز."] },
+    { n: 6, t: "تتنوع إستراتيجيات التدريس وفقاً لقدرات المتعلمين وتراعي الفروق الفردية بينهم.", ev: ["التهيئة (تطبيق أساليب لتشخيص مستويات المتعلمين وتحديد احتياجاتهم، قد تكون أسئلة).", "استخدام إستراتيجيات متنوعة (مثل: العروض التقديمية، التعلم التشاركي، المناقشة الجماعية، التعلم الذاتي، التعاون، التوجيه الفردي، الأنشطة التفاعلية، استخدام التقنية الرقمية المتنوعة، الكرسي الساخن، المفاهيم الكرتونية، الصور والرسوم والأفلام، تمثيل الأدوار…).", "تنوع إستراتيجيات التدريس يراعي الفروق الفردية بين المتعلمين.", "إستراتيجيات التدريس تشجع المتعلمين على المشاركة والتعلم.", "يستخدم أنشطة ومواد إضافية لدعم تعلم ذوي صعوبات التعلم وذوي الإعاقة.", "يستخدم أنشطة ومواد إثرائية لسريعي التعلم والموهوبين."] }] },
+  { t: "تفعل المدرسة التعلم الإلكتروني لتلبية احتياجات المتعلمين، ودعم تعلمهم", ic: "💻", items: [
+    { n: 7, t: "يدمج المعلم بين التعلم الصفي والتعلم الإلكتروني وفقاً للموقف التعليمي.", ev: ["يوظف أدوات وتطبيقات التعلم الإلكتروني في دعم التعلم داخل الصف (كمصدر لتوسيع المعرفة - تحديد مواد تعليمية).", "يقدم محتوى إلكتروني يتناسب مع موضوع الدرس.", "يستخدم أدوات وتطبيقات التعلم الإلكتروني التي تناسب الموقف التعليمي.", "يستخدم أدوات وتطبيقات التعلم الإلكتروني وفقاً لقدرات وخصائص المتعلمين.", "يستخدم أدوات وتطبيقات إلكترونية متنوعة (الحاسوب - الإنترنت - وسائط متعددة على الحاسوب وبالموبايل…).", "يوظف أدوات التعلم الإلكتروني في تنفيذ المهام والواجبات المنزلية بأنشطة مبتكرة."] }] },
+  { t: "توفر المدرسة أنشطة تعلم تطبيقية ترتبط بحياة المتعلمين", ic: "🛠️", items: [
+    { n: 8, t: "تركز أنشطة التعلم على تطبيقات عملية ترتبط بحياة المتعلمين.", ev: ["توافر أنشطة تعلم تركز على التطبيقات العملية للمعارف والمهارات (مثل: العروض التقديمية والمناقشات الجماعية والأنشطة العملية).", "تلائم خصائص المرحلة العمرية للمتعلمين.", "ترتبط الأنشطة بمواقف من واقع الحياة.", "تشجع الأنشطة المتعلمين على البحث والاستقصاء.", "تفعيل التقنية في الأنشطة مثل الفيديوهات والتطبيقات الإلكترونية والوسائط الاجتماعية.", "تحفز الأنشطة المتعلمين على المشاركة فيها (الأنشطة جاذبة).", "استخدام مشروعات التعلم القائمة على المشكلات والتحديات."] }] },
+  { t: "تنمي المدرسة المهارات القرائية والعددية الأساسية لدى المتعلمين", ic: "🔤", items: [
+    { n: 9, t: "تشجع بيئة التعلم على تنمية مهارات القراءة والكتابة، والمهارات العددية (الحساب) لدى المتعلمين.", ev: ["توافر أنشطة تعلم تركز على التطبيقات العملية للمعارف والمهارات (مثل العروض التقديمية والمناقشات الجماعية والأنشطة العملية).", "توافر مصادر في بيئة التعلم تدعم تنمية مهارات القراءة والكتابة.", "تتوافر مصادر في بيئة التعلم تدعم تنمية المهارات العددية (الحساب).", "يستخدم المعلم طرق وأساليب تعزز تنمية مهارات القراءة والكتابة.", "يستخدم المعلم طرق وأساليب تعزز تنمية المهارات العددية (الحساب).", "يستخدم طرق وأساليب متنوعة (أدوات التقنية الرقمية، النصوص، الصور، الرسوم، أفلام…).", "الطرق والأساليب تراعي الفروق الفردية بين المتعلمين.", "يوظف المتعلمون مهارات القراءة والكتابة في تنفيذ أنشطة التعلم (قراءة النصوص والمقالات وكتابتها).", "يوظف المتعلمون المهارات العددية (الحساب) في تنفيذ أنشطة التعلم."] }] },
+  { t: "تنمي المدرسة مهارات التفكير العليا لدى المتعلمين", ic: "🧠", items: [
+    { n: 10, t: "تشجع بيئة التعلم على تنمية مهارات التفكير (التفكير الناقد والإبداع وحل المشكلات) لدى المتعلمين.", ev: ["يستخدم المعلم طرق وأساليب تستهدف تنمية مهارات التفكير الناقد (التحليل، والاستنتاج، والتقويم) لدى جميع المتعلمين.", "يوظف المتعلمون مهارات التفكير الناقد في تنفيذ أنشطة التعلم (مثل: طرح الأسئلة، التحليل والربط بين الأفكار والاستنتاج والتقويم).", "يستخدم طرق وأساليب تستهدف تنمية مهارات حل المشكلات.", "يوظف المتعلمون خطوات ومهارات حل المشكلات في تنفيذ أنشطة التعلم (مثل: تحديد المشكلة، فهم المشكلة، اختيار الحل المناسب، تقويم الحلول…).", "يستخدم طرق وأساليب تستهدف تنمية مهارات التفكير الإبداعي (الطلاقة، المرونة، الأصالة) لدى جميع المتعلمين.", "يوظف المتعلمون التفكير الإبداعي في تنفيذ أنشطة التعلم (مثل: توليد مجموعة من الأفكار المتنوعة، أفكار جديدة، حل مهام مفتوحة النهاية، اقتراح حلول إبداعية، إعادة صياغة الأفكار بطرق جديدة).", "يستخدم طرق وأساليب متنوعة (أدوات التقنية الرقمية، النصوص، الصور، الرسوم، أفلام…).", "الطرق والأساليب تراعي الفروق الفردية بين المتعلمين.", "يوفر أنشطة إثرائية لتنمية مهارات التفكير لدى المتعلمين."] }] },
+  { t: "تنمي المدرسة المهارات العاطفية والاجتماعية لدى المتعلمين", ic: "🤝", items: [
+    { n: 11, t: "تشجع بيئة التعلم على التواصل الفعال، والتعاطف والاحترام المتبادل بين المتعلمين.", ev: ["يوفر المعلم أنشطة تعلم وأساليب تستهدف تنمية مهارات التواصل الفعال بين المتعلمين.", "ينظم الحوار والمناقشات الجماعية وتبادل الأفكار والآراء في بيئة التعلم.", "توفر أنشطة تعلم وأساليب تستهدف تنمية القدرة على التحكم في العواطف وضبط الانفعالات.", "تنظيم بيئة التعلم يشجع العمل التعاوني والمناقشة والحوار الفعال.", "يعبر المتعلمون عن آرائهم وأفكارهم بثقة ووضوح في بيئة التعلم.", "يسود الاحترام المتبادل والتعاطف بين المتعلمين في بيئة التعلم (الإصغاء بفاعلية، تقبل الآراء ووجهات النظر الأخرى، احترام حقوق الآخرين، تقبل التنوع، المبادرة في تقديم الدعم والمساندة).", "يشارك المتعلمون في أنشطة جماعية والعمل بروح الفريق."] }] },
+  { t: "تنمي المدرسة المهارات الرقمية لدى المتعلمين", ic: "🌐", items: [
+    { n: 12, t: "تعزز أنشطة التعلم مهارات البحث واستخدام التقنية الرقمية لدى المتعلمين.", ev: ["توفير التجهيزات والمصادر ومواد التقنية الرقمية في بيئة التعلم.", "توفير أنشطة تعلم وأساليب لتنمية مهارات التقنية الرقمية والتعامل مع البيانات لدى المتعلمين.", "يوظف المتعلمون مهارات التقنية الرقمية في التعلم (البحث والاستقصاء، وتنفيذ المهام، أداء الواجبات، تقديم العروض، الكتابة…).", "المعلم يشجع المتعلمين على البحث في المصادر الموثوقة والاستخدام الآمن للتقنية الرقمية.", "يتابع ويقدم الدعم للمتعلمين عند استخدام التقنية الرقمية.", "يشجع المتعلمين على الالتزام بقوانين وأخلاقيات أمن المعلومات وحقوق الملكية الفكرية.", "المصادر والأنشطة متنوعة.", "تميز المتعلمون في توظيف مهارات التقنية الرقمية."] }] },
+  { t: "تعزز المدرسة دافعية المتعلمين للتعلم والاستمتاع به", ic: "🔥", items: [
+    { n: 13, t: "يستخدم المعلم أساليب تحفيز تعزز الدافعية لدى المتعلمين.", ev: ["تنظيم بيئة التعلم يشجع التفاعل بإيجابية والدافعية للتعلم.", "يستخدم أساليب وأنشطة تعلم متنوعة (ألعاب، تمثيل أدوار، تجارب عملية، قصص، صور، رسوم، أفلام…).", "تشجع الأنشطة والأساليب المتعلمين على المشاركة.", "تشجع الأنشطة والأساليب على الاندماج في التعلم والاستمتاع به.", "تشجع الأنشطة والأساليب المتعلمين على التواصل والتعاون.", "يستخدم المعلم أساليب لتحفيز المتعلمين وتشجيعهم على المشاركة بإيجابية في تنفيذ الأنشطة.", "يستخدم أساليب تحفيز متنوعة لزيادة دافعية المتعلمين (الإشادة والثناء، المكافآت، الاحتفاء بالمنجزات…).", "أن يكون المعلم مثيراً للاهتمام ومتحمساً.", "يوفر المعلم أنشطة تعلم وأساليب تثير الفضول وحب الاستطلاع لدى المتعلمين.", "ربط الدرس بحياة المتعلمين.", "توفير فرص لتعبير المتعلمين عن آرائهم."] },
+    { n: 14, t: "يشارك المتعلمون في أنشطة التعلم بفاعلية، ويستمتعون بها.", ev: ["يسود في بيئة التعلم الشعور بالراحة والمتعة.", "يسود في بيئة التعلم الاحترام والتقدير المتبادل.", "يظهر المتعلمون الرغبة في التعلم (مثل: الانتباه، الإنصات، التساؤل، الفضول وحب الاستطلاع).", "يظهر المتعلمون الاندماج والمشاركة في الأنشطة بإيجابية.", "يعبر المتعلمون عن آرائهم وأفكارهم بثقة.", "يبادر المتعلمون في تقديم الدعم والمساندة لزملائهم والتعاون في تنفيذ الأنشطة."] }] },
+  { t: "تقوم المدرسة أداء المتعلمين باستخدام أساليب وأدوات تقويم متنوعة وفاعلة", ic: "📊", items: [
+    { n: 15, t: "يستخدم المعلم أساليب وأدوات تقويم متنوعة (التشخيصي، والتكويني، والختامي).", ev: ["يستخدم المعلم أساليب وأدوات تقويم تشخيصية لتحديد مستوى المتعلمين في المفاهيم الأساسية والمهارات اللازمة للتعلم.", "يطبق أساليب وأدوات تقويم متنوعة تشخيصية.", "يستخدم أساليب وأدوات التقويم البنائي (التكويني) في أثناء الدرس لمتابعة التعلم.", "يستخدم أساليب وأدوات تقويم ختامية لقياس مدى تحقيق المتعلمين للأهداف التعليمية المحددة في نهاية الدرس.", "يستخدم أساليب وأدوات تقويم متنوعة (مثل: تقويم ذاتي، تقويم الأقران، مهام مفتوحة النهاية، مشروعات، مهام أدائية، ملف الإنجاز…).", "يشارك المتعلمون في تقويم أدائهم بفاعلية.", "يشجع المتعلمين على المشاركة في تقويم أدائهم بفاعلية.", "تطبيق أساليب وأدوات تقويم مبتكرة."] },
+    { n: 16, t: "يستخدم المعلم أساليب وأدوات تقويم متنوعة تحقق التمايز في أداء المتعلمين.", ev: ["يستخدم المعلم أساليب وأدوات تقويم تحقق التمايز في مستويات الأداء للمتعلمين.", "توفير بيئة تعليمية عادلة لجميع المتعلمين.", "يستخدم أساليب وأدوات تقويم متنوعة (مثل: التقويم الذاتي، تقويم الأقران، استخدام التقنية الرقمية في التقويم، مهام مفتوحة النهاية، مشروعات، مهام أدائية، ملف الإنجاز…).", "أساليب وأدوات التقويم تكشف عن الفروق الفردية بين المتعلمين.", "تراعي أنماط تعلم المتعلمين المختلفة (سمعي - بصري - اجتماعي - حركي - شخصي).", "يطبق المتعلمون أساليب وأدوات التقويم الذاتي.", "يشارك المتعلمون في تقويم أقرانهم.", "يتابع المعلم تطبيق المتعلمين أساليب وأدوات التقويم.", "يستخدم محكات واضحة تحدد مستوى الإنجاز الفعلي للمتعلم."] }] },
+  { t: "تقدم المدرسة التغذية الراجعة للمتعلمين بانتظام", ic: "🔁", items: [
+    { n: 17, t: "يقدم المعلم تغذية راجعة للمتعلمين حسب الموقف التعليمي تركز على تحسين أدائهم.", ev: ["توافر تغذية راجعة للمتعلمين (فورية، بناءة، ترتبط بالموقف التعليمي).", "تقديم التغذية الراجعة بأساليب متنوعة (التعليق الشفوي، أو الكتابة، أو باستخدام التقنية، التحفيز والتشجيع، تقديم مقترحات التحسين، تصحيح المهام الفوري…).", "تقديم التغذية الراجعة بانتظام للمتعلمين.", "تقديم التغذية الراجعة بأساليب تراعي الفروق الفردية بين المتعلمين.", "يستجيب المتعلمون بإيجابية للتغذية الراجعة.", "يوظف المتعلمون التغذية الراجعة في تحسين أدائهم.", "التغذية الراجعة تعزز التعلم الذاتي لدى المتعلمين.", "تقديم التغذية الراجعة بطريقة مميزة."] }] },
+];
+const OB_ITEMS = OB_FORM.flatMap((g, gi) => g.items.map(it => ({ ...it, gi })));
+const OB_GC = ["#6d28d9", "#7c3aed", "#8b5cf6", "#9333ea", "#a21caf", "#be185d", "#db2777", "#c026d3", "#7e22ce", "#6b21a8", "#5b21b6", "#4c1d95"];
+const OB_LV = { 4: ["متحقق بدرجة عالية", "#15803d", "#dcfce7", "🌟"], 3: ["متحقق", "#0d9488", "#ccfbf1", "✅"], 2: ["متحقق جزئياً", "#b45309", "#fef3c7", "🔸"], 1: ["بحاجة إلى تطوير", "#b91c1c", "#fee2e2", "🔻"] };
+const OB_RANK = ["ممارس", "متقدم", "خبير"];
+const obIt = (e, n) => ptObj(ptObj(e && e.obs)["i" + n]);
+const obEvOn = (e, n) => { const x = ptObj(obIt(e, n).e); return Object.keys(x).filter(k => x[k]).map(k => +k.slice(1)).sort((a, b) => a - b); };
+const obTouched = (e, n) => { const x = obIt(e, n); return !!(x.lv || obEvOn(e, n).length || x.nt); };
+const obProg = e => OB_ITEMS.filter(it => obTouched(e, it.n)).length;
+const obAvg = e => { const a = OB_ITEMS.map(it => +obIt(e, it.n).lv || 0).filter(Boolean); return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null; };
+const obLvOfAvg = a => a == null ? null : a >= 3.5 ? 4 : a >= 2.5 ? 3 : a >= 1.5 ? 2 : 1;
+const obOverall = e => { const l = obLvOfAvg(obAvg(e)); return l ? [...OB_LV[l], l] : null; };
+const obEvPct = e => { let on = 0, all = 0; OB_ITEMS.forEach(it => { if (it.one) return; all += it.ev.length; on += obEvOn(e, it.n).length; }); return all ? on / all : 0; };
+const OB_CSS = `
+.ob-band{border-radius:16px;padding:10px 14px;color:#fff;font-weight:900;font-size:13.5px;line-height:1.8;display:flex;gap:8px;align-items:center}
+.ob-item{border:1.5px solid #ede9fe;border-radius:18px;background:#fff;overflow:hidden}
+.ob-item .hd{padding:10px 12px;background:linear-gradient(90deg,#faf5ff,#fff);font-weight:900;font-size:13.5px;display:flex;gap:8px;align-items:flex-start}
+.ob-item .hd .no{min-width:30px;height:30px;border-radius:10px;background:#7c3aed;color:#fff;display:grid;place-items:center;font-size:13px}
+.ob-lv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 12px 10px}
+.ob-lv button{border:1.5px solid #e2e8f0;background:#fff;border-radius:12px;padding:6px 2px;font-family:inherit;font-weight:900;font-size:11.5px;cursor:pointer;line-height:1.4}
+.ob-ev{display:grid;gap:6px;padding:0 12px 12px}
+.ob-ev button{display:flex;gap:8px;align-items:flex-start;text-align:right;border:1.5px solid #eef2f6;background:#f8fafc;border-radius:12px;padding:8px 10px;font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer;line-height:1.7;color:#334155;transition:all .15s}
+.ob-ev button i{font-style:normal;min-width:22px;height:22px;border-radius:7px;border:2px solid #cbd5e1;display:grid;place-items:center;font-size:13px;margin-top:2px;background:#fff}
+.ob-ev button.on{background:#ecfdf5;border-color:#34d399;color:#065f46}
+.ob-ev button.on i{background:#10b981;border-color:#10b981;color:#fff}
+.ob-nav{position:sticky;top:0;z-index:30;display:flex;gap:6px;overflow-x:auto;padding:8px;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);border-radius:16px;border:1px solid #ede9fe}
+.ob-nav button{flex-shrink:0;border:none;border-radius:999px;padding:5px 11px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;color:#fff}
+.ob-hd{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ob-hd label{font-size:11.5px;font-weight:800;color:#64748b}
+.ob-pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-weight:900;font-size:12px}
+@media (max-width:640px){.ob-lv{grid-template-columns:repeat(2,1fr)}}
+`;
+const obLvPill = (l, big) => l && OB_LV[l] ? <span className="ob-pill" style={{ background: OB_LV[l][2], color: OB_LV[l][1], fontSize: big ? 14 : 12 }}>{OB_LV[l][3]} {OB_LV[l][0]}</span> : null;
+
+// ══════════ إدخال الرصد (الزائر — مناسب للجوال) ══════════
+function ObsEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
+  const [e, setE] = useState(null); const [st, setSt] = useState(""); const tm = useRef(null); const [pn, setPn] = useCvFlush(); const [nt, setNt] = useState({}); const [hdO, setHdO] = useState(true);
+  useEffect(() => { if (!T) return; const x = ptObj(ptObj(D.ev[T.tk])[vn]); let n = { hd: ptObj(x.hd), obs: ptObj(x.obs), str: x.str || "", imp: x.imp || "", rec: x.rec || "", vnote: x.vnote || "", pub: !!x.pub, fin: x.fin || null, by: x.by || "" };
     let dr = null; try { dr = JSON.parse(localStorage.getItem(`cv-draft-${T.tk}-${vn}`) || "null"); } catch {}
-    if (dr && dr.at > (x.at || 0)) { n = { ...n, ...dr.e }; setE(n); setSt("♻️ استُعيد عملك المحفوظ على الجهاز"); saveNow(n).then(ok => setSt(ok ? "♻️ استُعيد عملك المحفوظ ورُفع للخادم" : "♻️ استُعيد عملك — محفوظ على الجهاز وسيُرفع عند عودة الاتصال")); } else { setE(n); setSt(""); } }, [T && T.tk, vn]);
+    if (dr && dr.e && dr.e.obs !== undefined && dr.at > (x.at || 0)) { n = { ...n, ...dr.e }; setE(n); setSt("♻️ استُعيد عملك المحفوظ على الجهاز"); saveNow(n).then(ok => setSt(ok ? "♻️ استُعيد عملك المحفوظ ورُفع للخادم" : "♻️ استُعيد عملك — محفوظ على الجهاز وسيُرفع عند عودة الاتصال")); } else { setE(n); setSt(""); } }, [T && T.tk, vn]);
   const saveNow = async (n) => {
     const b = `${CV_EVAL}/${T.tk}/${vn}`; const at = Date.now();
-    const o = { [`${b}/sc`]: n.sc.map(x => x == null ? "" : x), [`${b}/str`]: n.str, [`${b}/imp`]: n.imp, [`${b}/rec`]: n.rec, [`${b}/vnote`]: n.vnote || "", [`${b}/pub`]: n.pub ? 1 : 0, [`${b}/fin`]: n.fin || null, [`${b}/by`]: n.by || by, [`${b}/at`]: at, [`${b}/date`]: maKey(new Date()) };
+    const o = { [`${b}/hd`]: n.hd || {}, [`${b}/obs`]: n.obs || {}, [`${b}/str`]: n.str, [`${b}/imp`]: n.imp, [`${b}/rec`]: n.rec, [`${b}/vnote`]: n.vnote || "", [`${b}/pub`]: n.pub ? 1 : 0, [`${b}/fin`]: n.fin || null, [`${b}/by`]: n.by || by, [`${b}/at`]: at, [`${b}/date`]: maKey(new Date()) };
     const ok = await cvPatch(o); setPn(Object.keys(cvPendGet()).length);
-    if (ok) { try { localStorage.removeItem(`cv-draft-${T.tk}-${vn}`); } catch {} setD(d => ({ ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [vn]: { ...ptObj(ptObj(d.ev[T.tk])[vn]), sc: o[`${b}/sc`], str: n.str, imp: n.imp, rec: n.rec, vnote: n.vnote, pub: n.pub ? 1 : 0, fin: n.fin || null, by: n.by || by, at } } } })); }
+    setD(d => ({ ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [vn]: { ...ptObj(ptObj(d.ev[T.tk])[vn]), hd: n.hd, obs: n.obs, str: n.str, imp: n.imp, rec: n.rec, vnote: n.vnote, pub: n.pub ? 1 : 0, fin: n.fin || null, by: n.by || by, at } } } }));
+    if (ok) { try { localStorage.removeItem(`cv-draft-${T.tk}-${vn}`); } catch {} }
     setSt(ok ? "☁️ حُفظ تلقائياً" : "📱 انقطع الاتصال — العمل محفوظ على الجهاز وسيُرفع تلقائياً");
     return ok;
   };
   if (!T) return (
-    <div className="ma-card p-4"><b style={{ fontSize: 15 }}>👨‍🏫 اختر المعلم</b><div className="in-grid mt-3">{TS.map(x => { const tt = [1, 2, 3].map(v => cvTotal(ptObj(ptObj(D.ev[x.tk])[v]))); return <button key={x.tk} className="in-cell" style={{ cursor: "pointer", fontFamily: "inherit", textAlign: "right" }} onClick={() => { setTk(x.tk); const nx = x.vis.find(r => cvTotal(ptObj(ptObj(D.ev[x.tk])[r.v])) == null); setVn(nx ? nx.v : 1); }}><b style={{ fontSize: 13.5 }}>{x.name}</b><div style={{ fontSize: 11, color: "#64748b" }}>{x.s}</div><div className="flex gap-1 mt-1">{tt.map((t, i) => <span key={i} className="in-fl" style={{ background: t != null ? cvGrade(t)[2] : "#f1f5f9", color: t != null ? cvGrade(t)[1] : "#94a3b8", padding: "1px 7px" }}>{t != null ? maAr(t) : "—"}</span>)}</div></button>; })}</div></div>
+    <div className="ma-card p-4"><b style={{ fontSize: 15 }}>👨‍🏫 اختر المعلم لبدء الرصد</b><div className="in-grid mt-3">{TS.map(x => <button key={x.tk} className="in-cell" style={{ cursor: "pointer", fontFamily: "inherit", textAlign: "right" }} onClick={() => { setTk(x.tk); const nx = x.vis.find(r => !ptObj(ptObj(D.ev[x.tk])[r.v]).fin); setVn(nx ? nx.v : 1); }}><b style={{ fontSize: 13.5 }}>{x.name}</b><div style={{ fontSize: 11, color: "#64748b" }}>{x.s}</div><div className="flex gap-1 mt-1">{[1, 2, 3].map(v => { const ev = ptObj(ptObj(D.ev[x.tk])[v]); const o = obOverall(ev); return <span key={v} className="in-fl" style={{ background: ev.fin ? (o ? o[2] : "#dcfce7") : obProg(ev) ? "#ede9fe" : "#f1f5f9", color: ev.fin ? (o ? o[1] : "#15803d") : obProg(ev) ? "#6d28d9" : "#94a3b8", padding: "1px 7px" }}>{ev.fin ? "✓" : obProg(ev) ? `${maAr(obProg(ev))}/١٧` : "—"}</span>; })}</div></button>)}</div></div>
   );
-  const r = T.vis.find(x => x.v === vn);
-  const put = (patch) => { const n = { ...e, ...patch }; setE(n); try { localStorage.setItem(dKey(), JSON.stringify({ at: Date.now(), e: n })); } catch {} setSt("⏳ جاري الحفظ…"); clearTimeout(tm.current); tm.current = setTimeout(() => saveNow(n), 700); };
-  const finish = async () => { if (e.sc.some(x => x == null)) { alert("أكمل درجات المعايير العشرة أولاً"); return; } clearTimeout(tm.current); const n = { ...e, pub: true, fin: Date.now() }; setE(n); try { localStorage.setItem(dKey(), JSON.stringify({ at: Date.now(), e: n })); } catch {} const ok = await saveNow(n); toast(ok ? "✅ اعتُمدت الزيارة ونُشر التقييم للمعلم" : "📱 حُفظ على الجهاز — سيُنشر تلقائياً عند عودة الاتصال"); };
   if (!e) return null;
-  const tot = e.sc.every(x => x != null) ? e.sc.reduce((a, x) => a + (+x || 0), 0) : null; const part = e.sc.filter(x => x != null).reduce((a, x) => a + (+x || 0), 0); const g = cvGrade(tot);
-  const scCol = v => v >= 9 ? "#15803d" : v >= 8 ? "#0d9488" : v >= 7 ? "#2563eb" : v >= 6 ? "#b45309" : "#b91c1c";
-  const addQ = (fld, q) => put({ [fld]: e[fld] ? (e[fld].includes(q) ? e[fld] : e[fld] + "، " + q) : q });
+  const r = T.vis.find(x => x.v === vn);
+  const put = (patch) => { const n = { ...e, ...patch }; setE(n); try { localStorage.setItem(`cv-draft-${T.tk}-${vn}`, JSON.stringify({ at: Date.now(), e: n })); } catch {} setSt("⏳ جاري الحفظ…"); clearTimeout(tm.current); tm.current = setTimeout(() => saveNow(n), 700); };
+  const setIt = (n, patch) => put({ obs: { ...e.obs, ["i" + n]: { ...ptObj(e.obs["i" + n]), ...patch } } });
+  const togEv = (it, j) => { const x = ptObj(ptObj(e.obs["i" + it.n]).e); const ne = it.one ? { ["e" + j]: x["e" + j] ? null : 1 } : { ...x, ["e" + j]: x["e" + j] ? null : 1 }; Object.keys(ne).forEach(k => { if (!ne[k]) delete ne[k]; }); const patch = { e: ne }; if (it.one && ne["e" + j]) patch.lv = j + 1; setIt(it.n, patch); };
+  const prog = obProg(e); const ov = obOverall(e);
+  const finish = async () => { if (prog < 17 && !window.confirm(`رُصد ${prog} من ١٧ عنصراً — اعتماد الزيارة ونشرها للمعلم رغم ذلك؟`)) return; clearTimeout(tm.current); const n = { ...e, pub: true, fin: Date.now() }; setE(n); try { localStorage.setItem(`cv-draft-${T.tk}-${vn}`, JSON.stringify({ at: Date.now(), e: n })); } catch {} const ok = await saveNow(n); toast(ok ? "✅ اعتُمدت الزيارة ونُشر الرصد للمعلم" : "📱 حُفظ على الجهاز — سيُنشر تلقائياً عند عودة الاتصال"); };
+  const hd = e.hd || {}; const setHd = (k, v) => put({ hd: { ...hd, [k]: v } });
   const idx = TS.findIndex(x => x.tk === T.tk);
+  const addQ = (fld, q) => put({ [fld]: e[fld] ? (e[fld].includes(q) ? e[fld] : e[fld] + "، " + q) : q });
   return (
     <div className="grid gap-3">
-      <div className="ma-card p-4 flex items-center gap-3 flex-wrap">
-        <CvRing v={tot ?? (part || null)} size={88} />
-        <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 19, fontWeight: 900 }}>{T.name}</div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{T.s}{r ? ` • ${maDay(maDate(r.date))} ${cvHij(r.hij)} • الحصة ${r.p}${r.tm ? ` (${cvTm(r.tm)})` : ""} • ${cvCls(r.c)}` : ""}</div>{g ? <span className="in-fl" style={{ background: g[2], color: g[1], marginTop: 6 }}>{g[0]}</span> : <span style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>أُدخل {maAr(e.sc.filter(x => x != null).length)} من ١٠ معايير</span>}{r && r.tn && <div style={{ fontSize: 12.5, fontWeight: 800, background: "#f0fdfa", borderRadius: 10, padding: "5px 9px", marginTop: 6 }}>🗒️ ملاحظة المعلم: {r.tn}</div>}</div>
+      <style>{OB_CSS}</style>
+      <div className="ma-card p-4 flex items-center gap-3 flex-wrap" style={{ borderTop: "5px solid #7c3aed" }}>
+        <CvRing v={Math.round(prog / 17 * 100)} size={84} c="#7c3aed" txt={`${maAr(prog)}/١٧`} />
+        <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 19, fontWeight: 900 }}>{T.name}</div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{T.s}{r ? ` • ${maDay(maDate(r.date))} ${cvHij(r.hij)} • الحصة ${r.p}${r.tm ? ` (${cvTm(r.tm)})` : ""} • ${cvCls(r.c)}` : ""}</div>
+          <div className="flex gap-1 flex-wrap mt-1"><span className="ob-pill" style={{ background: "#ede9fe", color: "#6d28d9" }}>رُصد {maAr(prog)} من ١٧</span>{ov && obLvPill(ov[4])}{e.fin && <span className="ob-pill" style={{ background: "#dcfce7", color: "#15803d" }}>✓ معتمدة</span>}</div>
+          {r && r.tn && <div style={{ fontSize: 12.5, fontWeight: 800, background: "#f0fdfa", borderRadius: 10, padding: "5px 9px", marginTop: 6 }}>🗒️ ملاحظة المعلم: {r.tn}</div>}</div>
         <div className="flex gap-1 flex-wrap">{[1, 2, 3].map(v => <button key={v} className={`in-chip ${vn === v ? "on" : ""}`} onClick={() => setVn(v)}>الزيارة {CV_VN[v - 1]}</button>)}</div>
-        <div className="flex gap-1 flex-wrap"><button className="ma-btn" onClick={() => setTk(null)}>👥 معلم آخر</button><button className="ma-btn" onClick={() => inOpen(cvFormHTML(T, ptObj(D.ev[T.tk]), D.cfg.crit, idx), "نموذج الزيارة", cvPrintCss)}>🖨️ النموذج</button></div>
+        <div className="flex gap-1 flex-wrap"><button className="ma-btn" onClick={() => setTk(null)}>👥 معلم آخر</button><button className="ma-btn" onClick={() => obPrintTeacher(T, D, idx)}>🖨️ تقرير المعلم</button></div>
       </div>
-      <div className="grid gap-2">{D.cfg.crit.map((c, j) => { const v = e.sc[j]; return (
-        <div key={j} className="cv-crit"><span style={{ fontSize: 20 }}>{CV_CRIT[j] ? CV_CRIT[j].ic : "•"}</span><div style={{ fontSize: 13.5, fontWeight: 800 }}>{maAr(j + 1)}. {c}</div>
-          <div className="cv-sc">{[10, 9, 8, 7, 6, 5].map(n => <button key={n} className={v === n ? "on" : ""} style={v === n ? { background: scCol(n) } : null} onClick={() => { const sc = [...e.sc]; sc[j] = v === n ? null : n; put({ sc }); }}>{maAr(n)}</button>)}<select value={v != null && v < 5 ? v : ""} onChange={ev => { const sc = [...e.sc]; sc[j] = ev.target.value === "" ? null : +ev.target.value; put({ sc }); }} style={{ height: 34, borderRadius: 10, border: "1.5px solid #e2e8f0", fontFamily: "inherit", fontWeight: 900, background: v != null && v < 5 ? "#fee2e2" : "#fff" }}><option value="">أقل</option>{[4, 3, 2, 1, 0].map(n => <option key={n} value={n}>{maAr(n)}</option>)}</select></div>
-        </div>); })}
-        <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={() => put({ sc: e.sc.map(x => x == null ? 10 : x) })}>⚡ إكمال الفارغ بـ ١٠</button><button className="ma-btn" onClick={() => { if (window.confirm("مسح درجات هذه الزيارة؟")) put({ sc: Array(10).fill(null) }); }}>🧹 مسح الدرجات</button><span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 800, color: st.startsWith("📱") ? "#b45309" : "#0f766e" }}>{st}</span>{pn > 0 && <span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>📱 {maAr(pn)} تغيير بانتظار الرفع</span>}</div>
-      </div>
+      <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: 12.5, fontWeight: 800 }}><span style={{ color: st.startsWith("📱") ? "#b45309" : "#0f766e" }}>{st}</span>{pn > 0 && <span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>📱 {maAr(pn)} تغيير بانتظار الرفع</span>}</div>
+      <details className="ma-card p-3" open={hdO} onToggle={ev => setHdO(ev.currentTarget.open)}><summary style={{ fontWeight: 900, cursor: "pointer", fontSize: 14 }}>📋 بيانات الحصة (رصد بطاقة الملاحظة الصفية)</summary>
+        <div className="grid gap-2 mt-3">
+          <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 12.5 }}>رتبة المعلم:</b>{OB_RANK.map(x => <button key={x} className="cv-chip" style={hd.rank === x ? { background: "#7c3aed", color: "#fff" } : null} onClick={() => setHd("rank", hd.rank === x ? "" : x)}>{x}</button>)}</div>
+          <div className="ob-hd">
+            <label>موضوع الدرس<input className="ma-inp" value={hd.topic || ""} onChange={ev => setHd("topic", ev.target.value)} /></label>
+            <label>عدد الطلاب<input className="ma-inp" inputMode="numeric" value={hd.n || ""} onChange={ev => setHd("n", ev.target.value)} /></label>
+            <label>الغياب<input className="ma-inp" inputMode="numeric" value={hd.abs || ""} onChange={ev => setHd("abs", ev.target.value)} /></label>
+            <label>عدد الموهوبين<input className="ma-inp" inputMode="numeric" value={hd.gift || ""} onChange={ev => setHd("gift", ev.target.value)} /></label>
+            <label>عدد ذوي الإعاقة<input className="ma-inp" inputMode="numeric" value={hd.dis || ""} onChange={ev => setHd("dis", ev.target.value)} /></label>
+            <label>أسماء الأخصائيين<input className="ma-inp" value={hd.spec || ""} onChange={ev => setHd("spec", ev.target.value)} /></label>
+            <label style={{ gridColumn: "1/-1" }}>فريق المعايشة<input className="ma-inp" value={hd.team || ""} onChange={ev => setHd("team", ev.target.value)} /></label>
+          </div>
+        </div>
+      </details>
+      <div className="ob-nav">{OB_FORM.map((g, gi) => { const done = g.items.every(it => obTouched(e, it.n)); return <button key={gi} style={{ background: done ? "#10b981" : OB_GC[gi] }} onClick={() => { const el = document.getElementById(`obg-${gi}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{g.ic} {maAr(gi + 1)}{done ? " ✓" : ""}</button>; })}</div>
+      {OB_FORM.map((g, gi) => (
+        <div key={gi} id={`obg-${gi}`} className="grid gap-2" style={{ scrollMarginTop: 70 }}>
+          <div className="ob-band" style={{ background: `linear-gradient(135deg,${OB_GC[gi]},#4c1d95)` }}><span style={{ fontSize: 20 }}>{g.ic}</span><span>المؤشر {maAr(gi + 1)}: {g.t}</span></div>
+          {g.items.map(it => { const x = ptObj(e.obs["i" + it.n]); const on = obEvOn(e, it.n); return (
+            <div key={it.n} className="ob-item" style={obTouched(e, it.n) ? { borderColor: "#c4b5fd" } : null}>
+              <div className="hd"><span className="no">{maAr(it.n)}</span><span style={{ flex: 1 }}>{it.t}</span>{!it.one && <span className="ob-pill" style={{ background: on.length ? "#dcfce7" : "#f1f5f9", color: on.length ? "#15803d" : "#94a3b8" }}>{maAr(on.length)}/{maAr(it.ev.length)}</span>}</div>
+              <div className="ob-lv">{[1, 2, 3, 4].map(l => { const L = OB_LV[l]; const sel = +x.lv === l; return <button key={l} style={sel ? { background: L[1], color: "#fff", borderColor: L[1] } : { color: L[1] }} onClick={() => setIt(it.n, { lv: sel ? null : l })}>{L[3]} {L[0]}</button>; })}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 900, color: "#7c3aed", padding: "0 12px 6px" }}>👁 المشاهدات الدالة {it.one ? "(اختر واحدة)" : "(اضغط ما تحقق)"}</div>
+              <div className="ob-ev">{it.ev.map((t, j) => <button key={j} className={on.includes(j) ? "on" : ""} onClick={() => togEv(it, j)}><i>{on.includes(j) ? "✓" : ""}</i><span>{t}</span></button>)}</div>
+              <div style={{ padding: "0 12px 12px" }}>{nt[it.n] || x.nt ? <input className="ma-inp" placeholder="ملاحظة على هذا العنصر" value={x.nt || ""} onChange={ev => setIt(it.n, { nt: ev.target.value })} /> : <button className="cv-chip" onClick={() => setNt({ ...nt, [it.n]: 1 })}>＋ ملاحظة على العنصر</button>}</div>
+            </div>); })}
+        </div>))}
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
-        {[["str", "💪 نقاط القوة", "#15803d"], ["imp", "🛠️ جوانب تحتاج إلى تحسين", "#b45309"], ["rec", "🧭 التوصيات والتوجيهات", "#1d4ed8"]].map(([fl, l, c]) => <div key={fl} className="ma-card p-3 grid gap-2" style={{ borderTop: `4px solid ${c}` }}><b style={{ color: c }}>{l}</b><textarea className="ma-inp" style={{ minHeight: 90, height: "auto", padding: 10, lineHeight: 1.9 }} value={e[fl]} onChange={ev => put({ [fl]: ev.target.value })} /><div className="flex gap-1 flex-wrap">{CV_QS[fl].map(q => <button key={q} className="cv-chip" onClick={() => addQ(fl, q)}>＋ {q}</button>)}</div></div>)}
+        {[["str", "💪 أبرز نقاط القوة", "#15803d"], ["imp", "🛠️ جوانب تحتاج إلى تطوير", "#b45309"], ["rec", "🧭 التوصيات والتوجيهات", "#1d4ed8"]].map(([fl, l, c]) => <div key={fl} className="ma-card p-3 grid gap-2" style={{ borderTop: `4px solid ${c}` }}><b style={{ color: c }}>{l}</b><textarea className="ma-inp" style={{ minHeight: 80, height: "auto", padding: 10, lineHeight: 1.9 }} value={e[fl]} onChange={ev => put({ [fl]: ev.target.value })} /><div className="flex gap-1 flex-wrap">{CV_QS[fl].map(q => <button key={q} className="cv-chip" onClick={() => addQ(fl, q)}>＋ {q}</button>)}</div></div>)}
       </div>
       <div className="ma-card p-3 grid gap-3" style={{ borderTop: "4px solid #0f766e" }}>
         <b style={{ color: "#0f766e" }}>💬 ملاحظة الزائر للمعلم وردوده</b>
-        <textarea className="ma-inp" style={{ minHeight: 60, height: "auto", padding: 10 }} placeholder="ملاحظة عامة للمعلم تظهر له مع التقييم (اختياري)" value={e.vnote} onChange={ev => put({ vnote: ev.target.value })} />
+        <textarea className="ma-inp" style={{ minHeight: 60, height: "auto", padding: 10 }} placeholder="ملاحظة عامة للمعلم تظهر له مع الرصد (اختياري)" value={e.vnote} onChange={ev => put({ vnote: ev.target.value })} />
         <CvThread tk={T.tk} v={vn} who="v" name={e.by || by} ev={ptObj(D.ev[T.tk])[vn]} onAdd={m => setD(d => { const x = ptObj(ptObj(d.ev[T.tk])[vn]); return { ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [vn]: { ...x, thr: { ...ptObj(x.thr), [m.id]: m } } } } }; })} />
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}><CvImgs tk={T.tk} v={vn} who="a" canEdit title="صور الزائر" /><CvImgs tk={T.tk} v={vn} who="t" canEdit={false} title="صور المعلم" /></div>
       </div>
-      <div className="ma-card p-3 flex items-center gap-3 flex-wrap" style={{ background: e.fin ? "linear-gradient(135deg,#ecfdf5,#fff)" : "#fff", border: "2px solid #0f766e" }}>
-        <button className="ma-btn" style={{ padding: "12px 22px", fontSize: 15, background: "linear-gradient(135deg,#0f766e,#065f46)", color: "#fff", border: "none" }} onClick={finish}>{e.fin ? "💾 حفظ التعديل ونشره" : "✅ إنهاء الزيارة واعتماد التقييم ونشره للمعلم"}</button>
-        {e.fin && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اعتُمدت {ptWhen(e.fin)}</span>}
-        {e.fin && <a className="ma-btn" style={{ textDecoration: "none", background: "#25d366", color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`أ. ${T.name}\nتم اعتماد تقييم زيارتك الصفية ${CV_VN[vn - 1]}، يمكنك الاطلاع عليه والرد على ملاحظات الزائر عبر الرابط برقم هويتك:\n${cvLink()}`)}`}>💬 إشعار المعلم</a>}
-      </div>
-      <div className="ma-card p-3 flex items-center gap-3 flex-wrap" style={{ background: e.pub ? "#eff6ff" : "#fff" }}>
-        <label style={{ fontWeight: 900, display: "flex", gap: 6, alignItems: "center", fontSize: 14 }}><input type="checkbox" checked={e.pub} onChange={ev => { if (ev.target.checked && tot == null && !window.confirm("لم تكتمل الدرجات العشر — نشر التقييم للمعلم رغم ذلك؟")) return; put({ pub: ev.target.checked }); }} />👁 نشر التقييم للمعلم (يراه في بوابته برقم هويته)</label>
+      <div className="ma-card p-3 flex items-center gap-3 flex-wrap" style={{ background: e.fin ? "linear-gradient(135deg,#ecfdf5,#fff)" : "#fff", border: "2px solid #7c3aed" }}>
         <input className="ma-inp" style={{ width: 200 }} placeholder="اسم الزائر" value={e.by || by} onChange={ev => put({ by: ev.target.value })} />
-        {e.ack && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✍️ اطّلع المعلم {ptWhen(e.ack)}</span>}
+        <button className="ma-btn" style={{ padding: "12px 22px", fontSize: 15, background: "linear-gradient(135deg,#7c3aed,#4c1d95)", color: "#fff", border: "none" }} onClick={finish}>{e.fin ? "💾 حفظ التعديل ونشره" : "✅ إنهاء الزيارة واعتماد الرصد ونشره للمعلم"}</button>
+        {e.fin && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اعتُمدت {ptWhen(e.fin)}</span>}
+        {e.fin && <a className="ma-btn" style={{ textDecoration: "none", background: "#25d366", color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`أ. ${T.name}\nتم اعتماد رصد زيارتك الصفية ${CV_VN[vn - 1]}، يمكنك الاطلاع عليه والرد على ملاحظات الزائر وإرفاق شواهدك عبر الرابط برقم هويتك:\n${cvLink()}`)}`}>💬 إشعار المعلم</a>}
+        {!e.fin && <label style={{ fontWeight: 800, fontSize: 12.5, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={e.pub} onChange={ev => put({ pub: ev.target.checked })} />👁 إظهاره للمعلم قبل الاعتماد</label>}
       </div>
-      {e.reply && <div className="ma-card p-3" style={{ borderRight: "4px solid #7c3aed" }}><b style={{ color: "#7c3aed" }}>💬 تعليق المعلم على الزيارة</b><div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6, whiteSpace: "pre-wrap" }}>{e.reply}</div></div>}
     </div>
   );
 }
-function CvInd({ D, TS, by, openT }) {
-  const rows = TS.map(T => { const t = [1, 2, 3].map(v => cvTotal(ptObj(ptObj(D.ev[T.tk])[v]))); const dn = t.filter(x => x != null); return { T, t, avg: dn.length ? dn.reduce((a, b) => a + b, 0) / dn.length : null }; });
-  const allE = []; TS.forEach(T => [1, 2, 3].forEach(v => { const e = ptObj(ptObj(D.ev[T.tk])[v]); if (cvTotal(e) != null) allE.push(e); }));
-  const cAvg = D.cfg.crit.map((c, j) => allE.length ? allE.reduce((a, e) => a + (+maArr(e.sc)[j] || 0), 0) / allE.length : null);
-  const vAvg = [1, 2, 3].map(v => { const a = rows.map(x => x.t[v - 1]).filter(x => x != null); return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null; });
-  const dist = {}; allE.forEach(e => { const g = cvGrade(cvTotal(e))[0]; dist[g] = (dist[g] || 0) + 1; });
-  const ranked = rows.filter(x => x.avg != null).sort((a, b) => b.avg - a.avg);
-  const weak = cAvg.map((v, j) => ({ v, j })).filter(x => x.v != null).sort((a, b) => a.v - b.v).slice(0, 3);
-  const print = () => inOpen(`<section class="pg">${inHdr("مؤشرات الزيارات الصفية", "العام الدراسي ١٤٤٨هـ<br>الفصل الدراسي الأول")}<div class="kp"><div><b>${maAr(allE.length)}</b>زيارة مقيّمة</div>${vAvg.map((v, i) => `<div><b>${v != null ? maAr(Math.round(v * 10) / 10) : "—"}</b>متوسط الزيارة ${CV_VN[i]}</div>`).join("")}</div><h3>📊 متوسط كل معيار (من ١٠)</h3><table>${D.cfg.crit.map((c, j) => `<tr><td>${maAr(j + 1)}</td><td class="r">${ptEsc(c)}</td><td style="width:35%"><div class="bar"><i style="width:${cAvg[j] != null ? cAvg[j] * 10 : 0}%;background:${cAvg[j] >= 9 ? "#15803d" : cAvg[j] >= 8 ? "#0d9488" : cAvg[j] >= 7 ? "#2563eb" : "#b45309"}"></i></div></td><td><b>${cAvg[j] != null ? maAr(Math.round(cAvg[j] * 10) / 10) : "—"}</b></td></tr>`).join("")}</table><h3>👨‍🏫 نتائج المعلمين</h3><table><thead><tr><th>م</th><th>المعلم</th><th>التخصص</th>${CV_VN.map(v => `<th>${v}</th>`).join("")}<th>المتوسط</th><th>التقدير</th></tr></thead><tbody>${rows.map((x, i) => { const g = cvGrade(x.avg == null ? null : Math.round(x.avg)); return `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(x.T.name)}</b></td><td>${ptEsc(x.T.s)}</td>${x.t.map(t => `<td>${t != null ? maAr(t) : "—"}</td>`).join("")}<td><b>${x.avg != null ? maAr(Math.round(x.avg * 10) / 10) : "—"}</b></td><td>${g ? g[0] : ""}</td></tr>`; }).join("")}</tbody></table>${weak.length ? `<h3>🧭 احتياجات التطوير المهني المقترحة</h3><table>${weak.map(w => `<tr><td class="r">${ptEsc(D.cfg.crit[w.j])}</td><td>${maAr(Math.round(w.v * 10) / 10)}</td><td class="r">برنامج: ${CV_PD[w.j]}</td></tr>`).join("")}</table>` : ""}<div class="sg"><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "مؤشرات الزيارات");
-  const printAll = () => inOpen(TS.map((T, i) => cvFormHTML(T, ptObj(D.ev[T.tk]), D.cfg.crit, i)).join(""), "نماذج الزيارات", cvPrintCss);
+
+// ══════════ عرض الرصد (للمعلم) ══════════
+function ObsSheet({ e, prev }) {
+  const [all, setAll] = useState(false);
+  return (
+    <div className="grid gap-2">
+      <style>{OB_CSS}</style>
+      <label style={{ fontSize: 12, fontWeight: 800, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={all} onChange={ev => setAll(ev.target.checked)} />إظهار المشاهدات غير المرصودة أيضاً</label>
+      {OB_FORM.map((g, gi) => (
+        <div key={gi} className="grid gap-2">
+          <div className="ob-band" style={{ background: `linear-gradient(135deg,${OB_GC[gi]},#4c1d95)`, fontSize: 12.5 }}><span>{g.ic}</span><span>المؤشر {maAr(gi + 1)}: {g.t}</span></div>
+          {g.items.map(it => { const x = obIt(e, it.n); const on = obEvOn(e, it.n); const pl = prev ? +obIt(prev, it.n).lv || 0 : 0; const l = +x.lv || 0; return (
+            <div key={it.n} className="ob-item">
+              <div className="hd"><span className="no">{maAr(it.n)}</span><span style={{ flex: 1 }}>{it.t}</span>{obLvPill(l)}{pl && l && pl !== l ? <b style={{ color: l > pl ? "#15803d" : "#b91c1c" }}>{l > pl ? "▲" : "▼"}</b> : null}</div>
+              <div className="ob-ev">{it.ev.map((t, j) => on.includes(j) || all ? <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, fontWeight: 700, padding: "5px 10px", borderRadius: 10, background: on.includes(j) ? "#ecfdf5" : "#f8fafc", color: on.includes(j) ? "#065f46" : "#94a3b8" }}><span>{on.includes(j) ? "✅" : "▫️"}</span><span>{t}</span></div> : null)}{!on.length && !all && <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700, padding: "0 10px" }}>لم تُرصد مشاهدات</div>}</div>
+              {x.nt && <div style={{ margin: "0 12px 12px", fontSize: 12.5, fontWeight: 800, background: "#fff7ed", borderRadius: 10, padding: "6px 10px" }}>📝 {x.nt}</div>}
+            </div>); })}
+        </div>))}
+    </div>
+  );
+}
+
+// ══════════ الطباعة الإبداعية ══════════
+const OB_PCSS = `@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#1e1b4b;font-size:11px}
+.pg{page-break-after:always}.pg:last-child{page-break-after:auto}
+.cv{border-radius:22px;overflow:hidden;background:linear-gradient(135deg,#4c1d95,#7c3aed 55%,#db2777);color:#fff;padding:16px 20px;position:relative}
+.cv::after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.08);left:-60px;top:-120px}
+.cv .row{display:flex;align-items:center;gap:14px;position:relative;z-index:1}.cv img{width:64px;height:64px;border-radius:50%;background:#fff;padding:3px}
+.cv h1{margin:0;font-size:20px}.cv small{opacity:.9;font-weight:700}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;position:relative;z-index:1}.chips span{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px 12px;font-weight:800}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}.kv div{border:1.5px solid #ede9fe;border-radius:12px;padding:6px 8px;background:#faf5ff}.kv b{display:block;color:#6d28d9;font-size:10px}.kv span{font-weight:800}
+.sec{margin-top:10px;border-radius:16px;border:1.5px solid #ede9fe;overflow:hidden;page-break-inside:avoid}
+.band{padding:6px 12px;color:#fff;font-weight:900;font-size:11.5px}
+.it{padding:6px 12px;border-top:1px solid #f3e8ff;page-break-inside:avoid}.it .t{display:flex;gap:6px;align-items:flex-start;font-weight:900}.it .t .n{min-width:20px;height:20px;border-radius:6px;background:#7c3aed;color:#fff;display:inline-grid;place-items:center;font-size:10px}
+.ev{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.ev span{border-radius:8px;padding:2px 8px;font-size:9.5px;font-weight:700}.ev .on{background:#dcfce7;color:#065f46;border:1px solid #86efac}.ev .off{background:#f8fafc;color:#94a3b8;border:1px solid #e2e8f0}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-weight:900;font-size:10px;margin-right:auto;white-space:nowrap}
+.nt{margin-top:4px;background:#fff7ed;border-radius:8px;padding:3px 8px;font-weight:800}
+.box{border-radius:14px;padding:8px 12px;margin-top:8px;page-break-inside:avoid}.box b{display:block;margin-bottom:2px}
+.bub{border-radius:12px;padding:5px 10px;margin:4px 0;max-width:85%}.bub small{display:block;font-weight:900;font-size:9px}
+.imgs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}.imgs img{width:100%;height:110px;object-fit:cover;border-radius:10px;border:2px solid #ede9fe}
+.sg{display:flex;justify-content:space-around;margin-top:14px;font-weight:800;text-align:center}.sg span{display:block;margin-top:12px;color:#94a3b8}.sg .pn{display:block;margin-top:3px;color:#6d28d9}
+.fin{border-radius:18px;padding:12px 16px;background:linear-gradient(135deg,#fdf4ff,#ecfdf5);border:2px solid #c4b5fd;margin-top:10px}
+.bar{height:9px;border-radius:9px;background:#ede9fe;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px}
+table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;border-bottom:1px solid #f3e8ff;text-align:right}th{background:#6d28d9;color:#fff}`;
+const obOpen = (body, t) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${OB_PCSS}</style></head><body>${body}<script>setTimeout(()=>print(),1000)</script></body></html>`);
+const obLvHtml = l => l && OB_LV[l] ? `<span class="pill" style="background:${OB_LV[l][2]};color:${OB_LV[l][1]}">${OB_LV[l][3]} ${OB_LV[l][0]}</span>` : `<span class="pill" style="background:#f1f5f9;color:#94a3b8">—</span>`;
+function obVisitHTML(T, r, e, imgs, full) {
+  const hd = ptObj(e.hd); const ov = obOverall(e);
+  const thr = ptVals(e.thr).sort((a, b) => a.at - b.at);
+  return `<div class="cv" style="padding:10px 16px;margin-top:4px"><div class="row"><div style="flex:1"><h1 style="font-size:16px">الزيارة ${CV_VN[r.v - 1]} — ${maDay(maDate(r.date))} ${cvHij(r.hij)}</h1><small>الحصة ${ptEsc(r.p)}${r.tm ? ` (${ptEsc(cvTm(r.tm))})` : ""} • ${ptEsc(cvCls(r.c))} • الزائر: ${ptEsc(e.by || "")}</small></div>${ov ? `<div style="background:#fff;border-radius:14px;padding:6px 12px;color:${ov[1]};font-weight:900;font-size:13px">${ov[3]} ${ov[0]}</div>` : ""}</div></div>
+    <div class="kv"><div><b>موضوع الدرس</b><span>${ptEsc(hd.topic || "—")}</span></div><div><b>رتبة المعلم</b><span>${ptEsc(hd.rank || "—")}</span></div><div><b>عدد الطلاب / الغياب</b><span>${ptEsc(hd.n || "—")} / ${ptEsc(hd.abs || "—")}</span></div><div><b>الموهوبون / ذوو الإعاقة</b><span>${ptEsc(hd.gift || "—")} / ${ptEsc(hd.dis || "—")}</span></div>${hd.spec || hd.team ? `<div style="grid-column:1/-1"><b>الأخصائيون / فريق المعايشة</b><span>${ptEsc(hd.spec || "—")} • ${ptEsc(hd.team || "—")}</span></div>` : ""}</div>
+    ${OB_FORM.map((g, gi) => `<div class="sec"><div class="band" style="background:linear-gradient(90deg,${OB_GC[gi]},#4c1d95)">${g.ic} المؤشر ${maAr(gi + 1)}: ${ptEsc(g.t)}</div>${g.items.map(it => { const x = obIt(e, it.n); const on = obEvOn(e, it.n); return `<div class="it"><div class="t"><span class="n">${maAr(it.n)}</span><span style="flex:1">${ptEsc(it.t)}</span>${obLvHtml(+x.lv)}</div><div class="ev">${it.ev.map((t, j) => on.includes(j) ? `<span class="on">✓ ${ptEsc(t)}</span>` : full ? `<span class="off">${ptEsc(t)}</span>` : "").join("")}${!on.length && !full ? `<span class="off">لم تُرصد مشاهدات</span>` : ""}</div>${x.nt ? `<div class="nt">📝 ${ptEsc(x.nt)}</div>` : ""}</div>`; }).join("")}</div>`).join("")}
+    ${e.str ? `<div class="box" style="background:#f0fdf4;border-right:5px solid #15803d"><b style="color:#15803d">💪 أبرز نقاط القوة</b>${ptEsc(e.str)}</div>` : ""}
+    ${e.imp ? `<div class="box" style="background:#fffbeb;border-right:5px solid #b45309"><b style="color:#b45309">🛠️ جوانب تحتاج إلى تطوير</b>${ptEsc(e.imp)}</div>` : ""}
+    ${e.rec ? `<div class="box" style="background:#eff6ff;border-right:5px solid #1d4ed8"><b style="color:#1d4ed8">🧭 التوصيات والتوجيهات</b>${ptEsc(e.rec)}</div>` : ""}
+    ${e.vnote ? `<div class="box" style="background:#ecfdf5;border-right:5px solid #0f766e"><b style="color:#0f766e">👔 ملاحظة الزائر</b>${ptEsc(e.vnote)}</div>` : ""}
+    ${thr.length || e.reply ? `<div class="box" style="background:#faf5ff;border:1.5px solid #ede9fe"><b style="color:#6d28d9">💬 الملاحظات والردود</b>${thr.map(m => `<div class="bub" style="background:${m.who === "v" ? "#ecfdf5" : "#eff6ff"};${m.who === "v" ? "" : "margin-right:auto"}"><small style="color:${m.who === "v" ? "#0f766e" : "#1d4ed8"}">${m.who === "v" ? "👔 الزائر" : "👨‍🏫 المعلم"} — ${ptEsc(m.name || "")}</small>${ptEsc(m.text)}</div>`).join("")}${e.reply ? `<div class="bub" style="background:#eff6ff;margin-right:auto"><small style="color:#1d4ed8">👨‍🏫 تأمل المعلم</small>${ptEsc(e.reply)}</div>` : ""}${e.ack ? `<div style="font-size:9.5px;color:#15803d;font-weight:900">✓ اطّلع المعلم إلكترونياً</div>` : ""}</div>` : ""}
+    ${imgs.a.length || imgs.t.length ? `<div class="box" style="background:#fff;border:1.5px solid #ede9fe"><b style="color:#6d28d9">📷 صور وشواهد الزيارة</b>${imgs.a.length ? `<div style="font-weight:800;margin-top:4px">صور الزائر</div><div class="imgs">${imgs.a.map(s => `<img src="${s}">`).join("")}</div>` : ""}${imgs.t.length ? `<div style="font-weight:800;margin-top:6px">شواهد المعلم</div><div class="imgs">${imgs.t.map(s => `<img src="${s}">`).join("")}</div>` : ""}</div>` : ""}`;
+}
+async function obPrintTeacher(T, D, idx, opts = {}) {
+  const E = ptObj(D.ev[T.tk]); const V = T.vis.filter(r => { const e = ptObj(E[r.v]); return opts.pubOnly ? e.pub : obProg(e) > 0 || e.fin; });
+  const imgsOf = async v => { const [a, t] = await Promise.all([maGet(`${CV_IMG}/${T.tk}/${v}/a`), maGet(`${CV_IMG}/${T.tk}/${v}/t`)]); return { a: maArr(a), t: maArr(t) }; };
+  const IM = {}; for (const r of V) IM[r.v] = await imgsOf(r.v);
+  const fin = ptObj(E.final); const ovs = [1, 2, 3].map(v => obOverall(ptObj(E[v])));
+  const itemBest = OB_ITEMS.map(it => { const ls = [1, 2, 3].map(v => +obIt(ptObj(E[v]), it.n).lv || 0); const last = [...ls].reverse().find(Boolean) || 0; return { it, ls, last }; });
+  const strong = itemBest.filter(x => x.last >= 3), weak = itemBest.filter(x => x.last && x.last <= 2);
+  const cover = `<section class="pg"><div class="cv"><div class="row"><img src="${SCHOOL_LOGO}"><div style="flex:1"><small>المملكة العربية السعودية • وزارة التعليم • الإدارة العامة للتعليم بمحافظة جدة • مدرسة الأمير عبدالمجيد المتوسطة الأولى</small><h1>تقرير رصد الملاحظة الصفية</h1><div style="font-size:17px;font-weight:900;margin-top:2px">أ. ${ptEsc(T.name)}</div><small>${ptEsc(T.s)} • العام الدراسي ١٤٤٨هـ • الفصل الدراسي الأول</small></div></div>
+      <div class="chips">${T.vis.map((r, i) => `<span>الزيارة ${CV_VN[i]}: ${ovs[i] ? `${ovs[i][3]} ${ovs[i][0]}` : ptObj(E[r.v]).fin ? "منفذة" : `${maDay(maDate(r.date))} ${cvHij(r.hij)}`}</span>`).join("")}</div></div>
+    <div class="fin"><b style="font-size:14px;color:#6d28d9">🏁 التقييم النهائي</b>${fin.lv ? ` ${obLvHtml(+fin.lv)}` : ""}<div style="font-weight:700;line-height:2;margin-top:4px;white-space:pre-wrap">${ptEsc(fin.txt || "—")}</div></div>
+    <div class="sec" style="margin-top:10px"><div class="band" style="background:#6d28d9">📈 مسار العناصر عبر الزيارات</div><table><thead><tr><th>العنصر</th>${CV_VN.map(v => `<th style="text-align:center">${v}</th>`).join("")}</tr></thead><tbody>${itemBest.map(x => `<tr><td>${maAr(x.it.n)}. ${ptEsc(x.it.t)}</td>${x.ls.map(l => `<td style="text-align:center">${l ? `<span class="pill" style="background:${OB_LV[l][2]};color:${OB_LV[l][1]};margin:0">${OB_LV[l][3]}</span>` : "—"}</td>`).join("")}</tr>`).join("")}</tbody></table><div style="padding:6px 10px;font-size:9.5px;color:#64748b">${Object.entries(OB_LV).reverse().map(([k, v]) => `${v[3]} ${v[0]}`).join(" • ")}</div></div>
+    ${strong.length ? `<div class="box" style="background:#f0fdf4;border-right:5px solid #15803d"><b style="color:#15803d">🌟 عناصر متحققة بتميز</b>${strong.map(x => `• ${ptEsc(x.it.t)}`).join("<br>")}</div>` : ""}
+    ${weak.length ? `<div class="box" style="background:#fffbeb;border-right:5px solid #b45309"><b style="color:#b45309">🎯 عناصر للتطوير</b>${weak.map(x => `• ${ptEsc(x.it.t)}`).join("<br>")}</div>` : ""}
+    <div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر (الوكيل)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`;
+  const visits = V.map(r => `<section class="pg">${obVisitHTML(T, r, ptObj(E[r.v]), IM[r.v] || { a: [], t: [] }, opts.full)}<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر<br><b class="pn">${ptEsc(ptObj(E[r.v]).by || "")}</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`).join("");
+  printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>رصد الملاحظة الصفية — ${ptEsc(T.name)}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${OB_PCSS}</style></head><body>${cover}${visits}<script>setTimeout(()=>print(),1200)</script></body></html>`);
+}
+// ══════════ التقييم النهائي والمؤشرات العامة ══════════
+function obSchool(D, TS) {
+  const E = []; TS.forEach(T => [1, 2, 3].forEach(v => { const e = ptObj(ptObj(D.ev[T.tk])[v]); if (e.fin) E.push({ T, v, e }); }));
+  const items = OB_ITEMS.map(it => { const ls = E.map(x => +obIt(x.e, it.n).lv || 0).filter(Boolean); const avg = ls.length ? ls.reduce((a, b) => a + b, 0) / ls.length : null; const evc = it.ev.map((t, j) => ({ t, j, c: E.filter(x => obEvOn(x.e, it.n).includes(j)).length })); return { it, avg, n: ls.length, evc }; });
+  const allEv = items.flatMap(x => x.it.one ? [] : x.evc.map(y => ({ ...y, it: x.it })));
+  const topEv = [...allEv].sort((a, b) => b.c - a.c).slice(0, 8), lowEv = [...allEv].filter(x => E.length).sort((a, b) => a.c - b.c).slice(0, 8);
+  const rated = items.filter(x => x.avg != null); const best = [...rated].sort((a, b) => b.avg - a.avg).slice(0, 4), need = [...rated].sort((a, b) => a.avg - b.avg).slice(0, 4);
+  return { E, items, topEv, lowEv, best, need };
+}
+function ObsInd({ D, setD, TS, by, openT, toast }) {
+  const S = obSchool(D, TS); const [gen, setGen] = useState(ptObj(D.cfg.gen)); const [ft, setFt] = useState(null);
+  const saveGen = async (g) => { setGen(g); const ok = await cvPatch({ [`${CV_CFG}/gen`]: { ...g, at: Date.now() } }); setD(d => ({ ...d, cfg: { ...d.cfg, gen: g } })); toast(ok ? "✅ حُفظت الملاحظات العامة" : "📱 حُفظت على الجهاز"); };
+  const auto = [...S.best.map(x => `🌟 تميز واضح في: ${x.it.t}`), ...S.need.map(x => `🎯 يحتاج تركيزاً: ${x.it.t}`), ...S.lowEv.slice(0, 3).map(x => `▫️ مشاهدة قليلة الظهور: ${x.t}`)].join("\n");
+  const printSchool = () => obOpen(`<section class="pg"><div class="cv"><div class="row"><img src="${SCHOOL_LOGO}"><div><small>مدرسة الأمير عبدالمجيد المتوسطة الأولى • ١٤٤٨هـ</small><h1>أبرز ملاحظات رصد الملاحظة الصفية — للجميع</h1><small>${maAr(S.E.length)} زيارة معتمدة • ${maAr(TS.length)} معلماً</small></div></div></div>
+    ${gen.txt ? `<div class="fin"><b style="color:#6d28d9">📢 ملاحظات عامة للزملاء</b><div style="font-weight:700;line-height:2;white-space:pre-wrap">${ptEsc(gen.txt)}</div></div>` : ""}
+    <div class="sec"><div class="band" style="background:#6d28d9">📊 مستوى تحقق العناصر على مستوى المدرسة</div><table>${S.items.map(x => { const l = obLvOfAvg(x.avg); return `<tr><td>${maAr(x.it.n)}. ${ptEsc(x.it.t)}</td><td style="width:26%"><div class="bar"><i style="width:${x.avg ? x.avg / 4 * 100 : 0}%;background:${l ? OB_LV[l][1] : "#cbd5e1"}"></i></div></td><td style="width:18%">${l ? obLvHtml(l) : "—"}</td></tr>`; }).join("")}</table></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="box" style="background:#f0fdf4;border-right:5px solid #15803d"><b style="color:#15803d">✅ الأكثر رصداً</b>${S.topEv.map(x => `• ${ptEsc(x.t)} <b>(${maAr(x.c)})</b>`).join("<br>")}</div><div class="box" style="background:#fffbeb;border-right:5px solid #b45309"><b style="color:#b45309">▫️ الأقل رصداً (فرص تطوير)</b>${S.lowEv.map(x => `• ${ptEsc(x.t)} <b>(${maAr(x.c)})</b>`).join("<br>")}</div></div>
+    <div class="sg"><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "أبرز الملاحظات");
+  const printAll = async () => { for (let i = 0; i < TS.length; i++) { const E = ptObj(D.ev[TS[i].tk]); if ([1, 2, 3].some(v => ptObj(E[v]).fin)) { await obPrintTeacher(TS[i], D, i); break; } } };
   return (
     <div className="grid gap-3">
-      <div className="ma-card p-3 flex gap-2 flex-wrap"><button className="ma-btn pri" onClick={print}>🖨️ طباعة المؤشرات</button><button className="ma-btn" onClick={printAll}>🖨️ نماذج جميع المعلمين ({maAr(TS.length)})</button></div>
-      <div className="pt-kpis">{[["📝", maAr(allE.length), "زيارة مقيّمة", "#0f766e"], ...vAvg.map((v, i) => ["📈", v != null ? maAr(Math.round(v * 10) / 10) : "—", `متوسط الزيارة ${CV_VN[i]}`, ["#2563eb", "#7c3aed", "#db2777"][i]])].map((x, i) => <div key={i} className="pt-kpi" style={{ "--c": x[3] }}><b>{x[1]}</b><small>{x[0]} {x[2]}</small></div>)}</div>
+      <style>{OB_CSS}</style>
+      <div className="ma-card p-3 flex gap-2 flex-wrap"><button className="ma-btn pri" onClick={printSchool}>🖨️ طباعة أبرز الملاحظات (للجميع)</button></div>
+      <div className="pt-kpis"><div className="pt-kpi" style={{ "--c": "#7c3aed" }}><b>{maAr(S.E.length)}</b><small>زيارة معتمدة</small></div>{[4, 3, 2, 1].map(l => <div key={l} className="pt-kpi" style={{ "--c": OB_LV[l][1] }}><b>{maAr(S.E.filter(x => { const o = obOverall(x.e); return o && o[4] === l; }).length)}</b><small>{OB_LV[l][3]} {OB_LV[l][0]}</small></div>)}</div>
+      <div className="ma-card p-4 grid gap-2"><b style={{ fontSize: 15 }}>📢 ملاحظات عامة لجميع الزملاء</b><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>تظهر لكل معلم في صفحة زياراته عند النشر</div>
+        <textarea className="ma-inp" style={{ minHeight: 110, height: "auto", padding: 10, lineHeight: 1.9 }} value={gen.txt || ""} onChange={e => setGen({ ...gen, txt: e.target.value })} placeholder="مثال: نشكر الزملاء على تفعيل التعلم النشط، ونأمل التركيز على التقويم الذاتي وتقويم الأقران…" />
+        <div className="flex gap-2 flex-wrap"><button className="cv-chip" onClick={() => setGen({ ...gen, txt: (gen.txt ? gen.txt + "\n" : "") + auto })}>⚡ إدراج أبرز الملاحظات تلقائياً</button><label style={{ fontWeight: 800, fontSize: 12.5, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={!!gen.pub} onChange={e => setGen({ ...gen, pub: e.target.checked })} />👁 نشرها للمعلمين</label><button className="ma-btn pri" onClick={() => saveGen(gen)}>💾 حفظ</button></div></div>
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
-        <div className="ma-card p-4"><b>📊 متوسط كل معيار</b><div className="grid gap-2 mt-3">{D.cfg.crit.map((c, j) => <div key={j}><div className="flex justify-between gap-2" style={{ fontSize: 12, fontWeight: 800 }}><span>{CV_CRIT[j]?.ic} {c}</span><b>{cAvg[j] != null ? maAr(Math.round(cAvg[j] * 10) / 10) : "—"}</b></div><InBar v={cAvg[j] || 0} max={10} c={cAvg[j] >= 9 ? "#15803d" : cAvg[j] >= 8 ? "#0d9488" : cAvg[j] >= 7 ? "#2563eb" : "#b45309"} /></div>)}</div></div>
-        <div className="ma-card p-4 grid gap-3" style={{ alignContent: "start" }}><b>🏅 توزيع التقديرات</b><div className="flex gap-2 flex-wrap">{["ممتاز", "جيد جداً", "جيد", "مقبول", "يحتاج إلى دعم"].map(l => { const g = cvGrade(l === "ممتاز" ? 95 : l === "جيد جداً" ? 85 : l === "جيد" ? 75 : l === "مقبول" ? 65 : 50); return <div key={l} style={{ background: g[2], color: g[1], borderRadius: 16, padding: "10px 14px", textAlign: "center", minWidth: 90 }}><div style={{ fontSize: 22, fontWeight: 900 }}>{maAr(dist[l] || 0)}</div><small style={{ fontWeight: 900 }}>{l}</small></div>; })}</div>
-          {weak.length > 0 && <><b>🧭 احتياجات التطوير المهني</b>{weak.map(w => <div key={w.j} style={{ fontSize: 12.5, fontWeight: 800, background: "#fff7ed", borderRadius: 12, padding: "8px 10px" }}>{CV_CRIT[w.j]?.ic} {D.cfg.crit[w.j]} — <b>{maAr(Math.round(w.v * 10) / 10)}</b><div style={{ color: "#c2410c" }}>برنامج مقترح: {CV_PD[w.j]}</div></div>)}</>}</div>
+        <div className="ma-card p-4"><b>📊 مستوى تحقق العناصر</b><div className="grid gap-2 mt-3">{S.items.map(x => { const l = obLvOfAvg(x.avg); return <div key={x.it.n}><div className="flex justify-between gap-2" style={{ fontSize: 12, fontWeight: 800 }}><span>{maAr(x.it.n)}. {x.it.t}</span>{l ? obLvPill(l) : <span style={{ color: "#94a3b8" }}>—</span>}</div><InBar v={x.avg || 0} max={4} c={l ? OB_LV[l][1] : "#cbd5e1"} /></div>; })}</div></div>
+        <div className="ma-card p-4 grid gap-3" style={{ alignContent: "start" }}><b>✅ المشاهدات الأكثر رصداً</b>{S.topEv.map((x, i) => <div key={i} style={{ fontSize: 12.5, fontWeight: 700, background: "#f0fdf4", borderRadius: 10, padding: "6px 9px" }}>✓ {x.t} <b style={{ color: "#15803d" }}>({maAr(x.c)})</b></div>)}<b>▫️ المشاهدات الأقل رصداً — فرص تطوير</b>{S.lowEv.map((x, i) => <div key={i} style={{ fontSize: 12.5, fontWeight: 700, background: "#fffbeb", borderRadius: 10, padding: "6px 9px" }}>• {x.t} <b style={{ color: "#b45309" }}>({maAr(x.c)})</b></div>)}</div>
       </div>
-      <div className="ma-card p-4"><b>👨‍🏫 ترتيب المعلمين ومسار التطور</b><div className="grid gap-2 mt-3">{[...ranked, ...rows.filter(x => x.avg == null)].map((x, i) => { const g = cvGrade(x.avg == null ? null : Math.round(x.avg)); const tr = x.t[0] != null && x.t[2] != null ? x.t[2] - x.t[0] : x.t[0] != null && x.t[1] != null ? x.t[1] - x.t[0] : null; return (
-        <div key={x.T.tk} className="in-row" style={{ cursor: "pointer" }} onClick={() => openT(x.T.tk)}><span className="in-med" style={{ fontSize: x.avg != null && i < 3 ? 26 : 15 }}>{x.avg != null ? (i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : maAr(i + 1)) : "—"}</span><div style={{ flex: "1 1 180px", minWidth: 0 }}><b>{x.T.name}</b><div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>{x.T.s}</div></div><div className="flex gap-1">{x.t.map((t, k) => <span key={k} className="in-fl" style={{ background: t != null ? cvGrade(t)[2] : "#f1f5f9", color: t != null ? cvGrade(t)[1] : "#94a3b8" }}>{t != null ? maAr(t) : "—"}</span>)}</div>{tr != null && <b style={{ color: tr > 0 ? "#15803d" : tr < 0 ? "#b91c1c" : "#64748b" }}>{tr > 0 ? "▲" : tr < 0 ? "▼" : "●"} {maAr(Math.abs(tr))}</b>}{g && <span className="in-fl" style={{ background: g[2], color: g[1] }}>{maAr(Math.round(x.avg * 10) / 10)} • {g[0]}</span>}</div>); })}</div></div>
+      <div className="ma-card p-4"><b style={{ fontSize: 15 }}>🏁 التقييم النهائي لكل معلم</b><div className="grid gap-2 mt-3">{TS.map((T, i) => { const E = ptObj(D.ev[T.tk]); const f = ptObj(E.final); const ovs = [1, 2, 3].map(v => obOverall(ptObj(E[v]))); return (
+        <div key={T.tk} className="in-row"><div style={{ flex: "1 1 180px", minWidth: 0 }}><b>{T.name}</b><div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>{T.s}</div></div>
+          <div className="flex gap-1">{ovs.map((o, k) => <span key={k} title={`الزيارة ${CV_VN[k]}`} className="ob-pill" style={{ background: o ? o[2] : "#f1f5f9", color: o ? o[1] : "#94a3b8" }}>{o ? o[3] : "—"}</span>)}</div>
+          {f.lv ? obLvPill(+f.lv) : null}{f.pub ? <span className="in-fl" style={{ background: "#dbeafe", color: "#1d4ed8" }}>👁 منشور</span> : null}
+          <div className="flex gap-1"><button className="ma-btn" onClick={() => setFt({ T, txt: f.txt || "", lv: f.lv || "", pub: !!f.pub })}>🏁 التقييم النهائي</button><button className="ma-btn" onClick={() => obPrintTeacher(T, D, i)}>🖨️ التقرير</button><button className="ma-btn" onClick={() => openT(T.tk)}>🔭 الرصد</button></div>
+        </div>); })}</div></div>
+      {ft && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setFt(null)}><div className="ma-card p-4 grid gap-3" style={{ width: "min(600px,100%)", maxHeight: "90vh", overflow: "auto" }} onClick={ev => ev.stopPropagation()}>
+        <b style={{ fontSize: 16 }}>🏁 التقييم النهائي — {ft.T.name}</b>
+        <div className="flex gap-1 flex-wrap">{[4, 3, 2, 1].map(l => <button key={l} className="cv-chip" style={+ft.lv === l ? { background: OB_LV[l][1], color: "#fff" } : { color: OB_LV[l][1] }} onClick={() => setFt({ ...ft, lv: +ft.lv === l ? "" : l })}>{OB_LV[l][3]} {OB_LV[l][0]}</button>)}</div>
+        <textarea className="ma-inp" style={{ minHeight: 140, height: "auto", padding: 10, lineHeight: 1.9 }} value={ft.txt} onChange={ev => setFt({ ...ft, txt: ev.target.value })} placeholder="خلاصة أداء المعلم في الزيارات الثلاث، أبرز ما تميز به، وما يوصى بتطويره…" />
+        <button className="cv-chip" style={{ justifySelf: "start" }} onClick={() => { const E = ptObj(D.ev[ft.T.tk]); const ib = OB_ITEMS.map(it => ({ it, l: [3, 2, 1].map(v => +obIt(ptObj(E[v]), it.n).lv || 0).find(Boolean) || 0 })); const s = ib.filter(x => x.l >= 3).slice(0, 4).map(x => `• ${x.it.t}`), w = ib.filter(x => x.l && x.l <= 2).slice(0, 4).map(x => `• ${x.it.t}`); setFt({ ...ft, txt: (ft.txt ? ft.txt + "\n" : "") + (s.length ? `تميز الزميل في:\n${s.join("\n")}\n` : "") + (w.length ? `ويوصى بالتركيز على:\n${w.join("\n")}` : "") }); }}>⚡ صياغة تلقائية من الرصد</button>
+        <label style={{ fontWeight: 800, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={ft.pub} onChange={ev => setFt({ ...ft, pub: ev.target.checked })} />👁 نشره للمعلم</label>
+        <div className="flex gap-2 justify-end"><button className="ma-btn" onClick={() => setFt(null)}>إلغاء</button><button className="ma-btn pri" onClick={async () => { const v = { txt: ft.txt.trim(), lv: ft.lv || null, pub: ft.pub ? 1 : 0, at: Date.now(), by }; const ok = await cvPatch({ [`${CV_EVAL}/${ft.T.tk}/final`]: v }); setD(d => ({ ...d, ev: { ...d.ev, [ft.T.tk]: { ...ptObj(d.ev[ft.T.tk]), final: v } } })); setFt(null); toast(ok ? "✅ حُفظ التقييم النهائي" : "📱 حُفظ على الجهاز"); }}>💾 حفظ</button></div>
+      </div></div>}
     </div>
   );
 }
+
 function CvCfg({ D, setD, TS, toast }) {
   const [links, setLinks] = useState({ ...D.cfg.links }); const [crit, setCrit] = useState([...D.cfg.crit]);
   const lic = Object.entries(D.lic).filter(([, x]) => x && x.name).sort((a, b) => a[1].name.localeCompare(b[1].name, "ar"));
   const auto = () => { const n = { ...links }; let c = 0; TS.forEach(T => { if (!n[T.tk]) { const r = cvMatch(T.name, D.lic); if (r) { n[T.tk] = r; c++; } } }); setLinks(n); toast(`🔗 رُبط ${maAr(c)} معلم تلقائياً`); };
-  const save = async () => { const v = { crit, links, comp: D.cfg.comp }; const ok = await maPut(CV_CFG, v); if (ok) setD(d => ({ ...d, cfg: { ...d.cfg, ...v } })); toast(ok ? "✅ حُفظت الإعدادات" : "⚠️ تعذّر الحفظ"); };
+  const save = async () => { const ok = await cvPatch({ [`${CV_CFG}/links`]: links }); setD(d => ({ ...d, cfg: { ...d.cfg, links } })); toast(ok ? "✅ حُفظ الربط" : "📱 حُفظ على الجهاز"); };
   const reseed = async () => { if (!window.confirm("إعادة تحميل جدول الزيارات الأصلي (١٤٤٨)؟ ستُلغى تعديلات المواعيد، وتبقى التقييمات.")) return; const p = cvSeedPlan(); const ok = await maPut(CV_PLAN, p); if (ok) setD(d => ({ ...d, plan: p })); toast(ok ? "✅ أُعيد تحميل الجدول" : "⚠️ تعذّر"); };
   const nL = TS.filter(T => links[T.tk]).length;
   return (
@@ -34958,8 +35136,7 @@ function CvCfg({ D, setD, TS, toast }) {
         <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>يدخل المعلم من «بوابة المعلمين» برقم هويته المسجل في قائمة المعلمين (الرخصة المهنية)، فتظهر له زياراته وتقييمه. المعلم غير المسجّل يُضاف أولاً من قائمة المعلمين.</div>
         <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>{TS.map(T => <div key={T.tk} className="flex items-center gap-2" style={{ background: links[T.tk] ? "#f0fdf4" : "#fff7ed", borderRadius: 12, padding: "6px 10px" }}><span>{links[T.tk] ? "✅" : "⚠️"}</span><b style={{ flex: 1, fontSize: 13 }}>{T.name}</b><select className="ma-inp" style={{ width: 170, height: 34 }} value={links[T.tk] || ""} onChange={e => setLinks({ ...links, [T.tk]: e.target.value })}><option value="">— غير مربوط —</option>{lic.map(([id, x]) => <option key={id} value={id}>{x.name}</option>)}</select></div>)}</div>
       </div>
-      <div className="ma-card p-4 grid gap-2"><b style={{ fontSize: 15 }}>📋 معايير التقييم العشرة</b>{crit.map((c, j) => <div key={j} className="flex gap-2 items-center"><b style={{ width: 22 }}>{maAr(j + 1)}</b><input className="ma-inp" value={c} onChange={e => setCrit(crit.map((x, i) => i === j ? e.target.value : x))} /></div>)}</div>
-      <div className="flex gap-2"><button className="ma-btn pri" onClick={save}>💾 حفظ الربط والمعايير</button><button className="ma-btn" onClick={reseed}>↺ إعادة تحميل الجدول الأصلي</button></div>
+            <div className="flex gap-2"><button className="ma-btn pri" onClick={save}>💾 حفظ الربط</button><button className="ma-btn" onClick={reseed}>↺ إعادة تحميل الجدول الأصلي</button></div>
     </div>
   );
 }
@@ -35058,36 +35235,38 @@ function TeacherVisitsView({ me }) {
   const T = TS.find(x => D.cfg.links[x.tk] && D.cfg.links[x.tk] === me.rid) || TS.find(x => !D.cfg.links[x.tk] && cvMatch(x.name, { me: { name: me.name } }) === "me");
   if (!T) return <div className="ma-card p-8 text-center"><div style={{ fontSize: 40 }}>🔎</div><b>لا توجد زيارات صفية مجدولة باسمك</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 6 }}>إذا كان اسمك في جدول الزيارات فيرجى مراجعة الإدارة لربط حسابك</div></div>;
   const E = ptObj(D.ev[T.tk]); const k = maKey(new Date());
-  const next = T.vis.find(r => r.date >= k && cvTotal(ptObj(E[r.v])) == null);
-  const pubT = [1, 2, 3].map(v => { const e = ptObj(E[v]); return e.pub ? cvTotal(e) : null; });
-  const dn = pubT.filter(x => x != null); const avg = dn.length ? Math.round(dn.reduce((a, b) => a + b, 0) / dn.length * 10) / 10 : null;
+  const next = T.vis.find(r => r.date >= k && !ptObj(E[r.v]).fin);
   const ack = async (v) => { const e = ptObj(E[v]); const nv = { ...e, ack: Date.now(), reply: rep[v] != null ? rep[v] : e.reply || "" }; const ok = await cvPatch({ [`${CV_EVAL}/${T.tk}/${v}/ack`]: nv.ack, [`${CV_EVAL}/${T.tk}/${v}/reply`]: nv.reply }); setD(d => ({ ...d, ev: { ...d.ev, [T.tk]: { ...E, [v]: nv } } })); setMsg(ok ? "✍️ تم تسجيل اطلاعك — شكراً لك" : "📱 حُفظ على جهازك وسيُرسل عند عودة الاتصال"); setTimeout(() => setMsg(""), 3000); };
   const dd = next ? cvDays(next.date) : null;
   const pubE = { 1: E[1] && E[1].pub ? E[1] : {}, 2: E[2] && E[2].pub ? E[2] : {}, 3: E[3] && E[3].pub ? E[3] : {} };
+  const ovs = [1, 2, 3].map(v => pubE[v].pub ? obOverall(pubE[v]) : null);
+  const fin = ptObj(E.final); const gen = ptObj(D.cfg.gen);
   return (
     <div className="grid gap-3" dir="rtl">
-      <style>{IN_CSS + CV_CSS}</style>
-      <div className="in-hero" style={{ background: "linear-gradient(135deg,#064e3b,#0f766e 50%,#0891b2)" }}>
+      <style>{IN_CSS + CV_CSS + OB_CSS}</style>
+      <div className="in-hero" style={{ background: "linear-gradient(135deg,#4c1d95,#7c3aed 50%,#db2777)" }}>
         <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-4 flex-wrap">
-          <div style={{ flex: "1 1 240px", minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>🎯 زياراتي الصفية — ١٤٤٨هـ</div><div style={{ fontSize: 22, fontWeight: 900 }}>أ. {T.name}</div><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>{T.s}</div></div>
-          {next ? <div style={{ background: "rgba(255,255,255,.14)", borderRadius: 20, padding: "12px 18px", textAlign: "center", minWidth: 190 }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .9 }}>الزيارة {CV_VN[next.v - 1]} {dd === 0 ? "اليوم" : "بعد"}</div>{dd > 0 && <div className="cv-cd">{maAr(dd)}<small style={{ fontSize: 16 }}> {dd === 1 ? "يوم" : dd === 2 ? "يومين" : dd <= 10 ? "أيام" : "يوماً"}</small></div>}{dd === 0 && <div className="cv-cd">📌</div>}<div style={{ fontSize: 12.5, fontWeight: 800 }}>{maDay(maDate(next.date))} {cvHij(next.hij)}</div><div style={{ fontSize: 12, fontWeight: 700, opacity: .9 }}>الحصة {next.p}{next.tm ? ` (${cvTm(next.tm)})` : ""} • {cvCls(next.c)}</div></div>
-            : avg != null && <div style={{ background: "rgba(255,255,255,.14)", borderRadius: 20, padding: 10, textAlign: "center" }}><CvRing v={Math.round(avg)} size={96} c="#fbbf24" /><div style={{ fontSize: 12, fontWeight: 800 }}>متوسط تقييمك</div></div>}
+          <div style={{ flex: "1 1 240px", minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>🔭 رصد الملاحظات الصفية — ١٤٤٨هـ</div><div style={{ fontSize: 22, fontWeight: 900 }}>أ. {T.name}</div><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>{T.s}</div>
+            <div className="flex gap-1 flex-wrap mt-2">{T.vis.map((r, i) => <span key={i} className="ob-pill" style={{ background: "rgba(255,255,255,.18)", color: "#fff" }}>الزيارة {CV_VN[i]}: {ovs[i] ? `${ovs[i][3]} ${ovs[i][0]}` : ptObj(E[r.v]).fin ? "منفذة" : "⏳"}</span>)}</div></div>
+          {next && <div style={{ background: "rgba(255,255,255,.14)", borderRadius: 20, padding: "12px 18px", textAlign: "center", minWidth: 190 }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .9 }}>الزيارة {CV_VN[next.v - 1]} {dd === 0 ? "اليوم" : "بعد"}</div>{dd > 0 && <div className="cv-cd">{maAr(dd)}<small style={{ fontSize: 16 }}> {dd === 1 ? "يوم" : dd === 2 ? "يومين" : dd <= 10 ? "أيام" : "يوماً"}</small></div>}{dd === 0 && <div className="cv-cd">📌</div>}<div style={{ fontSize: 12.5, fontWeight: 800 }}>{maDay(maDate(next.date))} {cvHij(next.hij)}</div><div style={{ fontSize: 12, fontWeight: 700, opacity: .9 }}>الحصة {next.p}{next.tm ? ` (${cvTm(next.tm)})` : ""} • {cvCls(next.c)}</div></div>}
         </div>
       </div>
       <CvAlert T={T} E={E} />
-      <div className="cv-tl">{T.vis.map(r => { const e = pubE[r.v]; const t = cvTotal(e); const g = cvGrade(t); const raw = ptObj(E[r.v]); const st = cvTotal(raw) != null && !raw.pub ? ["wait", "🕓 نُفذت — بانتظار اعتماد التقييم", "#b45309", "#fef3c7"] : cvStatus(r, raw); return (
-        <div key={r.v} className="cv-vis" style={{ "--c": g ? g[1] : st[2], borderColor: open === r.v ? st[2] : "#eef2f6" }}>
+      {fin.pub ? <div className="ma-card p-4" style={{ background: "linear-gradient(135deg,#fdf4ff,#ecfdf5)", border: "2px solid #c4b5fd" }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 16, color: "#6d28d9" }}>🏁 التقييم النهائي</b>{fin.lv ? obLvPill(+fin.lv, true) : null}</div><div style={{ fontSize: 14, fontWeight: 700, lineHeight: 2.1, whiteSpace: "pre-wrap", marginTop: 6 }}>{fin.txt}</div></div> : null}
+      {gen.pub && gen.txt ? <div className="ma-card p-4" style={{ borderRight: "5px solid #7c3aed" }}><b style={{ color: "#6d28d9" }}>📢 ملاحظات عامة للزملاء</b><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2, whiteSpace: "pre-wrap", marginTop: 4 }}>{gen.txt}</div></div> : null}
+      <div className="cv-tl">{T.vis.map(r => { const raw = ptObj(E[r.v]); const g = raw.pub ? obOverall(raw) : null; const st = raw.fin && !raw.pub ? ["wait", "🕓 نُفذت — بانتظار الاعتماد", "#b45309", "#fef3c7"] : cvStatus(r, raw); return (
+        <div key={r.v} className="cv-vis" style={{ "--c": g ? g[1] : st[2], borderColor: open === r.v ? "#7c3aed" : "#eef2f6" }}>
           <div className="flex items-center justify-between gap-2"><b style={{ fontSize: 15 }}>الزيارة {CV_VN[r.v - 1]}</b><span className="in-fl" style={{ background: st[3], color: st[2] }}>{st[1]}</span></div>
           <div style={{ fontSize: 13, fontWeight: 800, marginTop: 8 }}>📅 {maDay(maDate(r.date))} {cvHij(r.hij)}</div>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>⏰ الحصة {r.p}{r.tm ? ` (${cvTm(r.tm)})` : ""} • 🏫 {cvCls(r.c)}</div>
-          {r.date > k && cvTotal(raw) == null && cvDays(r.date) <= 60 && <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1", marginTop: 4 }}>⏳ بعد {maAr(cvDays(r.date))} يوم</div>}
+          {r.date > k && !raw.fin && cvDays(r.date) <= 60 && <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1", marginTop: 4 }}>⏳ بعد {maAr(cvDays(r.date))} يوم</div>}
           {r.moved && <div style={{ fontSize: 11.5, fontWeight: 800, color: "#7c3aed", marginTop: 4 }}>🔁 مؤجلة من {maDay(maDate(r.moved))}</div>}
           {r.req && r.req.st === "new" && <div className="in-fl" style={{ background: "#fef3c7", color: "#92400e", marginTop: 6 }}>⏳ طلب التأجيل قيد المراجعة</div>}
           {r.req && r.req.st === "ok" && <div className="in-fl" style={{ background: "#dcfce7", color: "#15803d", marginTop: 6 }}>✅ قُبل التأجيل</div>}
           {r.req && r.req.st === "no" && <div className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c", marginTop: 6 }}>❌ لم يُقبل التأجيل{r.req.note ? ` — ${r.req.note}` : ""}</div>}
           {r.tn && <div style={{ fontSize: 12, fontWeight: 700, background: "#f0fdfa", borderRadius: 10, padding: "5px 8px", marginTop: 6 }}>🗒️ ملاحظتك للزائر: {r.tn}</div>}
-          {cvTotal(ptObj(E[r.v])) == null && r.date >= k && <div className="flex gap-1 flex-wrap" style={{ marginTop: 8 }}>{!(r.req && r.req.st === "new") && <button className="ma-btn" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setPp({ r, reason: "", pref: "" })}>⏸️ طلب تأجيل</button>}<button className="ma-btn" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setTn({ r, text: r.tn || "" })}>🗒️ {r.tn ? "تعديل الملاحظة" : "ملاحظة للزائر"}</button></div>}
-          {g && <div className="flex items-center gap-3 mt-3"><CvRing v={t} size={78} /><div><span className="in-fl" style={{ background: g[2], color: g[1], fontSize: 13 }}>{g[0]}</span><div><button className="ma-btn" style={{ marginTop: 6, padding: "4px 12px" }} onClick={() => setOpen(open === r.v ? null : r.v)}>{open === r.v ? "▲ إخفاء التفاصيل" : "👁 عرض التقييم"}</button></div></div></div>}
+          {!raw.fin && r.date >= k && <div className="flex gap-1 flex-wrap" style={{ marginTop: 8 }}>{!(r.req && r.req.st === "new") && <button className="ma-btn" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setPp({ r, reason: "", pref: "" })}>⏸️ طلب تأجيل</button>}<button className="ma-btn" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setTn({ r, text: r.tn || "" })}>🗒️ {r.tn ? "تعديل الملاحظة" : "ملاحظة للزائر"}</button></div>}
+          {raw.pub ? <div className="flex items-center gap-2 mt-3 flex-wrap">{g ? obLvPill(g[4], true) : <span className="ob-pill" style={{ background: "#ede9fe", color: "#6d28d9" }}>رُصد {maAr(obProg(raw))}/١٧</span>}<button className="ma-btn" style={{ padding: "4px 12px" }} onClick={() => setOpen(open === r.v ? null : r.v)}>{open === r.v ? "▲ إخفاء" : "👁 عرض الرصد"}</button>{raw.ack ? <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اطّلعت</span> : <span className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c" }}>● جديد</span>}</div> : null}
         </div>); })}</div>
       {tn && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setTn(null)}><div className="ma-card p-4 grid gap-3" style={{ width: "min(520px,100%)" }} onClick={ev => ev.stopPropagation()}>
         <b style={{ fontSize: 16 }}>🗒️ ملاحظة للزائر — الزيارة {CV_VN[tn.r.v - 1]}</b>
@@ -35105,18 +35284,18 @@ function TeacherVisitsView({ me }) {
         <div className="flex gap-1 flex-wrap">{D.cfg.comp.filter(c => c[0] > k).slice(0, 12).map(c => <button key={c[0]} className="cv-chip" style={pp.pref === c[0] ? { background: "#0f766e", color: "#fff" } : null} onClick={() => setPp({ ...pp, pref: pp.pref === c[0] ? "" : c[0] })}>{maDay(maDate(c[0]))} {cvHij(c[1])}</button>)}</div>
         <div className="flex gap-2 justify-end"><button className="ma-btn" onClick={() => setPp(null)}>إلغاء</button><button className="ma-btn pri" onClick={async () => { if (!pp.reason.trim()) { alert("اذكر سبب التأجيل"); return; } const c = D.cfg.comp.find(x => x[0] === pp.pref); const req = { at: Date.now(), reason: pp.reason.trim().slice(0, 400), pref: c ? c : null, st: "new", by: me.name }; const ok = await maPut(`${CV_PLAN}/${pp.r.id}/req`, req); if (ok) setD(d => ({ ...d, plan: { ...d.plan, [pp.r.id]: { ...d.plan[pp.r.id], req } } })); setPp(null); setMsg(ok ? "📨 أُرسل طلب التأجيل للإدارة" : "⚠️ تعذّر الإرسال"); setTimeout(() => setMsg(""), 3000); }}>📨 إرسال الطلب</button></div>
       </div></div>}
-      {open && pubE[open] && cvTotal(pubE[open]) != null && (() => { const e = pubE[open]; const prev = open > 1 ? pubE[open - 1] : null; return (
-        <div className="ma-card p-4 grid gap-3" style={{ borderTop: "5px solid #0f766e" }}>
-          <b style={{ fontSize: 16 }}>📋 تقييم الزيارة {CV_VN[open - 1]} {e.by ? <small style={{ color: "#64748b" }}>— الزائر: {e.by}</small> : null}</b>
-          <div className="grid gap-2">{D.cfg.crit.map((c, j) => { const v = +maArr(e.sc)[j] || 0; const pv = prev && cvTotal(prev) != null ? +maArr(prev.sc)[j] : null; return <div key={j}><div className="flex justify-between gap-2" style={{ fontSize: 12.5, fontWeight: 800 }}><span>{CV_CRIT[j]?.ic} {c}</span><span><b style={{ color: v >= 9 ? "#15803d" : v >= 7 ? "#2563eb" : "#b45309" }}>{maAr(v)}</b>/١٠{pv != null && pv !== v ? <b style={{ color: v > pv ? "#15803d" : "#b91c1c", marginRight: 4 }}>{v > pv ? "▲" : "▼"}</b> : null}</span></div><InBar v={v} max={10} c={v >= 9 ? "#15803d" : v >= 8 ? "#0d9488" : v >= 7 ? "#2563eb" : "#b45309"} /></div>; })}</div>
-          {[["str", "💪 نقاط القوة", "#15803d"], ["imp", "🛠️ جوانب تحتاج إلى تحسين", "#b45309"], ["rec", "🧭 التوصيات والتوجيهات", "#1d4ed8"]].map(([f, l, c]) => e[f] ? <div key={f} style={{ borderRight: `4px solid ${c}`, background: c + "0f", borderRadius: 12, padding: "8px 12px" }}><b style={{ color: c }}>{l}</b><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2 }}>{e[f]}</div></div> : null)}
+      {open && pubE[open] && pubE[open].pub && (() => { const e = pubE[open]; const prev = open > 1 && pubE[open - 1].pub ? pubE[open - 1] : null; const hd = ptObj(e.hd); return (
+        <div className="ma-card p-4 grid gap-3" style={{ borderTop: "5px solid #7c3aed" }}>
+          <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 16 }}>🔭 رصد الزيارة {CV_VN[open - 1]}</b>{e.by ? <small style={{ color: "#64748b", fontWeight: 800 }}>— الزائر: {e.by}</small> : null}{obOverall(e) ? obLvPill(obOverall(e)[4], true) : null}</div>
+          {(hd.topic || hd.rank) && <div className="flex gap-2 flex-wrap" style={{ fontSize: 12.5, fontWeight: 800 }}>{hd.topic && <span className="ob-pill" style={{ background: "#faf5ff", color: "#6d28d9" }}>📖 {hd.topic}</span>}{hd.rank && <span className="ob-pill" style={{ background: "#faf5ff", color: "#6d28d9" }}>🎖️ {hd.rank}</span>}{hd.n && <span className="ob-pill" style={{ background: "#f1f5f9", color: "#334155" }}>👥 {hd.n} طالب{hd.abs ? ` • غياب ${hd.abs}` : ""}</span>}</div>}
+          <ObsSheet e={e} prev={prev} />
+          {[["str", "💪 أبرز نقاط القوة", "#15803d"], ["imp", "🛠️ جوانب تحتاج إلى تطوير", "#b45309"], ["rec", "🧭 التوصيات والتوجيهات", "#1d4ed8"]].map(([f, l, c]) => e[f] ? <div key={f} style={{ borderRight: `4px solid ${c}`, background: c + "0f", borderRadius: 12, padding: "8px 12px" }}><b style={{ color: c }}>{l}</b><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2 }}>{e[f]}</div></div> : null)}
           {e.vnote && <div style={{ borderRight: "4px solid #0f766e", background: "#ecfdf5", borderRadius: 12, padding: "8px 12px" }}><b style={{ color: "#0f766e" }}>👔 ملاحظة الزائر</b><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2, whiteSpace: "pre-wrap" }}>{e.vnote}</div></div>}
           <div className="grid gap-2" style={{ background: "#f8fafc", borderRadius: 14, padding: 12 }}><b style={{ fontSize: 13.5 }}>💬 المحادثة مع الزائر</b><CvThread tk={T.tk} v={open} who="t" name={T.name} ev={e} onAdd={m => setD(d => { const x = ptObj(ptObj(d.ev[T.tk])[open]); return { ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [open]: { ...x, thr: { ...ptObj(x.thr), [m.id]: m } } } } }; })} /></div>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}><CvImgs tk={T.tk} v={open} who="a" canEdit={false} title="صور الزائر" /><CvImgs tk={T.tk} v={open} who="t" canEdit title="صوري (شواهد الحصة)" /></div>
-          <div className="grid gap-2" style={{ background: "#f8fafc", borderRadius: 14, padding: 12 }}><b style={{ fontSize: 13.5 }}>💬 تعليقك أو تأملك في الزيارة (اختياري)</b><textarea className="ma-inp" style={{ minHeight: 70, height: "auto", padding: 10 }} value={rep[open] != null ? rep[open] : e.reply || ""} onChange={ev => setRep({ ...rep, [open]: ev.target.value })} placeholder="مثال: سأعمل على تفعيل استراتيجية التعلم التعاوني في الدروس القادمة…" />
-            <div className="flex gap-2 items-center flex-wrap"><button className="ma-btn pri" onClick={() => ack(open)}>{e.ack ? "💾 تحديث التعليق" : "✍️ اطّلعت على التقييم"}</button>{e.ack && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اطّلعت {ptWhen(e.ack)}</span>}</div></div>
+          <div className="grid gap-2" style={{ background: "#f8fafc", borderRadius: 14, padding: 12 }}><b style={{ fontSize: 13.5 }}>✍️ تأملك في الزيارة (اختياري) وتأكيد الاطلاع</b><textarea className="ma-inp" style={{ minHeight: 70, height: "auto", padding: 10 }} value={rep[open] != null ? rep[open] : e.reply || ""} onChange={ev => setRep({ ...rep, [open]: ev.target.value })} placeholder="مثال: سأعمل على تفعيل التقويم الذاتي وتقويم الأقران في الدروس القادمة…" />
+            <div className="flex gap-2 items-center flex-wrap"><button className="ma-btn pri" onClick={() => ack(open)}>{e.ack ? "💾 تحديث" : "✍️ اطّلعت على الرصد"}</button>{e.ack && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اطّلعت {ptWhen(e.ack)}</span>}</div></div>
         </div>); })()}
-      {dn.length >= 2 && <div className="ma-card p-4"><b style={{ fontSize: 15 }}>📈 مسار تطورك</b><div className="flex items-end gap-4 mt-3" style={{ height: 140 }}>{pubT.map((t, i) => { const g = cvGrade(t); return <div key={i} style={{ flex: 1, textAlign: "center" }}><b style={{ color: g ? g[1] : "#94a3b8" }}>{t != null ? maAr(t) : "—"}</b><div style={{ height: t != null ? t : 4, background: g ? `linear-gradient(180deg,${g[1]},${g[1]}99)` : "#e2e8f0", borderRadius: 10, marginTop: 4 }} /><small style={{ fontWeight: 800 }}>الزيارة {CV_VN[i]}</small></div>; })}</div></div>}
       {(() => { const my = ptVals(D.msgs).filter(m => m.tk === T.tk).sort((a, b) => b.at - a.at); const send = async () => { const t = nm.text.trim(); if (!t) { alert("اكتب الملاحظة أو الطلب"); return; } const id = "m" + Date.now().toString(36); const v = { id, tk: T.tk, name: T.name, type: nm.type, text: t.slice(0, 800), vid: nm.vid || "", at: Date.now(), st: "new" }; const ok = await maPut(`${CV_MSG}/${id}`, v); if (ok) { setD(d => ({ ...d, msgs: { ...d.msgs, [id]: v } })); setNm({ type: "note", text: "", vid: "" }); } setMsg(ok ? "📨 وصلت رسالتك للإدارة" : "⚠️ تعذّر الإرسال"); setTimeout(() => setMsg(""), 3000); }; return (
         <div className="ma-card p-4 grid gap-3"><b style={{ fontSize: 15 }}>💬 ملاحظة أو طلب للإدارة</b>
           <div className="flex gap-1 flex-wrap">{CV_MT.map(([k2, ic, l]) => <button key={k2} className="cv-chip" style={nm.type === k2 ? { background: "#0f766e", color: "#fff" } : null} onClick={() => setNm({ ...nm, type: k2 })}>{ic} {l}</button>)}</div>
@@ -35125,14 +35304,14 @@ function TeacherVisitsView({ me }) {
           <button className="ma-btn pri" style={{ justifySelf: "start" }} onClick={send}>📨 إرسال</button>
           {my.map(m => <div key={m.id} style={{ borderRight: `4px solid ${m.st === "done" ? "#15803d" : "#f59e0b"}`, background: "#f8fafc", borderRadius: 12, padding: "8px 12px" }}><div className="flex gap-2 flex-wrap items-center" style={{ fontSize: 12, fontWeight: 800 }}><span>{cvMt(m.type)[1]} {cvMt(m.type)[2]}</span><span className="in-fl" style={{ background: m.st === "done" ? "#dcfce7" : "#fef3c7", color: m.st === "done" ? "#15803d" : "#92400e" }}>{m.st === "done" ? "✅ تم الرد" : "⏳ قيد المراجعة"}</span><span style={{ marginRight: "auto", color: "#94a3b8" }}>{ptWhen(m.at)}</span></div><div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 4, whiteSpace: "pre-wrap" }}>{m.text}</div>{m.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6, background: "#ecfdf5", borderRadius: 10, padding: "6px 10px" }}>↩️ رد الإدارة: {m.reply}</div>}</div>)}
         </div>); })()}
-      <div className="ma-card p-4"><b style={{ fontSize: 15 }}>📚 عناصر التقييم — ماذا يلاحظ الزائر؟</b><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>كل معيار من ١٠ درجات • المجموع ١٠٠ • ٩٠ فأكثر ممتاز، ٨٠ جيد جداً، ٧٠ جيد، ٦٠ مقبول</div>
-        <div className="grid gap-2 mt-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>{D.cfg.crit.map((c, j) => <details key={j} className="in-cell" style={{ cursor: "pointer" }}><summary style={{ fontSize: 13, fontWeight: 900, listStyle: "none" }}>{CV_CRIT[j]?.ic} {maAr(j + 1)}. {c}</summary><ul style={{ margin: "6px 18px 0 0", fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 2 }}>{maArr(CV_CRIT[j]?.tips).map((x, i) => <li key={i}>✓ {x}</li>)}</ul></details>)}</div></div>
-      <button className="ma-btn" style={{ justifySelf: "start" }} onClick={() => { const T2 = { ...T }; const E2 = Object.fromEntries([1, 2, 3].map(v => [v, pubE[v]])); inOpen(cvFormHTML(T2, E2, D.cfg.crit, TS.indexOf(T)), "نموذج الزيارة", cvPrintCss); }}>🖨️ طباعة نموذجي</button>
+      <div className="ma-card p-4"><b style={{ fontSize: 15 }}>📚 بطاقة الملاحظة الصفية — اطّلع على المؤشرات والمشاهدات قبل الزيارة</b><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>١٢ مؤشراً • ١٧ عنصراً • يرصد الزائر المشاهدات الدالة ومستوى التحقق لكل عنصر (بدون درجات)</div>
+        <div className="grid gap-2 mt-3">{OB_FORM.map((g, gi) => <details key={gi} style={{ borderRadius: 14, border: "1.5px solid #ede9fe", overflow: "hidden" }}><summary className="ob-band" style={{ background: `linear-gradient(135deg,${OB_GC[gi]},#4c1d95)`, cursor: "pointer", listStyle: "none", borderRadius: 0 }}><span>{g.ic}</span><span>المؤشر {maAr(gi + 1)}: {g.t}</span></summary><div className="grid gap-2 p-3">{g.items.map(it => <div key={it.n}><b style={{ fontSize: 13 }}>{maAr(it.n)}. {it.t}</b><ul style={{ margin: "4px 18px 0 0", fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.9 }}>{it.ev.map((x, j) => <li key={j}>☐ {x}</li>)}</ul></div>)}</div></details>)}</div>
+        <div className="flex gap-1 flex-wrap mt-3">{[4, 3, 2, 1].map(l => <span key={l}>{obLvPill(l)}</span>)}</div></div>
+      <button className="ma-btn" style={{ justifySelf: "start" }} onClick={() => obPrintTeacher(T, { ...D, ev: { ...D.ev, [T.tk]: { ...pubE, final: fin.pub ? fin : {} } } }, TS.indexOf(T), { pubOnly: true })}>🖨️ طباعة تقريري</button>
       {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
     </div>
   );
 }
-
 
 export default function SchoolWebsite(props) {
   return <SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary>;
