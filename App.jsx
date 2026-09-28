@@ -30693,6 +30693,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
             {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
             {ptTile("formative", "📘", "التقويم التكويني", "إعداد سجلك الخاص للدرجات وطباعته", "#2563eb", "#3b82f6", () => setView("formative"))}
+            <div style={{ gridColumn: "1/-1" }}><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>
             {ptTile("cv", "🎯", "زياراتي الصفية", "موعد زيارتك القادمة، وتقييمك ومؤشراتك وعناصر التقييم والملاحظات", "#0f766e", "#0891b2", () => setView("cv"))}
             {ptTile("beh", "📝", "الملاحظات السلوكية", "سجّل ملاحظة سلوكية لطالب بلمستين — تُحفظ فوراً", "#7c3aed", "#db2777", () => setView("beh"))}
             {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
@@ -31021,7 +31022,7 @@ function PortalsAdminPage() {
   };
   useEffect(() => { load(); }, []);
   const base = window.location.origin + window.location.pathname;
-  const links = [["teacher", "👨‍🏫", "بوابة المعلمين", "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني • أداء الطلاب", "#0d9488", "🔔 نأمل الدخول إلى بوابة المعلمين برقم السجل المدني:"], ["staff", "🗂️", "بوابة الإداريين والمرشد", "التأخر الصباحي • الإحصائيات • الأعذار", "#ea580c", "🔔 بوابة الإداريين والمرشد الطلابي (الدخول بالسجل المدني):"], ["late", "🌅", "رابط رصد التأخر الصباحي", "يفتح سجل التأخر مباشرة بعد الدخول بهوية الإداري أو المرشد", "#c2410c", "🌅 رابط رصد التأخر الصباحي (الدخول بالسجل المدني):"], ["parent", "👪", "بوابة أولياء الأمور", "المستوى • الغياب • التأخر • الإعلانات • الأعذار", "#2563eb", "👪 أولياء الأمور الكرام: يمكنكم متابعة أبنائكم عبر البوابة التالية بإدخال رقم هوية الطالب:"]];
+  const links = [["teacher", "👨‍🏫", "بوابة المعلمين", "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني • أداء الطلاب", "#0d9488", "🔔 نأمل الدخول إلى بوابة المعلمين برقم السجل المدني:"], ["staff", "🗂️", "بوابة الإداريين والمرشد", "التأخر الصباحي • الإحصائيات • الأعذار", "#ea580c", "🔔 بوابة الإداريين والمرشد الطلابي (الدخول بالسجل المدني):"], ["late", "🌅", "رابط رصد التأخر الصباحي", "يفتح سجل التأخر مباشرة بعد الدخول بهوية الإداري أو المرشد", "#c2410c", "🌅 رابط رصد التأخر الصباحي (الدخول بالسجل المدني):"], ["visits", "🎯", "رابط الزيارات الصفية للمعلمين", "موعد الزيارة • التقييم • عناصر التقييم • التنبيه وطلب التأجيل", "#0f766e", "🎯 زملائي المعلمين: مواعيد زياراتكم الصفية وتقييمكم عبر الرابط التالي برقم الهوية:"], ["parent", "👪", "بوابة أولياء الأمور", "المستوى • الغياب • التأخر • الإعلانات • الأعذار", "#2563eb", "👪 أولياء الأمور الكرام: يمكنكم متابعة أبنائكم عبر البوابة التالية بإدخال رقم هوية الطالب:"]];
   const setRoleLic = async (id, role) => { setRoles(p => ({ ...p, [id]: role })); await maPut(`${PT_ROLES}/${id}`, role); toast("✅ تم تحديث الصلاحية"); };
   const setRoleStaff = async (x, role) => { const v = { ...x, role }; setStaff(p => p.map(y => y.id === x.id ? v : y)); await maPut(`${PT_STAFF}/${x.id}`, v); toast("✅ تم تحديث الصلاحية"); };
   const delStaff = async (x) => { if (!window.confirm(`حذف ${x.name}؟`)) return; try { await fetch(`${FIREBASE_URL}/school/${PT_STAFF}/${x.id}.json`, { method: "DELETE" }); } catch {} setStaff(p => p.filter(y => y.id !== x.id)); };
@@ -33738,7 +33739,7 @@ const SIDX = "school-sidx";            // فهرس الطالب: {sid:{a:{dk:ck}
 const SIDX_META = "school-sidx-meta";
 const BK2 = "school-bk2", BK2_META = "school-bk2-meta";
 const IN_DEF = { abs: 3, late: 3, neg: 3, beh: 3 };
-const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg"];
+const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img"];
 const BK2_LBL = { [MA_ROSTER]: "كشوف الطلاب", [MA_ATT]: "الغياب", [MA_IDX]: "فهرس الغياب", [MA_META]: "إعدادات الفصول", [MA_LATE]: "التأخر الصباحي", [ML_DAY]: "اعتماد التأخر", [ML_CLS]: "اعتماد الفصول", [ML_CFG]: "أوقات التأخر", [ML_REP]: "تقارير التأخر", [SC_NODE]: "تصنيف الطلاب", [SC_META]: "فترة التصنيف", [SD_NODE]: "المتابعة اليومية", [SD_PC]: "ملاحظات أولياء الأمور على المتابعة", "formative-sheets": "سجلات التقويم التكويني", "formative-teachers": "قائمة المعلمين", [PT_STAFF]: "الإداريون", [TT_NODE]: "الجدول", [TT_CFG]: "أوقات الحصص", [TT_LOG]: "متابعة الحصص", [PT_EXC]: "أعذار أولياء الأمور", [PT_NOTES]: "ملاحظات أولياء الأمور", [PT_PREP]: "التقارير المرسلة", [WP_NODE]: "الخطة الأسبوعية", [IN_CFG]: "إعدادات المؤشرات", "school-bnotes": "الملاحظات السلوكية", "school-bnotes-cfg": "أنواع السلوك", "school-cv-plan": "جدول الزيارات الصفية", "school-cv-eval": "تقييم الزيارات الصفية", "school-cv-cfg": "إعدادات الزيارات" };
 
 // ── أدوات قاعدة البيانات
@@ -34606,7 +34607,9 @@ function BehaviorStats({ cats, classes, ros, by }) {
 //   school-cv-cfg = {crit:[...], links:{tk: rid}, comp:[{date,hij}]}
 // ══════════════════════════════════════════════════════════════════════
 const CV_SEED = [[1,1,5,"2026-09-29","1448/4/18","عبدالرحيم رضوان","الدراسات الإسلامية","الثالثة","8:30-9:15","5/1"],[2,1,5,"2026-09-29","1448/4/18","علي الغامدي","الدراسات الإسلامية","الرابعة","9:15-10:00","3/1"],[3,1,5,"2026-09-30","1448/4/19","وليد الزايدي","الدراسات الإسلامية","الثانية","7:45-8:30","2/3"],[4,1,5,"2026-09-30","1448/4/19","فهد رده","الدراسات الإسلامية","الثالثة","8:30-9:15","4/2"],[5,1,5,"2026-10-01","1448/4/20","سعد العتيبي","لغتي الخالدة","الرابعة","9:15-10:00","4/3"],[6,1,5,"2026-10-01","1448/4/20","عمر العمشاني","لغتي الخالدة","الخامسة","10:20-11:05","1/2"],[7,1,6,"2026-10-04","1448/4/23","هادي المقاطي","لغتي الخالدة","الثانية","7:45-8:30","1/1"],[8,1,6,"2026-10-04","1448/4/23","ماجد الهذلي","لغتي الخالدة","الثالثة","8:30-9:15","3/2"],[9,1,6,"2026-10-05","1448/4/24","عبدالعزيز جار الله","الرياضيات","الثالثة","8:30-9:15","1/1"],[10,1,6,"2026-10-05","1448/4/24","حسن العيسى","الرياضيات","الرابعة","9:15-10:00","1/3"],[11,1,6,"2026-10-06","1448/4/25","فيصل العتيبي","الرياضيات","الرابعة","9:15-10:00","4/3"],[12,1,6,"2026-10-06","1448/4/25","مجاهد الزهراني","الرياضيات","الخامسة","10:20-11:05","3/2"],[13,1,6,"2026-10-07","1448/4/26","رمضان الزهراني","العلوم","الخامسة","10:20-11:05","4/2"],[14,1,6,"2026-10-07","1448/4/26","صاطي الحارثي","العلوم","السادسة","11:05-11:50","5/1"],[15,1,6,"2026-10-08","1448/4/27","احمد الشهري","اللغة الإنجليزية","الرابعة","9:15-10:00","1/2"],[16,1,6,"2026-10-08","1448/4/27","محمد الحربي","العلوم","الخامسة","10:20-11:05","2/1"],[17,1,7,"2026-10-11","1448/4/30","جابر الشهري","اللغة الإنجليزية","الرابعة","9:15-10:00","3/1"],[18,1,7,"2026-10-11","1448/4/30","محمد الجوفي","اللغة الإنجليزية","الخامسة","10:20-11:05","3/3"],[19,1,7,"2026-10-12","1448/5/1","عبدالعزيز الذبياني","الدراسات الاجتماعية","الثانية","7:45-8:30","6/1"],[20,1,7,"2026-10-12","1448/5/1","اسامه السفري","الدراسات الاجتماعية","الرابعة","9:15-10:00","1/1"],[21,1,7,"2026-10-13","1448/5/2","احمد عزي","المهارات الرقمية","الخامسة","10:20-11:05","1/1"],[22,1,7,"2026-10-13","1448/5/2","محمد القارحي","الدراسات الاجتماعية","السادسة","11:05-11:50","3/1"],[23,1,7,"2026-10-14","1448/5/3","محمد الشهري","المهارات الرقمية","الثالثة","8:30-9:15","2/3"],[24,1,7,"2026-10-14","1448/5/3","فارس البشري","المهارات الرقمية","السادسة","11:05-11:50","3/2"],[25,1,7,"2026-10-15","1448/5/4","طارق الزهراني","التربية الفنية","الرابعة","9:15-10:00","2/1"],[26,1,7,"2026-10-15","1448/5/4","عبدالعزيز خضران","التربية البدنية","الخامسة","10:20-11:05","3/1"],[27,1,8,"2026-10-18","1448/5/7","حاتم الشمراني","صعوبات التعلم","بالتنسيق","","غرفة المصادر"],[28,2,10,"2026-11-01","1448/5/21","فهد رده","الدراسات الإسلامية","الثانية","7:45-8:30","3/2"],[29,2,10,"2026-11-01","1448/5/21","علي الغامدي","الدراسات الإسلامية","الخامسة","10:20-11:05","2/1"],[30,2,10,"2026-11-02","1448/5/22","سعد العتيبي","لغتي الخالدة","الثالثة","8:30-9:15","5/1"],[31,2,10,"2026-11-02","1448/5/22","وليد الزايدي","الدراسات الإسلامية","الرابعة","9:15-10:00","3/3"],[32,2,10,"2026-11-03","1448/5/23","ماجد الهذلي","لغتي الخالدة","الأولى","7:00-7:45","2/3"],[33,2,10,"2026-11-03","1448/5/23","عمر العمشاني","لغتي الخالدة","السابعة","14:00-14:45","2/2"],[34,2,10,"2026-11-04","1448/5/24","هادي المقاطي","لغتي الخالدة","الثالثة","8:30-9:15","3/3"],[35,2,10,"2026-11-04","1448/5/24","حسن العيسى","الرياضيات","السادسة","11:05-11:50","2/3"],[36,2,10,"2026-11-05","1448/5/25","فيصل العتيبي","الرياضيات","الأولى","7:00-7:45","3/3"],[37,2,10,"2026-11-05","1448/5/25","عبدالعزيز جار الله","الرياضيات","الخامسة","10:20-11:05","4/1"],[38,2,11,"2026-11-08","1448/5/28","رمضان الزهراني","العلوم","الأولى","7:00-7:45","3/2"],[39,2,11,"2026-11-08","1448/5/28","مجاهد الزهراني","الرياضيات","الرابعة","9:15-10:00","1/2"],[40,2,11,"2026-11-09","1448/5/29","محمد الحربي","العلوم","الثانية","7:45-8:30","4/1"],[41,2,11,"2026-11-09","1448/5/29","صاطي الحارثي","العلوم","الثالثة","8:30-9:15","6/1"],[42,2,11,"2026-11-10","1448/5/30","جابر الشهري","اللغة الإنجليزية","الثانية","7:45-8:30","2/1"],[43,2,11,"2026-11-10","1448/5/30","احمد الشهري","اللغة الإنجليزية","السادسة","11:05-11:50","4/2"],[44,2,11,"2026-11-11","1448/6/1","اسامه السفري","الدراسات الاجتماعية","الأولى","7:00-7:45","1/3"],[45,2,11,"2026-11-11","1448/6/1","محمد الجوفي","اللغة الإنجليزية","الثانية","7:45-8:30","4/3"],[46,2,11,"2026-11-12","1448/6/2","محمد القارحي","الدراسات الاجتماعية","الثالثة","8:30-9:15","4/1"],[47,2,11,"2026-11-12","1448/6/2","عبدالعزيز الذبياني","الدراسات الاجتماعية","الرابعة","9:15-10:00","4/2"],[48,2,12,"2026-11-15","1448/6/5","احمد عزي","المهارات الرقمية","الرابعة","9:15-10:00","5/1"],[49,2,12,"2026-11-15","1448/6/5","فارس البشري","المهارات الرقمية","السابعة","14:00-14:45","4/2"],[50,2,12,"2026-11-16","1448/6/6","طارق الزهراني","التربية الفنية","الثانية","7:45-8:30","4/2"],[51,2,12,"2026-11-16","1448/6/6","محمد الشهري","المهارات الرقمية","الخامسة","10:20-11:05","3/3"],[52,2,12,"2026-11-17","1448/6/7","عبدالرحيم رضوان","الدراسات الإسلامية","الثانية","7:45-8:30","6/1"],[53,2,12,"2026-11-17","1448/6/7","عبدالعزيز خضران","التربية البدنية","الرابعة","9:15-10:00","4/1"],[54,2,12,"2026-11-18","1448/6/8","حاتم الشمراني","صعوبات التعلم","بالتنسيق","","غرفة المصادر"],[55,3,14,"2026-12-06","1448/6/26","عبدالعزيز خضران","التربية البدنية","الثالثة","8:30-9:15","4/2"],[56,3,14,"2026-12-06","1448/6/26","طارق الزهراني","التربية الفنية","الخامسة","10:20-11:05","3/2"],[57,3,14,"2026-12-07","1448/6/27","فارس البشري","المهارات الرقمية","الأولى","7:00-7:45","6/1"],[58,3,14,"2026-12-07","1448/6/27","احمد عزي","المهارات الرقمية","السادسة","11:05-11:50","5/1"],[59,3,14,"2026-12-08","1448/6/28","عبدالعزيز الذبياني","الدراسات الاجتماعية","الثالثة","8:30-9:15","3/2"],[60,3,14,"2026-12-08","1448/6/28","محمد الشهري","المهارات الرقمية","السابعة","14:00-14:45","1/3"],[61,3,14,"2026-12-09","1448/6/29","محمد القارحي","الدراسات الاجتماعية","الثانية","7:45-8:30","3/3"],[62,3,14,"2026-12-09","1448/6/29","جابر الشهري","اللغة الإنجليزية","الخامسة","10:20-11:05","1/1"],[63,3,14,"2026-12-10","1448/7/1","محمد الجوفي","اللغة الإنجليزية","الأولى","7:00-7:45","1/3"],[64,3,14,"2026-12-10","1448/7/1","اسامه السفري","الدراسات الاجتماعية","السادسة","11:05-11:50","2/3"],[65,3,15,"2026-12-13","1448/7/4","محمد الحربي","العلوم","الثالثة","8:30-9:15","4/3"],[66,3,15,"2026-12-13","1448/7/4","احمد الشهري","اللغة الإنجليزية","الخامسة","10:20-11:05","2/2"],[67,3,15,"2026-12-14","1448/7/5","رمضان الزهراني","العلوم","الرابعة","9:15-10:00","1/2"],[68,3,15,"2026-12-14","1448/7/5","مجاهد الزهراني","الرياضيات","السادسة","11:05-11:50","2/2"],[69,3,15,"2026-12-15","1448/7/6","صاطي الحارثي","العلوم","الثانية","7:45-8:30","1/3"],[70,3,15,"2026-12-15","1448/7/6","عبدالعزيز جار الله","الرياضيات","الرابعة","9:15-10:00","2/1"],[71,3,15,"2026-12-16","1448/7/7","ماجد الهذلي","لغتي الخالدة","الثانية","7:45-8:30","4/2"],[72,3,15,"2026-12-16","1448/7/7","فيصل العتيبي","الرياضيات","الخامسة","10:20-11:05","6/1"],[73,3,15,"2026-12-17","1448/7/8","حسن العيسى","الرياضيات","الأولى","7:00-7:45","5/1"],[74,3,15,"2026-12-17","1448/7/8","هادي المقاطي","لغتي الخالدة","السادسة","11:05-11:50","2/1"],[75,3,16,"2026-12-20","1448/7/11","عمر العمشاني","لغتي الخالدة","الثالثة","8:30-9:15","1/3"],[76,3,16,"2026-12-20","1448/7/11","سعد العتيبي","لغتي الخالدة","السادسة","11:05-11:50","4/1"],[77,3,16,"2026-12-21","1448/7/12","علي الغامدي","الدراسات الإسلامية","الثالثة","8:30-9:15","4/1"],[78,3,16,"2026-12-21","1448/7/12","فهد رده","الدراسات الإسلامية","الخامسة","10:20-11:05","2/2"],[79,3,16,"2026-12-22","1448/7/13","وليد الزايدي","الدراسات الإسلامية","الأولى","7:00-7:45","1/3"],[80,3,16,"2026-12-22","1448/7/13","عبدالرحيم رضوان","الدراسات الإسلامية","الثالثة","8:30-9:15","5/1"],[81,3,16,"2026-12-23","1448/7/14","حاتم الشمراني","صعوبات التعلم","بالتنسيق","","غرفة المصادر"]];
-const CV_PLAN = "school-cv-plan", CV_EVAL = "school-cv-eval", CV_CFG = "school-cv-cfg";
+const CV_PLAN = "school-cv-plan", CV_EVAL = "school-cv-eval", CV_CFG = "school-cv-cfg", CV_MSG = "school-cv-msg";
+const CV_MT = [["note", "📝", "ملاحظة"], ["period", "🔁", "طلب تغيير الحصة أو الفصل"], ["extra", "➕", "طلب زيارة إضافية / تبادل زيارة مع زميل"], ["eval", "❓", "استفسار عن التقييم"], ["support", "🤝", "طلب دعم أو تدريب"], ["other", "📌", "أخرى"]];
+const cvMt = k => CV_MT.find(x => x[0] === k) || CV_MT[5];
 const CV_CRIT = [
   { t: "التزام المعلم بحضور الحصة وبدئها في وقتها", ic: "⏰", tips: ["الحضور إلى الفصل مع بداية الحصة دون تأخير", "استثمار وقت الحصة كاملاً حتى نهايتها", "الانتقال المنظم بين الحصص"] },
   { t: "تمكّن المعلم من المادة العلمية وقدرته على إيصال الدرس", ic: "🎓", tips: ["دقة المعلومات وسلامتها العلمية", "تبسيط المفاهيم وربطها بالواقع", "الإجابة الواثقة عن أسئلة الطلاب"] },
@@ -34642,9 +34645,9 @@ function cvSeedPlan() {
   return o;
 }
 async function cvLoad() {
-  let [plan, ev, cfg, lic] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL), maGet(CV_CFG), maGet(LIC_NODE)]);
+  let [plan, ev, cfg, lic, msgs] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL), maGet(CV_CFG), maGet(LIC_NODE), maGet(CV_MSG)]);
   plan = ptObj(plan); cfg = ptObj(cfg);
-  return { plan, ev: ptObj(ev), cfg: { crit: maArr(cfg.crit).length === 10 ? cfg.crit : CV_CRIT.map(c => c.t), links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
+  return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: maArr(cfg.crit).length === 10 ? cfg.crit : CV_CRIT.map(c => c.t), links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
 }
 const cvTeachers = plan => { const m = {}; Object.values(plan).forEach(r => { if (!r || !r.tk) return; const o = m[r.tk] = m[r.tk] || { tk: r.tk, name: r.t, s: r.s, vis: [] }; o.vis.push(r); }); Object.values(m).forEach(o => o.vis.sort((a, b) => a.v - b.v || a.date.localeCompare(b.date))); return Object.values(m).sort((a, b) => a.vis[0].n - b.vis[0].n); };
 const cvStatus = (r, e) => { const k = maKey(new Date()); const tot = cvTotal(e); if (tot != null) return ["done", "✅ نُفذت", "#15803d", "#dcfce7"]; if (r.date === k) return ["today", "📌 اليوم", "#7c3aed", "#ede9fe"]; if (r.date < k) return ["late", "🔄 لم تُنفَّذ — تحتاج تعويضاً", "#b91c1c", "#fee2e2"]; return ["soon", "⏳ قادمة", "#0369a1", "#e0f2fe"]; };
@@ -34685,7 +34688,7 @@ function cvFormHTML(T, E, crit, i) {
       ${crit.map((c, j) => `<tr><td>${maAr(j + 1)}</td><td class="r">${ptEsc(c)}</td><td>١٠</td>${[0, 1, 2].map(k => { const x = maArr(ev(k).sc)[j]; return `<td><b>${x != null && x !== "" ? maAr(x) : ""}</b></td>`; }).join("")}</tr>`).join("")}
       <tr><th colspan="2">المجموع</th><th>١٠٠</th>${tot.map(t => `<th>${t != null ? maAr(t) : ""}</th>`).join("")}</tr>
       <tr><td colspan="3" class="r"><b>التقدير</b></td>${tot.map(t => { const g = cvGrade(t); return `<td>${g ? `<span class="lv" style="background:${g[2]};color:${g[1]}">${g[0]}</span>` : ""}</td>`; }).join("")}</tr></tbody></table>
-    <table style="margin-top:6px"><tr><th style="width:18%">نقاط القوة</th><td class="r" style="height:50px;vertical-align:top">${txt("str")}</td></tr><tr><th>جوانب تحتاج إلى تحسين</th><td class="r" style="height:50px;vertical-align:top">${txt("imp")}</td></tr><tr><th>التوصيات والتوجيهات</th><td class="r" style="height:50px;vertical-align:top">${txt("rec")}</td></tr></table>
+    <table style="margin-top:6px"><tr><th style="width:18%">نقاط القوة</th><td class="r" style="height:50px;vertical-align:top">${txt("str")}</td></tr><tr><th>جوانب تحتاج إلى تحسين</th><td class="r" style="height:50px;vertical-align:top">${txt("imp")}</td></tr><tr><th>التوصيات والتوجيهات</th><td class="r" style="height:50px;vertical-align:top">${txt("rec")}</td></tr>${[0, 1, 2].some(k => ev(k).vnote) ? `<tr><th>ملاحظة الزائر</th><td class="r">${txt("vnote")}</td></tr>` : ""}${[0, 1, 2].some(k => ev(k).reply) ? `<tr><th>تعليق المعلم</th><td class="r">${txt("reply")}</td></tr>` : ""}</table>
     <table style="margin-top:6px"><tr><th>المعلم</th><th>الزائر (مدير المدرسة / الوكيل)</th></tr><tr><td class="r">الاسم: ${ptEsc(T.name)}</td><td class="r">الاسم: ${ptEsc([0, 1, 2].map(k => ev(k).by).filter(Boolean)[0] || "")}</td></tr><tr><td class="r" style="height:28px">التوقيع: ${[0, 1, 2].some(k => ev(k).ack) ? `<small style="color:#15803d">✓ اطّلع إلكترونياً</small>` : ""}</td><td class="r">التوقيع:</td></tr></table>
     <div style="font-size:9.5px;color:#64748b;margin-top:4px">سلم التقدير: ٩٠–١٠٠ ممتاز | ٨٠–٨٩ جيد جداً | ٧٠–٧٩ جيد | ٦٠–٦٩ مقبول | أقل من ٦٠ يحتاج إلى دعم</div></section>`;
 }
@@ -34703,7 +34706,8 @@ function ClassVisitsPage({ by = "الإدارة" }) {
   const all = Object.values(D.plan).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date) || a.n - b.n);
   const evOf = r => ptObj(ptObj(D.ev[r.tk])[r.v]);
   const done = all.filter(r => cvTotal(evOf(r)) != null).length, late = all.filter(r => cvStatus(r, evOf(r))[0] === "late").length;
-  const todayL = all.filter(r => r.date === k); const next = all.find(r => r.date > k);
+  const todayL = all.filter(r => r.date === k); const next = all.find(r => r.date > k); const reqs = all.filter(r => r.req && r.req.st === "new"); const nMsg = ptVals(D.msgs).filter(m => m.st !== "done").length;
+  const shareTxt = `🎯 الزيارات الصفية — مدرسة الأمير عبدالمجيد المتوسطة الأولى\nزملائي المعلمين: يمكنكم معرفة مواعيد زياراتكم الصفية وتقييمكم وعناصر التقييم، مع تنبيه قبل الزيارة، عبر الرابط التالي برقم الهوية:\n${cvLink()}`;
   const T = tk && TS.find(x => x.tk === tk);
   return (
     <div className="ma pt px-2 md:px-4 py-4" dir="rtl">
@@ -34713,14 +34717,17 @@ function ClassVisitsPage({ by = "الإدارة" }) {
           <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
             <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.16)", display: "grid", placeItems: "center", fontSize: 30 }}>🎯</div>
             <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 21, fontWeight: 900 }}>الزيارات الصفية — العام الدراسي ١٤٤٨هـ</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>الفصل الدراسي الأول • {maAr(TS.length)} معلماً × ٣ زيارات • ١٠ معايير من ١٠٠ درجة</div></div>
+            <div className="flex gap-2 flex-wrap"><a className="ma-btn" style={{ textDecoration: "none", background: "#25d366", color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(shareTxt)}`}>💬 إرسال رابط المعلمين</a><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => { try { navigator.clipboard.writeText(cvLink()); toast("📋 نُسخ الرابط: " + cvLink()); } catch { window.prompt("انسخ الرابط:", cvLink()); } }}>🔗 نسخ الرابط</button></div>
           </div>
           <div className="pt-kpis" style={{ marginTop: 14, position: "relative", zIndex: 1 }}>
-            {[["✅", `${maAr(done)} / ${maAr(all.length)}`, "زيارة منفذة"], ["📌", maAr(todayL.length), "زيارات اليوم"], ["🔄", maAr(late), "تحتاج تعويضاً"], ["⏭️", next ? `${maDay(maDate(next.date))} ${cvHij(next.hij)}` : "—", next ? `القادمة: ${next.t}` : "لا زيارات قادمة"]].map((x, i) => <div key={i} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{x[0]} {x[2]}</div><div style={{ fontSize: i === 3 ? 14 : 22, fontWeight: 900 }}>{x[1]}</div></div>)}
+            {[["✅", `${maAr(done)} / ${maAr(all.length)}`, "زيارة منفذة"], ["📌", maAr(todayL.length), "زيارات اليوم"], ["🔄", maAr(late), "تحتاج تعويضاً"], ["📨", maAr(reqs.length + nMsg), "طلبات وملاحظات"], ["⏭️", next ? `${maDay(maDate(next.date))} ${cvHij(next.hij)}` : "—", next ? `القادمة: ${next.t}` : "لا زيارات قادمة"]].map((x, i) => <div key={i} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{x[0]} {x[2]}</div><div style={{ fontSize: i === 3 ? 14 : 22, fontWeight: 900 }}>{x[1]}</div></div>)}
           </div>
         </div>
-        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["eval", "📝 التقييم"], ["ind", "📊 المؤشرات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
+        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["eval", "📝 التقييم"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "📊 المؤشرات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
+        {tab === "plan" && reqs.length > 0 && <CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} />}
         {tab === "plan" && <CvPlan D={D} all={all} evOf={evOf} f={f} setF={setF} openEval={(r) => { setTk(r.tk); setVn(r.v); setTab("eval"); }} setMv={setMv} by={by} />}
         {tab === "eval" && <CvEval D={D} setD={setD} TS={TS} T={T} setTk={setTk} vn={vn} setVn={setVn} by={by} toast={toast} />}
+        {tab === "msg" && <><CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} /><CvMsgs D={D} setD={setD} toast={toast} /></>}
         {tab === "ind" && <CvInd D={D} TS={TS} by={by} openT={t => { setTk(t); setTab("eval"); }} />}
         {tab === "cfg" && <CvCfg D={D} setD={setD} TS={TS} toast={toast} />}
       </div>
@@ -34749,11 +34756,45 @@ function CvPlan({ D, all, evOf, f, setF, openEval, setMv, by }) {
             <div key={r.id} className="in-row" style={{ borderRight: `5px solid ${st[2]}`, background: r.date === k ? "#faf5ff" : "#fff" }}>
               <div style={{ width: 86, textAlign: "center" }}><div style={{ fontSize: 12, fontWeight: 900, color: st[2] }}>{maDay(maDate(r.date))}</div><div style={{ fontSize: 12.5, fontWeight: 900 }}>{cvHij(r.hij)}</div></div>
               <div style={{ flex: "1 1 200px", minWidth: 0 }}><b style={{ fontSize: 14 }}>{r.t}</b><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{r.s} • الحصة {r.p}{r.tm ? ` (${cvTm(r.tm)})` : ""} • {cvCls(r.c)} • الزيارة {CV_VN[r.v - 1]}</div></div>
-              <span className="in-fl" style={{ background: st[3], color: st[2] }}>{st[1]}</span>{g && <span className="in-fl" style={{ background: g[2], color: g[1] }}>{maAr(t)} • {g[0]}</span>}{e.pub ? <span className="in-fl" style={{ background: "#dbeafe", color: "#1d4ed8" }}>👁 منشور</span> : null}{e.ack ? <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✍️ اطّلع</span> : null}
+              <span className="in-fl" style={{ background: st[3], color: st[2] }}>{st[1]}</span>{g && <span className="in-fl" style={{ background: g[2], color: g[1] }}>{maAr(t)} • {g[0]}</span>}{e.pub ? <span className="in-fl" style={{ background: "#dbeafe", color: "#1d4ed8" }}>👁 منشور</span> : null}{e.ack ? <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✍️ اطّلع</span> : null}{r.moved ? <span className="in-fl" style={{ background: "#ede9fe", color: "#6d28d9" }}>🔁 مؤجلة</span> : null}{r.req && r.req.st === "new" ? <span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>⏸️ طلب تأجيل</span> : null}{r.tn ? <span className="in-fl" title={r.tn} style={{ background: "#f0fdfa", color: "#0f766e" }}>🗒️ ملاحظة المعلم</span> : null}
               <div className="flex gap-1"><button className="ma-btn pri" onClick={() => openEval(r)}>📝 تقييم</button><button className="ma-btn" onClick={() => setMv(r)}>📆 تعديل الموعد</button></div>
             </div>); })}</div>
         </div>))}
       {!L.length && <div className="ma-card p-8 text-center font-bold text-gray-400">لا توجد زيارات مطابقة</div>}
+    </div>
+  );
+}
+function CvReqs({ D, setD, reqs, toast, setMv }) {
+  const decide = async (r, ok) => {
+    let note = ""; if (!ok) { note = window.prompt("سبب عدم القبول (اختياري):", "") || ""; }
+    const req = { ...r.req, st: ok ? "ok" : "no", dec: Date.now(), note };
+    const v = ok && r.req.pref ? { ...r, date: r.req.pref[0], hij: r.req.pref[1], moved: r.moved || r.date, req } : { ...r, req };
+    const res = await maPut(`${CV_PLAN}/${r.id}`, v); if (res) setD(d => ({ ...d, plan: { ...d.plan, [r.id]: v } }));
+    toast(res ? (ok ? (r.req.pref ? "✅ قُبل التأجيل ونُقلت الزيارة" : "✅ قُبل — حدّد الموعد الجديد") : "تم الرفض") : "⚠️ تعذّر الحفظ");
+    if (res && ok && !r.req.pref) setMv(v);
+  };
+  if (!reqs.length) return null;
+  return <div className="ma-card p-3 grid gap-2" style={{ border: "2px solid #f59e0b", background: "#fffbeb" }}><b style={{ fontSize: 15 }}>⏸️ طلبات تأجيل من المعلمين ({maAr(reqs.length)})</b>
+    {reqs.map(r => <div key={r.id} className="in-row" style={{ background: "#fff" }}><div style={{ flex: "1 1 240px", minWidth: 0 }}><b>{r.t}</b> <span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>— الزيارة {CV_VN[r.v - 1]} • {maDay(maDate(r.date))} {cvHij(r.hij)} • الحصة {r.p}</span><div style={{ fontSize: 13, fontWeight: 700 }}>📝 {r.req.reason}</div>{r.req.pref && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f766e" }}>📅 يقترح: {maDay(maDate(r.req.pref[0]))} {cvHij(r.req.pref[1])}</div>}<div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(r.req.at)}</div></div><div className="flex gap-1"><button className="ma-btn pri" onClick={() => decide(r, true)}>✅ قبول{r.req.pref ? " ونقل" : ""}</button><button className="ma-btn" onClick={() => decide(r, false)}>❌ رفض</button></div></div>)}</div>;
+}
+function CvMsgs({ D, setD, toast }) {
+  const [rp, setRp] = useState({}); const [flt, setFlt] = useState("new");
+  const L = ptVals(D.msgs).filter(m => flt === "all" || (flt === "new" ? m.st !== "done" : m.st === "done")).sort((a, b) => b.at - a.at);
+  const reply = async (m, done) => { const v = { ...m, reply: (rp[m.id] != null ? rp[m.id] : m.reply || "").trim(), st: done ? "done" : "new", rat: Date.now() }; const ok = await maPut(`${CV_MSG}/${m.id}`, v); if (ok) setD(d => ({ ...d, msgs: { ...d.msgs, [m.id]: v } })); toast(ok ? "✅ تم الحفظ — يظهر الرد للمعلم" : "⚠️ تعذّر الحفظ"); };
+  const tn = Object.values(D.plan).filter(r => r && r.tn && r.date >= maKey(new Date())).sort((a, b) => a.date.localeCompare(b.date));
+  return (
+    <div className="grid gap-3">
+      {tn.length > 0 && <div className="ma-card p-3 grid gap-2"><b style={{ fontSize: 15 }}>🗒️ ملاحظات المعلمين للزائر (زيارات قادمة)</b>{tn.map(r => <div key={r.id} className="in-row"><div style={{ width: 90, textAlign: "center", fontSize: 12, fontWeight: 900 }}>{maDay(maDate(r.date))}<br />{cvHij(r.hij)}</div><div style={{ flex: 1, minWidth: 0 }}><b>{r.t}</b> <small style={{ color: "#64748b", fontWeight: 800 }}>الزيارة {CV_VN[r.v - 1]} • الحصة {r.p}</small><div style={{ fontSize: 13, fontWeight: 700 }}>🗒️ {r.tn}</div></div></div>)}</div>}
+      <div className="ma-card p-3 grid gap-2">
+        <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 15 }}>📨 الملاحظات والطلبات</b>{[["new", "⏳ الجديدة"], ["done", "✅ المردود عليها"], ["all", "الكل"]].map(([k, l]) => <button key={k} className={`in-chip ${flt === k ? "on" : ""}`} onClick={() => setFlt(k)}>{l}</button>)}</div>
+        {L.map(m => { const r = m.vid && D.plan[m.vid]; return (
+          <div key={m.id} style={{ border: "1px solid #eef2f6", borderRight: `5px solid ${m.st === "done" ? "#15803d" : "#f59e0b"}`, borderRadius: 16, padding: "10px 12px", background: "#fff" }} className="grid gap-2">
+            <div className="flex gap-2 flex-wrap items-center"><b>{m.name}</b><span className="in-fl" style={{ background: "#eef2ff", color: "#4338ca" }}>{cvMt(m.type)[1]} {cvMt(m.type)[2]}</span>{r && <span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>بخصوص الزيارة {CV_VN[r.v - 1]} ({maDay(maDate(r.date))} {cvHij(r.hij)})</span>}<span style={{ marginRight: "auto", fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(m.at)}</span></div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "pre-wrap" }}>{m.text}</div>
+            <div className="flex gap-2 flex-wrap"><input className="ma-inp" style={{ flex: "1 1 240px" }} placeholder="اكتب الرد للمعلم…" value={rp[m.id] != null ? rp[m.id] : m.reply || ""} onChange={e => setRp({ ...rp, [m.id]: e.target.value })} /><button className="ma-btn pri" onClick={() => reply(m, true)}>↩️ رد وإغلاق</button>{m.st === "done" && <button className="ma-btn" onClick={() => reply(m, false)}>↺ إعادة فتح</button>}</div>
+          </div>); })}
+        {!L.length && <div style={{ color: "#94a3b8", fontWeight: 800, textAlign: "center", padding: 14 }}>لا توجد رسائل</div>}
+      </div>
     </div>
   );
 }
@@ -34779,14 +34820,64 @@ function CvMove({ D, setD, r, close, toast }) {
   );
 }
 const CV_QS = { str: ["تمكن علمي واضح", "تنويع في الاستراتيجيات", "إدارة صفية مميزة", "توظيف متميز للتقنية", "تفاعل عالٍ من الطلاب", "بيئة صفية محفزة", "لغة فصحى سليمة"], imp: ["إدارة وقت الحصة", "تفعيل مشاركة جميع الطلاب", "تنظيم السبورة", "تحديث سجل التقويم", "مراعاة الفروق الفردية", "غلق الدرس"], rec: ["حضور برنامج في التعلم النشط", "تبادل الزيارات مع زميل متميز", "توظيف أدوات التقويم البنائي", "الاستفادة من المنصات الرقمية", "إعداد خطة علاجية للطلاب المتعثرين"] };
+// ── حفظ لا يُفقد: مسودة على الجهاز + قائمة انتظار تُرفع عند عودة الاتصال
+const CV_IMG = "school-cv-img";
+const cvPendGet = () => { try { return JSON.parse(localStorage.getItem("cv-pend") || "{}"); } catch { return {}; } };
+const cvPendAdd = o => { try { localStorage.setItem("cv-pend", JSON.stringify({ ...cvPendGet(), ...o })); } catch {} };
+async function cvFlush() { const o = cvPendGet(); if (!Object.keys(o).length) return 0; const ok = navigator.onLine !== false && await fbPatch(o); if (ok) { try { localStorage.removeItem("cv-pend"); } catch {} return 0; } return Object.keys(o).length; }
+function useCvFlush() { const [n, setN] = useState(Object.keys(cvPendGet()).length); useEffect(() => { const f = async () => setN(await cvFlush()); f(); const t = setInterval(f, 15000); window.addEventListener("online", f); return () => { clearInterval(t); window.removeEventListener("online", f); }; }, []); return [n, setN]; }
+async function cvPatch(o) { const ok = navigator.onLine !== false && await fbPatch(o); if (!ok) cvPendAdd(o); return ok; }
+const cvCompress = f => new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => { const M = 1100; const k = Math.min(1, M / Math.max(im.width, im.height)); const c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", .72)); }; im.onerror = rej; im.src = rd.result; }; rd.onerror = rej; rd.readAsDataURL(f); });
+// ── صور الزيارة (حتى ٤ للزائر و٤ للمعلم)
+function CvImgs({ tk, v, who, canEdit, title }) {
+  const [L, setL] = useState(null); const [busy, setBusy] = useState(false); const [z, setZ] = useState(null); const ref = useRef(null);
+  const path = `${CV_IMG}/${tk}/${v}/${who}`;
+  useEffect(() => { (async () => { const d = await maGet(path); let loc = null; try { loc = JSON.parse(localStorage.getItem("cv-img-" + path) || "null"); } catch {} setL(loc && loc.pend ? loc.L : maArr(d)); if (loc && loc.pend) save(loc.L); })(); }, [path]);
+  const save = async (nl) => { setBusy(true); const ok = navigator.onLine !== false && await maPut(path, nl.length ? nl : null); try { if (ok) localStorage.removeItem("cv-img-" + path); else localStorage.setItem("cv-img-" + path, JSON.stringify({ pend: 1, L: nl })); } catch {} await cvPatch({ [`${CV_EVAL}/${tk}/${v}/img${who}`]: nl.length || null }); setBusy(false); if (!ok) setTimeout(() => save(nl), 20000); };
+  const add = async e => { const fs = [...(e.target.files || [])]; e.target.value = ""; const room = 4 - (L || []).length; if (!fs.length || room <= 0) return; setBusy(true); const out = []; for (const f of fs.slice(0, room)) { try { out.push(await cvCompress(f)); } catch {} } const nl = [...(L || []), ...out].slice(0, 4); setL(nl); await save(nl); };
+  const del = async i => { if (!window.confirm("حذف الصورة؟")) return; const nl = L.filter((_, j) => j !== i); setL(nl); await save(nl); };
+  if (L === null) return <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 800 }}>⏳ الصور…</div>;
+  if (!L.length && !canEdit) return null;
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center gap-2"><b style={{ fontSize: 13.5 }}>📷 {title} ({maAr(L.length)}/٤)</b>{canEdit && L.length < 4 && <><input ref={ref} type="file" accept="image/*" multiple hidden onChange={add} /><button className="ma-btn" style={{ padding: "3px 12px", fontSize: 12 }} disabled={busy} onClick={() => ref.current?.click()}>{busy ? "⏳" : "＋ إرفاق صور"}</button></>}</div>
+      {L.length > 0 && <div className="flex gap-2 flex-wrap">{L.map((src, i) => <div key={i} style={{ position: "relative" }}><img src={src} alt="" onClick={() => setZ(src)} style={{ width: 92, height: 92, objectFit: "cover", borderRadius: 14, cursor: "zoom-in", border: "2px solid #eef2f6" }} />{canEdit && <button onClick={() => del(i)} style={{ position: "absolute", top: -6, left: -6, width: 24, height: 24, borderRadius: "50%", border: "none", background: "#dc2626", color: "#fff", fontWeight: 900, cursor: "pointer" }}>×</button>}</div>)}</div>}
+      {z && <div onClick={() => setZ(null)} style={{ position: "fixed", inset: 0, zIndex: 900, background: "rgba(0,0,0,.85)", display: "grid", placeItems: "center", padding: 12 }}><img src={z} alt="" style={{ maxWidth: "100%", maxHeight: "92vh", borderRadius: 12 }} /></div>}
+    </div>
+  );
+}
+// ── ملاحظة الزائر وردود المعلم (محادثة لكل زيارة)
+function CvThread({ tk, v, who, name, ev, onAdd }) {
+  const [t, setT] = useState(""); const L = ptVals(ptObj(ev).thr).sort((a, b) => a.at - b.at);
+  const send = async () => { const x = t.trim(); if (!x) return; const id = "c" + Date.now().toString(36); const m = { id, who, name, text: x.slice(0, 800), at: Date.now() }; onAdd && onAdd(m); setT(""); await cvPatch({ [`${CV_EVAL}/${tk}/${v}/thr/${id}`]: m }); };
+  return (
+    <div className="grid gap-2">
+      {L.map(m => <div key={m.id} style={{ alignSelf: m.who === who ? "end" : "start", maxWidth: "88%", justifySelf: m.who === who ? "start" : "end", background: m.who === "v" ? "#ecfdf5" : "#eff6ff", border: `1px solid ${m.who === "v" ? "#a7f3d0" : "#bfdbfe"}`, borderRadius: 14, padding: "7px 11px" }}><div style={{ fontSize: 11, fontWeight: 900, color: m.who === "v" ? "#0f766e" : "#1d4ed8" }}>{m.who === "v" ? "👔 الزائر" : "👨‍🏫 المعلم"} — {m.name} • {ptWhen(m.at)}</div><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "pre-wrap" }}>{m.text}</div></div>)}
+      <div className="flex gap-2"><textarea className="ma-inp" style={{ flex: 1, minHeight: 44, height: "auto", padding: 8 }} placeholder={who === "v" ? "اكتب ملاحظتك للمعلم…" : "اكتب ردك على ملاحظة الزائر…"} value={t} onChange={e => setT(e.target.value)} /><button className="ma-btn pri" onClick={send}>إرسال</button></div>
+    </div>
+  );
+}
+
 function CvEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
-  const [e, setE] = useState(null); const [st, setSt] = useState(""); const tm = useRef(null);
-  useEffect(() => { if (!T) return; const x = ptObj(ptObj(D.ev[T.tk])[vn]); setE({ sc: Array.from({ length: 10 }, (_, j) => maArr(x.sc)[j] ?? null), str: x.str || "", imp: x.imp || "", rec: x.rec || "", pub: !!x.pub, ack: x.ack || null, reply: x.reply || "", by: x.by || "" }); setSt(""); }, [T && T.tk, vn]);
+  const [e, setE] = useState(null); const [st, setSt] = useState(""); const tm = useRef(null); const [pn, setPn] = useCvFlush();
+  const dKey = () => `cv-draft-${T.tk}-${vn}`;
+  useEffect(() => { if (!T) return; const x = ptObj(ptObj(D.ev[T.tk])[vn]); let n = { sc: Array.from({ length: 10 }, (_, j) => { const y = maArr(x.sc)[j]; return y === "" || y == null ? null : +y; }), str: x.str || "", imp: x.imp || "", rec: x.rec || "", vnote: x.vnote || "", pub: !!x.pub, fin: x.fin || null, ack: x.ack || null, reply: x.reply || "", by: x.by || "" };
+    let dr = null; try { dr = JSON.parse(localStorage.getItem(`cv-draft-${T.tk}-${vn}`) || "null"); } catch {}
+    if (dr && dr.at > (x.at || 0)) { n = { ...n, ...dr.e }; setE(n); setSt("♻️ استُعيد عملك المحفوظ على الجهاز"); saveNow(n).then(ok => setSt(ok ? "♻️ استُعيد عملك المحفوظ ورُفع للخادم" : "♻️ استُعيد عملك — محفوظ على الجهاز وسيُرفع عند عودة الاتصال")); } else { setE(n); setSt(""); } }, [T && T.tk, vn]);
+  const saveNow = async (n) => {
+    const b = `${CV_EVAL}/${T.tk}/${vn}`; const at = Date.now();
+    const o = { [`${b}/sc`]: n.sc.map(x => x == null ? "" : x), [`${b}/str`]: n.str, [`${b}/imp`]: n.imp, [`${b}/rec`]: n.rec, [`${b}/vnote`]: n.vnote || "", [`${b}/pub`]: n.pub ? 1 : 0, [`${b}/fin`]: n.fin || null, [`${b}/by`]: n.by || by, [`${b}/at`]: at, [`${b}/date`]: maKey(new Date()) };
+    const ok = await cvPatch(o); setPn(Object.keys(cvPendGet()).length);
+    if (ok) { try { localStorage.removeItem(`cv-draft-${T.tk}-${vn}`); } catch {} setD(d => ({ ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [vn]: { ...ptObj(ptObj(d.ev[T.tk])[vn]), sc: o[`${b}/sc`], str: n.str, imp: n.imp, rec: n.rec, vnote: n.vnote, pub: n.pub ? 1 : 0, fin: n.fin || null, by: n.by || by, at } } } })); }
+    setSt(ok ? "☁️ حُفظ تلقائياً" : "📱 انقطع الاتصال — العمل محفوظ على الجهاز وسيُرفع تلقائياً");
+    return ok;
+  };
   if (!T) return (
     <div className="ma-card p-4"><b style={{ fontSize: 15 }}>👨‍🏫 اختر المعلم</b><div className="in-grid mt-3">{TS.map(x => { const tt = [1, 2, 3].map(v => cvTotal(ptObj(ptObj(D.ev[x.tk])[v]))); return <button key={x.tk} className="in-cell" style={{ cursor: "pointer", fontFamily: "inherit", textAlign: "right" }} onClick={() => { setTk(x.tk); const nx = x.vis.find(r => cvTotal(ptObj(ptObj(D.ev[x.tk])[r.v])) == null); setVn(nx ? nx.v : 1); }}><b style={{ fontSize: 13.5 }}>{x.name}</b><div style={{ fontSize: 11, color: "#64748b" }}>{x.s}</div><div className="flex gap-1 mt-1">{tt.map((t, i) => <span key={i} className="in-fl" style={{ background: t != null ? cvGrade(t)[2] : "#f1f5f9", color: t != null ? cvGrade(t)[1] : "#94a3b8", padding: "1px 7px" }}>{t != null ? maAr(t) : "—"}</span>)}</div></button>; })}</div></div>
   );
   const r = T.vis.find(x => x.v === vn);
-  const put = (patch) => { const n = { ...e, ...patch }; setE(n); setSt("⏳"); clearTimeout(tm.current); tm.current = setTimeout(async () => { const v = { sc: n.sc.map(x => x == null ? "" : x), str: n.str, imp: n.imp, rec: n.rec, pub: n.pub ? 1 : 0, ack: n.ack || null, reply: n.reply || "", at: Date.now(), by: n.by || by, date: maKey(new Date()) }; const ok = await maPut(`${CV_EVAL}/${T.tk}/${vn}`, v); setSt(ok ? "☁️ حُفظ تلقائياً" : "⚠️ تعذّر الحفظ — تحقق من الاتصال"); if (ok) setD(d => ({ ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [vn]: v } } })); }, 700); };
+  const put = (patch) => { const n = { ...e, ...patch }; setE(n); try { localStorage.setItem(dKey(), JSON.stringify({ at: Date.now(), e: n })); } catch {} setSt("⏳ جاري الحفظ…"); clearTimeout(tm.current); tm.current = setTimeout(() => saveNow(n), 700); };
+  const finish = async () => { if (e.sc.some(x => x == null)) { alert("أكمل درجات المعايير العشرة أولاً"); return; } clearTimeout(tm.current); const n = { ...e, pub: true, fin: Date.now() }; setE(n); try { localStorage.setItem(dKey(), JSON.stringify({ at: Date.now(), e: n })); } catch {} const ok = await saveNow(n); toast(ok ? "✅ اعتُمدت الزيارة ونُشر التقييم للمعلم" : "📱 حُفظ على الجهاز — سيُنشر تلقائياً عند عودة الاتصال"); };
   if (!e) return null;
   const tot = e.sc.every(x => x != null) ? e.sc.reduce((a, x) => a + (+x || 0), 0) : null; const part = e.sc.filter(x => x != null).reduce((a, x) => a + (+x || 0), 0); const g = cvGrade(tot);
   const scCol = v => v >= 9 ? "#15803d" : v >= 8 ? "#0d9488" : v >= 7 ? "#2563eb" : v >= 6 ? "#b45309" : "#b91c1c";
@@ -34796,7 +34887,7 @@ function CvEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
     <div className="grid gap-3">
       <div className="ma-card p-4 flex items-center gap-3 flex-wrap">
         <CvRing v={tot ?? (part || null)} size={88} />
-        <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 19, fontWeight: 900 }}>{T.name}</div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{T.s}{r ? ` • ${maDay(maDate(r.date))} ${cvHij(r.hij)} • الحصة ${r.p}${r.tm ? ` (${cvTm(r.tm)})` : ""} • ${cvCls(r.c)}` : ""}</div>{g ? <span className="in-fl" style={{ background: g[2], color: g[1], marginTop: 6 }}>{g[0]}</span> : <span style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>أُدخل {maAr(e.sc.filter(x => x != null).length)} من ١٠ معايير</span>}</div>
+        <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 19, fontWeight: 900 }}>{T.name}</div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{T.s}{r ? ` • ${maDay(maDate(r.date))} ${cvHij(r.hij)} • الحصة ${r.p}${r.tm ? ` (${cvTm(r.tm)})` : ""} • ${cvCls(r.c)}` : ""}</div>{g ? <span className="in-fl" style={{ background: g[2], color: g[1], marginTop: 6 }}>{g[0]}</span> : <span style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>أُدخل {maAr(e.sc.filter(x => x != null).length)} من ١٠ معايير</span>}{r && r.tn && <div style={{ fontSize: 12.5, fontWeight: 800, background: "#f0fdfa", borderRadius: 10, padding: "5px 9px", marginTop: 6 }}>🗒️ ملاحظة المعلم: {r.tn}</div>}</div>
         <div className="flex gap-1 flex-wrap">{[1, 2, 3].map(v => <button key={v} className={`in-chip ${vn === v ? "on" : ""}`} onClick={() => setVn(v)}>الزيارة {CV_VN[v - 1]}</button>)}</div>
         <div className="flex gap-1 flex-wrap"><button className="ma-btn" onClick={() => setTk(null)}>👥 معلم آخر</button><button className="ma-btn" onClick={() => inOpen(cvFormHTML(T, ptObj(D.ev[T.tk]), D.cfg.crit, idx), "نموذج الزيارة", cvPrintCss)}>🖨️ النموذج</button></div>
       </div>
@@ -34804,10 +34895,21 @@ function CvEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
         <div key={j} className="cv-crit"><span style={{ fontSize: 20 }}>{CV_CRIT[j] ? CV_CRIT[j].ic : "•"}</span><div style={{ fontSize: 13.5, fontWeight: 800 }}>{maAr(j + 1)}. {c}</div>
           <div className="cv-sc">{[10, 9, 8, 7, 6, 5].map(n => <button key={n} className={v === n ? "on" : ""} style={v === n ? { background: scCol(n) } : null} onClick={() => { const sc = [...e.sc]; sc[j] = v === n ? null : n; put({ sc }); }}>{maAr(n)}</button>)}<select value={v != null && v < 5 ? v : ""} onChange={ev => { const sc = [...e.sc]; sc[j] = ev.target.value === "" ? null : +ev.target.value; put({ sc }); }} style={{ height: 34, borderRadius: 10, border: "1.5px solid #e2e8f0", fontFamily: "inherit", fontWeight: 900, background: v != null && v < 5 ? "#fee2e2" : "#fff" }}><option value="">أقل</option>{[4, 3, 2, 1, 0].map(n => <option key={n} value={n}>{maAr(n)}</option>)}</select></div>
         </div>); })}
-        <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={() => put({ sc: e.sc.map(x => x == null ? 10 : x) })}>⚡ إكمال الفارغ بـ ١٠</button><button className="ma-btn" onClick={() => { if (window.confirm("مسح درجات هذه الزيارة؟")) put({ sc: Array(10).fill(null) }); }}>🧹 مسح الدرجات</button><span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 800, color: st.startsWith("⚠️") ? "#b91c1c" : "#0f766e" }}>{st}</span></div>
+        <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={() => put({ sc: e.sc.map(x => x == null ? 10 : x) })}>⚡ إكمال الفارغ بـ ١٠</button><button className="ma-btn" onClick={() => { if (window.confirm("مسح درجات هذه الزيارة؟")) put({ sc: Array(10).fill(null) }); }}>🧹 مسح الدرجات</button><span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 800, color: st.startsWith("📱") ? "#b45309" : "#0f766e" }}>{st}</span>{pn > 0 && <span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>📱 {maAr(pn)} تغيير بانتظار الرفع</span>}</div>
       </div>
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
         {[["str", "💪 نقاط القوة", "#15803d"], ["imp", "🛠️ جوانب تحتاج إلى تحسين", "#b45309"], ["rec", "🧭 التوصيات والتوجيهات", "#1d4ed8"]].map(([fl, l, c]) => <div key={fl} className="ma-card p-3 grid gap-2" style={{ borderTop: `4px solid ${c}` }}><b style={{ color: c }}>{l}</b><textarea className="ma-inp" style={{ minHeight: 90, height: "auto", padding: 10, lineHeight: 1.9 }} value={e[fl]} onChange={ev => put({ [fl]: ev.target.value })} /><div className="flex gap-1 flex-wrap">{CV_QS[fl].map(q => <button key={q} className="cv-chip" onClick={() => addQ(fl, q)}>＋ {q}</button>)}</div></div>)}
+      </div>
+      <div className="ma-card p-3 grid gap-3" style={{ borderTop: "4px solid #0f766e" }}>
+        <b style={{ color: "#0f766e" }}>💬 ملاحظة الزائر للمعلم وردوده</b>
+        <textarea className="ma-inp" style={{ minHeight: 60, height: "auto", padding: 10 }} placeholder="ملاحظة عامة للمعلم تظهر له مع التقييم (اختياري)" value={e.vnote} onChange={ev => put({ vnote: ev.target.value })} />
+        <CvThread tk={T.tk} v={vn} who="v" name={e.by || by} ev={ptObj(D.ev[T.tk])[vn]} onAdd={m => setD(d => { const x = ptObj(ptObj(d.ev[T.tk])[vn]); return { ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [vn]: { ...x, thr: { ...ptObj(x.thr), [m.id]: m } } } } }; })} />
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}><CvImgs tk={T.tk} v={vn} who="a" canEdit title="صور الزائر" /><CvImgs tk={T.tk} v={vn} who="t" canEdit={false} title="صور المعلم" /></div>
+      </div>
+      <div className="ma-card p-3 flex items-center gap-3 flex-wrap" style={{ background: e.fin ? "linear-gradient(135deg,#ecfdf5,#fff)" : "#fff", border: "2px solid #0f766e" }}>
+        <button className="ma-btn" style={{ padding: "12px 22px", fontSize: 15, background: "linear-gradient(135deg,#0f766e,#065f46)", color: "#fff", border: "none" }} onClick={finish}>{e.fin ? "💾 حفظ التعديل ونشره" : "✅ إنهاء الزيارة واعتماد التقييم ونشره للمعلم"}</button>
+        {e.fin && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اعتُمدت {ptWhen(e.fin)}</span>}
+        {e.fin && <a className="ma-btn" style={{ textDecoration: "none", background: "#25d366", color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`أ. ${T.name}\nتم اعتماد تقييم زيارتك الصفية ${CV_VN[vn - 1]}، يمكنك الاطلاع عليه والرد على ملاحظات الزائر عبر الرابط برقم هويتك:\n${cvLink()}`)}`}>💬 إشعار المعلم</a>}
       </div>
       <div className="ma-card p-3 flex items-center gap-3 flex-wrap" style={{ background: e.pub ? "#eff6ff" : "#fff" }}>
         <label style={{ fontWeight: 900, display: "flex", gap: 6, alignItems: "center", fontSize: 14 }}><input type="checkbox" checked={e.pub} onChange={ev => { if (ev.target.checked && tot == null && !window.confirm("لم تكتمل الدرجات العشر — نشر التقييم للمعلم رغم ذلك؟")) return; put({ pub: ev.target.checked }); }} />👁 نشر التقييم للمعلم (يراه في بوابته برقم هويته)</label>
@@ -34862,9 +34964,94 @@ function CvCfg({ D, setD, TS, toast }) {
   );
 }
 
+// ── تنبيهات الزيارة: وقت البدء • نغمة • إشعار
+const cvStartMin = r => { const m = String(r && r.tm || "").match(/(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; };
+const cvAt = r => { const m = cvStartMin(r); if (m == null) return null; const d = maDate(r.date); d.setHours(Math.floor(m / 60), m % 60, 0, 0); return d; };
+let _cvAC = null;
+function cvChime(times = 3) {
+  try {
+    _cvAC = _cvAC || new (window.AudioContext || window.webkitAudioContext)(); const ac = _cvAC; if (ac.state === "suspended") ac.resume();
+    for (let k = 0; k < times; k++) [880, 1175, 1568].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.value = f; const t0 = ac.currentTime + k * 1.1 + i * 0.16; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + 0.65); });
+    if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
+  } catch {}
+}
+const CV_ALERT_CSS = `
+@keyframes cvPulse{0%,100%{box-shadow:0 0 0 0 rgba(234,88,12,.55)}50%{box-shadow:0 0 0 14px rgba(234,88,12,0)}}
+@keyframes cvShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
+.cv-alert{border-radius:24px;padding:16px 18px;color:#fff;position:relative;overflow:hidden;animation:cvPulse 1.8s infinite}
+.cv-alert .bell{font-size:40px;display:inline-block;animation:cvShake 1.2s infinite;transform-origin:50% 10%}
+.cv-alert .clk{font-size:40px;font-weight:900;letter-spacing:-1px;line-height:1;direction:ltr;display:inline-block}
+`;
+function CvAlert({ T, E }) {
+  const [now, setNow] = useState(new Date()); const [on, setOn] = useState(() => { try { return localStorage.getItem("cv-alarm") === "1"; } catch { return false; } });
+  const [lead, setLead] = useState(() => { try { return +localStorage.getItem("cv-lead") || 15; } catch { return 15; } });
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
+  const k = maKey(now); const tm = new Date(now); tm.setDate(tm.getDate() + 1); const kT = maKey(tm);
+  const up = T.vis.filter(r => cvTotal(ptObj(E[r.v])) == null && (r.date === k || r.date === kT)).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const at = up ? cvAt(up) : null; const left = at ? Math.round((at - now) / 1000) : null;
+  useEffect(() => {
+    if (!on || !up || left == null) return;
+    const key = `cv-rang-${up.id}-${up.date}`; let rang = null; try { rang = localStorage.getItem(key); } catch {}
+    const fire = (tag, msg) => { if (rang && rang.includes(tag)) return; cvChime(3); try { if ("Notification" in window && Notification.permission === "granted") new Notification("🎯 زيارة صفية", { body: msg, tag: key + tag }); } catch {} try { localStorage.setItem(key, (rang || "") + tag); } catch {} rang = (rang || "") + tag; };
+    if (left <= lead * 60 && left > 0) fire("L", `استعد — زيارتك بعد ${Math.ceil(left / 60)} دقيقة: الحصة ${up.p} • ${cvCls(up.c)}`);
+    if (left <= 0 && left > -300) fire("N", `بدأت الآن حصة الزيارة: الحصة ${up.p} • ${cvCls(up.c)}`);
+  }, [left, on, lead, up && up.id]);
+  if (!up) return null;
+  const enable = () => { cvChime(1); setOn(true); try { localStorage.setItem("cv-alarm", "1"); } catch {} try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}); } catch {} };
+  const off = () => { setOn(false); try { localStorage.setItem("cv-alarm", "0"); } catch {} };
+  const isToday = up.date === k; const soon = left != null && left <= lead * 60 && left > -45 * 60;
+  const fmt = s => { s = Math.max(0, s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? `${h}:` : "") + `${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`; };
+  const bg = !isToday ? "linear-gradient(135deg,#0369a1,#0891b2)" : soon ? "linear-gradient(135deg,#c2410c,#ea580c 55%,#f59e0b)" : "linear-gradient(135deg,#7c2d12,#c2410c 60%,#f59e0b)";
+  return (
+    <div className="cv-alert" style={{ background: bg, animation: isToday ? undefined : "none" }}>
+      <style>{CV_ALERT_CSS}</style>
+      <div className="flex items-center gap-3 flex-wrap" style={{ position: "relative", zIndex: 1 }}>
+        <span className="bell">{isToday ? (soon ? "⏰" : "🔔") : "📣"}</span>
+        <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 900, opacity: .9 }}>{isToday ? (left != null && left <= 0 ? "🎯 حصة الزيارة الآن" : "⚡ استعد — زيارة صفية قادمة اليوم") : "📌 تذكير: زيارة صفية غداً"}</div>
+          <div style={{ fontSize: 19, fontWeight: 900 }}>الزيارة {CV_VN[up.v - 1]} • الحصة {up.p}</div>
+          <div style={{ fontSize: 13, fontWeight: 800 }}>{maDay(maDate(up.date))} {cvHij(up.hij)}{up.tm ? ` • ${cvTm(up.tm)}` : ""} • {cvCls(up.c)}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, opacity: .9, marginTop: 4 }}>💡 جهّز: عنوان الدرس والتاريخ على السبورة • الوسيلة • سجل التقويم وكشف المتابعة</div>
+        </div>
+        {isToday && left != null && left > 0 && <div style={{ textAlign: "center", background: "rgba(0,0,0,.18)", borderRadius: 18, padding: "8px 14px" }}><div style={{ fontSize: 11.5, fontWeight: 800 }}>يبدأ بعد</div><div className="clk">{fmt(left)}</div></div>}
+      </div>
+      <div className="flex gap-2 items-center flex-wrap mt-3" style={{ position: "relative", zIndex: 1 }}>
+        {on ? <button className="ma-btn" style={{ background: "rgba(255,255,255,.2)", color: "#fff", borderColor: "rgba(255,255,255,.4)" }} onClick={off}>🔔 التنبيه مفعّل — إيقاف</button> : <button className="ma-btn" style={{ background: "#fff", color: "#c2410c", border: "none", fontWeight: 900 }} onClick={enable}>🔔 فعّل التنبيه بالنغمة</button>}
+        <label style={{ fontSize: 12.5, fontWeight: 800 }}>نبّهني قبل <select value={lead} onChange={e => { setLead(+e.target.value); try { localStorage.setItem("cv-lead", e.target.value); } catch {} }} style={{ borderRadius: 8, border: "none", fontFamily: "inherit", fontWeight: 900, padding: "2px 6px" }}>{[5, 10, 15, 30, 60].map(n => <option key={n} value={n}>{maAr(n)} دقيقة</option>)}</select></label>
+        <button className="ma-btn" style={{ background: "rgba(255,255,255,.15)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => cvChime(1)}>🎵 تجربة النغمة</button>
+        {on && <span style={{ fontSize: 11, fontWeight: 700, opacity: .9 }}>أبقِ هذه الصفحة مفتوحة ليعمل التنبيه</span>}
+      </div>
+    </div>
+  );
+}
+// ── بانر مختصر في بوابة المعلم
+function CvHomeBanner({ me, onOpen }) {
+  const [x, setX] = useState(null);
+  useEffect(() => { (async () => { const D = await cvLoad(); const TS = cvTeachers(D.plan); const T = TS.find(t => D.cfg.links[t.tk] === me.rid) || TS.find(t => !D.cfg.links[t.tk] && cvMatch(t.name, { me: { name: me.name } }) === "me"); if (!T) return; const k = maKey(new Date()); const E = ptObj(D.ev[T.tk]); const nx = T.vis.find(r => r.date >= k && cvTotal(ptObj(E[r.v])) == null); if (nx) setX(nx); })(); }, []);
+  if (!x) return null; const dd = cvDays(x.date); if (dd > 3) return null;
+  return <button type="button" onClick={onOpen} className="cv-alert" style={{ border: "none", textAlign: "right", fontFamily: "inherit", cursor: "pointer", background: dd === 0 ? "linear-gradient(135deg,#c2410c,#f59e0b)" : "linear-gradient(135deg,#0369a1,#0891b2)", animation: dd === 0 ? undefined : "none" }}><style>{CV_ALERT_CSS}</style><div className="flex items-center gap-3"><span className="bell">{dd === 0 ? "⏰" : "📣"}</span><div><div style={{ fontSize: 16, fontWeight: 900 }}>{dd === 0 ? "استعد — لديك زيارة صفية اليوم" : dd === 1 ? "تذكير: لديك زيارة صفية غداً" : `زيارة صفية بعد ${maAr(dd)} أيام`}</div><div style={{ fontSize: 12.5, fontWeight: 800 }}>الحصة {x.p}{x.tm ? ` (${cvTm(x.tm)})` : ""} • {cvCls(x.c)} • {maDay(maDate(x.date))} {cvHij(x.hij)} ← اضغط للتفاصيل</div></div></div></button>;
+}
+// ── رابط مباشر للمعلمين (بدون دخول الموقع): #visits
+function VisitsPublicPortal({ onBack }) {
+  const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-cv") || "null"); return m && m.rid ? m : null; } catch { return null; } });
+  const login = async v => { const r = await ptStaffLogin(v); if (r.err) return r.err; setMe(r); try { localStorage.setItem("pam-cv", JSON.stringify(r)); } catch {} return ""; };
+  const logout = () => { setMe(null); try { localStorage.removeItem("pam-cv"); } catch {} };
+  if (!me) return <PtLoginCard title="🎯 مواعيد الزيارات الصفية" sub="أدخل رقم هويتك لمعرفة موعد زيارتك وتقييمك وعناصر التقييم" icon="🎯" grad="linear-gradient(160deg,#064e3b,#0f766e 50%,#0891b2)" onLogin={login} onBack={onBack} hint="رقم السجل المدني المسجّل لدى المدرسة" />;
+  return (
+    <div className="ma pt px-3 md:px-6 py-4" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#ecfdf5,#f8fafc)" }}>
+      <style>{MA_CSS + PT_CSS}</style>
+      <div style={{ maxWidth: 960, margin: "0 auto" }} className="grid gap-3">
+        <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b><span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span><button className="ma-btn" onClick={logout}>خروج</button></div>
+        <TeacherVisitsView me={me} />
+      </div>
+    </div>
+  );
+}
+const cvLink = () => { try { return location.origin + location.pathname + "#visits"; } catch { return "#visits"; } };
+
 // ══════════ 👨‍🏫 بوابة المعلم: زياراتي الصفية ══════════
 function TeacherVisitsView({ me }) {
-  const [D, setD] = useState(null); const [open, setOpen] = useState(null); const [rep, setRep] = useState({}); const [msg, setMsg] = useState("");
+  const [D, setD] = useState(null); const [open, setOpen] = useState(null); const [rep, setRep] = useState({}); const [msg, setMsg] = useState(""); const [pp, setPp] = useState(null); useCvFlush(); const [tn, setTn] = useState(null); const [nm, setNm] = useState({ type: "note", text: "", vid: "" });
   useEffect(() => { (async () => setD(await cvLoad()))(); }, []);
   if (!D) return <div className="ma-card p-10 text-center font-bold text-gray-400">⏳</div>;
   const TS = cvTeachers(D.plan);
@@ -34874,7 +35061,7 @@ function TeacherVisitsView({ me }) {
   const next = T.vis.find(r => r.date >= k && cvTotal(ptObj(E[r.v])) == null);
   const pubT = [1, 2, 3].map(v => { const e = ptObj(E[v]); return e.pub ? cvTotal(e) : null; });
   const dn = pubT.filter(x => x != null); const avg = dn.length ? Math.round(dn.reduce((a, b) => a + b, 0) / dn.length * 10) / 10 : null;
-  const ack = async (v) => { const e = ptObj(E[v]); const nv = { ...e, ack: Date.now(), reply: rep[v] != null ? rep[v] : e.reply || "" }; const ok = await maPut(`${CV_EVAL}/${T.tk}/${v}`, nv); if (ok) setD(d => ({ ...d, ev: { ...d.ev, [T.tk]: { ...E, [v]: nv } } })); setMsg(ok ? "✍️ تم تسجيل اطلاعك — شكراً لك" : "⚠️ تعذّر الحفظ"); setTimeout(() => setMsg(""), 3000); };
+  const ack = async (v) => { const e = ptObj(E[v]); const nv = { ...e, ack: Date.now(), reply: rep[v] != null ? rep[v] : e.reply || "" }; const ok = await cvPatch({ [`${CV_EVAL}/${T.tk}/${v}/ack`]: nv.ack, [`${CV_EVAL}/${T.tk}/${v}/reply`]: nv.reply }); setD(d => ({ ...d, ev: { ...d.ev, [T.tk]: { ...E, [v]: nv } } })); setMsg(ok ? "✍️ تم تسجيل اطلاعك — شكراً لك" : "📱 حُفظ على جهازك وسيُرسل عند عودة الاتصال"); setTimeout(() => setMsg(""), 3000); };
   const dd = next ? cvDays(next.date) : null;
   const pubE = { 1: E[1] && E[1].pub ? E[1] : {}, 2: E[2] && E[2].pub ? E[2] : {}, 3: E[3] && E[3].pub ? E[3] : {} };
   return (
@@ -34887,23 +35074,57 @@ function TeacherVisitsView({ me }) {
             : avg != null && <div style={{ background: "rgba(255,255,255,.14)", borderRadius: 20, padding: 10, textAlign: "center" }}><CvRing v={Math.round(avg)} size={96} c="#fbbf24" /><div style={{ fontSize: 12, fontWeight: 800 }}>متوسط تقييمك</div></div>}
         </div>
       </div>
+      <CvAlert T={T} E={E} />
       <div className="cv-tl">{T.vis.map(r => { const e = pubE[r.v]; const t = cvTotal(e); const g = cvGrade(t); const raw = ptObj(E[r.v]); const st = cvTotal(raw) != null && !raw.pub ? ["wait", "🕓 نُفذت — بانتظار اعتماد التقييم", "#b45309", "#fef3c7"] : cvStatus(r, raw); return (
         <div key={r.v} className="cv-vis" style={{ "--c": g ? g[1] : st[2], borderColor: open === r.v ? st[2] : "#eef2f6" }}>
           <div className="flex items-center justify-between gap-2"><b style={{ fontSize: 15 }}>الزيارة {CV_VN[r.v - 1]}</b><span className="in-fl" style={{ background: st[3], color: st[2] }}>{st[1]}</span></div>
           <div style={{ fontSize: 13, fontWeight: 800, marginTop: 8 }}>📅 {maDay(maDate(r.date))} {cvHij(r.hij)}</div>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>⏰ الحصة {r.p}{r.tm ? ` (${cvTm(r.tm)})` : ""} • 🏫 {cvCls(r.c)}</div>
           {r.date > k && cvTotal(raw) == null && cvDays(r.date) <= 60 && <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1", marginTop: 4 }}>⏳ بعد {maAr(cvDays(r.date))} يوم</div>}
+          {r.moved && <div style={{ fontSize: 11.5, fontWeight: 800, color: "#7c3aed", marginTop: 4 }}>🔁 مؤجلة من {maDay(maDate(r.moved))}</div>}
+          {r.req && r.req.st === "new" && <div className="in-fl" style={{ background: "#fef3c7", color: "#92400e", marginTop: 6 }}>⏳ طلب التأجيل قيد المراجعة</div>}
+          {r.req && r.req.st === "ok" && <div className="in-fl" style={{ background: "#dcfce7", color: "#15803d", marginTop: 6 }}>✅ قُبل التأجيل</div>}
+          {r.req && r.req.st === "no" && <div className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c", marginTop: 6 }}>❌ لم يُقبل التأجيل{r.req.note ? ` — ${r.req.note}` : ""}</div>}
+          {r.tn && <div style={{ fontSize: 12, fontWeight: 700, background: "#f0fdfa", borderRadius: 10, padding: "5px 8px", marginTop: 6 }}>🗒️ ملاحظتك للزائر: {r.tn}</div>}
+          {cvTotal(ptObj(E[r.v])) == null && r.date >= k && <div className="flex gap-1 flex-wrap" style={{ marginTop: 8 }}>{!(r.req && r.req.st === "new") && <button className="ma-btn" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setPp({ r, reason: "", pref: "" })}>⏸️ طلب تأجيل</button>}<button className="ma-btn" style={{ padding: "4px 12px", fontSize: 12 }} onClick={() => setTn({ r, text: r.tn || "" })}>🗒️ {r.tn ? "تعديل الملاحظة" : "ملاحظة للزائر"}</button></div>}
           {g && <div className="flex items-center gap-3 mt-3"><CvRing v={t} size={78} /><div><span className="in-fl" style={{ background: g[2], color: g[1], fontSize: 13 }}>{g[0]}</span><div><button className="ma-btn" style={{ marginTop: 6, padding: "4px 12px" }} onClick={() => setOpen(open === r.v ? null : r.v)}>{open === r.v ? "▲ إخفاء التفاصيل" : "👁 عرض التقييم"}</button></div></div></div>}
         </div>); })}</div>
+      {tn && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setTn(null)}><div className="ma-card p-4 grid gap-3" style={{ width: "min(520px,100%)" }} onClick={ev => ev.stopPropagation()}>
+        <b style={{ fontSize: 16 }}>🗒️ ملاحظة للزائر — الزيارة {CV_VN[tn.r.v - 1]}</b>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>مثال: عنوان الدرس، الاستراتيجية التي ستطبقها، أو أي ظرف في الفصل تود أن يعرفه الزائر</div>
+        <div className="flex gap-1 flex-wrap">{["عنوان الدرس: ", "سأطبق استراتيجية: ", "الحصة تطبيقية / عملية", "لدي اختبار قصير في الحصة", "الفصل في معمل / مصادر التعلم"].map(x => <button key={x} className="cv-chip" onClick={() => setTn({ ...tn, text: (tn.text ? tn.text + " • " : "") + x })}>＋ {x}</button>)}</div>
+        <textarea className="ma-inp" style={{ minHeight: 80, height: "auto", padding: 10 }} value={tn.text} onChange={ev => setTn({ ...tn, text: ev.target.value })} />
+        <div className="flex gap-2 justify-end"><button className="ma-btn" onClick={() => setTn(null)}>إلغاء</button><button className="ma-btn pri" onClick={async () => { const t = tn.text.trim().slice(0, 500); const ok = await maPut(`${CV_PLAN}/${tn.r.id}/tn`, t || null); if (ok) setD(d => ({ ...d, plan: { ...d.plan, [tn.r.id]: { ...d.plan[tn.r.id], tn: t } } })); setTn(null); setMsg(ok ? "✅ وصلت ملاحظتك للزائر" : "⚠️ تعذّر الحفظ"); setTimeout(() => setMsg(""), 3000); }}>💾 حفظ</button></div>
+      </div></div>}
+      {pp && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setPp(null)}><div className="ma-card p-4 grid gap-3" style={{ width: "min(520px,100%)", maxHeight: "90vh", overflow: "auto" }} onClick={ev => ev.stopPropagation()}>
+        <b style={{ fontSize: 16 }}>⏸️ طلب تأجيل الزيارة {CV_VN[pp.r.v - 1]}</b>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>الموعد الحالي: {maDay(maDate(pp.r.date))} {cvHij(pp.r.hij)} • الحصة {pp.r.p}</div>
+        <div className="flex gap-1 flex-wrap">{["ظرف صحي", "ظرف عائلي", "مهمة رسمية / تكليف", "اختبار أو نشاط للفصل", "دورة تدريبية"].map(x => <button key={x} className="cv-chip" style={pp.reason === x ? { background: "#0f766e", color: "#fff" } : null} onClick={() => setPp({ ...pp, reason: x })}>{x}</button>)}</div>
+        <textarea className="ma-inp" style={{ minHeight: 60, height: "auto", padding: 10 }} placeholder="اكتب السبب أو تفاصيل الظرف" value={pp.reason} onChange={ev => setPp({ ...pp, reason: ev.target.value })} />
+        <div style={{ fontSize: 12.5, fontWeight: 900 }}>📅 اليوم المقترح من أيام التعويض (اختياري):</div>
+        <div className="flex gap-1 flex-wrap">{D.cfg.comp.filter(c => c[0] > k).slice(0, 12).map(c => <button key={c[0]} className="cv-chip" style={pp.pref === c[0] ? { background: "#0f766e", color: "#fff" } : null} onClick={() => setPp({ ...pp, pref: pp.pref === c[0] ? "" : c[0] })}>{maDay(maDate(c[0]))} {cvHij(c[1])}</button>)}</div>
+        <div className="flex gap-2 justify-end"><button className="ma-btn" onClick={() => setPp(null)}>إلغاء</button><button className="ma-btn pri" onClick={async () => { if (!pp.reason.trim()) { alert("اذكر سبب التأجيل"); return; } const c = D.cfg.comp.find(x => x[0] === pp.pref); const req = { at: Date.now(), reason: pp.reason.trim().slice(0, 400), pref: c ? c : null, st: "new", by: me.name }; const ok = await maPut(`${CV_PLAN}/${pp.r.id}/req`, req); if (ok) setD(d => ({ ...d, plan: { ...d.plan, [pp.r.id]: { ...d.plan[pp.r.id], req } } })); setPp(null); setMsg(ok ? "📨 أُرسل طلب التأجيل للإدارة" : "⚠️ تعذّر الإرسال"); setTimeout(() => setMsg(""), 3000); }}>📨 إرسال الطلب</button></div>
+      </div></div>}
       {open && pubE[open] && cvTotal(pubE[open]) != null && (() => { const e = pubE[open]; const prev = open > 1 ? pubE[open - 1] : null; return (
         <div className="ma-card p-4 grid gap-3" style={{ borderTop: "5px solid #0f766e" }}>
           <b style={{ fontSize: 16 }}>📋 تقييم الزيارة {CV_VN[open - 1]} {e.by ? <small style={{ color: "#64748b" }}>— الزائر: {e.by}</small> : null}</b>
           <div className="grid gap-2">{D.cfg.crit.map((c, j) => { const v = +maArr(e.sc)[j] || 0; const pv = prev && cvTotal(prev) != null ? +maArr(prev.sc)[j] : null; return <div key={j}><div className="flex justify-between gap-2" style={{ fontSize: 12.5, fontWeight: 800 }}><span>{CV_CRIT[j]?.ic} {c}</span><span><b style={{ color: v >= 9 ? "#15803d" : v >= 7 ? "#2563eb" : "#b45309" }}>{maAr(v)}</b>/١٠{pv != null && pv !== v ? <b style={{ color: v > pv ? "#15803d" : "#b91c1c", marginRight: 4 }}>{v > pv ? "▲" : "▼"}</b> : null}</span></div><InBar v={v} max={10} c={v >= 9 ? "#15803d" : v >= 8 ? "#0d9488" : v >= 7 ? "#2563eb" : "#b45309"} /></div>; })}</div>
           {[["str", "💪 نقاط القوة", "#15803d"], ["imp", "🛠️ جوانب تحتاج إلى تحسين", "#b45309"], ["rec", "🧭 التوصيات والتوجيهات", "#1d4ed8"]].map(([f, l, c]) => e[f] ? <div key={f} style={{ borderRight: `4px solid ${c}`, background: c + "0f", borderRadius: 12, padding: "8px 12px" }}><b style={{ color: c }}>{l}</b><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2 }}>{e[f]}</div></div> : null)}
+          {e.vnote && <div style={{ borderRight: "4px solid #0f766e", background: "#ecfdf5", borderRadius: 12, padding: "8px 12px" }}><b style={{ color: "#0f766e" }}>👔 ملاحظة الزائر</b><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2, whiteSpace: "pre-wrap" }}>{e.vnote}</div></div>}
+          <div className="grid gap-2" style={{ background: "#f8fafc", borderRadius: 14, padding: 12 }}><b style={{ fontSize: 13.5 }}>💬 المحادثة مع الزائر</b><CvThread tk={T.tk} v={open} who="t" name={T.name} ev={e} onAdd={m => setD(d => { const x = ptObj(ptObj(d.ev[T.tk])[open]); return { ...d, ev: { ...d.ev, [T.tk]: { ...ptObj(d.ev[T.tk]), [open]: { ...x, thr: { ...ptObj(x.thr), [m.id]: m } } } } }; })} /></div>
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}><CvImgs tk={T.tk} v={open} who="a" canEdit={false} title="صور الزائر" /><CvImgs tk={T.tk} v={open} who="t" canEdit title="صوري (شواهد الحصة)" /></div>
           <div className="grid gap-2" style={{ background: "#f8fafc", borderRadius: 14, padding: 12 }}><b style={{ fontSize: 13.5 }}>💬 تعليقك أو تأملك في الزيارة (اختياري)</b><textarea className="ma-inp" style={{ minHeight: 70, height: "auto", padding: 10 }} value={rep[open] != null ? rep[open] : e.reply || ""} onChange={ev => setRep({ ...rep, [open]: ev.target.value })} placeholder="مثال: سأعمل على تفعيل استراتيجية التعلم التعاوني في الدروس القادمة…" />
             <div className="flex gap-2 items-center flex-wrap"><button className="ma-btn pri" onClick={() => ack(open)}>{e.ack ? "💾 تحديث التعليق" : "✍️ اطّلعت على التقييم"}</button>{e.ack && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اطّلعت {ptWhen(e.ack)}</span>}</div></div>
         </div>); })()}
       {dn.length >= 2 && <div className="ma-card p-4"><b style={{ fontSize: 15 }}>📈 مسار تطورك</b><div className="flex items-end gap-4 mt-3" style={{ height: 140 }}>{pubT.map((t, i) => { const g = cvGrade(t); return <div key={i} style={{ flex: 1, textAlign: "center" }}><b style={{ color: g ? g[1] : "#94a3b8" }}>{t != null ? maAr(t) : "—"}</b><div style={{ height: t != null ? t : 4, background: g ? `linear-gradient(180deg,${g[1]},${g[1]}99)` : "#e2e8f0", borderRadius: 10, marginTop: 4 }} /><small style={{ fontWeight: 800 }}>الزيارة {CV_VN[i]}</small></div>; })}</div></div>}
+      {(() => { const my = ptVals(D.msgs).filter(m => m.tk === T.tk).sort((a, b) => b.at - a.at); const send = async () => { const t = nm.text.trim(); if (!t) { alert("اكتب الملاحظة أو الطلب"); return; } const id = "m" + Date.now().toString(36); const v = { id, tk: T.tk, name: T.name, type: nm.type, text: t.slice(0, 800), vid: nm.vid || "", at: Date.now(), st: "new" }; const ok = await maPut(`${CV_MSG}/${id}`, v); if (ok) { setD(d => ({ ...d, msgs: { ...d.msgs, [id]: v } })); setNm({ type: "note", text: "", vid: "" }); } setMsg(ok ? "📨 وصلت رسالتك للإدارة" : "⚠️ تعذّر الإرسال"); setTimeout(() => setMsg(""), 3000); }; return (
+        <div className="ma-card p-4 grid gap-3"><b style={{ fontSize: 15 }}>💬 ملاحظة أو طلب للإدارة</b>
+          <div className="flex gap-1 flex-wrap">{CV_MT.map(([k2, ic, l]) => <button key={k2} className="cv-chip" style={nm.type === k2 ? { background: "#0f766e", color: "#fff" } : null} onClick={() => setNm({ ...nm, type: k2 })}>{ic} {l}</button>)}</div>
+          <select className="ma-inp" style={{ maxWidth: 320 }} value={nm.vid} onChange={e => setNm({ ...nm, vid: e.target.value })}><option value="">بخصوص: عام</option>{T.vis.map(r => <option key={r.id} value={r.id}>الزيارة {CV_VN[r.v - 1]} — {maDay(maDate(r.date))} {cvHij(r.hij)}</option>)}</select>
+          <textarea className="ma-inp" style={{ minHeight: 80, height: "auto", padding: 10 }} placeholder="اكتب ملاحظتك أو طلبك…" value={nm.text} onChange={e => setNm({ ...nm, text: e.target.value })} />
+          <button className="ma-btn pri" style={{ justifySelf: "start" }} onClick={send}>📨 إرسال</button>
+          {my.map(m => <div key={m.id} style={{ borderRight: `4px solid ${m.st === "done" ? "#15803d" : "#f59e0b"}`, background: "#f8fafc", borderRadius: 12, padding: "8px 12px" }}><div className="flex gap-2 flex-wrap items-center" style={{ fontSize: 12, fontWeight: 800 }}><span>{cvMt(m.type)[1]} {cvMt(m.type)[2]}</span><span className="in-fl" style={{ background: m.st === "done" ? "#dcfce7" : "#fef3c7", color: m.st === "done" ? "#15803d" : "#92400e" }}>{m.st === "done" ? "✅ تم الرد" : "⏳ قيد المراجعة"}</span><span style={{ marginRight: "auto", color: "#94a3b8" }}>{ptWhen(m.at)}</span></div><div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 4, whiteSpace: "pre-wrap" }}>{m.text}</div>{m.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6, background: "#ecfdf5", borderRadius: 10, padding: "6px 10px" }}>↩️ رد الإدارة: {m.reply}</div>}</div>)}
+        </div>); })()}
       <div className="ma-card p-4"><b style={{ fontSize: 15 }}>📚 عناصر التقييم — ماذا يلاحظ الزائر؟</b><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>كل معيار من ١٠ درجات • المجموع ١٠٠ • ٩٠ فأكثر ممتاز، ٨٠ جيد جداً، ٧٠ جيد، ٦٠ مقبول</div>
         <div className="grid gap-2 mt-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>{D.cfg.crit.map((c, j) => <details key={j} className="in-cell" style={{ cursor: "pointer" }}><summary style={{ fontSize: 13, fontWeight: 900, listStyle: "none" }}>{CV_CRIT[j]?.ic} {maAr(j + 1)}. {c}</summary><ul style={{ margin: "6px 18px 0 0", fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 2 }}>{maArr(CV_CRIT[j]?.tips).map((x, i) => <li key={i}>✓ {x}</li>)}</ul></details>)}</div></div>
       <button className="ma-btn" style={{ justifySelf: "start" }} onClick={() => { const T2 = { ...T }; const E2 = Object.fromEntries([1, 2, 3].map(v => [v, pubE[v]])); inOpen(cvFormHTML(T2, E2, D.cfg.crit, TS.indexOf(T)), "نموذج الزيارة", cvPrintCss); }}>🖨️ طباعة نموذجي</button>
@@ -34968,7 +35189,7 @@ function SchoolWebsiteInner() {
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [attPortal, setAttPortal] = useState(() => window.location.hash.replace("#", "") === "attend");
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
-  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late"].includes(h) ? h : ""; });
+  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late", "visits"].includes(h) ? h : ""; });
   const [directAnnId, setDirectAnnId] = useState(() => {
     const h = window.location.hash.replace("#","");
     return h.startsWith("ann-") ? h.replace("ann-","") : null;
@@ -35283,6 +35504,7 @@ function SchoolWebsiteInner() {
 
   const hubBack = () => { setHubPortal(""); window.location.hash = ""; };
   if (hubPortal === "weekly") return <WeeklyPlanPublic onBack={hubBack} />;
+  if (hubPortal === "visits") return <VisitsPublicPortal onBack={hubBack} />;
   if (hubPortal === "parent") return <GuardianPortal onBack={hubBack} />;
   if (hubPortal === "late") return <StaffHub kind="staff" initView="late" onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
   if (hubPortal) return <StaffHub kind={hubPortal} onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
