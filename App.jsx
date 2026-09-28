@@ -1876,7 +1876,7 @@ const HUB_GROUPS = [
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
-    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"timetable",label:"جدول الحصص",icon:"📅"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
 function HomePage({ teachers, announcements, activities, navigate, attendance, week, messages, classList, weekArchive }) {
@@ -2046,7 +2046,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         <div className="bg-white rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">⚡ روابط سريعة</b></div>
           <div className="grid grid-cols-2 gap-2">
-            {[["جدول الحصص","📅","timetable"],["كشف الحضور","🧾","dailyattend"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
+            {[["الجدول المدرسي","🗓️","timetable"],["كشف الحضور","🧾","dailyattend"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
               <button key={id} onClick={()=>navigate(id)} className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 flex items-center gap-2 text-xs font-bold text-gray-700 hover:bg-teal-50 hover:border-teal-200 transition">{ic} {l}</button>
             ))}
           </div>
@@ -30668,6 +30668,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "weekly" && allowed) return wrap("📈 الحصر الأسبوعي", <MorningAttendancePage key="st-week" section="stats" initTab="weekly" />);
   if (view === "clsum" && allowed) return wrap("🏷️ خلاصة تصنيف الطلاب", <StudentClassifyPage mode="admin" viewOnly />);
   if (view === "cv") return wrap("🎯 زياراتي الصفية", <TeacherVisitsView me={me} />);
+  if (view === "sched" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("🗓️ الجدول المدرسي", isStaff ? <SchoolTimetablePage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} /> : <SchoolTimetablePage by={me.name} canEdit={false} ro me={me} />);
   if (view === "cvadm" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🎯 الزيارات الصفية", <ClassVisitsPage by={me.name} />);
   if (view === "beh" && (!isStaff || allowed)) return wrap("📝 الملاحظات السلوكية اليومية", <BehaviorNotesPage by={me.name} admin={["principal", "deputy"].includes(me.role)} />);
   if (view === "warn" && allowed) return wrap("🚨 الإنذار المبكر وملف الطالب", <InsightsPage by={me.name} staff initTab="warn" tabs={["warn", "student", "week", "rank"]} />);
@@ -30702,6 +30703,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             </div>}
             <div className="pt-tiles">
               {ptCan(me, "late") && ptTile("late", "🌅", "سجل التأخر الصباحي", "رصد المتأخرين بالفصول — يُحسب وقت الحضور ومدة التأخر تلقائياً، مع التقارير", "#ea580c", "#f59e0b", () => setView("late"))}
+              {ptCan(me, "tt") && ptTile("sched", "🗓️", "الجدول المدرسي", "جدول الفصول والمعلمين • الغائبون وتوزيع الاحتياط ١/٢/٣ تلقائياً • التأخر والخروج من الفصل", "#3730a3", "#0e7490", () => setView("sched"))}
               {ptCan(me, "tt") && ptTile("tt", "🗓️", "متابعة الحصص اليومية", "حضور المعلمين في الحصص والاحتياط والتأخر والخروج المبكر والملاحظات", "#0369a1", "#0891b2", () => setView("tt"))}
               {ptCan(me, "stats") && ptTile("stats", "📊", "الإحصائية اليومية", "غياب الحصة الثانية كما رصده المعلمون: الأسماء والفصول والمجموع", "#dc2626", "#f43f5e", () => setView("stats"))}
               {ptCan(me, "weekly") && ptTile("weekly", "📈", "الحصر الأسبوعي", "مقارنة الفصول وأكثر الطلاب غياباً خلال الأسبوع", "#0d9488", "#14b8a6", () => setView("weekly"))}
@@ -30716,6 +30718,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           <div className="pt-tiles">
             {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
             {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
+            {ptTile("sched", "🗓️", "جدولي المدرسي", "حصصك اليوم والأسبوع، وحصص الاحتياط المسندة إليك", "#3730a3", "#0e7490", () => setView("sched"))}
             {ptTile("formative", "📘", "التقويم التكويني", "إعداد سجلك الخاص للدرجات وطباعته", "#2563eb", "#3b82f6", () => setView("formative"))}
             <div style={{ gridColumn: "1/-1" }}><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>
             {ptTile("cv", "🎯", "زياراتي الصفية", "موعد زيارتك القادمة، وتقييمك ومؤشراتك وعناصر التقييم والملاحظات", "#0f766e", "#0891b2", () => setView("cv"))}
@@ -33763,7 +33766,7 @@ const SIDX = "school-sidx";            // فهرس الطالب: {sid:{a:{dk:ck}
 const SIDX_META = "school-sidx-meta";
 const BK2 = "school-bk2", BK2_META = "school-bk2-meta";
 const IN_DEF = { abs: 3, late: 3, neg: 3, beh: 3 };
-const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan"];
+const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan", "school-tt-abs"];
 const BK2_LBL = { [MA_ROSTER]: "كشوف الطلاب", [MA_ATT]: "الغياب", [MA_IDX]: "فهرس الغياب", [MA_META]: "إعدادات الفصول", [MA_LATE]: "التأخر الصباحي", [ML_DAY]: "اعتماد التأخر", [ML_CLS]: "اعتماد الفصول", [ML_CFG]: "أوقات التأخر", [ML_REP]: "تقارير التأخر", [SC_NODE]: "تصنيف الطلاب", [SC_META]: "فترة التصنيف", [SD_NODE]: "المتابعة اليومية", [SD_PC]: "ملاحظات أولياء الأمور على المتابعة", "formative-sheets": "سجلات التقويم التكويني", "formative-teachers": "قائمة المعلمين", [PT_STAFF]: "الإداريون", [TT_NODE]: "الجدول", [TT_CFG]: "أوقات الحصص", [TT_LOG]: "متابعة الحصص", [PT_EXC]: "أعذار أولياء الأمور", [PT_NOTES]: "ملاحظات أولياء الأمور", [PT_PREP]: "التقارير المرسلة", [WP_NODE]: "الخطة الأسبوعية", [IN_CFG]: "إعدادات المؤشرات", "school-bnotes": "الملاحظات السلوكية", "school-bnotes-cfg": "أنواع السلوك", "school-cv-plan": "جدول الزيارات الصفية", "school-cv-eval": "تقييم الزيارات الصفية", "school-cv-cfg": "إعدادات الزيارات" };
 
 // ── أدوات قاعدة البيانات
@@ -35399,7 +35402,9 @@ async function tpPdfToImages(file, onProg) {
 const tpLink = id => { try { return location.origin + location.pathname + "#termplan" + (id ? "-" + id : ""); } catch { return "#termplan"; } };
 const tpWhen = t => { if (!t) return ""; const d = new Date(t); const hm = d.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" }); return `${maDay(d)} ${maHijri(d)} • ${maGreg(d)} • الساعة ${hm}`; };
 const TP_CSS = `
-.tp{font-family:Cairo,Tahoma,sans-serif}
+.tp{font-family:Cairo,Tahoma,sans-serif;max-width:100%;overflow-x:hidden}
+.tp .grid{grid-template-columns:minmax(0,1fr)}.tp .grid>*,.tp-root>*{min-width:0;max-width:100%}
+.tp-root{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0;max-width:100%}
 .tp-hero{border-radius:28px;color:#fff;padding:22px 24px;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--a),var(--b))}
 .tp-hero::before{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.08);left:-90px;top:-150px}
 .tp-hero::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.07);right:-60px;bottom:-110px}
@@ -35408,22 +35413,26 @@ const TP_CSS = `
 .tp-desc{border-radius:22px;background:#fff;border:1px solid #eef2f6;padding:16px 18px;box-shadow:0 14px 30px -26px rgba(15,23,42,.5)}
 .tp-goal{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:14px;background:var(--s);font-weight:800;font-size:14px;line-height:1.8}
 .tp-goal i{font-style:normal;min-width:28px;height:28px;border-radius:9px;background:var(--a);color:#fff;display:grid;place-items:center;font-size:13px;margin-top:1px}
-.tp-view{border-radius:24px;background:#0f172a;padding:12px;position:relative;box-shadow:0 30px 60px -30px rgba(15,23,42,.7)}
-.tp-stage{position:relative;border-radius:16px;overflow:hidden;background:#fff;display:flex;justify-content:center;touch-action:pan-y}
+.tp-view{border-radius:24px;background:#0f172a;padding:12px;position:relative;min-width:0;max-width:100%;overflow:hidden;box-shadow:0 30px 60px -30px rgba(15,23,42,.7)}
+.tp-stage{position:relative;border-radius:16px;overflow:hidden;background:#fff;display:flex;justify-content:center;touch-action:pan-y pinch-zoom}
 .tp-stage img{width:100%;height:auto;display:block;user-select:none;-webkit-user-drag:none;animation:tpIn .35s ease}
 @keyframes tpIn{from{opacity:.2;transform:scale(.985)}to{opacity:1;transform:none}}
 .tp-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:none;background:rgba(15,23,42,.55);color:#fff;font-size:22px;font-weight:900;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(4px)}
 .tp-nav:disabled{opacity:.2;cursor:default}
 .tp-bar{display:flex;align-items:center;gap:10px;justify-content:center;color:#fff;font-weight:900;padding:10px 4px 2px;flex-wrap:wrap}
 .tp-prog{flex:1 1 200px;height:6px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden;max-width:420px}.tp-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--b),#fbbf24);transition:width .3s}
-.tp-thumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 2px}
+.tp-thumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 2px;max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
 .tp-thumbs button{flex-shrink:0;width:64px;border-radius:10px;overflow:hidden;border:3px solid transparent;padding:0;background:#fff;cursor:pointer;opacity:.6}
 .tp-thumbs button.on{border-color:#fbbf24;opacity:1}.tp-thumbs img{width:100%;display:block}
 .tp-full{position:fixed;inset:0;z-index:900;background:#020617;display:flex;flex-direction:column}
-.tp-full .sc{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:10px}
-.tp-full img{max-width:100%;height:auto;border-radius:8px;background:#fff}
+.tp-full .sc{flex:1;overflow:auto;display:block;padding:10px;-webkit-overflow-scrolling:touch;touch-action:auto}
+.tp-full img{display:block;margin:0 auto;height:auto;border-radius:8px;background:#fff}
+.tp-fbar{display:flex;align-items:center;gap:6px;padding:8px 10px;color:#fff;background:#0f172a}
+.tp-fbar button{border:none;border-radius:12px;min-width:40px;height:40px;padding:0 10px;font-family:inherit;font-weight:900;font-size:15px;background:#1e293b;color:#fff;cursor:pointer}
+.tp-fnav{display:flex;gap:8px;justify-content:center;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#0f172a}
+.tp-fnav button{flex:1;max-width:200px;border:none;border-radius:14px;padding:12px;font-family:inherit;font-weight:900;font-size:14px;background:#1e293b;color:#fff;cursor:pointer}.tp-fnav button:disabled{opacity:.3}
 .tp-btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:14px;padding:10px 16px;font-family:inherit;font-weight:900;font-size:13.5px;cursor:pointer;text-decoration:none}
-@media (max-width:640px){.tp-nav{width:40px;height:40px;font-size:18px}.tp-hero{padding:18px 16px}}
+@media (max-width:640px){.tp-nav{width:36px;height:36px;font-size:17px;background:rgba(15,23,42,.45)}.tp-hero{padding:16px 14px;border-radius:22px}.tp-view{padding:8px;border-radius:18px}.tp-stage{border-radius:12px}.tp-bar{gap:6px;font-size:13px}.tp-bar .tp-prog{flex-basis:100%;order:-1;max-width:none}.tp-thumbs button{width:52px}.tp-desc{padding:14px}.tp-goal{font-size:13.5px}}
 `;
 function TpViewer({ pages, th, title }) {
   const [i, setI] = useState(0); const [full, setFull] = useState(false); const [zoom, setZoom] = useState(1); const [all, setAll] = useState(false); const tx = useRef(null);
@@ -35448,9 +35457,11 @@ function TpViewer({ pages, th, title }) {
         <div className="tp-bar"><span>صفحة {maAr(i + 1)} من {maAr(n)}</span><div className="tp-prog"><i style={{ width: `${(i + 1) / n * 100}%` }} /></div><button className="tp-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", padding: "7px 12px" }} onClick={() => { setZoom(1); setFull(true); }}>⛶ تكبير</button><button className="tp-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", padding: "7px 12px" }} onClick={() => setAll(true)}>📄 كل الصفحات</button></div>
         {n > 1 && <div className="tp-thumbs">{pages.map((p, k) => <button key={k} id={`tp-th-${k}`} className={k === i ? "on" : ""} onClick={() => setI(k)}><img src={p} alt="" loading="lazy" /></button>)}</div>}
       </div>
-      {full && <div className="tp-full" onTouchStart={ts} onTouchEnd={te}>
-        <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 12px", color: "#fff", background: "#0f172a" }}><b style={{ flex: 1, fontSize: 14 }}>{title} — صفحة {maAr(i + 1)} من {maAr(n)}</b><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} onClick={() => setZoom(z => Math.max(1, z - .5))}>－</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} onClick={() => setZoom(z => Math.min(3, z + .5))}>＋</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} disabled={i === 0} onClick={prev}>→</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} disabled={i === n - 1} onClick={next}>←</button><button className="tp-btn" style={{ background: "#dc2626", color: "#fff", padding: "6px 12px" }} onClick={() => setFull(false)}>✕</button></div>
-        <div className="sc"><img src={pages[i]} alt="" style={{ width: `${zoom * 100}%`, maxWidth: zoom > 1 ? "none" : "100%" }} /></div>
+      {full && <div className="tp-full" dir="rtl" onTouchStart={e => { if (zoom === 1) ts(e); }} onTouchEnd={e => { if (zoom === 1) te(e); }}>
+        <div className="tp-fbar"><b style={{ flex: 1, minWidth: 0, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>صفحة {maAr(i + 1)} من {maAr(n)}</b><button onClick={() => setZoom(z => Math.max(1, z - .5))} aria-label="تصغير">－</button><button onClick={() => setZoom(1)} style={{ fontSize: 12 }}>{maAr(Math.round(zoom * 100))}٪</button><button onClick={() => setZoom(z => Math.min(4, z + .5))} aria-label="تكبير">＋</button><button style={{ background: "#dc2626" }} onClick={() => { setFull(false); setZoom(1); }} aria-label="إغلاق">✕</button></div>
+        <div className="sc" dir="ltr"><img src={pages[i]} alt="" style={{ width: `${zoom * 100}%`, maxWidth: zoom > 1 ? "none" : "100%" }} /></div>
+        {zoom > 1 && <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 12, fontWeight: 800, background: "#0f172a", padding: "4px 0 0" }}>☝️ حرّك الصفحة بإصبعك في كل الاتجاهات</div>}
+        {n > 1 && <div className="tp-fnav"><button disabled={i === 0} onClick={() => { prev(); setZoom(1); }}>→ السابقة</button><button disabled={i === n - 1} onClick={() => { next(); setZoom(1); }}>التالية ←</button></div>}
       </div>}
     </>
   );
@@ -35458,11 +35469,11 @@ function TpViewer({ pages, th, title }) {
 function TpPlanView({ p, pages, share }) {
   const th = tpTheme(p.theme); const goals = String(p.goals || "").split("\n").map(x => x.replace(/^[-•*\d.)\s]+/, "").trim()).filter(Boolean);
   return (
-    <div className="grid gap-4" style={{ "--a": th[0], "--b": th[1], "--s": th[2] }}>
+    <div className="tp-root" style={{ "--a": th[0], "--b": th[1], "--s": th[2] }}>
       <div className="tp-hero">
         <div className="flex items-center gap-3 flex-wrap">
           <img src={SCHOOL_LOGO} alt="" style={{ width: 64, height: 64, borderRadius: "50%", background: "#fff", padding: 3, boxShadow: "0 0 0 3px rgba(255,255,255,.35)" }} />
-          <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى{p.term ? ` • ${p.term}` : ""}</div><div style={{ fontSize: 25, fontWeight: 900, lineHeight: 1.4 }}>📚 {p.title || "الخطة الفصلية"}</div>
+          <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى{p.term ? ` • ${p.term}` : ""}</div><div style={{ fontSize: "clamp(19px,5.2vw,25px)", fontWeight: 900, lineHeight: 1.4, overflowWrap: "anywhere" }}>📚 {p.title || "الخطة الفصلية"}</div>
             <div className="tp-date">🕒 نُشرت: {tpWhen(p.pubAt || p.at)}</div></div>
           {share}
         </div>
@@ -35486,7 +35497,7 @@ function TermPlanPublic({ onBack, id: id0 }) {
   return (
     <div className="tp" dir="rtl" style={{ minHeight: "100vh", background: p ? `linear-gradient(180deg,${tpTheme(p.theme)[2]},#f8fafc 40%)` : "#f8fafc", padding: "16px 12px 40px" }}>
       <style>{TP_CSS}</style>
-      <div style={{ maxWidth: 980, margin: "0 auto" }} className="grid gap-4">
+      <div style={{ maxWidth: 980, margin: "0 auto", minWidth: 0 }} className="tp-root">
         {L === null ? <div className="tp-desc text-center" style={{ padding: 50, color: "#94a3b8", fontWeight: 800 }}>⏳</div> : !p ? <div className="tp-desc text-center" style={{ padding: 40 }}><div style={{ fontSize: 44 }}>📚</div><b>لم تُنشر الخطة الفصلية بعد</b></div> : <>
           {L.length > 1 && <div className="flex gap-2 flex-wrap">{L.map(x => <button key={x.id} className="tp-btn" style={x.id === id ? { background: tpTheme(x.theme)[0], color: "#fff" } : { background: "#fff", color: "#334155", border: "1px solid #e2e8f0" }} onClick={() => { setId(x.id); try { history.replaceState(null, "", "#termplan-" + x.id); } catch {} }}>📚 {x.title}</button>)}</div>}
           <TpPlanView p={p} pages={pages} share={tpShare(p, true)} />
@@ -35560,6 +35571,418 @@ function TermPlanPage() {
   );
 }
 
+
+const TT_PDF = {"ver":"pdf-1448-0926","at":1790380800000,"src":"جدول aSc (PDF) — ٢٦/٠٩","D":["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],"P":7,"T":["احمد عزي","احمد الشهري","اسامه السفري","جابر الشهري","حسن العيسى","رمضان الزهراني","سعد العتيبي","صاطي الحارثي","طارق الزهراني","عبدالرحيم رضوان","عبدالعزيز جار الله (رياضيات)","عبدالعزيز الذبياني","عبدالعزيز خضران (بدنية)","علي الغامدي","هادي المقاطي","فارس البشري","فهد رده","فيصل العتيبي","ماجد الهذلي","مجاهد الزهراني","محمد الجوفي","محمد القارحي","محمد الشهري","محمد الحربي","عمر العمشاني","وليد الزايدي","حاتم الشمراني (صعوبات)"],"A":["عزي","الشهري","السفري","ج.الشهري","العيسى","الزهراني","العتيبي","الحارثي","ط.الزهراني","رضوان","جار الله","الذبياني","خضران","الغامدي","المقاطي","البشري","رده","ف.العتيبي","الهذلي","م.الزهراني","الجوفي","القارحي","م.الشهري","الحربي","العمشاني","الزايدي","الشمراني"],"S":["اجتماعيات","احتياط 1","احتياط 2","احتياط 3","اسلامية","انجليزي","بدنية","تفكير ناقد","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"SA":["اجتماع","احتياط1","احتياط2","احتياط3","اسلامية","انجليزي","بدنية","تفكير","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"C":{"1-1":[[[4,13],[13,14],[10,10],[0,2],[11,5],[10,10],[5,3]],[[5,3],[10,10],[10,10],[0,2],[4,13],[11,5],[13,14]],[[4,13],[9,0],[12,8],[0,2],[11,5],[13,14],[10,10]],[[6,12],[13,14],[12,8],[14,0],[5,3],[4,13],[11,5]],[[6,12],[13,14],[9,0],[10,10],[4,13],[8,6],[5,3]]],"1-2":[[[10,10],[12,8],[13,14],[11,23],[4,13],[5,3],[0,2]],[[9,0],[0,2],[8,11],[5,3],[13,14],[4,13],[4,13]],[[0,2],[5,3],[6,12],[10,10],[10,10],[4,13],[13,14]],[[10,10],[11,23],[11,23],[14,2],[4,13],[6,12],[9,0]],[[10,10],[10,10],[5,3],[12,8],[11,23],[13,14],[13,14]]],"1-3":[[[13,14],[4,13],[0,21],[5,3],[10,10],[12,8],[10,10]],[[10,10],[8,14],[5,3],[13,14],[11,23],[13,14],[12,8]],[[9,0],[10,10],[13,14],[4,13],[11,23],[0,21],[0,21]],[[13,14],[4,13],[10,10],[14,21],[11,23],[5,3],[6,12]],[[4,13],[4,13],[10,10],[5,3],[6,12],[9,0],[11,23]]],"1-4":[[[5,3],[10,10],[9,0],[12,8],[0,21],[13,6],[4,13]],[[13,6],[11,23],[4,13],[0,21],[13,6],[5,3],[10,10]],[[10,10],[8,11],[10,10],[6,12],[4,13],[11,23],[4,13]],[[4,13],[12,8],[13,6],[14,3],[10,10],[11,23],[5,3]],[[13,6],[11,23],[0,21],[9,0],[10,10],[5,3],[6,12]]],"1-5":[[[11,7],[6,12],[10,4],[9,0],[5,3],[0,11],[4,9]],[[10,4],[5,3],[13,6],[0,11],[4,9],[9,0],[11,7]],[[12,8],[10,4],[4,9],[5,3],[13,6],[11,7],[10,4]],[[5,3],[13,6],[6,12],[14,4],[4,9],[11,7],[0,11]],[[10,4],[13,6],[8,2],[10,4],[13,6],[12,8],[4,9]]],"1-6":[[[5,1],[10,17],[11,7],[13,6],[4,9],[9,15],[6,12]],[[9,15],[0,11],[11,7],[10,17],[12,8],[4,9],[5,1]],[[10,17],[4,9],[10,17],[5,1],[8,2],[13,6],[11,7]],[[13,6],[6,12],[4,9],[14,7],[10,17],[12,8],[13,6]],[[5,1],[0,11],[0,11],[10,17],[11,7],[4,9],[13,6]]],"2-1":[[[6,12],[13,24],[10,19],[5,1],[4,16],[0,2],[10,19]],[[4,16],[5,1],[4,16],[11,5],[0,2],[12,8],[13,24]],[[11,5],[10,19],[13,24],[9,15],[8,11],[11,5],[10,19]],[[13,24],[11,5],[5,1],[14,22],[10,19],[4,16],[9,15]],[[4,16],[10,19],[12,8],[5,1],[13,24],[6,12],[0,2]]],"2-2":[[[9,15],[10,19],[4,16],[13,24],[5,1],[6,12],[11,5]],[[0,21],[13,24],[6,12],[5,1],[4,16],[10,19],[11,5]],[[5,1],[4,16],[10,19],[12,8],[13,24],[10,19],[13,24]],[[5,1],[10,19],[0,21],[14,26],[4,16],[11,5],[0,21]],[[12,8],[13,24],[11,5],[9,15],[4,16],[10,19],[8,21]]],"2-3":[[[11,5],[4,16],[13,18],[11,5],[12,8],[10,19],[0,11]],[[5,1],[4,16],[10,19],[9,15],[13,18],[8,21],[4,16]],[[4,16],[13,18],[0,11],[11,5],[10,19],[6,12],[5,1]],[[10,19],[0,11],[13,18],[14,24],[5,1],[9,15],[10,19]],[[11,5],[5,1],[4,16],[6,12],[12,8],[13,18],[10,19]]],"2-4":[[[4,16],[13,18],[6,12],[0,11],[10,19],[5,1],[9,15]],[[10,19],[12,8],[11,5],[13,18],[5,1],[4,16],[10,19]],[[10,19],[6,12],[11,5],[4,16],[8,21],[5,1],[13,18]],[[4,16],[13,18],[4,16],[14,11],[11,5],[0,11],[12,8]],[[10,19],[11,5],[5,1],[0,11],[10,19],[9,15],[13,18]]],"3-1":[[[5,20],[4,25],[13,24],[10,4],[6,12],[10,4],[4,25]],[[12,8],[4,25],[13,24],[10,4],[11,7],[5,20],[7,18]],[[4,25],[11,7],[11,7],[10,4],[5,20],[7,18],[9,22]],[[0,2],[13,24],[8,24],[14,20],[10,4],[4,25],[11,7]],[[5,20],[6,12],[9,22],[13,24],[0,2],[10,4],[12,8]]],"3-2":[[[13,18],[11,7],[12,8],[4,25],[7,25],[9,22],[10,4]],[[8,2],[6,12],[10,4],[5,20],[4,25],[13,18],[5,20]],[[13,18],[12,8],[10,4],[7,25],[6,12],[5,20],[4,25]],[[5,20],[4,25],[9,22],[14,17],[11,7],[10,4],[0,2]],[[4,25],[10,4],[11,7],[11,7],[13,18],[0,2],[10,4]]],"3-3":[[[11,23],[9,22],[6,15],[12,22],[5,20],[4,25],[5,20]],[[11,23],[10,17],[0,21],[4,25],[9,22],[10,17],[12,22]],[[13,14],[13,14],[5,20],[11,23],[4,25],[8,11],[10,17]],[[7,18],[0,21],[13,14],[14,15],[5,20],[10,17],[4,25]],[[10,17],[7,18],[4,25],[13,14],[10,17],[11,23],[6,15]]],"3-4":[[[8,24],[4,9],[11,23],[5,20],[9,22],[4,9],[13,6]],[[10,17],[5,20],[11,23],[6,0],[0,21],[7,24],[4,9]],[[4,9],[11,23],[13,6],[10,17],[12,22],[10,17],[6,0]],[[10,17],[5,20],[10,17],[14,9],[9,22],[13,6],[11,23]],[[0,21],[12,22],[5,20],[13,6],[4,9],[7,24],[10,17]]]},"RS":{"الأحد":[[2,17,4],[6,3,0],[9,1,25],[21,7,13],[26,4,11],[20,5,16],[24,0,22]],"الاثنين":[[9,7,13],[18,5,4],[20,26,14],[23,6,24],[11,0,15],[25,1,22],[15,17,21]],"الثلاثاء":[[7,3,15],[2,25,22],[18,16,26],[14,21,20],[9,4,17],[22,24,0],[6,11,23]],"الأربعاء":[[11,21,5],[22,15,1],[4,7,3],[18,16,13],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[20,7,25],[18,15,13],[2,23,5],[14,1,15],[21,11,17],[0,24,16]]},"R":{"الأحد":[[2,17,4],[6,3,0],[9,1,25],[21,7,13],[26,4,11],[20,5,16],[24,0,22]],"الاثنين":[[9,7,13],[18,5,4],[20,26,14],[23,6,24],[11,0,15],[25,1,22],[15,17,21]],"الثلاثاء":[[7,3,15],[2,25,22],[18,16,26],[14,21,20],[9,4,17],[22,24,0],[6,11,23]],"الأربعاء":[[11,21,5],[22,15,1],[4,7,3],[18,16,13],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[20,7,25],[18,15,13],[2,23,5],[14,1,15],[21,11,17],[0,24,16]]},"times":[["07:00","07:45"],["07:45","08:30"],["08:30","09:15"],["09:15","10:00"],["10:20","11:05"],["11:05","11:50"],["14:00","14:45"]]};
+
+// ══════════════════════════════════════════════════════════
+// 🗓️ الجدول المدرسي الذكي — الفصول والمعلمون والاحتياط (١/٢/٣)
+// school-tt (مع RS: احتياط مرتب لكل حصة) • school-tt-abs/{date}/t{ti} = {ti,o,at,by}
+// الرصد في school-ttlog/{date}/{d_p_ck} = {st, ti, si, mins, out, tm, sub, lvl, note}
+// ══════════════════════════════════════════════════════════
+const TT_ABS = "school-tt-abs", TT_OLD = "school-tt-old";
+const TT_LVC = [null, { c: "#0284c7", bg: "#e0f2fe", l: "احتياط ١" }, { c: "#d97706", bg: "#fef3c7", l: "احتياط ٢" }, { c: "#9333ea", bg: "#f3e8ff", l: "احتياط ٣" }, { c: "#0f766e", bg: "#ccfbf1", l: "متفرّغ" }];
+const ST2 = {
+  ok: { l: "حضر", ic: "✅", c: "#15803d", bg: "#dcfce7" },
+  late: { l: "تأخر عن الحصة", ic: "⏰", c: "#c2410c", bg: "#ffedd5" },
+  early: { l: "خرج من الفصل", ic: "🚪", c: "#7c3aed", bg: "#ede9fe" },
+  absent: { l: "غائب", ic: "❌", c: "#b91c1c", bg: "#fee2e2" },
+};
+const sttCk = ck => { const [l, s] = String(ck).split("-"); return `${maAr(s)}/${maAr(l)}`; };
+const sttNorm = s => String(s || "").replace(/\(.*?\)/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
+const sttHM = m => { if (m == null || isNaN(m)) return ""; const h = Math.floor(m / 60), mm = m % 60; return `${maPad(h)}:${maPad(mm)}`; };
+function sttFindMe(T, name) {
+  const w = sttNorm(name).split(" ").filter(Boolean); if (!w.length || !T) return -1;
+  const rows = T.T.map((n, i) => ({ i, w: sttNorm(n).split(" ").filter(Boolean) }));
+  const a = rows.filter(r => r.w[0] === w[0] && w.slice(1).some(x => r.w.slice(1).includes(x)));
+  if (a.length === 1) return a[0].i;
+  const b = rows.filter(r => r.w[r.w.length - 1] === w[w.length - 1] && r.w[0] === w[0]); if (b.length) return b[0].i;
+  const c = rows.filter(r => w.includes(r.w[0]) && w.includes(r.w[r.w.length - 1])); return c.length === 1 ? c[0].i : -1;
+}
+const sttRes = (T, d, p) => { const day = T.D[d]; const r = T.RS && T.RS[day] ? T.RS[day][p] : (T.R && T.R[day] ? T.R[day][p] : null); const arr = Array.isArray(r) ? r : (r && typeof r === "object" ? Object.values(r) : []); return arr.filter(x => x !== null && x !== undefined && x !== "").map(Number).slice(0, 3); };
+const sttClassOf = (T, d, p, ti) => Object.keys(T.C).find(ck => T.C[ck][d] && T.C[ck][d][p] && T.C[ck][d][p][1] === ti);
+const sttBusy = (T, d, p) => new Set(Object.keys(T.C).map(ck => T.C[ck][d][p][1]).filter(x => x >= 0));
+// توزيع الاحتياط: أول غائب ← احتياط ١ ، الثاني ← احتياط ٢ ، الثالث ← احتياط ٣ ، ثم المتفرغون الأقل تغطية
+function sttPlan(T, d, absList, log) {
+  const plan = {}; if (d < 0 || !T) return plan;
+  const absSet = new Set(absList); const cover = {};
+  Object.values(log || {}).forEach(v => { if (v && v.st === "sub" && v.sub != null) cover[v.sub] = (cover[v.sub] || 0) + 1; });
+  for (let p = 0; p < T.P; p++) {
+    const used = new Set(); const todo = [];
+    absList.forEach(a => { const ck = sttClassOf(T, d, p, a); if (!ck) return; const k = ttK(d, p, ck); const v = log[k]; if (v && v.st === "sub" && v.sub != null) { used.add(v.sub); plan[k] = { a, ck, p, sub: v.sub, lvl: v.lvl || 0, done: true }; } else if (v && v.st && v.st !== "absent") { /* حضر فعلياً */ } else todo.push({ a, ck, k }); });
+    Object.entries(log || {}).forEach(([k, v]) => { const [dd, pp] = k.split("_"); if (+dd === d && +pp === p && v && v.st === "sub" && v.sub != null) used.add(v.sub); });
+    const res = sttRes(T, d, p); const busy = sttBusy(T, d, p);
+    todo.forEach(({ a, ck, k }) => {
+      let sub = null, lvl = 0;
+      for (let i = 0; i < res.length; i++) { const t = res[i]; if (t >= 0 && !absSet.has(t) && !used.has(t) && !busy.has(t)) { sub = t; lvl = i + 1; break; } }
+      if (sub == null) { const fr = T.T.map((_, i) => i).filter(i => !busy.has(i) && !res.includes(i) && !absSet.has(i) && !used.has(i)).sort((x, y) => (cover[x] || 0) - (cover[y] || 0)); if (fr.length) { sub = fr[0]; lvl = 4; } }
+      if (sub != null) { used.add(sub); cover[sub] = (cover[sub] || 0) + 1; }
+      plan[k] = { a, ck, p, sub, lvl, done: false };
+    });
+  }
+  return plan;
+}
+
+const STT_CSS = `
+.stt{--ink:#0f172a;--mut:#64748b}
+.stt-hero{border-radius:26px;color:#fff;padding:18px 18px 16px;background:radial-gradient(600px 240px at 95% -40%,rgba(253,224,71,.28),transparent 60%),radial-gradient(500px 220px at 0% 120%,rgba(45,212,191,.35),transparent 60%),linear-gradient(135deg,#1e1b4b,#3730a3 50%,#0e7490);position:relative;overflow:hidden}
+.stt-hero::after{content:"";position:absolute;inset:auto -40px -60px auto;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.07)}
+.stt-now{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 14px;font-weight:900;font-size:13px}
+.stt-now i{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 4px rgba(74,222,128,.3);animation:ttP 1.6s infinite}
+.stt-seg{display:flex;background:#eef2ff;border-radius:16px;padding:4px;gap:4px}
+.stt-seg button{flex:1;border:none;background:transparent;border-radius:12px;padding:10px 6px;font-family:inherit;font-weight:900;font-size:13.5px;color:#475569;cursor:pointer;white-space:nowrap}
+.stt-seg button.on{background:#fff;color:#3730a3;box-shadow:0 4px 12px -6px rgba(55,48,163,.45)}
+.stt-sc{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.stt-chip{flex:none;padding:8px 13px;border-radius:999px;border:1.5px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;color:#334155;white-space:nowrap}
+.stt-chip.on{background:var(--cc,#3730a3);border-color:var(--cc,#3730a3);color:#fff}
+.stt-abs{display:inline-flex;align-items:center;gap:6px;background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b;border-radius:999px;padding:5px 6px 5px 12px;font-weight:900;font-size:13px}
+.stt-abs em{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px}
+.stt-abs button{border:none;background:#fee2e2;color:#b91c1c;border-radius:50%;width:24px;height:24px;cursor:pointer;font-weight:900}
+.stt-lv{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:900;white-space:nowrap}
+.stt-wrap{overflow-x:auto;border-radius:20px;border:1px solid #e2e8f0;background:#fff;-webkit-overflow-scrolling:touch}
+.stt-g{border-collapse:separate;border-spacing:0;width:100%}
+.stt-g th{position:sticky;top:0;z-index:2;background:#1e1b4b;color:#fff;font-size:12px;font-weight:900;padding:7px 4px;min-width:86px}
+.stt-g th.now{background:linear-gradient(180deg,#0891b2,#0e7490)}
+.stt-g th small{display:block;font-size:10px;opacity:.75;font-weight:700}
+.stt-g td{border-bottom:1px solid #f1f5f9;border-left:1px solid #f1f5f9;padding:3px;vertical-align:top}
+.stt-g .rh{position:sticky;right:0;z-index:1;background:#fff;font-weight:900;font-size:12.5px;white-space:nowrap;padding:6px 8px;border-left:2px solid #e2e8f0;min-width:0}
+.stt-g th.rh{background:#1e1b4b;z-index:3}
+.stt-c{position:relative;display:block;width:100%;min-height:56px;border-radius:12px;border:1.5px solid transparent;background:#f8fafc;padding:6px 6px 5px;text-align:right;font-family:inherit;cursor:pointer;overflow:hidden}
+.stt-c::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--sc)}
+.stt-c small{display:block;font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stt-c b{display:block;font-size:12.5px;font-weight:900;color:#0f172a;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stt-c .bd{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:900;border-radius:999px;padding:1px 7px;background:#fff}
+.stt-c.now{box-shadow:0 0 0 2px #0891b2}
+.stt-c.sug{border-style:dashed}
+.stt-card{display:flex;align-items:stretch;gap:0;border-radius:18px;background:#fff;border:1.5px solid #e2e8f0;overflow:hidden;cursor:pointer;text-align:right;font-family:inherit;width:100%;padding:0}
+.stt-card .pn{flex:none;width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;border-left:1.5px solid #e2e8f0;font-weight:900;color:#3730a3}
+.stt-card .pn b{font-size:22px;line-height:1}.stt-card .pn small{font-size:10px;color:#64748b;font-weight:800;margin-top:3px}
+.stt-card .bx{flex:1;min-width:0;padding:10px 12px;border-right:5px solid var(--sc)}
+.stt-card.now{box-shadow:0 0 0 3px #22d3ee;border-color:#22d3ee}
+.stt-sheet{position:fixed;inset:0;z-index:700;background:rgba(15,23,42,.55);display:flex;align-items:flex-end;justify-content:center}
+.stt-sheet>div{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:26px 26px 0 0;box-shadow:0 -20px 50px -20px rgba(0,0,0,.5);animation:sttUp .22s ease-out}
+@media (min-width:760px){.stt-sheet{align-items:center}.stt-sheet>div{border-radius:26px}}
+@keyframes sttUp{from{transform:translateY(40px);opacity:.4}}
+.stt-sts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stt-sts button{border:2px solid #e2e8f0;background:#fff;border-radius:16px;padding:10px 2px;font-family:inherit;font-weight:900;font-size:12.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:#334155}
+.stt-sts button span{font-size:24px}
+.stt-cand{display:flex;align-items:center;gap:10px;width:100%;border:2px solid #e2e8f0;background:#fff;border-radius:16px;padding:10px 12px;font-family:inherit;cursor:pointer;text-align:right}
+.stt-cand.on{border-color:var(--lc);background:var(--lb)}
+.stt-cand:disabled{opacity:.45;cursor:not-allowed}
+.stt-cand i{font-style:normal;flex:none;min-width:70px;text-align:center;border-radius:999px;padding:3px 8px;font-size:11.5px;font-weight:900;color:#fff;background:var(--lc)}
+.stt-step{display:flex;align-items:center;gap:8px}
+.stt-step button{width:40px;height:40px;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;font-size:20px;font-weight:900;cursor:pointer}
+.stt-step b{font-size:26px;font-weight:900;min-width:64px;text-align:center}
+.stt-pl{display:grid;gap:8px}
+.stt-pr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:8px 10px;cursor:pointer;font-family:inherit;text-align:right;width:100%}
+.stt-wk td .stt-c{min-height:50px;padding:5px 4px 4px}.stt-wk .stt-c b{font-size:11px}.stt-wk .stt-c small{font-size:10.5px}
+.stt-wk th{min-width:0!important;padding:6px 2px!important}
+@media (max-width:640px){.stt-g th{min-width:78px}.stt-wk th{font-size:11px}.stt-hero{padding:16px 14px}}
+`;
+
+function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave, onClear, onClose, subName }) {
+  const [si, ti] = T.C[ck][d][p];
+  const st0 = cur.st === "sub" ? "absent" : (cur.st || (abs.includes(ti) ? "absent" : ""));
+  const nowM = new Date().getHours() * 60 + new Date().getMinutes();
+  const s0 = mlToMin(times[p]?.[0]), e0 = mlToMin(times[p]?.[1]);
+  const inP = isToday && s0 != null && e0 != null && nowM >= s0 && nowM < e0;
+  const autoLate = inP ? Math.max(1, nowM - s0) : 5;
+  const autoOut = inP ? Math.max(1, e0 - nowM) : 10;
+  const pk = plan[ttK(d, p, ck)];
+  const [f, setF] = useState({ st: st0, mins: cur.mins || autoLate, out: cur.out || autoOut, sub: cur.sub != null ? cur.sub : (pk && pk.sub != null ? pk.sub : ""), lvl: cur.lvl || (pk ? pk.lvl : 0), note: cur.note || "" });
+  const res = sttRes(T, d, p); const busy = sttBusy(T, d, p);
+  const usedBy = {}; Object.entries(log).forEach(([k, v]) => { if (!v || v.st !== "sub" || v.sub == null) return; const [dd, pp, c2] = k.split("_"); if (+dd === d && +pp === p && c2 !== ck) usedBy[v.sub] = c2; });
+  Object.values(plan).forEach(x => { if (x.p === p && x.ck !== ck && x.sub != null && usedBy[x.sub] == null) usedBy[x.sub] = x.ck; });
+  const cover = {}; Object.values(log).forEach(v => { if (v && v.st === "sub" && v.sub != null) cover[v.sub] = (cover[v.sub] || 0) + 1; });
+  const free = T.T.map((_, i) => i).filter(i => !busy.has(i) && !res.includes(i) && !abs.includes(i)).sort((a, b) => (cover[a] || 0) - (cover[b] || 0));
+  const s = ST2[f.st];
+  const save = () => {
+    if (!f.st) { alert("اختر حالة الحصة"); return; }
+    const v = { st: f.st, ti, si };
+    if (f.st === "late") { v.mins = +f.mins || 0; v.tm = sttHM(s0 + v.mins); }
+    if (f.st === "early") { v.out = +f.out || 0; v.tm = sttHM(e0 - v.out); }
+    if (f.st === "absent" && f.sub !== "" && f.sub != null) { v.st = "sub"; v.sub = +f.sub; v.lvl = f.lvl || 0; }
+    if (f.note.trim()) v.note = f.note.trim();
+    onSave(v);
+  };
+  const Cand = ({ i, lvl, dis, why }) => { const L = TT_LVC[lvl]; return (
+    <button type="button" disabled={dis} className={`stt-cand ${+f.sub === i && f.sub !== "" ? "on" : ""}`} style={{ "--lc": L.c, "--lb": L.bg }} onClick={() => setF({ ...f, sub: i, lvl })}>
+      <i>{L.l}</i>
+      <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, fontWeight: 900, color: "#0f172a" }}>{ttClean(T.T[i])}</b><small style={{ fontSize: 11.5, fontWeight: 800, color: dis ? "#b91c1c" : "#64748b" }}>{why || (cover[i] ? `غطّى اليوم ${maAr(cover[i])} حصة` : "متاح الآن ✓")}</small></span>
+      {+f.sub === i && f.sub !== "" && <span style={{ fontSize: 20 }}>✔️</span>}
+    </button>); };
+  return (
+    <div className="stt-sheet" onClick={onClose}><div onClick={e => e.stopPropagation()} dir="rtl">
+      <div style={{ padding: "16px 18px 14px", background: `linear-gradient(135deg,${TT_SUBC[si % TT_SUBC.length]},#1e1b4b)`, color: "#fff", position: "relative" }}>
+        <div style={{ width: 44, height: 5, borderRadius: 9, background: "rgba(255,255,255,.5)", margin: "-6px auto 10px" }} />
+        <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{T.D[d]} • الحصة {TT_ORD[p]} • {mlFmtT(times[p]?.[0])} إلى {mlFmtT(times[p]?.[1])}</div>
+        <div style={{ fontSize: 21, fontWeight: 900, marginTop: 2 }}>{subName(si)} — {maClassName(ck)}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, marginTop: 2 }}>👤 {ttClean(T.T[ti])}{abs.includes(ti) ? " • 🚫 غائب اليوم" : ""}</div>
+      </div>
+      {ro ? <div className="p-4 grid gap-3">
+        {cur.st ? (() => { const x = ST2[cur.st === "sub" ? "absent" : cur.st]; return <div style={{ padding: "12px 14px", borderRadius: 16, background: x.bg, color: x.c, fontWeight: 900, fontSize: 15 }}>{x.ic} {x.l}{cur.st === "late" ? ` — ${maAr(cur.mins)} دقيقة` : cur.st === "early" ? ` — قبل النهاية بـ ${maAr(cur.out)} دقيقة` : ""}{cur.st === "sub" ? <div style={{ fontSize: 13.5, marginTop: 4 }}>🔄 البديل: {ttClean(T.T[cur.sub])}</div> : null}</div>; })() : <div style={{ padding: 12, borderRadius: 14, background: "#f1f5f9", fontWeight: 800, color: "#64748b", textAlign: "center" }}>لا توجد متابعة مسجلة لهذه الحصة</div>}
+        <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 900, color: "#64748b", marginBottom: 6 }}>🛡️ الاحتياط في هذه الحصة</div><div className="flex gap-1 flex-wrap">{res.map((t, i) => <span key={i} className="stt-lv" style={{ background: TT_LVC[i + 1].bg, color: TT_LVC[i + 1].c }}>{TT_LVC[i + 1].l}: {ttClean(T.T[t])}</span>)}</div></div>
+        <button className="ma-btn" onClick={onClose}>إغلاق</button>
+      </div> : <div className="p-4 grid gap-3">
+        <div className="stt-sts">{Object.entries(ST2).map(([k, x]) => <button key={k} type="button" onClick={() => setF({ ...f, st: k })} style={f.st === k ? { background: x.bg, borderColor: x.c, color: x.c } : null}><span>{x.ic}</span>{x.l}</button>)}</div>
+        {f.st === "late" && <div style={{ background: "#fff7ed", border: "1.5px solid #fed7aa", borderRadius: 18, padding: 12 }} className="grid gap-2">
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#9a3412" }}>⏰ {inP ? "حُسب التأخر تلقائياً من بداية الحصة حتى الآن" : "حدّد مدة التأخر"}</div>
+          <div className="stt-step" style={{ justifyContent: "center" }}><button onClick={() => setF({ ...f, mins: Math.max(1, (+f.mins || 0) - 1) })}>−</button><b style={{ color: "#c2410c" }}>{maAr(f.mins)}<small style={{ fontSize: 13 }}> د</small></b><button onClick={() => setF({ ...f, mins: (+f.mins || 0) + 1 })}>+</button></div>
+          <div className="flex gap-1 flex-wrap justify-center">{[5, 10, 15, 20, 30].map(m => <button key={m} className={`stt-chip ${+f.mins === m ? "on" : ""}`} style={{ "--cc": "#c2410c", padding: "5px 11px" }} onClick={() => setF({ ...f, mins: m })}>{maAr(m)} د</button>)}</div>
+          <div style={{ textAlign: "center", fontSize: 13, fontWeight: 800, color: "#7c2d12" }}>دخل الفصل الساعة <b>{mlFmtT(sttHM(s0 + (+f.mins || 0)))}</b></div>
+        </div>}
+        {f.st === "early" && <div style={{ background: "#f5f3ff", border: "1.5px solid #ddd6fe", borderRadius: 18, padding: 12 }} className="grid gap-2">
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#5b21b6" }}>🚪 {inP ? "حُسب الوقت المتبقي من الحصة تلقائياً من الآن" : "حدّد كم دقيقة قبل نهاية الحصة"}</div>
+          <div className="stt-step" style={{ justifyContent: "center" }}><button onClick={() => setF({ ...f, out: Math.max(1, (+f.out || 0) - 1) })}>−</button><b style={{ color: "#7c3aed" }}>{maAr(f.out)}<small style={{ fontSize: 13 }}> د</small></b><button onClick={() => setF({ ...f, out: (+f.out || 0) + 1 })}>+</button></div>
+          <div style={{ textAlign: "center", fontSize: 13, fontWeight: 800, color: "#4c1d95" }}>خرج الساعة <b>{mlFmtT(sttHM(e0 - (+f.out || 0)))}</b> — قبل نهاية الحصة بـ {maAr(f.out)} دقيقة</div>
+        </div>}
+        {f.st === "absent" && <div className="grid gap-2">
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>🔄 اختر البديل من الاحتياط</div>
+          {res.map((t, i) => { const why = abs.includes(t) ? "🚫 غائب اليوم" : usedBy[t] != null ? `يغطي ${maClassName(usedBy[t])}` : busy.has(t) ? "لديه حصة" : ""; return <Cand key={i} i={t} lvl={i + 1} dis={!!why} why={why} />; })}
+          {free.length > 0 && <details><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#0f766e", padding: "6px 2px" }}>🟢 معلمون متفرّغون في هذه الحصة ({maAr(free.length)})</summary><div className="grid gap-2 mt-2">{free.map(i => <Cand key={i} i={i} lvl={4} dis={usedBy[i] != null} why={usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : ""} />)}</div></details>}
+          <button type="button" className={`stt-chip ${f.sub === "" ? "on" : ""}`} style={{ "--cc": "#b91c1c", justifySelf: "start" }} onClick={() => setF({ ...f, sub: "", lvl: 0 })}>بدون بديل</button>
+        </div>}
+        <input className="ma-inp" value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder="📝 ملاحظة (اختياري)…" />
+        <div className="flex gap-2 justify-between flex-wrap">
+          {cur.st ? <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={onClear}>🗑 مسح</button> : <span />}
+          <div className="flex gap-2"><button className="ma-btn" onClick={onClose}>إلغاء</button><button className="ma-btn pri" style={{ padding: "10px 26px", background: s ? s.c : undefined, borderColor: s ? s.c : undefined }} onClick={save}>💾 حفظ</button></div>
+        </div>
+      </div>}
+    </div></div>);
+}
+
+function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false, me = null }) {
+  const [tt, setTt] = useState(null); const [times0, setTimes0] = useState(null);
+  const [dateK, setDateK] = useState(maKey(new Date()));
+  const [log, setLog] = useState({}); const [absO, setAbsO] = useState({});
+  const [view, setView] = useState(ro ? "tch" : "cls"); const [sel, setSel] = useState(""); const [mode, setMode] = useState("day");
+  const [cell, setCell] = useState(null); const [addA, setAddA] = useState(false); const [q, setQ] = useState("");
+  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false); const [now, setNow] = useState(new Date()); const [showPlan, setShowPlan] = useState(null);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
+  useEffect(() => { (async () => {
+    let [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]);
+    const stale = !a || !a.C || (!a.RS && (+a.at || 0) < TT_PDF.at);
+    if (stale) {
+      if (canEdit && !ro) { await maPut(TT_OLD, { tt: a || null, cfg: c || null, at: Date.now() }); const ok = await maPut(TT_NODE, { ...TT_PDF, by }); await maPut(TT_CFG, { ...(c && typeof c === "object" ? c : {}), times: TT_PDF.times }); if (ok) toast("✅ اعتُمد الجدول الجديد (فصول + معلمون + احتياط ١/٢/٣) — والقديم محفوظ نسخةً احتياطية"); }
+      a = TT_PDF; c = { ...(c || {}), times: TT_PDF.times };
+    }
+    setTt(a); setTimes0(c && Array.isArray(c.times) ? c.times : TT_PDF.times);
+    if (ro && me) { const i = sttFindMe(a, me.name); if (i >= 0) setSel(String(i)); }
+  })(); }, []);
+  const loadDay = async () => { const [l, ab] = await Promise.all([maGet(`${TT_LOG}/${dateK}`), maGet(`${TT_ABS}/${dateK}`)]); setLog(l && typeof l === "object" ? l : {}); setAbsO(ab && typeof ab === "object" ? ab : {}); };
+  useEffect(() => { loadDay(); const t = setInterval(() => { if (!cell && !addA) loadDay(); }, 45000); return () => clearInterval(t); }, [dateK, cell, addA]);
+  if (!tt) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري تحميل الجدول…</div>;
+
+  const T = tt; const D = maDate(dateK); const isToday = dateK === maKey(new Date());
+  const cks = Object.keys(T.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  const di = ttDayIdx(T, D);
+  const times = (times0 || TT_PDF.times).slice(0, T.P);
+  const nowM = now.getHours() * 60 + now.getMinutes();
+  const curP = isToday ? times.findIndex(([a, b]) => nowM >= mlToMin(a) && nowM < mlToMin(b)) : -1;
+  const absList = Object.values(absO).filter(x => x && x.ti != null).sort((a, b) => (a.o || 0) - (b.o || 0)).map(x => +x.ti);
+  const plan = sttPlan(T, di, absList, log);
+  const subName = si => si >= 0 ? (T.SA && T.SA[si]) || T.S[si] : "—";
+  const sc = si => TT_SUBC[si % TT_SUBC.length] || "#64748b";
+  const canRec = !ro && (isToday || canEdit);
+  const meIdx = me ? sttFindMe(T, me.name) : -1;
+
+  const putLog = async (d, p, ck, v) => {
+    const k = ttK(d, p, ck); const rec = v ? { ...v, by, at: Date.now() } : null;
+    setLog(o => { const n = { ...o }; if (rec) n[k] = rec; else delete n[k]; return n; });
+    const ok = rec ? await maPut(`${TT_LOG}/${dateK}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dateK}/${k}.json`, { method: "DELETE" }).then(r => r.ok).catch(() => false);
+    if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok;
+  };
+  const addAbs = async ti => {
+    if (absList.includes(ti)) return; const o = absList.length + 1; const rec = { ti, o, at: Date.now(), by };
+    setAbsO(x => ({ ...x, ["t" + ti]: rec })); setAddA(false); setQ("");
+    const ok = await maPut(`${TT_ABS}/${dateK}/t${ti}`, rec); if (!ok) toast("⚠️ تعذّر الحفظ");
+    const n = di >= 0 ? cks.filter(ck => T.C[ck][di].some(c => c[1] === ti)).length : 0;
+    toast(`🚫 ${ttClean(T.T[ti])} غائب (${maAr(o)}) — ${maAr(n)} حصة ستُغطّى من احتياط ${maAr(Math.min(o, 3))}`);
+  };
+  const delAbs = async ti => {
+    if (!window.confirm(`إلغاء غياب ${ttClean(T.T[ti])}؟`)) return;
+    const rest = absList.filter(x => x !== ti); const n = {}; rest.forEach((t, i) => { n["t" + t] = { ...(absO["t" + t] || { ti: t }), o: i + 1 }; });
+    setAbsO(n); await maPut(`${TT_ABS}/${dateK}`, Object.keys(n).length ? n : null);
+    const kill = Object.entries(log).filter(([k, v]) => v && v.ti === ti && (v.st === "absent" || v.st === "sub") && +k.split("_")[0] === di).map(([k]) => k);
+    if (kill.length && window.confirm(`حذف ${maAr(kill.length)} رصد احتياط سابق لهذا المعلم اليوم؟`)) for (const k of kill) { const [d, p, ck] = k.split("_"); await putLog(+d, +p, ck, null); }
+  };
+  const approve = async () => {
+    const rows = Object.entries(plan).filter(([, x]) => !x.done); if (!rows.length) { toast("✓ كل حصص الغائبين موزّعة"); return; }
+    setBusy(true); for (const [k, x] of rows) { const [si] = T.C[x.ck][di][x.p]; await putLog(di, x.p, x.ck, x.sub != null ? { st: "sub", ti: x.a, si, sub: x.sub, lvl: x.lvl, note: "غياب المعلم" } : { st: "absent", ti: x.a, si, note: "غياب المعلم — بلا بديل" }); }
+    setBusy(false); toast(`✅ اعتُمد توزيع الاحتياط لـ ${maAr(rows.length)} حصة`);
+  };
+
+  // ── وصف خانة (فصل) في يوم d حصة p
+  const infoCls = (d, p, ck) => {
+    const [si, ti] = T.C[ck][d][p]; if (si < 0) return null;
+    const isD = d === di; const v = isD ? log[ttK(d, p, ck)] : null; const pk = isD ? plan[ttK(d, p, ck)] : null;
+    const absent = isD && absList.includes(ti);
+    let bd = null;
+    if (v && v.st === "sub") { const L = TT_LVC[v.lvl || 4]; bd = { t: `🔄 ${ttShort(T, v.sub)}`, c: L.c, bg: L.bg }; }
+    else if (v && ST2[v.st]) { const x = ST2[v.st]; bd = { t: `${x.ic} ${v.st === "late" ? maAr(v.mins) + "د" : v.st === "early" ? "-" + maAr(v.out) + "د" : x.l}`, c: x.c, bg: x.bg }; }
+    else if (pk && pk.sub != null) { const L = TT_LVC[pk.lvl]; bd = { t: `↩ ${ttShort(T, pk.sub)}`, c: L.c, bg: L.bg, sug: true }; }
+    else if (absent) bd = { t: "🚫 غائب", c: "#b91c1c", bg: "#fee2e2" };
+    return { si, ti, v, pk, absent, bd };
+  };
+  const ClsCell = ({ d, p, ck, tview, cp }) => {
+    const x = infoCls(d, p, ck); if (!x) return <div style={{ minHeight: 56 }} />;
+    const bg = x.v && x.v.st === "sub" ? TT_LVC[x.v.lvl || 4].bg : x.bd && !x.bd.sug ? x.bd.bg : x.absent ? "#fff1f2" : "#f8fafc";
+    return <button type="button" className={`stt-c ${d === di && p === curP ? "now" : ""} ${x.bd && x.bd.sug ? "sug" : ""}`} style={{ "--sc": sc(x.si), background: bg, borderColor: x.bd ? x.bd.c + "66" : "transparent" }} onClick={() => setCell({ d, p, ck })}>
+      <small style={{ color: sc(x.si) }}>{subName(x.si)}</small>
+      <b style={{ color: x.absent ? "#b91c1c" : undefined }}>{tview ? (cp ? sttCk(ck) : maClassName(ck)) : ttShort(T, x.ti)}</b>
+      {x.bd && <span className="bd" style={{ color: x.bd.c, background: "#fff" }}>{x.bd.t}</span>}
+    </button>;
+  };
+  // خانة معلم: حصة، أو احتياط ملوّن، أو تغطية
+  const TchCell = ({ d, p, ti, cp }) => {
+    const ck = sttClassOf(T, d, p, ti);
+    if (ck) return <ClsCell d={d} p={p} ck={ck} tview cp={cp} />;
+    const lv = sttRes(T, d, p).indexOf(ti) + 1;
+    const isD = d === di;
+    const cov = isD ? Object.entries(log).find(([k, v]) => v && v.st === "sub" && v.sub === ti && +k.split("_")[1] === p && +k.split("_")[0] === d) : null;
+    const sug = isD && !cov ? Object.values(plan).find(x => !x.done && x.sub === ti && x.p === p) : null;
+    const tgt = cov ? cov[0].split("_")[2] : sug ? sug.ck : null;
+    if (tgt) { const L = TT_LVC[cov ? (cov[1].lvl || lv || 4) : sug.lvl]; return <button type="button" className={`stt-c ${sug ? "sug" : ""}`} style={{ "--sc": L.c, background: L.bg, borderColor: L.c + "88" }} onClick={() => setCell({ d, p, ck: tgt })}><small style={{ color: L.c }}>{L.l}{sug ? " • مقترح" : ""}</small><b>🔄 {cp ? sttCk(tgt) : maClassName(tgt)}</b></button>; }
+    if (lv) { const L = TT_LVC[lv]; return <div className="stt-c" style={{ "--sc": L.c, background: `repeating-linear-gradient(135deg,${L.bg},${L.bg} 7px,#fff 7px,#fff 12px)`, borderColor: L.c + "44", cursor: "default" }}>{cp ? <div style={{ textAlign: "center" }}><small style={{ color: L.c, fontSize: 9.5, overflow: "visible" }}>احتياط</small><b style={{ color: L.c, fontSize: 19, lineHeight: 1.1 }}>{maAr(lv)}</b></div> : <><small style={{ color: L.c }}>🛡️ {L.l}</small><b style={{ color: L.c }}>مناوب</b></>}</div>; }
+    return <div style={{ minHeight: 56, borderRadius: 12, background: "#fcfcfd" }} />;
+  };
+
+  // ── الطباعة
+  const PCSS = `@page{size:A4 landscape;margin:7mm}.pg{border-color:#3730a3}.pg::before{background:linear-gradient(90deg,#1e1b4b,#3730a3,#0891b2,#fbbf24)}.tt span{background:linear-gradient(135deg,#3730a3,#1e1b4b)}th{background:#1e1b4b}
+  table.w td{height:52px;vertical-align:middle;font-size:11px}table.w td.dh{background:#eef2ff;font-weight:900;font-size:12px;width:70px}table.w td b{display:block;font-size:12.5px}table.w td i{font-style:normal;display:block;font-size:10px;font-weight:800;color:#475569}
+  .lgd{display:flex;gap:6px;justify-content:center;margin:6px 0}.lgd span{border-radius:999px;padding:2px 10px;font-weight:900;font-size:10.5px}.sg .pn{color:#3730a3}`;
+  const weekHTML = (kind, key) => {
+    const head = `<tr><th>اليوم</th>${times.map((t, p) => `<th>${TT_ORD[p]}<br><small>${mlFmtT(t[0])} - ${mlFmtT(t[1])}</small></th>`).join("")}</tr>`;
+    const rows = T.D.map((dn, d) => `<tr><td class="dh">${dn}</td>${times.map((_, p) => {
+      if (kind === "cls") { const [si, ti] = T.C[key][d][p]; return si < 0 ? "<td></td>" : `<td style="border-top:4px solid ${sc(si)}"><b style="color:${sc(si)}">${ptEsc(subName(si))}</b><i>${ptEsc(ttClean(T.T[ti]))}</i></td>`; }
+      const ck = sttClassOf(T, d, p, key); if (ck) { const [si] = T.C[ck][d][p]; return `<td style="border-top:4px solid ${sc(si)}"><b>${ptEsc(maClassName(ck))}</b><i style="color:${sc(si)}">${ptEsc(subName(si))}</i></td>`; }
+      const lv = sttRes(T, d, p).indexOf(key) + 1; return lv ? `<td style="background:${TT_LVC[lv].bg};color:${TT_LVC[lv].c}"><b>🛡️ ${TT_LVC[lv].l}</b></td>` : "<td></td>";
+    }).join("")}</tr>`).join("");
+    const nm = kind === "cls" ? `جدول فصل ${maClassName(key)}` : `جدول المعلم: ${ttClean(T.T[key])}`;
+    const cnt = kind === "tch" ? (() => { let n = 0, r = 0; T.D.forEach((_, d) => times.forEach((_, p) => { if (sttClassOf(T, d, p, key)) n++; else if (sttRes(T, d, p).includes(key)) r++; })); return `<div class="lgd"><span style="background:#eef2ff;color:#3730a3">📚 ${maAr(n)} حصة أسبوعياً</span><span style="background:#e0f2fe;color:#0284c7">🛡️ ${maAr(r)} حصة احتياط</span></div>`; })() : "";
+    return `<section class="pg">${inHdr(nm, `${maDay(new Date())}<br>${maHijri(new Date())}`)}${cnt}<table class="w"><thead>${head}</thead><tbody>${rows}</tbody></table>${kind === "tch" ? `<div class="lgd">${[1, 2, 3].map(i => `<span style="background:${TT_LVC[i].bg};color:${TT_LVC[i].c}">${TT_LVC[i].l}</span>`).join("")}</div>` : ""}${inSig(by, "وكيل الشؤون التعليمية")}</section>`;
+  };
+  const printWeek = (all) => {
+    const list = view === "cls" ? (all || sel === "" ? cks : [sel]).map(k => weekHTML("cls", k)) : (all || sel === "" ? T.T.map((_, i) => i) : [+sel]).map(i => weekHTML("tch", i));
+    inOpen(list.join(""), "الجدول المدرسي", PCSS);
+  };
+  const printSubs = () => {
+    if (di < 0) return; const rows = Object.values(plan).sort((a, b) => a.p - b.p || absList.indexOf(a.a) - absList.indexOf(b.a));
+    const body = rows.map((x, i) => { const [si] = T.C[x.ck][di][x.p]; const L = TT_LVC[x.lvl]; return `<tr><td>${maAr(i + 1)}</td><td><b>${TT_ORD[x.p]}</b><br><small>${mlFmtT(times[x.p][0])}</small></td><td>${ptEsc(maClassName(x.ck))}</td><td>${ptEsc(subName(si))}</td><td style="color:#b91c1c;font-weight:900">${ptEsc(ttClean(T.T[x.a]))}</td><td style="font-weight:900">${x.sub != null ? ptEsc(ttClean(T.T[x.sub])) : "—"}</td><td>${L ? `<span class="lv" style="background:${L.bg};color:${L.c}">${L.l}</span>` : "بلا بديل"}</td><td style="width:90px"></td></tr>`; }).join("");
+    inOpen(`<section class="pg">${inHdr("كشف توزيع حصص الانتظار (الاحتياط)", `${maDay(D)}<br>${maHijri(D)}<br>${maGreg(D)}`)}
+      <div class="kp"><div><b>${maAr(absList.length)}</b>معلم غائب</div><div><b>${maAr(rows.length)}</b>حصة تحتاج بديلاً</div><div><b>${maAr(rows.filter(x => x.sub != null).length)}</b>حصة مغطاة</div><div><b>${maAr(rows.filter(x => x.done).length)}</b>معتمدة</div></div>
+      <div class="lgd">${absList.map((t, i) => `<span style="background:#fee2e2;color:#991b1b">${maAr(i + 1)}) ${ptEsc(ttClean(T.T[t]))}</span>`).join("")}</div>
+      <table><thead><tr><th>م</th><th>الحصة</th><th>الفصل</th><th>المادة</th><th>المعلم الغائب</th><th>المعلم البديل</th><th>نوع الاحتياط</th><th>توقيع البديل</th></tr></thead><tbody>${body || `<tr><td colspan="8">لا توجد حصص</td></tr>`}</tbody></table>${inSig(by, "وكيل الشؤون التعليمية")}</section>`, "كشف الاحتياط", PCSS.replace("A4 landscape", "A4"));
+  };
+
+  // ── تبديل اليوم عبر أيام الأسبوع الحالي
+  const weekDate = d => { const x = new Date(); const base = new Date(x.getFullYear(), x.getMonth(), x.getDate() - (x.getDay() === 5 || x.getDay() === 6 ? -((7 - x.getDay()) % 7) : x.getDay())); base.setDate(base.getDate() + d); return maKey(base); };
+  const selLbl = view === "cls" ? (sel === "" ? "كل الفصول" : maClassName(sel)) : view === "tch" ? (sel === "" ? "كل المعلمين" : ttClean(T.T[+sel])) : "";
+  const tList = T.T.map((n, i) => ({ i, n: ttClean(n) })).sort((a, b) => a.n.localeCompare(b.n, "ar"));
+  const cur = cell ? log[ttK(cell.d, cell.p, cell.ck)] || {} : {};
+  const myCov = meIdx >= 0 && di >= 0 ? [...Object.entries(log).filter(([k, v]) => v && v.st === "sub" && v.sub === meIdx && +k.split("_")[0] === di).map(([k, v]) => ({ p: +k.split("_")[1], ck: k.split("_")[2], lvl: v.lvl, ok: true })), ...Object.values(plan).filter(x => !x.done && x.sub === meIdx).map(x => ({ p: x.p, ck: x.ck, lvl: x.lvl }))].sort((a, b) => a.p - b.p) : [];
+
+  // ── بطاقات اليوم لعنصر واحد (مريحة للجوال)
+  const DayCards = () => di < 0 ? null : <div className="grid gap-2">{times.map((t, p) => {
+    if (view === "cls") { const x = infoCls(di, p, sel); if (!x) return null; return <button key={p} type="button" className={`stt-card ${p === curP ? "now" : ""}`} onClick={() => setCell({ d: di, p, ck: sel })}>
+      <div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div>
+      <div className="bx" style={{ "--sc": sc(x.si) }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 17, color: sc(x.si) }}>{T.S[x.si]}</b>{p === curP && <span className="stt-lv" style={{ background: "#cffafe", color: "#0e7490" }}>● الآن</span>}{x.bd && <span className="stt-lv" style={{ background: x.bd.bg, color: x.bd.c, border: x.bd.sug ? `1.5px dashed ${x.bd.c}` : "none" }}>{x.bd.sug ? "مقترح " : ""}{x.bd.t}</span>}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: x.absent ? "#b91c1c" : "#334155", marginTop: 2 }}>👤 {ttClean(T.T[x.ti])}</div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8" }}>{mlFmtT(t[0])} إلى {mlFmtT(t[1])}</div></div></button>; }
+    const ti = +sel; const ck = sttClassOf(T, di, p, ti); const lv = sttRes(T, di, p).indexOf(ti) + 1;
+    const cv = myCovAll(ti).find(z => z.p === p);
+    if (ck) { const x = infoCls(di, p, ck); return <button key={p} type="button" className={`stt-card ${p === curP ? "now" : ""}`} onClick={() => setCell({ d: di, p, ck })}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": sc(x.si) }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 17 }}>{maClassName(ck)}</b>{p === curP && <span className="stt-lv" style={{ background: "#cffafe", color: "#0e7490" }}>● الآن</span>}{x.bd && <span className="stt-lv" style={{ background: x.bd.bg, color: x.bd.c }}>{x.bd.t}</span>}</div><div style={{ fontSize: 14, fontWeight: 900, color: sc(x.si) }}>{T.S[x.si]}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8" }}>{mlFmtT(t[0])} إلى {mlFmtT(t[1])}</div></div></button>; }
+    if (cv) { const L = TT_LVC[cv.lvl || lv || 4]; return <button key={p} type="button" className="stt-card" style={{ borderColor: L.c }} onClick={() => setCell({ d: di, p, ck: cv.ck })}><div className="pn" style={{ background: L.bg, color: L.c }}><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": L.c, background: L.bg }}><b style={{ fontSize: 16, color: L.c }}>🔄 تغطية {maClassName(cv.ck)}</b><div style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>{L.l}{cv.ok ? " • معتمد" : " • مقترح"}</div></div></button>; }
+    if (lv) { const L = TT_LVC[lv]; return <div key={p} className="stt-card" style={{ cursor: "default", borderColor: L.c + "66" }}><div className="pn" style={{ background: L.bg, color: L.c }}><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": L.c }}><b style={{ fontSize: 16, color: L.c }}>🛡️ {L.l}</b><div style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>مناوب احتياط — جاهز عند غياب زميل</div></div></div>; }
+    return <div key={p} className="stt-card" style={{ cursor: "default", opacity: .7 }}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": "#e2e8f0" }}><b style={{ fontSize: 14, color: "#94a3b8" }}>☕ فراغ</b></div></div>;
+  })}</div>;
+  function myCovAll(ti) { return [...Object.entries(log).filter(([k, v]) => v && v.st === "sub" && v.sub === ti && +k.split("_")[0] === di).map(([k, v]) => ({ p: +k.split("_")[1], ck: k.split("_")[2], lvl: v.lvl, ok: true })), ...Object.values(plan).filter(x => !x.done && x.sub === ti).map(x => ({ p: x.p, ck: x.ck, lvl: x.lvl }))]; }
+
+  const WeekGrid = () => <div className="stt-wrap stt-wk"><table className="stt-g" style={{ tableLayout: "fixed" }}><thead><tr><th className="rh" style={{ width: 54 }}>اليوم</th>{times.map((t, p) => <th key={p}>{maAr(p + 1)}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
+    <tbody>{T.D.map((dn, d) => <tr key={d}><td className="rh" style={{ fontSize: 12, background: d === di ? "#eef2ff" : "#fff", color: d === di ? "#3730a3" : undefined }}>{dn}</td>{times.map((_, p) => <td key={p}>{view === "cls" ? <ClsCell d={d} p={p} ck={sel} cp /> : <TchCell d={d} p={p} ti={+sel} cp />}</td>)}</tr>)}</tbody></table></div>;
+
+  const planRows = Object.values(plan).sort((a, b) => absList.indexOf(a.a) - absList.indexOf(b.a) || a.p - b.p);
+  const pending = planRows.filter(x => !x.done).length;
+  const openPlan = showPlan === null ? pending > 0 : showPlan;
+
+  return (
+    <div className="ma stt px-2 md:px-6 py-3" dir="rtl">
+      <style>{MA_CSS + STT_CSS}</style>
+      <div className="grid gap-3" style={{ maxWidth: 1400, margin: "0 auto" }}>
+        <div className="stt-hero">
+          <div style={{ position: "relative", zIndex: 1 }} className="grid gap-2">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
+              <div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+                <div style={{ fontSize: 23, fontWeight: 900 }}>🗓️ الجدول المدرسي</div>
+                <div style={{ fontSize: 13.5, fontWeight: 800, opacity: .95 }}>{maDay(D)} • {maHijri(D)}</div></div>
+              <div className="flex gap-2 items-center"><input type="date" className="ma-inp" style={{ width: 150, height: 38, color: "#0f172a", background: "#fff", fontWeight: 800 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} />{!isToday && <button className="ma-btn" onClick={() => setDateK(maKey(new Date()))}>اليوم</button>}</div>
+            </div>
+            <div className="flex gap-2 flex-wrap">{curP >= 0 ? <span className="stt-now"><i />الآن: الحصة {TT_ORD[curP]} • تنتهي بعد {maAr(mlToMin(times[curP][1]) - nowM)} د</span> : isToday && di >= 0 ? <span className="stt-now" style={{ opacity: .85 }}>⏸ خارج وقت الحصص</span> : null}
+              <span className="stt-now" style={{ background: "rgba(255,255,255,.1)" }}>🏫 {maAr(cks.length)} فصلاً • 👥 {maAr(T.T.length)} معلماً</span></div>
+            <div className="stt-sc" style={{ paddingBottom: 0 }}>{T.D.map((dn, d) => <button key={d} className={`stt-chip ${d === di ? "on" : ""}`} style={{ "--cc": "#fbbf24", color: d === di ? "#1e1b4b" : "#fff", background: d === di ? "#fbbf24" : "rgba(255,255,255,.12)", borderColor: "rgba(255,255,255,.3)" }} onClick={() => setDateK(weekDate(d))}>{dn}</button>)}</div>
+          </div>
+        </div>
+
+        {ro && meIdx >= 0 && myCov.length > 0 && <div className="ma-card p-3" style={{ border: "2px solid #0284c7", background: "#f0f9ff" }}><b style={{ fontSize: 15, color: "#075985" }}>🛡️ لديك حصص احتياط {isToday ? "اليوم" : "في هذا اليوم"}</b><div className="grid gap-1 mt-2">{myCov.map((x, i) => { const L = TT_LVC[x.lvl || 4]; return <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 800, fontSize: 14 }}><span className="stt-lv" style={{ background: L.bg, color: L.c }}>{L.l}</span>الحصة {TT_ORD[x.p]} ({mlFmtT(times[x.p][0])}) — {maClassName(x.ck)}{x.ok ? " ✓" : " (مقترح)"}</div>; })}</div></div>}
+        {ro && meIdx < 0 && <div className="ma-card p-3" style={{ fontWeight: 800, color: "#b45309", background: "#fffbeb" }}>🔎 لم أجد اسمك في الجدول تلقائياً — اختر اسمك من قائمة المعلمين بالأسفل</div>}
+
+        {!ro && di >= 0 && <div className="ma-card p-3 grid gap-2" style={{ border: absList.length ? "2px solid #fecaca" : undefined }}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <b style={{ fontSize: 15 }}>🚫 المعلمون الغائبون {isToday ? "اليوم" : ""}</b>
+            {absList.map((t, i) => <span key={t} className="stt-abs"><em style={{ background: TT_LVC[Math.min(i + 1, 3)].c }}>{maAr(i + 1)}</em>{ttClean(T.T[t])}{canRec && <button onClick={() => delAbs(t)} title="إلغاء">×</button>}</span>)}
+            {canRec && <button className="ma-btn" style={{ background: "#dc2626", color: "#fff", border: "none", marginRight: absList.length ? 0 : "auto" }} onClick={() => setAddA(true)}>＋ معلم غائب</button>}
+          </div>
+          {!absList.length ? <div style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>عند إضافة غائب يستعرض الجدول تلقائياً <b style={{ color: TT_LVC[1].c }}>الاحتياط الأول</b> المتاح لحصصه، والغائب الثاني <b style={{ color: TT_LVC[2].c }}>الاحتياط الثاني</b>، والثالث <b style={{ color: TT_LVC[3].c }}>الاحتياط الثالث</b>.</div> : <>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button className="ma-btn" onClick={() => setShowPlan(!openPlan)}>{openPlan ? "▾" : "▸"} توزيع الاحتياط ({maAr(planRows.length)} حصة{pending ? ` • ${maAr(pending)} بانتظار الاعتماد` : " • معتمد ✓"})</button>
+              {canRec && pending > 0 && <button className="ma-btn grn" disabled={busy} onClick={approve}>{busy ? "⏳" : "✅ اعتماد التوزيع"}</button>}
+              <button className="ma-btn gold" onClick={printSubs}>🖨 كشف الاحتياط</button>
+            </div>
+            {openPlan && <div className="stt-pl">{planRows.map(x => { const [si] = T.C[x.ck][di][x.p]; const L = TT_LVC[x.lvl]; return <button key={x.ck + x.p} type="button" className="stt-pr" style={{ borderColor: L ? L.c + "66" : "#fecaca", background: x.done ? (L ? L.bg : "#fff") : "#fff", borderStyle: x.done ? "solid" : "dashed" }} onClick={() => setCell({ d: di, p: x.p, ck: x.ck })}>
+              <span className="stt-lv" style={{ background: "#1e1b4b", color: "#fff" }}>الحصة {maAr(x.p + 1)}</span>
+              <b style={{ fontSize: 13.5 }}>{maClassName(x.ck)}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: sc(si) }}>{subName(si)}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: "#b91c1c" }}>بدل {ttClean(T.T[x.a])}</span>
+              <span style={{ marginRight: "auto", display: "flex", gap: 6, alignItems: "center" }}>{L ? <><span className="stt-lv" style={{ background: L.c, color: "#fff" }}>{L.l}</span><b style={{ fontSize: 14 }}>{ttClean(T.T[x.sub])}</b></> : <b style={{ color: "#b91c1c" }}>⚠️ لا يوجد بديل متاح</b>}{x.done ? <span title="معتمد">✅</span> : <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 800 }}>مقترح</span>}</span>
+            </button>; })}{!planRows.length && <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>لا توجد حصص للغائبين في هذا اليوم</div>}</div>}
+          </>}
+        </div>}
+
+        <div className="stt-seg">{[["cls", "🚪 الفصول"], ["tch", "👤 المعلمون"], ["res", "🛡️ الاحتياط"]].map(([k, l]) => <button key={k} className={view === k ? "on" : ""} onClick={() => { setView(k); setSel(k === "tch" && ro && meIdx >= 0 ? String(meIdx) : ""); }}>{l}</button>)}</div>
+
+        {view !== "res" && <div className="grid gap-2">
+          {view === "cls" ? <div className="stt-sc"><button className={`stt-chip ${sel === "" ? "on" : ""}`} onClick={() => setSel("")}>الكل</button>{cks.map(ck => <button key={ck} className={`stt-chip ${sel === ck ? "on" : ""}`} style={{ "--cc": MA_LV[+ck[0] - 1]?.c, color: sel === ck ? "#fff" : MA_LV[+ck[0] - 1]?.c }} onClick={() => setSel(ck)}>{maClassName(ck)}</button>)}</div>
+            : <div className="flex gap-2 items-center"><select className="ma-inp" style={{ flex: 1, height: 44, fontWeight: 800 }} value={sel} onChange={e => setSel(e.target.value)}><option value="">👥 كل المعلمين</option>{tList.map(x => <option key={x.i} value={x.i}>{x.n}{absList.includes(x.i) ? " 🚫" : ""}{x.i === meIdx ? " (أنا)" : ""}</option>)}</select></div>}
+          <div className="flex gap-2 items-center flex-wrap">
+            {sel !== "" && <div className="stt-seg" style={{ flex: "0 1 260px" }}>{[["day", "📋 اليوم"], ["week", "🗓️ الأسبوع"]].map(([k, l]) => <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{l}</button>)}</div>}
+            <div className="flex gap-1 flex-wrap" style={{ marginRight: "auto" }}>{[1, 2, 3].map(i => <span key={i} className="stt-lv" style={{ background: TT_LVC[i].bg, color: TT_LVC[i].c }}>■ {TT_LVC[i].l}</span>)}</div>
+            <button className="ma-btn" onClick={() => printWeek(false)}>🖨 {sel === "" ? (view === "cls" ? "جداول الفصول" : "جداول المعلمين") : "طباعة الجدول"}</button>
+          </div>
+        </div>}
+
+        {di < 0 && !(sel !== "" && mode === "week") && view !== "res" ? <div className="ma-card p-8 text-center"><div style={{ fontSize: 44 }}>🌙</div><b>لا يوجد دوام في {maDay(D)}</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 4 }}>اختر يوماً من أيام الأسبوع بالأعلى</div></div>
+          : view === "res" ? (di < 0 ? <div className="ma-card p-6 text-center font-bold text-gray-400">اختر يوم دوام</div> : <div className="grid gap-2">{times.map((t, p) => { const res = sttRes(T, di, p); return <div key={p} className={`stt-card ${p === curP ? "now" : ""}`} style={{ cursor: "default" }}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": "#3730a3" }}><div className="grid gap-1">{res.map((ti, i) => { const L = TT_LVC[i + 1]; const cv = Object.entries(log).find(([k, v]) => v && v.st === "sub" && v.sub === ti && +k.split("_")[1] === p && +k.split("_")[0] === di) || Object.values(plan).find(x => x.sub === ti && x.p === p); const cck = cv ? (Array.isArray(cv) ? cv[0].split("_")[2] : cv.ck) : null; return <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="stt-lv" style={{ background: L.c, color: "#fff", minWidth: 66, justifyContent: "center" }}>{L.l}</span><b style={{ fontSize: 14, color: absList.includes(ti) ? "#b91c1c" : "#0f172a", textDecoration: absList.includes(ti) ? "line-through" : "none" }}>{ttClean(T.T[ti])}</b>{cck && <span className="stt-lv" style={{ background: L.bg, color: L.c }}>🔄 {maClassName(cck)}</span>}</div>; })}</div></div></div>; })}</div>)
+          : sel !== "" && mode === "day" ? <DayCards />
+          : sel !== "" ? <WeekGrid />
+          : <div className="stt-wrap"><table className="stt-g"><thead><tr><th className="rh">{view === "cls" ? "الفصل" : "المعلم"}</th>{times.map((t, p) => <th key={p} className={p === curP ? "now" : ""}>{TT_ORD[p]}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
+            <tbody>{view === "cls" ? cks.map(ck => <tr key={ck}><td className="rh" style={{ color: MA_LV[+ck[0] - 1]?.c, cursor: "pointer" }} onClick={() => setSel(ck)}>{sttCk(ck)}</td>{times.map((_, p) => <td key={p}><ClsCell d={di} p={p} ck={ck} /></td>)}</tr>)
+              : tList.map(({ i, n }) => <tr key={i}><td className="rh" style={{ cursor: "pointer", color: absList.includes(i) ? "#b91c1c" : undefined, background: absList.includes(i) ? "#fef2f2" : "#fff", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }} onClick={() => setSel(String(i))}>{absList.includes(i) ? "🚫 " : ""}{n.split(" ").slice(0, 2).join(" ")}</td>{times.map((_, p) => <td key={p}><TchCell d={di} p={p} ti={i} /></td>)}</tr>)}</tbody></table></div>}
+
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8", textAlign: "center" }}>المصدر: {T.src || "الجدول المدرسي"} • اضغط على أي حصة {ro ? "لعرض تفاصيلها" : "لرصد: حضر • تأخر • خرج من الفصل • غائب مع البديل"}</div>
+      </div>
+
+      {cell && <SttSheet key={ttK(cell.d, cell.p, cell.ck)} T={T} d={cell.d} p={cell.p} ck={cell.ck} cur={cur} times={times} plan={cell.d === di ? plan : {}} abs={cell.d === di ? absList : []} log={cell.d === di ? log : {}} isToday={isToday && cell.d === di} ro={ro || !canRec || cell.d !== di} subName={si => T.S[si]} onClose={() => setCell(null)}
+        onSave={async v => { const ok = await putLog(cell.d, cell.p, cell.ck, v); if (ok) { setCell(null); toast("✅ تم الحفظ"); } }} onClear={async () => { await putLog(cell.d, cell.p, cell.ck, null); setCell(null); }} />}
+      {addA && <div className="stt-sheet" onClick={() => setAddA(false)}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ padding: 16 }}>
+        <div style={{ width: 44, height: 5, borderRadius: 9, background: "#cbd5e1", margin: "0 auto 12px" }} />
+        <b style={{ fontSize: 17 }}>🚫 تسجيل معلم غائب — {maDay(D)}</b>
+        <div style={{ fontSize: 12.5, color: "#64748b", fontWeight: 700, margin: "4px 0 10px" }}>سيكون الغائب رقم <b style={{ color: TT_LVC[Math.min(absList.length + 1, 3)].c }}>{maAr(absList.length + 1)}</b> ← تُغطّى حصصه من <b style={{ color: TT_LVC[Math.min(absList.length + 1, 3)].c }}>{TT_LVC[Math.min(absList.length + 1, 3)].l}</b> أولاً ثم التالي المتاح</div>
+        <input className="ma-inp" autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 ابحث بالاسم…" />
+        <div className="grid gap-1 mt-2" style={{ maxHeight: "55vh", overflow: "auto" }}>{tList.filter(x => !absList.includes(x.i) && (!q || sttNorm(x.n).includes(sttNorm(q)))).map(x => { const n = cks.filter(ck => T.C[ck][di].some(c => c[1] === x.i)).length; return <button key={x.i} type="button" className="stt-cand" onClick={() => addAbs(x.i)}><span style={{ flex: 1, fontWeight: 900, fontSize: 14.5 }}>{x.n}</span><small style={{ fontWeight: 800, color: n ? "#b91c1c" : "#94a3b8" }}>{n ? `${maAr(n)} حصة اليوم` : "لا حصص اليوم"}</small></button>; })}</div>
+        <button className="ma-btn" style={{ marginTop: 10, width: "100%" }} onClick={() => setAddA(false)}>إلغاء</button>
+      </div></div>}
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, maxWidth: "92vw", textAlign: "center" }}>{msg}</div>}
+    </div>);
+}
 
 export default function SchoolWebsite(props) {
   return <SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary>;
@@ -35987,7 +36410,7 @@ function SchoolWebsiteInner() {
     { id: "broadcast",      label: "الإذاعة المدرسية",   icon: "🎙️" },
     { id: "quiz",           label: "اختبارات الطلاب",    icon: "📝" },
     { id: "luckywheel",     label: "عجلة الحظ",            icon: "🎡" },
-    { id: "timetable",      label: "جدول الحصص",           icon: "📅" },
+    { id: "timetable",      label: "الجدول المدرسي",       icon: "🗓️" },
     { id: "dailyquiz",      label: "الاختبار اليومي",      icon: "🎯" },
     { id: "raffle",         label: "سحب الطلاب",           icon: "🎰" },
     { id: "aiteacher",      label: "مساعد المعلم الذكي",   icon: "🤖" },
@@ -36335,7 +36758,7 @@ function SchoolWebsiteInner() {
                 {page === "broadcast"      && <BroadcastPage />}
                 {page === "quiz"           && <QuizPage />}
                 {page === "luckywheel"     && <LuckyWheelPage />}
-                {page === "timetable"      && <TimetablePage teachers={teachers} />}
+                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}
                 {page === "honorboard"     && <HonorBoardPage classList={classList} />}
                 {page === "absencestats"   && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
                 {page === "monthlyreport"  && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
@@ -36511,7 +36934,7 @@ function SchoolWebsiteInner() {
         {page === "broadcast"     && <BroadcastPage />}
         {page === "quiz"          && <QuizPage />}
         {page === "luckywheel"    && <LuckyWheelPage />}
-        {page === "timetable"     && <TimetablePage teachers={teachers} />}
+        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}
         {page === "honorboard"    && <HonorBoardPage classList={classList} />}
         {page === "absencestats"  && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
         {page === "monthlyreport" && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
