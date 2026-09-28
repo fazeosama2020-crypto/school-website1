@@ -1851,6 +1851,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
         </div>
         <div className="gt-more">
           <button onClick={() => goHash("weekly")} style={{ background: "linear-gradient(135deg,#0f766e,#0e7490)", borderColor: "transparent" }}>🗓️ الخطة الأسبوعية</button>
+          <button onClick={() => goHash("termplan")} style={{ background: "linear-gradient(135deg,#6d28d9,#0891b2)", borderColor: "transparent" }}>📚 الخطة الفصلية</button>
           <button onClick={onPublicAnnouncements}>📢 إعلانات المدرسة</button>
           <button onClick={onTeacherPortal}>📊 التقويم الذاتي لمعايير الأداء</button>
           <button onClick={onStudentRaffle}>🎰 سحب الجوائز</button>
@@ -1867,7 +1868,7 @@ const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
     tools:[{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
-    tools:[{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
+    tools:[{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
     tools:[{id:"classvisits",label:"الزيارات الصفية ١٤٤٨",icon:"🎯"},{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
@@ -30815,7 +30816,7 @@ function GuardianPortal({ onBack }) {
               <div style={{ fontSize: 21, fontWeight: 900 }}>{me.name}</div>
               <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>الصف {maClassName(me.ck)} • مدرسة الأمير عبدالمجيد المتوسطة</div>
             </div>
-            <div className="flex gap-2"><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={logout}>خروج</button><button className="ma-btn" onClick={() => { window.location.hash = "weekly"; window.location.reload(); }}>🗓️ الخطة الأسبوعية</button>{onBack && <button className="ma-btn" onClick={onBack}>🏠</button>}</div>
+            <div className="flex gap-2"><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={logout}>خروج</button><button className="ma-btn" onClick={() => { window.location.hash = "weekly"; window.location.reload(); }}>🗓️ الخطة الأسبوعية</button><button className="ma-btn" onClick={() => { window.location.hash = "termplan"; window.location.reload(); }}>📚 الخطة الفصلية</button>{onBack && <button className="ma-btn" onClick={onBack}>🏠</button>}</div>
           </div>
           {d && <div className="pt-kpis" style={{ marginTop: 16, position: "relative", zIndex: 1 }}>
             {summ.map(({ dm, v }) => <div key={dm.k} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{dm.ic} {dm.t}</div><div style={{ marginTop: 4 }}>{badge(dm.k, v)}</div></div>)}
@@ -31045,7 +31046,7 @@ function PortalsAdminPage() {
   };
   useEffect(() => { load(); }, []);
   const base = window.location.origin + window.location.pathname;
-  const links = [["teacher", "👨‍🏫", "بوابة المعلمين", "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني • أداء الطلاب", "#0d9488", "🔔 نأمل الدخول إلى بوابة المعلمين برقم السجل المدني:"], ["staff", "🗂️", "بوابة الإداريين والمرشد", "التأخر الصباحي • الإحصائيات • الأعذار", "#ea580c", "🔔 بوابة الإداريين والمرشد الطلابي (الدخول بالسجل المدني):"], ["late", "🌅", "رابط رصد التأخر الصباحي", "يفتح سجل التأخر مباشرة بعد الدخول بهوية الإداري أو المرشد", "#c2410c", "🌅 رابط رصد التأخر الصباحي (الدخول بالسجل المدني):"], ["visits", "🎯", "رابط الزيارات الصفية للمعلمين", "موعد الزيارة • التقييم • عناصر التقييم • التنبيه وطلب التأجيل", "#0f766e", "🎯 زملائي المعلمين: مواعيد زياراتكم الصفية وتقييمكم عبر الرابط التالي برقم الهوية:"], ["parent", "👪", "بوابة أولياء الأمور", "المستوى • الغياب • التأخر • الإعلانات • الأعذار", "#2563eb", "👪 أولياء الأمور الكرام: يمكنكم متابعة أبنائكم عبر البوابة التالية بإدخال رقم هوية الطالب:"]];
+  const links = [["teacher", "👨‍🏫", "بوابة المعلمين", "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني • أداء الطلاب", "#0d9488", "🔔 نأمل الدخول إلى بوابة المعلمين برقم السجل المدني:"], ["staff", "🗂️", "بوابة الإداريين والمرشد", "التأخر الصباحي • الإحصائيات • الأعذار", "#ea580c", "🔔 بوابة الإداريين والمرشد الطلابي (الدخول بالسجل المدني):"], ["late", "🌅", "رابط رصد التأخر الصباحي", "يفتح سجل التأخر مباشرة بعد الدخول بهوية الإداري أو المرشد", "#c2410c", "🌅 رابط رصد التأخر الصباحي (الدخول بالسجل المدني):"], ["visits", "🎯", "رابط الزيارات الصفية للمعلمين", "موعد الزيارة • التقييم • عناصر التقييم • التنبيه وطلب التأجيل", "#0f766e", "🎯 زملائي المعلمين: مواعيد زياراتكم الصفية وتقييمكم عبر الرابط التالي برقم الهوية:"], ["termplan", "📚", "رابط الخطة الفصلية", "تعرض أحدث خطة فصلية منشورة لأولياء الأمور", "#6d28d9", "📚 أولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية عبر الرابط:"], ["parent", "👪", "بوابة أولياء الأمور", "المستوى • الغياب • التأخر • الإعلانات • الأعذار", "#2563eb", "👪 أولياء الأمور الكرام: يمكنكم متابعة أبنائكم عبر البوابة التالية بإدخال رقم هوية الطالب:"]];
   const setRoleLic = async (id, role) => { setRoles(p => ({ ...p, [id]: role })); await maPut(`${PT_ROLES}/${id}`, role); toast("✅ تم تحديث الصلاحية"); };
   const setRoleStaff = async (x, role) => { const v = { ...x, role }; setStaff(p => p.map(y => y.id === x.id ? v : y)); await maPut(`${PT_STAFF}/${x.id}`, v); toast("✅ تم تحديث الصلاحية"); };
   const delStaff = async (x) => { if (!window.confirm(`حذف ${x.name}؟`)) return; try { await fetch(`${FIREBASE_URL}/school/${PT_STAFF}/${x.id}.json`, { method: "DELETE" }); } catch {} setStaff(p => p.filter(y => y.id !== x.id)); };
@@ -33762,7 +33763,7 @@ const SIDX = "school-sidx";            // فهرس الطالب: {sid:{a:{dk:ck}
 const SIDX_META = "school-sidx-meta";
 const BK2 = "school-bk2", BK2_META = "school-bk2-meta";
 const IN_DEF = { abs: 3, late: 3, neg: 3, beh: 3 };
-const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img"];
+const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan"];
 const BK2_LBL = { [MA_ROSTER]: "كشوف الطلاب", [MA_ATT]: "الغياب", [MA_IDX]: "فهرس الغياب", [MA_META]: "إعدادات الفصول", [MA_LATE]: "التأخر الصباحي", [ML_DAY]: "اعتماد التأخر", [ML_CLS]: "اعتماد الفصول", [ML_CFG]: "أوقات التأخر", [ML_REP]: "تقارير التأخر", [SC_NODE]: "تصنيف الطلاب", [SC_META]: "فترة التصنيف", [SD_NODE]: "المتابعة اليومية", [SD_PC]: "ملاحظات أولياء الأمور على المتابعة", "formative-sheets": "سجلات التقويم التكويني", "formative-teachers": "قائمة المعلمين", [PT_STAFF]: "الإداريون", [TT_NODE]: "الجدول", [TT_CFG]: "أوقات الحصص", [TT_LOG]: "متابعة الحصص", [PT_EXC]: "أعذار أولياء الأمور", [PT_NOTES]: "ملاحظات أولياء الأمور", [PT_PREP]: "التقارير المرسلة", [WP_NODE]: "الخطة الأسبوعية", [IN_CFG]: "إعدادات المؤشرات", "school-bnotes": "الملاحظات السلوكية", "school-bnotes-cfg": "أنواع السلوك", "school-cv-plan": "جدول الزيارات الصفية", "school-cv-eval": "تقييم الزيارات الصفية", "school-cv-cfg": "إعدادات الزيارات" };
 
 // ── أدوات قاعدة البيانات
@@ -35373,6 +35374,192 @@ function TeacherVisitsView({ me }) {
     </div>
   );
 }
+// ══════════════════════════════════════════════════════════════════════
+// 📚 الخطة الفصلية — رفع PDF واستعراض صفحاته بحجم كبير + رابط مباشر لأولياء الأمور
+//   school-tplan/{id} = {id,title,desc,goals,term,theme,pages,pubAt,at,show}
+//   school-tplan-pg/{id}/{n} = صورة الصفحة
+// ══════════════════════════════════════════════════════════════════════
+const TP_NODE = "school-tplan", TP_PG = "school-tplan-pg";
+const TP_THEMES = { teal: ["#0f766e", "#14b8a6", "#f0fdfa"], indigo: ["#3730a3", "#6366f1", "#eef2ff"], purple: ["#6d28d9", "#a855f7", "#faf5ff"], rose: ["#be123c", "#fb7185", "#fff1f2"], amber: ["#b45309", "#f59e0b", "#fffbeb"], sky: ["#0369a1", "#38bdf8", "#f0f9ff"] };
+const tpTheme = k => TP_THEMES[k] || TP_THEMES.teal;
+async function tpPdfToImages(file, onProg) {
+  const lib = await loadPdfJs();
+  const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const n = Math.min(pdf.numPages, 60); const out = [];
+  for (let i = 1; i <= n; i++) {
+    const pg = await pdf.getPage(i); const v0 = pg.getViewport({ scale: 1 });
+    const scale = Math.min(2.4, 1300 / v0.width); const vp = pg.getViewport({ scale });
+    const cv = document.createElement("canvas"); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+    const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height);
+    await pg.render({ canvasContext: cx, viewport: vp }).promise;
+    out.push(cv.toDataURL("image/jpeg", 0.8)); onProg && onProg(i, n);
+  }
+  return { imgs: out, total: pdf.numPages };
+}
+const tpLink = id => { try { return location.origin + location.pathname + "#termplan" + (id ? "-" + id : ""); } catch { return "#termplan"; } };
+const tpWhen = t => { if (!t) return ""; const d = new Date(t); const hm = d.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" }); return `${maDay(d)} ${maHijri(d)} • ${maGreg(d)} • الساعة ${hm}`; };
+const TP_CSS = `
+.tp{font-family:Cairo,Tahoma,sans-serif}
+.tp-hero{border-radius:28px;color:#fff;padding:22px 24px;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--a),var(--b))}
+.tp-hero::before{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.08);left:-90px;top:-150px}
+.tp-hero::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.07);right:-60px;bottom:-110px}
+.tp-hero>*{position:relative;z-index:1}
+.tp-date{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:5px 14px;font-weight:800;font-size:12.5px;margin-top:10px}
+.tp-desc{border-radius:22px;background:#fff;border:1px solid #eef2f6;padding:16px 18px;box-shadow:0 14px 30px -26px rgba(15,23,42,.5)}
+.tp-goal{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:14px;background:var(--s);font-weight:800;font-size:14px;line-height:1.8}
+.tp-goal i{font-style:normal;min-width:28px;height:28px;border-radius:9px;background:var(--a);color:#fff;display:grid;place-items:center;font-size:13px;margin-top:1px}
+.tp-view{border-radius:24px;background:#0f172a;padding:12px;position:relative;box-shadow:0 30px 60px -30px rgba(15,23,42,.7)}
+.tp-stage{position:relative;border-radius:16px;overflow:hidden;background:#fff;display:flex;justify-content:center;touch-action:pan-y}
+.tp-stage img{width:100%;height:auto;display:block;user-select:none;-webkit-user-drag:none;animation:tpIn .35s ease}
+@keyframes tpIn{from{opacity:.2;transform:scale(.985)}to{opacity:1;transform:none}}
+.tp-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:none;background:rgba(15,23,42,.55);color:#fff;font-size:22px;font-weight:900;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(4px)}
+.tp-nav:disabled{opacity:.2;cursor:default}
+.tp-bar{display:flex;align-items:center;gap:10px;justify-content:center;color:#fff;font-weight:900;padding:10px 4px 2px;flex-wrap:wrap}
+.tp-prog{flex:1 1 200px;height:6px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden;max-width:420px}.tp-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--b),#fbbf24);transition:width .3s}
+.tp-thumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 2px}
+.tp-thumbs button{flex-shrink:0;width:64px;border-radius:10px;overflow:hidden;border:3px solid transparent;padding:0;background:#fff;cursor:pointer;opacity:.6}
+.tp-thumbs button.on{border-color:#fbbf24;opacity:1}.tp-thumbs img{width:100%;display:block}
+.tp-full{position:fixed;inset:0;z-index:900;background:#020617;display:flex;flex-direction:column}
+.tp-full .sc{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:10px}
+.tp-full img{max-width:100%;height:auto;border-radius:8px;background:#fff}
+.tp-btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:14px;padding:10px 16px;font-family:inherit;font-weight:900;font-size:13.5px;cursor:pointer;text-decoration:none}
+@media (max-width:640px){.tp-nav{width:40px;height:40px;font-size:18px}.tp-hero{padding:18px 16px}}
+`;
+function TpViewer({ pages, th, title }) {
+  const [i, setI] = useState(0); const [full, setFull] = useState(false); const [zoom, setZoom] = useState(1); const [all, setAll] = useState(false); const tx = useRef(null);
+  const n = pages.length;
+  useEffect(() => { const k = e => { if (e.key === "ArrowLeft") setI(x => Math.min(n - 1, x + 1)); if (e.key === "ArrowRight") setI(x => Math.max(0, x - 1)); if (e.key === "Escape") setFull(false); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [n]);
+  useEffect(() => { const t = document.getElementById(`tp-th-${i}`); if (t) t.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, [i]);
+  if (!n) return null;
+  const next = () => setI(x => Math.min(n - 1, x + 1)), prev = () => setI(x => Math.max(0, x - 1));
+  const ts = e => { tx.current = e.touches[0].clientX; }; const te = e => { if (tx.current == null) return; const d = e.changedTouches[0].clientX - tx.current; if (Math.abs(d) > 50) { d < 0 ? next() : prev(); } tx.current = null; };
+  if (all) return (
+    <div className="grid gap-3"><div className="flex justify-between items-center flex-wrap gap-2"><b style={{ fontSize: 15 }}>📄 جميع الصفحات ({maAr(n)})</b><button className="tp-btn" style={{ background: th[2], color: th[0] }} onClick={() => setAll(false)}>📖 العرض صفحة بصفحة</button></div>
+      {pages.map((p, k) => <div key={k} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid #e2e8f0", background: "#fff", boxShadow: "0 14px 30px -24px rgba(15,23,42,.5)" }}><img src={p} alt="" style={{ width: "100%", display: "block" }} loading="lazy" /><div style={{ textAlign: "center", fontWeight: 900, fontSize: 12, color: "#64748b", padding: 6 }}>صفحة {maAr(k + 1)} من {maAr(n)}</div></div>)}</div>
+  );
+  return (
+    <>
+      <div className="tp-view">
+        <div className="tp-stage" onTouchStart={ts} onTouchEnd={te} onDoubleClick={() => setFull(true)}>
+          <img key={i} src={pages[i]} alt={`صفحة ${i + 1}`} />
+          <button className="tp-nav" style={{ right: 10 }} disabled={i === 0} onClick={prev} aria-label="السابقة">›</button>
+          <button className="tp-nav" style={{ left: 10 }} disabled={i === n - 1} onClick={next} aria-label="التالية">‹</button>
+        </div>
+        <div className="tp-bar"><span>صفحة {maAr(i + 1)} من {maAr(n)}</span><div className="tp-prog"><i style={{ width: `${(i + 1) / n * 100}%` }} /></div><button className="tp-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", padding: "7px 12px" }} onClick={() => { setZoom(1); setFull(true); }}>⛶ تكبير</button><button className="tp-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", padding: "7px 12px" }} onClick={() => setAll(true)}>📄 كل الصفحات</button></div>
+        {n > 1 && <div className="tp-thumbs">{pages.map((p, k) => <button key={k} id={`tp-th-${k}`} className={k === i ? "on" : ""} onClick={() => setI(k)}><img src={p} alt="" loading="lazy" /></button>)}</div>}
+      </div>
+      {full && <div className="tp-full" onTouchStart={ts} onTouchEnd={te}>
+        <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 12px", color: "#fff", background: "#0f172a" }}><b style={{ flex: 1, fontSize: 14 }}>{title} — صفحة {maAr(i + 1)} من {maAr(n)}</b><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} onClick={() => setZoom(z => Math.max(1, z - .5))}>－</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} onClick={() => setZoom(z => Math.min(3, z + .5))}>＋</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} disabled={i === 0} onClick={prev}>→</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "6px 12px" }} disabled={i === n - 1} onClick={next}>←</button><button className="tp-btn" style={{ background: "#dc2626", color: "#fff", padding: "6px 12px" }} onClick={() => setFull(false)}>✕</button></div>
+        <div className="sc"><img src={pages[i]} alt="" style={{ width: `${zoom * 100}%`, maxWidth: zoom > 1 ? "none" : "100%" }} /></div>
+      </div>}
+    </>
+  );
+}
+function TpPlanView({ p, pages, share }) {
+  const th = tpTheme(p.theme); const goals = String(p.goals || "").split("\n").map(x => x.replace(/^[-•*\d.)\s]+/, "").trim()).filter(Boolean);
+  return (
+    <div className="grid gap-4" style={{ "--a": th[0], "--b": th[1], "--s": th[2] }}>
+      <div className="tp-hero">
+        <div className="flex items-center gap-3 flex-wrap">
+          <img src={SCHOOL_LOGO} alt="" style={{ width: 64, height: 64, borderRadius: "50%", background: "#fff", padding: 3, boxShadow: "0 0 0 3px rgba(255,255,255,.35)" }} />
+          <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى{p.term ? ` • ${p.term}` : ""}</div><div style={{ fontSize: 25, fontWeight: 900, lineHeight: 1.4 }}>📚 {p.title || "الخطة الفصلية"}</div>
+            <div className="tp-date">🕒 نُشرت: {tpWhen(p.pubAt || p.at)}</div></div>
+          {share}
+        </div>
+      </div>
+      {(p.desc || goals.length > 0) && <div className="tp-desc grid gap-3">
+        {p.desc && <div><b style={{ fontSize: 16, color: th[0] }}>📝 عن الخطة</b><div style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 2.1, color: "#334155", whiteSpace: "pre-wrap", marginTop: 4 }}>{p.desc}</div></div>}
+        {goals.length > 0 && <div className="grid gap-2"><b style={{ fontSize: 16, color: th[0] }}>🎯 أهداف الخطة</b>{goals.map((g, k) => <div key={k} className="tp-goal"><i>{maAr(k + 1)}</i><span>{g}</span></div>)}</div>}
+      </div>}
+      {pages === null ? <div className="tp-desc text-center" style={{ color: "#94a3b8", fontWeight: 800, padding: 40 }}>⏳ جاري تحميل صفحات الخطة…</div> : pages.length ? <TpViewer pages={pages} th={th} title={p.title} /> : <div className="tp-desc text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد صفحات</div>}
+    </div>
+  );
+}
+const tpShare = (p, compact) => { const txt = `📚 ${p.title || "الخطة الفصلية"} — مدرسة الأمير عبدالمجيد المتوسطة الأولى\nأولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية، للاطلاع عليها:\n${tpLink(p.id)}`; return <div className="flex gap-2 flex-wrap"><a className="tp-btn" style={{ background: "#25d366", color: "#fff" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(txt)}`}>💬 {compact ? "واتساب" : "إرسال بالواتساب"}</a><button className="tp-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.35)" }} onClick={() => { try { navigator.clipboard.writeText(tpLink(p.id)); alert("📋 نُسخ الرابط"); } catch { window.prompt("انسخ الرابط:", tpLink(p.id)); } }}>🔗 نسخ الرابط</button></div>; };
+
+// ══════════ الصفحة العامة (رابط ولي الأمر) ══════════
+function TermPlanPublic({ onBack, id: id0 }) {
+  const [L, setL] = useState(null); const [id, setId] = useState(id0 || ""); const [pages, setPages] = useState(null);
+  useEffect(() => { (async () => { const d = ptVals(await maGet(TP_NODE)).filter(x => x.show !== 0).sort((a, b) => (b.pubAt || b.at) - (a.pubAt || a.at)); setL(d); if (!id && d[0]) setId(d[0].id); })(); }, []);
+  useEffect(() => { if (!id) return; setPages(null); (async () => setPages(maArr(await maGet(`${TP_PG}/${id}`)).filter(Boolean)))(); }, [id]);
+  const p = L && L.find(x => x.id === id);
+  return (
+    <div className="tp" dir="rtl" style={{ minHeight: "100vh", background: p ? `linear-gradient(180deg,${tpTheme(p.theme)[2]},#f8fafc 40%)` : "#f8fafc", padding: "16px 12px 40px" }}>
+      <style>{TP_CSS}</style>
+      <div style={{ maxWidth: 980, margin: "0 auto" }} className="grid gap-4">
+        {L === null ? <div className="tp-desc text-center" style={{ padding: 50, color: "#94a3b8", fontWeight: 800 }}>⏳</div> : !p ? <div className="tp-desc text-center" style={{ padding: 40 }}><div style={{ fontSize: 44 }}>📚</div><b>لم تُنشر الخطة الفصلية بعد</b></div> : <>
+          {L.length > 1 && <div className="flex gap-2 flex-wrap">{L.map(x => <button key={x.id} className="tp-btn" style={x.id === id ? { background: tpTheme(x.theme)[0], color: "#fff" } : { background: "#fff", color: "#334155", border: "1px solid #e2e8f0" }} onClick={() => { setId(x.id); try { history.replaceState(null, "", "#termplan-" + x.id); } catch {} }}>📚 {x.title}</button>)}</div>}
+          <TpPlanView p={p} pages={pages} share={tpShare(p, true)} />
+          {onBack && <button className="tp-btn" style={{ justifySelf: "center", background: "#fff", color: "#334155", border: "1px solid #e2e8f0" }} onClick={onBack}>🏠 بوابة المدرسة</button>}
+        </>}
+      </div>
+    </div>
+  );
+}
+
+// ══════════ صفحة الإدارة ══════════
+function TermPlanPage() {
+  const [L, setL] = useState(null); const [ed, setEd] = useState(null); const [busy, setBusy] = useState(""); const [msg, setMsg] = useState(""); const [view, setView] = useState(null); const fileRef = useRef(null);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  const load = async () => setL(ptVals(await maGet(TP_NODE)).sort((a, b) => (b.pubAt || b.at) - (a.pubAt || a.at)));
+  useEffect(() => { load(); }, []);
+  const toLocal = t => { const d = new Date(t || Date.now()); const z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`; };
+  const newPlan = () => setEd({ id: "tp" + Date.now().toString(36), title: "الخطة الفصلية — الفصل الدراسي الأول ١٤٤٨هـ", term: "الفصل الدراسي الأول", desc: "", goals: "", theme: "teal", pubAt: Date.now(), show: 1, pages: 0, _imgs: null, isNew: true });
+  const edit = async (p) => { setBusy("تحميل…"); const imgs = maArr(await maGet(`${TP_PG}/${p.id}`)).filter(Boolean); setBusy(""); setEd({ ...p, _imgs: imgs, _dirty: false }); };
+  const onPdf = async e => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; try { setBusy("تحميل قارئ PDF…"); const r = await tpPdfToImages(f, (i, n) => setBusy(`تحويل الصفحة ${maAr(i)} من ${maAr(n)}…`)); setEd(x => ({ ...x, _imgs: r.imgs, _dirty: true, src: f.name })); setBusy(""); toast(`✅ تحوّل الملف إلى ${maAr(r.imgs.length)} صفحة${r.total > r.imgs.length ? ` (أول ${maAr(r.imgs.length)} من ${maAr(r.total)})` : ""}`); } catch (err) { setBusy(""); alert("تعذّر قراءة ملف PDF: " + (err?.message || err)); } };
+  const save = async () => {
+    if (!ed.title.trim()) { alert("اكتب عنوان الخطة"); return; }
+    if (!(ed._imgs && ed._imgs.length) && !ed.pages) { alert("ارفع ملف PDF للخطة"); return; }
+    const meta = { id: ed.id, title: ed.title.trim(), term: ed.term || "", desc: ed.desc || "", goals: ed.goals || "", theme: ed.theme || "teal", pubAt: ed.pubAt || Date.now(), show: ed.show ? 1 : 0, at: ed.at || Date.now(), upd: Date.now(), pages: ed._imgs ? ed._imgs.length : ed.pages, src: ed.src || "" };
+    if (ed._dirty && ed._imgs) {
+      try { await fetch(`${FIREBASE_URL}/school/${TP_PG}/${ed.id}.json`, { method: "DELETE" }); } catch {}
+      for (let k = 0; k < ed._imgs.length; k++) { setBusy(`رفع الصفحة ${maAr(k + 1)} من ${maAr(ed._imgs.length)}…`); const ok = await maPut(`${TP_PG}/${ed.id}/${k}`, ed._imgs[k]); if (!ok) { setBusy(""); alert(`⚠️ تعذّر رفع الصفحة ${k + 1} — تحقق من الاتصال وأعد الحفظ`); return; } }
+    }
+    setBusy("حفظ…"); const ok = await maPut(`${TP_NODE}/${ed.id}`, meta); setBusy("");
+    if (!ok) { alert("⚠️ تعذّر الحفظ"); return; }
+    toast("✅ نُشرت الخطة — أرسل الرابط لأولياء الأمور"); setEd(null); load();
+  };
+  const del = async (p) => { if (!window.confirm(`حذف «${p.title}»؟`)) return; try { await fetch(`${FIREBASE_URL}/school/${TP_NODE}/${p.id}.json`, { method: "DELETE" }); await fetch(`${FIREBASE_URL}/school/${TP_PG}/${p.id}.json`, { method: "DELETE" }); } catch {} load(); };
+  if (view) return <div className="tp grid gap-3" dir="rtl"><style>{TP_CSS}</style><button className="tp-btn" style={{ justifySelf: "start", background: "#fff", border: "1px solid #e2e8f0" }} onClick={() => setView(null)}>→ رجوع للخطط</button><TpPlanView p={view.p} pages={view.pages} share={tpShare(view.p)} /></div>;
+  if (ed) { const th = tpTheme(ed.theme); return (
+    <div className="tp grid gap-3" dir="rtl" style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <style>{TP_CSS}</style>
+      <div className="tp-desc grid gap-3" style={{ borderTop: `5px solid ${th[0]}` }}>
+        <div className="flex items-center justify-between flex-wrap gap-2"><b style={{ fontSize: 17 }}>{ed.isNew ? "➕ خطة فصلية جديدة" : "✏️ تعديل الخطة"}</b><button className="tp-btn" style={{ background: "#f1f5f9", color: "#334155" }} onClick={() => setEd(null)}>إلغاء</button></div>
+        <label style={{ fontSize: 12.5, fontWeight: 800 }}>عنوان الخطة<input className="ma-inp" value={ed.title} onChange={e => setEd({ ...ed, title: e.target.value })} /></label>
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
+          <label style={{ fontSize: 12.5, fontWeight: 800 }}>الفصل / الفترة<input className="ma-inp" value={ed.term} onChange={e => setEd({ ...ed, term: e.target.value })} /></label>
+          <label style={{ fontSize: 12.5, fontWeight: 800 }}>تاريخ ووقت النشر (يمكن أن يكون سابقاً)<input type="datetime-local" className="ma-inp" value={toLocal(ed.pubAt)} onChange={e => setEd({ ...ed, pubAt: e.target.value ? new Date(e.target.value).getTime() : Date.now() })} /></label>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: th[0] }}>🕒 سيظهر: {tpWhen(ed.pubAt)}</div>
+        <label style={{ fontSize: 12.5, fontWeight: 800 }}>📝 نص تعريفي يشرح الخطة (يظهر أعلى الصفحة)<textarea className="ma-inp" style={{ minHeight: 110, height: "auto", padding: 10, lineHeight: 1.9 }} value={ed.desc} onChange={e => setEd({ ...ed, desc: e.target.value })} placeholder="مثال: تتضمن الخطة الفصلية توزيع الدروس والاختبارات والأنشطة خلال الفصل الدراسي، ونأمل من أولياء الأمور الاطلاع عليها ومتابعة أبنائهم…" /></label>
+        <label style={{ fontSize: 12.5, fontWeight: 800 }}>🎯 أهداف الخطة (هدف في كل سطر)<textarea className="ma-inp" style={{ minHeight: 90, height: "auto", padding: 10, lineHeight: 1.9 }} value={ed.goals} onChange={e => setEd({ ...ed, goals: e.target.value })} placeholder={"تنظيم تعلم الطالب خلال الفصل\nتعريف ولي الأمر بمواعيد الاختبارات\nتعزيز الشراكة بين المدرسة والأسرة"} /></label>
+        <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 12.5 }}>🎨 لون الصفحة:</b>{Object.entries(TP_THEMES).map(([k, t]) => <button key={k} onClick={() => setEd({ ...ed, theme: k })} style={{ width: 34, height: 34, borderRadius: 12, border: ed.theme === k ? "3px solid #0f172a" : "2px solid #fff", boxShadow: "0 0 0 1px #e2e8f0", background: `linear-gradient(135deg,${t[0]},${t[1]})`, cursor: "pointer" }} />)}</div>
+        <div className="flex gap-2 items-center flex-wrap" style={{ background: th[2], borderRadius: 16, padding: 12 }}><input ref={fileRef} type="file" accept="application/pdf" hidden onChange={onPdf} /><button className="tp-btn" style={{ background: th[0], color: "#fff" }} disabled={!!busy} onClick={() => fileRef.current?.click()}>📄 {ed._imgs && ed._imgs.length ? "استبدال ملف PDF" : "رفع ملف PDF"}</button><span style={{ fontWeight: 800, fontSize: 13 }}>{ed._imgs && ed._imgs.length ? `✅ ${maAr(ed._imgs.length)} صفحة${ed.src ? ` — ${ed.src}` : ""}` : "لم يُرفع ملف بعد"}</span></div>
+        <label style={{ fontWeight: 800, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={!!ed.show} onChange={e => setEd({ ...ed, show: e.target.checked })} />👁 ظاهرة لأولياء الأمور</label>
+        <div className="flex gap-2 flex-wrap"><button className="tp-btn" style={{ background: `linear-gradient(135deg,${th[0]},${th[1]})`, color: "#fff", padding: "12px 22px" }} disabled={!!busy} onClick={save}>{busy || "💾 حفظ ونشر الخطة"}</button></div>
+      </div>
+      {ed._imgs && ed._imgs.length > 0 && <><b style={{ fontSize: 15 }}>👁 معاينة كما يراها ولي الأمر</b><TpPlanView p={{ ...ed, at: ed.pubAt }} pages={ed._imgs} share={null} /></>}
+    </div>
+  ); }
+  return (
+    <div className="tp grid gap-4" dir="rtl" style={{ maxWidth: 1100, margin: "0 auto", padding: "12px 6px" }}>
+      <style>{TP_CSS}</style>
+      <div className="tp-hero" style={{ "--a": "#0f766e", "--b": "#0891b2" }}><div className="flex items-center gap-3 flex-wrap"><div style={{ fontSize: 40 }}>📚</div><div style={{ flex: "1 1 220px" }}><div style={{ fontSize: 23, fontWeight: 900 }}>الخطة الفصلية</div><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>ارفع ملف PDF، واكتب شرحاً وأهدافاً، ثم أرسل الرابط لأولياء الأمور — تُعرض الصفحات بحجم كبير صفحة تلو الأخرى</div></div><button className="tp-btn" style={{ background: "#fff", color: "#0f766e" }} onClick={newPlan}>➕ خطة جديدة</button></div></div>
+      {busy && <div className="tp-desc text-center font-bold">{busy}</div>}
+      {L === null ? <div className="tp-desc text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>⏳</div> : !L.length ? <div className="tp-desc text-center" style={{ padding: 40 }}><div style={{ fontSize: 44 }}>📄</div><b>لا توجد خطط بعد — اضغط «خطة جديدة»</b></div> :
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))" }}>{L.map(p => { const th = tpTheme(p.theme); return (
+          <div key={p.id} className="tp-desc grid gap-2" style={{ borderTop: `6px solid ${th[0]}` }}>
+            <div className="flex items-center gap-2"><span style={{ fontSize: 30 }}>📚</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 15 }}>{p.title}</b><div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>🕒 {tpWhen(p.pubAt || p.at)}</div></div></div>
+            <div className="flex gap-1 flex-wrap"><span className="pt-st" style={{ background: th[2], color: th[0] }}>📄 {maAr(p.pages || 0)} صفحة</span><span className="pt-st" style={{ background: p.show ? "#dcfce7" : "#f1f5f9", color: p.show ? "#15803d" : "#64748b" }}>{p.show ? "👁 منشورة" : "🔒 مخفية"}</span></div>
+            <div className="flex gap-1 flex-wrap"><button className="tp-btn" style={{ background: th[0], color: "#fff", padding: "7px 12px" }} onClick={async () => { setBusy("تحميل…"); const pages = maArr(await maGet(`${TP_PG}/${p.id}`)).filter(Boolean); setBusy(""); setView({ p, pages }); }}>👁 عرض</button><button className="tp-btn" style={{ background: "#f1f5f9", color: "#334155", padding: "7px 12px" }} onClick={() => edit(p)}>✏️ تعديل</button><a className="tp-btn" style={{ background: "#25d366", color: "#fff", padding: "7px 12px" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`📚 ${p.title} — مدرسة الأمير عبدالمجيد المتوسطة الأولى\nأولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية، للاطلاع عليها:\n${tpLink(p.id)}`)}`}>💬 واتساب</a><button className="tp-btn" style={{ background: "#f1f5f9", color: "#334155", padding: "7px 12px" }} onClick={() => { try { navigator.clipboard.writeText(tpLink(p.id)); toast("📋 نُسخ الرابط"); } catch { window.prompt("انسخ الرابط:", tpLink(p.id)); } }}>🔗</button><button className="tp-btn" style={{ background: "#fff1f2", color: "#be123c", padding: "7px 12px" }} onClick={() => del(p)}>🗑</button></div>
+          </div>); })}</div>}
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>🔗 الرابط العام لأحدث خطة: <b dir="ltr">{tpLink()}</b></div>
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+    </div>
+  );
+}
+
 
 export default function SchoolWebsite(props) {
   return <SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary>;
@@ -35429,7 +35616,7 @@ function SchoolWebsiteInner() {
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [attPortal, setAttPortal] = useState(() => window.location.hash.replace("#", "") === "attend");
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
-  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late", "visits"].includes(h) ? h : ""; });
+  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late", "visits"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
   const [directAnnId, setDirectAnnId] = useState(() => {
     const h = window.location.hash.replace("#","");
     return h.startsWith("ann-") ? h.replace("ann-","") : null;
@@ -35469,7 +35656,7 @@ function SchoolWebsiteInner() {
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["classvisits","insights","behavior","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["termplan","classvisits","insights","behavior","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -35745,6 +35932,7 @@ function SchoolWebsiteInner() {
   const hubBack = () => { setHubPortal(""); window.location.hash = ""; };
   if (hubPortal === "weekly") return <WeeklyPlanPublic onBack={hubBack} />;
   if (hubPortal === "visits") return <VisitsPublicPortal onBack={hubBack} />;
+  if (hubPortal.startsWith("termplan")) return <TermPlanPublic onBack={hubBack} id={hubPortal.slice(9)} />;
   if (hubPortal === "parent") return <GuardianPortal onBack={hubBack} />;
   if (hubPortal === "late") return <StaffHub kind="staff" initView="late" onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
   if (hubPortal) return <StaffHub kind={hubPortal} onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
@@ -35788,6 +35976,7 @@ function SchoolWebsiteInner() {
     { id: "formative",      label: "التقويم التكويني",    icon: "📘" },
     { id: "studentclassify", label: "تصنيف الطلاب", icon: "🏷️" },
     { id: "weeklyplan", label: "الخطة الأسبوعية", icon: "🗓️" },
+    { id: "termplan", label: "الخطة الفصلية", icon: "📚" },
     { id: "portals", label: "بوابات الدخول والصلاحيات", icon: "🔐" },
     { id: "parentinbox", label: "طلبات أولياء الأمور", icon: "📨" },
     { id: "morningattend",  label: "غياب الطلاب — المعلمون", icon: "📋" },
@@ -35834,7 +36023,7 @@ function SchoolWebsiteInner() {
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["morningboard","morningattend","morninglate","periodfollow","attendstats","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["insights","behavior","students","formative","studentclassify","weeklyplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["insights","behavior","students","formative","studentclassify","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
@@ -36124,6 +36313,7 @@ function SchoolWebsiteInner() {
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}
+                {page === "termplan" && <TermPlanPage />}
                 {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
                 {page === "portals" && <PortalsAdminPage />}
                 {page === "parentinbox" && <div className="px-3 md:px-6 py-4"><ParentInbox by={user?.name || "الإدارة"} /></div>}
@@ -36299,6 +36489,7 @@ function SchoolWebsiteInner() {
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}
+                {page === "termplan" && <TermPlanPage />}
         {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
         {page === "portals" && <PortalsAdminPage />}
         {page === "parentinbox" && <div className="px-3 md:px-6 py-4"><ParentInbox by={user?.name || "الإدارة"} /></div>}
