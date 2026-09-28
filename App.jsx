@@ -29139,6 +29139,7 @@ function FormativeGradebookPage({ classList = [] }) {
   const [toast, setToast] = useState("");
   const [showStyle, setShowStyle] = useState(false);
   const [teachersList, setTeachersList] = useState(FG_TEACHERS_DEFAULT);
+  const [ink, setInk] = useState(() => { try { return localStorage.getItem("fg-ink") || "full"; } catch { return "full"; } });
   const staffRef = useRef(null);
   useEffect(() => { (async () => { try { const t = await DB.get("formative-teachers", null); if (Array.isArray(t) && t.length) setTeachersList(t); } catch {} })(); }, []);
   const saveTeachers = (list) => { const u = [...new Set(list.map(x => String(x).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ar")); setTeachersList(u); try { DB.set("formative-teachers", u); } catch {} return u; };
@@ -29458,16 +29459,19 @@ function FormativeGradebookPage({ classList = [] }) {
     XLSX.writeFile(wb, "نموذج_أسماء_الطلاب.xlsx");
   };
 
-  // ── طباعة ملونة
+  // ── طباعة (ألوان كاملة / خفيفة لتوفير الحبر / أبيض وأسود)
+  const setInkM = v => { setInk(v); try { localStorage.setItem("fg-ink", v); } catch {} };
   const print = () => {
+    const LT = ink === "light", BW = ink === "bw";
+    const cellBgP = (c, i) => BW ? (i % 2 ? "#f5f5f5" : "#fff") : LT ? (i % 2 ? "#fafafa" : "#fff") : cellBg(c, i, true);
     const logo = typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" style="width:62px;height:62px">` : "";
     const HR = anyMulti ? 3 : 2;
-    const gh = sheet.groups.map(g => { const n = sheet.cols.filter(c => c.groupId === g.id).reduce((a, c) => a + spanOf(c), 0); return n ? `<th colspan="${n}" style="background:${g.color};color:#fff">${g.label} (${g.max})</th>` : ""; }).join("");
-    const ch = orderedColsAll.map(c => `<th colspan="${spanOf(c)}" ${spanOf(c) === 1 && anyMulti ? 'rowspan="2"' : ""} style="background:${hexA(c.color, .15)};border-top:3px solid ${c.color}">${c.label}<br><small>${c.max}${wOf(c) === 0.5 ? " ÷٢" : ""}</small></th>`).join("");
-    const sh3 = orderedColsAll.filter(c => nEntries(c) > 1).map(c => keysOf(c).map((_, k) => `<th style="background:${hexA(c.color, .1)};font-size:9px">${k + 1}</th>`).join("")).join("");
+    const gh = sheet.groups.map(g => { const n = sheet.cols.filter(c => c.groupId === g.id).reduce((a, c) => a + spanOf(c), 0); return n ? `<th colspan="${n}" style="${BW ? "background:#fff;color:#000;border:1.5px solid #000" : LT ? `background:${hexA(g.color, .12)};color:${g.color};border-top:3px solid ${g.color}` : `background:${g.color};color:#fff`}">${g.label} (${g.max})</th>` : ""; }).join("");
+    const ch = orderedColsAll.map(c => `<th colspan="${spanOf(c)}" ${spanOf(c) === 1 && anyMulti ? 'rowspan="2"' : ""} style="${BW ? "background:#fff;border-top:2px solid #000" : LT ? `background:#fff;border-top:2px solid ${c.color};color:${c.color}` : `background:${hexA(c.color, .15)};border-top:3px solid ${c.color}`}">${c.label}<br><small>${c.max}${wOf(c) === 0.5 ? " ÷٢" : ""}</small></th>`).join("");
+    const sh3 = orderedColsAll.filter(c => nEntries(c) > 1).map(c => keysOf(c).map((_, k) => `<th style="background:${BW || LT ? "#fff" : hexA(c.color, .1)};font-size:9px">${k + 1}</th>`).join("")).join("");
     const body = named.map((st, i) => { const r = rowCalc(st);
       const cells = orderedColsAll.map(c => { const v = colValue(st, c);
-        return keysOf(c).map(k => `<td style="background:${cellBg(c, i, true)}">${st.scores?.[k] ?? ""}</td>`).join(""); }).join("");
+        return keysOf(c).map(k => `<td style="background:${cellBgP(c, i)}">${st.scores?.[k] ?? ""}</td>`).join(""); }).join("");
       return `<tr><td>${i + 1}</td><td style="text-align:right;padding-right:8px;font-weight:700;white-space:nowrap">${st.name}</td>${cells}<td style="font-weight:900">${r.any ? r.t : ""}${r.any && !r.cond ? "<br><small style='color:#dc2626'>لم يحقق النسبة الشرطية</small>" : ""}</td></tr>`; }).join("");
     printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>سجل التقويم التكويني</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
@@ -29476,12 +29480,13 @@ function FormativeGradebookPage({ classList = [] }) {
 .k .l{text-align:left}h1{text-align:center;font-size:18px;margin:4px 0;color:#0f766e}
 .info{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:12px;font-weight:700;background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:6px;margin-bottom:8px}
 table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid ${ST.vline};border-bottom:${ST.lineW}px solid ${ST.line};padding:4px;text-align:center}th small{font-weight:400;color:#475569}
-.sig{display:flex;justify-content:space-around;margin-top:26px;font-weight:700;font-size:12px}</style></head><body>
+.sig{display:flex;justify-content:space-around;margin-top:26px;font-weight:700;font-size:12px}
+${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!important}.info{background:#fff!important;border-color:#000!important}img{filter:grayscale(1)}th,td{border-color:#999!important}` : LT ? `.info{background:#fff!important}.k{border-bottom-width:1.5px!important}` : ""}</style></head><body>
 <div class="k"><div>المملكة العربية السعودية<br>وزارة التعليم<br>${sheet.edu}<br>${sheet.school}</div><div>${logo}</div><div class="l">العام الدراسي: ${sheet.year}<br>${sheet.semester}<br>المادة: ${sheet.subject || "—"}</div></div>
 <h1>سجل رصد التقويم التكويني</h1>
 <div class="info"><span>المعلم: ${sheet.teacher || "—"}</span><span>المادة: ${sheet.subject || "—"}</span><span>الصف: ${sheet.level}</span><span>الفصل: ${sheet.section}</span><span>عدد الطلاب: ${named.length}</span><span>${FG_FORMS[form].ic} ${FG_FORMS[form].t}</span></div>
 <table style="font-size:10px"><thead><tr><th rowspan="${HR}">م</th><th rowspan="${HR}" style="min-width:150px">اسم الطالب</th>${gh}<th rowspan="${HR}">المجموع<br><small>${maxTotal}</small></th></tr><tr>${ch}</tr>${anyMulti ? `<tr>${sh3}</tr>` : ""}</thead><tbody>${body}</tbody></table>
-<div class="sig"><span>معلم المادة: ${sheet.teacher || "............"}</span><span>التوقيع: ............</span><span>مدير المدرسة: ............</span></div>
+<div class="sig"><span>معلم المادة: ${sheet.teacher || "............"}</span><span>التوقيع: ............</span><span>مدير المدرسة: فازع القرني ............</span></div>
 <script>setTimeout(()=>print(),600)</script></body></html>`);
   };
 
@@ -29610,7 +29615,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid 
           <button className="fg-btn" onClick={() => setShowStyle(v => !v)} style={showStyle ? { borderColor: "#0d9488", color: "#0d9488" } : undefined}>🎨 الألوان والخطوط</button>
           <button className="fg-btn" onClick={addGroup}>＋ مكوّن تقويم</button>
           <button className="fg-btn vio" onClick={exportExcel}>📤 تصدير Excel</button>
-          <button className="fg-btn pri" onClick={print}>🖨 طباعة ملونة</button>
+          <span style={{ display: "inline-flex", gap: 0, borderRadius: 12, overflow: "hidden", border: "1px solid #0f766e" }}><select value={ink} onChange={e => setInkM(e.target.value)} style={{ border: "none", fontFamily: "inherit", fontWeight: 800, fontSize: 12.5, padding: "0 8px", background: "#f0fdfa", color: "#0f766e" }}><option value="full">🎨 ألوان كاملة</option><option value="light">🌤️ ألوان خفيفة (توفير الحبر)</option><option value="bw">⚫ أبيض وأسود (أقصى توفير)</option></select><button className="fg-btn pri" style={{ borderRadius: 0 }} onClick={print}>🖨 طباعة</button></span>
         </div>
 
         {showStyle && (
@@ -34654,7 +34659,7 @@ function cvSeedPlan() {
 async function cvLoad() {
   let [plan, ev, cfg, lic, msgs] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL), maGet(CV_CFG), maGet(LIC_NODE), maGet(CV_MSG)]);
   plan = ptObj(plan); cfg = ptObj(cfg);
-  return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: [], gen: ptObj(cfg.gen), links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
+  return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: [], gen: ptObj(cfg.gen), resched: cfg.resched || "", links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
 }
 const cvTeachers = plan => { const m = {}; Object.values(plan).forEach(r => { if (!r || !r.tk) return; const o = m[r.tk] = m[r.tk] || { tk: r.tk, name: r.t, s: r.s, vis: [] }; o.vis.push(r); }); Object.values(m).forEach(o => o.vis.sort((a, b) => a.v - b.v || a.date.localeCompare(b.date))); return Object.values(m).sort((a, b) => a.vis[0].n - b.vis[0].n); };
 const cvStatus = (r, e) => { const k = maKey(new Date()); const tot = cvTotal(e); if (tot != null) return ["done", "✅ نُفذت", "#15803d", "#dcfce7"]; if (r.date === k) return ["today", "📌 اليوم", "#7c3aed", "#ede9fe"]; if (r.date < k) return ["late", "🔄 لم تُنفَّذ — تحتاج تعويضاً", "#b91c1c", "#fee2e2"]; return ["soon", "⏳ قادمة", "#0369a1", "#e0f2fe"]; };
@@ -34683,7 +34688,7 @@ function ClassVisitsPage({ by = "الإدارة" }) {
   const [D, setD] = useState(null); const [tab, setTab] = useState("plan"); const [msg, setMsg] = useState("");
   const [tk, setTk] = useState(null); const [vn, setVn] = useState(1); const [f, setF] = useState({ q: "", v: "", st: "" }); const [mv, setMv] = useState(null);
   const toast = t => { setMsg(t); clearTimeout(toast.t); toast.t = setTimeout(() => setMsg(""), 3000); };
-  const load = async () => { const d = await cvLoad(); if (!Object.keys(d.plan).length) { const p = cvSeedPlan(); const ok = await maPut(CV_PLAN, p); if (ok) d.plan = p; const links = {}; cvTeachers(p).forEach(T => { const rid = cvMatch(T.name, d.lic); if (rid) links[T.tk] = rid; }); d.cfg.links = links; await cvPatch({ [`${CV_CFG}/links`]: links }); } setD(d); };
+  const load = async () => { const d = await cvLoad(); if (!Object.keys(d.plan).length) { const p0 = cvSeedPlan(); const p = { ...p0, ...cvReflow(p0, {}, "2026-09-30", typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null, TT_DEF_TIMES) }; d.cfg.resched = "2026-09-30"; cvPatch({ [`${CV_CFG}/resched`]: "2026-09-30" }); const ok = await maPut(CV_PLAN, p); if (ok) d.plan = p; const links = {}; cvTeachers(p).forEach(T => { const rid = cvMatch(T.name, d.lic); if (rid) links[T.tk] = rid; }); d.cfg.links = links; await cvPatch({ [`${CV_CFG}/links`]: links }); } setD(d); };
   useEffect(() => { load(); }, []);
   if (!D) return <div className="ma-card p-10 text-center font-bold text-gray-400">⏳ جاري تحميل الزيارات الصفية…</div>;
   const TS = cvTeachers(D.plan); const k = maKey(new Date());
@@ -34708,12 +34713,13 @@ function ClassVisitsPage({ by = "الإدارة" }) {
           </div>
         </div>
         <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["eval", "🔭 رصد الملاحظة"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "🏁 التقييم النهائي وأبرز الملاحظات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
+        {tab === "plan" && !D.cfg.resched && <div className="ma-card p-3 flex items-center gap-2 flex-wrap" style={{ background: "#faf5ff", border: "2px dashed #a78bfa" }}><b>↪️ لبدء الزيارات من الأربعاء ١٩/٤/١٤٤٨هـ مع اختيار الحصص من جدول كل معلم:</b><button className="ma-btn pri" onClick={() => setTab("cfg")}>فتح أداة إعادة الجدولة</button></div>}
         {tab === "plan" && reqs.length > 0 && <CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} />}
         {tab === "plan" && <CvPlan D={D} all={all} evOf={evOf} f={f} setF={setF} openEval={(r) => { setTk(r.tk); setVn(r.v); setTab("eval"); }} setMv={setMv} by={by} />}
         {tab === "eval" && <ObsEval D={D} setD={setD} TS={TS} T={T} setTk={setTk} vn={vn} setVn={setVn} by={by} toast={toast} />}
         {tab === "msg" && <><CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} /><CvMsgs D={D} setD={setD} toast={toast} /></>}
         {tab === "ind" && <ObsInd D={D} setD={setD} TS={TS} by={by} toast={toast} openT={t => { setTk(t); setTab("eval"); }} />}
-        {tab === "cfg" && <CvCfg D={D} setD={setD} TS={TS} toast={toast} />}
+        {tab === "cfg" && <><CvResched D={D} setD={setD} toast={toast} /><CvCfg D={D} setD={setD} TS={TS} toast={toast} /></>}
       </div>
       {mv && <CvMove D={D} setD={setD} r={mv} close={() => setMv(null)} toast={toast} />}
       {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
@@ -34908,6 +34914,7 @@ const OB_CSS = `
 .ob-hd label{font-size:11.5px;font-weight:800;color:#64748b}
 .ob-pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-weight:900;font-size:12px}
 @media (max-width:640px){.ob-lv{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:900px){.ob-item.ed{display:grid;grid-template-columns:minmax(0,1fr) 430px;align-items:stretch}.ob-item.ed>*{grid-column:1/-1}.ob-item.ed>.hd{grid-column:1;grid-row:1}.ob-item.ed>.ob-lv{grid-column:2;grid-row:1;padding:10px 12px;background:linear-gradient(90deg,#faf5ff,#fff);align-content:center;border-right:1px dashed #ddd6fe}.ob-item.ed .ob-ev{grid-template-columns:1fr 1fr}}
 `;
 const obLvPill = (l, big) => l && OB_LV[l] ? <span className="ob-pill" style={{ background: OB_LV[l][2], color: OB_LV[l][1], fontSize: big ? 14 : 12 }}>{OB_LV[l][3]} {OB_LV[l][0]}</span> : null;
 
@@ -34970,7 +34977,7 @@ function ObsEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
         <div key={gi} id={`obg-${gi}`} className="grid gap-2" style={{ scrollMarginTop: 70 }}>
           <div className="ob-band" style={{ background: `linear-gradient(135deg,${OB_GC[gi]},#4c1d95)` }}><span style={{ fontSize: 20 }}>{g.ic}</span><span>المؤشر {maAr(gi + 1)}: {g.t}</span></div>
           {g.items.map(it => { const x = ptObj(e.obs["i" + it.n]); const on = obEvOn(e, it.n); return (
-            <div key={it.n} className="ob-item" style={obTouched(e, it.n) ? { borderColor: "#c4b5fd" } : null}>
+            <div key={it.n} className="ob-item ed" style={obTouched(e, it.n) ? { borderColor: "#c4b5fd" } : null}>
               <div className="hd"><span className="no">{maAr(it.n)}</span><span style={{ flex: 1 }}>{it.t}</span>{!it.one && <span className="ob-pill" style={{ background: on.length ? "#dcfce7" : "#f1f5f9", color: on.length ? "#15803d" : "#94a3b8" }}>{maAr(on.length)}/{maAr(it.ev.length)}</span>}</div>
               <div className="ob-lv">{[1, 2, 3, 4].map(l => { const L = OB_LV[l]; const sel = +x.lv === l; return <button key={l} style={sel ? { background: L[1], color: "#fff", borderColor: L[1] } : { color: L[1] }} onClick={() => setIt(it.n, { lv: sel ? null : l })}>{L[3]} {L[0]}</button>; })}</div>
               <div style={{ fontSize: 11.5, fontWeight: 900, color: "#7c3aed", padding: "0 12px 6px" }}>👁 المشاهدات الدالة {it.one ? "(اختر واحدة)" : "(اضغط ما تحقق)"}</div>
@@ -35118,6 +35125,60 @@ function ObsInd({ D, setD, TS, by, openT, toast }) {
         <label style={{ fontWeight: 800, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={ft.pub} onChange={ev => setFt({ ...ft, pub: ev.target.checked })} />👁 نشره للمعلم</label>
         <div className="flex gap-2 justify-end"><button className="ma-btn" onClick={() => setFt(null)}>إلغاء</button><button className="ma-btn pri" onClick={async () => { const v = { txt: ft.txt.trim(), lv: ft.lv || null, pub: ft.pub ? 1 : 0, at: Date.now(), by }; const ok = await cvPatch({ [`${CV_EVAL}/${ft.T.tk}/final`]: v }); setD(d => ({ ...d, ev: { ...d.ev, [ft.T.tk]: { ...ptObj(d.ev[ft.T.tk]), final: v } } })); setFt(null); toast(ok ? "✅ حُفظ التقييم النهائي" : "📱 حُفظ على الجهاز"); }}>💾 حفظ</button></div>
       </div></div>}
+    </div>
+  );
+}
+
+// ── إعادة جدولة الزيارات ابتداءً من تاريخ (يومان دراسيان لكل يوم، على أيام الجدول الأصلية ثم أيام التعويض)
+//    وتُختار الحصة من الجدول المدرسي الفعلي للمعلم في اليوم الجديد (أقرب حصة لحصته الأصلية) دون تعارض بين زيارتي اليوم
+function cvReflow(plan, ev, start, TT, times) {
+  const V = Object.values(plan).filter(Boolean).sort((a, b) => a.n - b.n);
+  const done = r => ptObj(ptObj(ev[r.tk])[r.v]).fin;
+  const mov = V.filter(r => !done(r) && !(r.date < start && r.moved));
+  const hijOf = {}, wkOf = {}; CV_SEED.forEach(x => { hijOf[x[3]] = x[4]; wkOf[wkStart(x[3])] = x[2]; }); CV_COMP.forEach(c => { hijOf[c[0]] = c[1]; });
+  const seedDays = [...new Set(CV_SEED.map(x => x[3]))].sort();
+  const days = [...new Set([...seedDays, ...CV_COMP.filter(c => c[0] > seedDays[seedDays.length - 1]).map(c => c[0])])].filter(d => d >= start).sort();
+  const busy = {}; V.filter(r => !mov.includes(r)).forEach(r => { busy[r.date] = (busy[r.date] || 0) + 1; });
+  const tIdx = {}; if (TT && TT.T) TT.T.forEach((n, i) => { tIdx[i] = { name: ttClean(n) }; });
+  const toMin = s => { const m = String(s || "").match(/(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; };
+  const ORD = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة"];
+  const out = {}; const used = {}; let di = 0;
+  const pTime = {}; CV_SEED.forEach(x => { if (x[8] && !pTime[x[7]]) pTime[x[7]] = x[8]; }); // أوقات الحصص كما في جدول الزيارات المعتمد
+  for (const r of mov) {
+    while (di < days.length && (busy[days[di]] || 0) >= 2) di++;
+    if (di >= days.length) { out[r.id] = { ...r }; continue; }
+    const d = days[di]; busy[d] = (busy[d] || 0) + 1;
+    const nr = { ...r, date: d, hij: hijOf[d] || r.hij, wk: wkOf[wkStart(d)] || r.wk, resched: start };
+    let ti = TT && TT.T && r.p !== "بالتنسيق" ? cvMatch(r.t, tIdx) : null;
+    const dIdx = TT && TT.C ? ttDayIdx(TT, maDate(d)) : -1;
+    if (ti != null && dIdx >= 0) {
+      ti = +ti; const opts = [];
+      Object.keys(TT.C).forEach(ck => { maArr(TT.C[ck][dIdx]).forEach((c, p) => { if (c && c[1] === ti) opts.push({ ck, p }); }); });
+      const want = Math.max(0, ORD.indexOf(r.p));
+      const free = opts.filter(o => !(used[d] || []).includes(o.p)).sort((a, b) => Math.abs(a.p - want) - Math.abs(b.p - want) || a.p - b.p);
+      const o = free[0] || opts[0];
+      if (o) { const tm = pTime[ORD[o.p]] ? pTime[ORD[o.p]].split("-") : (times[o.p] || []); const f = z => String(z || "").replace(/^0/, ""); const [lv, sec] = o.ck.split("-"); nr.p = ORD[o.p] || nr.p; nr.tm = tm[0] ? `${f(tm[0])}-${f(tm[1])}` : nr.tm; nr.c = `${sec}/${lv}`; nr.ttok = 1; (used[d] = used[d] || []).push(o.p); }
+      else nr.ttok = 0;
+    }
+    out[r.id] = nr;
+  }
+  return out;
+}
+function CvResched({ D, setD, toast }) {
+  const [start, setStart] = useState(ptObj(D.cfg).resched || "2026-09-30"); const [prev, setPrev] = useState(null); const [busy, setBusy] = useState(false);
+  const run = async () => { setBusy(true); const [tt, cfg] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]); const T = tt && tt.C ? tt : (typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null); const times = cfg && Array.isArray(cfg.times) ? cfg.times : TT_DEF_TIMES; setPrev({ out: cvReflow(D.plan, D.ev, start, T, times), src: tt && tt.C ? "جدول المدرسة المرفوع" : "الجدول المرجعي" }); setBusy(false); };
+  const apply = async () => { if (!window.confirm(`تطبيق الجدولة الجديدة لـ ${maAr(Object.keys(prev.out).length)} زيارة ابتداءً من ${maDay(maDate(start))}؟`)) return; setBusy(true); const np = { ...D.plan, ...prev.out }; const ok = await maPut(CV_PLAN, np); if (ok) { await cvPatch({ [`${CV_CFG}/resched`]: start }); setD(d => ({ ...d, plan: np, cfg: { ...d.cfg, resched: start } })); setPrev(null); } setBusy(false); toast(ok ? "✅ طُبّقت الجدولة الجديدة — يراها المعلمون فوراً" : "⚠️ تعذّر الحفظ"); };
+  const ch = prev ? Object.values(prev.out).sort((a, b) => a.date.localeCompare(b.date) || a.n - b.n) : [];
+  return (
+    <div className="ma-card p-4 grid gap-3" style={{ border: "2px solid #7c3aed" }}>
+      <b style={{ fontSize: 15 }}>↪️ إعادة جدولة الزيارات ابتداءً من تاريخ</b>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.9 }}>تُنقل الزيارات غير المنفذة بنفس ترتيبها (زيارتان في اليوم) على أيام الجدول الدراسية ثم أيام التعويض، وتُختار <b>الحصة من جدول المعلم الفعلي</b> في اليوم الجديد (أقرب حصة لحصته الأصلية)، دون تعارض بين زيارتي اليوم الواحد. الزيارات المعتمدة لا تتغير.</div>
+      <div className="flex gap-2 items-center flex-wrap"><label style={{ fontWeight: 800, fontSize: 13 }}>البداية: <input type="date" className="ma-inp" style={{ width: 170, display: "inline-block" }} value={start} onChange={e => setStart(e.target.value)} /></label><span style={{ fontWeight: 800, color: "#7c3aed" }}>{maDay(maDate(start))}</span><button className="ma-btn pri" disabled={busy} onClick={run}>{busy ? "⏳" : "👁 معاينة الجدولة"}</button>{D.cfg.resched && <span className="in-fl" style={{ background: "#ede9fe", color: "#6d28d9" }}>آخر جدولة: من {maDay(maDate(D.cfg.resched))}</span>}</div>
+      {prev && <>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>مصدر الحصص: {prev.src} • ✓ = الحصة من جدول المعلم</div>
+        <div style={{ maxHeight: 420, overflow: "auto", border: "1px solid #ede9fe", borderRadius: 14 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}><thead><tr style={{ background: "#7c3aed", color: "#fff", position: "sticky", top: 0 }}><th style={{ padding: 6 }}>المعلم</th><th>الزيارة</th><th>الموعد السابق</th><th>الموعد الجديد</th></tr></thead><tbody>{ch.map(r => { const o = D.plan[r.id]; const same = o.date === r.date && o.p === r.p; return <tr key={r.id} style={{ borderBottom: "1px solid #f3e8ff", background: same ? "#fff" : "#faf5ff" }}><td style={{ padding: "5px 8px", fontWeight: 800 }}>{r.t}</td><td style={{ textAlign: "center" }}>{CV_VN[r.v - 1]}</td><td style={{ color: "#94a3b8" }}>{maDay(maDate(o.date))} {cvHij(o.hij)} • {o.p}</td><td style={{ fontWeight: 800, color: same ? "#334155" : "#6d28d9" }}>{maDay(maDate(r.date))} {cvHij(r.hij)} • الحصة {r.p}{r.tm ? ` (${cvTm(r.tm)})` : ""} • {cvCls(r.c)} {r.ttok ? "✓" : r.ttok === 0 ? "⚠️" : ""}</td></tr>; })}</tbody></table></div>
+        <div className="flex gap-2"><button className="ma-btn pri" disabled={busy} onClick={apply}>✅ تطبيق الجدولة الجديدة</button><button className="ma-btn" onClick={() => setPrev(null)}>إلغاء</button></div>
+      </>}
     </div>
   );
 }
