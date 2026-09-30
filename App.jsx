@@ -31052,7 +31052,7 @@ function PortalsAdminPage() {
   };
   useEffect(() => { load(); }, []);
   const base = window.location.origin + window.location.pathname;
-  const links = [["teacher", "👨‍🏫", "بوابة المعلمين", "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني • أداء الطلاب", "#0d9488", "🔔 نأمل الدخول إلى بوابة المعلمين برقم السجل المدني:"], ["staff", "🗂️", "بوابة الإداريين والمرشد", "التأخر الصباحي • الإحصائيات • الأعذار", "#ea580c", "🔔 بوابة الإداريين والمرشد الطلابي (الدخول بالسجل المدني):"], ["late", "🌅", "رابط رصد التأخر الصباحي", "يفتح سجل التأخر مباشرة بعد الدخول بهوية الإداري أو المرشد", "#c2410c", "🌅 رابط رصد التأخر الصباحي (الدخول بالسجل المدني):"], ["visits", "🎯", "رابط الزيارات الصفية للمعلمين", "موعد الزيارة • التقييم • عناصر التقييم • التنبيه وطلب التأجيل", "#0f766e", "🎯 زملائي المعلمين: مواعيد زياراتكم الصفية وتقييمكم عبر الرابط التالي برقم الهوية:"], ["termplan", "📚", "رابط الخطة الفصلية", "تعرض أحدث خطة فصلية منشورة لأولياء الأمور", "#6d28d9", "📚 أولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية عبر الرابط:"], ["parent", "👪", "بوابة أولياء الأمور", "المستوى • الغياب • التأخر • الإعلانات • الأعذار", "#2563eb", "👪 أولياء الأمور الكرام: يمكنكم متابعة أبنائكم عبر البوابة التالية بإدخال رقم هوية الطالب:"]];
+  const links = [["teacher", "👨‍🏫", "بوابة المعلمين", "غياب الحصة الثانية • تصنيف الطلاب • التقويم التكويني • أداء الطلاب", "#0d9488", "🔔 نأمل الدخول إلى بوابة المعلمين برقم السجل المدني:"], ["staff", "🗂️", "بوابة الإداريين والمرشد", "التأخر الصباحي • الإحصائيات • الأعذار", "#ea580c", "🔔 بوابة الإداريين والمرشد الطلابي (الدخول بالسجل المدني):"], ["attend", "📋", "رابط غياب الطلاب — الحصة الثانية", "يدخل المعلم برقم هويته فتظهر الفصول مباشرة دون الدخول لبوابة المعلمين (يتذكّره الجهاز ٣٠ يوماً)", "#0d9488", "📋 زملائي المعلمين: رابط رصد غياب الطلاب في الحصة الثانية — ادخل برقم هويتك واختر الفصل واعتمد الغياب:"], ["late", "🌅", "رابط رصد التأخر الصباحي", "يفتح سجل التأخر مباشرة بعد الدخول بهوية الإداري أو المرشد", "#c2410c", "🌅 رابط رصد التأخر الصباحي (الدخول بالسجل المدني):"], ["visits", "🎯", "رابط الزيارات الصفية للمعلمين", "موعد الزيارة • التقييم • عناصر التقييم • التنبيه وطلب التأجيل", "#0f766e", "🎯 زملائي المعلمين: مواعيد زياراتكم الصفية وتقييمكم عبر الرابط التالي برقم الهوية:"], ["termplan", "📚", "رابط الخطة الفصلية", "تعرض أحدث خطة فصلية منشورة لأولياء الأمور", "#6d28d9", "📚 أولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية عبر الرابط:"], ["parent", "👪", "بوابة أولياء الأمور", "المستوى • الغياب • التأخر • الإعلانات • الأعذار", "#2563eb", "👪 أولياء الأمور الكرام: يمكنكم متابعة أبنائكم عبر البوابة التالية بإدخال رقم هوية الطالب:"]];
   const setRoleLic = async (id, role) => { setRoles(p => ({ ...p, [id]: role })); await maPut(`${PT_ROLES}/${id}`, role); toast("✅ تم تحديث الصلاحية"); };
   const setRoleStaff = async (x, role) => { const v = { ...x, role }; setStaff(p => p.map(y => y.id === x.id ? v : y)); await maPut(`${PT_STAFF}/${x.id}`, v); toast("✅ تم تحديث الصلاحية"); };
   const delStaff = async (x) => { if (!window.confirm(`حذف ${x.name}؟`)) return; try { await fetch(`${FIREBASE_URL}/school/${PT_STAFF}/${x.id}.json`, { method: "DELETE" }); } catch {} setStaff(p => p.filter(y => y.id !== x.id)); };
@@ -32879,7 +32879,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
       setRosters(ros && typeof ros === "object" ? ros : {});
       if (Array.isArray(ft) && ft.length) setTeachers(ft);
       try { const t = localStorage.getItem("ma-teacher"); if (t) setTeacher(t); } catch {}
-      try { const m = JSON.parse(localStorage.getItem("ma-me") || "null"); if (m && m.day === maKey(new Date()) && m.name) setMe(m); } catch {}
+      try { const m = JSON.parse(localStorage.getItem("ma-me") || "null"); if (m && m.name && (m.day === maKey(new Date()) || (m.exp && m.exp > Date.now()))) setMe(m); } catch {}
       const lic = await maGet(LIC_NODE);
       const licNames = lic && typeof lic === "object" ? Object.values(lic).filter(r => r && r.name).map(r => r.name) : [];
       if (licNames.length) setTeachers(p => [...new Set([...licNames, ...p])].sort((a, b) => a.localeCompare(b, "ar")));
@@ -32949,7 +32949,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
     const r = lic && typeof lic === "object" ? Object.values(lic).find(x => x && x.idHash === h) : null;
     setBusy(false);
     if (!r) { setLoginErr("رقم السجل المدني غير مسجّل — يرجى مراجعة وكيل شؤون الطلاب"); return; }
-    const m = { name: r.name, hash: h, day: maKey(new Date()) };
+    const m = { name: r.name, hash: h, day: maKey(new Date()), exp: Date.now() + 30 * 864e5 };
     setMe(m); setNidIn("");
     try { localStorage.setItem("ma-me", JSON.stringify(m)); } catch {}
   };
@@ -36340,7 +36340,7 @@ function SchoolWebsiteInner() {
   const [weekArchive, setWeekArchive] = useState([]);
 
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
-  const [attPortal, setAttPortal] = useState(() => window.location.hash.replace("#", "") === "attend");
+  const [attPortal, setAttPortal] = useState(() => ["attend", "absence", "ghiab"].includes(window.location.hash.replace("#", "")));
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
   const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late", "visits"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
   const [directAnnId, setDirectAnnId] = useState(() => {
@@ -36381,6 +36381,7 @@ function SchoolWebsiteInner() {
       }
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
+      if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
       if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["asmfollow","termplan","classvisits","insights","behavior","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
