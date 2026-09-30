@@ -32891,6 +32891,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   }, []);
   useEffect(() => { (async () => { const d = await maGet(`${MA_ATT}/${dateK}`); setDay(maNormDay(d)); })(); }, [dateK]);
   const followToday = useRef(true);
+  useEffect(() => { const f = () => { const t = maKey(new Date()); if (followToday.current) setDateK(d => d === t ? d : t); }; f(); document.addEventListener("visibilitychange", f); window.addEventListener("focus", f); return () => { document.removeEventListener("visibilitychange", f); window.removeEventListener("focus", f); }; }, []);
   useEffect(() => {
     const t = setInterval(async () => {
       setTick(Date.now());
@@ -33230,8 +33231,8 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
               <div style={{ fontSize: 18, fontWeight: 900 }}>{maDay(D)}</div>
               <div style={{ fontSize: 13, fontWeight: 800, color: "#fde68a" }}>🌙 {maHijri(D)}</div>
               <div style={{ fontSize: 12, fontWeight: 700, opacity: .8 }}>📅 {maGreg(D)}</div>
-              {!isT && <input type="date" value={dateK} onChange={e => { if (!e.target.value) return; followToday.current = e.target.value === maKey(new Date()); setDateK(e.target.value); }} style={{ marginTop: 6, borderRadius: 10, border: "none", padding: "3px 8px", fontFamily: "inherit", fontWeight: 800, fontSize: 12 }} />}
-              {!isToday && <div style={{ fontSize: 11, fontWeight: 900, color: "#fca5a5", marginTop: 4 }}>⚠ ليس تاريخ اليوم</div>}
+              {!isT && <input type="date" value={dateK} onChange={e => { if (!e.target.value) return; followToday.current = e.target.value === maKey(new Date()); setDateK(e.target.value); }} style={{ marginTop: 6, borderRadius: 10, border: "none", padding: "4px 8px", fontFamily: "inherit", fontWeight: 800, fontSize: 13, color: "#0f172a", background: "#fff", colorScheme: "light" }} />}
+              {!isToday && <div style={{ fontSize: 11, fontWeight: 900, color: "#fca5a5", marginTop: 4 }}>⚠ ليس تاريخ اليوم {!isT && <button onClick={() => { followToday.current = true; setDateK(maKey(new Date())); setCk(null); }} style={{ marginRight: 6, border: "none", borderRadius: 8, padding: "2px 10px", fontFamily: "inherit", fontWeight: 900, fontSize: 11.5, background: "#fde68a", color: "#78350f", cursor: "pointer" }}>↩ اليوم</button>}</div>}
               {isT && me && <div style={{ marginTop: 8, fontSize: 12.5, fontWeight: 900 }}>👤 أ. {me.name} <button onClick={logoutT} style={{ marginRight: 6, background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.35)", borderRadius: 999, padding: "1px 10px", fontFamily: "inherit", fontWeight: 800, fontSize: 11, cursor: "pointer" }}>خروج</button></div>}
             </div>
           </div>
@@ -33599,7 +33600,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
             return Object.keys(by).length ? Object.entries(by).map(([n, hs]) => (
               <div key={n} style={{ border: "1px solid #fecaca", borderRadius: 14, padding: 10, marginBottom: 8, background: "#fffafa" }}>
                 <div style={{ fontWeight: 900 }}>{n} <span style={{ color: "#b91c1c" }}>— غاب {maAr(hs.length)} يوم</span> <small style={{ color: "#64748b" }}>({maClassName(hs[0].c)})</small></div>
-                <div className="flex gap-1 flex-wrap mt-1">{hs.map((h, i) => <button key={i} className="ma-btn" style={{ padding: "3px 10px", fontSize: 11.5 }} onClick={() => { setDateK(h.d.date); setTab("stats"); }}>{h.d.dayName} {h.d.hijri}</button>)}</div>
+                <div className="flex gap-1 flex-wrap mt-1">{hs.map((h, i) => <button key={i} className="ma-btn" style={{ padding: "3px 10px", fontSize: 11.5 }} onClick={() => { followToday.current = h.d.date === maKey(new Date()); setDateK(h.d.date); setTab("stats"); }}>{h.d.dayName} {h.d.hijri}</button>)}</div>
               </div>)) : <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد غياب مسجّل لهذا الاسم</div>;
           })() : idx.length ? (
             <div style={{ overflowX: "auto" }}>
@@ -33610,7 +33611,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
                     <td style={{ padding: 8, fontWeight: 900 }}>{d.dayName}</td><td style={{ padding: 8 }}>{d.hijri}</td><td style={{ padding: 8, color: "#64748b" }}>{maGreg(maDate(d.date))}</td>
                     <td style={{ padding: 8, textAlign: "center" }}>{maAr(d.classes)}/{maAr(classes.length)}</td>
                     <td style={{ padding: 8, textAlign: "center", fontWeight: 900, color: "#b91c1c" }}>{maAr(d.absent)}</td>
-                    <td style={{ padding: 8 }}><button className="ma-btn" style={{ padding: "5px 12px" }} onClick={() => { setDateK(d.date); setTab("stats"); }}>عرض ←</button></td>
+                    <td style={{ padding: 8 }}><button className="ma-btn" style={{ padding: "5px 12px" }} onClick={() => { followToday.current = d.date === maKey(new Date()); setDateK(d.date); setTab("stats"); }}>عرض ←</button></td>
                   </tr>))}</tbody>
               </table>
             </div>) : <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا توجد أيام مؤرشفة بعد — تُحفظ تلقائياً عند اعتماد التحضير</div>}
