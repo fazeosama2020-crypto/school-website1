@@ -32827,6 +32827,7 @@ function GuardianDaily({ me }) {
   );
 }
 
+const MA_LOCK = "school-mattend-lock";
 function MorningAttendancePage({ mode = "admin", onBack, section = "take", initTab }) {
   const isT = mode === "teacher";
   const isStats = !isT && section === "stats";
@@ -32858,6 +32859,8 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   const [late, setLate] = useState([]);               // تأخر اليوم
   const [wkLate, setWkLate] = useState(null);
   const [lateQ, setLateQ] = useState("");
+  const [lk, setLk] = useState({ mode: "open", at: "09:00", day: "", open: "" }); // إقفال إدخال الغياب للمعلمين (بيد المدير)
+  useEffect(() => { const f = async () => { const v = await maGet(MA_LOCK); if (v && typeof v === "object") setLk(p => ({ ...p, ...v })); }; f(); const t = setInterval(f, 20000); return () => clearInterval(t); }, []);
   const [lateCk, setLateCk] = useState("");
   const [lateStart, setLateStart] = useState("06:45");
   const [lateAdd, setLateAdd] = useState(null);       // {s, time, reason, home}
@@ -32913,6 +32916,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   // ── الحفظ والاعتماد
   const approver = isT ? (me?.name || "") : teacher;
   const saveAttendance = async () => {
+    if (tLocked) { alert("🔒 أُقفل إدخال الغياب لهذا اليوم من قِبل إدارة المدرسة — راجع وكيل المدرسة"); return; }
     if (!approver) { alert(isT ? "سجّل دخولك بالسجل المدني" : "اختر اسم المعتمِد"); return; }
     if (!cur.length) { alert("لا يوجد طلاب في هذا الفصل"); return; }
     const prev = day[ck];
@@ -33148,6 +33152,10 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
   const pastDeadline = isToday && nowMin >= dlMin;
   const missing = classes.filter(c => studentsOf(c.ck).length && !day[c.ck]);
   const dlLabel = maAr(`${dlH}:${maPad(dlM || 0)}`);
+  const lkToday = maKey(new Date());
+  const lkAtMin = mlToMin(lk.at); const lkTimeClosed = lk.mode === "time" && lkAtMin != null && nowMin >= lkAtMin && lk.open !== lkToday;
+  const entryClosed = lk.day === lkToday || lkTimeClosed; const tLocked = isT && entryClosed;
+  const saveLk = async (v) => { const n = { ...lk, ...v, by: teacher || "الإدارة", at2: Date.now() }; setLk(n); const ok = await maPut(MA_LOCK, n); toast(ok ? "✅ تم الحفظ" : "⚠️ تعذّر الحفظ"); };
 
   const ClassPicker = ({ onPick, selected, showDay }) => (
     <div className="grid gap-3">
@@ -33178,6 +33186,32 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
           <span dir="ltr" style={{ flex: "1 1 220px", minWidth: 0, background: "#fff", border: "1px solid #fde68a", borderRadius: 10, padding: "6px 10px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", userSelect: "all" }}>{portalLink}</span>
           <button className="ma-btn" style={{ padding: "6px 12px" }} onClick={() => { try { navigator.clipboard.writeText(portalLink); toast("✅ تم نسخ الرابط"); } catch {} }}>📋 نسخ</button>
           <a className="ma-btn gold" style={{ padding: "6px 12px" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`🔔 تذكير التحضير — ${maDay(new Date())} ${maHijri(new Date())} الموافق ${maGreg(new Date())}\nنأمل إدخال غياب الحصة الثانية واعتماده قبل الساعة ${deadline} صباحاً (الدخول برقم السجل المدني):\n` + portalLink)}`}>💬 إرسال تذكير اليوم</a>
+        </div>
+      )}
+
+      {!isT && !isStats && (
+        <div className="ma-card mb-3" style={{ padding: "12px 14px", display: "grid", gap: 10, borderColor: entryClosed ? "#fca5a5" : "#86efac", background: entryClosed ? "linear-gradient(90deg,#fef2f2,#fff)" : "linear-gradient(90deg,#f0fdf4,#fff)" }}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <b style={{ fontSize: 14.5 }}>🔐 إدخال الغياب للمعلمين:</b>
+            <span style={{ fontWeight: 900, fontSize: 13, borderRadius: 999, padding: "4px 12px", color: "#fff", background: entryClosed ? "#dc2626" : "#16a34a" }}>{entryClosed ? "🔒 مقفل الآن" : "🔓 مفتوح الآن"}</span>
+            {lk.mode === "time" && <span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>يُقفل تلقائياً يومياً الساعة {mlFmtT(lk.at)}</span>}
+            <span style={{ marginRight: "auto" }} className="flex gap-2">{entryClosed
+              ? <button className="ma-btn grn" onClick={() => saveLk({ day: "", open: lkTimeClosed ? lkToday : lk.open })}>🔓 فتح الإدخال الآن</button>
+              : <button className="ma-btn" style={{ background: "#dc2626", color: "#fff", border: "none" }} onClick={() => { if (window.confirm("إقفال إدخال الغياب للمعلمين الآن لهذا اليوم؟ (يُفتح تلقائياً غداً)")) saveLk({ day: lkToday }); }}>🔒 إقفال الآن</button>}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: 12.5, fontWeight: 800 }}>
+            <span>طريقة الإقفال:</span>
+            <button className={`ma-tab ${lk.mode !== "time" ? "on" : ""}`} style={{ padding: "6px 12px" }} onClick={() => saveLk({ mode: "open" })}>مفتوح — يُقفل يدوياً بيد المدير</button>
+            <button className={`ma-tab ${lk.mode === "time" ? "on" : ""}`} style={{ padding: "6px 12px" }} onClick={() => saveLk({ mode: "time" })}>إقفال تلقائي يومي</button>
+            {lk.mode === "time" && <label className="flex items-center gap-1">الساعة <input type="time" className="ma-inp" style={{ width: 120, height: 34 }} value={lk.at || "09:00"} onChange={e => e.target.value && saveLk({ at: e.target.value })} /></label>}
+          </div>
+        </div>
+      )}
+      {tLocked && (
+        <div className="ma-card mb-3" style={{ padding: "14px 16px", textAlign: "center", background: "#fef2f2", borderColor: "#fca5a5" }}>
+          <div style={{ fontSize: 30 }}>🔒</div>
+          <div style={{ fontWeight: 900, fontSize: 15.5, color: "#991b1b" }}>أُقفل إدخال الغياب لهذا اليوم من قِبل إدارة المدرسة</div>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#7f1d1d", marginTop: 4 }}>يمكنك الاطلاع على الفصول فقط — للتعديل راجع وكيل المدرسة</div>
         </div>
       )}
 
@@ -33303,7 +33337,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
                         {teachers.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     )}
-                    <button className="ma-btn pri" style={{ padding: "12px 24px", fontSize: 14.5 }} disabled={busy || !cur.length} onClick={saveAttendance}>{busy ? "⏳ جاري الحفظ…" : editing ? "💾 حفظ التعديل" : "💾 اعتماد وحفظ"}</button>
+                    <button className="ma-btn pri" style={{ padding: "12px 24px", fontSize: 14.5 }} disabled={busy || !cur.length || tLocked} onClick={saveAttendance}>{busy ? "⏳ جاري الحفظ…" : editing ? "💾 حفظ التعديل" : "💾 اعتماد وحفظ"}</button>
                   </div>
                 </>)}
               </div>
@@ -33769,7 +33803,7 @@ const SIDX = "school-sidx";            // فهرس الطالب: {sid:{a:{dk:ck}
 const SIDX_META = "school-sidx-meta";
 const BK2 = "school-bk2", BK2_META = "school-bk2-meta";
 const IN_DEF = { abs: 3, late: 3, neg: 3, beh: 3 };
-const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan", "school-tt-abs", "school-asm", "school-asm-cfg"];
+const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan", "school-tt-abs", "school-asm", "school-asm-cfg", "school-mattend-lock"];
 const BK2_LBL = { [MA_ROSTER]: "كشوف الطلاب", [MA_ATT]: "الغياب", [MA_IDX]: "فهرس الغياب", [MA_META]: "إعدادات الفصول", [MA_LATE]: "التأخر الصباحي", [ML_DAY]: "اعتماد التأخر", [ML_CLS]: "اعتماد الفصول", [ML_CFG]: "أوقات التأخر", [ML_REP]: "تقارير التأخر", [SC_NODE]: "تصنيف الطلاب", [SC_META]: "فترة التصنيف", [SD_NODE]: "المتابعة اليومية", [SD_PC]: "ملاحظات أولياء الأمور على المتابعة", "formative-sheets": "سجلات التقويم التكويني", "formative-teachers": "قائمة المعلمين", [PT_STAFF]: "الإداريون", [TT_NODE]: "الجدول", [TT_CFG]: "أوقات الحصص", [TT_LOG]: "متابعة الحصص", [PT_EXC]: "أعذار أولياء الأمور", [PT_NOTES]: "ملاحظات أولياء الأمور", [PT_PREP]: "التقارير المرسلة", [WP_NODE]: "الخطة الأسبوعية", [IN_CFG]: "إعدادات المؤشرات", "school-bnotes": "الملاحظات السلوكية", "school-bnotes-cfg": "أنواع السلوك", "school-cv-plan": "جدول الزيارات الصفية", "school-cv-eval": "تقييم الزيارات الصفية", "school-cv-cfg": "إعدادات الزيارات" };
 
 // ── أدوات قاعدة البيانات
