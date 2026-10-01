@@ -1986,36 +1986,10 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
           ))}
         </div>
       </div>
+      <DutyTodayHome navigate={navigate} />
       <AdminLiveBoard navigate={navigate} />
 
-      {/* ── الأقسام: بطاقات (وسط) + لوحة الأدوات (يمين) ── */}
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr] mb-4">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden self-start order-2 lg:order-1 border border-gray-100">
-          <div className="p-4 text-white flex items-center gap-3" style={{background:`linear-gradient(120deg,${hubG.c},${hubG.c}cc)`}}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl" style={{background:"rgba(255,255,255,.25)"}}>{hubG.icon}</div>
-            <div><h3 className="font-black text-lg">{hubG.title}</h3><p className="text-xs opacity-90">{hubG.tools.length} أداة</p></div>
-          </div>
-          <div className="p-2 max-h-[430px] overflow-y-auto">
-            {hubG.tools.map(t => (
-              <button key={t.id} onClick={() => navigate(t.id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition hover:brightness-95 text-right" style={{background:hubG.tint+"66"}}>
-                <span className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{background:hubG.tint,color:hubG.c}}>{t.icon}</span>
-                <span className="text-sm font-bold text-gray-700">{t.label}</span>
-                <span className="mr-auto text-gray-300">←</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 order-1 lg:order-2">
-          {HUB_GROUPS.map((grp, i) => (
-            <button key={i} onClick={() => setHubSel(i)} className="text-right bg-white rounded-2xl p-6 transition hover:-translate-y-1 hover:shadow-xl border-2" style={{borderColor: hubSel === i ? grp.c : "transparent", boxShadow: hubSel===i ? `0 10px 26px ${grp.c}22` : undefined}}>
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4" style={{background:grp.tint,color:grp.c}}>{grp.icon}</div>
-              <h4 className="font-black text-xl text-gray-800 mb-1">{grp.title}</h4>
-              <p className="text-xs text-gray-500 leading-relaxed mb-4" style={{minHeight:36}}>{grp.desc}</p>
-              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-xl" style={{background:grp.tint,color:grp.c}}>عرض الأدوات ←</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <HomeHub navigate={navigate} initSel={hubSel} />
 
       {/* ── المؤشرات + مهامي اليوم ── */}
       <div className="grid gap-4 lg:grid-cols-[1fr_300px] mb-4">
@@ -31122,6 +31096,93 @@ function PortalsAdminPage() {
 }
 
 // ══════════ لوحة المدير: كل ما يجري اليوم ══════════
+// ══════════ 🧭 مركز الأقسام — واجهة احترافية لعرض أقسام الموقع ══════════
+const HUB_CSS = `
+.hb{display:grid;gap:14px;margin-bottom:18px}
+.hb-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hb-top h2{margin:0;font-size:19px;font-weight:900;color:#0f172a}
+.hb-q{flex:1 1 220px;max-width:380px;margin-right:auto;display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:8px 12px}
+.hb-q input{border:none;outline:none;flex:1;font-family:inherit;font-weight:800;font-size:13.5px;background:transparent;min-width:0}
+.hb-tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.hb-tab{position:relative;border:none;cursor:pointer;font-family:inherit;text-align:right;border-radius:22px;padding:14px 14px 12px;background:#fff;box-shadow:0 10px 24px -22px rgba(15,23,42,.6);border:1.5px solid #eef2f7;transition:transform .18s,box-shadow .18s;overflow:hidden;color:#0f172a}
+.hb-tab:hover{transform:translateY(-3px);box-shadow:0 18px 30px -22px var(--c)}
+.hb-tab .ic{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:23px;background:var(--t)}
+.hb-tab b{display:block;font-size:14.5px;font-weight:900;margin-top:8px;line-height:1.35}
+.hb-tab small{display:block;font-size:11.5px;font-weight:800;color:#94a3b8;margin-top:2px}
+.hb-tab.on{background:linear-gradient(150deg,var(--c),var(--c2));color:#fff;border-color:transparent;box-shadow:0 20px 34px -20px var(--c)}
+.hb-tab.on .ic{background:rgba(255,255,255,.22)}.hb-tab.on small{color:rgba(255,255,255,.85)}
+.hb-tab.on::after{content:"";position:absolute;left:-30px;bottom:-40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12)}
+.hb-panel{border-radius:26px;background:#fff;border:1.5px solid #eef2f7;overflow:hidden;box-shadow:0 20px 40px -34px rgba(15,23,42,.6)}
+.hb-ph{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(90deg,var(--t),#fff);border-bottom:1px solid #f1f5f9}
+.hb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;padding:14px}
+.hb-tool{border:1.5px solid #f1f5f9;background:#fff;border-radius:18px;padding:12px;display:flex;gap:10px;align-items:flex-start;text-align:right;cursor:pointer;font-family:inherit;transition:all .16s;position:relative}
+.hb-tool:hover{border-color:var(--c);background:var(--t);transform:translateY(-2px)}
+.hb-tool .ti{flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:21px;background:var(--t)}
+.hb-tool b{display:block;font-size:13.5px;font-weight:900;color:#0f172a;line-height:1.4}
+.hb-tool small{display:block;font-size:11px;font-weight:700;color:#64748b;line-height:1.55;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hb-tool .go{position:absolute;left:10px;bottom:8px;color:var(--c);font-weight:900;opacity:0;transition:opacity .15s}
+.hb-tool:hover .go{opacity:1}
+.hb-fav{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.hb-fav button{flex:none;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 14px;border:1.5px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:900;font-size:12.5px;color:#334155;cursor:pointer}
+.hb-fav button:hover{border-color:#0d9488;color:#0d9488}
+@media (max-width:1100px){.hb-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.hb-tabs{display:flex;overflow-x:auto;gap:8px;padding-bottom:4px}.hb-tab{flex:none;width:132px;padding:10px}.hb-tab b{font-size:13px}.hb-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.hb-tool{flex-direction:column;padding:10px}.hb-tool small{-webkit-line-clamp:3}}
+`;
+const HUB_C2 = ["#0ea5e9", "#c026d3", "#10b981", "#f59e0b", "#fb7185", "#8b5cf6"];
+function HomeHub({ navigate, initSel = 0 }) {
+  const [sel, setSel] = useState(() => { try { const v = +localStorage.getItem("hub-sel"); return isNaN(v) ? initSel : Math.min(v, HUB_GROUPS.length - 1); } catch { return initSel; } });
+  const [q, setQ] = useState("");
+  const [use, setUse] = useState(() => { try { return JSON.parse(localStorage.getItem("hub-use") || "{}") || {}; } catch { return {}; } });
+  const all = HUB_GROUPS.flatMap((g, gi) => g.tools.map(t => ({ ...t, gi })));
+  const desc = id => (typeof NAV_TOOL_DESC !== "undefined" && NAV_TOOL_DESC[id]) || "";
+  const go = t => { const n = { ...use, [t.id]: (use[t.id] || 0) + 1 }; setUse(n); try { localStorage.setItem("hub-use", JSON.stringify(n)); } catch {} navigate(t.id); };
+  const pick = i => { setSel(i); setQ(""); try { localStorage.setItem("hub-sel", String(i)); } catch {} };
+  const fav = all.filter(t => use[t.id]).sort((a, b) => use[b.id] - use[a.id]).filter((t, i, A) => A.findIndex(x => x.id === t.id) === i).slice(0, 8);
+  const G = HUB_GROUPS[sel]; const c2 = HUB_C2[sel % HUB_C2.length];
+  const list = q ? all.filter((t, i, A) => A.findIndex(x => x.id === t.id) === i && (cvNorm(t.label).includes(cvNorm(q)) || cvNorm(desc(t.id)).includes(cvNorm(q)))) : G.tools.map(t => ({ ...t, gi: sel }));
+  return <div className="hb" dir="rtl"><style>{HUB_CSS}</style>
+    <div className="hb-top"><h2>🧭 أقسام الموقع</h2><span style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>{maAr(all.length)} أداة في {maAr(HUB_GROUPS.length)} أقسام</span>
+      <label className="hb-q"><span>🔎</span><input value={q} onChange={e => setQ(e.target.value)} placeholder="ابحث عن أي أداة… (غياب، زيارات، جدول…)" />{q && <button onClick={() => setQ("")} style={{ border: "none", background: "none", cursor: "pointer", fontWeight: 900, color: "#94a3b8" }}>✕</button>}</label></div>
+    {fav.length > 0 && !q && <div className="hb-fav"><span style={{ flex: "none", alignSelf: "center", fontSize: 12.5, fontWeight: 900, color: "#64748b" }}>⭐ الأكثر استخداماً:</span>{fav.map(t => <button key={t.id} onClick={() => go(t)}>{t.icon} {t.label}</button>)}</div>}
+    {!q && <div className="hb-tabs">{HUB_GROUPS.map((g, i) => <button key={i} className={`hb-tab ${sel === i ? "on" : ""}`} style={{ "--c": g.c, "--c2": HUB_C2[i % HUB_C2.length], "--t": g.tint }} onClick={() => pick(i)}><div className="ic">{g.icon}</div><b>{g.title}</b><small>{maAr(g.tools.length)} أداة</small></button>)}</div>}
+    <div className="hb-panel" style={{ "--c": q ? "#0d9488" : G.c, "--t": q ? "#f0fdfa" : G.tint }}>
+      <div className="hb-ph">{q ? <><span style={{ fontSize: 26 }}>🔎</span><div><b style={{ fontSize: 16.5 }}>نتائج البحث عن «{q}»</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maAr(list.length)} أداة</div></div></> : <><span style={{ width: 50, height: 50, borderRadius: 16, display: "grid", placeItems: "center", fontSize: 25, color: "#fff", background: `linear-gradient(135deg,${G.c},${c2})`, boxShadow: `0 12px 22px -14px ${G.c}` }}>{G.icon}</span><div style={{ minWidth: 0 }}><b style={{ fontSize: 17, color: G.c }}>{G.title}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{G.desc}</div></div><span style={{ marginRight: "auto", fontSize: 12, fontWeight: 900, color: G.c, background: "#fff", borderRadius: 999, padding: "4px 12px", border: `1.5px solid ${G.c}33` }}>{maAr(G.tools.length)} أداة</span></>}</div>
+      <div className="hb-grid">{list.map(t => { const g = HUB_GROUPS[t.gi]; return <button key={t.id + t.gi} className="hb-tool" style={{ "--c": g.c, "--t": g.tint }} onClick={() => go(t)}><span className="ti">{t.icon}</span><span style={{ minWidth: 0 }}><b>{t.label}</b>{desc(t.id) ? <small>{desc(t.id)}</small> : q ? <small>{g.title}</small> : null}</span><span className="go">←</span></button>; })}
+        {!list.length && <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 24, color: "#94a3b8", fontWeight: 800 }}>لا توجد أداة بهذا الاسم</div>}</div>
+    </div>
+  </div>;
+}
+// ══════════ 📋 قوائم أسماء الغائبين والمتأخرين (مرتبة حسب الفصل ثم الاسم) ══════════
+const RL_CSS = `.rl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.rl-box{border-radius:20px;border:1.5px solid var(--b);background:#fff;overflow:hidden}
+.rl-hd{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);color:var(--c);font-weight:900;font-size:14.5px}
+.rl-body{max-height:340px;overflow:auto;padding:4px 10px 10px}
+.rl-cls{position:sticky;top:0;background:#fff;z-index:1;display:flex;align-items:center;gap:6px;padding:8px 2px 4px;font-size:12.5px;font-weight:900;color:var(--lc);border-bottom:1.5px dashed #eef2f7}
+.rl-cls i{font-style:normal;margin-right:auto;background:var(--bg);color:var(--c);border-radius:999px;padding:0 9px;font-size:11.5px}
+.rl-row{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 2px;border-bottom:1px solid #f8fafc;font-size:13px;font-weight:800;color:#0f172a}
+.rl-row .n{color:#94a3b8;font-size:11.5px;text-align:center}
+.rl-row .x{font-size:11.5px;font-weight:900;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.rl-tg{display:flex;gap:6px;flex-wrap:wrap}.rl-tg button{border:1.5px solid #e2e8f0;background:#fff;border-radius:999px;padding:4px 12px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;color:#475569}.rl-tg button.on{background:#0f172a;color:#fff;border-color:#0f172a}
+@media (max-width:760px){.rl{grid-template-columns:minmax(0,1fr)}}`;
+function RosterLists({ abs, late, navigate }) {
+  const [mode, setMode] = useState("cls"); const [open, setOpen] = useState(true);
+  const ord = ck => { const [l, s] = String(ck || "9-99").split("-").map(Number); return (l || 9) * 100 + (s || 99); };
+  const byName = (a, b) => String(a.name).localeCompare(String(b.name), "ar");
+  const groups = L => { const m = {}; L.forEach(x => { (m[x.ck] = m[x.ck] || []).push(x); }); return Object.entries(m).sort((a, b) => ord(a[0]) - ord(b[0])).map(([ck, A]) => [ck, A.sort(byName)]); };
+  const Box = ({ t, ic, c, bg, b, L, extra, go, empty }) => { let k = 0; const flat = [...L].sort(mode === "time" && L[0] && L[0].time != null ? (x, y) => String(x.time).localeCompare(String(y.time)) : byName); return <div className="rl-box" style={{ "--c": c, "--bg": bg, "--b": b }}>
+    <div className="rl-hd"><span>{ic} {t}</span><span style={{ background: "#fff", borderRadius: 999, padding: "0 10px", fontSize: 13 }}>{maAr(L.length)}</span><button onClick={() => navigate(go)} style={{ marginRight: "auto", border: "none", background: "rgba(255,255,255,.7)", color: c, borderRadius: 10, padding: "3px 10px", fontFamily: "inherit", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>التفاصيل ←</button></div>
+    <div className="rl-body">{!L.length ? <div style={{ textAlign: "center", padding: 18, color: "#94a3b8", fontWeight: 800 }}>{empty}</div> : mode === "cls" ? groups(L).map(([ck, A]) => { const lv = MA_LV[+String(ck)[0] - 1]; return <div key={ck}><div className="rl-cls" style={{ "--lc": lv ? lv.c : "#475569" }}>🚪 {ck ? maClassName(ck) : "بدون فصل"}<i>{maAr(A.length)}</i></div>{A.map(x => <div key={x.id + ck} className="rl-row"><span className="n">{maAr(++k)}</span><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.name}</span>{extra(x)}</div>)}</div>; })
+      : flat.map(x => <div key={x.id + x.ck} className="rl-row"><span className="n">{maAr(++k)}</span><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.name} <small style={{ color: "#94a3b8" }}>• {x.ck ? sttCk(x.ck) : ""}</small></span>{extra(x)}</div>)}</div>
+  </div>; };
+  return <div style={{ marginTop: 12 }}><style>{RL_CSS}</style>
+    <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14.5 }}>📋 أسماء الطلاب اليوم</b><div className="rl-tg">{[["cls", "حسب الفصل"], ["abc", "أبجدياً"], ["time", "حسب وقت الحضور"]].map(([k, l]) => <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{l}</button>)}</div><button onClick={() => setOpen(!open)} style={{ marginRight: "auto", border: "none", background: "#f1f5f9", borderRadius: 10, padding: "4px 12px", fontFamily: "inherit", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>{open ? "إخفاء ▴" : "إظهار ▾"}</button></div>
+    {open && <div className="rl">
+      <Box t="الغائبون — الحصة الثانية" ic="🚫" c="#b91c1c" bg="#fee2e2" b="#fecaca" L={abs} go="attendstats" empty="لا غياب مسجّل حتى الآن" extra={x => x.cnt > 1 ? <span className="x" style={{ background: "#fef2f2", color: "#b91c1c" }} title="أيام الغياب هذا الأسبوع">{maAr(x.cnt)} أيام</span> : <span />} />
+      <Box t="المتأخرون صباحاً" ic="🌅" c="#c2410c" bg="#ffedd5" b="#fed7aa" L={late} go="morninglate" empty="لا متأخرين اليوم 🌟" extra={x => <span className="x" style={{ background: x.mins >= 30 ? "#fee2e2" : "#fff7ed", color: x.mins >= 30 ? "#b91c1c" : "#9a3412" }}>{x.time ? mlFmtT(x.time) : ""}{x.mins ? ` • ${mlDur(+x.mins)}` : ""}</span>} />
+    </div>}
+  </div>;
+}
+
 function AdminLiveBoard({ navigate }) {
   const [s, setS] = useState(null);
   useEffect(() => { const t = setTimeout(() => { bk2Auto(); maGet(SIDX_META).then(m => { if (!m) sidxRebuild(); }); }, 4000); return () => clearTimeout(t); }, []);
@@ -31137,8 +31198,9 @@ function AdminLiveBoard({ navigate }) {
       let tot = 0, clsd = 0, flag = 0;
       cls.forEach(c => { const st = maArr(ptObj(ros)[c.ck]?.students).filter(Boolean); const recs = ptVals(ptObj(sc)[c.ck]); st.forEach(x => { tot++; const its = recs.map(r => r.items && r.items[x.id]).filter(Boolean); if (its.length) { clsd++; const a = scSummary(its.map(i => i.a).filter(v => v != null)), b = scSummary(its.map(i => i.b).filter(v => v != null)), tt = scSummary(its.map(i => i.t).filter(v => v != null)); if ((a != null && a >= 2) || (b != null && b >= 2) || (tt != null && tt >= 1)) flag++; } }); });
       const since = Date.now() - 86400000; let nc = 0; Object.values(ptObj(cm)).forEach(o => ptVals(o).forEach(c => { if (c.at > since) nc++; }));
-      const lateL = ptVals(late);
-      if (alive) setS({ done: done.length, all: cls.length, missing, absent, present, late: lateL.length, lateNames: lateL.slice(0, 6), tot, clsd, flag, exc: ptVals(ex).filter(x => !x.status || x.status === "new").length, notes: ptVals(nt).filter(x => !x.reply).length, nc, dl: meta?.deadline || "08:30" });
+      const lateL = ptVals(late).filter(x => x && x.name);
+      const absL = done.flatMap(c => maArr(day[c.ck].absent).filter(x => x && x.name).map(x => ({ id: x.id || x.name, name: x.name, ck: c.ck })));
+      if (alive) setS({ done: done.length, all: cls.length, missing, absent, present, late: lateL.length, lateNames: lateL.slice(0, 6), absL, lateL: lateL.map(x => ({ id: x.id || x.name, name: x.name, ck: x.ck, time: x.time, mins: +x.mins || 0 })), tot, clsd, flag, exc: ptVals(ex).filter(x => !x.status || x.status === "new").length, notes: ptVals(nt).filter(x => !x.reply).length, nc, dl: meta?.deadline || "08:30" });
     })();
     return () => { alive = false; };
   }, []);
@@ -31152,10 +31214,11 @@ function AdminLiveBoard({ navigate }) {
         <div className="pt-kpis">
           {card("#0d9488", "📋", `${maAr(s.done)} من ${maAr(s.all)}`, "فصول رصدت غياب الحصة الثانية", "attendstats", s.missing.length ? `متبقٍّ ${maAr(s.missing.length)} — الموعد ${s.dl}` : "✓ اكتمل الرصد")}
           {card("#dc2626", "🚫", maAr(s.absent), "غائب اليوم", "attendstats", s.present ? `من ${maAr(s.present)} طالب (${maAr(Math.round(s.absent / s.present * 100))}٪)` : "")}
-          {card("#ea580c", "🌅", maAr(s.late), "متأخر صباحاً", "morninglate", s.lateNames.map(x => x.name?.split(" ")[0]).join("، "))}
+          {card("#ea580c", "🌅", maAr(s.late), "متأخر صباحاً", "morninglate", s.late ? `أول حضور ${mlFmtT([...s.lateL].sort((a, b) => String(a.time).localeCompare(String(b.time)))[0].time)}` : "✓ لا متأخرين")}
           {card("#7c3aed", "🏷️", `${maAr(s.clsd)} من ${maAr(s.tot)}`, "طالب مصنَّف", "studentclassify", s.flag ? `${maAr(s.flag)} يحتاجون متابعة` : "")}
           {card("#2563eb", "📨", maAr(s.exc + s.notes), "طلبات أولياء الأمور", "parentinbox", `${maAr(s.exc)} عذر • ${maAr(s.notes)} ملاحظة • ${maAr(s.nc)} تعليق`)}
         </div>
+        <RosterLists abs={s.absL} late={s.lateL} navigate={navigate} />
         {s.missing.length > 0 && <div className="flex gap-1 flex-wrap mt-3" style={{ fontSize: 12, fontWeight: 800, color: "#b45309" }}>⏳ لم تُرصد بعد: {s.missing.map(c => <span key={c.ck} className="sc-badge" style={{ background: "#fef3c7", color: "#92400e" }}>{maClassName(c.ck)}</span>)}</div>}
       </div>
     </div>
@@ -33826,7 +33889,7 @@ const SIDX = "school-sidx";            // فهرس الطالب: {sid:{a:{dk:ck}
 const SIDX_META = "school-sidx-meta";
 const BK2 = "school-bk2", BK2_META = "school-bk2-meta";
 const IN_DEF = { abs: 3, late: 3, neg: 3, beh: 3 };
-const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan", "school-tt-abs", "school-asm", "school-asm-cfg", "school-mattend-lock", "school-duty", "school-duty-ack", "school-duty-rep", "school-duty-att", "school-phones", "school-duty-log"];
+const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan", "school-tt-abs", "school-asm", "school-asm-cfg", "school-mattend-lock", "school-duty", "school-duty-ack", "school-duty-rep", "school-duty-att", "school-phones", "school-duty-log", "school-duty-sig"];
 const BK2_LBL = { [MA_ROSTER]: "كشوف الطلاب", [MA_ATT]: "الغياب", [MA_IDX]: "فهرس الغياب", [MA_META]: "إعدادات الفصول", [MA_LATE]: "التأخر الصباحي", [ML_DAY]: "اعتماد التأخر", [ML_CLS]: "اعتماد الفصول", [ML_CFG]: "أوقات التأخر", [ML_REP]: "تقارير التأخر", [SC_NODE]: "تصنيف الطلاب", [SC_META]: "فترة التصنيف", [SD_NODE]: "المتابعة اليومية", [SD_PC]: "ملاحظات أولياء الأمور على المتابعة", "formative-sheets": "سجلات التقويم التكويني", "formative-teachers": "قائمة المعلمين", [PT_STAFF]: "الإداريون", [TT_NODE]: "الجدول", [TT_CFG]: "أوقات الحصص", [TT_LOG]: "متابعة الحصص", [PT_EXC]: "أعذار أولياء الأمور", [PT_NOTES]: "ملاحظات أولياء الأمور", [PT_PREP]: "التقارير المرسلة", [WP_NODE]: "الخطة الأسبوعية", [IN_CFG]: "إعدادات المؤشرات", "school-bnotes": "الملاحظات السلوكية", "school-bnotes-cfg": "أنواع السلوك", "school-cv-plan": "جدول الزيارات الصفية", "school-cv-eval": "تقييم الزيارات الصفية", "school-cv-cfg": "إعدادات الزيارات" };
 
 // ── أدوات قاعدة البيانات
@@ -36413,7 +36476,8 @@ async function duLoad() { const [d, a] = await Promise.all([maGet(DU_NODE), maGe
 // ── عرض المعلم (بعد الدخول بالهوية)
 function DutyTeacherView({ me }) {
   const [D, setD] = useState(null); const [pg, setPg] = useState(null); const [sel, setSel] = useState(null); const [tab, setTab] = useState("me"); const [now, setNow] = useState(new Date());
-  const [rp, setRp] = useState({}); const [rs, setRs] = useState(null); const [a30, setA30] = useState({});
+  const [rp, setRp] = useState({}); const [rs, setRs] = useState(null); const [a30, setA30] = useState({}); const [sg, setSg] = useState({}); const [sp, setSp] = useState(null);
+  useEffect(() => { (async () => setSg(ptObj(await maGet(`${DU_SIG}/${maKey(new Date())}`))))(); }, []);
   useEffect(() => { (async () => { const t = new Date(); const f = new Date(t); f.setDate(t.getDate() - 29); setA30(ptObj(await fbRange(DU_AT, maKey(f), maKey(t)))); })(); }, []);
   useEffect(() => { duLoad().then(setD); (async () => setRp(ptObj(await maGet(`${DU_REP}/${maKey(new Date())}`))))(); const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
   useEffect(() => { if (tab === "file" && pg === null) (async () => setPg(maArr(await maGet(DU_PG)).filter(Boolean)))(); }, [tab]);
@@ -36441,7 +36505,8 @@ function DutyTeacherView({ me }) {
         {(() => { const dk0 = s.dk || wk[big ? td : day]; const team = dk0 ? duDue(D, dk0).flatMap(x => maArr(x.tn).map(n => ({ n, pl: x.ty === "mon" ? "⏱️ المناوب" : x.pl }))) : []; return team.length > 1 ? <div style={{ marginTop: 6, background: "#f8fafc", borderRadius: 12, padding: "4px 6px" }}><small style={{ fontWeight: 900, color: "#64748b" }}>👥 فريق {DU_DAYS[maDate(dk0).getDay()]}:</small> {team.map((x, i) => { const isMe = duEq(x.n, me.name); return <span key={i} className={`du-chip ${isMe ? "me" : ""}`}>{isMe ? "أنت" : x.n} <small style={{ opacity: .7 }}>• {x.pl}</small></span>; })}</div> : null; })()}
         {DU_TASKS[s.ty] && <details style={{ marginTop: 6 }}><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: T.c }}>📋 مهام {T.l} ({maAr(DU_TASKS[s.ty].length)})</summary><ol style={{ margin: "6px 0 0", paddingRight: 18, fontSize: 12.5, fontWeight: 700, color: "#334155", lineHeight: 1.9 }}>{DU_TASKS[s.ty].map((t, i) => <li key={i}>{t}</li>)}</ol></details>}
         {s.note && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", marginTop: 4 }}>📝 {s.note}</div>}
-        {td >= 0 && duD(s.d).includes(td) && (big || day === td) && (() => { const r = rp[`${s.id}_${duAk(me)}`]; return <div style={{ marginTop: 8 }} className="grid gap-1">
+        {td >= 0 && duD(s.d).includes(td) && (big || day === td) && (() => { const r = rp[`${s.id}_${duAk(me)}`]; const g = duSigOf(sg, s, me.name); return <div style={{ marginTop: 8 }} className="grid gap-1">
+          <button type="button" className="ma-btn" style={{ whiteSpace: "normal", width: "100%", justifyContent: "center", padding: "8px 10px", ...(g ? { background: "#f0fdf4", borderColor: "#86efac", color: "#15803d" } : { background: "#0f172a", color: "#fff", border: "none" }) }} onClick={() => setSp(s)}>{g ? <>✍️ وقّعت الساعة {duHM(g.at)} <img src={g.img} alt="" style={{ height: 22, background: "#fff", borderRadius: 6, marginRight: 6 }} /></> : "✍️ التوقيع الإلكتروني على الحضور"}</button>
           <button type="button" className="ma-btn" style={{ whiteSpace: "normal", lineHeight: 1.5, width: "100%", justifyContent: "center", textAlign: "center", padding: "8px 10px", ...(r ? { background: "#f0fdf4", borderColor: "#86efac", color: "#15803d" } : { background: T.c, color: "#fff", border: "none" }) }} onClick={() => setRs(s)}>{r ? <>✅ رُفع {"⭐".repeat(+r.star || 0)}{maArr(r.st).length ? ` • ${maAr(maArr(r.st).length)} طالب` : ""} • ✏️ تعديل</> : "📝 كتابة تقرير المناوبة"}</button>
           {r && r.adm && <div style={{ fontSize: 12, fontWeight: 800, color: "#0f766e", background: "#f0fdfa", borderRadius: 10, padding: "4px 8px" }}>🏅 تقييم الإدارة: {"⭐".repeat(r.adm.star || 0)} {r.adm.note || ""}</div>}
         </div>; })()}
@@ -36469,9 +36534,10 @@ function DutyTeacherView({ me }) {
       </>}
       {tab === "all" && <div className="grid gap-2">
         <div className="flex gap-1 flex-wrap">{DU_DAYS.map((n, i) => <button key={i} className={`stt-chip ${day === i ? "on" : ""}`} style={{ "--cc": "#0f766e" }} onClick={() => setSel(i)}>{n}{i === td ? " •" : ""}</button>)}</div>
-        {all.map(s => { const T = DU_TY[s.ty] || DU_TY.oth; return <div key={s.id} className="du-slot"><div className="tm" style={{ background: T.c }}><span style={{ fontSize: 20 }}>{T.ic}</span>{s.f ? mlFmtT(s.f) : ""}</div><div className="bx"><b style={{ fontSize: 14, color: T.c }}>{s.ty === "oth" && s.lbl ? s.lbl : T.l}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}> • 📍 {s.pl}</span><div>{maArr(s.tn).map(n => <span key={n} className={`du-chip ${duEq(n, me.name) ? "me" : ""}`}>{n}</span>)}</div></div></div>; })}
-        {!all.length && <div className="ma-card p-5 text-center font-bold" style={{ color: "#94a3b8" }}>لا توجد مهام مسجلة يوم {DU_DAYS[day]}</div>}
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{maDay(maDate(wk[day]))} • {asmHij(maDate(wk[day]))}</div>
+        <DuDayPanel D={D} dk={wk[day]} me={me} sig={day === td ? sg : {}} att={ptObj(a30[wk[day]])} />
       </div>}
+      {sp && <DuSigPad title={`التوقيع على ${(DU_TY[sp.ty] || DU_TY.oth).l}`} sub={`${maDay(now)} ${asmHij(now)} • 📍 ${sp.pl || ""} • أ. ${me.name}`} onClose={() => setSp(null)} onSave={async img => { const t = maKey(new Date()); const k = `${sp.id}_${asmK(me.name)}`; const v = { sid: sp.id, n: me.name, img, at: Date.now(), ty: sp.ty }; const ok = await maPut(`${DU_SIG}/${t}/${k}`, v); if (ok) { setSg(x => ({ ...x, [k]: v })); setSp(null); } else alert("⚠️ تعذّر حفظ التوقيع — تحقق من الاتصال"); }} />}
       {rs && <DutyReportSheet s={rs} me={me} dateK={maKey(new Date())} cur={rp[`${rs.id}_${duAk(me)}`] || null} onClose={() => setRs(null)} onSaved={v => { setRp(x => ({ ...x, [`${rs.id}_${duAk(me)}`]: v })); setRs(null); }} />}
       {tab === "file" && (pg === null ? <div className="ma-card p-8 text-center text-gray-400 font-bold">⏳ جاري تحميل الملف…</div> : pg.length ? <div className="tp"><TpViewer pages={pg} th={["#0f766e", "#14b8a6", "#ccfbf1"]} title="الإشراف والمناوبة" /></div> : <div className="ma-card p-6 text-center font-bold" style={{ color: "#94a3b8" }}>لم يُرفع الملف الرسمي بعد</div>)}
     </div>);
@@ -36782,7 +36848,8 @@ const duLogAdd = async (dateK, by, txt) => { const id = "l" + Date.now().toStrin
 const duIsMe = (n, name) => duEq(n, name);
 function DutyBoard({ S, DD, names, by }) {
   const [dateK, setDateK] = useState(maKey(new Date())); const [at, setAt] = useState(null); const [rep, setRep] = useState({}); const [P, setP] = useState({}); const [pb, setPb] = useState(false); const [st30, setSt30] = useState(null); const [pk, setPk] = useState(null); const [log, setLog] = useState({});
-  const load = async () => { const [a, r, l] = await Promise.all([maGet(`${DU_AT}/${dateK}`), maGet(`${DU_REP}/${dateK}`), maGet(`${DU_LOG}/${dateK}`)]); setAt(ptObj(a)); setRep(ptObj(r)); setLog(ptObj(l)); };
+  const [sig, setSig] = useState({});
+  const load = async () => { const [a, r, l, g] = await Promise.all([maGet(`${DU_AT}/${dateK}`), maGet(`${DU_REP}/${dateK}`), maGet(`${DU_LOG}/${dateK}`), maGet(`${DU_SIG}/${dateK}`)]); setAt(ptObj(a)); setRep(ptObj(r)); setLog(ptObj(l)); setSig(ptObj(g)); };
   useEffect(() => { setAt(null); load(); }, [dateK]);
   useEffect(() => { (async () => { setP(ptObj(await maGet(PH_NODE))); const t = new Date(); const f = new Date(t); f.setDate(t.getDate() - 29); setSt30(ptObj(await fbRange(DU_AT, maKey(f), maKey(t)))); })(); }, []);
   const D = maDate(dateK); const wd = D.getDay(); const isToday = dateK === maKey(new Date());
@@ -36803,7 +36870,7 @@ function DutyBoard({ S, DD, names, by }) {
   const subMsg = (s, n, sub) => { const T = DU_TY[s.ty] || DU_TY.oth; return `🔄 تكليف بديل — الأستاذ الفاضل / ${sub}\nنأمل تغطية ${s.ty === "oth" && s.lbl ? s.lbl : T.l} اليوم ${maDay(D)} ${asmHij(D)} بدلاً عن أ. ${n}\n📍 ${s.pl}\n🕒 ${s.f ? mlFmtT(s.f) : ""}${s.t ? " إلى " + mlFmtT(s.t) : ""}\nشاكرين تعاونكم 🌹\nمهامك: ${duLink()}`; };
   const logL = Object.values(log).filter(x => x && x.txt).sort((a, b) => b.at - a.at);
   const toPrincipal = `🔔 تعديلات الإشراف والمناوبة — ${maDay(D)} ${asmHij(D)}\n` + logL.slice().reverse().map(x => "• " + x.txt).join("\n") + `\n— ${by}`;
-  const printDay = () => { inOpen(`<section class="pg">${inHdr("كشف فريق الإشراف والمناوبة", `${maDay(D)}<br>${asmHij(D)}`)}<div class="kp"><div><b>${maAr(all.length - marked.length)}</b>حاضر</div><div><b style="color:#b91c1c">${maAr(cnt("a"))}</b>غائب</div><div><b style="color:#c2410c">${maAr(cnt("n"))}</b>لم يحضر</div><div><b>${maAr(marked.filter(x => recOf(x.s, x.n).sub).length)}</b>بديل</div></div><table><thead><tr><th>م</th><th>المهمة</th><th>المكان</th><th>الوقت</th><th class="r">المكلّف</th><th>الحالة</th><th class="r">البديل / ملاحظة</th><th>التوقيع</th></tr></thead><tbody>${all.map((x, i) => { const T = DU_TY[x.s.ty] || DU_TY.oth; const r = recOf(x.s, x.n); const st = r && duAst(r.st); return `<tr><td>${maAr(i + 1)}</td><td style="color:${T.c};font-weight:900">${T.ic} ${T.l}</td><td>${ptEsc(x.s.pl)}</td><td>${x.s.f ? mlFmtT(x.s.f) : ""}</td><td class="r"><b>${duLead(x.s) === x.n ? "👑 " : ""}${ptEsc(x.n)}</b></td><td style="background:${st ? st.bg : "#f0fdf4"};color:${st ? st.c : "#15803d"};font-weight:900">${st ? st.ic + " " + st.l : "✅ حاضر"}</td><td class="r">${r && r.sub ? "🔄 " + ptEsc(r.sub) : ""}${r && r.note ? " — " + ptEsc(r.note) : ""}</td><td style="width:70px"></td></tr>`; }).join("")}</tbody></table>${inSig(by, "وكيل المدرسة")}</section>`, "فريق الإشراف", `.pg{border-color:#0f766e}th{background:#0c4a6e}`); };
+  const printDay = () => { inOpen(`<section class="pg">${inHdr("كشف فريق الإشراف والمناوبة", `${maDay(D)}<br>${asmHij(D)}`)}<div class="kp"><div><b>${maAr(all.length - marked.length)}</b>حاضر</div><div><b style="color:#b91c1c">${maAr(cnt("a"))}</b>غائب</div><div><b style="color:#c2410c">${maAr(cnt("n"))}</b>لم يحضر</div><div><b>${maAr(marked.filter(x => recOf(x.s, x.n).sub).length)}</b>بديل</div></div><table><thead><tr><th>م</th><th>المهمة</th><th>المكان</th><th>الوقت</th><th class="r">المكلّف</th><th>الحالة</th><th class="r">البديل / ملاحظة</th><th>التوقيع</th></tr></thead><tbody>${all.map((x, i) => { const T = DU_TY[x.s.ty] || DU_TY.oth; const r = recOf(x.s, x.n); const st = r && duAst(r.st); return `<tr><td>${maAr(i + 1)}</td><td style="color:${T.c};font-weight:900">${T.ic} ${T.l}</td><td>${ptEsc(x.s.pl)}</td><td>${x.s.f ? mlFmtT(x.s.f) : ""}</td><td class="r"><b>${duLead(x.s) === x.n ? "👑 " : ""}${ptEsc(x.n)}</b></td><td style="background:${st ? st.bg : "#f0fdf4"};color:${st ? st.c : "#15803d"};font-weight:900">${st ? st.ic + " " + st.l : "✅ حاضر"}</td><td class="r">${r && r.sub ? "🔄 " + ptEsc(r.sub) : ""}${r && r.note ? " — " + ptEsc(r.note) : ""}</td><td style="width:90px">${(() => { const g = duSigOf(sig, x.s, x.n) || (r && r.sub ? duSigOf(sig, x.s, r.sub) : null); return g ? `<img src="${g.img}" style="height:26px"><br><small>${duHM(g.at)}</small>` : ""; })()}</td></tr>`; }).join("")}</tbody></table>${inSig(by, "وكيل المدرسة")}</section>`, "فريق الإشراف", `.pg{border-color:#0f766e}th{background:#0c4a6e}`); };
   return (
     <div className="grid gap-3">
       <div className="ma-card p-3 flex gap-2 flex-wrap items-center"><input type="date" className="ma-inp" style={{ width: 160 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} /><b style={{ fontSize: 13.5 }}>{maDay(D)} • {asmHij(D)}</b>
@@ -36821,6 +36888,7 @@ function DutyBoard({ S, DD, names, by }) {
                 {A ? <span className="du-tag" style={{ background: A.c, color: "#fff" }}>{A.ic} {A.l}</span> : <span className="du-tag" style={{ background: "#dcfce7", color: "#15803d" }}>✅ حاضر</span>}
                 {k30 > 0 && <span className="du-tag" style={{ background: "#fff", color: "#b91c1c", border: "1px solid #fecaca" }} title="حالات خلال ٣٠ يوماً">⚑ {maAr(k30)}</span>}
               </div>
+              {(() => { const g = duSigOf(sig, s, n) || (r && r.sub ? duSigOf(sig, s, r.sub) : null); return g ? <div className="flex items-center gap-2" style={{ marginTop: 4, fontSize: 12, fontWeight: 900, color: "#15803d" }}>✍️ {g.n !== n ? `${g.n} — ` : ""}وقّع الساعة {duHM(g.at)}<img src={g.img} alt="" style={{ height: 30, background: "#fff", borderRadius: 8, border: "1px solid #bbf7d0" }} /></div> : (!A && dateK <= maKey(new Date()) ? <div style={{ marginTop: 4, fontSize: 11.5, fontWeight: 800, color: "#94a3b8" }}>⏳ لم يوقّع إلكترونياً بعد</div> : null); })()}
               {r && (r.sub || r.note) && <div style={{ fontSize: 12.5, fontWeight: 800, marginTop: 4, color: "#0369a1" }}>{r.sub ? <>🔄 البديل: <b>{r.sub}</b></> : <span style={{ color: "#b91c1c" }}>⚠️ بدون بديل</span>}{r.note ? <span style={{ color: "#475569" }}> • {r.note}</span> : null}</div>}
               <div className="flex gap-1 flex-wrap mt-1 items-center">{Object.entries(DU_AST).map(([k, x]) => <button key={k} className="stt-chip" style={{ padding: "4px 9px", fontSize: 12, ...(st === k ? { background: x.c, color: "#fff", borderColor: x.c } : { color: x.c }) }} onClick={() => mark(s, n, k)}>{x.ic} {x.l}</button>)}
                 {A && <button className="stt-chip" style={{ padding: "4px 9px", fontSize: 12, color: "#0369a1" }} onClick={() => setPk({ s, n, st, note: r.note || "", sub: r.sub || "", q: "" })}>🔄 {r.sub ? "تغيير البديل" : "اختيار بديل"}</button>}
@@ -36854,7 +36922,8 @@ function DutyChangesAlert({ onOpen }) {
 
 // ── جدول المناوبة اليومية (حسب التاريخ)
 function DutyMonRoster({ D, names, by, onChange }) {
-  const [open, setOpen] = useState(false); const t = maKey(new Date());
+  const [open, setOpen] = useState(false); const t = maKey(new Date()); const [P, setP] = useState({});
+  useEffect(() => { (async () => setP(ptObj(await maGet(PH_NODE))))(); }, []);
   const L = Object.entries(ptObj(D.M)).sort((a, b) => a[0].localeCompare(b[0])); const H = Object.entries(ptObj(D.H));
   const cnt = {}; L.forEach(([, n]) => { cnt[n] = (cnt[n] || 0) + 1; });
   const next = L.filter(([k]) => k >= t); const shown = open ? L : next.slice(0, 10);
@@ -36866,9 +36935,97 @@ function DutyMonRoster({ D, names, by, onChange }) {
     <div className="grid gap-1" style={{ maxHeight: open ? "60vh" : undefined, overflow: "auto" }}>{shown.map(([k, n]) => <div key={k} className="flex items-center gap-2 flex-wrap" style={{ padding: "6px 8px", borderRadius: 12, background: k === t ? "#dbeafe" : "#f8fafc", border: k === t ? "2px solid #1e40af" : "1px solid #eef2f7" }}>
       <b style={{ width: 70, fontSize: 13 }}>{maDay(maDate(k))}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", width: 105 }}>{asmHij(maDate(k))}</span>
       <select className="ma-inp" style={{ flex: "1 1 160px", height: 36, fontWeight: 900 }} value={names.find(x => duEq(x, n)) || n} onChange={e => setN(k, e.target.value, n)}>{!names.some(x => duEq(x, n)) && <option value={n}>{n}</option>}{names.map(x => <option key={x} value={x}>{x}</option>)}</select>
-      <small style={{ fontWeight: 800, color: "#94a3b8" }}>{maAr(cnt[n] || 0)} مناوبة</small>{k === t && <span className="du-tag" style={{ background: "#1e40af", color: "#fff" }}>اليوم</span>}</div>)}</div>
+      <small style={{ fontWeight: 800, color: "#94a3b8" }}>{maAr(cnt[n] || 0)} مناوبة</small>{k >= t && <WaBtn small ph={phOf(P, n)} txt={duMsg(duMonSlot(k, n, D.cfg), n, "rem", k)} label="" />}{k === t && <span className="du-tag" style={{ background: "#1e40af", color: "#fff" }}>اليوم</span>}</div>)}</div>
   </div>;
 }
+// ══════════ ✍️ التوقيع الإلكتروني + لوحة اليوم (المناوب ومشرفو الفسحة) ══════════
+const DU_SIG = "school-duty-sig"; // {date}/{sid}_{k} = {sid,n,img,at,ty,for}
+const duSigOf = (sig, s, n) => Object.values(ptObj(sig)).find(g => g && g.sid === s.id && duEq(g.n, n));
+const duHM = ms => { try { return new Date(ms).toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
+function DuSigPad({ title, sub, onSave, onClose }) {
+  const ref = useRef(null); const dr = useRef(false); const [has, setHas] = useState(false); const [busy, setBusy] = useState(false);
+  useEffect(() => { const c = ref.current; const r = c.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1; c.width = r.width * dpr; c.height = r.height * dpr; const x = c.getContext("2d"); x.scale(dpr, dpr); x.lineWidth = 2.8; x.lineCap = "round"; x.lineJoin = "round"; x.strokeStyle = "#0f172a"; }, []);
+  const pos = e => { const r = ref.current.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const down = e => { e.preventDefault(); try { ref.current.setPointerCapture(e.pointerId); } catch {} dr.current = true; const x = ref.current.getContext("2d"); const [a, b] = pos(e); x.beginPath(); x.moveTo(a, b); x.lineTo(a + .1, b + .1); x.stroke(); setHas(true); };
+  const move = e => { if (!dr.current) return; e.preventDefault(); const x = ref.current.getContext("2d"); const [a, b] = pos(e); x.lineTo(a, b); x.stroke(); };
+  const up = () => { dr.current = false; };
+  const clear = () => { const c = ref.current; const x = c.getContext("2d"); x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height); x.restore(); setHas(false); };
+  const save = async () => { const c = ref.current; const o = document.createElement("canvas"); o.width = 360; o.height = 150; o.getContext("2d").drawImage(c, 0, 0, 360, 150); setBusy(true); await onSave(o.toDataURL("image/png")); setBusy(false); };
+  return <div className="stt-sheet" onClick={onClose}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ padding: 16 }}>
+    <b style={{ fontSize: 16 }}>✍️ {title}</b>
+    {sub && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b", marginTop: 2 }}>{sub}</div>}
+    <div style={{ marginTop: 10, borderRadius: 18, border: "2px dashed #94a3b8", background: "repeating-linear-gradient(0deg,#fff,#fff 36px,#f1f5f9 36px,#f1f5f9 37px)", position: "relative" }}>
+      <canvas ref={ref} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} style={{ width: "100%", height: 170, display: "block", touchAction: "none", cursor: "crosshair" }} />
+      {!has && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", pointerEvents: "none", color: "#cbd5e1", fontWeight: 900, fontSize: 18 }}>وقّع هنا بإصبعك ✍️</div>}
+    </div>
+    <div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8", marginTop: 6 }}>يُحفظ التوقيع مع وقت التوقيع ويظهر لإدارة المدرسة في سجل الإشراف والمناوبة</div>
+    <div className="flex gap-2 justify-between mt-3"><button className="ma-btn" onClick={clear}>🧽 مسح</button><div className="flex gap-2"><button className="ma-btn" onClick={onClose}>إلغاء</button><button className="ma-btn pri" disabled={!has || busy} onClick={save}>{busy ? "⏳" : "✅ اعتماد التوقيع"}</button></div></div>
+  </div></div>;
+}
+const DU_PLC = { "المقصف": ["#b45309", "#fef3c7", "🥪"], "وسط الساحة": ["#047857", "#d1fae5", "🎯"], "يمين الساحة": ["#1d4ed8", "#dbeafe", "➡️"], "يسار الساحة": ["#be185d", "#fce7f3", "⬅️"] };
+const DUP_CSS = `.dup-mon{border-radius:22px;padding:14px;color:#fff;background:radial-gradient(400px 160px at 100% -30%,rgba(253,224,71,.35),transparent 60%),linear-gradient(135deg,#1e3a8a,#1e40af 55%,#0369a1);position:relative;overflow:hidden}
+.dup-mon::after{content:"⏱️";position:absolute;left:10px;bottom:-12px;font-size:70px;opacity:.15}
+.dup-loc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dup-tile{border-radius:18px;padding:10px;border:2px solid var(--c);background:var(--b);min-width:0}
+.dup-tile h4{margin:0 0 6px;font-size:13.5px;font-weight:900;color:var(--c)}
+.dup-p{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff;border-radius:12px;padding:6px 8px;margin-top:4px;font-size:13px;font-weight:900;color:#0f172a}
+.dup-p.me{outline:2.5px solid #0f766e}
+.dup-sg{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:900}
+@media (max-width:420px){.dup-loc{grid-template-columns:minmax(0,1fr)}}`;
+function DuDayPanel({ D, dk, me, P, sig, att, admin }) {
+  const due = duDue(D, dk); const mon = due.find(s => s.ty === "mon"); const brk = due.filter(s => s.ty === "brk"); const oth = due.filter(s => s.ty !== "mon" && s.ty !== "brk");
+  const hol = ptObj(D.H)[dk]; const wd = maDate(dk).getDay();
+  const st = (s, n) => { const a = att && att[`${s.id}_${asmK(n)}`]; if (a && duAst(a.st)) return { a }; const g = duSigOf(sig, s, n); return g ? { g } : null; };
+  const Person = ({ s, n, light }) => { const x = st(s, n); const isMe = me && duEq(n, me.name); const A = x && x.a ? duAst(x.a.st) : null; const subG = x && x.a && x.a.sub ? duSigOf(sig, s, x.a.sub) : null; return (
+    <div className={`dup-p ${isMe ? "me" : ""}`} style={light ? { background: "rgba(255,255,255,.95)" } : null}>
+      <span style={{ flex: "1 1 110px", minWidth: 0, textDecoration: A ? "line-through" : "none" }}>{isMe ? "أنت — " : ""}{n}</span>
+      {x && x.g && <span className="dup-sg" style={{ background: "#dcfce7", color: "#15803d" }}>✍️ وقّع {duHM(x.g.at)}</span>}
+      {A && <span className="dup-sg" style={{ background: A.bg, color: A.c }}>{A.ic} {A.l}</span>}
+      {A && x.a.sub && <span className="dup-sg" style={{ background: "#e0f2fe", color: "#0369a1" }}>🔄 {x.a.sub}{subG ? " ✍️" : ""}</span>}
+      {!x && admin && dk <= maKey(new Date()) && <span className="dup-sg" style={{ background: "#f1f5f9", color: "#94a3b8" }}>⏳ لم يوقّع</span>}
+      {admin && <WaBtn small ph={phOf(P, A && x.a.sub ? x.a.sub : n)} txt={duMsg(s, A && x.a.sub ? x.a.sub : n, "rem", dk)} label="" />}
+      {admin && x && x.g && <img src={x.g.img} alt="" style={{ height: 26, background: "#fff", borderRadius: 6, border: "1px solid #e2e8f0" }} />}
+    </div>); };
+  const Tasks = ({ ty, c }) => DU_TASKS[ty] ? <details style={{ marginTop: 8 }}><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: c }}>📋 مهام {ty === "mon" ? "المعلم المناوب" : "المعلم المشرف"} ({maAr(DU_TASKS[ty].length)})</summary><ol style={{ margin: "6px 0 0", paddingRight: 18, fontSize: 12.5, fontWeight: 700, lineHeight: 1.9, color: ty === "mon" ? "#e0f2fe" : "#334155" }}>{DU_TASKS[ty].map((t, i) => <li key={i}>{t}</li>)}</ol></details> : null;
+  if (hol) return <div className="ma-card p-5 text-center"><div style={{ fontSize: 36 }}>🌴</div><b>{hol}</b></div>;
+  if (wd > 4) return <div className="ma-card p-5 text-center font-bold" style={{ color: "#94a3b8" }}>🌙 لا دوام</div>;
+  const locs = {}; brk.forEach(s => { (locs[s.pl] = locs[s.pl] || []).push(s); });
+  return <div className="grid gap-3"><style>{DUP_CSS}</style>
+    {mon ? <div className="dup-mon"><div style={{ position: "relative", zIndex: 1 }}>
+      <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15 }}>⏱️ المعلم المناوب اليوم</b><span className="dup-sg" style={{ background: "rgba(255,255,255,.18)", color: "#fff" }}>🕒 {mlFmtT(mon.f)} إلى {mlFmtT(mon.t)}</span></div>
+      <div style={{ fontSize: 12, fontWeight: 800, opacity: .85, margin: "2px 0 4px" }}>📍 من دخول الطلاب حتى خروج آخر طالب</div>
+      {maArr(mon.tn).map(n => <Person key={n} s={mon} n={n} light />)}
+      <Tasks ty="mon" c="#fde68a" /></div></div> : <div className="ma-card p-3 text-center font-bold" style={{ color: "#94a3b8" }}>لا يوجد مناوب محدد لهذا اليوم</div>}
+    {brk.length > 0 && <div className="ma-card p-3" style={{ borderTop: "5px solid #0891b2" }}>
+      <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 8 }}><b style={{ fontSize: 15, color: "#0e7490" }}>🥪 مشرفو الفسحة</b><span className="dup-sg" style={{ background: "#ecfeff", color: "#0e7490" }}>🕒 {mlFmtT(brk[0].f)} إلى {mlFmtT(brk[0].t)}</span><span className="dup-sg" style={{ background: "#f1f5f9", color: "#475569" }}>👥 {maAr(brk.reduce((a, s) => a + maArr(s.tn).length, 0))} مشرفين</span></div>
+      <div className="dup-loc">{Object.entries(locs).map(([pl, L]) => { const [c, b, ic] = DU_PLC[pl] || ["#475569", "#f8fafc", "📍"]; return <div key={pl} className="dup-tile" style={{ "--c": c, "--b": b }}><h4>{ic} {pl}</h4>{L.flatMap(s => maArr(s.tn).map(n => <Person key={s.id + n} s={s} n={n} />))}</div>; })}</div>
+      <Tasks ty="brk" c="#0e7490" /></div>}
+    {oth.map(s => { const T = DU_TY[s.ty] || DU_TY.oth; return <div key={s.id} className="ma-card p-3" style={{ borderRight: `5px solid ${T.c}` }}><b style={{ color: T.c }}>{T.ic} {s.ty === "oth" && s.lbl ? s.lbl : T.l}</b> <small style={{ fontWeight: 800, color: "#64748b" }}>📍 {s.pl} • {s.f ? mlFmtT(s.f) : ""}</small>{maArr(s.tn).map(n => <Person key={n} s={s} n={n} />)}</div>; })}
+  </div>;
+}
+// ── بطاقة الشاشة الرئيسية للإدارة
+function DutyTodayHome({ navigate }) {
+  const [X, setX] = useState(null); const [i, setI] = useState(0); const dk = maKey(new Date());
+  const load = async () => { const [D, att, sig, P] = await Promise.all([duLoad(), maGet(`${DU_AT}/${dk}`), maGet(`${DU_SIG}/${dk}`), maGet(PH_NODE)]); setX({ D, att: ptObj(att), sig: ptObj(sig), P: ptObj(P) }); };
+  useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); }, []);
+  if (!X) return null; const due = duDue(X.D, dk); if (!due.length) return null;
+  const ppl = due.flatMap(s => maArr(s.tn).map(n => { const a = X.att[`${s.id}_${asmK(n)}`]; const sub = a && duAst(a.st) ? a.sub : ""; return a && duAst(a.st) && !sub ? null : { s, n: sub || n }; })).filter(Boolean);
+  const signed = ppl.filter(x => duSigOf(X.sig, x.s, x.n)).length; const cur = ppl[i];
+  const grp = `🛡️ الإشراف والمناوبة — ${maDay(new Date())} ${asmHij(new Date())}\n` + due.map(s => `${(DU_TY[s.ty] || DU_TY.oth).ic} ${s.ty === "mon" ? "المناوب" : s.pl}: ${maArr(s.tn).join("، ")}`).join("\n") + `\n\nللاطلاع والتوقيع: ${duLink()}`;
+  return <div className="ma ma-card" style={{ padding: 14, margin: "0 0 18px", borderRadius: 24, border: "2px solid #99f6e4", background: "#fff" }} dir="rtl"><style>{MA_CSS + STT_CSS + DU_CSS}</style>
+    <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: 10 }}>
+      <b style={{ fontSize: 17 }}>🛡️ الإشراف والمناوبة اليوم</b>
+      <span className="dup-sg" style={{ background: signed === ppl.length ? "#dcfce7" : "#fef3c7", color: signed === ppl.length ? "#15803d" : "#92400e", fontSize: 12.5 }}>✍️ وقّع {maAr(signed)} من {maAr(ppl.length)}</span>
+      <span style={{ marginRight: "auto" }} className="flex gap-2 flex-wrap">
+        {cur ? <a className="ma-btn" target="_blank" rel="noreferrer" href={waUrl(phOf(X.P, cur.n), duMsg(cur.s, cur.n, "rem", dk))} onClick={() => setTimeout(() => setI(i + 1), 300)} style={{ background: "#25d366", color: "#fff", border: "none", textDecoration: "none" }}>📲 تذكير التالي ({maAr(i + 1)}/{maAr(ppl.length)}): {cur.n}</a> : <button className="ma-btn" onClick={() => setI(0)}>✅ أُرسل للجميع — إعادة</button>}
+        <WaBtn txt={grp} label="للمجموعة" />
+        {navigate && <button className="ma-btn" onClick={() => navigate("duty")}>فتح الصفحة ←</button>}
+      </span>
+    </div>
+    <DuDayPanel D={X.D} dk={dk} P={X.P} sig={X.sig} att={X.att} admin />
+  </div>;
+}
+
 function SttWaPanel({ T, rows, di, times, D, subName }) {
   const [P, setP] = useState({}); const [pb, setPb] = useState(false);
   useEffect(() => { (async () => setP(ptObj(await maGet(PH_NODE))))(); }, []);
