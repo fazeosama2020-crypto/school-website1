@@ -29064,6 +29064,16 @@ const FG_CSS = `
 .fg-ch .mx input{width:42px;height:22px;border:1px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-weight:900;font-size:11px;outline:none}
 .fg-ch .tools{display:flex;justify-content:center;gap:4px;margin-top:5px;opacity:.8;transition:opacity .2s}
 .fg-ch:hover .tools{opacity:1}
+.fg-ch .fg-xdel{position:absolute;top:3px;left:3px;width:19px;height:19px;border:none;border-radius:50%;background:#fee2e2;color:#dc2626;font-size:10px;font-weight:900;cursor:pointer;line-height:1;display:grid;place-items:center;z-index:2}
+.fg-ch .fg-xdel:hover{background:#dc2626;color:#fff}
+.fg-addcol{background:#f8fafc!important;padding:6px!important;vertical-align:middle}
+.fg-addcol button{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;border:2px dashed #94a3b8;border-radius:10px;background:#fff;color:#0f766e;font-family:inherit;font-weight:900;font-size:18px;cursor:pointer;padding:6px 4px;line-height:1}
+.fg-addcol button span{font-size:11px}
+.fg-addcol button:hover{border-color:#0f766e;background:#f0fdfa}
+.fg-addcol select{margin-top:5px;width:100%;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:11px;font-weight:800;padding:3px;background:#fff;color:#475569}
+.fg-addcol-td{background:#f8fafc}
+.fg-addrows{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;color:#334155;font-size:12.5px;font-weight:800}
+.fg-addrows input{width:56px;height:32px;border:1px solid #cbd5e1;border-radius:8px;text-align:center;font-family:inherit;font-weight:900;font-size:13px}
 .fg-ch .tools button{border:none;background:#f1f5f9;border-radius:6px;width:22px;height:20px;cursor:pointer;font-size:11px}
 .fg-ch .tools button.del:hover{background:#fee2e2}
 .fg-sw{position:absolute;top:100%;right:50%;transform:translateX(50%);z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:8px;display:grid;grid-template-columns:repeat(6,20px);gap:5px;box-shadow:0 14px 30px -12px rgba(15,23,42,.4)}
@@ -29160,6 +29170,7 @@ function fgUniqueNames(body, col) {
 
 function FormativeGradebookPage({ classList = [] }) {
   const [sheets, setSheets] = useState([]);
+  const [rowsN, setRowsN] = useState(1);
   const [activeId, setActiveId] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [swatch, setSwatch] = useState(null);
@@ -29303,7 +29314,10 @@ function FormativeGradebookPage({ classList = [] }) {
     names.forEach(n => { const name = String(n ?? "").trim().replace(/\s+/g, " "); if (name && !existing.has(name)) { existing.add(name); add.push({ id: fgId(), name, scores: {} }); } });
     return { ...s, students: [...clean, ...add] };
   });
-  const addBlank = (n = 1) => update(s => ({ ...s, students: [...s.students, ...Array.from({ length: n }, () => ({ id: fgId(), name: "", scores: {} }))] }));
+  const addBlank = (n = 1) => update(s => ({ ...s, students: [...s.students, ...Array.from({ length: Math.max(1, Math.min(60, +n || 1)) }, () => ({ id: fgId(), name: "", scores: {}, keep: 1 }))] }));
+  const delBlankRows = () => { const n = sheet.students.filter(st => !st.name.trim() && !Object.values(st.scores || {}).some(v => v !== "" && v != null)).length; if (!n) return; if (window.confirm(`حذف ${n} صفاً فارغاً (بدون اسم ولا درجات)؟`)) update(s => ({ ...s, students: s.students.filter(st => st.name.trim() || Object.values(st.scores || {}).some(v => v !== "" && v != null)) })); };
+  const dupCol = (id) => update(s => { const i = s.cols.findIndex(c => c.id === id); if (i < 0) return s; const c = s.cols[i]; const m = String(c.label).match(/^(.*?)\s*(\d+)$/); const label = m ? `${m[1]} ${+m[2] + 1}` : `${c.label} ٢`; const cols = [...s.cols]; cols.splice(i + 1, 0, { ...c, id: fgId(), label }); return { ...s, cols }; });
+  const addColEnd = () => update(s => { let groups = s.groups; let g = groups[groups.length - 1]; if (!g) { g = { id: fgId(), label: "مكوّن", max: 10, color: FG_GROUP_COLORS[0] }; groups = [g]; } const col = { id: fgId(), label: "عمود جديد", max: 5, groupId: g.id, color: FG_PALETTE[s.cols.length % FG_PALETTE.length] || g.color }; const idx = s.cols.map(c => c.groupId).lastIndexOf(g.id); const cols = [...s.cols]; cols.splice(idx + 1, 0, col); return { ...s, groups, cols }; });
   const setName = (id, name) => update(s => ({ ...s, students: s.students.map(st => st.id === id ? { ...st, name } : st) }));
   const delStudent = (id) => update(s => ({ ...s, students: s.students.filter(st => st.id !== id) }));
   const setScore = (sid, cid, v) => update(s => ({ ...s, students: s.students.map(st => {
@@ -29499,10 +29513,11 @@ function FormativeGradebookPage({ classList = [] }) {
     const gh = sheet.groups.map(g => { const n = sheet.cols.filter(c => c.groupId === g.id).reduce((a, c) => a + spanOf(c), 0); return n ? `<th colspan="${n}" style="${BW ? "background:#fff;color:#000;border:1.5px solid #000" : LT ? `background:${hexA(g.color, .12)};color:${g.color};border-top:3px solid ${g.color}` : `background:${g.color};color:#fff`}">${g.label} (${g.max})</th>` : ""; }).join("");
     const ch = orderedColsAll.map(c => `<th colspan="${spanOf(c)}" ${spanOf(c) === 1 && anyMulti ? 'rowspan="2"' : ""} style="${BW ? "background:#fff;border-top:2px solid #000" : LT ? `background:#fff;border-top:2px solid ${c.color};color:${c.color}` : `background:${hexA(c.color, .15)};border-top:3px solid ${c.color}`}">${c.label}<br><small>${c.max}${wOf(c) === 0.5 ? " ÷٢" : ""}</small></th>`).join("");
     const sh3 = orderedColsAll.filter(c => nEntries(c) > 1).map(c => keysOf(c).map((_, k) => `<th style="background:${BW || LT ? "#fff" : hexA(c.color, .1)};font-size:9px">${k + 1}</th>`).join("")).join("");
-    const body = named.map((st, i) => { const r = rowCalc(st);
+    const prows = sheet.students.filter(st => (st.name || "").trim() || st.keep || Object.values(st.scores || {}).some(v => v !== "" && v != null));
+    const body = prows.map((st, i) => { const r = rowCalc(st);
       const cells = orderedColsAll.map(c => { const v = colValue(st, c);
         return keysOf(c).map(k => `<td style="background:${cellBgP(c, i)}">${st.scores?.[k] ?? ""}</td>`).join(""); }).join("");
-      return `<tr><td>${i + 1}</td><td style="text-align:right;padding-right:8px;font-weight:700;white-space:nowrap">${st.name}</td>${cells}<td style="font-weight:900">${r.any ? r.t : ""}${r.any && !r.cond ? "<br><small style='color:#dc2626'>لم يحقق النسبة الشرطية</small>" : ""}</td></tr>`; }).join("");
+      return `<tr><td>${i + 1}</td><td style="text-align:right;padding-right:8px;font-weight:700;white-space:nowrap;height:22px">${st.name || ""}</td>${cells}<td style="font-weight:900">${r.any ? r.t : ""}${r.any && !r.cond ? "<br><small style='color:#dc2626'>لم يحقق النسبة الشرطية</small>" : ""}</td></tr>`; }).join("");
     printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>سجل التقويم التكويني</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
 <style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Cairo,Tahoma,sans-serif;margin:0;color:#0f172a}
@@ -29719,6 +29734,13 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
                     </th>
                   );
                 })}
+                <th rowSpan={anyMulti ? 3 : 2} className="fg-addcol" style={{ minWidth: 92 }}>
+                  <button onClick={addColEnd} title="إضافة عمود جديد في آخر السجل">＋<span>إضافة عمود</span></button>
+                  <select value="" onChange={e => { if (e.target.value) dupCol(e.target.value); }} title="تكرار عمود موجود">
+                    <option value="">⧉ تكرار عمود…</option>
+                    {orderedColsAll.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  </select>
+                </th>
                 <th rowSpan={anyMulti ? 3 : 2} style={{ minWidth: 80, background: ST.head, color: "#fff", fontWeight: 900 }}>المجموع<div style={{ fontSize: 11, opacity: .7 }}>من {maxTotal}</div></th>
                 <th rowSpan={anyMulti ? 3 : 2} style={{ width: 34, background: ST.head }}></th>
               </tr>
@@ -29727,6 +29749,7 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
                   const multi = nEntries(c) > 1;
                   return (
                   <th key={c.id} className="fg-ch" colSpan={spanOf(c)} rowSpan={!multi && anyMulti ? 2 : 1} style={{ background: c.color + "10" }}>
+                    <button className="fg-xdel" title="حذف العمود" onClick={() => delCol(c.id)}>✕</button>
                     <div className="bar" style={{ background: c.color }} />
                     <input className="l" value={c.label} onChange={e => setCol(c.id, "label", e.target.value)} />
                     <div className="mx">
@@ -29739,7 +29762,7 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
                       <button title="اللون" onClick={() => setSwatch(swatch === c.id ? null : c.id)} style={{ background: c.color }}>&nbsp;</button>
                       <button title="نقل يساراً" onClick={() => moveCol(c.id, 1)}>←</button>
                       <button title={wOf(c) === 0.5 ? "تُحسب ÷٢ — اضغط لإلغاء القسمة" : "اضغط لاحتساب هذا العمود ÷٢"} onClick={() => setCol(c.id, "weight", wOf(c) === 0.5 ? 1 : 0.5)} style={{ width: "auto", padding: "0 4px", fontWeight: 900, background: wOf(c) === 0.5 ? c.color : "#f1f5f9", color: wOf(c) === 0.5 ? "#fff" : "#475569" }}>÷٢</button>
-                      <button className="del" title="حذف العمود" onClick={() => delCol(c.id)}>🗑</button>
+                      <button title="تكرار العمود (نسخة بنفس الإعدادات بجانبه)" onClick={() => dupCol(c.id)} style={{ fontWeight: 900 }}>⧉</button>
                     </div>
                     {wOf(c) === 0.5 && <div style={{ fontSize: 9.5, fontWeight: 800, color: c.color }}>يُحتسب {Math.round((+c.max || 0) / 2 * 100) / 100} في المجموع</div>}
                     {swatch === c.id && (
@@ -29782,12 +29805,13 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
                       });
                       return cells;
                     })}
+                    <td className="fg-addcol-td"></td>
                     <td className="fg-tot" style={{ color: "#0f172a" }}>{r.any ? r.t : ""}{r.any && !r.cond && <div style={{ fontSize: 9, fontWeight: 800, color: "#dc2626" }}>لم يحقق النسبة الشرطية</div>}</td>
                     <td><button className="fg-rowdel" title="حذف الطالب" onClick={() => { if (!st.name || window.confirm(`حذف ${st.name}؟`)) delStudent(st.id); }}>✕</button></td>
                   </tr>
                 );
               })}
-              {!sheet.students.length && <tr><td colSpan={orderedColsAll.reduce((a, c) => a + spanOf(c), 0) + 4} style={{ padding: 40, color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب — استورد من Excel أو الصق الأسماء</td></tr>}
+              {!sheet.students.length && <tr><td colSpan={orderedColsAll.reduce((a, c) => a + spanOf(c), 0) + 5} style={{ padding: 40, color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب — استورد من Excel أو الصق الأسماء</td></tr>}
             </tbody>
             <tfoot>
               <tr className="fg-foot">
@@ -29796,6 +29820,7 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
                 {orderedColsAll.flatMap(c => nEntries(c) > 1
                   ? keysOf(c).map(k => <td key={k} style={{ color: c.color, fontSize: 11 }}>{keyAvg(k)}</td>)
                   : [<td key={c.id} style={{ color: c.color }}>{colAvg(c)}</td>])}
+                <td className="fg-addcol-td"></td>
                 <td>{calcs.length ? (calcs.reduce((a, r) => a + r.t, 0) / calcs.length).toFixed(1) : "—"}</td>
                 <td></td>
               </tr>
@@ -29803,7 +29828,13 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
           </table>
         </div>
         <div className="p-3 flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-gray-500">
-          <button className="fg-btn" onClick={() => addBlank(5)}>＋ ٥ صفوف</button>
+          <span className="fg-addrows">
+            <span>إضافة</span>
+            <input type="number" min="1" max="60" value={rowsN} onChange={e => setRowsN(e.target.value)} />
+            <span>صف</span>
+            <button className="fg-btn pri" onClick={() => addBlank(rowsN)}>＋ إضافة صفوف في آخر السجل</button>
+            <button className="fg-btn" onClick={delBlankRows} title="حذف الصفوف التي ليس فيها اسم ولا درجات">🧹 حذف الصفوف الفارغة</button>
+          </span>
           <span>💡 Enter للانتقال للطالب التالي • الأسهم للتنقل • الخلية الحمراء تتجاوز الدرجة • يُحفظ تلقائياً</span>
         </div>
       </div>
