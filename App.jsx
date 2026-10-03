@@ -1112,7 +1112,8 @@ function AnnDatePicker({ ann, setAnn }) {
 // (سابقاً كانت كل الإعلانات تُرفع دفعة واحدة، فتفشل عند وجود صور كبيرة ولا تصل للأجهزة الأخرى)
 // ══════════════════════════════════════════════════════════
 const ANN_NODE = "school-ann-items";
-const ANN_META = "school-ann-meta"; // {id:{at}} — يُعرف منه ما تغيّر فيُحمَّل فقط (بدل تحميل كل الإعلانات بصورها كل مرة)
+const ANN_META = "school-ann-meta";
+let annLoadFailed = false; // {id:{at}} — يُعرف منه ما تغيّر فيُحمَّل فقط (بدل تحميل كل الإعلانات بصورها كل مرة)
 const idbKV = {
   db: null,
   open() { if (!this.db) this.db = new Promise((res, rej) => { try { const r = indexedDB.open("pam-cache", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); return this.db; },
@@ -1145,6 +1146,7 @@ async function annLoadAll() {
     const arr = items && typeof items === "object" ? Object.values(items).filter(x => x && x.id != null) : [];
     await annBuildMeta(arr); return arr;
   }
+  try { const r = await fetch(`${FIREBASE_URL}/school/${ANN_NODE}.json?shallow=true`); const keys = await r.json(); if (keys && typeof keys === "object") { const now = Date.now(); const fix = {}; Object.keys(keys).forEach(id => { if (!meta[id]) { meta[id] = { at: now }; fix[`${ANN_META}/${id}`] = { at: now }; } }); if (Object.keys(fix).length) fbPatch(fix); } } catch {}
   const items = { ...(c.items || {}) }, at = { ...(c.at || {}) }; let ch = false;
   Object.keys(items).forEach(id => { if (!meta[id]) { delete items[id]; delete at[id]; ch = true; } });
   const need = Object.keys(meta).filter(id => !items[id] || !at[id] || at[id].at !== (meta[id] && meta[id].at));
@@ -1165,6 +1167,31 @@ async function annFetchOne(id) {
     return arr.find(a => a && String(a.id) === String(id)) || null;
   } catch { return null; }
 }
+// ══════════ الأنشطة: كل نشاط في عقدة مستقلة school/school-act-items/{id} ══════════
+// (سابقاً: كل الأنشطة بصورها في عقدة واحدة — تفشل الكتابة مع الصور وقد تستبدل بيانات الخادم بنسخة ناقصة)
+const ACT_NODE = "school-act-items", ACT_MIG = "school-act-migrated";
+async function fetchJ(path, ms = 30000) { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); try { const r = await fetch(`${FIREBASE_URL}/school/${path}.json`, { signal: c.signal }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); } finally { clearTimeout(t); } }
+const actArr = v => (Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : []).filter(a => a && a.id != null);
+const actSort = L => L.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+// يُرجع {ok, list} — ok=false عند تعذّر الوصول للخادم (لا يُكتب شيء ولا تُستخدم بيانات افتراضية)
+async function actLoad() {
+  let items, mig;
+  try { [items, mig] = await Promise.all([fetchJ(ACT_NODE, 40000), fetchJ(ACT_MIG, 15000)]); } catch { try { [items, mig] = await Promise.all([fetchJ(ACT_NODE, 60000), fetchJ(ACT_MIG, 20000)]); } catch { const c = await idbKV.get("act-cache"); return { ok: false, list: actSort(actArr(c)) }; } }
+  const byId = new Map(actArr(items).map(a => [String(a.id), a]));
+  if (!mig) { // ترحيل لمرة واحدة من العقدة القديمة + أي نسخة محلية لم تُرفع
+    let leg = null; try { leg = await fetchJ("school-activities", 60000); } catch { const c = await idbKV.get("act-cache"); return { ok: false, list: actSort([...byId.values(), ...actArr(c).filter(a => !byId.has(String(a.id)))]) }; }
+    const local = []; try { local.push(...actArr(JSON.parse(localStorage.getItem(DB_CACHE_PREFIX + "school-activities") || "null"))); } catch {} try { const q = JSON.parse(localStorage.getItem(DB_QUEUE_KEY) || "[]"); q.filter(i => i && i.key === "school-activities").forEach(i => local.push(...actArr(i.value))); } catch {}
+    const src = [...actArr(leg), ...local]; const o = {};
+    src.forEach(a => { if (!byId.has(String(a.id))) { byId.set(String(a.id), a); o[`${ACT_NODE}/${a.id}`] = a; } });
+    if (!actArr(leg).length && !byId.size) DEFAULT_ACTIVITIES.forEach(a => { byId.set(String(a.id), a); o[`${ACT_NODE}/${a.id}`] = a; });
+    o[ACT_MIG] = Date.now(); try { await fbPatch(o); } catch {}
+    try { const q = JSON.parse(localStorage.getItem(DB_QUEUE_KEY) || "[]").filter(i => i && i.key !== "school-activities"); localStorage.setItem(DB_QUEUE_KEY, JSON.stringify(q)); } catch {}
+  }
+  const list = actSort([...byId.values()]); idbKV.set("act-cache", list); return { ok: true, list };
+}
+async function actPut(a) { const content = await annCompressHtml(a.description || ""); const v = { ...a, description: content }; if (JSON.stringify(v).length > 9000000) return "big"; const ok = await dbFirebasePut(`${ACT_NODE}/${a.id}`, v); if (!ok) { try { dbQueue.add(`${ACT_NODE}/${a.id}`, v); } catch {} } return ok; }
+async function actDel(id) { try { const r = await fetch(`${FIREBASE_URL}/school/${ACT_NODE}/${id}.json`, { method: "DELETE" }); return r.ok; } catch { return false; } }
+
 // تصغير الصور المضمّنة داخل نص الإعلان (base64) قبل الحفظ
 async function annCompressHtml(html) {
   if (!html || typeof html !== "string" || !html.includes("data:image")) return html;
@@ -12065,13 +12092,15 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
   const add = () => {
     if (!newAct.title) return;
     const u = [{ ...newAct, id: Date.now() }, ...activities];
-    setActivities(u); saveActivities(u); setNewAct(emptyAct); setShowForm(false);
+    setActivities(u); actAfter(saveActivities(u), "✅ تم حفظ النشاط على الخادم"); setNewAct(emptyAct); setShowForm(false);
   };
-  const del = (id) => { const u = activities.filter(a => a.id !== id); setActivities(u); saveActivities(u); };
+  const del = (id) => { if (!window.confirm("حذف هذا النشاط؟")) return; const u = activities.filter(a => a.id !== id); setActivities(u); actAfter(saveActivities(u), "🗑️ تم الحذف"); };
+  const [actMsg, setActMsg] = useState("");
+  const actAfter = (p, okMsg) => { setActMsg("⏳ جاري الحفظ على الخادم…"); Promise.resolve(p).then(ok => { if (ok === "big") { setActMsg(""); alert("⚠️ حجم الصور كبير جداً — صغّر الصور أو قلّل عددها ثم احفظ مرة أخرى"); } else if (ok === false) { setActMsg(""); alert("⚠️ حُفظ على هذا الجهاز لكن تعذّر رفعه للخادم الآن (الاتصال ضعيف) — سيُعاد رفعه تلقائياً عند تحسن الاتصال. لا تحذف بيانات المتصفح."); } else { setActMsg(okMsg); setTimeout(() => setActMsg(""), 3000); } }); };
   const startEdit = (act) => { setEditId(act.id); setEditAct({ ...act }); };
   const saveEdit = () => {
     const u = activities.map(a => a.id === editId ? { ...editAct } : a);
-    setActivities(u); saveActivities(u); setEditId(null); setEditAct(null);
+    setActivities(u); actAfter(saveActivities(u), "✅ تم حفظ التعديل على الخادم"); setEditId(null); setEditAct(null);
   };
 
   const printAct = (act) => {
@@ -12173,6 +12202,7 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
     <div dir="rtl" style={{ maxWidth: 1100, margin: "0 auto", width: "100%" }}>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="text-2xl font-black text-teal-900">الأنشطة المدرسية</h2>
+        {actMsg && <span style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: 999, padding: "4px 12px" }}>{actMsg}</span>}
         <button onClick={() => { setShowForm(!showForm); setEditId(null); }}
           className="bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700">
           {showForm ? "✕ إلغاء" : "+ نشاط جديد"}
@@ -37482,23 +37512,23 @@ function SchoolWebsiteInner() {
           DB.get("school-week", DEFAULT_WEEK),
           DB.get("school-attendance", {}),
           (async () => {
-            let hasMeta = false;
-            try { const r = await fetch(`${FIREBASE_URL}/school/${ANN_META}.json?shallow=true`); const j = await r.json(); hasMeta = !!(j && typeof j === "object"); } catch {}
-            if (hasMeta) { const arr = await annLoadAll(); return arr.filter(x => x && x.id != null).sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)); }
-            let items = null;
-            try { const r = await fetch(`${FIREBASE_URL}/school/${ANN_NODE}.json`); items = await r.json(); } catch {}
-            const legacy = await DB.get("school-announcements", DEFAULT_ANNOUNCEMENTS);
-            const legacyArr = Array.isArray(legacy) ? legacy : (legacy && typeof legacy === "object" ? Object.values(legacy) : []);
+            // لا تُستخدم بيانات افتراضية ولا يُكتب أي شيء على الخادم إذا تعذّر الاتصال — يُعرض المخزّن على الجهاز فقط
+            const cachedList = async () => { const c = await idbKV.get("ann-cache"); let L = Object.values((c && c.items) || {}); if (!L.length) { try { L = actArr(JSON.parse(localStorage.getItem(DB_CACHE_PREFIX + "school-announcements") || "null")); } catch {} } return L.filter(x => x && x.id != null).sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)); };
+            let metaJ; try { metaJ = await fetchJ(`${ANN_META}`, 20000); } catch { annLoadFailed = true; return cachedList(); }
+            if (metaJ && typeof metaJ === "object") { const arr = await annLoadAll(); return arr.filter(x => x && x.id != null).sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)); }
+            let items, legacy;
+            try { items = await fetchJ(ANN_NODE, 60000); legacy = await fetchJ("school-announcements", 60000); } catch { annLoadFailed = true; return cachedList(); }
+            const legacyArr = actArr(legacy);
             const itemsArr = items && typeof items === "object" ? Object.values(items).filter(x => x && x.id != null) : [];
-            // دمج: العقد المستقلة هي الأحدث، ويُضاف أي إعلان قديم غير موجود فيها (مع ترحيله)
             const byId = new Map(itemsArr.map(a => [String(a.id), a]));
             const toMigrate = legacyArr.filter(a => a && a.id != null && !byId.has(String(a.id)));
             toMigrate.forEach(a => { byId.set(String(a.id), a); annPut(a.id, a); });
+            if (!byId.size) DEFAULT_ANNOUNCEMENTS.forEach(a => byId.set(String(a.id), a));
             const outA = [...byId.values()].sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
-            annBuildMeta(outA);
+            if (itemsArr.length || toMigrate.length) annBuildMeta(outA);
             return outA;
           })(),
-          DB.get("school-activities", DEFAULT_ACTIVITIES),
+          actLoad(),
           DB.get("school-font", "'Noto Naskh Arabic', serif"),
           DB.get("school-class-list", []),
           DB.get("school-messages", []),
@@ -37565,7 +37595,7 @@ function SchoolWebsiteInner() {
         // Firebase يحذف المصفوفات الفارغة ويحوّل المتقطعة إلى كائنات — نوحّد الشكل
         const asArr = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === "object" ? Object.values(v).filter(x => x != null) : []);
         setTeachers(asArr(t)); setWeek(validWeek); setAttendance(finalAtt || {}); setAnnouncements(asArr(ann));
-        setActivities(asArr(act)); setSiteFont(font);
+        actLoadedRef.current = act && act.ok; actSavedRef.current = act && act.ok ? Object.fromEntries(act.list.map(a => [String(a.id), JSON.stringify(a)])) : null; setActivities(act ? act.list : []); setSiteFont(font);
         setMessages(Array.isArray(msgs) ? msgs : []);
         setSurveys(Array.isArray(survs) ? survs : []);
         setWeekArchive(Array.isArray(wArch) ? wArch : []);
@@ -37677,7 +37707,15 @@ function SchoolWebsiteInner() {
     const res = await Promise.all(jobs);
     return res.every(Boolean);
   };
-  const saveActivities = (v) => DB.set("school-activities", v);
+  const actSavedRef = useRef(null); const actLoadedRef = useRef(false);
+  // حفظ الأنشطة: يُرفع النشاط الذي تغيّر فقط، ويُحذف المحذوف فقط — لا يمكن أن تُستبدل أنشطة الخادم بنسخة ناقصة
+  const saveActivities = async (v) => {
+    const list = actArr(v); const prev = actSavedRef.current || {}; const next = {}; const jobs = [];
+    list.forEach(a => { const js = JSON.stringify(a); next[String(a.id)] = js; if (prev[String(a.id)] !== js) jobs.push(actPut(a)); });
+    if (actSavedRef.current) Object.keys(prev).forEach(id => { if (!(id in next)) jobs.push(actDel(id)); });
+    actSavedRef.current = next; idbKV.set("act-cache", list);
+    const res = await Promise.all(jobs); if (res.includes("big")) return "big"; return res.every(Boolean);
+  };
   const saveSiteFont = (v) => DB.set("school-font", v);
   const saveClass = (cls) => DB.set(`school-cls-${cls.id}`, cls);
   const deleteClass = (id) => DB.set(`school-cls-${id}`, null);
