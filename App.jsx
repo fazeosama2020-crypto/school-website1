@@ -1920,7 +1920,7 @@ const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
     tools:[{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
-    tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
+    tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
     tools:[{id:"classvisits",label:"الزيارات الصفية ١٤٤٨",icon:"🎯"},{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
@@ -30719,10 +30719,12 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   const wrap = (t, node) => <div className="pt px-2 md:px-5 py-4" dir="rtl" style={{ minHeight: "100vh", background: "#f8fafc" }}><style>{MA_CSS + PT_CSS}</style><Bar t={t} />{node}</div>;
   if (view === "attend") return wrap("📋 غياب الحصة الثانية", <MorningAttendancePage mode="teacher" />);
   if (view === "classify") return wrap("🏷️ تصنيف الطلاب", <StudentClassifyPage mode="teacher" />);
+  if (view === "stlv") return wrap("📊 سجل تصنيف مستويات الطلاب", <StudentLevelsPage by={me.name} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
+  if (view === "readwk") return wrap("📖 حصر الضعف القرائي", <ReadingWeakPage by={me.name} admin={isStaff} />);
   if (view === "formative") return wrap("📘 التقويم التكويني", <FormativeGradebookPage classList={classList} />);
   if (view === "students") return wrap("📒 المتابعة اليومية للطلاب", <StudentDailyPage by={me.name} legacy={<StudentsPage classList={classList} setClassList={setClassList || (() => {})} saveClass={saveClass || (() => {})} deleteClass={() => alert("الحذف متاح للإدارة فقط")} onSendNote={onSendNote || (() => {})} messages={messages} />} />);
   if (view && isStaff && allowed && !ptCan(me, view)) return wrap("⛔ غير مصرّح", <div className="ma-card p-6 text-center"><div style={{ fontSize: 40 }}>⛔</div><div style={{ fontWeight: 900, fontSize: 16 }}>هذه الخدمة غير متاحة لحسابك</div><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>يمكن لمدير المدرسة منحك الصلاحية من «قائمة الإداريين»</div></div>);
-  if (view === "tt" && allowed) return wrap("🗓️ متابعة الحصص اليومية", <PeriodFollowPage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} />);
+  if (view === "tt" && allowed) return wrap("🗓️ متابعة سير الحصص الدراسية", <SchoolTimetablePage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} />);
   if (view === "late" && allowed) return wrap("🌅 سجل التأخر الصباحي", <MorningLatePage by={me.name} canConfig={["principal", "deputy"].includes(me.role)} />);
   if (view === "stats" && allowed) return wrap("📊 إحصائيات الغياب", <MorningAttendancePage key="st-stats" section="stats" initTab="stats" />);
   if (view === "weekly" && allowed) return wrap("📈 الحصر الأسبوعي", <MorningAttendancePage key="st-week" section="stats" initTab="weekly" />);
@@ -30785,6 +30787,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           <div className="pt-tiles">
             {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
             {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
+            {ptTile("stlv", "📊", "سجل مستويات الطلاب", "مميز • جيد • متوسط • متدنٍ — مع الملاحظات وطباعة السجل باسمك", "#6d28d9", "#db2777", () => setView("stlv"))}
+            {ptTile("readwk", "📖", "حصر الضعف القرائي", "ضعف شديد / متوسط • المهارات • العلاج • المتابعة", "#c2410c", "#f59e0b", () => setView("readwk"))}
             <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
             {ptTile("duty", "🛡️", "الإشراف والمناوبة", "مهامك في الإشراف والمناوبة بطريقة بطاقات مع التذكير والملف الرسمي", "#0c4a6e", "#0f766e", () => setView("duty"))}
             {ptTile("asm", "🎺", "حضوري للطابور", "حضورك للطابور الصباحي خلال الأسبوع وعدد مرات عدم الحضور", "#6d28d9", "#be185d", () => setView("asm"))}
@@ -30876,7 +30880,7 @@ function GuardianPortal({ onBack }) {
     setD(p => ({ ...p, notes: [v, ...p.notes] })); setNote(""); toast("✅ وصلت ملاحظتك للمدرسة");
   };
   const excSt = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
-  const tabs = [["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
+  const tabs = [["tt", "🗓️ جدولي"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
   return (
     <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eff6ff,#f8fafc)" }}>
       <style>{MA_CSS + PT_CSS + (typeof scCSS !== "undefined" ? scCSS : "")}</style>
@@ -30907,6 +30911,7 @@ function GuardianPortal({ onBack }) {
                 </div>
               </div>)) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لم يُسجَّل تصنيف للطالب بعد</div>)}
             {tab === "daily" && <GuardianDaily me={me} />}
+            {tab === "tt" && <GuardianTT me={me} />}
             {tab === "week" && <GuardianWeek me={me} reps={d.reps} />}
             {tab === "grades" && <GuardianGrades me={me} />}
             {tab === "abs" && <div className="pt-item">{d.abs.length ? <div className="grid gap-2">{d.abs.map(k => <div key={k} className="flex items-center gap-3" style={{ padding: "8px 10px", borderRadius: 12, background: "#fef2f2" }}><span style={{ fontSize: 18 }}>🚫</span><b style={{ fontSize: 14 }}>{maDay(maDate(k))}</b><span style={{ fontSize: 13, fontWeight: 700, color: "#64748b" }}>{maHijri(maDate(k))} • {maGreg(maDate(k))}</span></div>)}</div> : <div className="text-center" style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا يوجد غياب مسجّل — بارك الله فيه</div>}</div>}
@@ -35807,7 +35812,7 @@ function TermPlanPage() {
 }
 
 
-const TT_PDF = {"ver":"pdf-1448-0926","at":1790380800000,"src":"جدول aSc (PDF) — ٢٦/٠٩","D":["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],"P":7,"T":["احمد عزي","احمد الشهري","اسامه السفري","جابر الشهري","حسن العيسى","رمضان الزهراني","سعد العتيبي","صاطي الحارثي","طارق الزهراني","عبدالرحيم رضوان","عبدالعزيز جار الله (رياضيات)","عبدالعزيز الذبياني","عبدالعزيز خضران (بدنية)","علي الغامدي","هادي المقاطي","فارس البشري","فهد رده","فيصل العتيبي","ماجد الهذلي","مجاهد الزهراني","محمد الجوفي","محمد القارحي","محمد الشهري","محمد الحربي","عمر العمشاني","وليد الزايدي","حاتم الشمراني (صعوبات)"],"A":["عزي","الشهري","السفري","ج.الشهري","العيسى","الزهراني","العتيبي","الحارثي","ط.الزهراني","رضوان","جار الله","الذبياني","خضران","الغامدي","المقاطي","البشري","رده","ف.العتيبي","الهذلي","م.الزهراني","الجوفي","القارحي","م.الشهري","الحربي","العمشاني","الزايدي","الشمراني"],"S":["اجتماعيات","احتياط 1","احتياط 2","احتياط 3","اسلامية","انجليزي","بدنية","تفكير ناقد","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"SA":["اجتماع","احتياط1","احتياط2","احتياط3","اسلامية","انجليزي","بدنية","تفكير","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"C":{"1-1":[[[4,13],[13,14],[10,10],[0,2],[11,5],[10,10],[5,3]],[[5,3],[10,10],[10,10],[0,2],[4,13],[11,5],[13,14]],[[4,13],[9,0],[12,8],[0,2],[11,5],[13,14],[10,10]],[[6,12],[13,14],[12,8],[14,0],[5,3],[4,13],[11,5]],[[6,12],[13,14],[9,0],[10,10],[4,13],[8,6],[5,3]]],"1-2":[[[10,10],[12,8],[13,14],[11,23],[4,13],[5,3],[0,2]],[[9,0],[0,2],[8,11],[5,3],[13,14],[4,13],[4,13]],[[0,2],[5,3],[6,12],[10,10],[10,10],[4,13],[13,14]],[[10,10],[11,23],[11,23],[14,2],[4,13],[6,12],[9,0]],[[10,10],[10,10],[5,3],[12,8],[11,23],[13,14],[13,14]]],"1-3":[[[13,14],[4,13],[0,21],[5,3],[10,10],[12,8],[10,10]],[[10,10],[8,14],[5,3],[13,14],[11,23],[13,14],[12,8]],[[9,0],[10,10],[13,14],[4,13],[11,23],[0,21],[0,21]],[[13,14],[4,13],[10,10],[14,21],[11,23],[5,3],[6,12]],[[4,13],[4,13],[10,10],[5,3],[6,12],[9,0],[11,23]]],"1-4":[[[5,3],[10,10],[9,0],[12,8],[0,21],[13,6],[4,13]],[[13,6],[11,23],[4,13],[0,21],[13,6],[5,3],[10,10]],[[10,10],[8,11],[10,10],[6,12],[4,13],[11,23],[4,13]],[[4,13],[12,8],[13,6],[14,3],[10,10],[11,23],[5,3]],[[13,6],[11,23],[0,21],[9,0],[10,10],[5,3],[6,12]]],"1-5":[[[11,7],[6,12],[10,4],[9,0],[5,3],[0,11],[4,9]],[[10,4],[5,3],[13,6],[0,11],[4,9],[9,0],[11,7]],[[12,8],[10,4],[4,9],[5,3],[13,6],[11,7],[10,4]],[[5,3],[13,6],[6,12],[14,4],[4,9],[11,7],[0,11]],[[10,4],[13,6],[8,2],[10,4],[13,6],[12,8],[4,9]]],"1-6":[[[5,1],[10,17],[11,7],[13,6],[4,9],[9,15],[6,12]],[[9,15],[0,11],[11,7],[10,17],[12,8],[4,9],[5,1]],[[10,17],[4,9],[10,17],[5,1],[8,2],[13,6],[11,7]],[[13,6],[6,12],[4,9],[14,7],[10,17],[12,8],[13,6]],[[5,1],[0,11],[0,11],[10,17],[11,7],[4,9],[13,6]]],"2-1":[[[6,12],[13,24],[10,19],[5,1],[4,16],[0,2],[10,19]],[[4,16],[5,1],[4,16],[11,5],[0,2],[12,8],[13,24]],[[11,5],[10,19],[13,24],[9,15],[8,11],[11,5],[10,19]],[[13,24],[11,5],[5,1],[14,22],[10,19],[4,16],[9,15]],[[4,16],[10,19],[12,8],[5,1],[13,24],[6,12],[0,2]]],"2-2":[[[9,15],[10,19],[4,16],[13,24],[5,1],[6,12],[11,5]],[[0,21],[13,24],[6,12],[5,1],[4,16],[10,19],[11,5]],[[5,1],[4,16],[10,19],[12,8],[13,24],[10,19],[13,24]],[[5,1],[10,19],[0,21],[14,26],[4,16],[11,5],[0,21]],[[12,8],[13,24],[11,5],[9,15],[4,16],[10,19],[8,21]]],"2-3":[[[11,5],[4,16],[13,18],[11,5],[12,8],[10,19],[0,11]],[[5,1],[4,16],[10,19],[9,15],[13,18],[8,21],[4,16]],[[4,16],[13,18],[0,11],[11,5],[10,19],[6,12],[5,1]],[[10,19],[0,11],[13,18],[14,24],[5,1],[9,15],[10,19]],[[11,5],[5,1],[4,16],[6,12],[12,8],[13,18],[10,19]]],"2-4":[[[4,16],[13,18],[6,12],[0,11],[10,19],[5,1],[9,15]],[[10,19],[12,8],[11,5],[13,18],[5,1],[4,16],[10,19]],[[10,19],[6,12],[11,5],[4,16],[8,21],[5,1],[13,18]],[[4,16],[13,18],[4,16],[14,11],[11,5],[0,11],[12,8]],[[10,19],[11,5],[5,1],[0,11],[10,19],[9,15],[13,18]]],"3-1":[[[5,20],[4,25],[13,24],[10,4],[6,12],[10,4],[4,25]],[[12,8],[4,25],[13,24],[10,4],[11,7],[5,20],[7,18]],[[4,25],[11,7],[11,7],[10,4],[5,20],[7,18],[9,22]],[[0,2],[13,24],[8,24],[14,20],[10,4],[4,25],[11,7]],[[5,20],[6,12],[9,22],[13,24],[0,2],[10,4],[12,8]]],"3-2":[[[13,18],[11,7],[12,8],[4,25],[7,25],[9,22],[10,4]],[[8,2],[6,12],[10,4],[5,20],[4,25],[13,18],[5,20]],[[13,18],[12,8],[10,4],[7,25],[6,12],[5,20],[4,25]],[[5,20],[4,25],[9,22],[14,17],[11,7],[10,4],[0,2]],[[4,25],[10,4],[11,7],[11,7],[13,18],[0,2],[10,4]]],"3-3":[[[11,23],[9,22],[6,15],[12,22],[5,20],[4,25],[5,20]],[[11,23],[10,17],[0,21],[4,25],[9,22],[10,17],[12,22]],[[13,14],[13,14],[5,20],[11,23],[4,25],[8,11],[10,17]],[[7,18],[0,21],[13,14],[14,15],[5,20],[10,17],[4,25]],[[10,17],[7,18],[4,25],[13,14],[10,17],[11,23],[6,15]]],"3-4":[[[8,24],[4,9],[11,23],[5,20],[9,22],[4,9],[13,6]],[[10,17],[5,20],[11,23],[6,0],[0,21],[7,24],[4,9]],[[4,9],[11,23],[13,6],[10,17],[12,22],[10,17],[6,0]],[[10,17],[5,20],[10,17],[14,9],[9,22],[13,6],[11,23]],[[0,21],[12,22],[5,20],[13,6],[4,9],[7,24],[10,17]]]},"RS":{"الأحد":[[2,17,4],[6,3,0],[9,1,25],[21,7,13],[26,4,11],[20,5,16],[24,0,22]],"الاثنين":[[9,7,13],[18,5,4],[20,26,14],[23,6,24],[11,0,15],[25,1,22],[15,17,21]],"الثلاثاء":[[7,3,15],[2,25,22],[18,16,26],[14,21,20],[9,4,17],[22,24,0],[6,11,23]],"الأربعاء":[[11,21,5],[22,15,1],[4,7,3],[18,16,13],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[20,7,25],[18,15,13],[2,23,5],[14,1,15],[21,11,17],[0,24,16]]},"R":{"الأحد":[[2,17,4],[6,3,0],[9,1,25],[21,7,13],[26,4,11],[20,5,16],[24,0,22]],"الاثنين":[[9,7,13],[18,5,4],[20,26,14],[23,6,24],[11,0,15],[25,1,22],[15,17,21]],"الثلاثاء":[[7,3,15],[2,25,22],[18,16,26],[14,21,20],[9,4,17],[22,24,0],[6,11,23]],"الأربعاء":[[11,21,5],[22,15,1],[4,7,3],[18,16,13],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[20,7,25],[18,15,13],[2,23,5],[14,1,15],[21,11,17],[0,24,16]]},"times":[["07:00","07:45"],["07:45","08:30"],["08:30","09:15"],["09:15","10:00"],["10:20","11:05"],["11:05","11:50"],["14:00","14:45"]]};
+const TT_PDF = {"ver":"pdf-1448-1003","at":1791061200000,"src":"جدول aSc (PDF) — ٠٣/١٠","D":["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],"P":7,"T":["احمد عزي","احمد الشهري","اسامه السفري","جابر الشهري","حسن العيسى","رمضان الزهراني","سعد العتيبي","صاطي الحارثي","طارق الزهراني","عبدالرحيم رضوان","عبدالعزيز جار الله (رياضيات)","عبدالعزيز الذبياني","عبدالعزيز خضران (بدنية)","علي الغامدي","هادي المقاطي","فارس البشري","فهد رده","فيصل العتيبي","ماجد الهذلي","مجاهد الزهراني","محمد الجوفي","محمد القارحي","محمد الشهري","محمد الحربي","عمر العمشاني","وليد الزايدي","حاتم الشمراني (صعوبات)"],"A":["عزي","الشهري","السفري","ج.الشهري","العيسى","الزهراني","العتيبي","الحارثي","ط.الزهراني","رضوان","جار الله","الذبياني","خضران","الغامدي","المقاطي","البشري","رده","ف.العتيبي","الهذلي","م.الزهراني","الجوفي","القارحي","م.الشهري","الحربي","العمشاني","الزايدي","الشمراني"],"S":["اجتماعيات","احتياط 1","احتياط 2","احتياط 3","اسلامية","انجليزي","بدنية","تفكير ناقد","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"SA":["اجتماع","احتياط1","احتياط2","احتياط3","اسلامية","انجليزي","بدنية","تفكير","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"C":{"1-1":[[[6,12],[13,14],[0,2],[10,10],[11,5],[4,13],[5,3]],[[5,3],[10,10],[12,8],[10,10],[4,13],[11,5],[13,14]],[[4,13],[9,0],[6,12],[0,2],[11,5],[13,14],[10,10]],[[10,10],[13,14],[12,8],[14,0],[5,3],[4,13],[11,5]],[[0,2],[13,14],[9,0],[10,10],[4,13],[8,6],[5,3]]],"1-2":[[[10,10],[12,8],[13,14],[6,12],[4,13],[5,3],[0,2]],[[13,14],[0,2],[8,11],[5,3],[10,10],[11,23],[4,13]],[[12,8],[5,3],[10,10],[10,10],[11,23],[4,13],[13,14]],[[11,23],[10,10],[4,13],[14,2],[13,14],[6,12],[9,0]],[[10,10],[0,2],[5,3],[9,0],[11,23],[4,13],[13,14]]],"1-3":[[[13,14],[4,13],[0,21],[5,3],[10,10],[12,8],[10,10]],[[10,10],[8,14],[5,3],[13,14],[11,23],[4,13],[12,8]],[[9,0],[10,10],[5,3],[4,13],[13,14],[11,23],[0,21]],[[13,14],[4,13],[10,10],[14,21],[11,23],[5,3],[6,12]],[[4,13],[10,10],[13,14],[0,21],[6,12],[9,0],[11,23]]],"1-4":[[[0,21],[10,10],[9,0],[12,8],[5,3],[13,6],[4,13]],[[0,21],[11,23],[4,13],[8,11],[13,6],[5,3],[10,10]],[[10,10],[13,6],[11,23],[6,12],[9,0],[0,21],[4,13]],[[4,13],[12,8],[13,6],[14,3],[10,10],[11,23],[5,3]],[[13,6],[11,23],[10,10],[4,13],[10,10],[5,3],[6,12]]],"1-5":[[[8,2],[10,4],[5,3],[9,0],[13,6],[0,11],[4,9]],[[6,12],[10,4],[13,6],[12,8],[4,9],[9,0],[11,7]],[[0,11],[10,4],[4,9],[5,3],[13,6],[11,7],[10,4]],[[5,3],[13,6],[10,4],[14,4],[4,9],[11,7],[0,11]],[[6,12],[13,6],[11,7],[5,3],[10,4],[12,8],[4,9]]],"1-6":[[[13,6],[0,11],[5,1],[11,7],[4,9],[9,15],[6,12]],[[13,6],[0,11],[11,7],[10,17],[10,17],[4,9],[5,1]],[[10,17],[4,9],[12,8],[5,1],[8,2],[13,6],[11,7]],[[10,17],[6,12],[4,9],[14,7],[10,17],[12,8],[13,6]],[[5,1],[9,15],[0,11],[10,17],[11,7],[4,9],[13,6]]],"2-1":[[[11,5],[13,24],[10,19],[5,1],[4,16],[0,2],[10,19]],[[10,19],[5,1],[4,16],[11,5],[0,2],[12,8],[13,24]],[[10,19],[6,12],[4,16],[9,15],[8,11],[11,5],[13,24]],[[13,24],[5,1],[11,5],[14,24],[10,19],[4,16],[9,15]],[[10,19],[12,8],[0,2],[5,1],[13,24],[6,12],[4,16]]],"2-2":[[[9,15],[0,21],[4,16],[13,24],[5,1],[10,19],[11,5]],[[4,16],[13,24],[6,12],[5,1],[10,19],[10,19],[11,5]],[[13,24],[4,16],[0,21],[12,8],[6,12],[5,1],[10,19]],[[5,1],[10,19],[13,24],[14,26],[4,16],[11,5],[0,21]],[[12,8],[13,24],[11,5],[9,15],[4,16],[10,19],[8,21]]],"2-3":[[[10,19],[11,5],[13,18],[4,16],[12,8],[6,12],[0,11]],[[5,1],[10,19],[8,21],[9,15],[11,5],[13,18],[4,16]],[[4,16],[10,19],[0,11],[11,5],[10,19],[13,18],[5,1]],[[10,19],[0,11],[13,18],[14,22],[5,1],[9,15],[4,16]],[[4,16],[11,5],[5,1],[6,12],[12,8],[13,18],[10,19]]],"2-4":[[[4,16],[13,18],[0,11],[11,5],[10,19],[5,1],[9,15]],[[0,11],[12,8],[11,5],[13,18],[5,1],[4,16],[10,19]],[[6,12],[9,15],[11,5],[4,16],[5,1],[10,19],[13,18]],[[4,16],[13,18],[10,19],[14,11],[6,12],[8,21],[12,8]],[[11,5],[5,1],[10,19],[0,11],[10,19],[4,16],[13,18]]],"3-1":[[[5,20],[11,7],[13,24],[10,4],[6,12],[10,4],[4,25]],[[0,2],[4,25],[13,24],[10,4],[11,7],[5,20],[7,18]],[[4,25],[8,24],[11,7],[7,18],[5,20],[10,4],[9,22]],[[12,8],[10,4],[6,12],[14,20],[13,24],[4,25],[11,7]],[[5,20],[4,25],[9,22],[13,24],[0,2],[10,4],[12,8]]],"3-2":[[[13,18],[7,25],[12,8],[4,25],[5,20],[9,22],[10,4]],[[10,4],[6,12],[13,18],[9,22],[4,25],[11,7],[5,20]],[[13,18],[12,8],[10,4],[7,25],[11,7],[5,20],[4,25]],[[5,20],[4,25],[8,2],[14,17],[11,7],[10,4],[0,2]],[[4,25],[10,4],[6,12],[11,7],[13,18],[0,2],[10,4]]],"3-3":[[[11,23],[9,22],[6,15],[12,22],[4,25],[0,21],[5,20]],[[11,23],[10,17],[13,14],[4,25],[5,20],[10,17],[12,22]],[[9,22],[13,14],[5,20],[11,23],[4,25],[8,11],[10,17]],[[7,18],[0,21],[13,14],[14,15],[5,20],[10,17],[4,25]],[[10,17],[7,18],[4,25],[13,14],[10,17],[11,23],[6,15]]],"3-4":[[[8,24],[10,17],[5,20],[11,23],[0,21],[4,9],[13,6]],[[10,17],[5,20],[11,23],[6,0],[9,22],[7,24],[4,9]],[[4,9],[11,23],[10,17],[13,6],[12,22],[10,17],[6,0]],[[4,9],[5,20],[10,17],[14,9],[9,22],[13,6],[11,23]],[[0,21],[12,22],[5,20],[13,6],[4,9],[7,24],[10,17]]]},"RS":{"الأحد":[[7,17,0],[23,3,15],[9,6,25],[21,2,13],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,16,21],[20,26,4],[2,6,24],[11,3,15],[25,14,22],[23,17,0]],"الثلاثاء":[[6,3,15],[2,25,7],[1,13,26],[14,21,9],[18,4,17],[22,24,0],[20,11,5]],"الأربعاء":[[11,4,5],[22,23,24],[16,7,21],[18,1,13],[15,0,25],[2,9,14],[17,26,20]],"الخميس":[[22,9,26],[20,7,11],[18,4,16],[25,23,5],[6,1,15],[21,14,17],[0,24,2]]},"R":{"الأحد":[[7,17,0],[23,3,15],[9,6,25],[21,2,13],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,16,21],[20,26,4],[2,6,24],[11,3,15],[25,14,22],[23,17,0]],"الثلاثاء":[[6,3,15],[2,25,7],[1,13,26],[14,21,9],[18,4,17],[22,24,0],[20,11,5]],"الأربعاء":[[11,4,5],[22,23,24],[16,7,21],[18,1,13],[15,0,25],[2,9,14],[17,26,20]],"الخميس":[[22,9,26],[20,7,11],[18,4,16],[25,23,5],[6,1,15],[21,14,17],[0,24,2]]},"times":[["07:00","07:45"],["07:45","08:30"],["08:30","09:15"],["09:15","10:00"],["10:20","11:05"],["11:05","11:50"],["14:00","14:45"]]};
 
 // ══════════════════════════════════════════════════════════
 // 🗓️ الجدول المدرسي الذكي — الفصول والمعلمون والاحتياط (١/٢/٣)
@@ -35821,7 +35826,84 @@ const ST2 = {
   late: { l: "تأخر عن الحصة", ic: "⏰", c: "#c2410c", bg: "#ffedd5" },
   early: { l: "خرج من الفصل", ic: "🚪", c: "#7c3aed", bg: "#ede9fe" },
   absent: { l: "غائب", ic: "❌", c: "#b91c1c", bg: "#fee2e2" },
+  note: { l: "ملاحظة على الفصل", ic: "📝", c: "#0369a1", bg: "#e0f2fe" },
 };
+// ══════════ سجل متابعة سير الحصص الدراسية (رصد بالتاريخ والوقت + طباعة) ══════════
+const TT_LRS = ["انشغال بعمل إداري", "تأخر انتهاء الحصة السابقة", "ظرف طارئ", "استئذان مسبق", "بدون عذر"];
+const TT_CNS = ["فوضى وضعف انضباط", "عدم إحضار الكتب والأدوات", "نظافة الفصل", "تأخر طلاب عن الحصة", "تميّز وانضباط الفصل", "عطل في الفصل (تكييف/إضاءة/سبورة)", "أخرى"];
+const ttFresh = a => a && a.C && a.RS && !((+a.at || 0) < TT_PDF.at && a.ver !== TT_PDF.ver) ? a : TT_PDF;
+const sttAtT = ms => { try { return new Date(ms).toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
+function SttLogPanel({ T, times, by, subName }) {
+  const today = maKey(new Date());
+  const [rng, setRng] = useState("week"); const [f, setF] = useState(today); const [t, setT] = useState(today);
+  const [rows, setRows] = useState(null); const [fl, setFl] = useState("all"); const [ck, setCk] = useState(""); const [tq, setTq] = useState("");
+  const bounds = () => { const d0 = new Date(); if (rng === "day") return [today, today]; if (rng === "week") { const s = new Date(d0); s.setDate(d0.getDate() - d0.getDay()); return [maKey(s), today]; } if (rng === "month") { const s = new Date(d0); s.setDate(d0.getDate() - 29); return [maKey(s), today]; } if (rng === "term") { const y = d0.getMonth() >= 7 ? d0.getFullYear() : d0.getFullYear() - 1; return [`${y}-08-01`, today]; } return [f <= t ? f : t, f <= t ? t : f]; };
+  const [F0, T0] = bounds();
+  useEffect(() => { let on = true; setRows(null); (async () => { const L = await fbRange(TT_LOG, F0, T0); if (!on) return; const out = []; Object.entries(ptObj(L)).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([k, v]) => { if (!v || typeof v !== "object") return; const [d, p, c] = k.split("_"); out.push({ dk, d: +d, p: +p, ck: c, ...v }); })); out.sort((a, b) => b.dk.localeCompare(a.dk) || a.p - b.p || String(a.ck).localeCompare(String(b.ck))); setRows(out); })(); return () => { on = false; }; }, [F0, T0]);
+  const kindOf = r => r.st === "sub" ? "absent" : r.st;
+  const R = (rows || []).filter(r => (fl === "all" || kindOf(r) === fl || (fl === "cn" && r.cn)) && (!ck || r.ck === ck) && (!tq || ttClean(T.T[r.ti] || "").includes(tq) || (r.sub != null && ttClean(T.T[r.sub] || "").includes(tq))));
+  const cnt = k => (rows || []).filter(r => k === "cn" ? r.cn : kindOf(r) === k).length;
+  const lateMin = (rows || []).filter(r => r.st === "late").reduce((a, r) => a + (+r.mins || 0), 0);
+  const tops = (() => { const m = {}; (rows || []).forEach(r => { if (r.st === "late" || r.st === "early") { const k = r.ti; m[k] = m[k] || { n: 0, mins: 0 }; m[k].n++; m[k].mins += +r.mins || +r.out || 0; } }); return Object.entries(m).sort((a, b) => b[1].n - a[1].n).slice(0, 5); })();
+  const detail = r => { const x = []; if (r.st === "late") x.push(`تأخر ${maAr(r.mins)} د${r.tm ? ` — دخل ${mlFmtT(r.tm)}` : ""}`); if (r.st === "early") x.push(`خرج قبل النهاية بـ ${maAr(r.out)} د${r.tm ? ` — الساعة ${mlFmtT(r.tm)}` : ""}`); if (r.st === "sub") x.push(`البديل: ${ttClean(T.T[r.sub] || "")}${TT_LVC[r.lvl] ? ` (${TT_LVC[r.lvl].l})` : ""}`); if (r.st === "absent") x.push("بدون بديل"); if (r.rsn) x.push(`السبب: ${r.rsn}`); if (r.note) x.push(r.note); return x.join(" • "); };
+  const cnTxt = r => r.cn ? `${r.cn.c || ""}${r.cn.c && r.cn.t ? " — " : ""}${r.cn.t || ""}` : "";
+  const stOf = r => ST2[kindOf(r)] || { l: r.st, ic: "•", c: "#475569", bg: "#f1f5f9" };
+  const print = () => {
+    const body = R.map((r, i) => { const s = stOf(r); const [si] = (T.C[r.ck] && T.C[r.ck][r.d] && T.C[r.ck][r.d][r.p]) || [r.si]; return `<tr><td>${maAr(i + 1)}</td><td>${maDay(maDate(r.dk))}<br><small>${asmHij(maDate(r.dk))}</small></td><td>${TT_ORD[r.p] || maAr(r.p + 1)}</td><td>${maClassName(r.ck)}</td><td>${ptEsc(subName(r.si != null ? r.si : si))}</td><td class="r"><b>${ptEsc(ttClean(T.T[r.ti] || ""))}</b></td><td><span class="lv" style="background:${s.bg};color:${s.c}">${s.ic} ${s.l}</span></td><td class="r" style="font-size:9.5px">${ptEsc(detail(r))}</td><td class="r" style="font-size:9.5px">${ptEsc(cnTxt(r))}</td><td style="font-size:9.5px">${r.at ? sttAtT(r.at) : ""}<br>${ptEsc(r.by || "")}</td></tr>`; }).join("");
+    inOpen(`<section class="pg">${inHdr("سجل متابعة سير الحصص الدراسية", `من ${asmHij(maDate(F0))}<br>إلى ${asmHij(maDate(T0))}`)}
+      <div class="kp" style="grid-template-columns:repeat(5,1fr)"><div><b>${maAr(cnt("late"))}</b>⏰ تأخر عن الحصة<br><small>${maAr(lateMin)} دقيقة</small></div><div><b>${maAr(cnt("early"))}</b>🚪 خروج قبل النهاية</div><div><b>${maAr(cnt("absent"))}</b>❌ غياب / احتياط</div><div><b>${maAr(cnt("cn"))}</b>📝 ملاحظات على الفصول</div><div><b>${maAr(cnt("ok"))}</b>✅ حضر</div></div>
+      ${tops.length ? `<div class="lgd">${tops.map(([k, v]) => `<span style="background:#fff7ed;color:#9a3412">${ptEsc(ttClean(T.T[k] || ""))}: ${maAr(v.n)} مرة (${maAr(v.mins)} د)</span>`).join("")}</div>` : ""}
+      <table><thead><tr><th>م</th><th>اليوم والتاريخ</th><th>الحصة</th><th>الفصل</th><th>المادة</th><th class="r">المعلم</th><th>الحالة</th><th class="r">التفاصيل</th><th class="r">ملاحظة على الفصل</th><th>وقت الرصد</th></tr></thead><tbody>${body || `<tr><td colspan="10">لا توجد سجلات في هذه الفترة</td></tr>`}</tbody></table>
+      ${inSig(by, "وكيل الشؤون التعليمية")}</section>`, "سجل متابعة الحصص", `@page{size:A4 landscape;margin:8mm}.pg{border-color:#1e1b4b}.pg::before{background:linear-gradient(90deg,#1e1b4b,#4f46e5,#fbbf24)}.tt span{background:linear-gradient(135deg,#4f46e5,#1e1b4b)}th{background:#312e81}.kp b{color:#4338ca}.lgd{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.lgd span{border-radius:999px;padding:2px 10px;font-size:10px;font-weight:800}tr{break-inside:avoid}tr:nth-child(even) td{background:#fafafa}`);
+  };
+  const cks = Object.keys(T.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  return <div className="grid gap-3">
+    <div className="ma-card p-3 grid gap-2">
+      <div className="flex gap-2 flex-wrap items-center"><b style={{ fontSize: 15 }}>📒 سجل متابعة سير الحصص</b><div className="stt-seg" style={{ flex: "1 1 360px" }}>{[["day", "اليوم"], ["week", "الأسبوع"], ["month", "٣٠ يوماً"], ["term", "العام"], ["custom", "فترة محددة"]].map(([k, l]) => <button key={k} className={rng === k ? "on" : ""} onClick={() => setRng(k)}>{l}</button>)}</div></div>
+      {rng === "custom" && <div className="flex gap-2 flex-wrap items-center" style={{ fontSize: 13, fontWeight: 800 }}>من <input type="date" className="ma-inp" style={{ width: 160, height: 38 }} value={f} max={today} onChange={e => e.target.value && setF(e.target.value)} /> إلى <input type="date" className="ma-inp" style={{ width: 160, height: 38 }} value={t} max={today} onChange={e => e.target.value && setT(e.target.value)} /></div>}
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>📅 {maDay(maDate(F0))} {asmHij(maDate(F0))} ← {maDay(maDate(T0))} {asmHij(maDate(T0))}</div>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>{[["late", "⏰ تأخر", "#c2410c", "#ffedd5", `${maAr(lateMin)} د`], ["early", "🚪 خروج", "#7c3aed", "#ede9fe"], ["absent", "❌ غياب/احتياط", "#b91c1c", "#fee2e2"], ["cn", "📝 ملاحظات الفصول", "#0369a1", "#e0f2fe"], ["ok", "✅ حضر", "#15803d", "#dcfce7"]].map(([k, l, c, bg, s]) => <button key={k} onClick={() => setFl(fl === k ? "all" : k)} style={{ background: bg, color: c, border: `2px solid ${fl === k ? c : "transparent"}`, borderRadius: 16, padding: "10px 8px", fontFamily: "inherit", cursor: "pointer", textAlign: "center" }}><div style={{ fontSize: 12.5, fontWeight: 900 }}>{l}</div><div style={{ fontSize: 24, fontWeight: 900 }}>{rows ? maAr(cnt(k)) : "…"}</div>{s && <small style={{ fontWeight: 800 }}>{s}</small>}</button>)}</div>
+    {tops.length > 0 && <div className="ma-card p-3" style={{ fontSize: 12.5, fontWeight: 800 }}><b>📌 الأكثر تأخراً / خروجاً في الفترة: </b>{tops.map(([k, v]) => <span key={k} className="stt-lv" style={{ background: "#fff7ed", color: "#9a3412", margin: 3, display: "inline-block" }}>{ttClean(T.T[k] || "")} — {maAr(v.n)} مرة ({maAr(v.mins)} د)</span>)}</div>}
+    <div className="ma-card p-3 grid gap-2">
+      <div className="flex gap-2 flex-wrap items-center"><select className="ma-inp" style={{ width: "auto", height: 38 }} value={ck} onChange={e => setCk(e.target.value)}><option value="">كل الفصول</option>{cks.map(k => <option key={k} value={k}>{maClassName(k)}</option>)}</select><input className="ma-inp" style={{ flex: "1 1 160px", height: 38 }} value={tq} onChange={e => setTq(e.target.value)} placeholder="🔍 بحث باسم المعلم" /><button className="ma-btn pri" onClick={print} disabled={!rows}>🖨 طباعة السجل ({maAr(R.length)})</button></div>
+      {rows === null ? <div style={{ textAlign: "center", color: "#94a3b8", padding: 20 }}>⏳</div> : !R.length ? <div style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800, padding: 20 }}>لا توجد سجلات</div> :
+        <div className="grid gap-2">{R.slice(0, 300).map((r, i) => { const s = stOf(r); return <div key={i} style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 10, alignItems: "center", padding: "9px 12px", borderRadius: 14, background: "#fff", border: "1px solid #eef2f7", borderRight: `5px solid ${s.c}` }}>
+          <div style={{ textAlign: "center", minWidth: 62 }}><div style={{ fontSize: 11, fontWeight: 900, color: "#64748b" }}>{maDay(maDate(r.dk))}</div><div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8" }}>{asmHij(maDate(r.dk))}</div><div style={{ fontSize: 12, fontWeight: 900, color: "#1e1b4b" }}>ح {maAr(r.p + 1)}</div></div>
+          <div style={{ minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 14 }}>{ttClean(T.T[r.ti] || "")} <small style={{ color: "#64748b", fontWeight: 800 }}>• {maClassName(r.ck)} • {subName(r.si)}</small></div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}><span className="stt-lv" style={{ background: s.bg, color: s.c }}>{s.ic} {s.l}</span> {detail(r)}</div>
+            {r.cn && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0369a1", marginTop: 2 }}>📝 {cnTxt(r)}</div>}</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", textAlign: "left" }}>🕒 {r.at ? sttAtT(r.at) : ""}<br />{r.by || ""}</div>
+        </div>; })}</div>}
+    </div>
+  </div>;
+}
+// جدول الطالب في بوابة ولي الأمر/الطالب
+function GuardianTT({ me }) {
+  const [S, setS] = useState(null);
+  useEffect(() => { (async () => { const t = maKey(new Date()); const [a, c, l] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`)]); setS({ T: ttFresh(a), times: c && Array.isArray(c.times) ? c.times : TT_PDF.times, log: ptObj(l) }); })(); }, []);
+  if (!S) return <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8" }}>⏳</div>;
+  const { T, log } = S; const times = S.times.slice(0, T.P); const G = T.C[me.ck];
+  if (!G) return <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد جدول لفصل {maClassName(me.ck)}</div>;
+  const now = new Date(); const di = ttDayIdx(T, now); const nowM = now.getHours() * 60 + now.getMinutes();
+  const curP = di >= 0 ? times.findIndex(([a, b]) => nowM >= mlToMin(a) && nowM < mlToMin(b)) : -1;
+  const nextP = di >= 0 && curP < 0 ? times.findIndex(([a]) => mlToMin(a) > nowM) : -1;
+  const sub = si => (T.SA && T.SA[si]) || T.S[si] || "";
+  const sc = si => TT_SUBC[si % TT_SUBC.length] || "#64748b";
+  const chg = p => { const v = log[ttK(di, p, me.ck)]; return v && v.st === "sub" && v.sub != null ? `حصة انتظار مع أ. ${ttClean(T.T[v.sub])}` : v && v.st === "absent" ? "المعلم غائب" : ""; };
+  return <div className="grid gap-3">
+    {di >= 0 && <div className="pt-item" style={{ background: "linear-gradient(135deg,#312e81,#4f46e5)", color: "#fff", border: "none" }}>
+      <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>📅 {maDay(now)} — {maClassName(me.ck)}</div>
+      {(() => { const p = curP >= 0 ? curP : nextP; if (p < 0) return <div style={{ fontSize: 17, fontWeight: 900, marginTop: 4 }}>انتهت حصص اليوم 🌙</div>; const [si, ti] = G[di][p]; return <div style={{ marginTop: 4 }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "#fde68a" }}>{curP >= 0 ? "🔴 الحصة الحالية" : "⏭️ الحصة القادمة"} — {TT_ORD[p]} ({mlFmtT(times[p][0])} – {mlFmtT(times[p][1])})</div><div style={{ fontSize: 22, fontWeight: 900 }}>{sub(si)}</div><div style={{ fontSize: 13.5, fontWeight: 800, opacity: .9 }}>👤 أ. {ttClean(T.T[ti])}{chg(p) ? ` • ${chg(p)}` : ""}</div></div>; })()}
+    </div>}
+    {di >= 0 && <div className="pt-item"><b style={{ fontSize: 14.5 }}>📋 حصص اليوم</b><div className="grid gap-2" style={{ marginTop: 8 }}>{times.map((t, p) => { const [si, ti] = G[di][p] || [-1, -1]; const c = chg(p); return <div key={p} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 12, background: p === curP ? "#eef2ff" : "#f8fafc", border: `1.5px solid ${p === curP ? "#6366f1" : "transparent"}`, opacity: curP >= 0 && p < curP ? .55 : 1 }}><span style={{ minWidth: 34, height: 34, borderRadius: 10, background: sc(si), color: "#fff", display: "grid", placeItems: "center", fontWeight: 900 }}>{maAr(p + 1)}</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ color: sc(si) }}>{sub(si)}</b><div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>أ. {ttClean(T.T[ti])}{c && <span style={{ color: "#b45309", fontWeight: 900 }}> • {c}</span>}</div></div><small style={{ fontWeight: 800, color: "#94a3b8" }}>{mlFmtT(t[0])}</small></div>; })}</div></div>}
+    <div className="pt-item" style={{ overflowX: "auto" }}><b style={{ fontSize: 14.5 }}>🗓️ الجدول الأسبوعي — {maClassName(me.ck)}</b>
+      <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 3, marginTop: 8, minWidth: 560, fontSize: 12 }}><thead><tr><th style={{ background: "#1e1b4b", color: "#fff", borderRadius: 8, padding: 6 }}>اليوم</th>{times.map((t, p) => <th key={p} style={{ background: "#1e1b4b", color: "#fff", borderRadius: 8, padding: 4 }}>{maAr(p + 1)}<div style={{ fontSize: 9.5, opacity: .8 }}>{mlFmtT(t[0])}</div></th>)}</tr></thead>
+        <tbody>{T.D.map((dn, d) => <tr key={d}><td style={{ background: d === di ? "#4f46e5" : "#eef2ff", color: d === di ? "#fff" : "#312e81", fontWeight: 900, borderRadius: 8, padding: 6, textAlign: "center" }}>{dn}</td>{times.map((_, p) => { const [si, ti] = G[d][p] || [-1, -1]; return <td key={p} style={{ background: d === di && p === curP ? "#fef3c7" : sc(si) + "14", borderRadius: 8, padding: "5px 3px", textAlign: "center", borderTop: `3px solid ${sc(si)}` }}><b style={{ color: sc(si), display: "block" }}>{sub(si)}</b><small style={{ color: "#64748b", fontWeight: 700 }}>{ttShort(T, ti)}</small></td>; })}</tr>)}</tbody></table></div>
+  </div>;
+}
+
+
 const sttCk = ck => { const [l, s] = String(ck).split("-"); return `${maAr(s)}/${maAr(l)}`; };
 const sttNorm = s => String(s || "").replace(/\(.*?\)/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
 const sttHM = m => { if (m == null || isNaN(m)) return ""; const h = Math.floor(m / 60), mm = m % 60; return `${maPad(h)}:${maPad(mm)}`; };
@@ -35923,7 +36005,7 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
   const autoLate = inP ? Math.max(1, nowM - s0) : 5;
   const autoOut = inP ? Math.max(1, e0 - nowM) : 10;
   const pk = plan[ttK(d, p, ck)];
-  const [f, setF] = useState({ st: st0, mins: cur.mins || autoLate, out: cur.out || autoOut, sub: cur.sub != null ? cur.sub : (pk && pk.sub != null ? pk.sub : ""), lvl: cur.lvl || (pk ? pk.lvl : 0), note: cur.note || "" });
+  const [f, setF] = useState({ st: st0, mins: cur.mins || autoLate, out: cur.out || autoOut, sub: cur.sub != null ? cur.sub : (pk && pk.sub != null ? pk.sub : ""), lvl: cur.lvl || (pk ? pk.lvl : 0), note: cur.note || "", rsn: cur.rsn || "", cnc: (cur.cn && cur.cn.c) || "", cnt: (cur.cn && cur.cn.t) || "" });
   const res = sttRes(T, d, p); const busy = sttBusy(T, d, p);
   const usedBy = {}; Object.entries(log).forEach(([k, v]) => { if (!v || v.st !== "sub" || v.sub == null) return; const [dd, pp, c2] = k.split("_"); if (+dd === d && +pp === p && c2 !== ck) usedBy[v.sub] = c2; });
   Object.values(plan).forEach(x => { if (x.p === p && x.ck !== ck && x.sub != null && usedBy[x.sub] == null) usedBy[x.sub] = x.ck; });
@@ -35931,8 +36013,12 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
   const free = T.T.map((_, i) => i).filter(i => !busy.has(i) && !res.includes(i) && !abs.includes(i)).sort((a, b) => (cover[a] || 0) - (cover[b] || 0));
   const s = ST2[f.st];
   const save = () => {
-    if (!f.st) { alert("اختر حالة الحصة"); return; }
-    const v = { st: f.st, ti, si };
+    const hasCn = f.cnc || f.cnt.trim();
+    if (!f.st && !hasCn) { alert("اختر حالة الحصة أو اكتب ملاحظة على الفصل"); return; }
+    const v = { st: f.st || "note", ti, si, dt: maKey(new Date()) };
+    if (f.st === "note" && !hasCn) { alert("اكتب الملاحظة على الفصل"); return; }
+    if (hasCn) v.cn = { c: f.cnc || "", t: f.cnt.trim() };
+    if (f.st === "late" && f.rsn) v.rsn = f.rsn;
     if (f.st === "late") { v.mins = +f.mins || 0; v.tm = sttHM(s0 + v.mins); }
     if (f.st === "early") { v.out = +f.out || 0; v.tm = sttHM(e0 - v.out); }
     if (f.st === "absent" && f.sub !== "" && f.sub != null) { v.st = "sub"; v.sub = +f.sub; v.lvl = f.lvl || 0; }
@@ -35964,6 +36050,8 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
           <div className="stt-step" style={{ justifyContent: "center" }}><button onClick={() => setF({ ...f, mins: Math.max(1, (+f.mins || 0) - 1) })}>−</button><b style={{ color: "#c2410c" }}>{maAr(f.mins)}<small style={{ fontSize: 13 }}> د</small></b><button onClick={() => setF({ ...f, mins: (+f.mins || 0) + 1 })}>+</button></div>
           <div className="flex gap-1 flex-wrap justify-center">{[5, 10, 15, 20, 30].map(m => <button key={m} className={`stt-chip ${+f.mins === m ? "on" : ""}`} style={{ "--cc": "#c2410c", padding: "5px 11px" }} onClick={() => setF({ ...f, mins: m })}>{maAr(m)} د</button>)}</div>
           <div style={{ textAlign: "center", fontSize: 13, fontWeight: 800, color: "#7c2d12" }}>دخل الفصل الساعة <b>{mlFmtT(sttHM(s0 + (+f.mins || 0)))}</b></div>
+          <div style={{ fontSize: 12.5, fontWeight: 900, color: "#9a3412" }}>📌 سبب التأخر</div>
+          <div className="flex gap-1 flex-wrap">{TT_LRS.map(r => <button key={r} className={`stt-chip ${f.rsn === r ? "on" : ""}`} style={{ "--cc": "#c2410c", padding: "5px 10px", fontSize: 12 }} onClick={() => setF({ ...f, rsn: f.rsn === r ? "" : r })}>{r}</button>)}</div>
         </div>}
         {f.st === "early" && <div style={{ background: "#f5f3ff", border: "1.5px solid #ddd6fe", borderRadius: 18, padding: 12 }} className="grid gap-2">
           <div style={{ fontSize: 13, fontWeight: 900, color: "#5b21b6" }}>🚪 {inP ? "حُسب الوقت المتبقي من الحصة تلقائياً من الآن" : "حدّد كم دقيقة قبل نهاية الحصة"}</div>
@@ -35976,7 +36064,13 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
           {free.length > 0 && <details><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#0f766e", padding: "6px 2px" }}>🟢 معلمون متفرّغون في هذه الحصة ({maAr(free.length)})</summary><div className="grid gap-2 mt-2">{free.map(i => <Cand key={i} i={i} lvl={4} dis={usedBy[i] != null} why={usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : ""} />)}</div></details>}
           <button type="button" className={`stt-chip ${f.sub === "" ? "on" : ""}`} style={{ "--cc": "#b91c1c", justifySelf: "start" }} onClick={() => setF({ ...f, sub: "", lvl: 0 })}>بدون بديل</button>
         </div>}
-        <input className="ma-inp" value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder="📝 ملاحظة (اختياري)…" />
+        <input className="ma-inp" value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder={f.st === "late" ? "✍️ سبب آخر / ملاحظة على التأخر…" : "✍️ ملاحظة على المعلم أو الحصة (اختياري)…"} />
+        <div style={{ background: "#f0f9ff", border: "1.5px solid #bae6fd", borderRadius: 16, padding: 10 }} className="grid gap-2">
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#0369a1" }}>📝 ملاحظة على الفصل {f.st !== "note" && <small style={{ color: "#64748b", fontWeight: 700 }}>(اختياري — تُحفظ مع وقت الرصد)</small>}</div>
+          <div className="flex gap-1 flex-wrap">{TT_CNS.map(r => <button key={r} className={`stt-chip ${f.cnc === r ? "on" : ""}`} style={{ "--cc": "#0369a1", padding: "5px 10px", fontSize: 12 }} onClick={() => setF({ ...f, cnc: f.cnc === r ? "" : r })}>{r}</button>)}</div>
+          <input className="ma-inp" value={f.cnt} onChange={e => setF({ ...f, cnt: e.target.value })} placeholder="تفاصيل الملاحظة على الفصل…" />
+        </div>
+        <div style={{ fontSize: 11.5, fontWeight: 800, color: "#94a3b8", textAlign: "center" }}>🕒 يُسجَّل الرصد بتاريخ اليوم {asmHij(new Date())} والساعة {sttAtT(Date.now())}{cur.at ? ` • آخر رصد: ${sttAtT(cur.at)}${cur.by ? " — " + cur.by : ""}` : ""}</div>
         <div className="flex gap-2 justify-between flex-wrap">
           {cur.st ? <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={onClear}>🗑 مسح</button> : <span />}
           <div className="flex gap-2"><button className="ma-btn" onClick={onClose}>إلغاء</button><button className="ma-btn pri" style={{ padding: "10px 26px", background: s ? s.c : undefined, borderColor: s ? s.c : undefined }} onClick={save}>💾 حفظ</button></div>
@@ -35996,9 +36090,9 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
   useEffect(() => { (async () => {
     let [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]);
-    const stale = !a || !a.C || (!a.RS && (+a.at || 0) < TT_PDF.at);
+    const stale = ttFresh(a) === TT_PDF && a !== TT_PDF;
     if (stale) {
-      if (canEdit && !ro) { await maPut(TT_OLD, { tt: a || null, cfg: c || null, at: Date.now() }); const ok = await maPut(TT_NODE, { ...TT_PDF, by }); await maPut(TT_CFG, { ...(c && typeof c === "object" ? c : {}), times: TT_PDF.times }); if (ok) toast("✅ اعتُمد الجدول الجديد (فصول + معلمون + احتياط ١/٢/٣) — والقديم محفوظ نسخةً احتياطية"); }
+      if (canEdit && !ro) { await maPut(TT_OLD, { tt: a || null, cfg: c || null, at: Date.now() }); const ok = await maPut(TT_NODE, { ...TT_PDF, by }); await maPut(TT_CFG, { ...(c && typeof c === "object" ? c : {}), times: TT_PDF.times }); if (ok) toast(`✅ اعتُمد الجدول المحدَّث (${TT_PDF.src}) — فصول + معلمون + احتياط ١/٢/٣، والقديم محفوظ نسخةً احتياطية`); }
       a = TT_PDF; c = { ...(c || {}), times: TT_PDF.times };
     }
     setTt(a); setTimes0(c && Array.isArray(c.times) ? c.times : TT_PDF.times);
@@ -36066,6 +36160,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
       <small style={{ color: sc(x.si) }}>{subName(x.si)}</small>
       <b style={{ color: x.absent ? "#b91c1c" : undefined }}>{tview ? (cp ? sttCk(ck) : maClassName(ck)) : ttShort(T, x.ti)}</b>
       {x.bd && <span className="bd" style={{ color: x.bd.c, background: "#fff" }}>{x.bd.t}</span>}
+      {x.v && x.v.cn && x.v.st !== "note" && <span title={`ملاحظة على الفصل: ${x.v.cn.c || ""} ${x.v.cn.t || ""}`} style={{ position: "absolute", top: 2, left: 4, fontSize: 12 }}>📝</span>}
     </button>;
   };
   // خانة معلم: حصة، أو احتياط ملوّن، أو تغطية
@@ -36183,9 +36278,9 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
           </>}
         </div>}
 
-        <div className="stt-seg">{[["cls", "🚪 الفصول"], ["tch", "👤 المعلمون"], ["res", "🛡️ الاحتياط"]].map(([k, l]) => <button key={k} className={view === k ? "on" : ""} onClick={() => { setView(k); setSel(k === "tch" && ro && meIdx >= 0 ? String(meIdx) : ""); }}>{l}</button>)}</div>
+        <div className="stt-seg">{[["cls", "🚪 الفصول"], ["tch", "👤 المعلمون"], ["res", "🛡️ الاحتياط"], ...(ro ? [] : [["log", "📒 سجل المتابعة"]])].map(([k, l]) => <button key={k} className={view === k ? "on" : ""} onClick={() => { setView(k); setSel(k === "tch" && ro && meIdx >= 0 ? String(meIdx) : ""); }}>{l}</button>)}</div>
 
-        {view !== "res" && <div className="grid gap-2">
+        {view !== "res" && view !== "log" && <div className="grid gap-2">
           {view === "cls" ? <div className="stt-sc"><button className={`stt-chip ${sel === "" ? "on" : ""}`} onClick={() => setSel("")}>الكل</button>{cks.map(ck => <button key={ck} className={`stt-chip ${sel === ck ? "on" : ""}`} style={{ "--cc": MA_LV[+ck[0] - 1]?.c, color: sel === ck ? "#fff" : MA_LV[+ck[0] - 1]?.c }} onClick={() => setSel(ck)}>{maClassName(ck)}</button>)}</div>
             : <div className="flex gap-2 items-center"><select className="ma-inp" style={{ flex: 1, height: 44, fontWeight: 800 }} value={sel} onChange={e => setSel(e.target.value)}><option value="">👥 كل المعلمين</option>{tList.map(x => <option key={x.i} value={x.i}>{x.n}{absList.includes(x.i) ? " 🚫" : ""}{x.i === meIdx ? " (أنا)" : ""}</option>)}</select></div>}
           <div className="flex gap-2 items-center flex-wrap">
@@ -36195,7 +36290,8 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
           </div>
         </div>}
 
-        {di < 0 && !(sel !== "" && mode === "week") && view !== "res" ? <div className="ma-card p-8 text-center"><div style={{ fontSize: 44 }}>🌙</div><b>لا يوجد دوام في {maDay(D)}</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 4 }}>اختر يوماً من أيام الأسبوع بالأعلى</div></div>
+        {view === "log" ? <SttLogPanel T={T} times={times} by={by} subName={subName} />
+          : di < 0 && !(sel !== "" && mode === "week") && view !== "res" ? <div className="ma-card p-8 text-center"><div style={{ fontSize: 44 }}>🌙</div><b>لا يوجد دوام في {maDay(D)}</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 4 }}>اختر يوماً من أيام الأسبوع بالأعلى</div></div>
           : view === "res" ? (di < 0 ? <div className="ma-card p-6 text-center font-bold text-gray-400">اختر يوم دوام</div> : <div className="grid gap-2">{times.map((t, p) => { const res = sttRes(T, di, p); return <div key={p} className={`stt-card ${p === curP ? "now" : ""}`} style={{ cursor: "default" }}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": "#3730a3" }}><div className="grid gap-1">{res.map((ti, i) => { const L = TT_LVC[i + 1]; const cv = Object.entries(log).find(([k, v]) => v && v.st === "sub" && v.sub === ti && +k.split("_")[1] === p && +k.split("_")[0] === di) || Object.values(plan).find(x => x.sub === ti && x.p === p); const cck = cv ? (Array.isArray(cv) ? cv[0].split("_")[2] : cv.ck) : null; return <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="stt-lv" style={{ background: L.c, color: "#fff", minWidth: 66, justifyContent: "center" }}>{L.l}</span><b style={{ fontSize: 14, color: absList.includes(ti) ? "#b91c1c" : "#0f172a", textDecoration: absList.includes(ti) ? "line-through" : "none" }}>{ttClean(T.T[ti])}</b>{cck && <span className="stt-lv" style={{ background: L.bg, color: L.c }}>🔄 {maClassName(cck)}</span>}</div>; })}</div></div></div>; })}</div>)
           : sel !== "" && mode === "day" ? <DayCards />
           : sel !== "" ? <WeekGrid />
@@ -36344,7 +36440,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
       if (src === "cv") { const d = await cvLoad(); names = cvTeachers(d.plan).map(t => ({ n: t.name, s: t.s, rid: d.cfg.links[t.tk] || cvMatch(t.name, d.lic) })); }
       if (src === "lic") { const l = ptObj(await maGet(LIC_NODE)); names = Object.entries(l).filter(([, x]) => x && x.name).map(([id, x]) => ({ n: x.name, rid: id })); }
       if (src === "site") { const t = await DB.get("school-teachers", []); names = (Array.isArray(t) ? t : []).map(x => ({ n: typeof x === "string" ? x : x && x.name })).filter(x => x.n); }
-      if (src === "tt") { const a = await maGet(TT_NODE); const T = a && a.T && (a.RS || (+a.at || 0) >= TT_PDF.at) ? a : TT_PDF; names = T.T.map(n => ({ n: ttClean(n) })); }
+      if (src === "tt") { const a = await maGet(TT_NODE); const T = ttFresh(a); names = T.T.map(n => ({ n: ttClean(n) })); }
     } catch (e) { alert("تعذّر الاستيراد: " + (e?.message || e)); }
     const lic = src === "lic" ? null : await maGet(LIC_NODE);
     const cur = ptObj(cfg.T); const exists = Object.values(cur).filter(x => x && x.n);
@@ -36683,7 +36779,7 @@ function DutyHomeBanner({ me, onOpen }) {
 function DutyAdminPage({ by = "الإدارة" }) {
   const [D, setD] = useState(null); const [ed, setEd] = useState(null); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(""); const [names, setNames] = useState([]); const [tab, setTab] = useState("board"); const [pv, setPv] = useState(null); const [q, setQ] = useState(""); const fileRef = useRef(null); const xRef = useRef(null); const [TT0, setTT0] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
-  const load = async () => { const d = await duLoad(); const [tt, lic] = await Promise.all([maGet(TT_NODE), maGet(LIC_NODE)]); const T = tt && tt.T && (tt.RS || (+tt.at || 0) >= TT_PDF.at) ? tt : TT_PDF;
+  const load = async () => { const d = await duLoad(); const [tt, lic] = await Promise.all([maGet(TT_NODE), maGet(LIC_NODE)]); const T = ttFresh(tt);
     if (d.cfg._needOff) { const cur = ptObj(await maGet(`${DU_NODE}/S`)); const o = { [`${DU_NODE}/cfg/off`]: DU_OFF_VER, [`${DU_NODE}/M`]: DU_OFF_M, [`${DU_NODE}/H`]: DU_OFF_H }; Object.entries(cur).forEach(([k, x]) => { if (!x || x.auto || x.off) o[`${DU_NODE}/S/${k}`] = null; }); Object.values(DU_OFF_S).forEach(x => { o[`${DU_NODE}/S/${x.id}`] = x; }); if (await fbPatch(o)) { d.cfg.off = DU_OFF_VER; delete d.cfg._needOff; setTimeout(() => toast("📥 اعتُمد التوزيع الرسمي: الإشراف الأسبوعي + جدول المناوبة اليومية للعام ١٤٤٨هـ"), 300); } }
     setD(d); setTT0(T); const n = [...T.T.map(ttClean)]; Object.values(ptObj(lic)).forEach(x => { if (x && x.name && !n.some(y => cvMatch(y, { e: { name: x.name } }) === "e")) n.push(x.name); }); setNames(n.sort((a, b) => a.localeCompare(b, "ar"))); };
   useEffect(() => { load(); }, []);
@@ -37162,7 +37258,7 @@ const NQ_SUBJ = ["علوم", "رياضيات", "لغة عربية", "اجتما�
 const NQ_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة";
 const nqUid = () => Math.random().toString(36).slice(2, 11);
 const nqLink = () => { try { return location.origin + location.pathname + "#nafes"; } catch { return "#nafes"; } };
-const nqSubs = ex => maArr(ex && ex.subjects).map(s => ({ name: s.name || "", questions: maArr(s.questions).map(q => ({ ...q, options: [0, 1, 2, 3].map(i => (q.options && q.options[i]) || "") })) }));
+const nqSubs = ex => maArr(ex && ex.subjects).map(s => ({ name: s.name || "", intro: maArr(s.intro), questions: maArr(s.questions).map(q => ({ ...q, options: [0, 1, 2, 3].map(i => (q.options && q.options[i]) || "") })) }));
 const nqCalc = (ex, ans) => { let total = 0, maxTotal = 0; const subjectScores = {}; nqSubs(ex).forEach(sub => { let score = 0, maxScore = 0; sub.questions.forEach(q => { maxScore += +q.grade || 0; if (ans[q.id] !== undefined && +ans[q.id] === +q.correct) score += +q.grade || 0; }); subjectScores[sub.name] = { score, maxScore }; total += score; maxTotal += maxScore; }); return { subjectScores, total, maxTotal }; };
 const nqGrade = p => p >= 90 ? { label: "ممتاز", color: "#166534", bg: "#dcfce7" } : p >= 80 ? { label: "جيد جداً", color: "#1e40af", bg: "#dbeafe" } : p >= 70 ? { label: "جيد", color: "#6b21a8", bg: "#f3e8ff" } : p >= 60 ? { label: "مقبول", color: "#9a3412", bg: "#ffedd5" } : { label: "ضعيف", color: "#991b1b", bg: "#fee2e2" };
 const nqQBad = q => { const f = q.options.filter(o => o && String(o).trim()).length; if (!(q.text && q.text.trim()) && !q.image) return "السؤال بلا نص ولا صورة"; if (f < 2) return "يحتاج خيارين على الأقل"; if (!(q.options[+q.correct] && String(q.options[+q.correct]).trim())) return "الإجابة الصحيحة غير محددة (الخيار المختار فارغ)"; return ""; };
@@ -37314,10 +37410,88 @@ function NqCropper({ page, init, onDone, onClose }) {
   </div></div>;
 }
 
+// ══════════ قراءة نماذج الأسئلة الجاهزة (بدون ذكاء اصطناعي) — تتعرّف على الترويسة والمادة وأرقام الأسئلة والخيارات ══════════
+const nqFixAr = s => String(s || "").normalize("NFKC").replace(/[ً-ْـ‏‎‪-‮]/g, "")
+  .replace(/اال/g, "الا").replace(/األ/g, "الأ").replace(/اإل/g, "الإ").replace(/اآل/g, "الآ")
+  .replace(/(^|[\s(«"\-–])امل/g, "$1الم").replace(/(^|[\s(«"\-–])لال/g, "$1للا").replace(/(^|\s)ل(ل?)امل/g, "$1ل$2الم");
+const NQ_HDR_RE = /المملكة|وزارة التعليم|إدارة التعليم|ادارة التعليم|اسم الطالب|الدرجة الكلية|اسم المدرسة|نواتج التعلم|Public|FDC|رقم الجلوس|الفصل الدراسي|العام الدراسي|اختر الإجابة|السؤال الأول|السؤال الثاني|السؤال الثالث|درجة السؤال|درجات فقط|عشر درجات|أجب عن|اقرأ النص|تعليمات/;
+const NQ_SUBJ_RE = [[/رياضيات|الرياضيات/, "رياضيات"], [/العلوم|علوم/, "علوم"], [/اللغةالعربية|لغتي|اللغة العربية|العربية|لغة عربية|عربي/, "لغة عربية"], [/الإنجليزية|الانجليزية|English/i, "لغة إنجليزية"], [/الاجتماعية|اجتماعيات/, "اجتماعيات"], [/الإسلامية|الاسلامية/, "دراسات إسلامية"], [/الرقمية/, "مهارات رقمية"], [/التفكير الناقد/, "تفكير ناقد"]];
+const nqSubjOf = txt => { const t = nqFixAr(txt).replace(/\s+/g, " "); const m = t.match(/(?:لمادة|المادة|مادة)\s*:?\s*([^\s،,.]+(?:\s[^\s،,.]+)?)/); const probe = s => { for (const [re, n] of NQ_SUBJ_RE) if (re.test(s) || re.test(s.replace(/\s/g, ""))) return n; return ""; }; return (m && probe(m[1])) || probe(t); };
+// خطوط الجدول الأفقية وحدود المحتوى في الصفحة
+async function nqLayout(page) {
+  const im = await nqLoadImg(page.src); const W = 1000, H = Math.round(im.height * W / im.width); const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, W, H); g.drawImage(im, 0, 0, W, H);
+  const d = g.getImageData(0, 0, W, H).data; const lit = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) lit[i] = (d[i * 4] * .3 + d[i * 4 + 1] * .59 + d[i * 4 + 2] * .11) < 215 ? 1 : 0;
+  const rowF = new Float32Array(H), longRun = new Float32Array(H); let xL = W, xR = 0;
+  for (let y = 0; y < H; y++) { let s = 0, run = 0, best = 0; for (let x = 0; x < W; x++) { const v = lit[y * W + x]; s += v; run = v ? run + 1 : 0; if (run > best) best = run; } rowF[y] = s / W; longRun[y] = best / W; }
+  let top = 0, bot = H - 1; while (top < H && rowF[top] < .002) top++; while (bot > top && rowF[bot] < .002) bot--;
+  const lines = []; for (let y = top; y <= bot; y++) if (longRun[y] > .35) { if (lines.length && y - lines[lines.length - 1][1] <= 3) lines[lines.length - 1][1] = y; else lines.push([y, y]); }
+  for (let y = top; y <= bot; y++) { if (rowF[y] < .002) continue; for (let x = 0; x < W; x++) if (lit[y * W + x]) { if (x < xL) xL = x; break; } for (let x = W - 1; x >= 0; x--) if (lit[y * W + x]) { if (x > xR) xR = x; break; } }
+  return { lines: lines.map(([a, b]) => (a + b) / 2 / H), top: top / H, bot: bot / H, xL: Math.max(0, xL / W - .006), xR: Math.min(1, xR / W + .006) };
+}
+const nqJoin = T => { if (!T.length) return ""; const S = [...T].sort((p, q) => p.y - q.y); const lines = []; S.forEach(t => { const l = lines[lines.length - 1]; if (l && Math.abs(l.y - t.y) <= .006) l.a.push(t); else lines.push({ y: t.y, a: [t] }); }); return lines.map(l => { l.a.sort((p, q) => q.x - p.x); let out = "", prev = null; l.a.forEach(t => { if (prev && prev.x - (t.x + t.w) > .0022) out += " "; out += t.s; prev = t; }); let r = nqFixAr(out).replace(/\s+/g, " ").trim(); if (/[؀-ۿ]/.test(r)) r = r.replace(/[()\[\]{}<>]/g, c => ({ "(": ")", ")": "(", "[": "]", "]": "[", "{": "}", "}": "{", "<": ">", ">": "<" }[c])); return r; }).filter(Boolean).join("\n").trim(); };
+// يحلل الصفحات المحددة ويعيد الأسئلة والنصوص (القطع القرائية) مع المادة لكل صفحة
+async function nqStruct(pages, onP) {
+  const out = []; let subj = "", last = 0;
+  for (let j = 0; j < pages.length; j++) {
+    const { p, i: pi } = pages[j]; onP && onP(j + 1, pages.length);
+    const T = (p.tx || []).map(t => ({ ...t, n: nqFixAr(t.s).trim() })).filter(t => t.n);
+    if (!T.length) continue;
+    const L = await nqLayout(p); const ln = L.lines;
+    const above = y => { let r = null; ln.forEach(v => { if (v < y - .002) r = v; }); return r; };
+    const below = y => ln.find(v => v > y + .002) ?? null;
+    // أسطر النص
+    const rows = []; [...T].sort((a, b) => a.y - b.y).forEach(t => { const r = rows[rows.length - 1]; if (r && Math.abs(r.y - t.y) <= .006) r.a.push(t); else rows.push({ y: t.y, a: [t] }); });
+    rows.forEach(r => { r.txt = nqJoin(r.a); });
+    // عمود الترقيم (يمين الجدول)
+    const cand = T.filter(t => t.x > .8 && /^[\d٠-٩]{1,2}$/.test(t.n));
+    const anc0 = T.filter(t => t.x > .8 && /^[أا]$/.test(t.n));
+    const colX = (() => { const xs = [...cand, ...anc0].map(t => t.x).sort((a, b) => a - b); return xs.length ? xs[xs.length >> 1] : .92; })();
+    const anc = anc0.filter(t => Math.abs(t.x - colX) < .012);
+    const fy = (() => { const c = cand.filter(t => Math.abs(t.x - colX) < .02 && !anc.some(a => Math.abs(a.y - t.y) < .008)); return c.length ? Math.min(...c.map(t => t.y)) : .35; })();
+    const ps = nqSubjOf(rows.filter(r => r.y < fy - .004 && (NQ_HDR_RE.test(r.txt) || /مادة|المادة/.test(r.txt) || r.y < .3)).map(r => r.txt).join(" ")); if (ps && ps !== subj) { subj = ps; last = 0; }
+    const nums = []; cand.filter(t => Math.abs(t.x - colX) < .02 && !anc.some(a => Math.abs(a.y - t.y) < .008)).sort((a, b) => a.y - b.y).forEach(t => { const v = +String(t.n).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)); if ((v > last && v <= last + 3) || (v === 1 && last > 0)) { if (v === 1 && last > 0 && !ps) { /* ترقيم جديد في نفس المادة */ } nums.push({ ...t, v }); last = v; } });
+    const hdrRows = rows.filter(r => NQ_HDR_RE.test(r.txt) && (!nums.length || r.y < nums[0].y));
+    const hb = hdrRows.length ? Math.max(...hdrRows.map(r => r.y)) : 0;
+    let firstTop = (() => { const b = hb ? below(hb) : null; if (b != null && (!nums.length || b < nums[0].y)) return b; if (hb) return hb + .006; const f = ln.find(v => v > L.top + .01); return f != null && (!nums.length || f < nums[0].y) ? f : L.top; })();
+    if (!nums.length) { // صفحة بلا أسئلة مرقمة → نص قراءة/مقدمة
+      if (L.bot - firstTop > .12) out.push({ kind: "intro", subj, pi, box: [L.xL, Math.max(0, firstTop - .004), L.xR, Math.min(1, L.bot + .006)], text: rows.filter(r => r.y > firstTop).map(r => r.txt).join("\n").slice(0, 2000) });
+      continue;
+    }
+    let start = firstTop;
+    nums.forEach((nm, k) => {
+      const nextY = k + 1 < nums.length ? nums[k + 1].y : 2;
+      const As = anc.filter(a => a.y > nm.y + .004 && a.y < nextY - .004).sort((a, b) => a.y - b.y);
+      let end; if (As.length) end = below(As[As.length - 1].y) ?? Math.min(L.bot + .006, As[As.length - 1].y + .03); else end = k + 1 < nums.length ? (above(nums[k + 1].y) ?? nums[k + 1].y - .02) : L.bot + .006;
+      if (end <= start) end = Math.min(1, start + .05);
+      const optTop = As.length ? (above(As[0].y + .001) ?? As[0].y - .02) : end;
+      const qT = T.filter(t => t.y > start && t.y < Math.max(start + .005, optTop) + .003 && t !== nm && !(Math.abs(t.x - colX) < .02 && /^[\d٠-٩]{1,2}$/.test(t.n)));
+      let opts = null;
+      if (As.length) {
+        const oT = T.filter(t => t.y > optTop && t.y <= end + .003);
+        const lets = oT.filter(t => /^[أابجد]$/.test(t.n)).map(t => ({ ...t, L: t.n === "ا" ? "أ" : t.n })).sort((a, b) => b.x - a.x);
+        const seq = []; ["أ", "ب", "ج", "د"].forEach(Lt => { const f = lets.find(t => t.L === Lt && (!seq.length || t.x < seq[seq.length - 1].x)); if (f) seq.push(f); });
+        if (seq.length >= 2) opts = seq.map((a, q) => nqJoin(oT.filter(t => { const cx = t.x + t.w / 2; return t !== a && !seq.includes(t) && !lets.includes(t) && cx < a.x + .002 && cx > (seq[q + 1] ? seq[q + 1].x + seq[q + 1].w : 0); })).replace(/\n/g, " "));
+      }
+      out.push({ kind: "q", subj, num: nm.v, pi, box: [L.xL, Math.max(0, start - .003), L.xR, Math.min(1, end + .004)], text: nqJoin(qT), opts });
+      start = end;
+    });
+  }
+  return out;
+}
+// مفتاح الإجابة: «1-ب 2-ج» أو «ب ج أ د…» ويقبل اسم المادة في بداية السطر
+const nqParseKey = txt => {
+  const m = {}; const seq = []; let subj = "*";
+  String(txt || "").split(/\n+/).forEach(line => { const l = nqFixAr(line); const s = nqSubjOf(l.split(/[:：]/)[0]); if (s && /[:：]/.test(l)) subj = s; const body = /[:：]/.test(l) && s ? l.slice(l.search(/[:：]/) + 1) : l; let any = false;
+    for (const mm of body.matchAll(/([\d٠-٩]{1,2})\s*[-–.)(:]?\s*([أابجد]|صح|خطأ)/g)) { const n = +mm[1].replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)); const v = mm[2] === "صح" ? 0 : mm[2] === "خطأ" ? 1 : ["أ", "ب", "ج", "د"].indexOf(mm[2] === "ا" ? "أ" : mm[2]); (m[subj] = m[subj] || {})[n] = v; any = true; }
+    if (!any) body.split(/[\s,،\-]+/).forEach(w => { if (/^[أابجد]$/.test(w)) seq.push({ subj, v: ["أ", "ب", "ج", "د"].indexOf(w === "ا" ? "أ" : w) }); });
+  });
+  return { m, seq };
+};
+
 // نافذة الاستيراد والتحليل
 function NqImport({ subjects, si, onAdd, onClose }) {
   const [pages, setPages] = useState([]); const [sel, setSel] = useState({}); const [txt, setTxt] = useState(""); const [mode, setMode] = useState("split");
-  const [o, setO] = useState({ solve: 1, img: "auto", n: 10, lv: "متوسط", grade: "", focus: "", g: 2, how: "auto", ptxt: 0, nopt: 4 }); const [tgt, setTgt] = useState(si);
+  const [o, setO] = useState({ solve: 1, img: "auto", n: 10, lv: "متوسط", grade: "", focus: "", g: 2, how: "auto", ptxt: 0, nopt: 4 }); const [tgt, setTgt] = useState(-1); const [akey, setAkey] = useState(""); const [akMsg, setAkMsg] = useState("");
   const [busy, setBusy] = useState(""); const [err, setErr] = useState(""); const [items, setItems] = useState(null); const [sum, setSum] = useState(null); const [crop, setCrop] = useState(null); const fr = useRef(null); const [hasKey, setHasKey] = useState(() => !!nqKey());
   const selPages = pages.map((p, i) => ({ p, i })).filter(x => sel[x.i] !== false);
   const addFiles = async files => {
@@ -37332,21 +37506,32 @@ function NqImport({ subjects, si, onAdd, onClose }) {
   };
   const pasteClip = async () => { const b = await nqClipImg(); if (b) addFiles([new File([b], "لقطة ملصقة", { type: b.type })]); else setErr("لا توجد صورة في الحافظة — انسخ صورة أو لقطة شاشة أولاً، أو اضغط داخل النافذة ثم Ctrl+V"); };
   const letters = n => ["أ", "ب", "ج", "د"].map((l, i) => i < n ? (n === 2 ? ["صح", "خطأ"][i] : `الخيار ${l}`) : "");
-  const splitItem = async (page, pi, box) => { const image = await nqCrop(page, box, 900); let text = "", options = letters(o.nopt); if (o.ptxt) { const t = nqRegionText(page, box); if (t) { const sp = nqSplitOpts(t); if (sp) { text = sp.q; options = sp.opts; } else text = t; } } const raw = nqRegionText(page, box); const hdr = raw && /وزارة التعليم|اسم الطالب|المملكة العربية|الإدارة العامة|رقم الجلوس|الدرجة الكلية/.test(raw) && !nqSplitOpts(raw); return { k: nqUid(), on: !hdr, text, options, correct: -1, ai: false, explain: "", skill: "", pi, box, imFull: image, imFig: null, image, split: 1 }; };
+  const splitItem = async (page, pi, box) => { const image = await nqCrop(page, box, 900); let text = "", options = letters(o.nopt); if (o.ptxt) { const t = nqRegionText(page, box); if (t) { const sp = nqSplitOpts(t); if (sp) { text = sp.q; options = sp.opts; } else text = t; } } const raw = nqRegionText(page, box); const hdr = raw && /وزارة التعليم|اسم الطالب|المملكة العربية|الإدارة العامة|رقم الجلوس|الدرجة الكلية/.test(raw) && !nqSplitOpts(raw); return { k: nqUid(), on: !hdr, kind: "q", subj: "", text, options, correct: -1, ai: false, explain: "", skill: "", pi, box, imFull: image, imFig: null, image, split: 1 }; };
   const mkItem = async (q, page, pi) => {
     const box = nqBox(q.box), fig = nqBox(q.fig);
     const [imFull, imFig] = await Promise.all([box && page ? nqCrop(page, box) : null, fig && page ? nqCrop(page, fig) : null]);
     const opts = [0, 1, 2, 3].map(i => String((q.options || [])[i] == null ? "" : (q.options || [])[i]).trim());
     const c = Number.isInteger(+q.correct) && +q.correct >= 0 && +q.correct < 4 && opts[+q.correct] ? +q.correct : -1;
     const im = o.img === "none" ? null : o.img === "full" ? (imFull || imFig) : imFig;
-    return { k: nqUid(), on: true, text: String(q.text || "").trim(), options: opts, correct: c, ai: q.src === "ai" || mode === "gen", explain: String(q.explain || "").trim(), skill: q.skill || "", pi, box, fig, imFull, imFig, image: im };
+    return { k: nqUid(), on: true, kind: "q", subj: q.subject ? (nqSubjOf(q.subject) || String(q.subject).trim()) : "", num: +q.num || undefined, text: String(q.text || "").trim(), options: opts, correct: c, ai: q.src === "ai" || mode === "gen", explain: String(q.explain || "").trim(), skill: q.skill || "", pi, box, fig, imFull, imFig, image: im };
   };
+  const applyKey = (L, kt) => { if (!kt || !kt.trim() || !L) return L; const { m, seq } = nqParseKey(kt); let n = 0, si2 = 0; const qs = L.filter(x => x.kind !== "intro"); const res = L.map(x => { if (x.kind === "intro") return x; let v; const num = x.num || (qs.indexOf(x) + 1); const sm = x.subj && m[x.subj]; if (sm && sm[num] != null) v = sm[num]; else if (m["*"] && m["*"][num] != null && (!x.subj || !Object.keys(m).some(k => k !== "*"))) v = m["*"][num]; else if (seq.length && si2 < seq.length) v = seq[si2++].v; if (v != null && v >= 0 && x.options[v] !== undefined) { n++; return { ...x, correct: v, ai: false }; } return x; }); setAkMsg(n ? `✅ طُبّق مفتاح الإجابة على ${maAr(n)} سؤال` : "⚠️ لم يُطابق المفتاح أي سؤال — اكتبه مثل: 1-ب 2-ج 3-أ"); return res; };
   const run = async () => {
     setErr(""); setItems(null); setSum(null);
     if (mode === "split") {
       if (!selPages.length) { setErr("أضف ملف PDF أو صورة أولاً — التقسيم يعمل على الصفحات"); return; }
+      if (selPages.some(x => x.p.tx && x.p.tx.length > 5)) {
+        try {
+          const st = await nqStruct(selPages, (a, n) => setBusy(`🧭 قراءة النموذج: صفحة ${maAr(a)} من ${maAr(n)}…`));
+          if (st.some(x => x.kind === "q")) {
+            const all = [];
+            for (const x of st) { const pg = pages[x.pi]; const image = await nqCrop(pg, x.box, 1000); all.push({ k: nqUid(), on: true, kind: x.kind, subj: x.subj || "", num: x.num, text: x.kind === "q" ? (o.ptxt ? x.text : "") : "", options: x.kind === "q" ? (x.opts && x.opts.filter(Boolean).length >= 2 ? [0, 1, 2, 3].map(q => x.opts[q] || "") : letters(o.nopt)) : [], correct: -1, ai: false, explain: "", skill: "", pi: x.pi, box: x.box, imFull: image, imFig: null, image, split: 1 }); }
+            setItems(applyKey(all, akey)); setBusy(""); return;
+          }
+        } catch (e) { setErr(e.message || String(e)); }
+      }
       const all = []; for (let j = 0; j < selPages.length; j++) { const { p, i } = selPages[j]; setBusy(`✂️ تقسيم الصفحة ${maAr(j + 1)} من ${maAr(selPages.length)}…`); try { const boxes = await nqSplit(p, o.how); for (const b of boxes) all.push(await splitItem(p, i, b)); } catch (e) { setErr(e.message || String(e)); } }
-      setItems(all); setBusy(""); if (!all.length) setErr("لم تُكتشف أسئلة — جرّب طريقة تقسيم أخرى أو أضف الأسئلة يدوياً بالقص"); return;
+      setItems(applyKey(all, akey)); setBusy(""); if (!all.length) setErr("لم تُكتشف أسئلة — جرّب طريقة تقسيم أخرى أو أضف الأسئلة يدوياً بالقص"); return;
     }
     if (!nqKey()) { setHasKey(false); setErr("أدخل مفتاح الذكاء الاصطناعي أعلاه أولاً، أو استخدم «تقسيم بدون ذكاء اصطناعي»"); return; }
     if (!selPages.length && !txt.trim()) { setErr("أضف ملف PDF أو صورة أو الصق نصاً أولاً"); return; }
@@ -37354,19 +37539,20 @@ function NqImport({ subjects, si, onAdd, onClose }) {
       if (mode === "extract") {
         const P = `استخرج كل أسئلة الاختيار من متعدد (وأسئلة صح وخطأ) الموجودة ${selPages.length ? "في صورة الصفحة المرفقة" : "في النص التالي"} كما هي بدقة دون تغيير صياغتها.
 أعد JSON فقط بدون أي نص آخر بهذا الشكل:
-[{"text":"نص السؤال كاملاً","options":["","","",""],"correct":0,"src":"page","explain":""${selPages.length ? ',"box":[0.05,0.1,0.95,0.3],"fig":null' : ""}}]
+[{"num":1,"subject":"اسم المادة كما في الصفحة","text":"نص السؤال كاملاً","options":["","","",""],"correct":0,"src":"page","explain":""${selPages.length ? ',"box":[0.05,0.1,0.95,0.3],"fig":null' : ""}}]
 القواعد:
 - options: الخيارات بالترتيب بدون الحروف أو الأرقام (أ، ب، ج، د). لسؤال صح وخطأ ضع ["صح","خطأ","",""].
 - correct: رقم الخيار الصحيح (0-3) إذا كان محدداً في المصدر (مظلل أو عليه علامة أو في مفتاح الإجابة) مع "src":"page". ${o.solve ? 'إذا لم يكن محدداً فحلّ السؤال بنفسك بدقة وضع رقم إجابتك مع "src":"ai" واكتب في explain شرحاً مختصراً للحل.' : "إذا لم يكن محدداً ضع -1."}
 ${selPages.length ? `- box: مستطيل يحيط بالسؤال كاملاً مع خياراته ورسومه، كنسب من عرض وارتفاع الصورة [x1,y1,x2,y2] بين 0 و1، x من يسار الصورة وy من أعلاها.
 - fig: مستطيل الرسم أو الشكل أو الجدول أو الصورة التابعة للسؤال بنفس الطريقة إن وُجد، وإلا null.
 ` : ""}- اكتب الرموز والمعادلات الرياضية بنص واضح (س²، √، ½، ×، ÷).
-- تجاهل العناوين والتعليمات وأرقام الصفحات والترويسات وبيانات الطالب.
+- تجاهل الترويسة (المملكة، الوزارة، الإدارة، المدرسة) وخانات اسم الطالب والفصل والدرجة والتعليمات وأرقام الصفحات — لا تعتبرها أسئلة.
+- num رقم السؤال كما في الورقة، وsubject المادة التي ينتمي إليها السؤال إن ظهرت (رياضيات/علوم/لغة عربية...).
 - إذا لم توجد أسئلة أعد [].${selPages.length ? "" : "\n\nالنص:\n" + txt.slice(0, 30000)}`;
         const all = [];
         if (selPages.length) { for (let j = 0; j < selPages.length; j++) { const { p, i } = selPages[j]; setBusy(`🔍 قراءة أسئلة الصفحة ${maAr(j + 1)} من ${maAr(selPages.length)} بالذكاء الاصطناعي…`); const arr = nqJSON(await nqAI(P, { images: [p.src], max: 8000 })); for (const q of (Array.isArray(arr) ? arr : arr.questions || [])) if (q && (q.text || q.box)) all.push(await mkItem(q, p, i)); setItems([...all]); } }
         else { setBusy("🔍 استخراج الأسئلة من النص…"); const arr = nqJSON(await nqAI(P, { max: 8000 })); for (const q of (Array.isArray(arr) ? arr : arr.questions || [])) if (q && q.text) all.push(await mkItem(q, null, -1)); }
-        setItems(all); if (!all.length) setErr("لم يُعثر على أسئلة — جرّب «توليد أسئلة من المحتوى» أو صورة أوضح");
+        setItems(applyKey(all, akey)); if (!all.length) setErr("لم يُعثر على أسئلة — جرّب «توليد أسئلة من المحتوى» أو صورة أوضح");
       } else {
         const imgs = selPages.slice(0, 6);
         setBusy(`✨ تحليل ${imgs.length ? maAr(imgs.length) + " صفحة" : "النص"} وتوليد ${maAr(o.n)} سؤالاً…`);
@@ -37385,11 +37571,13 @@ ${selPages.length ? `- box: مستطيل يحيط بالسؤال كاملاً م
   const set = (k, f, v) => setItems(L => L.map(x => x.k === k ? { ...x, [f]: v } : x));
   const merge = async n => { const a = items[n], b = items[n + 1]; if (!a || !b || a.pi !== b.pi || !a.box || !b.box) return; const box = [Math.min(a.box[0], b.box[0]), Math.min(a.box[1], b.box[1]), Math.max(a.box[2], b.box[2]), Math.max(a.box[3], b.box[3])]; const im = await nqCrop(pages[a.pi], box, 900); const t = [a.text, b.text].filter(Boolean).join("\n"); setItems(L => { const c = [...L]; c.splice(n, 2, { ...a, box, image: im, imFull: im, text: t }); return c; }); };
   const addManual = pi => setCrop({ k: null, pg: pages[pi], pi, init: null });
-  const ok = (items || []).filter(x => x.on);
-  const add = () => { const qs = ok.map(x => ({ id: nqUid(), text: x.text, image: x.image || null, options: x.options, correct: x.correct, grade: +o.g || 2, feedback: x.explain ? nqEscT(x.explain) : "", ...(x.ai ? { aiAns: 1 } : {}) })); onAdd(tgt, qs); };
+  const ok = (items || []).filter(x => x.on); const okQ = ok.filter(x => x.kind !== "intro");
+  const subjOf = x => tgt >= 0 ? subjects[tgt] : (x.subj || subjects[si] || subjects[0] || "عام");
+  const allSubj = [...new Set([...subjects, ...(items || []).map(x => x.subj).filter(Boolean)])];
+  const add = () => { const G = new Map(); ok.forEach(x => { const n = subjOf(x); if (!G.has(n)) G.set(n, { name: n, qs: [], intro: [] }); const g = G.get(n); if (x.kind === "intro") { if (x.image) g.intro.push(x.image); return; } g.qs.push({ id: nqUid(), text: x.text, image: x.image || null, options: x.options, correct: x.correct, grade: +o.g || 2, feedback: x.explain ? nqEscT(x.explain) : "", ...(x.ai ? { aiAns: 1 } : {}) }); }); onAdd([...G.values()]); };
   const B = (on, c = "#1d4ed8") => ({ padding: "5px 10px", borderRadius: 8, border: `2px solid ${on ? c : "#e2e8f0"}`, background: on ? c : "#fff", color: on ? "#fff" : "#475569", fontWeight: 800, fontSize: 12, cursor: "pointer" });
   const SEL = { width: "auto", maxWidth: "100%", padding: "5px 8px" };
-  const MODES = [["split", "✂️ تقسيم الصفحات إلى أسئلة", "بدون ذكاء اصطناعي — كل سؤال صورة كما في الملف وتحدد أنت الإجابة"], ["extract", "🔍 قراءة الأسئلة بالذكاء الاصطناعي", "يقرأ نص كل سؤال وخياراته وصورته ويقترح الإجابة"], ["gen", "✨ تحليل الصفحة وتوليد أسئلة", "يحلل الدرس/الصفحة وينشئ أسئلة جديدة بأسلوب نافس"]];
+  const MODES = [["split", "🧭 قراءة النموذج الجاهز", "بدون ذكاء اصطناعي — يتجاوز الترويسة وخانات الاسم والفصل، ويتعرّف على المواد وأرقام الأسئلة والخيارات"], ["extract", "🔍 قراءة الأسئلة بالذكاء الاصطناعي", "يقرأ نص كل سؤال وخياراته وصورته ويقترح الإجابة"], ["gen", "✨ تحليل الصفحة وتوليد أسئلة", "يحلل الدرس/الصفحة وينشئ أسئلة جديدة بأسلوب نافس"]];
   return <div className="nq-modal" style={{ alignItems: "flex-start", overflowY: "auto", overflowX: "hidden" }} onPaste={e => { const it = Array.from(e.clipboardData.items || []).filter(i => i.type.startsWith("image/")); if (it.length) { e.preventDefault(); addFiles(it.map(i => i.getAsFile())); } }}>
     <div className="nq-card" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 12, maxWidth: 880, width: "100%", margin: "10px auto", boxSizing: "border-box" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 18, color: "#1e3a8a", flex: "1 1 220px" }}>📥 استيراد الأسئلة وتحليل الصفحات</b><button className="nq-b nq-ghost" onClick={onClose} disabled={!!busy}>✕ إغلاق</button></div>
@@ -37404,12 +37592,12 @@ ${selPages.length ? `- box: مستطيل يحيط بالسؤال كاملاً م
       {mode !== "split" && <NqKeyBox compact onChange={setHasKey} />}
       {mode !== "split" && <textarea className="nq-inp" style={{ minHeight: 64, boxSizing: "border-box", width: "100%" }} value={txt} onChange={e => setTxt(e.target.value)} placeholder={mode === "gen" ? "اختياري: الصق نص الدرس هنا لتوليد أسئلة منه (أو اعتمد على الصفحات المختارة)" : "اختياري: الصق نص الأسئلة المنسوخ من PDF / Word بدلاً من الصفحات"} />}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 13, fontWeight: 800, background: "#f8fafc", borderRadius: 12, padding: "10px 12px", minWidth: 0 }}>
-        <label>المادة: <select className="nq-inp" style={SEL} value={tgt} onChange={e => setTgt(+e.target.value)}>{subjects.map((s, i) => <option key={i} value={i}>{s}</option>)}</select></label>
+        <label>المادة: <select className="nq-inp" style={SEL} value={tgt} onChange={e => setTgt(+e.target.value)}><option value={-1}>🧭 تلقائي من الملف (لكل صفحة مادتها)</option>{subjects.map((s, i) => <option key={i} value={i}>{s}</option>)}</select></label>
         <label>درجة السؤال: <input className="nq-inp" type="number" min={1} style={{ width: 60, padding: "5px 8px" }} value={o.g} onChange={e => setO({ ...o, g: +e.target.value || 1 })} /></label>
         {mode === "split" && <>
           <label>طريقة التقسيم: <select className="nq-inp" style={SEL} value={o.how} onChange={e => setO({ ...o, how: e.target.value })}><option value="auto">تلقائي</option><option value="lines">حسب خطوط الجدول</option><option value="gaps">حسب المسافات الفارغة</option></select></label>
           <label>عدد الخيارات: <select className="nq-inp" style={SEL} value={o.nopt} onChange={e => setO({ ...o, nopt: +e.target.value })}><option value={4}>٤ (أ ب ج د)</option><option value={3}>٣</option><option value={2}>صح / خطأ</option></select></label>
-          {pages.some(p => p.tx && p.tx.length) && <label style={{ display: "flex", gap: 5, alignItems: "center" }}><input type="checkbox" checked={!!o.ptxt} onChange={e => setO({ ...o, ptxt: e.target.checked ? 1 : 0 })} /> نسخ النص من ملف PDF (تجريبي)</label>}
+          {pages.some(p => p.tx && p.tx.length) && <label style={{ display: "flex", gap: 5, alignItems: "center" }}><input type="checkbox" checked={!!o.ptxt} onChange={e => setO({ ...o, ptxt: e.target.checked ? 1 : 0 })} /> نسخ نص السؤال من الملف (الصورة تبقى)</label>}
         </>}
         {mode === "extract" && <>
           <label style={{ display: "flex", gap: 5, alignItems: "center" }}><input type="checkbox" checked={!!o.solve} onChange={e => setO({ ...o, solve: e.target.checked ? 1 : 0 })} /> حلّ الأسئلة التي لا تظهر إجابتها</label>
@@ -37422,23 +37610,29 @@ ${selPages.length ? `- box: مستطيل يحيط بالسؤال كاملاً م
           <input className="nq-inp" style={{ flex: "1 1 160px", minWidth: 0, padding: "5px 8px" }} value={o.focus} onChange={e => setO({ ...o, focus: e.target.value })} placeholder="تركيز اختياري (مهارة/فكرة)" />
         </>}
       </div>
-      <button className="nq-b" style={{ background: mode === "split" ? "linear-gradient(135deg,#0f766e,#2563eb)" : "linear-gradient(135deg,#7c3aed,#2563eb)", color: "#fff", fontSize: 15 }} disabled={!!busy} onClick={run}>{busy || (mode === "split" ? "✂️ قسّم الصفحات إلى أسئلة" : mode === "extract" ? "🔍 اقرأ الأسئلة بالذكاء الاصطناعي" : "✨ حلّل وولّد الأسئلة")}</button>
+      {mode !== "gen" && <details style={{ background: "#fefce8", border: "1.5px solid #fde68a", borderRadius: 12, padding: "8px 12px" }} open={!!akey}>
+        <summary style={{ cursor: "pointer", fontWeight: 900, color: "#854d0e", fontSize: 13.5 }}>🔑 مفتاح الإجابة (اختياري — يبقى مخفياً عن الطلاب ويُصحَّح به تلقائياً)</summary>
+        <textarea className="nq-inp" style={{ minHeight: 60, marginTop: 8, width: "100%", boxSizing: "border-box" }} value={akey} onChange={e => setAkey(e.target.value)} placeholder={"مثال: 1-ب 2-ج 3-أ 4-د …\nأو لكل مادة سطر:\nرياضيات: 1-ب 2-ج 3-أ\nعلوم: 1-د 2-أ\nأو الحروف فقط بالترتيب: ب ج أ د ب …"} />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}><button className="nq-b" style={{ background: "#ca8a04", color: "#fff", padding: "6px 14px", fontSize: 13 }} disabled={!items || !akey.trim()} onClick={() => setItems(L => applyKey(L, akey))}>تطبيق المفتاح على الأسئلة</button>{akMsg && <span style={{ fontSize: 12.5, fontWeight: 800, color: akMsg.startsWith("✅") ? "#166534" : "#b45309" }}>{akMsg}</span>}</div>
+      </details>}
+      <button className="nq-b" style={{ background: mode === "split" ? "linear-gradient(135deg,#0f766e,#2563eb)" : "linear-gradient(135deg,#7c3aed,#2563eb)", color: "#fff", fontSize: 15 }} disabled={!!busy} onClick={run}>{busy || (mode === "split" ? "🧭 اقرأ النموذج واستخرج الأسئلة" : mode === "extract" ? "🔍 اقرأ الأسئلة بالذكاء الاصطناعي" : "✨ حلّل وولّد الأسئلة")}</button>
       {busy && <div className="nq-pbar"><div className="nq-pfill" style={{ width: "100%", background: "linear-gradient(90deg,#7c3aed,#2563eb,#7c3aed)", backgroundSize: "200% 100%", animation: "nqSh 1.2s linear infinite" }} /></div>}
       {err && <div style={{ color: "#dc2626", fontWeight: 800, fontSize: 13, background: "#fef2f2", borderRadius: 10, padding: "8px 12px" }}>⚠️ {err}</div>}
       {sum && (sum.s || sum.k.length > 0) && <div style={{ background: "linear-gradient(135deg,#f5f3ff,#eff6ff)", border: "2px solid #c4b5fd", borderRadius: 12, padding: "10px 14px" }}><b style={{ color: "#6d28d9" }}>🧠 تحليل المحتوى</b><div style={{ fontSize: 13.5, lineHeight: 1.8, marginTop: 4 }}>{sum.s}</div>{sum.k.length > 0 && <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 6 }}>{sum.k.map((k, i) => <span key={i} className="nq-badge" style={{ background: "#ede9fe", color: "#5b21b6" }}>{k}</span>)}</div>}</div>}
       {items && <>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ flex: "1 1 200px", color: "#1e3a8a" }}>📝 راجع الأسئلة قبل الإضافة ({maAr(ok.length)} من {maAr(items.length)})</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>⚠️ {maAr(items.filter(x => x.on && x.correct < 0).length)} بلا إجابة{items.some(x => x.ai) ? ` • 🤖 ${maAr(items.filter(x => x.on && x.ai && x.correct >= 0).length)} مقترحة` : ""}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ flex: "1 1 200px", color: "#1e3a8a" }}>📝 راجع الأسئلة قبل الإضافة ({maAr(okQ.length)} سؤال{ok.length > okQ.length ? ` + ${maAr(ok.length - okQ.length)} نص` : ""})</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>⚠️ {maAr(okQ.filter(x => x.correct < 0).length)} بلا إجابة{items.some(x => x.ai) ? ` • 🤖 ${maAr(items.filter(x => x.on && x.ai && x.correct >= 0).length)} مقترحة` : ""}</span>
           {selPages.length > 0 && <select className="nq-inp" style={{ ...SEL, fontSize: 12.5 }} value="" onChange={e => e.target.value !== "" && addManual(+e.target.value)}><option value="">➕ إضافة سؤال بالقص من صفحة…</option>{pages.map((p, i) => <option key={i} value={i}>الصفحة {maAr(i + 1)}</option>)}</select>}</div>
-        {mode === "split" && items.length > 0 && <div style={{ fontSize: 12.5, color: "#0f766e", fontWeight: 800, background: "#f0fdfa", border: "1.5px solid #99f6e4", borderRadius: 10, padding: "7px 12px", lineHeight: 1.8 }}>💡 ألغِ تحديد الترويسة وبيانات الطالب، واستخدم «⬇ دمج مع التالي» إذا انقسم السؤال وخياراته إلى جزأين، و«✂️ قص يدوي» لتعديل حدود أي سؤال. ثم اضغط الدائرة أمام الإجابة الصحيحة.</div>}
+        {tgt < 0 && items.some(x => x.subj) && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{[...new Set(items.map(x => x.subj || "—"))].map(n => <span key={n} className="nq-badge" style={{ background: "#eff6ff", color: "#1d4ed8", fontSize: 12.5 }}>📚 {n}: {maAr(items.filter(x => (x.subj || "—") === n && x.on && x.kind !== "intro").length)} سؤال{items.some(x => (x.subj || "—") === n && x.kind === "intro") ? " + نص قراءة" : ""}</span>)}</div>}
+        {mode === "split" && items.length > 0 && <div style={{ fontSize: 12.5, color: "#0f766e", fontWeight: 800, background: "#f0fdfa", border: "1.5px solid #99f6e4", borderRadius: 10, padding: "7px 12px", lineHeight: 1.8 }}>💡 راجع الأسئلة: ألغِ تحديد أي جزء ليس سؤالاً، واستخدم «⬇ دمج مع التالي» إذا انقسم السؤال وخياراته إلى جزأين، و«✂️ قص يدوي» لتعديل حدود أي سؤال. ثم اضغط الدائرة أمام الإجابة الصحيحة.</div>}
         {items.map((x, n) => { const pg = pages[x.pi]; const nx = items[n + 1]; return <div key={x.k} style={{ border: `2px solid ${!x.on ? "#e2e8f0" : x.correct < 0 ? "#fbbf24" : "#bfdbfe"}`, borderRadius: 14, padding: 12, opacity: x.on ? 1 : .5, background: "#fff", minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}><label style={{ display: "flex", gap: 6, alignItems: "center", fontWeight: 900, color: "#1d4ed8" }}><input type="checkbox" checked={x.on} onChange={e => set(x.k, "on", e.target.checked)} /> سؤال {maAr(n + 1)}</label>{pg && <small style={{ color: "#94a3b8", fontWeight: 700 }}>ص{maAr(x.pi + 1)}</small>}{x.skill && <span className="nq-badge" style={{ background: "#f0fdf4", color: "#166534" }}>{x.skill}</span>}{x.correct < 0 ? <span className="nq-badge" style={{ background: "#fffbeb", color: "#b45309" }}>⚠️ حدّد الإجابة الصحيحة</span> : x.ai ? <span className="nq-badge" style={{ background: "#f5f3ff", color: "#6d28d9" }}>🤖 إجابة مقترحة — راجعها</span> : <span className="nq-badge" style={{ background: "#dcfce7", color: "#166534" }}>✓ محددة</span>}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}><label style={{ display: "flex", gap: 6, alignItems: "center", fontWeight: 900, color: x.kind === "intro" ? "#7c3aed" : "#1d4ed8" }}><input type="checkbox" checked={x.on} onChange={e => set(x.k, "on", e.target.checked)} /> {x.kind === "intro" ? "📖 نص قراءة / مقدمة تُعرض للطالب أعلى أسئلة المادة" : `سؤال ${maAr(x.num || n + 1)}`}</label>{tgt < 0 && <select className="nq-inp" style={{ width: "auto", padding: "2px 6px", fontSize: 12 }} value={x.subj || ""} onChange={e => { const v = e.target.value === "__n" ? (window.prompt("اسم المادة:") || "").trim() : e.target.value; if (v || e.target.value === "") set(x.k, "subj", v); }}><option value="">— المادة —</option>{allSubj.map(z => <option key={z} value={z}>{z}</option>)}<option value="__n">＋ مادة أخرى…</option></select>}{pg && <small style={{ color: "#94a3b8", fontWeight: 700 }}>ص{maAr(x.pi + 1)}</small>}{x.skill && <span className="nq-badge" style={{ background: "#f0fdf4", color: "#166534" }}>{x.skill}</span>}{x.kind === "intro" ? null : x.correct < 0 ? <span className="nq-badge" style={{ background: "#fffbeb", color: "#b45309" }}>⚠️ حدّد الإجابة الصحيحة</span> : x.ai ? <span className="nq-badge" style={{ background: "#f5f3ff", color: "#6d28d9" }}>🤖 إجابة مقترحة — راجعها</span> : <span className="nq-badge" style={{ background: "#dcfce7", color: "#166534" }}>✓ محددة</span>}</div>
           {pg && <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 6 }}>{x.imFig && <button style={B(x.image === x.imFig)} onClick={() => set(x.k, "image", x.imFig)}>🖼 الشكل</button>}{x.imFull && !x.split && <button style={B(x.image === x.imFull)} onClick={() => set(x.k, "image", x.imFull)}>📄 السؤال كاملاً</button>}<button style={B(false, "#7c3aed")} onClick={() => setCrop({ k: x.k, pg, init: x.box || x.fig })}>✂️ قص يدوي</button>{nx && nx.pi === x.pi && x.box && nx.box && <button style={B(false, "#0f766e")} onClick={() => merge(n)}>⬇ دمج مع التالي</button>}{x.image && <button style={B(false, "#dc2626")} onClick={() => set(x.k, "image", null)}>✕ بدون صورة</button>}</div>}
           {x.image && <img src={x.image} alt="" style={{ maxWidth: "100%", maxHeight: 260, objectFit: "contain", borderRadius: 8, border: "1px solid #e2e8f0", marginBottom: 6, display: "block" }} />}
-          <textarea className="nq-inp" style={{ minHeight: 42, marginBottom: 6, width: "100%", boxSizing: "border-box" }} value={x.text} onChange={e => set(x.k, "text", e.target.value)} placeholder={x.image ? "نص السؤال (اختياري — السؤال ظاهر في الصورة)" : "نص السؤال"} />
+          {x.kind !== "intro" && <><textarea className="nq-inp" style={{ minHeight: 42, marginBottom: 6, width: "100%", boxSizing: "border-box" }} value={x.text} onChange={e => set(x.k, "text", e.target.value)} placeholder={x.image ? "نص السؤال (اختياري — السؤال ظاهر في الصورة)" : "نص السؤال"} />
           <div style={{ display: "grid", gap: 4 }}>{x.options.map((op, oi) => <div key={oi} style={{ display: "flex", gap: 7, alignItems: "center", minWidth: 0 }}><button onClick={() => set(x.k, "correct", oi)} title="الإجابة الصحيحة" style={{ width: 28, height: 28, borderRadius: "50%", border: `2.5px solid ${x.correct === oi ? "#166534" : "#cbd5e1"}`, background: x.correct === oi ? "#166534" : "#fff", color: "#fff", fontWeight: 900, cursor: "pointer", flexShrink: 0, fontSize: 12 }}>{x.correct === oi ? "✓" : ""}</button><b style={{ minWidth: 16, color: "#94a3b8" }}>{["أ", "ب", "ج", "د"][oi]}</b><input className="nq-inp" style={{ flex: 1, minWidth: 0, padding: "6px 10px", borderColor: x.correct === oi ? "#86efac" : "#e2e8f0" }} value={op} onChange={e => set(x.k, "options", x.options.map((v, j) => j === oi ? e.target.value : v))} placeholder="(فارغ = غير مستخدم)" /></div>)}</div>
-          {x.explain && <div style={{ marginTop: 6, fontSize: 12.5, color: "#5b21b6", background: "#faf5ff", borderRadius: 8, padding: "6px 10px" }}>💡 {x.explain}</div>}
+          <textarea className="nq-inp" style={{ minHeight: 34, marginTop: 6, width: "100%", boxSizing: "border-box", background: "#faf5ff", borderColor: "#e9d5ff", fontSize: 13 }} value={x.explain} onChange={e => set(x.k, "explain", e.target.value)} placeholder="💡 تغذية راجعة للطالب (اختياري) — تظهر له بعد إنهاء الاختبار" /></>}
         </div>; })}
-        <div style={{ position: "sticky", bottom: 0, background: "#fff", paddingTop: 8, display: "flex", gap: 8 }}><button className="nq-b nq-green" style={{ flex: 1, fontSize: 15 }} disabled={!ok.length} onClick={add}>✓ إضافة {maAr(ok.length)} سؤال إلى «{subjects[tgt]}»</button></div>
+        <div style={{ position: "sticky", bottom: 0, background: "#fff", paddingTop: 8, display: "flex", gap: 8 }}><button className="nq-b nq-green" style={{ flex: 1, fontSize: 15 }} disabled={!okQ.length && !ok.length} onClick={add}>✓ إضافة {maAr(okQ.length)} سؤال{tgt >= 0 ? ` إلى «${subjects[tgt]}»` : ` في ${maAr(new Set(ok.map(subjOf)).size)} مادة`}</button></div>
       </>}
     </div>
     {crop && <NqCropper page={crop.pg} init={crop.init} onClose={() => setCrop(null)} onDone={async b => { if (crop.k) { const d = await nqCrop(crop.pg, b, 900); if (d) setItems(L => L.map(x => x.k === crop.k ? { ...x, image: d, imFull: x.split ? d : x.imFull, box: b } : x)); } else { const it = await splitItem(crop.pg, crop.pi, b); setItems(L => [...(L || []), it]); } setCrop(null); }} />}
@@ -37461,7 +37655,7 @@ const NQ_REP = "school-nq-rep";
 
 // ── شاشة الاختبار
 function NqQuiz({ exam, answers, setAnswers, onSubmit, onBack }) {
-  const subs = nqSubs(exam).filter(s => s.questions.length); const [si, setSi] = useState(0); const [cm, setCm] = useState(false);
+  const subs = nqSubs(exam).filter(s => s.questions.length); const [si, setSi] = useState(0); const [cm, setCm] = useState(false); const [zoom, setZoom] = useState(null);
   const cur = subs[si]; if (!cur) return <div className="nq-card" style={{ textAlign: "center", padding: 40 }}>لا توجد أسئلة في هذا الاختبار</div>;
   const totalQ = subs.reduce((a, s) => a + s.questions.length, 0); const done = Object.keys(answers).filter(k => subs.some(s => s.questions.some(q => q.id === k))).length; const last = si === subs.length - 1;
   return <div className="grid gap-3">
@@ -37471,9 +37665,11 @@ function NqQuiz({ exam, answers, setAnswers, onSubmit, onBack }) {
     </div>
     <div className="nq-card" style={{ padding: "11px 16px" }}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7, fontSize: 13, fontWeight: 800, color: "#475569" }}><span>تقدمك في الاختبار</span><span>{maAr(done)} / {maAr(totalQ)} أُجيب</span></div><div className="nq-pbar"><div className="nq-pfill" style={{ width: `${totalQ ? done / totalQ * 100 : 0}%` }} /></div></div>
     <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>{subs.map((s, i) => { const a = s.questions.filter(q => answers[q.id] !== undefined).length; const d = a === s.questions.length; return <button key={i} className={`nq-tab ${i === si ? "on" : d ? "done" : ""}`} onClick={() => setSi(i)}>{d && i !== si ? "✓ " : ""}{s.name} <span style={{ opacity: .7, fontSize: 11 }}>({maAr(a)}/{maAr(s.questions.length)})</span></button>; })}</div>
+    {cur.intro.length > 0 && <div className="nq-card" style={{ border: "2px solid #c4b5fd", background: "linear-gradient(180deg,#faf5ff,#fff)" }}><b style={{ color: "#6d28d9", fontSize: 15 }}>📖 اقرأ النص التالي ثم أجب عن أسئلة {cur.name}</b><small style={{ display: "block", color: "#94a3b8", fontWeight: 700, marginBottom: 8 }}>اضغط على الصورة لتكبيرها</small>{cur.intro.map((im, k) => <img key={k} src={im} alt="" onClick={() => setZoom(im)} style={{ width: "100%", borderRadius: 10, border: "1px solid #e9d5ff", marginBottom: 8, cursor: "zoom-in" }} />)}</div>}
+    {zoom && <div className="nq-modal" style={{ alignItems: "flex-start", overflow: "auto", zIndex: 950 }} onClick={() => setZoom(null)}><div style={{ position: "relative", width: "100%", maxWidth: 1000, margin: "10px auto" }}><button className="nq-b" style={{ position: "sticky", top: 6, float: "left", background: "#0f172a", color: "#fff", zIndex: 2 }}>✕ إغلاق</button><img src={zoom} alt="" style={{ width: "100%", background: "#fff", borderRadius: 10 }} /></div></div>}
     {cur.questions.map((q, qi) => <div key={q.id} className="nq-card">
       <div style={{ display: "flex", gap: 11, marginBottom: 10 }}><div style={{ minWidth: 30, height: 30, borderRadius: 8, background: answers[q.id] !== undefined ? "#166534" : "#1d4ed8", color: "#fff", display: "grid", placeItems: "center", fontSize: 14, fontWeight: 900 }}>{maAr(qi + 1)}</div><div style={{ flex: 1 }}>{q.text && <p style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.8, margin: 0 }}>{q.text}</p>}<span style={{ fontSize: 12, color: "#94a3b8" }}>({maAr(q.grade)} درجة)</span></div></div>
-      {q.image && <img src={q.image} alt="" style={{ width: "100%", maxHeight: 260, objectFit: "contain", borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 12 }} />}
+      {q.image && <img src={q.image} alt="" onClick={() => setZoom(q.image)} style={{ width: "100%", maxHeight: 380, objectFit: "contain", borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 12, cursor: "zoom-in", background: "#fff" }} />}
       <div className="grid gap-2">{q.options.map((o, oi) => o ? <button key={oi} className={`nq-opt ${+answers[q.id] === oi && answers[q.id] !== undefined ? "sel" : ""}`} onClick={() => setAnswers({ ...answers, [q.id]: oi })}><span style={{ minWidth: 28, height: 28, borderRadius: 7, background: +answers[q.id] === oi && answers[q.id] !== undefined ? "#1d4ed8" : "#f1f5f9", color: +answers[q.id] === oi && answers[q.id] !== undefined ? "#fff" : "#64748b", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 900 }}>{["أ", "ب", "ج", "د"][oi]}</span>{o}</button> : null)}</div>
     </div>)}
     <div style={{ display: "flex", gap: 10 }}>{si > 0 && <button className="nq-b nq-ghost" style={{ flex: 1 }} onClick={() => setSi(si - 1)}>→ السابق</button>}{!last ? <button className="nq-b nq-blue" style={{ flex: 2 }} onClick={() => { setSi(si + 1); window.scrollTo(0, 0); }}>التالي ←</button> : <button className="nq-b nq-green" style={{ flex: 2 }} onClick={() => done < totalQ ? setCm(true) : onSubmit()}>إنهاء الاختبار ✓</button>}</div>
@@ -37597,6 +37793,8 @@ function NqEditor({ exam, onSave, onBack, classes, ros }) {
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 10, fontSize: 13, fontWeight: 800 }}><label style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={E.open !== 0} onChange={e => upd(p => { p.open = e.target.checked ? 1 : 0; return p; })} /> متاح للطلاب</label><label style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={E.once !== 0} onChange={e => upd(p => { p.once = e.target.checked ? 1 : 0; return p; })} /> محاولة واحدة لكل طالب</label><label style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={E.showAns !== 0} onChange={e => upd(p => { p.showAns = e.target.checked ? 1 : 0; return p; })} /> إظهار الإجابات الصحيحة والشرح للطالب بعد الإنهاء</label></div>
     </div>
     <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>{E.subjects.map((s, i) => <button key={i} className={`nq-tab ${i === si ? "on" : ""}`} onClick={() => setSi(i)}>{s.name} <small style={{ opacity: .7 }}>({maAr(s.questions.length)})</small></button>)}<button className="nq-tab" onClick={() => { const n = window.prompt("اسم المادة الجديدة:"); if (n && n.trim()) upd(p => { p.subjects.push({ name: n.trim(), questions: [] }); return p; }); }}>＋ مادة</button></div>
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", fontSize: 12.5 }}><b style={{ color: "#1e3a8a" }}>📚 {cur.name}</b><button className="nq-b nq-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => { const n = window.prompt("اسم المادة:", cur.name); if (n && n.trim()) upd(p => { p.subjects[si].name = n.trim(); return p; }); }}>✏️ تسمية</button>{E.subjects.length > 1 && <button className="nq-b" style={{ padding: "4px 10px", fontSize: 12, background: "#fef2f2", color: "#dc2626" }} onClick={() => { if (window.confirm(`حذف مادة «${cur.name}» بكل أسئلتها (${maAr(cur.questions.length)})؟`)) { upd(p => { p.subjects.splice(si, 1); return p; }); setSi(0); } }}>🗑 حذف المادة</button>}</div>
+    {maArr(cur.intro).length > 0 && <div className="nq-card" style={{ border: "2px solid #c4b5fd" }}><b style={{ color: "#6d28d9" }}>📖 نص القراءة / المقدمة ({maAr(maArr(cur.intro).length)}) — يظهر للطالب أعلى أسئلة {cur.name}</b><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>{maArr(cur.intro).map((im, k) => <div key={k} style={{ position: "relative", width: 140 }}><img src={im} alt="" style={{ width: "100%", height: 180, objectFit: "cover", objectPosition: "top", borderRadius: 8, border: "1px solid #e9d5ff" }} /><button className="nq-b" style={{ position: "absolute", top: 4, left: 4, padding: "2px 8px", fontSize: 12, background: "rgba(220,38,38,.9)", color: "#fff" }} onClick={() => upd(p => { p.subjects[si].intro = maArr(p.subjects[si].intro).filter((_, j) => j !== k); return p; })}>✕</button></div>)}</div></div>}
     {cur.questions.length === 0 && <div className="nq-card" style={{ textAlign: "center", color: "#94a3b8", padding: 30 }}>❓ لا توجد أسئلة في {cur.name} بعد</div>}
     {(iss.bad.length > 0) && <div className="nq-card" style={{ background: "#fffbeb", border: "2px solid #fbbf24", padding: "10px 14px", fontSize: 13, fontWeight: 800, color: "#92400e" }}>⚠️ {maAr(iss.bad.length)} سؤال غير مكتمل: {iss.bad.slice(0, 6).map(b => `${b.s} ${maAr(b.i + 1)}`).join("، ")}{iss.bad.length > 6 ? "…" : ""} — أكملها قبل إتاحة الاختبار</div>}
     {pm && <div style={{ position: "fixed", bottom: 18, left: "50%", transform: "translateX(-50%)", background: "#1e293b", color: "#fff", padding: "10px 16px", borderRadius: 10, fontWeight: 800, fontSize: 13, zIndex: 99, maxWidth: "92vw" }}>{pm}</div>}
@@ -37611,7 +37809,7 @@ function NqEditor({ exam, onSave, onBack, classes, ros }) {
       <NqFb html={q.feedback} onChange={h => setQ(q.id, "feedback", h)} />
     </div>; })}
     <button className="nq-b" style={{ background: "linear-gradient(135deg,#0f766e,#2563eb)", color: "#fff", fontSize: 15 }} onClick={() => setImp(true)}>📥 استيراد أسئلة من PDF / صورة / نص — أو تحليل صفحة وتوليد أسئلة منها</button>
-    {imp && <NqImport subjects={E.subjects.map(x => x.name)} si={si} onClose={() => setImp(false)} onAdd={(ix, qs) => { upd(p => { p.subjects[ix].questions.push(...qs); return p; }); setSi(ix); setImp(false); }} />}
+    {imp && <NqImport subjects={E.subjects.map(x => x.name)} si={si} onClose={() => setImp(false)} onAdd={groups => { let first = -1; upd(p => { groups.forEach(g => { const nn = z => String(z || "").replace(/^ال|\s/g, ""); let ix = p.subjects.findIndex(x => nn(x.name) === nn(g.name) || nn(x.name).includes(nn(g.name)) || nn(g.name).includes(nn(x.name))); if (ix < 0) { p.subjects.push({ name: g.name, questions: [] }); ix = p.subjects.length - 1; } p.subjects[ix].questions.push(...g.qs); if (g.intro.length) p.subjects[ix].intro = [...maArr(p.subjects[ix].intro), ...g.intro]; if (first < 0 && g.qs.length) first = ix; }); return p; }); if (first >= 0) setSi(first); setImp(false); }} />}
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}><button className="nq-b nq-blue" onClick={addQ}>＋ سؤال في {cur.name}</button><button className="nq-b" style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#fff" }} onClick={() => setAi({ n: 5, topic: "", grade: "", lv: "متوسط", g: 2 })}>✨ توليد أسئلة بالذكاء الاصطناعي</button></div>
     {ai && <div className="nq-modal" onClick={() => !ai.busy && setAi(null)}><div className="nq-card" style={{ maxWidth: 460, width: "100%" }} onClick={e => e.stopPropagation()}>
       <b style={{ fontSize: 17 }}>✨ توليد أسئلة {cur.name} بأسلوب نافس</b>
@@ -37732,7 +37930,7 @@ function NafesAdminPage({ by = "الإدارة" }) {
   useEffect(() => { load(); }, []);
   useEffect(() => { if (!msg) return; const t = setTimeout(() => setMsg(""), 3000); return () => clearTimeout(t); }, [msg]);
   const classes = maClasses(counts).filter(c => maArr(ros[c.ck] && ros[c.ck].students).length);
-  const save = async E => { const v = { ...E, subjects: E.subjects.map(s => ({ name: s.name, questions: s.questions })), at: E.at || Date.now(), upd: Date.now() }; const ok = await maPut(`${NQ_EX}/${E.id}`, v); if (!ok) setMsg("⚠️ تعذّر الحفظ — تحقق من الاتصال"); else setEx(L => [v, ...(L || []).filter(x => x.id !== v.id)].sort((a, b) => (b.at || 0) - (a.at || 0))); };
+  const save = async E => { const v = { ...E, subjects: E.subjects.map(s => ({ name: s.name, questions: s.questions, ...(maArr(s.intro).length ? { intro: maArr(s.intro) } : {}) })), at: E.at || Date.now(), upd: Date.now() }; const ok = await maPut(`${NQ_EX}/${E.id}`, v); if (!ok) setMsg("⚠️ تعذّر الحفظ — تحقق من الاتصال"); else setEx(L => [v, ...(L || []).filter(x => x.id !== v.id)].sort((a, b) => (b.at || 0) - (a.at || 0))); };
   const create = async () => { const E = { id: "nq" + Date.now().toString(36), title: nt.trim() || "اختبار تدريبي جديد", subjects: NQ_SUBJ.map(n => ({ name: n, questions: [] })), cls: classes.map(c => c.ck), open: 1, once: 1, at: Date.now() }; await save(E); setNt(""); setEd(E); setScr("ed"); };
   const del = async x => { if (!window.confirm(`حذف «${x.title}» ونتائجه؟`)) return; await fetch(`${FIREBASE_URL}/school/${NQ_EX}/${x.id}.json`, { method: "DELETE" }).catch(() => {}); await fetch(`${FIREBASE_URL}/school/${NQ_RES}/${x.id}.json`, { method: "DELETE" }).catch(() => {}); setEx(L => L.filter(y => y.id !== x.id)); };
   if (!ex) return <div className="p-10 text-center font-bold text-gray-400">⏳</div>;
@@ -37750,6 +37948,215 @@ function NafesAdminPage({ by = "الإدارة" }) {
         </>}
     {msg && <div onClick={() => setMsg("")} style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 900, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
   </div></div>;
+}
+
+// ══════════ سجل تصنيف مستويات الطلاب + سجل حصر الضعف القرائي ══════════
+const LV_NODE = "school-stlv", RW_NODE = "school-readwk";
+const LV_DEF = [
+  { t: "مميز", ic: "🌟", c: "#15803d", bg: "#dcfce7", act: "برنامج إثرائي، مسابقات، وتكليفه بقيادة مجموعة" },
+  { t: "جيد", ic: "👍", c: "#2563eb", bg: "#dbeafe", act: "تعزيز وتحفيز وأنشطة تحدٍّ إضافية" },
+  { t: "متوسط", ic: "📘", c: "#d97706", bg: "#fef3c7", act: "تدريبات إضافية وتعلّم بالأقران ومتابعة الواجبات" },
+  { t: "متدنٍ يحتاج متابعة", ic: "⚠️", c: "#dc2626", bg: "#fee2e2", act: "خطة علاجية فردية، حصص تقوية، والتواصل مع ولي الأمر" },
+];
+const LV_TAGS = ["مشاركة فاعلة", "ينجز واجباته", "سريع الفهم", "مبدع ومبادر", "يحتاج تأسيساً", "ضعف في القراءة", "ضعف في الكتابة", "قلة التركيز", "لا ينجز الواجبات", "غياب متكرر", "يحتاج تحفيزاً", "يحتاج تواصلاً مع ولي الأمر"];
+const LV_TERMS = ["الفصل الدراسي الأول", "الفصل الدراسي الثاني", "الفصل الدراسي الثالث"];
+const RW_LV = [
+  { k: "s", t: "ضعف شديد", ic: "🔴", c: "#dc2626", bg: "#fee2e2", d: "لا يميّز بعض الحروف أو يقرأ بالتهجئة الحرفية" },
+  { k: "m", t: "ضعف متوسط", ic: "🟠", c: "#d97706", bg: "#fef3c7", d: "يقرأ ببطء مع أخطاء متكررة وضعف في الفهم" },
+];
+const RW_SK = ["تمييز الحروف وأصواتها", "التمييز بين الحروف المتشابهة رسماً", "قراءة المقاطع الصوتية", "قراءة الكلمات", "قراءة الجمل القصيرة", "مراعاة الحركات والضبط", "الطلاقة (السرعة والدقة)", "الفهم القرائي", "الكتابة والإملاء"];
+const RW_PL = ["القراءة الموجهة داخل الحصة", "برنامج علاجي / حصص تقوية", "القرين المساعد", "البطاقات والألعاب القرائية", "القراءة المنزلية اليومية", "التواصل مع ولي الأمر", "الإحالة للموجّه الطلابي", "الإحالة لبرنامج صعوبات التعلم"];
+const RW_ST = [{ k: "c", t: "مستمر", ic: "⏳", c: "#dc2626", bg: "#fee2e2" }, { k: "i", t: "تحسّن ملحوظ", ic: "📈", c: "#ca8a04", bg: "#fef9c3" }, { k: "o", t: "تجاوز الضعف", ic: "✅", c: "#16a34a", bg: "#dcfce7" }];
+const TR_CSS = `
+.tr{max-width:1180px;margin:0 auto}.tr *{box-sizing:border-box}
+.tr-hero{border-radius:24px;padding:18px 20px;color:#fff;position:relative;overflow:hidden}
+.tr-hero::after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.1);left:-60px;top:-90px}
+.tr-hero h2{margin:0;font-size:21px;font-weight:900}.tr-hero p{margin:4px 0 0;font-size:12.5px;font-weight:700;opacity:.9}
+.tr-card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;box-shadow:0 12px 30px -24px rgba(15,23,42,.4);padding:14px}
+.tr-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tr-f label{font-size:12px;font-weight:900;color:#475569;display:grid;gap:4px}
+.tr-inp{width:100%;height:40px;border:1.5px solid #e2e8f0;border-radius:12px;padding:0 10px;font-family:inherit;font-weight:800;font-size:13.5px;background:#f8fafc;outline:none}
+.tr-inp:focus{border-color:#7c3aed;background:#fff}
+.tr-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.tr-stat{border-radius:16px;padding:10px 12px;cursor:pointer;border:2px solid transparent;transition:transform .15s}.tr-stat:hover{transform:translateY(-2px)}
+.tr-stat.on{border-color:currentColor}.tr-stat b{display:block;font-size:24px;line-height:1.2}.tr-stat small{font-weight:800;font-size:12px}
+.tr-stack{display:flex;height:12px;border-radius:9px;overflow:hidden;background:#f1f5f9}
+.tr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.tr-stu{background:#fff;border:1.5px solid #e2e8f0;border-radius:18px;padding:12px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.tr-stu::before{content:"";position:absolute;inset:0 0 0 auto;width:6px;background:var(--c,#e2e8f0)}
+.tr-stu.set{border-color:var(--c);box-shadow:0 10px 24px -18px var(--c)}
+.tr-nm{display:flex;align-items:center;gap:8px;font-weight:900;font-size:14.5px;margin-bottom:8px}.tr-nm i{font-style:normal;min-width:26px;height:26px;border-radius:8px;background:#f1f5f9;color:#64748b;display:grid;place-items:center;font-size:12px}
+.tr-lvs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.tr-lv{border:1.5px solid #e2e8f0;background:#fff;border-radius:11px;padding:6px 2px;font-family:inherit;font-weight:900;font-size:11.5px;cursor:pointer;color:#475569;line-height:1.3;transition:all .15s}
+.tr-lv.on{color:#fff;border-color:transparent;transform:scale(1.03)}
+.tr-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px}
+.tr-tag{border:1px solid #e2e8f0;background:#f8fafc;border-radius:999px;padding:2px 9px;font-family:inherit;font-size:11px;font-weight:800;color:#64748b;cursor:pointer}
+.tr-tag.on{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6}
+.tr-ta{width:100%;min-height:44px;border:1.5px solid #e2e8f0;border-radius:11px;padding:7px 10px;font-family:inherit;font-size:13px;font-weight:700;margin-top:7px;resize:vertical;outline:none;background:#fcfcfd}
+.tr-ta:focus{border-color:#a78bfa;background:#fff}
+.tr-btn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #e2e8f0;background:#fff;border-radius:12px;padding:8px 14px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;color:#334155;white-space:nowrap}
+.tr-btn.p{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-color:transparent}
+.tr-btn.g{background:linear-gradient(135deg,#16a34a,#0f766e);color:#fff;border-color:transparent}
+.tr-chip{border:1.5px solid #e2e8f0;background:#fff;border-radius:999px;padding:5px 12px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;color:#475569}
+.tr-chip.on{background:#0f172a;color:#fff;border-color:#0f172a}
+.tr-save{font-size:12px;font-weight:900}
+.tr .nq-tbl{width:100%;border-collapse:collapse;font-size:13px}.tr .nq-tbl th{background:#7c2d12;color:#fff;padding:8px 6px;font-weight:800;white-space:nowrap}.tr .nq-tbl td{padding:7px 6px;border-bottom:1px solid #f1f5f9;text-align:center}
+.tr .nq-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;white-space:nowrap}
+@media (max-width:640px){.tr-grid{grid-template-columns:1fr}.tr-lvs{grid-template-columns:repeat(2,1fr)}}
+`;
+// طباعة ملوّنة مشتركة
+const trPrintCss = ac => `.pg{border-color:${ac}}.pg::before{background:linear-gradient(90deg,${ac},#fbbf24,${ac})}.tt span{background:linear-gradient(135deg,${ac},#0f172a)}th{background:${ac}}h3{color:${ac}}.kp b{color:${ac}}
+.info{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:6px 10px;font-size:11px;font-weight:800;margin:6px 0}
+.lvb{display:inline-block;border-radius:999px;padding:2px 10px;font-weight:900;font-size:10px;white-space:nowrap}
+.kp4{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:6px;margin:8px 0}.kp4 div{border-radius:12px;padding:7px;text-align:center;font-size:10.5px;font-weight:900;border:1.5px solid}.kp4 b{display:block;font-size:20px}
+.stk{display:flex;height:12px;border-radius:9px;overflow:hidden;margin:4px 0 8px}.stk i{display:block;height:100%}
+td.r{text-align:right;padding-right:6px}tr:nth-child(even) td{background:#fafafa}tr{break-inside:avoid}
+.note{font-size:9.5px;color:#475569;text-align:right}`;
+const trUseRoster = () => {
+  const [counts, setCounts] = useState([6, 4, 4]); const [ros, setRos] = useState(null);
+  useEffect(() => { (async () => { const [m, r] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER)]); if (m && Array.isArray(m.counts)) setCounts(m.counts.map(n => +n || 0)); setRos(ptObj(r)); })(); }, []);
+  const classes = maClasses(counts).filter(c => !ros || maArr(ros[c.ck] && ros[c.ck].students).length);
+  const studentsOf = ck => maArr(ros && ros[ck] && ros[ck].students).filter(s => s && s.name).map((s, i) => ({ ...s, id: s.id || "n" + asmK(s.name) }));
+  return { classes, studentsOf, ready: !!ros };
+};
+// حفظ مؤجَّل لكل مسار
+const trUseSaver = () => {
+  const pend = useRef({}); const tm = useRef(null); const [st, setSt] = useState("");
+  const flush = async () => { const P = pend.current; pend.current = {}; const ks = Object.keys(P); if (!ks.length) return; setSt("⏳ جاري الحفظ…"); const ok = await fbPatch(P); setSt(ok === false ? "⚠️ تعذّر الحفظ — سيُعاد المحاولة" : "✓ محفوظ"); if (ok === false) { pend.current = { ...P, ...pend.current }; clearTimeout(tm.current); tm.current = setTimeout(flush, 4000); } };
+  const put = (path, v) => { Object.keys(pend.current).forEach(k => { if (k.startsWith(path + "/")) delete pend.current[k]; }); const anc = Object.keys(pend.current).find(k => path.startsWith(k + "/") && pend.current[k] === null); if (anc) delete pend.current[anc]; pend.current[path] = v; setSt("✎ تعديلات غير محفوظة"); clearTimeout(tm.current); tm.current = setTimeout(flush, 800); };
+  useEffect(() => () => { clearTimeout(tm.current); flush(); }, []);
+  return { put, st };
+};
+
+function StudentLevelsPage({ by = "", admin = false }) {
+  const { classes, studentsOf, ready } = trUseRoster(); const { put, st } = trUseSaver();
+  const [ck, setCk] = useState(""); const [teacher, setTeacher] = useState(by || ""); const [subject, setSubject] = useState(""); const [term, setTerm] = useState(LV_TERMS[0]);
+  const [rec, setRec] = useState(null); const [others, setOthers] = useState([]); const [flt, setFlt] = useState("all"); const [q, setQ] = useState("");
+  useEffect(() => { if (!ck && classes.length) setCk(classes[0].ck); }, [classes.length]);
+  const skey = asmK(`${teacher.trim()}|${subject.trim()}|${term}`);
+  useEffect(() => { if (!ck) return; let on = true; setRec(null); (async () => { const all = ptObj(await maGet(`${LV_NODE}/${ck}`)); if (!on) return; setOthers(Object.entries(all).map(([k, v]) => ({ k, ...v })).filter(v => v.teacher)); setRec(all[skey] || { teacher: teacher.trim(), subject: subject.trim(), term, ck, r: {} }); })(); return () => { on = false; }; }, [ck, skey]);
+  const S = studentsOf(ck); const R = (rec && rec.r) || {};
+  const ready2 = teacher.trim() && subject.trim();
+  const setR = (sid, patch) => { if (!ready2) { alert("اكتب اسم المعلم والمادة أولاً"); return; } setRec(p => { const r = { ...(p.r || {}) }; const cur = { ...(r[sid] || {}), ...patch }; r[sid] = cur; return { ...p, r }; }); const base = `${LV_NODE}/${ck}/${skey}`; put(`${base}/teacher`, teacher.trim()); put(`${base}/subject`, subject.trim()); put(`${base}/term`, term); put(`${base}/ck`, ck); put(`${base}/at`, Date.now()); Object.entries(patch).forEach(([k, v]) => put(`${base}/r/${sid}/${k}`, v === "" || (Array.isArray(v) && !v.length) ? null : v)); };
+  const cnt = LV_DEF.map((_, i) => S.filter(s => R[s.id] && R[s.id].l === i).length); const un = S.length - cnt.reduce((a, b) => a + b, 0);
+  const shown = S.filter(s => (flt === "all" || (flt === "u" ? !(R[s.id] && R[s.id].l != null) : R[s.id] && R[s.id].l === +flt)) && (!q || s.name.includes(q)));
+  const print = (grouped) => {
+    const pct = n => S.length ? Math.round(n / S.length * 100) : 0;
+    const row = (s, i) => { const x = R[s.id] || {}; const L = LV_DEF[x.l]; return `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(s.name)}</b></td><td>${L ? `<span class="lvb" style="background:${L.bg};color:${L.c}">${L.ic} ${L.t}</span>` : "—"}</td><td class="note">${maArr(x.tg).map(ptEsc).join("، ")}${x.n ? `${maArr(x.tg).length ? "<br>" : ""}${ptEsc(x.n)}` : ""}</td><td class="note">${ptEsc(x.a || (L ? L.act : ""))}</td></tr>`; };
+    const thead = `<thead><tr><th style="width:28px">م</th><th class="r" style="width:26%">اسم الطالب</th><th style="width:15%">المستوى</th><th>الملاحظات والاحتياجات</th><th style="width:24%">الإجراء / الخطة</th></tr></thead>`;
+    const body = grouped ? LV_DEF.map((L, li) => { const G = S.filter(s => R[s.id] && R[s.id].l === li); return G.length ? `<h3 style="color:${L.c}">${L.ic} ${L.t} (${maAr(G.length)})</h3><table>${thead}<tbody>${G.map(row).join("")}</tbody></table>` : ""; }).join("") : `<table>${thead}<tbody>${S.map(row).join("")}</tbody></table>`;
+    inOpen(`<section class="pg">${inHdr("سجل تصنيف مستويات الطلاب", `${term}<br>${maDay(new Date())}<br>${asmHij(new Date())}`)}
+      <div class="info"><span>👤 المعلم: ${ptEsc(teacher)}</span><span>📚 المادة: ${ptEsc(subject)}</span><span>🏫 الفصل: ${maClassName(ck)}</span><span>👥 عدد الطلاب: ${maAr(S.length)}</span></div>
+      <div class="kp4">${LV_DEF.map((L, i) => `<div style="background:${L.bg};border-color:${L.c};color:${L.c}"><b>${maAr(cnt[i])}</b>${L.ic} ${L.t}<br><small>${maAr(pct(cnt[i]))}٪</small></div>`).join("")}</div>
+      <div class="stk">${LV_DEF.map((L, i) => `<i style="width:${pct(cnt[i])}%;background:${L.c}"></i>`).join("")}</div>
+      ${body}
+      ${cnt[3] ? `<h3 style="color:#dc2626">⚠️ خطة متابعة الطلاب المتدنين</h3><div style="font-size:10.5px;line-height:1.9;border:1.5px dashed #fca5a5;border-radius:10px;padding:6px 10px;background:#fff7f7">${S.filter(s => R[s.id] && R[s.id].l === 3).map(s => `• <b>${ptEsc(s.name)}</b>: ${ptEsc(R[s.id].a || LV_DEF[3].act)}`).join("<br>")}</div>` : ""}
+      ${inSig(teacher, "وكيل الشؤون التعليمية")}</section>`, "سجل تصنيف مستويات الطلاب", trPrintCss("#6d28d9"));
+  };
+  return <div className="tr grid gap-3" dir="rtl"><style>{TR_CSS}</style>
+    <div className="tr-hero" style={{ background: "linear-gradient(135deg,#4c1d95,#7c3aed 55%,#db2777)" }}><h2>📊 سجل تصنيف مستويات الطلاب</h2><p>تصنيف الطالب في مادتك إلى: مميز • جيد • متوسط • متدنٍ يحتاج متابعة — مع الملاحظات والإجراء المقترح وطباعة سجل ملوّن باسم المعلم</p></div>
+    <div className="tr-card"><div className="tr-f">
+      <label>👤 المعلم<input className="tr-inp" value={teacher} readOnly={!!by && !admin} onChange={e => setTeacher(e.target.value)} placeholder="اسم المعلم" list="lv-teachers" /></label>
+      <datalist id="lv-teachers">{[...new Set(others.map(o => o.teacher))].map(t => <option key={t} value={t} />)}</datalist>
+      <label>📚 المادة<input className="tr-inp" value={subject} onChange={e => setSubject(e.target.value)} placeholder="مثال: الرياضيات" list="lv-subj" /></label>
+      <datalist id="lv-subj">{[...new Set([...SC_SUBJECTS, ...others.map(o => o.subject)])].map(t => <option key={t} value={t} />)}</datalist>
+      <label>🏫 الفصل<select className="tr-inp" value={ck} onChange={e => setCk(e.target.value)}>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)} ({maAr(studentsOf(c.ck).length)})</option>)}</select></label>
+      <label>🗓️ الفترة<select className="tr-inp" value={term} onChange={e => setTerm(e.target.value)}>{LV_TERMS.map(t => <option key={t}>{t}</option>)}</select></label>
+    </div>
+      {others.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}><small style={{ fontWeight: 900, color: "#64748b" }}>سجلات هذا الفصل:</small>{others.map(o => <button key={o.k} className={`tr-chip ${o.k === skey ? "on" : ""}`} onClick={() => { setTeacher(o.teacher); setSubject(o.subject || ""); setTerm(o.term || LV_TERMS[0]); }} disabled={!!by && !admin && o.teacher !== by}>{o.subject} — {o.teacher} <small style={{ opacity: .7 }}>({maAr(Object.keys(ptObj(o.r)).length)})</small></button>)}</div>}
+    </div>
+    {!ready ? <div className="tr-card" style={{ textAlign: "center", color: "#94a3b8" }}>⏳</div> : !S.length ? <div className="tr-card" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب في هذا الفصل — تُستورد الأسماء من «غياب الطلاب ← الفصول والطلاب»</div> : <>
+      <div className="tr-stats">
+        {LV_DEF.map((L, i) => <div key={i} className={`tr-stat ${flt === String(i) ? "on" : ""}`} style={{ background: L.bg, color: L.c }} onClick={() => setFlt(flt === String(i) ? "all" : String(i))}><small>{L.ic} {L.t}</small><b>{maAr(cnt[i])}</b><small style={{ opacity: .8 }}>{maAr(S.length ? Math.round(cnt[i] / S.length * 100) : 0)}٪</small></div>)}
+        <div className={`tr-stat ${flt === "u" ? "on" : ""}`} style={{ background: "#f1f5f9", color: "#475569" }} onClick={() => setFlt(flt === "u" ? "all" : "u")}><small>⬜ لم يُصنَّف</small><b>{maAr(un)}</b><small>من {maAr(S.length)}</small></div>
+      </div>
+      <div className="tr-card" style={{ padding: 10 }}><div className="tr-stack">{LV_DEF.map((L, i) => <i key={i} style={{ width: `${S.length ? cnt[i] / S.length * 100 : 0}%`, background: L.c, display: "block" }} />)}</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}><input className="tr-inp" style={{ flex: "1 1 180px", height: 36 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔍 بحث عن طالب" /><span className="tr-save" style={{ color: st.startsWith("⚠") ? "#dc2626" : st.startsWith("✓") ? "#16a34a" : "#64748b" }}>{st}</span><button className="tr-btn p" onClick={() => print(false)} disabled={!ready2}>🖨️ طباعة السجل</button><button className="tr-btn" onClick={() => print(true)} disabled={!ready2}>🖨️ طباعة حسب المستويات</button></div>
+        {!ready2 && <div style={{ marginTop: 8, fontSize: 12.5, fontWeight: 900, color: "#b45309" }}>✍️ اكتب اسم المعلم والمادة لبدء التصنيف</div>}
+      </div>
+      <div className="tr-grid">{shown.map(s => { const x = R[s.id] || {}; const L = LV_DEF[x.l]; return <div key={s.id} className={`tr-stu ${L ? "set" : ""}`} style={{ "--c": L ? L.c : "#e2e8f0" }}>
+        <div className="tr-nm"><i>{maAr(S.indexOf(s) + 1)}</i><span style={{ flex: 1 }}>{s.name}</span>{L && <span style={{ fontSize: 18 }}>{L.ic}</span>}</div>
+        <div className="tr-lvs">{LV_DEF.map((D, i) => <button key={i} className={`tr-lv ${x.l === i ? "on" : ""}`} style={x.l === i ? { background: D.c } : { borderColor: D.bg }} onClick={() => setR(s.id, { l: x.l === i ? null : i })}>{D.ic}<br />{i === 3 ? "متدنٍ" : D.t}</button>)}</div>
+        <div className="tr-tags">{LV_TAGS.map(t => { const on = maArr(x.tg).includes(t); return <button key={t} className={`tr-tag ${on ? "on" : ""}`} onClick={() => setR(s.id, { tg: on ? maArr(x.tg).filter(z => z !== t) : [...maArr(x.tg), t] })}>{t}</button>; })}</div>
+        <textarea className="tr-ta" value={x.n || ""} onChange={e => setR(s.id, { n: e.target.value })} placeholder="📝 ملاحظات المعلم بعد التقييم…" />
+        {L && <input className="tr-inp" style={{ height: 34, marginTop: 6, fontSize: 12.5 }} value={x.a || ""} onChange={e => setR(s.id, { a: e.target.value })} placeholder={`🎯 الإجراء: ${L.act}`} />}
+      </div>; })}</div>
+    </>}
+  </div>;
+}
+
+function ReadingWeakPage({ by = "", admin = false }) {
+  const { classes, studentsOf, ready } = trUseRoster(); const { put, st } = trUseSaver();
+  const [tab, setTab] = useState("cls"); const [ck, setCk] = useState(""); const [all, setAll] = useState(null); const [open, setOpen] = useState(null); const [q, setQ] = useState(""); const [fl, setFl] = useState("all"); const [fu, setFu] = useState("");
+  useEffect(() => { if (!ck && classes.length) setCk(classes[0].ck); }, [classes.length]);
+  useEffect(() => { (async () => setAll(ptObj(await maGet(RW_NODE))))(); }, []);
+  const recOf = (c, sid) => ptObj(all && all[c])[sid];
+  const setR = (c, s, patch) => { setAll(A => { const n = { ...ptObj(A) }; const cl = { ...ptObj(n[c]) }; const cur = { sid: s.id, name: s.name, ck: c, d: maKey(new Date()), ...(cl[s.id] || {}), ...patch, by: by || (cl[s.id] && cl[s.id].by) || "", at: Date.now() }; if (patch.lv === null) delete cl[s.id]; else cl[s.id] = cur; n[c] = cl; return n; }); if (patch.lv === null) { put(`${RW_NODE}/${c}/${s.id}`, null); return; } const base = `${RW_NODE}/${c}/${s.id}`; const cur = recOf(c, s.id) || {}; if (!cur.sid) { put(`${base}/sid`, s.id); put(`${base}/name`, s.name); put(`${base}/ck`, c); put(`${base}/d`, maKey(new Date())); } put(`${base}/by`, by || cur.by || ""); put(`${base}/at`, Date.now()); Object.entries(patch).forEach(([k, v]) => put(`${base}/${k}`, v === "" || (Array.isArray(v) && !v.length) ? null : v)); };
+  const flat = Object.values(ptObj(all)).flatMap(c => Object.values(ptObj(c))).filter(x => x && x.lv);
+  const S = studentsOf(ck);
+  const cntBy = (L, f) => L.filter(f).length;
+  const lvOf = k => RW_LV.find(x => x.k === k); const stOf = k => RW_ST.find(x => x.k === (k || "c"));
+  const printList = (L, title) => {
+    const rows = L.map((x, i) => { const V = lvOf(x.lv), T = stOf(x.st); return `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(x.name)}</b></td><td>${maClassName(x.ck)}</td><td><span class="lvb" style="background:${V.bg};color:${V.c}">${V.ic} ${V.t}</span></td><td class="note">${maArr(x.sk).map(ptEsc).join("، ") || "—"}</td><td class="note">${maArr(x.pl).map(ptEsc).join("، ") || "—"}</td><td><span class="lvb" style="background:${T.bg};color:${T.c}">${T.ic} ${T.t}</span></td><td class="note">${ptEsc(x.c || "")}${maArr(x.fu).length ? `<br><i>آخر متابعة: ${ptEsc(maArr(x.fu).slice(-1)[0].n)}</i>` : ""}</td></tr>`; }).join("");
+    const n = L.length, sv = cntBy(L, x => x.lv === "s"), md = cntBy(L, x => x.lv === "m");
+    inOpen(`<section class="pg">${inHdr("سجل حصر الطلاب ذوي الضعف القرائي", `${maDay(new Date())}<br>${asmHij(new Date())}`)}
+      <div class="info"><span>📍 ${ptEsc(title)}</span>${by ? `<span>👤 المعلم: ${ptEsc(by)}</span>` : ""}<span>📖 إجمالي المحصورين: ${maAr(n)}</span></div>
+      <div class="kp4" style="--n:5"><div style="background:#fee2e2;border-color:#dc2626;color:#dc2626"><b>${maAr(sv)}</b>🔴 ضعف شديد</div><div style="background:#fef3c7;border-color:#d97706;color:#d97706"><b>${maAr(md)}</b>🟠 ضعف متوسط</div>${RW_ST.map(T => `<div style="background:${T.bg};border-color:${T.c};color:${T.c}"><b>${maAr(cntBy(L, x => (x.st || "c") === T.k))}</b>${T.ic} ${T.t}</div>`).join("")}</div>
+      <table><thead><tr><th style="width:24px">م</th><th class="r">اسم الطالب</th><th>الفصل</th><th>درجة الضعف</th><th>المهارات المتأثرة</th><th>الإجراءات العلاجية</th><th>الحالة</th><th>ملاحظات المعلم</th></tr></thead><tbody>${rows || `<tr><td colspan="8">لا يوجد طلاب محصورون</td></tr>`}</tbody></table>
+      <h3>📌 مؤشرات التشخيص المعتمدة</h3><div style="font-size:10px;line-height:1.8">🔴 <b>ضعف شديد:</b> ${RW_LV[0].d}. &nbsp; 🟠 <b>ضعف متوسط:</b> ${RW_LV[1].d}.</div>
+      ${inSig(by || "معلم المادة", "الموجّه الطلابي")}</section>`, "حصر الضعف القرائي", trPrintCss("#b45309"));
+  };
+  const printCard = x => { const V = lvOf(x.lv), T = stOf(x.st);
+    inOpen(`<section class="pg">${inHdr("بطاقة متابعة طالب — الضعف القرائي", `${maDay(new Date())}<br>${asmHij(new Date())}`)}
+      <div class="info"><span>👤 الطالب: <b>${ptEsc(x.name)}</b></span><span>🏫 ${maClassName(x.ck)}</span><span>📅 تاريخ الحصر: ${x.d ? asmHij(maDate(x.d)) : "—"}</span><span>✍️ ${ptEsc(x.by || by || "")}</span></div>
+      <div class="kp4" style="--n:2"><div style="background:${V.bg};border-color:${V.c};color:${V.c}"><b>${V.ic}</b>${V.t}</div><div style="background:${T.bg};border-color:${T.c};color:${T.c}"><b>${T.ic}</b>${T.t}</div></div>
+      <h3>🔍 المهارات القرائية</h3><table><thead><tr><th class="r">المهارة</th><th style="width:22%">الحالة</th></tr></thead><tbody>${RW_SK.map(k => `<tr><td class="r">${k}</td><td>${maArr(x.sk).includes(k) ? '<span class="lvb" style="background:#fee2e2;color:#dc2626">يحتاج علاجاً</span>' : '<span class="lvb" style="background:#dcfce7;color:#16a34a">متمكن</span>'}</td></tr>`).join("")}</tbody></table>
+      <h3>🩺 الإجراءات العلاجية</h3><div style="font-size:11px;line-height:2">${maArr(x.pl).map(p => `☑ ${ptEsc(p)}`).join(" &nbsp; ") || "—"}</div>
+      <h3>📝 ملاحظات المعلم</h3><div style="font-size:11px;line-height:1.9;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;min-height:40px">${ptEsc(x.c || "")}</div>
+      <h3>📈 سجل المتابعة</h3><table><thead><tr><th style="width:26%">التاريخ</th><th class="r">الملاحظة</th><th style="width:20%">المعلم</th></tr></thead><tbody>${maArr(x.fu).map(f => `<tr><td>${asmHij(maDate(f.d))}</td><td class="r">${ptEsc(f.n)}</td><td>${ptEsc(f.by || "")}</td></tr>`).join("") || `<tr><td colspan="3" style="height:60px"></td></tr>`}</tbody></table>
+      <div style="margin-top:10px;font-size:11px;font-weight:800">توقيع ولي الأمر بالعلم: ........................</div>
+      ${inSig(x.by || by || "", "الموجّه الطلابي")}</section>`, "بطاقة متابعة", trPrintCss("#b45309"));
+  };
+  const classL = S.map(s => ({ s, r: recOf(ck, s.id) }));
+  const flagged = classL.filter(x => x.r && x.r.lv);
+  const sumL = flat.filter(x => (fl === "all" || x.lv === fl || (x.st || "c") === fl) && (!q || String(x.name).includes(q))).sort((a, b) => String(a.ck).localeCompare(String(b.ck)) || (a.lv === b.lv ? 0 : a.lv === "s" ? -1 : 1));
+  return <div className="tr grid gap-3" dir="rtl"><style>{TR_CSS}</style>
+    <div className="tr-hero" style={{ background: "linear-gradient(135deg,#7c2d12,#c2410c 55%,#f59e0b)" }}><h2>📖 حصر الطلاب ذوي الضعف القرائي</h2><p>تشخيص درجة الضعف (شديد / متوسط) والمهارات المتأثرة، والإجراءات العلاجية، ومتابعة التحسن — مع سجل وبطاقة متابعة مطبوعة</p></div>
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{[["cls", "🏫 الحصر حسب الفصل"], ["sum", `📊 خلاصة المدرسة (${maAr(flat.length)})`]].map(([k, l]) => <button key={k} className={`tr-chip ${tab === k ? "on" : ""}`} style={{ padding: "8px 16px", fontSize: 13 }} onClick={() => setTab(k)}>{l}</button>)}<span className="tr-save" style={{ marginRight: "auto", alignSelf: "center", color: st.startsWith("⚠") ? "#dc2626" : "#16a34a" }}>{st}</span></div>
+    {!ready || !all ? <div className="tr-card" style={{ textAlign: "center", color: "#94a3b8" }}>⏳</div> : tab === "cls" ? <>
+      <div className="tr-card" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}>
+        <label style={{ fontSize: 12, fontWeight: 900, color: "#475569", display: "grid", gap: 4, flex: "1 1 200px" }}>🏫 الفصل<select className="tr-inp" value={ck} onChange={e => { setCk(e.target.value); setOpen(null); }}>{classes.map(c => { const n = Object.values(ptObj(all[c.ck])).filter(x => x && x.lv).length; return <option key={c.ck} value={c.ck}>{maClassName(c.ck)}{n ? ` — ${maAr(n)} محصور` : ""}</option>; })}</select></label>
+        <div style={{ display: "flex", gap: 6 }}><span className="lvb tr-chip" style={{ background: "#fee2e2", color: "#dc2626", borderColor: "#fecaca" }}>🔴 {maAr(flagged.filter(x => x.r.lv === "s").length)} شديد</span><span className="tr-chip" style={{ background: "#fef3c7", color: "#b45309", borderColor: "#fde68a" }}>🟠 {maAr(flagged.filter(x => x.r.lv === "m").length)} متوسط</span></div>
+        <button className="tr-btn g" onClick={() => printList(flagged.map(x => x.r), maClassName(ck))}>🖨️ طباعة سجل الفصل</button>
+      </div>
+      <div className="tr-card" style={{ padding: 8 }}>
+        {!S.length && <div style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800, padding: 20 }}>لا يوجد طلاب في هذا الفصل</div>}
+        {classL.map(({ s, r }, i) => { const V = r && lvOf(r.lv); const isO = open === s.id; return <div key={s.id} style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px", background: V ? `linear-gradient(90deg,#fff,${V.bg})` : "#fff", borderRadius: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ minWidth: 26, height: 26, borderRadius: 8, background: "#f1f5f9", color: "#64748b", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 900 }}>{maAr(i + 1)}</span>
+            <b style={{ flex: "1 1 160px", fontSize: 14 }}>{s.name}</b>
+            <div style={{ display: "flex", gap: 4 }}>{[{ k: null, t: "لا يوجد", c: "#64748b", bg: "#f8fafc", ic: "—" }, ...RW_LV].map(L => { const on = (r && r.lv) === L.k || (!r && L.k === null); return <button key={String(L.k)} className="tr-chip" style={on ? { background: L.k ? L.c : "#334155", color: "#fff", borderColor: "transparent" } : { color: L.c }} onClick={() => { if (L.k === null) { if (r && (r.c || maArr(r.sk).length) && !window.confirm(`إزالة ${s.name} من الحصر وحذف بياناته؟`)) return; setR(ck, s, { lv: null }); setOpen(null); } else { setR(ck, s, { lv: L.k }); setOpen(s.id); } }}>{L.k ? L.ic + " " : ""}{L.t}</button>; })}</div>
+            {r && <button className="tr-chip" onClick={() => setOpen(isO ? null : s.id)}>{isO ? "▲ إغلاق" : "▼ التفاصيل"}</button>}
+          </div>
+          {r && !isO && (maArr(r.sk).length > 0 || r.c) && <div style={{ fontSize: 12, color: "#475569", fontWeight: 700, marginTop: 4, paddingRight: 34 }}>{maArr(r.sk).length ? `🔍 ${maArr(r.sk).join("، ")}` : ""}{r.c ? ` • 📝 ${r.c}` : ""} <span className="tr-chip" style={{ padding: "1px 8px", fontSize: 11, color: stOf(r.st).c }}>{stOf(r.st).ic} {stOf(r.st).t}</span></div>}
+          {r && isO && <div style={{ marginTop: 8, padding: "10px 12px", background: "#fff", border: "1.5px solid #fde68a", borderRadius: 14, display: "grid", gap: 8 }}>
+            <div><b style={{ fontSize: 12.5, color: "#92400e" }}>🔍 المهارات القرائية المتأثرة</b><div className="tr-tags">{RW_SK.map(k => { const on = maArr(r.sk).includes(k); return <button key={k} className={`tr-tag ${on ? "on" : ""}`} style={on ? { background: "#fee2e2", borderColor: "#fca5a5", color: "#b91c1c" } : undefined} onClick={() => setR(ck, s, { sk: on ? maArr(r.sk).filter(z => z !== k) : [...maArr(r.sk), k] })}>{k}</button>; })}</div></div>
+            <div><b style={{ fontSize: 12.5, color: "#92400e" }}>🩺 الإجراءات العلاجية</b><div className="tr-tags">{RW_PL.map(k => { const on = maArr(r.pl).includes(k); return <button key={k} className={`tr-tag ${on ? "on" : ""}`} style={on ? { background: "#dcfce7", borderColor: "#86efac", color: "#166534" } : undefined} onClick={() => setR(ck, s, { pl: on ? maArr(r.pl).filter(z => z !== k) : [...maArr(r.pl), k] })}>{k}</button>; })}</div></div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}><b style={{ fontSize: 12.5, color: "#92400e" }}>📈 الحالة:</b>{RW_ST.map(T => <button key={T.k} className="tr-chip" style={(r.st || "c") === T.k ? { background: T.c, color: "#fff", borderColor: "transparent" } : { color: T.c }} onClick={() => setR(ck, s, { st: T.k })}>{T.ic} {T.t}</button>)}</div>
+            <textarea className="tr-ta" value={r.c || ""} onChange={e => setR(ck, s, { c: e.target.value })} placeholder="📝 تعليق المعلم: وصف مستوى القراءة، الأخطاء الشائعة، نقاط القوة…" />
+            <div><b style={{ fontSize: 12.5, color: "#92400e" }}>🗓️ سجل المتابعة</b>{maArr(r.fu).map((f, j) => <div key={j} style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", padding: "3px 0" }}>• <span style={{ color: "#94a3b8" }}>{asmHij(maDate(f.d))}</span> — {f.n} {f.by && <small style={{ color: "#94a3b8" }}>({f.by})</small>} <button className="tr-tag" style={{ color: "#dc2626" }} onClick={() => setR(ck, s, { fu: maArr(r.fu).filter((_, z) => z !== j) })}>✕</button></div>)}
+              <div style={{ display: "flex", gap: 6, marginTop: 4 }}><input className="tr-inp" style={{ height: 34 }} value={fu} onChange={e => setFu(e.target.value)} placeholder="أضف ملاحظة متابعة (مثال: قرأ الفقرة بطلاقة أفضل)" /><button className="tr-btn" onClick={() => { if (!fu.trim()) return; setR(ck, s, { fu: [...maArr(r.fu), { d: maKey(new Date()), n: fu.trim(), by: by || "" }] }); setFu(""); }}>＋</button></div></div>
+            <div style={{ display: "flex", gap: 8 }}><button className="tr-btn" onClick={() => printCard(recOf(ck, s.id))}>🖨️ بطاقة متابعة الطالب</button></div>
+          </div>}
+        </div>; })}
+      </div>
+    </> : <>
+      <div className="tr-stats">{[...RW_LV.map(L => ({ k: L.k, t: L.ic + " " + L.t, n: cntBy(flat, x => x.lv === L.k), c: L.c, bg: L.bg })), ...RW_ST.map(T => ({ k: T.k, t: T.ic + " " + T.t, n: cntBy(flat, x => (x.st || "c") === T.k), c: T.c, bg: T.bg }))].map(x => <div key={x.k} className={`tr-stat ${fl === x.k ? "on" : ""}`} style={{ background: x.bg, color: x.c }} onClick={() => setFl(fl === x.k ? "all" : x.k)}><small>{x.t}</small><b>{maAr(x.n)}</b></div>)}</div>
+      <div className="tr-card"><b style={{ color: "#9a3412" }}>🏫 التوزيع على الفصول</b><div style={{ display: "grid", gap: 6, marginTop: 8 }}>{classes.map(c => { const L = Object.values(ptObj(all[c.ck])).filter(x => x && x.lv); if (!L.length) return null; const n = studentsOf(c.ck).length || 1; const sv = cntBy(L, x => x.lv === "s"), md = L.length - sv; return <div key={c.ck} style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr) auto", gap: 8, alignItems: "center", fontSize: 12.5, fontWeight: 800 }}><span>{maClassName(c.ck)}</span><div className="tr-stack"><i style={{ display: "block", width: `${sv / n * 100}%`, background: "#dc2626" }} /><i style={{ display: "block", width: `${md / n * 100}%`, background: "#f59e0b" }} /></div><span>🔴 {maAr(sv)} • 🟠 {maAr(md)} <small style={{ color: "#94a3b8" }}>({maAr(Math.round(L.length / n * 100))}٪)</small></span></div>; })}{!flat.length && <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب محصورون بعد</div>}</div></div>
+      <div className="tr-card"><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}><input className="tr-inp" style={{ flex: "1 1 180px", height: 36 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔍 بحث" /><button className="tr-btn g" onClick={() => printList(sumL, "جميع فصول المدرسة")}>🖨️ طباعة سجل المدرسة</button></div>
+        <div style={{ overflowX: "auto" }}><table className="nq-tbl" style={{ minWidth: 640 }}><thead><tr><th>م</th><th style={{ textAlign: "right" }}>الطالب</th><th>الفصل</th><th>الدرجة</th><th>المهارات</th><th>الحالة</th><th>المعلم</th><th></th></tr></thead><tbody>{sumL.map((x, i) => { const V = lvOf(x.lv), T = stOf(x.st); return <tr key={x.ck + x.sid}><td>{maAr(i + 1)}</td><td style={{ textAlign: "right", fontWeight: 800 }}>{x.name}</td><td>{maClassName(x.ck)}</td><td><span className="nq-badge" style={{ background: V.bg, color: V.c }}>{V.ic} {V.t}</span></td><td style={{ fontSize: 11.5 }}>{maArr(x.sk).length ? maAr(maArr(x.sk).length) + " مهارات" : "—"}</td><td><span className="nq-badge" style={{ background: T.bg, color: T.c }}>{T.ic} {T.t}</span></td><td style={{ fontSize: 12 }}>{x.by || "—"}</td><td><button className="tr-tag" onClick={() => printCard(x)}>🖨️</button></td></tr>; })}</tbody></table></div></div>
+    </>}
+  </div>;
 }
 
 export default function SchoolWebsite(props) {
@@ -37848,7 +38255,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -38177,6 +38584,8 @@ function SchoolWebsiteInner() {
     { id: "behavior", label: "الملاحظات السلوكية", icon: "📝" },
     { id: "morningboard", label: "شاشة الصباح", icon: "📺" },
     { id: "formative",      label: "التقويم التكويني",    icon: "📘" },
+    { id: "stulevels",      label: "سجل مستويات الطلاب",    icon: "📊" },
+    { id: "readweak",      label: "حصر الضعف القرائي",    icon: "📖" },
     { id: "studentclassify", label: "تصنيف الطلاب", icon: "🏷️" },
     { id: "weeklyplan", label: "الخطة الأسبوعية", icon: "🗓️" },
     { id: "termplan", label: "الخطة الفصلية", icon: "📚" },
@@ -38186,7 +38595,7 @@ function SchoolWebsiteInner() {
     { id: "morninglate", label: "سجل التأخر الصباحي", icon: "🌅" },
     { id: "asmfollow", label: "حضور المعلمين للطابور", icon: "🎺" },
     { id: "duty", label: "الإشراف والمناوبة", icon: "🛡️" },
-    { id: "periodfollow", label: "متابعة الحصص اليومية", icon: "🗓️" },
+    { id: "periodfollow", label: "متابعة سير الحصص الدراسية", icon: "🗓️" },
     { id: "attendstats",    label: "إحصائيات الغياب والتأخر", icon: "📊" },
     { id: "strategies",     label: "الاستراتيجيات",      icon: "🧠" },
     { id: "broadcast",      label: "الإذاعة المدرسية",   icon: "🎙️" },
@@ -38228,7 +38637,7 @@ function SchoolWebsiteInner() {
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","insights","behavior","students","formative","studentclassify","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","insights","behavior","students","formative","studentclassify","stulevels","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
@@ -38511,10 +38920,10 @@ function SchoolWebsiteInner() {
                 {page === "admin-attendance"&& <AdminAttendancePage />}
                 {page === "attendance"     && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
                 {page === "formative"      && <FormativeGradebookPage classList={classList} />}
-                {page === "studentclassify" && <StudentClassifyPage />}
+                {page === "studentclassify" && <StudentClassifyPage />}{page === "stulevels" && <StudentLevelsPage admin />}{page === "readweak" && <ReadingWeakPage by="" admin />}
                 {page === "weeklyplan" && <WeeklyPlanPage />}
                 {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
-                {page === "periodfollow" && <PeriodFollowPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
+                {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}
@@ -38687,10 +39096,10 @@ function SchoolWebsiteInner() {
         {page === "admin-attendance" && <AdminAttendancePage />}
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
         {page === "formative"     && <FormativeGradebookPage classList={classList} />}
-        {page === "studentclassify" && <StudentClassifyPage />}
+        {page === "studentclassify" && <StudentClassifyPage />}{page === "stulevels" && <StudentLevelsPage admin />}{page === "readweak" && <ReadingWeakPage by="" admin />}
         {page === "weeklyplan" && <WeeklyPlanPage />}
         {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
-        {page === "periodfollow" && <PeriodFollowPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
+        {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}
