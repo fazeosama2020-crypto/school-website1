@@ -207,12 +207,18 @@ const PERIODS = ["الأولى","الثانية","الثالثة","الرابع�
 const ABSENCE_TYPES = ["حاضر", "اضطراري", "مرضي", "اعتيادي"];
 const FARES_OPTIONS = ["—", "نعم ✓", "لا ✗"];
 
-const DEFAULT_ANNOUNCEMENTS = [
-  { id: 1, title: "تعميم بخصوص اختبارات منتصف الفصل", date: "28/08/1447 هـ", category: "تعاميم", priority: "عاجل", content: "يُعلن عن بدء اختبارات منتصف الفصل الدراسي الثالث يوم الأحد القادم.", pinned: true },
-  { id: 2, title: "دورة تدريبية في استراتيجيات التعلم النشط", date: "27/08/1447 هـ", category: "تدريب", priority: "عادي", content: "تُقام دورة تدريبية بعنوان استراتيجيات التعلم النشط يوم الثلاثاء.", pinned: false },
-  { id: 3, title: "إجازة اليوم الوطني", date: "25/08/1447 هـ", category: "إعلانات", priority: "عادي", content: "تُمنح إجازة رسمية بمناسبة اليوم الوطني السعودي.", pinned: false },
-  { id: 4, title: "اجتماع مجلس الآباء", date: "24/08/1447 هـ", category: "اجتماعات", priority: "مهم", content: "يُعقد اجتماع مجلس الآباء والمعلمين يوم الأربعاء الساعة 6 مساءً.", pinned: true },
+// كانت هنا ٤ إعلانات تجريبية — أُزيلت من الكود، وأي نسخة منها محفوظة على الخادم تُخفى ولا تُحذف
+const DEFAULT_ANNOUNCEMENTS = [];
+const ANN_SAMPLE_TXT = [
+  ["تعميم بخصوص اختبارات منتصف الفصل", "يُعلن عن بدء اختبارات منتصف الفصل الدراسي الثالث"],
+  ["دورة تدريبية في استراتيجيات التعلم النشط", "تُقام دورة تدريبية بعنوان استراتيجيات التعلم النشط"],
+  ["إجازة اليوم الوطني", "تُمنح إجازة رسمية بمناسبة اليوم الوطني السعودي"],
+  ["اجتماع مجلس الآباء", "يُعقد اجتماع مجلس الآباء والمعلمين يوم الأربعاء"],
 ];
+
+// الإعلانات التجريبية الأربعة القديمة: لا تُعرض أبداً (تبقى على الخادم دون حذف)
+const annN = v => String(v || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/[\u064B-\u0652\u0640]/g, "").replace(/[إأآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/\s+/g, " ").trim();
+const annIsSample = a => { if (!a || typeof a !== "object") return false; const t = annN(a.title), c = annN(a.content); return ANN_SAMPLE_TXT.some(([st, sc]) => t === annN(st) && (c.includes(annN(sc)) || [1, 2, 3, 4].includes(+a.id))); };
 
 const DEFAULT_ACTIVITIES = [
   { id: 1, title: "مسابقة القرآن الكريم", date: "01/09/1447 هـ", type: "ديني", description: "مسابقة في حفظ وتلاوة القرآن الكريم.", responsible: "أحمد العتيبي", status: "قادم", image: "📖" },
@@ -1137,7 +1143,8 @@ async function annBuildMeta(arr) {
   await idbKV.set("ann-cache", { items: Object.fromEntries(arr.filter(a => a && a.id != null).map(a => [String(a.id), a])), at: m });
 }
 // تحميل الإعلانات: يُنزَّل فقط الجديد أو المعدَّل منذ آخر زيارة (مخزَّن على الجهاز)
-async function annLoadAll() {
+async function annLoadAll() { return (await annLoadAllRaw()).filter(a => a && !annIsSample(a)); }
+async function annLoadAllRaw() {
   let meta; try { const r = await fetch(`${FIREBASE_URL}/school/${ANN_META}.json`); meta = await r.json(); } catch { meta = undefined; }
   const c = (await idbKV.get("ann-cache")) || { items: {}, at: {} };
   if (meta === undefined) return Object.values(c.items || {});
@@ -1918,9 +1925,9 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
 // ===== لوحة الأقسام: بطاقات مصنّفة + لوحة أدوات جانبية =====
 const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
-    tools:[{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
+    tools:[{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"alreport",label:"تقرير الغياب والتأخر المتكرر",icon:"🔁"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
-    tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
+    tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"conduct",label:"متابعة السلوك اليومي",icon:"🚸"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
     tools:[{id:"classvisits",label:"الزيارات الصفية ١٤٤٨",icon:"🎯"},{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
@@ -1928,7 +1935,7 @@ const HUB_GROUPS = [
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
-    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
 function HomePage({ teachers, announcements, activities, navigate, attendance, week, messages, classList, weekArchive }) {
@@ -28681,6 +28688,7 @@ const NAV_TOOL_DESC = {
   broadcast:"برامج الإذاعة الصباحية", suggestions:"آراء ومقترحات المجتمع",
   activities:"خطة الأنشطة والبرامج", gallery:"صور ومعرض الأنشطة", meetings:"محاضر الاجتماعات", committeemeeting:"اجتماعات اللجان المدرسية",
   monthlyreport:"التقرير الشهري الشامل", report:"توثيق تقارير البرامج", qiyas:"قياس أثر البرامج",
+  conduct:"مخالفات الطلاب والفصول مع الصور والتقرير", alreport:"الفصول الأكثر غياباً وتأخراً والطلاب المتكررون", trash:"استرجاع أي شيء حُذف أو استُبدل",
   surveys:"استبيانات ونماذج رأي", officialforms:"نماذج رسمية جاهزة", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
 };
 
@@ -30736,6 +30744,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "sched" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("🗓️ الجدول المدرسي", isStaff ? <SchoolTimetablePage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} /> : <SchoolTimetablePage by={me.name} canEdit={false} ro me={me} />);
   if (view === "cvadm" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🎯 الزيارات الصفية", <ClassVisitsPage by={me.name} />);
   if (view === "beh" && (!isStaff || allowed)) return wrap("📝 الملاحظات السلوكية اليومية", <BehaviorNotesPage by={me.name} admin={["principal", "deputy"].includes(me.role)} />);
+  if (view === "conduct" && (!isStaff || allowed)) return wrap("🚸 متابعة السلوك اليومي", <DailyConductPage by={me.name} me={me} staff={isStaff && allowed} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
+  if (view === "alrep" && isStaff && allowed) return wrap("🔁 تقرير الغياب والتأخر المتكرر", <AbsLateReportPage by={me.name} />);
   if (view === "warn" && allowed) return wrap("🚨 الإنذار المبكر وملف الطالب", <InsightsPage by={me.name} staff initTab="warn" tabs={["warn", "student", "week", "rank"]} />);
   if (view === "inbox" && allowed) return wrap("📨 أعذار وملاحظات أولياء الأمور", <ParentInbox by={me.name} />);
 
@@ -30779,6 +30789,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {ptCan(me, "clsum") && ptTile("clsum", "🏷️", "خلاصة تصنيف الطلاب", "المستوى الدراسي والسلوك والحضور — والطلاب المحتاجون للمتابعة", "#7c3aed", "#a855f7", () => setView("clsum"))}
               {["principal", "deputy"].includes(me.role) && ptTile("cvadm", "🎯", "الزيارات الصفية", "جدول زيارات المعلمين وتقييمها ومؤشراتها", "#0f766e", "#0891b2", () => setView("cvadm"))}
               {ptCan(me, "beh") && ptTile("beh", "📝", "الملاحظات السلوكية اليومية", "قصة الشعر والزي والفوضى والانشغال… تُحفظ بلمسة واحدة مع الإحصائية", "#7c3aed", "#db2777", () => setView("beh"))}
+              {ptCan(me, "conduct") && ptTile("conduct", "🚸", "متابعة السلوك اليومي", "مخالفات الطلاب والفصول مع الصور • التقرير والطلاب المتكررون", "#1e3a8a", "#0f766e", () => setView("conduct"))}
+              {ptCan(me, "alrep") && ptTile("alrep", "🔁", "تقرير الغياب والتأخر المتكرر", "الفصول الأكثر غياباً وتأخراً صباحياً والطلاب المتكررون مع الطباعة وExcel", "#b91c1c", "#c2410c", () => setView("alrep"))}
               {ptCan(me, "warn") && ptTile("warn", "🚨", "الإنذار المبكر وملف الطالب", "الطلاب المحتاجون للمتابعة، والملف الشامل لكل طالب، والتقارير الأسبوعية لأولياء الأمور", "#b91c1c", "#f97316", () => setView("warn"))}
               {ptCan(me, "inbox") && ptTile("inbox", "📨", "أعذار وملاحظات أولياء الأمور", "مراجعة الأعذار وقبولها أو رفضها والرد على الملاحظات", "#2563eb", "#3b82f6", () => setView("inbox"), sum && sum.exc + sum.notes ? maAr(sum.exc + sum.notes) : "")}
             </div>
@@ -30797,6 +30809,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             <div style={{ gridColumn: "1/-1" }}><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>
             {ptTile("cv", "🎯", "زياراتي الصفية", "موعد زيارتك القادمة، وتقييمك ومؤشراتك وعناصر التقييم والملاحظات", "#0f766e", "#0891b2", () => setView("cv"))}
             {ptTile("beh", "📝", "الملاحظات السلوكية", "سجّل ملاحظة سلوكية لطالب بلمستين — تُحفظ فوراً", "#7c3aed", "#db2777", () => setView("beh"))}
+            {ptTile("conduct", "🚸", "متابعة السلوك اليومي", "رصد مخالفة طالب أو مخالفة على الفصل مع صورتين — يُحفظ حتى لو انقطع الاتصال", "#1e3a8a", "#0f766e", () => setView("conduct"))}
             {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
           </div>
         )}
@@ -31025,7 +31038,7 @@ function ParentInbox({ by = "الإدارة" }) {
 }
 
 // ══════════ قائمة الإداريين وصلاحياتهم ══════════
-const PT_SERVICES = [["late", "🌅", "التأخر الصباحي"], ["tt", "🗓️", "متابعة الحصص"], ["asm", "🎺", "حضور الطابور"], ["stats", "📊", "الإحصائية اليومية"], ["weekly", "📈", "الحصر الأسبوعي"], ["clsum", "🏷️", "خلاصة التصنيف"], ["inbox", "📨", "أعذار أولياء الأمور"], ["warn", "🚨", "الإنذار المبكر وملف الطالب"], ["beh", "📝", "الملاحظات السلوكية"]];
+const PT_SERVICES = [["late", "🌅", "التأخر الصباحي"], ["tt", "🗓️", "متابعة الحصص"], ["asm", "🎺", "حضور الطابور"], ["stats", "📊", "الإحصائية اليومية"], ["weekly", "📈", "الحصر الأسبوعي"], ["clsum", "🏷️", "خلاصة التصنيف"], ["inbox", "📨", "أعذار أولياء الأمور"], ["warn", "🚨", "الإنذار المبكر وملف الطالب"], ["beh", "📝", "الملاحظات السلوكية"], ["conduct", "🚸", "متابعة السلوك اليومي"], ["alrep", "🔁", "تقرير الغياب والتأخر المتكرر"]];
 const ptCan = (me, k) => !me || !me.perms || me.perms[k] !== false;
 function StaffPermsPanel({ focus }) {
   const [staff, setStaff] = useState(null); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
@@ -32544,7 +32557,7 @@ function PeriodFollowPage({ by = "الإدارة", canEdit = true }) {
   };
   useEffect(() => { if (tab === "rep") runRep(); }, [tab, rp.kind]);
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
-  useEffect(() => { (async () => { const [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]); setTt(a && a.C ? a : false); if (c && Array.isArray(c.times)) setCfg({ times: c.times, work: Array.isArray(c.work) ? c.work : ["06:30", "13:30"] }); })(); }, []);
+  useEffect(() => { (async () => { const [a, c] = await Promise.all([maGet(TT_NODE).then(ttFresh), maGet(TT_CFG)]); setTt(a && a.C ? a : false); if (c && Array.isArray(c.times)) setCfg({ times: c.times, work: Array.isArray(c.work) ? c.work : ["06:30", "13:30"] }); })(); }, []);
   useEffect(() => { (async () => { const l = await maGet(`${TT_LOG}/${dateK}`); setLog(l && typeof l === "object" ? l : {}); })(); }, [dateK]);
   const D = maDate(dateK); const isToday = dateK === maKey(new Date());
   if (tt === null) return <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div>;
@@ -34425,7 +34438,7 @@ function InMonthly({ D, by }) {
   const nR = Ss.filter(s => s.lvl === "r").length, nY = Ss.filter(s => s.lvl === "y").length;
   const scA = [0, 0, 0, 0], scB = [0, 0, 0, 0]; let scN = 0; Ss.forEach(s => { if (s.sc) { scN++; if (s.sc.a != null) scA[s.sc.a]++; if (s.sc.b != null) scB[s.sc.b]++; } });
   const [tt, setTt] = useState(null);
-  useEffect(() => { (async () => { const [T, L] = await Promise.all([maGet(TT_NODE), fbRange(TT_LOG, D.f, D.t)]); const cnt = {}; Object.values(ptObj(L)).forEach(day => Object.values(ptObj(day)).forEach(v => { if (!v || !v.st) return; cnt[v.st] = (cnt[v.st] || 0) + 1; })); const byT = {}; Object.values(ptObj(L)).forEach(day => Object.values(ptObj(day)).forEach(v => { if (!v || v.ti == null || !T || !T.T) return; const n = ttClean(T.T[v.ti]); const o = byT[n] = byT[n] || { ok: 0, late: 0, absent: 0, early: 0, sub: 0 }; if (o[v.st] != null) o[v.st]++; })); setTt({ cnt, byT }); })(); }, [D.f, D.t]);
+  useEffect(() => { (async () => { const [T, L] = await Promise.all([maGet(TT_NODE).then(ttFresh), fbRange(TT_LOG, D.f, D.t)]); const cnt = {}; Object.values(ptObj(L)).forEach(day => Object.values(ptObj(day)).forEach(v => { if (!v || !v.st) return; cnt[v.st] = (cnt[v.st] || 0) + 1; })); const byT = {}; Object.values(ptObj(L)).forEach(day => Object.values(ptObj(day)).forEach(v => { if (!v || v.ti == null || !T || !T.T) return; const n = ttClean(T.T[v.ti]); const o = byT[n] = byT[n] || { ok: 0, late: 0, absent: 0, early: 0, sub: 0 }; if (o[v.st] != null) o[v.st]++; })); setTt({ cnt, byT }); })(); }, [D.f, D.t]);
   const kp = [["📅", maAr(days.length), "أيام دراسية مرصودة"], ["✅", inPct(seats ? 1 - absN / seats : null), "نسبة الحضور"], ["🚫", maAr(absN), "حالات الغياب"], ["⏰", maAr(lateN), `حالة تأخر (${maAr(lateM)} دقيقة)`], ["📒", `${maAr(pos)} / ${maAr(neg)}`, "متابعة إيجابية / تحتاج اهتماماً"], ["🚨", `${maAr(nR)} / ${maAr(nY)}`, "إنذار 🔴 / متابعة 🟡"]];
   const print = () => {
     const ttRows = tt ? Object.entries(tt.byT).sort((a, b) => (b[1].absent + b[1].late + b[1].early) - (a[1].absent + a[1].late + a[1].early)).slice(0, 15).map(([n, o]) => `<tr><td class="r">${ptEsc(n)}</td><td>${maAr(o.ok)}</td><td>${maAr(o.late)}</td><td>${maAr(o.early)}</td><td>${maAr(o.absent)}</td><td>${maAr(o.sub)}</td></tr>`).join("") : "";
@@ -34463,7 +34476,7 @@ function InMorning({ go }) {
   const [d, setD] = useState(null); const [now, setNow] = useState(new Date()); const [warn, setWarn] = useState(null); const ref = useRef(null);
   const load = async () => {
     const t = maKey(new Date());
-    const [att, meta, late, ap, ros, T, cfg, log, ex, nt, cvp] = await Promise.all([maGet(`${MA_ATT}/${t}`), maGet(MA_META), maGet(`${MA_LATE}/${t}`), maGet(`${ML_DAY}/${t}`), maGet(MA_ROSTER), maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(PT_EXC), maGet(PT_NOTES), maGet(CV_PLAN)]);
+    const [att, meta, late, ap, ros, T, cfg, log, ex, nt, cvp] = await Promise.all([maGet(`${MA_ATT}/${t}`), maGet(MA_META), maGet(`${MA_LATE}/${t}`), maGet(`${ML_DAY}/${t}`), maGet(MA_ROSTER), maGet(TT_NODE).then(ttFresh), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(PT_EXC), maGet(PT_NOTES), maGet(CV_PLAN)]);
     const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4]; const cls = maClasses(counts); const day = maNormDay(att);
     const done = cls.filter(c => day[c.ck]); const absent = done.reduce((a, c) => a + day[c.ck].absent.length, 0), total = done.reduce((a, c) => a + (day[c.ck].total || 0), 0);
     const allStu = cls.reduce((a, c) => a + maArr(ptObj(ros)[c.ck]?.students).length, 0);
@@ -34956,10 +34969,11 @@ function ClassVisitsPage({ by = "الإدارة" }) {
             {[["✅", `${maAr(done)} / ${maAr(all.length)}`, "زيارة منفذة"], ["📌", maAr(todayL.length), "زيارات اليوم"], ["🔄", maAr(late), "تحتاج تعويضاً"], ["📨", maAr(reqs.length + nMsg), "طلبات وملاحظات"], ["⏭️", next ? `${maDay(maDate(next.date))} ${cvHij(next.hij)}` : "—", next ? `القادمة: ${next.t}` : "لا زيارات قادمة"]].map((x, i) => <div key={i} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{x[0]} {x[2]}</div><div style={{ fontSize: i === 3 ? 14 : 22, fontWeight: 900 }}>{x[1]}</div></div>)}
           </div>
         </div>
-        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["eval", "🔭 رصد الملاحظة"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "🏁 التقييم النهائي وأبرز الملاحظات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
+        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["add", "➕ اختيار المعلم وإضافة زيارة"], ["eval", "🔭 رصد الملاحظة"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "🏁 التقييم النهائي وأبرز الملاحظات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
         {tab === "plan" && !D.cfg.resched && <div className="ma-card p-3 flex items-center gap-2 flex-wrap" style={{ background: "#faf5ff", border: "2px dashed #a78bfa" }}><b>↪️ لبدء الزيارات من الأربعاء ١٩/٤/١٤٤٨هـ مع اختيار الحصص من جدول كل معلم:</b><button className="ma-btn pri" onClick={() => setTab("cfg")}>فتح أداة إعادة الجدولة</button></div>}
         {tab === "plan" && reqs.length > 0 && <CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} />}
         {tab === "plan" && <CvPlan D={D} all={all} evOf={evOf} f={f} setF={setF} openEval={(r) => { setTk(r.tk); setVn(r.v); setTab("eval"); }} setMv={setMv} by={by} />}
+        {tab === "add" && <CvAdd D={D} setD={setD} toast={toast} by={by} />}
         {tab === "eval" && <ObsEval D={D} setD={setD} TS={TS} T={T} setTk={setTk} vn={vn} setVn={setVn} by={by} toast={toast} />}
         {tab === "msg" && <><CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} /><CvMsgs D={D} setD={setD} toast={toast} /></>}
         {tab === "ind" && <ObsInd D={D} setD={setD} TS={TS} by={by} toast={toast} openT={t => { setTk(t); setTab("eval"); }} />}
@@ -35410,7 +35424,7 @@ function cvReflow(plan, ev, start, TT, times) {
 }
 function CvResched({ D, setD, toast }) {
   const [start, setStart] = useState(ptObj(D.cfg).resched || "2026-09-30"); const [prev, setPrev] = useState(null); const [busy, setBusy] = useState(false);
-  const run = async () => { setBusy(true); const [tt, cfg] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]); const T = tt && tt.C ? tt : (typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null); const times = cfg && Array.isArray(cfg.times) ? cfg.times : TT_DEF_TIMES; setPrev({ out: cvReflow(D.plan, D.ev, start, T, times), src: tt && tt.C ? "جدول المدرسة المرفوع" : "الجدول المرجعي" }); setBusy(false); };
+  const run = async () => { setBusy(true); const [tt, cfg] = await Promise.all([maGet(TT_NODE).then(ttFresh), maGet(TT_CFG)]); const T = tt && tt.C ? tt : (typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null); const times = cfg && Array.isArray(cfg.times) ? cfg.times : TT_DEF_TIMES; setPrev({ out: cvReflow(D.plan, D.ev, start, T, times), src: tt && tt.C ? "جدول المدرسة المرفوع" : "الجدول المرجعي" }); setBusy(false); };
   const apply = async () => { if (!window.confirm(`تطبيق الجدولة الجديدة لـ ${maAr(Object.keys(prev.out).length)} زيارة ابتداءً من ${maDay(maDate(start))}؟`)) return; setBusy(true); const np = { ...D.plan, ...prev.out }; const ok = await maPut(CV_PLAN, np); if (ok) { await cvPatch({ [`${CV_CFG}/resched`]: start }); setD(d => ({ ...d, plan: np, cfg: { ...d.cfg, resched: start } })); setPrev(null); } setBusy(false); toast(ok ? "✅ طُبّقت الجدولة الجديدة — يراها المعلمون فوراً" : "⚠️ تعذّر الحفظ"); };
   const ch = prev ? Object.values(prev.out).sort((a, b) => a.date.localeCompare(b.date) || a.n - b.n) : [];
   return (
@@ -35432,7 +35446,7 @@ function CvCfg({ D, setD, TS, toast }) {
   const lic = Object.entries(D.lic).filter(([, x]) => x && x.name).sort((a, b) => a[1].name.localeCompare(b[1].name, "ar"));
   const auto = () => { const n = { ...links }; let c = 0; TS.forEach(T => { if (!n[T.tk]) { const r = cvMatch(T.name, D.lic); if (r) { n[T.tk] = r; c++; } } }); setLinks(n); toast(`🔗 رُبط ${maAr(c)} معلم تلقائياً`); };
   const save = async () => { const ok = await cvPatch({ [`${CV_CFG}/links`]: links }); setD(d => ({ ...d, cfg: { ...d.cfg, links } })); toast(ok ? "✅ حُفظ الربط" : "📱 حُفظ على الجهاز"); };
-  const reseed = async () => { if (!window.confirm("إعادة تحميل جدول الزيارات الأصلي (١٤٤٨)؟ ستُلغى تعديلات المواعيد، وتبقى التقييمات.")) return; const p = cvSeedPlan(); const ok = await maPut(CV_PLAN, p); if (ok) setD(d => ({ ...d, plan: p })); toast(ok ? "✅ أُعيد تحميل الجدول" : "⚠️ تعذّر"); };
+  const reseed = async () => { if (!window.confirm("إعادة تحميل جدول الزيارات الأصلي (١٤٤٨)؟ ستُلغى تعديلات المواعيد، وتبقى التقييمات والزيارات المضافة يدوياً.")) return; const p = { ...cvSeedPlan(), ...Object.fromEntries(Object.entries(D.plan).filter(([, r]) => r && r.add)) }; const ok = await maPut(CV_PLAN, p); if (ok) setD(d => ({ ...d, plan: p })); toast(ok ? "✅ أُعيد تحميل الجدول" : "⚠️ تعذّر"); };
   const nL = TS.filter(T => links[T.tk]).length;
   return (
     <div className="grid gap-3">
@@ -35812,7 +35826,7 @@ function TermPlanPage() {
 }
 
 
-const TT_PDF = {"ver":"pdf-1448-1003","at":1791061200000,"src":"جدول aSc (PDF) — ٠٣/١٠","D":["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],"P":7,"T":["احمد عزي","احمد الشهري","اسامه السفري","جابر الشهري","حسن العيسى","رمضان الزهراني","سعد العتيبي","صاطي الحارثي","طارق الزهراني","عبدالرحيم رضوان","عبدالعزيز جار الله (رياضيات)","عبدالعزيز الذبياني","عبدالعزيز خضران (بدنية)","علي الغامدي","هادي المقاطي","فارس البشري","فهد رده","فيصل العتيبي","ماجد الهذلي","مجاهد الزهراني","محمد الجوفي","محمد القارحي","محمد الشهري","محمد الحربي","عمر العمشاني","وليد الزايدي","حاتم الشمراني (صعوبات)"],"A":["عزي","الشهري","السفري","ج.الشهري","العيسى","الزهراني","العتيبي","الحارثي","ط.الزهراني","رضوان","جار الله","الذبياني","خضران","الغامدي","المقاطي","البشري","رده","ف.العتيبي","الهذلي","م.الزهراني","الجوفي","القارحي","م.الشهري","الحربي","العمشاني","الزايدي","الشمراني"],"S":["اجتماعيات","احتياط 1","احتياط 2","احتياط 3","اسلامية","انجليزي","بدنية","تفكير ناقد","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"SA":["اجتماع","احتياط1","احتياط2","احتياط3","اسلامية","انجليزي","بدنية","تفكير","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"C":{"1-1":[[[6,12],[13,14],[0,2],[10,10],[11,5],[4,13],[5,3]],[[5,3],[10,10],[12,8],[10,10],[4,13],[11,5],[13,14]],[[4,13],[9,0],[6,12],[0,2],[11,5],[13,14],[10,10]],[[10,10],[13,14],[12,8],[14,0],[5,3],[4,13],[11,5]],[[0,2],[13,14],[9,0],[10,10],[4,13],[8,6],[5,3]]],"1-2":[[[10,10],[12,8],[13,14],[6,12],[4,13],[5,3],[0,2]],[[13,14],[0,2],[8,11],[5,3],[10,10],[11,23],[4,13]],[[12,8],[5,3],[10,10],[10,10],[11,23],[4,13],[13,14]],[[11,23],[10,10],[4,13],[14,2],[13,14],[6,12],[9,0]],[[10,10],[0,2],[5,3],[9,0],[11,23],[4,13],[13,14]]],"1-3":[[[13,14],[4,13],[0,21],[5,3],[10,10],[12,8],[10,10]],[[10,10],[8,14],[5,3],[13,14],[11,23],[4,13],[12,8]],[[9,0],[10,10],[5,3],[4,13],[13,14],[11,23],[0,21]],[[13,14],[4,13],[10,10],[14,21],[11,23],[5,3],[6,12]],[[4,13],[10,10],[13,14],[0,21],[6,12],[9,0],[11,23]]],"1-4":[[[0,21],[10,10],[9,0],[12,8],[5,3],[13,6],[4,13]],[[0,21],[11,23],[4,13],[8,11],[13,6],[5,3],[10,10]],[[10,10],[13,6],[11,23],[6,12],[9,0],[0,21],[4,13]],[[4,13],[12,8],[13,6],[14,3],[10,10],[11,23],[5,3]],[[13,6],[11,23],[10,10],[4,13],[10,10],[5,3],[6,12]]],"1-5":[[[8,2],[10,4],[5,3],[9,0],[13,6],[0,11],[4,9]],[[6,12],[10,4],[13,6],[12,8],[4,9],[9,0],[11,7]],[[0,11],[10,4],[4,9],[5,3],[13,6],[11,7],[10,4]],[[5,3],[13,6],[10,4],[14,4],[4,9],[11,7],[0,11]],[[6,12],[13,6],[11,7],[5,3],[10,4],[12,8],[4,9]]],"1-6":[[[13,6],[0,11],[5,1],[11,7],[4,9],[9,15],[6,12]],[[13,6],[0,11],[11,7],[10,17],[10,17],[4,9],[5,1]],[[10,17],[4,9],[12,8],[5,1],[8,2],[13,6],[11,7]],[[10,17],[6,12],[4,9],[14,7],[10,17],[12,8],[13,6]],[[5,1],[9,15],[0,11],[10,17],[11,7],[4,9],[13,6]]],"2-1":[[[11,5],[13,24],[10,19],[5,1],[4,16],[0,2],[10,19]],[[10,19],[5,1],[4,16],[11,5],[0,2],[12,8],[13,24]],[[10,19],[6,12],[4,16],[9,15],[8,11],[11,5],[13,24]],[[13,24],[5,1],[11,5],[14,24],[10,19],[4,16],[9,15]],[[10,19],[12,8],[0,2],[5,1],[13,24],[6,12],[4,16]]],"2-2":[[[9,15],[0,21],[4,16],[13,24],[5,1],[10,19],[11,5]],[[4,16],[13,24],[6,12],[5,1],[10,19],[10,19],[11,5]],[[13,24],[4,16],[0,21],[12,8],[6,12],[5,1],[10,19]],[[5,1],[10,19],[13,24],[14,26],[4,16],[11,5],[0,21]],[[12,8],[13,24],[11,5],[9,15],[4,16],[10,19],[8,21]]],"2-3":[[[10,19],[11,5],[13,18],[4,16],[12,8],[6,12],[0,11]],[[5,1],[10,19],[8,21],[9,15],[11,5],[13,18],[4,16]],[[4,16],[10,19],[0,11],[11,5],[10,19],[13,18],[5,1]],[[10,19],[0,11],[13,18],[14,22],[5,1],[9,15],[4,16]],[[4,16],[11,5],[5,1],[6,12],[12,8],[13,18],[10,19]]],"2-4":[[[4,16],[13,18],[0,11],[11,5],[10,19],[5,1],[9,15]],[[0,11],[12,8],[11,5],[13,18],[5,1],[4,16],[10,19]],[[6,12],[9,15],[11,5],[4,16],[5,1],[10,19],[13,18]],[[4,16],[13,18],[10,19],[14,11],[6,12],[8,21],[12,8]],[[11,5],[5,1],[10,19],[0,11],[10,19],[4,16],[13,18]]],"3-1":[[[5,20],[11,7],[13,24],[10,4],[6,12],[10,4],[4,25]],[[0,2],[4,25],[13,24],[10,4],[11,7],[5,20],[7,18]],[[4,25],[8,24],[11,7],[7,18],[5,20],[10,4],[9,22]],[[12,8],[10,4],[6,12],[14,20],[13,24],[4,25],[11,7]],[[5,20],[4,25],[9,22],[13,24],[0,2],[10,4],[12,8]]],"3-2":[[[13,18],[7,25],[12,8],[4,25],[5,20],[9,22],[10,4]],[[10,4],[6,12],[13,18],[9,22],[4,25],[11,7],[5,20]],[[13,18],[12,8],[10,4],[7,25],[11,7],[5,20],[4,25]],[[5,20],[4,25],[8,2],[14,17],[11,7],[10,4],[0,2]],[[4,25],[10,4],[6,12],[11,7],[13,18],[0,2],[10,4]]],"3-3":[[[11,23],[9,22],[6,15],[12,22],[4,25],[0,21],[5,20]],[[11,23],[10,17],[13,14],[4,25],[5,20],[10,17],[12,22]],[[9,22],[13,14],[5,20],[11,23],[4,25],[8,11],[10,17]],[[7,18],[0,21],[13,14],[14,15],[5,20],[10,17],[4,25]],[[10,17],[7,18],[4,25],[13,14],[10,17],[11,23],[6,15]]],"3-4":[[[8,24],[10,17],[5,20],[11,23],[0,21],[4,9],[13,6]],[[10,17],[5,20],[11,23],[6,0],[9,22],[7,24],[4,9]],[[4,9],[11,23],[10,17],[13,6],[12,22],[10,17],[6,0]],[[4,9],[5,20],[10,17],[14,9],[9,22],[13,6],[11,23]],[[0,21],[12,22],[5,20],[13,6],[4,9],[7,24],[10,17]]]},"RS":{"الأحد":[[7,17,0],[23,3,15],[9,6,25],[21,2,13],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,16,21],[20,26,4],[2,6,24],[11,3,15],[25,14,22],[23,17,0]],"الثلاثاء":[[6,3,15],[2,25,7],[1,13,26],[14,21,9],[18,4,17],[22,24,0],[20,11,5]],"الأربعاء":[[11,4,5],[22,23,24],[16,7,21],[18,1,13],[15,0,25],[2,9,14],[17,26,20]],"الخميس":[[22,9,26],[20,7,11],[18,4,16],[25,23,5],[6,1,15],[21,14,17],[0,24,2]]},"R":{"الأحد":[[7,17,0],[23,3,15],[9,6,25],[21,2,13],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,16,21],[20,26,4],[2,6,24],[11,3,15],[25,14,22],[23,17,0]],"الثلاثاء":[[6,3,15],[2,25,7],[1,13,26],[14,21,9],[18,4,17],[22,24,0],[20,11,5]],"الأربعاء":[[11,4,5],[22,23,24],[16,7,21],[18,1,13],[15,0,25],[2,9,14],[17,26,20]],"الخميس":[[22,9,26],[20,7,11],[18,4,16],[25,23,5],[6,1,15],[21,14,17],[0,24,2]]},"times":[["07:00","07:45"],["07:45","08:30"],["08:30","09:15"],["09:15","10:00"],["10:20","11:05"],["11:05","11:50"],["14:00","14:45"]]};
+const TT_PDF = {"ver":"xlsx-1448-1006","at":1791314946596,"src":"جدول المعلمين الجديد (Excel) — ٠٦/١٠","D":["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],"P":7,"T":["احمد عزي","احمد الشهري","اسامه السفري","جابر الشهري","حسن العيسى","رمضان الزهراني","سعد العتيبي","صاطي الحارثي","طارق الزهراني","عبدالرحيم رضوان","عبدالعزيز جار الله (رياضيات)","عبدالعزيز الذبياني","عبدالعزيز خضران (بدنية)","علي الغامدي","هادي المقاطي","فارس البشري","فهد رده","فيصل العتيبي","ماجد الهذلي","مجاهد الزهراني","محمد الجوفي","محمد القارحي","محمد الشهري","محمد الحربي","عمر العمشاني","وليد الزايدي","حاتم الشمراني (صعوبات)"],"A":["عزي","الشهري","السفري","ج.الشهري","العيسى","الزهراني","العتيبي","الحارثي","ط.الزهراني","رضوان","جار الله","الذبياني","خضران","الغامدي","المقاطي","البشري","رده","ف.العتيبي","الهذلي","م.الزهراني","الجوفي","القارحي","م.الشهري","الحربي","العمشاني","الزايدي","الشمراني"],"S":["اجتماعيات","احتياط 1","احتياط 2","احتياط 3","اسلامية","انجليزي","بدنية","تفكير ناقد","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"SA":["اجتماع","احتياط1","احتياط2","احتياط3","اسلامية","انجليزي","بدنية","تفكير","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"C":{"1-1":[[[6,12],[13,14],[0,2],[10,10],[11,5],[4,13],[5,3]],[[5,3],[10,10],[12,8],[10,10],[4,13],[11,5],[13,14]],[[4,13],[9,0],[6,12],[0,2],[11,5],[13,14],[10,10]],[[10,10],[13,14],[12,8],[14,0],[5,3],[4,13],[11,5]],[[0,2],[13,14],[9,0],[10,10],[4,13],[8,6],[5,3]]],"1-2":[[[10,10],[12,8],[13,14],[6,12],[4,13],[5,3],[0,2]],[[13,14],[0,2],[8,11],[5,3],[10,10],[11,23],[4,13]],[[12,8],[5,3],[10,10],[10,10],[11,23],[4,13],[13,14]],[[11,23],[10,10],[4,13],[14,2],[13,14],[6,12],[9,0]],[[10,10],[0,2],[5,3],[9,0],[11,23],[4,13],[13,14]]],"1-3":[[[13,14],[4,13],[0,21],[5,3],[10,10],[12,8],[10,10]],[[10,10],[8,14],[5,3],[13,14],[11,23],[4,13],[12,8]],[[9,0],[10,10],[5,3],[4,13],[13,14],[11,23],[0,21]],[[13,14],[4,13],[10,10],[14,21],[11,23],[5,3],[6,12]],[[4,13],[10,10],[13,14],[0,21],[6,12],[9,0],[11,23]]],"1-4":[[[0,21],[10,10],[9,0],[12,8],[5,3],[13,6],[4,13]],[[0,21],[11,23],[4,13],[8,11],[13,6],[5,3],[10,10]],[[10,10],[13,6],[11,23],[6,12],[9,0],[0,21],[4,13]],[[4,13],[12,8],[13,6],[14,3],[10,10],[11,23],[5,3]],[[13,6],[11,23],[10,10],[4,13],[10,10],[5,3],[6,12]]],"1-5":[[[8,2],[10,4],[5,3],[9,0],[13,6],[0,11],[4,9]],[[6,12],[10,4],[13,6],[12,8],[4,9],[9,0],[11,7]],[[0,11],[10,4],[4,9],[5,3],[13,6],[11,7],[10,4]],[[5,3],[13,6],[10,4],[14,4],[4,9],[11,7],[0,11]],[[6,12],[13,6],[11,7],[5,3],[10,4],[12,8],[4,9]]],"1-6":[[[13,6],[0,11],[5,1],[11,7],[4,9],[9,15],[6,12]],[[13,6],[0,11],[11,7],[10,17],[10,17],[4,9],[5,1]],[[10,17],[4,9],[12,8],[5,1],[8,2],[13,6],[11,7]],[[10,17],[6,12],[4,9],[14,7],[10,17],[12,8],[13,6]],[[5,1],[9,15],[0,11],[10,17],[11,7],[4,9],[13,6]]],"2-1":[[[11,5],[13,24],[10,19],[5,1],[4,16],[0,2],[10,19]],[[10,19],[5,1],[4,16],[11,5],[0,2],[12,8],[13,24]],[[10,19],[6,12],[4,16],[9,15],[8,11],[11,5],[13,24]],[[13,24],[5,1],[11,5],[14,24],[10,19],[4,16],[9,15]],[[10,19],[12,8],[0,2],[5,1],[13,24],[6,12],[4,16]]],"2-2":[[[9,15],[0,21],[4,16],[13,24],[5,1],[10,19],[11,5]],[[4,16],[13,24],[6,12],[5,1],[10,19],[10,19],[11,5]],[[13,24],[4,16],[0,21],[12,8],[6,12],[5,1],[10,19]],[[5,1],[10,19],[13,24],[14,16],[4,16],[11,5],[0,21]],[[12,8],[13,24],[11,5],[9,15],[4,16],[10,19],[8,21]]],"2-3":[[[10,19],[11,5],[13,18],[4,16],[12,8],[6,12],[0,11]],[[5,1],[10,19],[8,21],[9,15],[11,5],[13,18],[4,16]],[[4,16],[10,19],[0,11],[11,5],[10,19],[13,18],[5,1]],[[10,19],[0,11],[13,18],[14,5],[5,1],[9,15],[4,16]],[[4,16],[11,5],[5,1],[6,12],[12,8],[13,18],[10,19]]],"2-4":[[[4,16],[13,18],[0,11],[11,5],[10,19],[5,1],[9,15]],[[0,11],[12,8],[11,5],[13,18],[5,1],[4,16],[10,19]],[[6,12],[9,15],[11,5],[4,16],[5,1],[10,19],[13,18]],[[4,16],[13,18],[10,19],[14,11],[6,12],[8,21],[12,8]],[[11,5],[5,1],[10,19],[0,11],[10,19],[4,16],[13,18]]],"3-1":[[[5,20],[11,7],[13,24],[10,4],[6,12],[10,4],[4,25]],[[0,2],[4,25],[13,24],[10,4],[11,7],[5,20],[7,18]],[[4,25],[8,24],[11,7],[7,18],[5,20],[10,4],[9,22]],[[12,8],[10,4],[6,12],[14,22],[13,24],[4,25],[11,7]],[[5,20],[4,25],[9,22],[13,24],[0,2],[10,4],[12,8]]],"3-2":[[[13,18],[7,25],[12,8],[4,25],[5,20],[9,22],[10,4]],[[10,4],[6,12],[13,18],[9,22],[4,25],[11,7],[5,20]],[[13,18],[12,8],[10,4],[7,25],[11,7],[5,20],[4,25]],[[5,20],[4,25],[8,2],[14,17],[11,7],[10,4],[0,2]],[[4,25],[10,4],[6,12],[11,7],[13,18],[0,2],[10,4]]],"3-3":[[[11,23],[9,22],[6,15],[12,22],[4,25],[0,21],[5,20]],[[11,23],[10,17],[13,14],[4,25],[5,20],[10,17],[12,22]],[[9,22],[13,14],[5,20],[11,23],[4,25],[8,11],[10,17]],[[7,18],[0,21],[13,14],[14,15],[5,20],[10,17],[4,25]],[[10,17],[7,18],[4,25],[13,14],[10,17],[11,23],[6,15]]],"3-4":[[[8,24],[10,17],[5,20],[11,23],[12,22],[4,9],[13,6]],[[10,17],[5,20],[11,23],[6,0],[9,22],[7,24],[4,9]],[[4,9],[11,23],[10,17],[13,6],[0,21],[10,17],[6,0]],[[4,9],[5,20],[10,17],[14,9],[9,22],[13,6],[11,23]],[[0,21],[12,22],[5,20],[13,6],[4,9],[7,24],[10,17]]]},"RS":{"الأحد":[[7,17,13],[23,15,0],[9,6,25],[21,2,14],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,26,21],[20,4,0],[2,6,24],[11,3,15],[25,14,22],[0,17,23]],"الثلاثاء":[[6,3,15],[2,25,7],[13,1,18],[14,21,9],[17,26,4],[22,24,0],[23,11,20]],"الأربعاء":[[11,4,5],[24,23,22],[16,7,21],[1,13,18],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[3,20,11],[18,4,16],[25,5,18],[6,1,15],[21,7,17],[0,24,2]]},"R":{"الأحد":[[7,17,13],[23,15,0],[9,6,25],[21,2,14],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,26,21],[20,4,0],[2,6,24],[11,3,15],[25,14,22],[0,17,23]],"الثلاثاء":[[6,3,15],[2,25,7],[13,1,18],[14,21,9],[17,26,4],[22,24,0],[23,11,20]],"الأربعاء":[[11,4,5],[24,23,22],[16,7,21],[1,13,18],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[3,20,11],[18,4,16],[25,5,18],[6,1,15],[21,7,17],[0,24,2]]},"times":[["07:00","07:45"],["07:45","08:30"],["08:30","09:15"],["09:15","10:00"],["10:20","11:05"],["11:05","11:50"],["14:00","14:45"]]};
 
 // ══════════════════════════════════════════════════════════
 // 🗓️ الجدول المدرسي الذكي — الفصول والمعلمون والاحتياط (١/٢/٣)
@@ -36231,6 +36245,9 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const WeekGrid = () => <div className="stt-wrap stt-wk"><table className="stt-g" style={{ tableLayout: "fixed" }}><thead><tr><th className="rh" style={{ width: 54 }}>اليوم</th>{times.map((t, p) => <th key={p}>{maAr(p + 1)}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
     <tbody>{T.D.map((dn, d) => <tr key={d}><td className="rh" style={{ fontSize: 12, background: d === di ? "#eef2ff" : "#fff", color: d === di ? "#3730a3" : undefined }}>{dn}</td>{times.map((_, p) => <td key={p}>{view === "cls" ? <ClsCell d={d} p={p} ck={sel} cp /> : <TchCell d={d} p={p} ti={+sel} cp />}</td>)}</tr>)}</tbody></table></div>;
 
+  const allTable = dd => <div className="stt-wrap"><table className="stt-g"><thead><tr><th className="rh">{view === "cls" ? "الفصل" : "المعلم"}</th>{times.map((t, p) => <th key={p} className={dd === di && p === curP ? "now" : ""}>{TT_ORD[p]}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
+            <tbody>{view === "cls" ? cks.map(ck => <tr key={ck}><td className="rh" style={{ color: MA_LV[+ck[0] - 1]?.c, cursor: "pointer" }} onClick={() => setSel(ck)}>{sttCk(ck)}</td>{times.map((_, p) => <td key={p}><ClsCell d={dd} p={p} ck={ck} /></td>)}</tr>)
+              : tList.map(({ i, n }) => <tr key={i}><td className="rh" style={{ cursor: "pointer", color: absList.includes(i) ? "#b91c1c" : undefined, background: absList.includes(i) ? "#fef2f2" : "#fff", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }} onClick={() => setSel(String(i))}>{absList.includes(i) ? "🚫 " : ""}{n.split(" ").slice(0, 2).join(" ")}</td>{times.map((_, p) => <td key={p}><TchCell d={dd} p={p} ti={i} /></td>)}</tr>)}</tbody></table></div>;
   const planRows = Object.values(plan).sort((a, b) => absList.indexOf(a.a) - absList.indexOf(b.a) || a.p - b.p);
   const pending = planRows.filter(x => !x.done).length;
   const openPlan = showPlan === null ? pending > 0 : showPlan;
@@ -36284,20 +36301,19 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
           {view === "cls" ? <div className="stt-sc"><button className={`stt-chip ${sel === "" ? "on" : ""}`} onClick={() => setSel("")}>الكل</button>{cks.map(ck => <button key={ck} className={`stt-chip ${sel === ck ? "on" : ""}`} style={{ "--cc": MA_LV[+ck[0] - 1]?.c, color: sel === ck ? "#fff" : MA_LV[+ck[0] - 1]?.c }} onClick={() => setSel(ck)}>{maClassName(ck)}</button>)}</div>
             : <div className="flex gap-2 items-center"><select className="ma-inp" style={{ flex: 1, height: 44, fontWeight: 800 }} value={sel} onChange={e => setSel(e.target.value)}><option value="">👥 كل المعلمين</option>{tList.map(x => <option key={x.i} value={x.i}>{x.n}{absList.includes(x.i) ? " 🚫" : ""}{x.i === meIdx ? " (أنا)" : ""}</option>)}</select></div>}
           <div className="flex gap-2 items-center flex-wrap">
-            {sel !== "" && <div className="stt-seg" style={{ flex: "0 1 260px" }}>{[["day", "📋 اليوم"], ["week", "🗓️ الأسبوع"]].map(([k, l]) => <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{l}</button>)}</div>}
+            {<div className="stt-seg" style={{ flex: "0 1 340px" }}>{[["day", "📋 اليوم"], ["week", sel === "" ? "🗓️ الأسبوع كاملاً يوماً بيوم" : "🗓️ الأسبوع"]].map(([k, l]) => <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{l}</button>)}</div>}
             <div className="flex gap-1 flex-wrap" style={{ marginRight: "auto" }}>{[1, 2, 3].map(i => <span key={i} className="stt-lv" style={{ background: TT_LVC[i].bg, color: TT_LVC[i].c }}>■ {TT_LVC[i].l}</span>)}</div>
             <button className="ma-btn" onClick={() => printWeek(false)}>🖨 {sel === "" ? (view === "cls" ? "جداول الفصول" : "جداول المعلمين") : "طباعة الجدول"}</button>
           </div>
         </div>}
 
         {view === "log" ? <SttLogPanel T={T} times={times} by={by} subName={subName} />
-          : di < 0 && !(sel !== "" && mode === "week") && view !== "res" ? <div className="ma-card p-8 text-center"><div style={{ fontSize: 44 }}>🌙</div><b>لا يوجد دوام في {maDay(D)}</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 4 }}>اختر يوماً من أيام الأسبوع بالأعلى</div></div>
+          : di < 0 && mode !== "week" && view !== "res" ? <div className="ma-card p-8 text-center"><div style={{ fontSize: 44 }}>🌙</div><b>لا يوجد دوام في {maDay(D)}</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 4 }}>اختر يوماً من أيام الأسبوع بالأعلى</div></div>
           : view === "res" ? (di < 0 ? <div className="ma-card p-6 text-center font-bold text-gray-400">اختر يوم دوام</div> : <div className="grid gap-2">{times.map((t, p) => { const res = sttRes(T, di, p); return <div key={p} className={`stt-card ${p === curP ? "now" : ""}`} style={{ cursor: "default" }}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": "#3730a3" }}><div className="grid gap-1">{res.map((ti, i) => { const L = TT_LVC[i + 1]; const cv = Object.entries(log).find(([k, v]) => v && v.st === "sub" && v.sub === ti && +k.split("_")[1] === p && +k.split("_")[0] === di) || Object.values(plan).find(x => x.sub === ti && x.p === p); const cck = cv ? (Array.isArray(cv) ? cv[0].split("_")[2] : cv.ck) : null; return <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span className="stt-lv" style={{ background: L.c, color: "#fff", minWidth: 66, justifyContent: "center" }}>{L.l}</span><b style={{ fontSize: 14, color: absList.includes(ti) ? "#b91c1c" : "#0f172a", textDecoration: absList.includes(ti) ? "line-through" : "none" }}>{ttClean(T.T[ti])}</b>{cck && <span className="stt-lv" style={{ background: L.bg, color: L.c }}>🔄 {maClassName(cck)}</span>}</div>; })}</div></div></div>; })}</div>)
           : sel !== "" && mode === "day" ? <DayCards />
           : sel !== "" ? <WeekGrid />
-          : <div className="stt-wrap"><table className="stt-g"><thead><tr><th className="rh">{view === "cls" ? "الفصل" : "المعلم"}</th>{times.map((t, p) => <th key={p} className={p === curP ? "now" : ""}>{TT_ORD[p]}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
-            <tbody>{view === "cls" ? cks.map(ck => <tr key={ck}><td className="rh" style={{ color: MA_LV[+ck[0] - 1]?.c, cursor: "pointer" }} onClick={() => setSel(ck)}>{sttCk(ck)}</td>{times.map((_, p) => <td key={p}><ClsCell d={di} p={p} ck={ck} /></td>)}</tr>)
-              : tList.map(({ i, n }) => <tr key={i}><td className="rh" style={{ cursor: "pointer", color: absList.includes(i) ? "#b91c1c" : undefined, background: absList.includes(i) ? "#fef2f2" : "#fff", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }} onClick={() => setSel(String(i))}>{absList.includes(i) ? "🚫 " : ""}{n.split(" ").slice(0, 2).join(" ")}</td>{times.map((_, p) => <td key={p}><TchCell d={di} p={p} ti={i} /></td>)}</tr>)}</tbody></table></div>}
+          : mode === "week" ? <div className="grid gap-4">{T.D.map((dn, dd) => <div key={dd} className="grid gap-1"><div className="flex items-center gap-2"><b style={{ fontSize: 15.5, color: dd === di ? "#3730a3" : "#0f172a" }}>📅 {dn}</b>{dd === di && <span className="stt-lv" style={{ background: "#eef2ff", color: "#3730a3" }}>اليوم المختار</span>}</div>{allTable(dd)}</div>)}</div>
+          : allTable(di)}
 
         <div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8", textAlign: "center" }}>المصدر: {T.src || "الجدول المدرسي"} • اضغط على أي حصة {ro ? "لعرض تفاصيلها" : "لرصد: حضر • تأخر • خرج من الفصل • غائب مع البديل"}</div>
       </div>
@@ -38159,8 +38175,803 @@ function ReadingWeakPage({ by = "", admin = false }) {
   </div>;
 }
 
+
+// ══════════════════════════════════════════════════════════════════════
+// 🛡️ حماية البيانات — لا يُفقد شيء: كل حذف أو استبدال يُنسخ أولاً إلى «سلة المحذوفات»
+//   school-trash/{YYYY-MM}/{id} = {id, path, why, at, who, items:[{k, v}], rs?}
+//   k = null (العقدة كاملة) • "[]" (عنصر من قائمة) • مفتاح فرعي
+// ══════════════════════════════════════════════════════════════════════
+const TR_NODE = "school-trash";
+const TR_BASE = FIREBASE_URL + "/school";
+// عقد مؤقتة أو فهارس أو نسخ احتياطية — لا داعي لأرشفتها
+const TR_SKIP = [TR_NODE, "school-mlate-live", "school-mlate-draft", "school-bk2", "school-ann-meta", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old"];
+const trSkip = p => !p || TR_SKIP.some(s => p === s || p.startsWith(s + "/") || p.startsWith(s + "-"));
+function trPath(url) {
+  const u = String(url || ""); if (!u.startsWith(TR_BASE)) return null;
+  let p = u.slice(TR_BASE.length).split("?")[0];
+  if (!p.endsWith(".json")) return null; p = p.slice(0, -5).replace(/^\//, "");
+  try { return decodeURIComponent(p); } catch { return p; }
+}
+const trWho = () => { try { if (window.__pamUser) return String(window.__pamUser); const m = JSON.parse(localStorage.getItem("pam-staff") || "null"); return (m && m.name) || ""; } catch { return ""; } };
+const trSeen = new Map(); // آخر قيمة معروفة لكل مسار (من القراءة أو الكتابة) لمعرفة ما حُذف عند الاستبدال
+function trRemember(p, v) { if (trSeen.has(p)) trSeen.delete(p); trSeen.set(p, v); if (trSeen.size > 40) trSeen.delete(trSeen.keys().next().value); }
+const trArrLike = o => { if (Array.isArray(o)) return true; if (!o || typeof o !== "object") return false; const ks = Object.keys(o); return ks.length > 0 && ks.every(k => /^\d+$/.test(k)) && Math.max(...ks.map(Number)) < ks.length * 2 + 5; };
+function trRemoved(prev, next) {
+  if (prev == null || typeof prev !== "object") return [];
+  if (next == null || typeof next !== "object") return [{ k: null, v: prev }];
+  if (trArrLike(prev)) {
+    const P = Object.values(prev).filter(x => x != null), N = Object.values(next).filter(x => x != null);
+    const idOf = x => x && typeof x === "object" && x.id != null ? String(x.id) : null;
+    const ids = new Set(N.map(idOf).filter(Boolean)), js = new Set(N.filter(x => !idOf(x)).map(x => JSON.stringify(x)));
+    return P.filter(x => { const id = idOf(x); return id ? !ids.has(id) : !js.has(JSON.stringify(x)); }).map(v => ({ k: "[]", v }));
+  }
+  if (trArrLike(next)) return [{ k: null, v: prev }];
+  return Object.keys(prev).filter(k => prev[k] != null && next[k] == null).map(k => ({ k, v: prev[k] }));
+}
+let _trFetch = null;
+const trMonth = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+async function trArchive(path, items, why) {
+  if (!items || !items.length || !_trFetch) return;
+  const at = Date.now(); const id = "d" + at.toString(36) + Math.random().toString(36).slice(2, 6);
+  let rec = { id, path, why, at, who: trWho(), items }; let body = JSON.stringify(rec);
+  if (body.length > 9e6) { rec = { ...rec, big: 1, items: items.map(x => ({ k: x.k, big: 1 })) }; body = JSON.stringify(rec); }
+  const url = `${TR_BASE}/${TR_NODE}/${trMonth(at)}/${id}.json`;
+  try { const r = await _trFetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body }); if (r.ok) return; } catch {}
+  try { const q = (await idbKV.get("tr-q")) || []; q.push({ url, body }); await idbKV.set("tr-q", q.slice(-300)); } catch {}
+}
+let _trFlushing = false;
+async function trFlush() {
+  if (_trFlushing || !_trFetch) return; _trFlushing = true;
+  try { const q = (await idbKV.get("tr-q")) || []; if (q.length) { const rest = []; for (const x of q) { let ok = false; try { const r = await _trFetch(x.url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: x.body }); ok = r.ok; } catch {} if (!ok) rest.push(x); } await idbKV.set("tr-q", rest); } } catch {}
+  _trFlushing = false;
+}
+async function trBefore(path, why) {
+  let v; try { const r = await _trFetch(`${TR_BASE}/${path}.json`); v = await r.json(); } catch { v = trSeen.get(path); }
+  if (v != null && !(v && typeof v === "object" && v.error && Object.keys(v).length === 1)) await trArchive(path, [{ k: null, v }], why);
+  trSeen.delete(path);
+}
+function trDiff(path, body) {
+  const prev = trSeen.get(path); let next;
+  try { next = body.length < 3e6 ? JSON.parse(body) : undefined; } catch {}
+  if (next === undefined) { trSeen.delete(path); return; }
+  trRemember(path, next);
+  if (prev === undefined) return;
+  const rm = trRemoved(prev, next); if (rm.length) trArchive(path, rm, "استبدال");
+}
+function trInstall() {
+  if (typeof window === "undefined" || !window.fetch || window.__trOn) return; window.__trOn = 1;
+  _trFetch = window.fetch.bind(window);
+  window.fetch = async function (input, init) {
+    let url = ""; try { url = typeof input === "string" ? input : (input && input.url) || ""; } catch {}
+    const path = url && url.startsWith(TR_BASE) ? trPath(url) : null;
+    if (path == null) return _trFetch(input, init);
+    const method = String((init && init.method) || (input && typeof input === "object" && input.method) || "GET").toUpperCase();
+    if (method === "GET") {
+      const res = await _trFetch(input, init);
+      if (path && !trSkip(path) && !/[?&](shallow|orderBy)=/.test(url) && res && res.ok) {
+        try { const len = +res.headers.get("content-length") || 0; if (len < 1.5e6) res.clone().text().then(t => { if (t.length < 1.5e6) { try { trRemember(path, JSON.parse(t)); } catch {} } }).catch(() => {}); } catch {}
+      }
+      return res;
+    }
+    try {
+      const b = init && typeof init.body === "string" ? init.body : null;
+      if (method === "DELETE") { if (!trSkip(path)) await trBefore(path, "حذف"); }
+      else if (method === "PUT") { if (!trSkip(path) && b != null) { if (b === "null") await trBefore(path, "حذف"); else trDiff(path, b); } }
+      else if (method === "PATCH" && b) { const o = JSON.parse(b); if (o && typeof o === "object") for (const [k, v] of Object.entries(o)) { const sub = path ? `${path}/${k}` : k; if (v === null && !trSkip(sub)) await trBefore(sub, "حذف"); } }
+    } catch {}
+    return _trFetch(input, init);
+  };
+  const f = () => trFlush(); setTimeout(f, 4000); setInterval(f, 45000); window.addEventListener("online", f);
+}
+
+// ── صفحة سلة المحذوفات والاسترجاع
+const TR_LBL = (p) => { const n = String(p || "").split("/")[0]; const M = { ...(typeof BK2_LBL !== "undefined" ? BK2_LBL : {}), "school-ann-items": "الإعلانات", "school-act-items": "الأنشطة", "school-teachers": "المعلمون", "school-messages": "رسائل الأهالي", "school-surveys": "الاستبيانات", "school-attendance": "حضور المعلمين", "school-class-list": "قائمة الفصول", "school-dconduct": "متابعة السلوك اليومي", "school-dconduct-img": "صور متابعة السلوك", "school-wplan": "الخطة الأسبوعية", "school-tplan": "الخطة الفصلية", "school-pexcuses": "أعذار أولياء الأمور", "school-pnotes": "ملاحظات أولياء الأمور", "school-staff2": "الإداريون", "school-nq-ex": "اختبارات نافس", "school-nq-res": "نتائج نافس", "school-duty": "الإشراف والمناوبة", "school-license2": "الرخصة المهنية" }; return M[n] || (n.startsWith("school-cls-") ? "بيانات فصل" : n); };
+const trSum = v => { if (v == null) return ""; if (typeof v !== "object") return String(v).slice(0, 140); const x = v; const t = x.title || x.name || x.t || x.sname || x.text || x.note || x.content || x.description || ""; if (t) return String(t).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 140); const n = Object.keys(x).length; return `${maAr(n)} عنصر`; };
+function TrashPage() {
+  const [months, setMonths] = useState(null); const [mon, setMon] = useState(""); const [L, setL] = useState(null); const [q, setQ] = useState(""); const [view, setView] = useState(null); const [busy, setBusy] = useState(""); const [msg, setMsg] = useState("");
+  const toast = t => { setMsg(t); clearTimeout(toast.t); toast.t = setTimeout(() => setMsg(""), 4000); };
+  useEffect(() => { (async () => { let ks = []; try { const r = await fetch(`${FIREBASE_URL}/school/${TR_NODE}.json?shallow=true`); const j = await r.json(); ks = Object.keys(ptObj(j)).sort().reverse(); } catch {} setMonths(ks); if (ks[0]) setMon(ks[0]); })(); }, []);
+  useEffect(() => { if (!mon) { setL([]); return; } setL(null); (async () => { const d = await maGet(`${TR_NODE}/${mon}`); setL(ptVals(d).sort((a, b) => (b.at || 0) - (a.at || 0))); })(); }, [mon]);
+  const restore = async (e) => {
+    if (!window.confirm(`استرجاع ${e.items.length > 1 ? maAr(e.items.length) + " عناصر" : "العنصر"} إلى «${TR_LBL(e.path)}»؟`)) return;
+    setBusy(e.id); let ok = true;
+    try {
+      for (const it of e.items) {
+        if (it.big || it.v === undefined) continue;
+        if (it.k === null) {
+          const cur = await maGet(e.path);
+          if (cur == null) ok = (await maPut(e.path, it.v)) && ok;
+          else if (trArrLike(cur) || trArrLike(it.v)) { const C = maArr(cur); const idOf = x => x && x.id != null ? String(x.id) : JSON.stringify(x); const has = new Set(C.map(idOf)); const add = maArr(it.v).filter(x => !has.has(idOf(x))); if (add.length) ok = (await maPut(e.path, [...C, ...add])) && ok; }
+          else if (typeof cur === "object" && typeof it.v === "object") { const o = {}; Object.keys(it.v).forEach(k => { if (cur[k] == null) o[`${e.path}/${k}`] = it.v[k]; }); if (Object.keys(o).length) ok = (await fbPatch(o)) && ok; }
+          else if (window.confirm("يوجد محتوى حالي في نفس المكان — استبداله بالنسخة المسترجعة؟ (سيُحفظ الحالي في السلة)")) ok = (await maPut(e.path, it.v)) && ok;
+        } else if (it.k === "[]") {
+          const C = maArr(await maGet(e.path)); const id = it.v && it.v.id != null ? String(it.v.id) : null;
+          if (!(id ? C.some(x => x && String(x.id) === id) : C.some(x => JSON.stringify(x) === JSON.stringify(it.v)))) ok = (await maPut(e.path, [...C, it.v])) && ok;
+        } else {
+          const sub = `${e.path}/${it.k}`; const cur = await maGet(sub);
+          if (cur == null || window.confirm(`يوجد محتوى حالي في «${it.k}» — استبداله؟`)) ok = (await maPut(sub, it.v)) && ok;
+        }
+      }
+      // الإعلانات تحتاج فهرسها حتى تظهر
+      const seg = e.path.split("/");
+      if (seg[0] === "school-ann-items") { const ids = seg[1] ? [seg[1]] : e.items.filter(i => i.k && i.k !== "[]").map(i => i.k); for (const id of ids) await dbFirebasePut(`school-ann-meta/${id}`, { at: Date.now() }); }
+      if (ok) { await maPut(`${TR_NODE}/${mon}/${e.id}/rs`, { at: Date.now(), by: trWho() || "الإدارة" }); setL(l => l.map(x => x.id === e.id ? { ...x, rs: { at: Date.now() } } : x)); }
+    } catch { ok = false; }
+    setBusy(""); toast(ok ? "✅ تم الاسترجاع — حدّث الصفحة لرؤيته في مكانه" : "⚠️ تعذّر الاسترجاع — تحقق من الاتصال وأعد المحاولة");
+  };
+  const LL = (L || []).filter(e => !q || TR_LBL(e.path).includes(q) || JSON.stringify(e.items || []).includes(q) || String(e.who || "").includes(q));
+  return (
+    <div className="ma pt px-2 md:px-4 py-4" dir="rtl">
+      <style>{MA_CSS + PT_CSS + IN_CSS}</style>
+      <div className="grid gap-4" style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div className="in-hero" style={{ background: "linear-gradient(135deg,#1e293b,#334155 55%,#0f766e)" }}>
+          <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
+            <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.16)", display: "grid", placeItems: "center", fontSize: 30 }}>🗃️</div>
+            <div style={{ flex: "1 1 240px", minWidth: 0 }}><div style={{ fontSize: 20, fontWeight: 900 }}>سلة المحذوفات والاسترجاع</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>أي شيء يُحذف أو يُستبدل في الموقع تُحفظ نسخته هنا تلقائياً قبل حذفه، ويمكن استرجاعه في أي وقت</div></div>
+          </div>
+        </div>
+        <div className="ma-card p-3 flex gap-2 flex-wrap items-center">
+          <b>📅 الشهر:</b>
+          {months === null ? <span style={{ color: "#94a3b8", fontWeight: 800 }}>⏳</span> : months.length ? months.map(m => <button key={m} className={`in-chip ${mon === m ? "on" : ""}`} onClick={() => setMon(m)}>{m}</button>) : <span style={{ color: "#64748b", fontWeight: 800 }}>لا توجد محذوفات بعد</span>}
+          <input className="ma-inp" style={{ width: 220, height: 36, marginRight: "auto" }} placeholder="🔍 بحث بالاسم أو العنوان" value={q} onChange={e => setQ(e.target.value)} />
+        </div>
+        {L === null && <div className="ma-card p-8 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>}
+        {L && <div className="grid gap-2">{LL.map(e => (
+          <div key={e.id} className="in-row" style={{ borderRight: `5px solid ${e.rs ? "#15803d" : e.why === "حذف" ? "#dc2626" : "#d97706"}` }}>
+            <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+              <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 14 }}>{TR_LBL(e.path)}</b><span className="in-fl" style={{ background: e.why === "حذف" ? "#fee2e2" : "#fef3c7", color: e.why === "حذف" ? "#b91c1c" : "#92400e" }}>{e.why === "حذف" ? "🗑 حذف" : "✏️ أُزيل أثناء تعديل"}</span>{e.items && e.items.length > 1 && <span className="in-fl" style={{ background: "#f1f5f9", color: "#334155" }}>{maAr(e.items.length)} عناصر</span>}{e.rs && <span className="in-fl" style={{ background: "#dcfce7", color: "#15803d" }}>✅ مُسترجع</span>}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", marginTop: 2 }}>{(e.items || []).slice(0, 3).map(i => trSum(i.v)).filter(Boolean).join(" • ") || "—"}</div>
+              <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(e.at)}{e.who ? ` • ${e.who}` : ""} • {e.path}</div>
+            </div>
+            <div className="flex gap-1"><button className="ma-btn" onClick={() => setView(e)}>👁 عرض</button><button className="ma-btn pri" disabled={busy === e.id || e.big} onClick={() => restore(e)}>{busy === e.id ? "⏳" : "↩️ استرجاع"}</button></div>
+          </div>))}
+          {!LL.length && <div className="ma-card p-8 text-center" style={{ color: "#15803d", fontWeight: 900 }}>لا توجد عناصر في هذا الشهر</div>}
+        </div>}
+      </div>
+      {view && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setView(null)}><div className="ma-card p-4 grid gap-2" style={{ width: "min(760px,100%)", maxHeight: "88vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
+        <b style={{ fontSize: 15 }}>{TR_LBL(view.path)} — {ptWhen(view.at)}</b>
+        {(view.items || []).map((it, i) => { const imgs = JSON.stringify(it.v || "").match(/data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/g) || []; return <div key={i} className="grid gap-2" style={{ border: "1px solid #eef2f6", borderRadius: 14, padding: 10 }}>
+          {imgs.length > 0 && <div className="flex gap-2 flex-wrap">{imgs.slice(0, 6).map((s, j) => <img key={j} src={s} alt="" style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 12 }} />)}</div>}
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 11.5, background: "#f8fafc", borderRadius: 10, padding: 8, maxHeight: 260, overflow: "auto", direction: "rtl", fontFamily: "inherit" }}>{JSON.stringify(it.v, (k, v) => typeof v === "string" && v.startsWith("data:") ? "[صورة]" : v, 2).slice(0, 6000)}</pre></div>; })}
+        <div className="flex justify-end"><button className="ma-btn" onClick={() => setView(null)}>إغلاق</button></div>
+      </div></div>}
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, maxWidth: "92vw" }}>{msg}</div>}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ✍️ حفظ تلقائي لكل ما يُكتب — عند انقطاع الاتصال أو إغلاق الصفحة يعود النص كما كان
+//   localStorage «pam-drafts-v1» = {key:{v, t, p, at, lbl, sec, pg, ce, s}}  (s=1: أُرسل/انتهى — لا يُسترجع تلقائياً ويبقى في «مسوداتي»)
+// ══════════════════════════════════════════════════════════════════════
+const DR_KEY = "pam-drafts-v1";
+let drMem = null;
+const drGet = () => { if (!drMem) { try { drMem = JSON.parse(localStorage.getItem(DR_KEY) || "{}") || {}; } catch { drMem = {}; } } return drMem; };
+function drStore() {
+  const now = Date.now(); const E = Object.entries(drGet()).filter(([, d]) => d && now - (d.at || 0) < 30 * 864e5).sort((a, b) => b[1].at - a[1].at).slice(0, 150);
+  drMem = Object.fromEntries(E);
+  try { localStorage.setItem(DR_KEY, JSON.stringify(drMem)); } catch { try { localStorage.setItem(DR_KEY, JSON.stringify(Object.fromEntries(E.slice(0, 40).map(([k, d]) => [k, { ...d, v: String(d.v || "").slice(0, 30000) }])))); } catch {} }
+  try { window.dispatchEvent(new Event("pam-drafts")); } catch {}
+}
+const DR_NO = /هوية|السجل المدني|سجلك|كلمة المرور|كلمة السر|password|رمز التحقق|بحث|🔍/i;
+const drLabel = el => String(el.getAttribute("placeholder") || el.getAttribute("aria-label") || el.getAttribute("title") || el.getAttribute("name") || (el.closest("label") ? el.closest("label").textContent : "") || "").replace(/\s+/g, " ").trim().slice(0, 60);
+function drOk(el) {
+  if (!el || el.nodeType !== 1 || !el.isConnected) return false;
+  if (el.closest("[data-nodraft]")) return false;
+  if (el.isContentEditable) return el.hasAttribute("contenteditable");
+  if (el.disabled || el.readOnly) return false;
+  if (el.tagName === "TEXTAREA") return !DR_NO.test(drLabel(el));
+  if (el.tagName !== "INPUT") return false;
+  const ty = (el.getAttribute("type") || "text").toLowerCase();
+  if (!["text", "email", "url", "tel"].includes(ty)) return false;
+  if (/numeric|decimal/.test(el.getAttribute("inputmode") || "")) return false;
+  return !DR_NO.test(drLabel(el));
+}
+const drTag = el => el.isContentEditable ? "ce" : el.tagName.toLowerCase();
+const drSection = el => { const c = el.closest(".ma-card,.pt-item,.bn-panel,form,[role=dialog]"); const b = c && c.querySelector("b,h1,h2,h3,h4"); return String(b ? b.textContent : "").replace(/[0-9٠-٩()]/g, "").replace(/\s+/g, " ").trim().slice(0, 40); };
+const drScope = () => { const b = document.querySelector(".pt-bar b"); return (window.location.hash || "#") + "|" + (b ? b.textContent.trim().slice(0, 40) : ""); };
+const drPage = () => { const b = document.querySelector(".pt-bar b"); return (b && b.textContent.trim()) || window.__pamPageLabel || window.location.hash.replace("#", "") || "الصفحة الرئيسية"; };
+function drSig(el) {
+  const tag = drTag(el), lbl = drLabel(el), sec = drSection(el), sc = drScope();
+  const same = [...document.querySelectorAll(tag === "ce" ? "[contenteditable]" : tag)].filter(x => x.isConnected && drTag(x) === tag && drLabel(x) === lbl && drSection(x) === sec);
+  return { key: [sc, sec, tag, lbl, same.indexOf(el)].join("|"), uniq: same.length === 1, lbl, sec, sc };
+}
+const drLive = new Map(); // key → العنصر الذي يحمل المسودة الآن
+function drSet(el, v) {
+  if (el.isContentEditable) el.innerHTML = v;
+  else { const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype; const d = Object.getOwnPropertyDescriptor(proto, "value"); if (d && d.set) d.set.call(el, v); else el.value = v; }
+  el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true }));
+}
+function drPut(el) {
+  if (!el || !el.isConnected) return;
+  const s = drSig(el); const ce = el.isContentEditable; const v = ce ? el.innerHTML : el.value; const txt = String((ce ? el.innerText : v) || "");
+  const o = drGet();
+  if (!txt.trim()) { if (o[s.key] && !o[s.key].s) { o[s.key] = { ...o[s.key], s: 1 }; drStore(); } drLive.delete(s.key); return; } // لا يُمسح — يبقى في «مسوداتي»
+  if (txt.trim().length < 2) return;
+  o[s.key] = { v: String(v).slice(0, 200000), t: txt.trim().slice(0, 400), p: ce ? txt.slice(0, 200000) : undefined, at: Date.now(), lbl: s.lbl || s.sec || "حقل كتابة", sec: s.sec, pg: drPage(), ce: ce ? 1 : 0, s: 0 };
+  drLive.set(s.key, el); drStore();
+}
+const drDone = new WeakSet();
+function drScan() {
+  const o = drGet(); const sc = drScope() + "|";
+  if (!Object.entries(o).some(([k, d]) => d && !d.s && k.startsWith(sc))) return;
+  document.querySelectorAll("input,textarea,[contenteditable]").forEach(el => {
+    if (drDone.has(el) || !drOk(el)) return; drDone.add(el);
+    const s = drSig(el); const d = o[s.key]; if (!d || d.s || !s.uniq) return;
+    const cur = el.isContentEditable ? el.innerText : el.value; if (String(cur || "").trim()) return;
+    drSet(el, d.v); drLive.set(s.key, el);
+    try { window.dispatchEvent(new CustomEvent("pam-draft-restored", { detail: { key: s.key, lbl: d.lbl, at: d.at } })); } catch {}
+  });
+}
+const DR_SAVE_RE = /حفظ|نشر|إرسال|ارسال|اعتماد|تسجيل|إضافة|اضافة|رفع|💾|📤/;
+function drInstall() {
+  if (typeof window === "undefined" || typeof document === "undefined" || window.__drOn) return; window.__drOn = 1;
+  const T = new WeakMap(); const pend = new Set();
+  const flush = () => { pend.forEach(el => { clearTimeout(T.get(el)); drPut(el); }); pend.clear(); };
+  document.addEventListener("input", e => {
+    let el = e.target; if (el && el.isContentEditable && !el.hasAttribute("contenteditable")) el = el.closest("[contenteditable]");
+    if (!drOk(el)) return; pend.add(el); clearTimeout(T.get(el)); T.set(el, setTimeout(() => { pend.delete(el); drPut(el); }, 400));
+  }, true);
+  // بعد الضغط على زر حفظ/إرسال: المسودة التي اختفى حقلها تُعدّ مرسلة
+  document.addEventListener("click", e => {
+    const b = e.target && e.target.closest && e.target.closest("button,[role=button],input[type=submit]"); if (!b) return;
+    if (!DR_SAVE_RE.test(String(b.textContent || b.value || ""))) return; flush();
+    const keys = [...drLive.keys()];
+    setTimeout(() => { const o = drGet(); let ch = false; keys.forEach(k => { const el = drLive.get(k), d = o[k]; if (!d || d.s) return; if (!el || !el.isConnected) { o[k] = { ...d, s: 1 }; ch = true; drLive.delete(k); } }); if (ch) drStore(); }, 1500);
+  }, true);
+  // الحقل الذي أفرغه الموقع نفسه بعد الحفظ = أُرسل
+  setInterval(() => { const o = drGet(); let ch = false; drLive.forEach((el, k) => { const d = o[k]; if (!d || !el.isConnected) { drLive.delete(k); return; } const cur = el.isContentEditable ? el.innerText : el.value; if (!String(cur || "").trim() && !d.s && Date.now() - d.at > 900) { o[k] = { ...d, s: 1 }; ch = true; drLive.delete(k); } }); if (ch) drStore(); }, 1500);
+  window.addEventListener("pagehide", flush); window.addEventListener("beforeunload", flush);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+  window.addEventListener("offline", flush);
+  let mt; const mo = new MutationObserver(() => { clearTimeout(mt); mt = setTimeout(drScan, 350); });
+  const start = () => { try { mo.observe(document.body, { childList: true, subtree: true }); } catch {} drScan(); };
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+  window.addEventListener("hashchange", () => setTimeout(drScan, 400));
+}
+if (typeof window !== "undefined") { try { trInstall(); } catch {} try { drInstall(); } catch {} }
+
+// شريط الاتصال + تنبيه الاسترجاع + «مسوداتي»
+function PamGuard() {
+  const [on, setOn] = useState(() => typeof navigator === "undefined" || navigator.onLine !== false);
+  const [n, setN] = useState(0); const [open, setOpen] = useState(false); const [rt, setRt] = useState(null); const [cp, setCp] = useState(""); const [, force] = useState(0);
+  const last = useRef(null);
+  useEffect(() => {
+    const cnt = () => { setN(Object.keys(drGet()).length); force(x => x + 1); };
+    const up = () => setOn(true), dn = () => setOn(false);
+    let tm; const rs = e => { setRt(e.detail); clearTimeout(tm); tm = setTimeout(() => setRt(null), 10000); };
+    const fi = e => { if (drOk(e.target)) last.current = e.target; };
+    cnt(); window.addEventListener("pam-drafts", cnt); window.addEventListener("online", up); window.addEventListener("offline", dn); window.addEventListener("pam-draft-restored", rs); document.addEventListener("focusin", fi);
+    return () => { window.removeEventListener("pam-drafts", cnt); window.removeEventListener("online", up); window.removeEventListener("offline", dn); window.removeEventListener("pam-draft-restored", rs); document.removeEventListener("focusin", fi); clearTimeout(tm); };
+  }, []);
+  const say = t => { setCp(t); clearTimeout(say.t); say.t = setTimeout(() => setCp(""), 3500); };
+  const ignore = () => { const el = drLive.get(rt.key); if (el && el.isConnected) drSet(el, ""); const o = drGet(); if (o[rt.key]) { o[rt.key] = { ...o[rt.key], s: 1 }; drStore(); } setRt(null); };
+  const esc = s => String(s || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const insert = d => { const el = last.current; if (!el || !el.isConnected) { say("👆 اضغط داخل الحقل الذي تريد الإدراج فيه، ثم افتح «مسوداتي» واضغط إدراج"); return; } const v = el.isContentEditable ? (d.ce ? d.v : esc(d.v).replace(/\n/g, "<br>")) : (d.ce ? (d.p || d.t) : d.v); drSet(el, v); setOpen(false); say("✅ أُدرج النص"); };
+  const copy = async d => { const t = d.ce ? (d.p || d.t) : d.v; try { await navigator.clipboard.writeText(t); say("📋 نُسخ النص"); } catch { window.prompt("انسخ النص:", t); } };
+  const L = Object.entries(drGet()).sort((a, b) => b[1].at - a[1].at);
+  const box = { position: "fixed", zIndex: 690, fontFamily: "Cairo,Tahoma,sans-serif", direction: "rtl" };
+  return (
+    <div data-nodraft="1">
+      {!on && <div style={{ ...box, top: 0, left: 0, right: 0, zIndex: 900, background: "#7c2d12", color: "#fff", textAlign: "center", padding: "6px 10px", fontSize: 13, fontWeight: 800 }}>📡 لا يوجد اتصال — استمر في الكتابة، كل ما تكتبه محفوظ على جهازك ويعود كما هو</div>}
+      {rt && <div style={{ ...box, bottom: 70, left: "50%", transform: "translateX(-50%)", zIndex: 860, background: "#0f172a", color: "#fff", borderRadius: 16, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", maxWidth: "94vw", boxShadow: "0 18px 40px -20px rgba(0,0,0,.6)" }}><span style={{ fontWeight: 800, fontSize: 13 }}>↩️ أعدنا ما كتبته سابقاً في «{rt.lbl}» ({ptWhen(rt.at)})</span><button onClick={() => setRt(null)} style={{ border: "none", borderRadius: 10, padding: "4px 12px", fontWeight: 900, fontFamily: "inherit", cursor: "pointer", background: "#14b8a6", color: "#fff" }}>تمام</button><button onClick={ignore} style={{ border: "1px solid #475569", borderRadius: 10, padding: "4px 12px", fontWeight: 800, fontFamily: "inherit", cursor: "pointer", background: "transparent", color: "#e2e8f0" }}>ابدأ من جديد</button></div>}
+      {n > 0 && !open && <button title="مسوداتي — كل ما كتبته محفوظ هنا" onClick={() => setOpen(true)} style={{ ...box, bottom: 14, left: 14, width: 44, height: 44, borderRadius: 14, border: "1px solid #e2e8f0", background: "#fff", boxShadow: "0 10px 24px -14px rgba(15,23,42,.6)", fontSize: 20, cursor: "pointer" }}>📝<span style={{ position: "absolute", top: -6, right: -6, background: "#0f766e", color: "#fff", borderRadius: 999, fontSize: 10.5, fontWeight: 900, padding: "1px 6px" }}>{maAr(n)}</span></button>}
+      {open && <div style={{ ...box, bottom: 12, left: 12, width: "min(420px,94vw)", maxHeight: "70vh", overflow: "auto", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, boxShadow: "0 24px 50px -24px rgba(15,23,42,.6)", padding: 12, zIndex: 870 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}><b style={{ fontSize: 15 }}>📝 مسوداتي</b><span style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>آخر ما كتبته في الموقع (٣٠ يوماً)</span><button onClick={() => setOpen(false)} style={{ marginRight: "auto", border: "none", background: "#f1f5f9", borderRadius: 10, width: 30, height: 30, cursor: "pointer", fontWeight: 900 }}>✕</button></div>
+        {cp && <div style={{ background: "#f0fdfa", color: "#0f766e", borderRadius: 10, padding: "6px 10px", fontSize: 12.5, fontWeight: 800, marginBottom: 8 }}>{cp}</div>}
+        <div style={{ display: "grid", gap: 8 }}>{L.map(([k, d]) => <div key={k} style={{ border: "1px solid #eef2f6", borderRight: `4px solid ${d.s ? "#94a3b8" : "#d97706"}`, borderRadius: 14, padding: "8px 10px" }}>
+          <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>{d.pg}{d.lbl ? ` • ${d.lbl}` : ""} • {ptWhen(d.at)}{!d.s ? " • لم يُرسل" : ""}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: "4px 0", whiteSpace: "pre-wrap", maxHeight: 84, overflow: "hidden" }}>{d.t}</div>
+          <div style={{ display: "flex", gap: 6 }}><button onClick={() => copy(d)} style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: 10, padding: "3px 10px", fontWeight: 800, fontFamily: "inherit", cursor: "pointer", fontSize: 12 }}>📋 نسخ</button><button onClick={() => insert(d)} style={{ border: "none", background: "#0f766e", color: "#fff", borderRadius: 10, padding: "3px 10px", fontWeight: 800, fontFamily: "inherit", cursor: "pointer", fontSize: 12 }}>⤵️ إدراج في الحقل</button></div>
+        </div>)}</div>
+      </div>}
+      {cp && !open && <div style={{ ...box, bottom: 66, left: 14, background: "#0f172a", color: "#fff", borderRadius: 12, padding: "8px 12px", fontSize: 12.5, fontWeight: 800, maxWidth: "80vw" }}>{cp}</div>}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 🚸 متابعة السلوك اليومي — مخالفات الطلاب ومخالفات الفصول (يدخلها المعلمون برقم الهوية)
+//   school-dconduct/{date}/{id} = {id, k:"s"|"c", dk, at, time, ck, cat, other, note, per, img, ni, by, role, sid, name, nh, x?}
+//   school-dconduct-img/{gid} = [صورة، صورة]  (حتى صورتين لكل رصد)
+//   لا يُحذف الرصد: الإلغاء يضع علامة x ويمكن التراجع عنه
+// ══════════════════════════════════════════════════════════════════════
+const DC_NODE = "school-dconduct", DC_IMG = "school-dconduct-img";
+const DC_STU = [
+  { k: "lateP", ic: "⏰", t: "تأخر عن الحصة", c: "#c2410c" },
+  { k: "hair", ic: "💇", t: "قصة شعر مخالفة", c: "#7c3aed" },
+  { k: "noise", ic: "📢", t: "إزعاج وفوضى", c: "#dc2626" },
+  { k: "books", ic: "🎒", t: "عدم إحضار الكتب والأدوات", c: "#b45309" },
+  { k: "sleep", ic: "😴", t: "النوم", c: "#0369a1" },
+  { k: "talk", ic: "🗣️", t: "الكلام أثناء الشرح", c: "#be185d" },
+  { k: "uniform", ic: "👕", t: "الزي المخالف", c: "#2563eb" },
+  { k: "other", ic: "📝", t: "أخرى", c: "#475569", txt: 1 },
+];
+const DC_CLS = [
+  { k: "dirty", ic: "🧹", t: "فصل غير نظيف", c: "#a16207" },
+  { k: "desks", ic: "🪑", t: "الطاولات غير مرتبة", c: "#0f766e" },
+  { k: "absent", ic: "🚫", t: "كثرة الغياب", c: "#b91c1c" },
+  { k: "other", ic: "📝", t: "أخرى", c: "#475569", txt: 1 },
+];
+const dcCat = (k, kind) => (kind === "c" ? DC_CLS : DC_STU).find(c => c.k === k) || { k, ic: "📝", t: "أخرى", c: "#475569" };
+const dcLbl = r => r.cat === "other" && r.other ? r.other : dcCat(r.cat, r.k).t;
+const dcId = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// قائمة انتظار على الجهاز (IndexedDB تتسع للصور) تُرفع عند عودة الاتصال
+async function dcQGet() { return (await idbKV.get("dc-q")) || []; }
+async function dcQAdd(path, v) { const q = await dcQGet(); q.push({ path, v }); await idbKV.set("dc-q", q); }
+let _dcFl = false;
+async function dcFlush() {
+  if (_dcFl) return (await dcQGet()).length; _dcFl = true;
+  const q = await dcQGet(); const rest = [];
+  for (const x of q) { const ok = navigator.onLine !== false && await maPut(x.path, x.v); if (!ok) rest.push(x); }
+  await idbKV.set("dc-q", rest); _dcFl = false; return rest.length;
+}
+async function dcPut(path, v) { const ok = navigator.onLine !== false && await maPut(path, v); if (!ok) await dcQAdd(path, v); return ok; }
+const dcCompress = f => new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => { const M = 1000; const k = Math.min(1, M / Math.max(im.width, im.height)); const c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", .7)); }; im.onerror = rej; im.src = rd.result; }; rd.onerror = rej; rd.readAsDataURL(f); });
+const dcNowPer = (times) => { const n = new Date(); const m = n.getHours() * 60 + n.getMinutes(); const T = (times || TT_DEF_TIMES).slice(0, 7); const i = T.findIndex(([a, b]) => { const x = mlToMin(a), y = mlToMin(b); return x != null && y != null && m >= x && m < y; }); return i >= 0 ? String(i + 1) : ""; };
+const DC_CSS = `
+.dc-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dc-seg button{border:2px solid #e2e8f0;background:#fff;border-radius:18px;padding:12px;font-family:inherit;font-weight:900;font-size:14.5px;cursor:pointer;color:#334155;display:flex;align-items:center;justify-content:center;gap:8px}
+.dc-seg button.on{border-color:#1e3a8a;background:#1e3a8a;color:#fff}
+.dc-cls{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.dc-ct{border:2px solid #eef2f6;background:#fff;border-radius:16px;padding:9px 6px;font-family:inherit;cursor:pointer;text-align:center;position:relative}
+.dc-ct b{display:block;font-size:14.5px;font-weight:900}.dc-ct small{font-size:11px;font-weight:800;color:#64748b}
+.dc-ct .n{position:absolute;top:5px;left:5px;background:#fee2e2;color:#b91c1c;border-radius:999px;padding:0 7px;font-size:11px;font-weight:900}
+.dc-stu{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;max-height:360px;overflow:auto;padding:2px}
+.dc-s{display:flex;align-items:center;gap:8px;border:2px solid #eef2f6;background:#fff;border-radius:14px;padding:7px 9px;font-family:inherit;cursor:pointer;text-align:right;font-weight:800;font-size:13px}
+.dc-s.on{border-color:#1e3a8a;background:#eff6ff}
+.dc-s i{font-style:normal;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#f1f5f9;font-size:11.5px;flex-shrink:0}
+.dc-s.on i{background:#1e3a8a;color:#fff}
+.dc-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.dc-cat{border:2px solid #e2e8f0;border-color:color-mix(in srgb,var(--c) 30%,#fff);background:#f8fafc;background:color-mix(in srgb,var(--c) 7%,#fff);color:var(--c);border-radius:16px;padding:12px 8px;font-family:inherit;font-weight:900;font-size:13.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.dc-cat span{font-size:26px;line-height:1}
+.dc-cat.on{background:var(--c);border-color:var(--c);color:#fff;box-shadow:0 12px 22px -14px var(--c)}
+.dc-ph{width:96px;height:96px;border-radius:14px;border:2px dashed #cbd5e1;background:#f8fafc;display:grid;place-items:center;font-size:12px;font-weight:800;color:#64748b;cursor:pointer;font-family:inherit;position:relative;overflow:hidden}
+.dc-ph img{width:100%;height:100%;object-fit:cover}
+.dc-ph .x{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;border:none;background:#dc2626;color:#fff;font-weight:900;cursor:pointer;line-height:1}
+.dc-save{position:sticky;bottom:8px;z-index:20}
+@media (max-width:640px){.dc-cls{grid-template-columns:repeat(3,1fr)}.dc-stu{grid-template-columns:1fr}.dc-cats{grid-template-columns:repeat(2,1fr)}}
+`;
+function DcImgs({ gid, n }) {
+  const [L, setL] = useState(null); const [z, setZ] = useState(null);
+  useEffect(() => { (async () => { let d = await maGet(`${DC_IMG}/${gid}`); if (!d) { const q = await dcQGet(); const x = q.find(i => i.path === `${DC_IMG}/${gid}`); d = x && x.v; } setL(maArr(d)); })(); }, [gid]);
+  if (L === null) return <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 800 }}>⏳ {maAr(n || 1)} صورة…</span>;
+  return <><div className="flex gap-2 flex-wrap">{L.map((s, i) => <img key={i} src={s} alt="" onClick={() => setZ(s)} style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 12, cursor: "zoom-in", border: "2px solid #eef2f6" }} />)}</div>
+    {z && <div onClick={() => setZ(null)} style={{ position: "fixed", inset: 0, zIndex: 950, background: "rgba(0,0,0,.85)", display: "grid", placeItems: "center", padding: 12 }}><img src={z} alt="" style={{ maxWidth: "100%", maxHeight: "92vh", borderRadius: 12 }} /></div>}</>;
+}
+function DcRow({ r, onCancel, canEdit }) {
+  const c = dcCat(r.cat, r.k); const [img, setImg] = useState(false);
+  return (
+    <div className="in-row" style={{ borderRight: `5px solid ${r.x ? "#cbd5e1" : c.c}`, opacity: r.x ? .6 : 1 }}>
+      <span style={{ fontSize: 22 }}>{r.k === "c" ? "🏫" : c.ic}</span>
+      <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+        <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 14 }}>{r.k === "c" ? `الفصل ${maClassName(r.ck)}` : r.name}</b>{r.k !== "c" && <span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>{maClassName(r.ck)}</span>}<span className="in-fl" style={{ background: c.c + "1a", color: c.c }}>{r.k === "c" ? c.ic + " " : ""}{dcLbl(r)}</span>{r.per && <span className="in-fl" style={{ background: "#f1f5f9", color: "#334155" }}>الحصة {TT_ORD[+r.per - 1] || maAr(r.per)}</span>}{r.x && <span className="in-fl" style={{ background: "#f1f5f9", color: "#64748b" }}>ملغى</span>}</div>
+        {r.note && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", marginTop: 2 }}>📝 {r.note}</div>}
+        <div style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{maDay(maDate(r.dk))} {maHijri(maDate(r.dk))} • {mlFmtT(r.time)} • {r.by}</div>
+        {img && r.img && <div className="mt-2"><DcImgs gid={r.img} n={r.ni} /></div>}
+      </div>
+      <div className="flex gap-1">{r.img && r.ni > 0 && <button className="ma-btn" style={{ padding: "3px 10px" }} onClick={() => setImg(!img)}>📷 {maAr(r.ni)}</button>}{canEdit && <button className="ma-btn" style={{ padding: "3px 10px" }} onClick={() => onCancel(r)}>{r.x ? "↺ إعادة" : "إلغاء"}</button>}</div>
+    </div>
+  );
+}
+function DailyConductPage({ by = "الإدارة", me = null, admin = false, staff = false }) {
+  const full = admin || staff;
+  const [tab, setTab] = useState("rec"); const [kind, setKind] = useState("s");
+  const [classes, setClasses] = useState([]); const [ros, setRos] = useState({}); const [times, setTimes] = useState(TT_DEF_TIMES);
+  const [dateK, setDateK] = useState(maKey(new Date())); const [day, setDay] = useState({});
+  const [ck, setCk] = useState(null); const [sel, setSel] = useState([]); const [q, setQ] = useState("");
+  const [cat, setCat] = useState(""); const [other, setOther] = useState(""); const [note, setNote] = useState(""); const [per, setPer] = useState(""); const [imgs, setImgs] = useState([]);
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(""); const [pend, setPend] = useState(0); const [mine, setMine] = useState(!full);
+  const fRef = useRef(null);
+  const toast = t => { setMsg(t); clearTimeout(toast.t); toast.t = setTimeout(() => setMsg(""), 3800); };
+  useEffect(() => { (async () => {
+    const [m, r, tc] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), maGet(TT_CFG)]);
+    setClasses(maClasses(m && Array.isArray(m.counts) ? m.counts.map(n => +n || 0) : [6, 4, 4])); setRos(ptObj(r));
+    const tm = tc && Array.isArray(tc.times) && tc.times.length ? tc.times : TT_DEF_TIMES; setTimes(tm); setPer(p => p || dcNowPer(tm));
+  })(); const f = async () => setPend(await dcFlush()); f(); const t = setInterval(f, 20000); window.addEventListener("online", f); return () => { clearInterval(t); window.removeEventListener("online", f); }; }, []);
+  const loadDay = async () => { const d = ptObj(await maGet(`${DC_NODE}/${dateK}`)); const qq = await dcQGet(); qq.forEach(x => { if (x.v && x.v.dk === dateK && x.v.id && x.path.startsWith(DC_NODE + "/")) d[x.v.id] = x.v; }); setDay(d); };
+  useEffect(() => { loadDay(); }, [dateK]);
+  const studentsOf = k => maArr(ros[k] && ros[k].students).filter(x => x && x.id && x.name);
+  const dayL = Object.values(day).filter(r => r && r.id).sort((a, b) => (b.at || 0) - (a.at || 0));
+  const myL = dayL.filter(r => !mine || r.by === by);
+  const dayByCk = {}; dayL.filter(r => !r.x).forEach(r => dayByCk[r.ck] = (dayByCk[r.ck] || 0) + 1);
+  const cats = kind === "c" ? DC_CLS : DC_STU; const cc = cat && dcCat(cat, kind);
+  const ready = ck && cat && (kind === "c" || sel.length) && (!cc.txt || other.trim());
+  const addImg = async e => { const fs = [...(e.target.files || [])]; e.target.value = ""; const room = 2 - imgs.length; if (!fs.length || room <= 0) return; const out = []; for (const f of fs.slice(0, room)) { try { out.push(await dcCompress(f)); } catch {} } setImgs(p => [...p, ...out].slice(0, 2)); };
+  const save = async () => {
+    if (!ready) { toast(!ck ? "🏫 اختر الفصل" : kind === "s" && !sel.length ? "👦 اختر الطالب" : !cat ? "اختر نوع المخالفة" : "✍️ اكتب نوع المخالفة في «أخرى»"); return; }
+    setBusy(true);
+    const now = new Date(); const tm = `${maPad(now.getHours())}:${maPad(now.getMinutes())}`;
+    const gid = imgs.length ? dcId() : "";
+    const base = { k: kind, dk: dateK, time: tm, ck, cat, other: cc.txt ? other.trim() : "", note: note.trim(), per, img: gid, ni: imgs.length, by, bh: (me && me.hash) || "", role: (me && me.role) || (admin ? "admin" : "") };
+    const L = kind === "c" ? [{ ...base, id: dcId(), at: now.getTime() }] : studentsOf(ck).filter(s => sel.includes(s.id)).map((s, i) => ({ ...base, id: dcId() + i, at: now.getTime() + i, sid: s.id, name: s.name, nh: s.nh || "" }));
+    let bad = 0;
+    if (gid && !(await dcPut(`${DC_IMG}/${gid}`, imgs))) bad++;
+    for (const r of L) { if (!(await dcPut(`${DC_NODE}/${dateK}/${r.id}`, r))) bad++; }
+    setDay(p => { const n = { ...p }; L.forEach(r => n[r.id] = r); return n; });
+    setPend((await dcQGet()).length); setBusy(false);
+    toast(bad ? "📱 حُفظ على جهازك وسيُرفع تلقائياً عند عودة الاتصال" : `✅ حُفظ: ${dcLbl(L[0])} — ${kind === "c" ? maClassName(ck) : L.length > 1 ? maAr(L.length) + " طلاب" : L[0].name.split(" ").slice(0, 2).join(" ")}`);
+    setSel([]); setCat(""); setOther(""); setNote(""); setImgs([]);
+  };
+  const cancel = async (r) => {
+    if (!full && r.by !== by) return;
+    if (!r.x && !window.confirm(`إلغاء رصد «${dcLbl(r)}»${r.name ? " للطالب " + r.name : ""}؟ (يبقى محفوظاً ويمكن إعادته)`)) return;
+    const v = r.x ? { ...r, x: null } : { ...r, x: { by, at: Date.now() } };
+    setDay(p => ({ ...p, [r.id]: v })); await dcPut(`${DC_NODE}/${r.dk}/${r.id}`, v); setPend((await dcQGet()).length);
+  };
+  const pick = s => setSel(p => p.includes(s.id) ? p.filter(x => x !== s.id) : [...p, s.id]);
+  const isToday = dateK === maKey(new Date());
+  return (
+    <div className="ma pt px-2 md:px-4 py-4" dir="rtl">
+      <style>{MA_CSS + PT_CSS + IN_CSS + DC_CSS}</style>
+      <div className="grid gap-4" style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div className="in-hero" style={{ background: "linear-gradient(135deg,#172554,#1e3a8a 55%,#0f766e)" }}>
+          <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
+            <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.16)", display: "grid", placeItems: "center", fontSize: 30 }}>🚸</div>
+            <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 20, fontWeight: 900 }}>متابعة السلوك اليومي</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>مخالفات الطلاب ومخالفات الفصول • {maDay(maDate(dateK))} {maHijri(maDate(dateK))}</div></div>
+            <div className="flex gap-2 items-center flex-wrap"><input type="date" className="ma-inp" style={{ width: 150, height: 38 }} value={dateK} max={maKey(new Date())} onChange={e => e.target.value && setDateK(e.target.value)} />{pend > 0 && <span className="pt-st" style={{ background: "#fef3c7", color: "#92400e" }}>📱 {maAr(pend)} بانتظار الرفع</span>}</div>
+          </div>
+        </div>
+        <div className="ma-tabs">{[["rec", "✍️ رصد جديد"], ["log", `📋 ${full ? "سجل اليوم" : "رصدي"} (${maAr((full ? dayL : dayL.filter(r => r.by === by)).filter(r => !r.x).length)})`], ...(full ? [["rep", "📊 التقرير والمتكررون"]] : [])].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+
+        {tab === "rec" && <>
+          <div className="dc-seg"><button className={kind === "s" ? "on" : ""} onClick={() => { setKind("s"); setCat(""); }}>👦 مخالفة طالب</button><button className={kind === "c" ? "on" : ""} onClick={() => { setKind("c"); setCat(""); setSel([]); }}>🏫 مخالفة على الفصل</button></div>
+          <div className="ma-card p-3"><div className="flex items-center gap-2"><b style={{ fontSize: 14 }}>🏫 الفصل</b>{ck && <span className="pt-st" style={{ background: MA_LV[+ck[0] - 1]?.soft, color: MA_LV[+ck[0] - 1]?.c }}>{maClassName(ck)}</span>}</div>
+            <div className="dc-cls mt-2">{classes.map(c => <button key={c.ck} className="dc-ct" style={ck === c.ck ? { borderColor: MA_LV[c.lv].c, background: MA_LV[c.lv].soft } : null} onClick={() => { setCk(c.ck); setSel([]); setQ(""); }}>{dayByCk[c.ck] ? <span className="n">{maAr(dayByCk[c.ck])}</span> : null}<b style={{ color: MA_LV[c.lv].c }}>{maClassName(c.ck)}</b><small>{maAr(studentsOf(c.ck).length)} طالب</small></button>)}</div>
+          </div>
+          {kind === "s" && ck && <div className="ma-card p-3 grid gap-2">
+            <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14 }}>👦 الطالب {sel.length > 1 ? `(${maAr(sel.length)} محددون)` : ""}</b><input className="ma-inp" style={{ width: 180, height: 34, marginRight: "auto" }} placeholder="🔍 بحث" value={q} onChange={e => setQ(e.target.value)} />{sel.length > 0 && <button className="ma-btn" style={{ padding: "3px 10px" }} onClick={() => setSel([])}>إلغاء التحديد</button>}</div>
+            <div className="dc-stu">{studentsOf(ck).filter(s => !q || s.name.includes(q)).map((s, i) => { const td = dayL.filter(r => r.sid === s.id && !r.x).length; return <button key={s.id} className={`dc-s ${sel.includes(s.id) ? "on" : ""}`} onClick={() => pick(s)}><i>{sel.includes(s.id) ? "✓" : maAr(i + 1)}</i><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>{td > 0 && <span className="pt-st" style={{ marginRight: "auto", background: "#fee2e2", color: "#b91c1c", padding: "1px 7px" }}>{maAr(td)}</span>}</button>; })}</div>
+            {!studentsOf(ck).length && <div style={{ color: "#94a3b8", fontWeight: 800, textAlign: "center", padding: 14 }}>لا توجد أسماء لهذا الفصل — تُرفع كشوف الطلاب من «سجل التأخر الصباحي ← الفصول»</div>}
+          </div>}
+          {ck && <div className="ma-card p-3 grid gap-3">
+            <b style={{ fontSize: 14 }}>{kind === "c" ? "🏫 مخالفة الفصل" : "⚠️ نوع المخالفة"}</b>
+            <div className="dc-cats">{cats.map(c => <button key={c.k} type="button" className={`dc-cat ${cat === c.k ? "on" : ""}`} style={{ "--c": c.c }} onClick={() => setCat(cat === c.k ? "" : c.k)}><span>{c.ic}</span>{c.t}</button>)}</div>
+            {cc && cc.txt && <input className="ma-inp" placeholder={kind === "c" ? "اكتب مخالفة الفصل" : "اكتب نوع المخالفة"} value={other} onChange={e => setOther(e.target.value)} />}
+            <div className="grid gap-2" style={{ gridTemplateColumns: "minmax(120px,170px) 1fr" }}>
+              <label style={{ fontSize: 12.5, fontWeight: 800 }}>الحصة<select className="ma-inp" value={per} onChange={e => setPer(e.target.value)}><option value="">—</option>{TT_ORD.slice(0, 7).map((p, i) => <option key={i} value={String(i + 1)}>{p}</option>)}</select></label>
+              <label style={{ fontSize: 12.5, fontWeight: 800 }}>ملاحظة (اختياري)<input className="ma-inp" placeholder="تفاصيل المخالفة" value={note} onChange={e => setNote(e.target.value)} /></label>
+            </div>
+            <div className="grid gap-2"><b style={{ fontSize: 13 }}>📷 صور (حتى صورتين — اختياري)</b>
+              <div className="flex gap-2 flex-wrap">{imgs.map((s, i) => <div key={i} className="dc-ph"><img src={s} alt="" /><button className="x" onClick={() => setImgs(imgs.filter((_, j) => j !== i))}>×</button></div>)}{imgs.length < 2 && <button type="button" className="dc-ph" onClick={() => fRef.current?.click()}>＋ صورة</button>}<input ref={fRef} type="file" accept="image/*" multiple hidden onChange={addImg} /></div>
+            </div>
+          </div>}
+          {ck && <div className="dc-save"><button className="ma-btn pri" style={{ width: "100%", justifyContent: "center", padding: "13px", fontSize: 15, opacity: ready ? 1 : .55 }} disabled={busy} onClick={save}>{busy ? "⏳ جاري الحفظ…" : `💾 حفظ ${kind === "c" ? "مخالفة الفصل" : sel.length > 1 ? `المخالفة لـ ${maAr(sel.length)} طلاب` : "المخالفة"}`}</button></div>}
+          {ck && dayL.filter(r => r.ck === ck).length > 0 && <div className="ma-card p-3 grid gap-2"><b style={{ fontSize: 13.5 }}>📋 رصد {maClassName(ck)} {isToday ? "اليوم" : "في هذا اليوم"}</b>{dayL.filter(r => r.ck === ck).map(r => <DcRow key={r.id} r={r} onCancel={cancel} canEdit={full || r.by === by} />)}</div>}
+        </>}
+
+        {tab === "log" && <div className="grid gap-2">
+          {full && <div className="ma-card p-2 flex gap-2 items-center flex-wrap"><button className={`in-chip ${!mine ? "on" : ""}`} onClick={() => setMine(false)}>الكل</button><button className={`in-chip ${mine ? "on" : ""}`} onClick={() => setMine(true)}>رصدي فقط</button></div>}
+          {(full ? myL : dayL.filter(r => r.by === by)).map(r => <DcRow key={r.id} r={r} onCancel={cancel} canEdit={full || r.by === by} />)}
+          {!(full ? myL : dayL.filter(r => r.by === by)).length && <div className="ma-card p-8 text-center" style={{ color: "#15803d", fontWeight: 900 }}>لا يوجد رصد {isToday ? "اليوم" : "في هذا اليوم"}</div>}
+        </div>}
+        {tab === "rep" && full && <DcReport classes={classes} by={by} />}
+      </div>
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800, maxWidth: "92vw" }}>{msg}</div>}
+    </div>
+  );
+}
+function DcReport({ classes, by }) {
+  const [per, setPer] = useState({ kind: "month", from: maKey(new Date()), to: maKey(new Date()) });
+  const [f, t] = inPeriod(per.kind, per.from, per.to);
+  const [data, setData] = useState(null); const [ck, setCk] = useState(""); const [minN, setMinN] = useState(2); const [stu, setStu] = useState(null); const [msg, setMsg] = useState("");
+  useEffect(() => { setData(null); (async () => setData(await fbRange(DC_NODE, f, t)))(); }, [f, t]);
+  if (!data) return <div className="ma-card p-10 text-center font-bold text-gray-400">⏳ جاري إعداد التقرير…</div>;
+  const all = []; Object.values(ptObj(data)).forEach(d => Object.values(ptObj(d)).forEach(r => { if (r && r.id && !r.x) all.push(r); }));
+  const R = all.filter(r => !ck || r.ck === ck).sort((a, b) => (b.at || 0) - (a.at || 0));
+  const S = R.filter(r => r.k !== "c"), C = R.filter(r => r.k === "c");
+  const cnt = (L, fn) => { const o = {}; L.forEach(r => { const k = fn(r); o[k] = (o[k] || 0) + 1; }); return o; };
+  const bySC = cnt(S, r => r.cat), byCC = cnt(C, r => r.cat);
+  const otherS = cnt(S.filter(r => r.cat === "other" && r.other), r => r.other), otherC = cnt(C.filter(r => r.cat === "other" && r.other), r => r.other);
+  const byCk = {}; classes.forEach(c => byCk[c.ck] = { ck: c.ck, lv: c.lv, s: 0, c: 0, stu: new Set(), cats: {} });
+  R.forEach(r => { const o = byCk[r.ck] = byCk[r.ck] || { ck: r.ck, lv: +String(r.ck)[0] - 1, s: 0, c: 0, stu: new Set(), cats: {} }; if (r.k === "c") o.c++; else { o.s++; o.stu.add(r.sid); } const lb = dcLbl(r); o.cats[lb] = (o.cats[lb] || 0) + 1; });
+  const CK = Object.values(byCk).filter(o => o.s + o.c).sort((a, b) => (b.s + b.c) - (a.s + a.c));
+  const byStu = {}; S.forEach(r => { const o = byStu[r.sid] = byStu[r.sid] || { sid: r.sid, name: r.name, ck: r.ck, nh: r.nh, n: 0, c: {}, L: [] }; o.n++; const lb = dcLbl(r); o.c[lb] = (o.c[lb] || 0) + 1; o.L.push(r); });
+  const rep = Object.values(byStu).filter(s => s.n >= minN).sort((a, b) => b.n - a.n);
+  const byBy = cnt(R, r => r.by || "—");
+  const mx = o => Math.max(1, ...Object.values(o));
+  const sub = `من ${maHijri(maDate(f))}<br>إلى ${maHijri(maDate(t))}`;
+  const catRows = (o, kind, oth) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) => { const c = dcCat(k, kind); return `<tr><td class="r">${c.ic} ${ptEsc(c.t)}${k === "other" && Object.keys(oth).length ? `<br><small>${Object.entries(oth).map(([x, m]) => ptEsc(x) + " ×" + maAr(m)).join(" • ")}</small>` : ""}</td><td style="width:45%"><div class="bar"><i style="width:${Math.round(n / mx(o) * 100)}%;background:${c.c}"></i></div></td><td><b>${maAr(n)}</b></td></tr>`; }).join("") || `<tr><td colspan="3">لا يوجد</td></tr>`;
+  const print = () => inOpen(`<section class="pg">${inHdr("تقرير متابعة السلوك اليومي", sub)}<div class="kp"><div><b>${maAr(S.length)}</b>مخالفة طلاب</div><div><b>${maAr(Object.keys(byStu).length)}</b>طالب مخالف</div><div><b>${maAr(C.length)}</b>مخالفة فصول</div><div><b>${maAr(rep.length)}</b>طالب متكرر (${maAr(minN)}+)</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><h3>👦 مخالفات الطلاب حسب النوع</h3><table>${catRows(bySC, "s", otherS)}</table></div><div><h3>🏫 مخالفات الفصول حسب النوع</h3><table>${catRows(byCC, "c", otherC)}</table></div></div>
+    <h3>🏫 الفصول الأكثر مخالفات</h3><table><thead><tr><th>م</th><th>الفصل</th><th>مخالفات الطلاب</th><th>عدد الطلاب</th><th>مخالفات الفصل</th><th>المجموع</th><th>الأكثر تكراراً</th></tr></thead><tbody>${CK.map((o, i) => `<tr><td>${maAr(i + 1)}</td><td><b>${maClassName(o.ck)}</b></td><td>${maAr(o.s)}</td><td>${maAr(o.stu.size)}</td><td>${maAr(o.c)}</td><td><b>${maAr(o.s + o.c)}</b></td><td class="r">${Object.entries(o.cats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => ptEsc(k) + " ×" + maAr(n)).join(" • ")}</td></tr>`).join("") || `<tr><td colspan="7">لا يوجد</td></tr>`}</tbody></table>
+    <h3>🔁 الطلاب المتكررون (${maAr(minN)} مخالفات فأكثر)</h3><table><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>العدد</th><th>التفصيل</th></tr></thead><tbody>${rep.map((s, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(s.name)}</b></td><td>${maClassName(s.ck)}</td><td><b>${maAr(s.n)}</b></td><td class="r">${Object.entries(s.c).map(([k, n]) => ptEsc(k) + " ×" + maAr(n)).join(" • ")}</td></tr>`).join("") || `<tr><td colspan="5">لا يوجد طلاب متكررون</td></tr>`}</tbody></table>${inSig(by, "وكيل شؤون الطلاب")}</section>`, "تقرير السلوك اليومي");
+  const excel = async () => { const X = await loadXLSX(); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, X.utils.json_to_sheet(R.map(r => ({ "التاريخ": r.dk, "الهجري": maHijri(maDate(r.dk)), "الوقت": r.time, "النوع": r.k === "c" ? "مخالفة فصل" : "مخالفة طالب", "الطالب": r.name || "", "الفصل": maClassName(r.ck), "المخالفة": dcLbl(r), "الحصة": r.per ? TT_ORD[+r.per - 1] : "", "الملاحظة": r.note || "", "الصور": r.ni || 0, "المسجّل": r.by || "" }))), "الرصد"); X.utils.book_append_sheet(wb, X.utils.json_to_sheet(rep.map(s => ({ "الطالب": s.name, "الفصل": maClassName(s.ck), "العدد": s.n, "التفصيل": Object.entries(s.c).map(([k, n]) => `${k} ×${n}`).join(" • ") }))), "المتكررون"); X.writeFile(wb, `متابعة-السلوك-${f}-${t}.xlsx`); };
+  const printStu = s => inOpen(`<section class="pg">${inHdr("سجل مخالفات الطالب", sub)}<table><tr><td class="r" style="font-size:14px"><b>${ptEsc(s.name)}</b></td><td>${maClassName(s.ck)}</td><td>عدد المخالفات: <b>${maAr(s.n)}</b></td></tr></table><table style="margin-top:8px"><thead><tr><th>م</th><th>اليوم والتاريخ</th><th>الحصة</th><th>المخالفة</th><th>الملاحظة</th><th>المسجّل</th></tr></thead><tbody>${[...s.L].sort((a, b) => (a.at || 0) - (b.at || 0)).map((r, i) => `<tr><td>${maAr(i + 1)}</td><td>${maDay(maDate(r.dk))} ${maHijri(maDate(r.dk))}</td><td>${r.per ? TT_ORD[+r.per - 1] : "—"}</td><td>${ptEsc(dcLbl(r))}</td><td class="r">${ptEsc(r.note || "")}</td><td>${ptEsc(r.by || "")}</td></tr>`).join("")}</tbody></table>${inSig(by, "الموجه الطلابي")}</section>`, "سجل الطالب");
+  const sendStu = async s => { if (!s.nh) { alert("الطالب غير مربوط برقم الهوية"); return; } const id = "dc" + Date.now().toString(36); const text = [`ولي أمر الطالب ${s.name} — ${maClassName(s.ck)}`, `نحيطكم علماً بالمخالفات المسجلة من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))}:`, ...[...s.L].sort((a, b) => (a.at || 0) - (b.at || 0)).map(r => `• ${maHijri(maDate(r.dk))}: ${dcLbl(r)}${r.note ? " — " + r.note : ""}`), "نأمل تعاونكم مع المدرسة في متابعة الطالب وتوجيهه."].join("\n"); const ok = await maPut(`${PT_PREP}/${id}`, { id, nh: s.nh, sname: s.name, ck: s.ck, type: "warn", title: "🚸 متابعة السلوك اليومي", text, at: Date.now(), by }); setMsg(ok ? "📤 وصل لبوابة ولي الأمر" : "⚠️ تعذّر الإرسال"); setTimeout(() => setMsg(""), 3000); };
+  const Bars = ({ o, kind, oth }) => <div className="grid gap-2 mt-3">{Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) => { const c = dcCat(k, kind); return <div key={k}><div className="flex justify-between" style={{ fontSize: 12.5, fontWeight: 800 }}><span>{c.ic} {c.t}</span><b>{maAr(n)}</b></div><InBar v={n} max={mx(o)} c={c.c} />{k === "other" && Object.keys(oth).length > 0 && <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>{Object.entries(oth).map(([x, m]) => `${x} ×${maAr(m)}`).join(" • ")}</div>}</div>; })}{!Object.keys(o).length && <span style={{ color: "#15803d", fontWeight: 900 }}>لا يوجد</span>}</div>;
+  return (
+    <div className="grid gap-3">
+      <div className="ma-card p-3 grid gap-2"><InPer per={per} setPer={setPer} /><div className="flex gap-2 flex-wrap items-center"><select className="ma-inp" style={{ width: 150, height: 36 }} value={ck} onChange={e => setCk(e.target.value)}><option value="">كل الفصول</option>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>من {maHijri(maDate(f))} إلى {maHijri(maDate(t))}</span><div className="flex gap-2" style={{ marginRight: "auto" }}><button className="ma-btn pri" onClick={print}>🖨️ طباعة</button><button className="ma-btn grn" onClick={excel}>📊 Excel</button></div></div></div>
+      <div className="pt-kpis"><div className="pt-kpi" style={{ "--c": "#dc2626" }}><b>{maAr(S.length)}</b><small>مخالفة طلاب</small></div><div className="pt-kpi" style={{ "--c": "#1e3a8a" }}><b>{maAr(Object.keys(byStu).length)}</b><small>طالب مخالف</small></div><div className="pt-kpi" style={{ "--c": "#a16207" }}><b>{maAr(C.length)}</b><small>مخالفة فصول</small></div><div className="pt-kpi" style={{ "--c": "#7c3aed" }}><b>{maAr(rep.length)}</b><small>طالب متكرر</small></div></div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
+        <div className="ma-card p-4"><b>👦 مخالفات الطلاب حسب النوع</b><Bars o={bySC} kind="s" oth={otherS} /></div>
+        <div className="ma-card p-4"><b>🏫 مخالفات الفصول حسب النوع</b><Bars o={byCC} kind="c" oth={otherC} /></div>
+      </div>
+      <div className="ma-card p-4"><b>🏫 الفصول الأكثر مخالفات</b><div className="grid gap-2 mt-3">{CK.map((o, i) => <div key={o.ck} className="in-row" style={{ cursor: "pointer" }} onClick={() => setCk(ck === o.ck ? "" : o.ck)}><span className="in-med" style={{ fontSize: 16 }}>{maAr(i + 1)}</span><b style={{ width: 100, color: MA_LV[o.lv] ? MA_LV[o.lv].c : "#0f172a" }}>{maClassName(o.ck)}</b><div style={{ flex: "1 1 160px" }}><InBar v={o.s + o.c} max={Math.max(1, ...CK.map(x => x.s + x.c))} c={MA_LV[o.lv] ? MA_LV[o.lv].c : "#475569"} /></div><span className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c" }}>👦 {maAr(o.s)} ({maAr(o.stu.size)} طالب)</span><span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>🏫 {maAr(o.c)}</span><b style={{ fontSize: 18 }}>{maAr(o.s + o.c)}</b></div>)}{!CK.length && <span style={{ color: "#15803d", fontWeight: 900 }}>لا مخالفات في الفترة</span>}</div></div>
+      <div className="ma-card p-4"><div className="flex items-center gap-2 flex-wrap"><b>🔁 الطلاب المتكررون</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>من</span>{[2, 3, 5].map(n => <button key={n} className={`in-chip ${minN === n ? "on" : ""}`} onClick={() => setMinN(n)}>{maAr(n)}+ مخالفات</button>)}</div>
+        <div className="grid gap-2 mt-3">{rep.map((s, i) => <div key={s.sid} className="in-row" style={{ cursor: "pointer" }} onClick={() => setStu(s)}><span className="in-med" style={{ fontSize: 16 }}>{maAr(i + 1)}</span><b style={{ flex: "1 1 160px" }}>{s.name}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>{maClassName(s.ck)}</span><span className="flex gap-1 flex-wrap">{Object.entries(s.c).map(([k, n]) => <span key={k} className="in-fl" style={{ background: "#f1f5f9", color: "#334155" }}>{k} {maAr(n)}</span>)}</span><b style={{ fontSize: 18, color: s.n >= 5 ? "#b91c1c" : "#b45309" }}>{maAr(s.n)}</b></div>)}{!rep.length && <span style={{ color: "#15803d", fontWeight: 900 }}>لا يوجد طلاب متكررون في الفترة</span>}</div></div>
+      <div className="ma-card p-4"><b>✍️ المسجّلون</b><div className="flex gap-2 flex-wrap mt-2">{Object.entries(byBy).sort((a, b) => b[1] - a[1]).map(([k, n]) => <span key={k} className="in-fl" style={{ background: "#eff6ff", color: "#1e3a8a" }}>{k} • {maAr(n)}</span>)}</div></div>
+      {stu && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setStu(null)}><div className="ma-card" style={{ width: "min(640px,100%)", maxHeight: "88vh", overflow: "auto", padding: 0 }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: "14px 18px", background: "linear-gradient(135deg,#1e3a8a,#172554)", color: "#fff" }}><div style={{ fontSize: 18, fontWeight: 900 }}>🚸 {stu.name}</div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{maClassName(stu.ck)} • {maAr(stu.n)} مخالفة خلال الفترة</div></div>
+        <div className="p-4 grid gap-2">{[...stu.L].sort((a, b) => (b.at || 0) - (a.at || 0)).map(r => <DcRow key={r.id} r={r} canEdit={false} />)}
+          <div className="flex gap-2 flex-wrap justify-end mt-2"><button className="ma-btn" onClick={() => printStu(stu)}>🖨️ سجل الطالب</button><button className="ma-btn pri" onClick={() => sendStu(stu)}>📤 إرسال لولي الأمر</button><button className="ma-btn" onClick={() => setStu(null)}>إغلاق</button></div></div>
+      </div></div>}
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 🔁 تقرير الغياب والتأخر الصباحي — الفصول الأكثر والطلاب المتكررون
+// ══════════════════════════════════════════════════════════════════════
+function AbsLateReportPage({ by = "الإدارة" }) {
+  const [per, setPer] = useState({ kind: "month", from: maKey(new Date()), to: maKey(new Date()) });
+  const [f, t] = inPeriod(per.kind, per.from, per.to);
+  const [D, setD] = useState(null); const [mode, setMode] = useState("both"); const [minN, setMinN] = useState(2); const [ck, setCk] = useState(""); const [q, setQ] = useState(""); const [stu, setStu] = useState(null);
+  useEffect(() => { setD(null); (async () => { const [ros, meta, att, late] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t)]); setD({ ros: ptObj(ros), classes: maClasses(meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4]), att: ptObj(att), late: ptObj(late) }); })(); }, [f, t]);
+  if (!D) return <div className="ma pt px-2 md:px-4 py-4" dir="rtl"><style>{MA_CSS + PT_CSS + IN_CSS}</style><div className="ma-card p-10 text-center font-bold text-gray-400" style={{ maxWidth: 1100, margin: "0 auto" }}>⏳ جاري جمع بيانات الغياب والتأخر…</div></div>;
+  // ── التجميع
+  const S = {}, C = {}; const nm = {};
+  D.classes.forEach(c => { C[c.ck] = { ck: c.ck, lv: c.lv, n: 0, abs: 0, absStu: new Set(), late: 0, lateStu: new Set(), mins: 0, days: 0 }; maArr(D.ros[c.ck] && D.ros[c.ck].students).forEach(s => { if (s && s.id) { nm[s.id] = { name: s.name, ck: c.ck, nh: s.nh || "" }; C[c.ck].n++; } }); });
+  const gS = (id, name, ck0) => { const b = nm[id] || {}; return S[id] = S[id] || { sid: id, name: b.name || name || "—", ck: b.ck || ck0, nh: b.nh || "", abs: [], late: [], mins: 0 }; };
+  const gC = k => C[k] = C[k] || { ck: k, lv: +String(k)[0] - 1, n: 0, abs: 0, absStu: new Set(), late: 0, lateStu: new Set(), mins: 0, days: 0 };
+  const wd = {};
+  Object.entries(D.att).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([k, r]) => { if (!r) return; const c = gC(k); c.days++; maArr(r.absent).forEach(a => { if (!a || !a.id) return; const s = gS(a.id, a.name, k); s.abs.push(dk); c.abs++; c.absStu.add(a.id); const w = maDate(dk).getDay(); wd[w] = wd[w] || { a: 0, l: 0 }; wd[w].a++; }); }));
+  Object.entries(D.late).forEach(([dk, day]) => Object.values(ptObj(day)).forEach(r => { if (!r || !r.id) return; const s = gS(r.id, r.name, r.ck); const k = s.ck || r.ck; s.late.push({ dk, time: r.time, mins: +r.mins || 0, reason: r.reason || "" }); s.mins += +r.mins || 0; if (k) { const c = gC(k); c.late++; c.lateStu.add(r.id); c.mins += +r.mins || 0; } const w = maDate(dk).getDay(); wd[w] = wd[w] || { a: 0, l: 0 }; wd[w].l++; }));
+  const val = s => mode === "abs" ? s.abs.length : mode === "late" ? s.late.length : s.abs.length + s.late.length;
+  const cVal = c => mode === "abs" ? c.abs : mode === "late" ? c.late : c.abs + c.late;
+  const CL = Object.values(C).filter(c => cVal(c) > 0).sort((a, b) => cVal(b) - cVal(a));
+  const mxC = Math.max(1, ...CL.map(cVal));
+  const all = Object.values(S).filter(s => val(s) > 0);
+  const rep = all.filter(s => val(s) >= minN && (!ck || s.ck === ck) && (!q || s.name.includes(q))).sort((a, b) => val(b) - val(a) || b.abs.length - a.abs.length);
+  const totA = all.reduce((a, s) => a + s.abs.length, 0), totL = all.reduce((a, s) => a + s.late.length, 0);
+  const uA = all.filter(s => s.abs.length).length, uL = all.filter(s => s.late.length).length;
+  const MODES = [["both", "🚫⏰ الغياب والتأخر"], ["abs", "🚫 الغياب"], ["late", "⏰ التأخر الصباحي"]];
+  const mLbl = MODES.find(m => m[0] === mode)[1];
+  const WD = [["0", "الأحد"], ["1", "الاثنين"], ["2", "الثلاثاء"], ["3", "الأربعاء"], ["4", "الخميس"]];
+  const mxW = Math.max(1, ...WD.map(([k]) => wd[k] ? (mode === "abs" ? wd[k].a : mode === "late" ? wd[k].l : wd[k].a + wd[k].l) : 0));
+  const sub = `من ${maHijri(maDate(f))}<br>إلى ${maHijri(maDate(t))}`;
+  const dts = L => L.map(d => maHijri(maDate(d)).replace(/\s*هـ$/, "")).join("، ");
+  const print = () => inOpen(`<section class="pg">${inHdr(`تقرير ${mLbl.replace(/^[^ ]+ /, "")} — الفصول الأكثر والطلاب المتكررون`, sub)}<div class="kp"><div><b>${maAr(totA)}</b>حالة غياب</div><div><b>${maAr(uA)}</b>طالب غائب</div><div><b>${maAr(totL)}</b>حالة تأخر صباحي</div><div><b>${maAr(uL)}</b>طالب متأخر</div></div>
+    <h3>🏫 الفصول الأكثر</h3><table><thead><tr><th>م</th><th>الفصل</th><th>عدد الطلاب</th><th>حالات الغياب</th><th>طلاب غائبون</th><th>حالات التأخر</th><th>طلاب متأخرون</th><th>دقائق التأخر</th></tr></thead><tbody>${CL.map((c, i) => `<tr><td>${maAr(i + 1)}</td><td><b>${maClassName(c.ck)}</b></td><td>${maAr(c.n)}</td><td>${maAr(c.abs)}</td><td>${maAr(c.absStu.size)}</td><td>${maAr(c.late)}</td><td>${maAr(c.lateStu.size)}</td><td>${maAr(c.mins)}</td></tr>`).join("") || `<tr><td colspan="8">لا يوجد</td></tr>`}</tbody></table>
+    <h3>🔁 الطلاب المتكررون (${maAr(minN)} مرات فأكثر)${ck ? " — " + maClassName(ck) : ""}</h3><table><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>الغياب</th><th>أيام الغياب</th><th>التأخر</th><th>أيام التأخر</th><th>المجموع</th></tr></thead><tbody>${rep.map((s, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(s.name)}</b></td><td>${maClassName(s.ck)}</td><td><b>${maAr(s.abs.length)}</b></td><td class="r" style="font-size:9px">${dts([...s.abs].sort())}</td><td><b>${maAr(s.late.length)}</b></td><td class="r" style="font-size:9px">${dts(s.late.map(x => x.dk).sort())}</td><td><b>${maAr(val(s))}</b></td></tr>`).join("") || `<tr><td colspan="8">لا يوجد طلاب متكررون</td></tr>`}</tbody></table>${inSig(by, "وكيل شؤون الطلاب")}</section>`, "تقرير الغياب والتأخر", "@page{size:A4 landscape;margin:7mm}");
+  const excel = async () => { const X = await loadXLSX(); const wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, X.utils.json_to_sheet(rep.map(s => ({ "الطالب": s.name, "الفصل": maClassName(s.ck), "عدد الغياب": s.abs.length, "أيام الغياب": dts([...s.abs].sort()), "عدد التأخر": s.late.length, "أيام التأخر": dts(s.late.map(x => x.dk).sort()), "دقائق التأخر": s.mins, "المجموع": val(s) }))), "الطلاب المتكررون");
+    X.utils.book_append_sheet(wb, X.utils.json_to_sheet(CL.map(c => ({ "الفصل": maClassName(c.ck), "عدد الطلاب": c.n, "حالات الغياب": c.abs, "طلاب غائبون": c.absStu.size, "حالات التأخر": c.late, "طلاب متأخرون": c.lateStu.size, "دقائق التأخر": c.mins }))), "الفصول");
+    X.writeFile(wb, `الغياب-والتأخر-${f}-${t}.xlsx`); };
+  return (
+    <div className="ma pt px-2 md:px-4 py-4" dir="rtl">
+      <style>{MA_CSS + PT_CSS + IN_CSS}</style>
+      <div className="grid gap-4" style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div className="in-hero" style={{ background: "linear-gradient(135deg,#7f1d1d,#b91c1c 50%,#c2410c)" }}>
+          <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
+            <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.16)", display: "grid", placeItems: "center", fontSize: 30 }}>🔁</div>
+            <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 20, fontWeight: 900 }}>تقرير الغياب والتأخر الصباحي</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>الفصول الأكثر غياباً وتأخراً • الطلاب المتكررون • من {maHijri(maDate(f))} إلى {maHijri(maDate(t))}</div></div>
+            <div className="flex gap-2"><button className="ma-btn" onClick={print}>🖨️ طباعة</button><button className="ma-btn grn" onClick={excel}>📊 Excel</button></div>
+          </div>
+        </div>
+        <div className="ma-card p-3 grid gap-2"><InPer per={per} setPer={setPer} /><div className="flex gap-2 flex-wrap items-center">{MODES.map(([k, l]) => <button key={k} className={`in-chip ${mode === k ? "on" : ""}`} onClick={() => setMode(k)}>{l}</button>)}</div></div>
+        <div className="pt-kpis"><div className="pt-kpi" style={{ "--c": "#b91c1c" }}><b>{maAr(totA)}</b><small>حالة غياب • {maAr(uA)} طالب</small></div><div className="pt-kpi" style={{ "--c": "#c2410c" }}><b>{maAr(totL)}</b><small>حالة تأخر صباحي • {maAr(uL)} طالب</small></div><div className="pt-kpi" style={{ "--c": "#7c3aed" }}><b>{maAr(all.filter(s => val(s) >= minN).length)}</b><small>طالب متكرر ({maAr(minN)}+)</small></div><div className="pt-kpi" style={{ "--c": "#0f766e" }}><b>{CL[0] ? maClassName(CL[0].ck) : "—"}</b><small>الفصل الأكثر</small></div></div>
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
+          <div className="ma-card p-4"><b>🏫 الفصول الأكثر — {mLbl}</b><div className="grid gap-2 mt-3">{CL.map((c, i) => <button key={c.ck} style={{ all: "unset", cursor: "pointer" }} onClick={() => setCk(ck === c.ck ? "" : c.ck)}><div className="flex justify-between items-center gap-2" style={{ fontSize: 12.5, fontWeight: 800 }}><span style={{ color: MA_LV[c.lv] ? MA_LV[c.lv].c : "#0f172a" }}>{maAr(i + 1)}. {maClassName(c.ck)} {ck === c.ck ? "✓" : ""}</span><span style={{ color: "#64748b" }}>{mode !== "late" ? `🚫 ${maAr(c.abs)} (${maAr(c.absStu.size)} طالب)` : ""}{mode === "both" ? " • " : ""}{mode !== "abs" ? `⏰ ${maAr(c.late)} (${maAr(c.lateStu.size)} طالب)` : ""}</span></div><InBar v={cVal(c)} max={mxC} c={MA_LV[c.lv] ? MA_LV[c.lv].c : "#475569"} /></button>)}{!CL.length && <span style={{ color: "#15803d", fontWeight: 900 }}>لا يوجد غياب أو تأخر في الفترة</span>}</div></div>
+          <div className="ma-card p-4"><b>📅 حسب أيام الأسبوع</b><div className="grid gap-2 mt-3">{WD.map(([k, l]) => { const x = wd[k] || { a: 0, l: 0 }; const v = mode === "abs" ? x.a : mode === "late" ? x.l : x.a + x.l; return <div key={k}><div className="flex justify-between" style={{ fontSize: 12.5, fontWeight: 800 }}><span>{l}</span><span>{mode !== "late" ? `🚫 ${maAr(x.a)}` : ""}{mode === "both" ? " • " : ""}{mode !== "abs" ? `⏰ ${maAr(x.l)}` : ""}</span></div><InBar v={v} max={mxW} c="#b91c1c" /></div>; })}</div></div>
+        </div>
+        <div className="ma-card p-4">
+          <div className="flex items-center gap-2 flex-wrap"><b>🔁 الطلاب المتكررون</b>{[2, 3, 5].map(n => <button key={n} className={`in-chip ${minN === n ? "on" : ""}`} onClick={() => setMinN(n)}>{maAr(n)}+ مرات</button>)}<select className="ma-inp" style={{ width: 150, height: 36 }} value={ck} onChange={e => setCk(e.target.value)}><option value="">كل الفصول</option>{D.classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select><input className="ma-inp" style={{ width: 170, height: 36, marginRight: "auto" }} placeholder="🔍 بحث" value={q} onChange={e => setQ(e.target.value)} /></div>
+          <div className="grid gap-2 mt-3">{rep.map((s, i) => <div key={s.sid} className="in-row" style={{ cursor: "pointer" }} onClick={() => setStu(s)}><span className="in-med" style={{ fontSize: 16 }}>{maAr(i + 1)}</span><b style={{ flex: "1 1 170px" }}>{s.name}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>{maClassName(s.ck)}</span>{mode !== "late" && <span className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 غياب {maAr(s.abs.length)}</span>}{mode !== "abs" && <span className="in-fl" style={{ background: "#ffedd5", color: "#c2410c" }}>⏰ تأخر {maAr(s.late.length)}{s.mins ? ` • ${maAr(s.mins)} د` : ""}</span>}<b style={{ fontSize: 18, color: val(s) >= 5 ? "#b91c1c" : "#b45309" }}>{maAr(val(s))}</b></div>)}{!rep.length && <span style={{ color: "#15803d", fontWeight: 900 }}>لا يوجد طلاب متكررون بهذا الشرط</span>}</div>
+        </div>
+      </div>
+      {stu && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setStu(null)}><div className="ma-card" style={{ width: "min(600px,100%)", maxHeight: "88vh", overflow: "auto", padding: 0 }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: "14px 18px", background: "linear-gradient(135deg,#b91c1c,#7f1d1d)", color: "#fff" }}><div style={{ fontSize: 18, fontWeight: 900 }}>{stu.name}</div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{maClassName(stu.ck)} • غياب {maAr(stu.abs.length)} • تأخر {maAr(stu.late.length)}</div></div>
+        <div className="p-4 grid gap-3">
+          {stu.abs.length > 0 && <div><b>🚫 أيام الغياب</b><div className="flex gap-1 flex-wrap mt-2">{[...stu.abs].sort().map(d => <span key={d} className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c" }}>{maDay(maDate(d))} {maHijri(maDate(d))}</span>)}</div></div>}
+          {stu.late.length > 0 && <div><b>⏰ التأخر الصباحي</b><div className="grid gap-1 mt-2">{[...stu.late].sort((a, b) => a.dk.localeCompare(b.dk)).map((x, i) => <div key={i} className="in-row" style={{ padding: "6px 10px" }}><b style={{ fontSize: 12.5 }}>{maDay(maDate(x.dk))} {maHijri(maDate(x.dk))}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>حضر {mlFmtT(x.time)} • {maAr(x.mins)} دقيقة{x.reason ? ` • ${x.reason}` : ""}</span></div>)}</div></div>}
+          <div className="flex justify-end"><button className="ma-btn" onClick={() => setStu(null)}>إغلاق</button></div>
+        </div>
+      </div></div>}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ➕ الزيارات الصفية: اختيار المعلم واليوم • رفع أسماء المعلمين (Excel) والجدول • ترتيب حسب الحصص
+//   school-cv-cfg/xt = [{n, s}]  قائمة المعلمين المطلوب زيارتهم
+//   school-cv-tt = جدول مرفوع خاص بالزيارات (لا يغيّر جدول المدرسة)
+// ══════════════════════════════════════════════════════════════════════
+const CV_TT = "school-cv-tt";
+const cvTI = T => Object.fromEntries(((T && T.T) || []).map((n, i) => [i, { name: ttClean(n) }]));
+const cvTiOf = (T, name) => { if (!T || !T.T) return -1; const r = cvMatch(name, cvTI(T)); return r == null ? -1 : +r; };
+const cvSlots = (T, ti, date) => { const di = T && T.C ? ttDayIdx(T, maDate(date)) : -1; if (di < 0 || ti < 0) return []; const out = []; Object.keys(T.C).forEach(ck => maArr(T.C[ck][di]).forEach((c, p) => { if (c && c[1] === ti) { const s = (T.S && T.S[c[0]]) || ""; if (!/احتياط/.test(s)) out.push({ p, ck, s }); } })); return out.sort((a, b) => a.p - b.p); };
+const cvTmOf = (times, p) => { const x = (times || [])[p] || []; const f = z => String(z || "").replace(/^0/, ""); return x[0] ? `${f(x[0])}-${f(x[1])}` : ""; };
+const cvHijOf = iso => { const h = annGToHijri(iso); return `${h.y}/${h.m}/${h.d}`; };
+const cvCkC = ck => { const [lv, sec] = String(ck).split("-"); return `${sec}/${lv}`; };
+const cvPIdx = p => TT_ORD.indexOf(p);
+function cvWkOf(plan, date) {
+  const ws = wkStart(date); const r = Object.values(plan).find(x => x && x.date && x.wk && wkStart(x.date) === ws); if (r) return r.wk;
+  const s = CV_SEED.find(x => wkStart(x[3]) === ws); if (s) return s[2];
+  const b = CV_SEED[0]; return b[2] + Math.round((maDate(ws) - maDate(wkStart(b[3]))) / (7 * 864e5));
+}
+const cvHol = d => { const H = typeof DU_OFF_H !== "undefined" ? DU_OFF_H : {}; return H[d] || ""; };
+function cvTkOf(plan, name) { const TS = cvTeachers(plan); const E = Object.fromEntries(TS.map(x => [x.tk, { name: x.name }])); return cvMatch(name, E) || ("tx" + asmK(name)); }
+function cvNextV(plan, ev, tk) { for (let v = 1; v <= 3; v++) { const e = ptObj(ptObj(ev[tk])[v]); if (!e.fin) return v; } return 3; }
+async function cvReadNames(file) {
+  const X = await loadXLSX(); const wb = X.read(await file.arrayBuffer(), { type: "array" });
+  const rows = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" }).filter(r => r.some(x => String(x).trim()));
+  let hi = rows.findIndex(r => r.some(x => /اسم|الاسم|المعلم/.test(String(x)))); let nc = -1, sc = -1;
+  if (hi >= 0) { nc = rows[hi].findIndex(x => /اسم|الاسم|المعلم/.test(String(x))); sc = rows[hi].findIndex(x => /التخصص|المادة|تخصص/.test(String(x))); }
+  if (nc < 0) { let best = 0; const cols = Math.max(0, ...rows.map(r => r.length)); for (let c = 0; c < cols; c++) { const n = rows.filter(r => /[\u0600-\u06FF]{2,}\s+[\u0600-\u06FF]{2,}/.test(String(r[c]))).length; if (n > best) { best = n; nc = c; } } }
+  if (nc < 0) return [];
+  const out = [], seen = new Set();
+  rows.slice(hi + 1).forEach(r => { const n = String(r[nc] || "").replace(/\s+/g, " ").trim(); if (!n || !/[\u0600-\u06FF]/.test(n) || /^(م|الاسم|اسم المعلم|المعلم)$/.test(n)) return; const k = cvNorm(n); if (seen.has(k)) return; seen.add(k); out.push({ n, s: sc >= 0 ? String(r[sc] || "").trim() : "" }); });
+  return out;
+}
+function CvAdd({ D, setD, toast, by }) {
+  const [sT, setST] = useState(null); const [uT, setUT] = useState(null); const [src, setSrc] = useState("school"); const [times, setTimes] = useState(TT_DEF_TIMES);
+  const [xt, setXt] = useState(null); const [mode, setMode] = useState("t"); const [busy, setBusy] = useState(""); const [showL, setShowL] = useState(false); const [newN, setNewN] = useState("");
+  const [date, setDate] = useState(maKey(new Date()));
+  const [tn, setTn] = useState(""); const [v, setV] = useState(1); const [slot, setSlot] = useState(null); const [man, setMan] = useState({ p: "الأولى", tm: "", c: "", s: "" });
+  const [onlyL, setOnlyL] = useState(true); const [sel, setSel] = useState({});
+  const [au, setAu] = useState({ start: maKey(new Date()), per: 2, v: "auto", from: "list" }); const [prev, setPrev] = useState(null);
+  const nRef = useRef(null), tRef = useRef(null);
+  useEffect(() => { (async () => {
+    const [a, c, u, x] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(CV_TT), maGet(`${CV_CFG}/xt`)]);
+    const T0 = ttFresh(a); setST(T0); setTimes(c && Array.isArray(c.times) && c.times.length ? c.times : (T0.times || TT_DEF_TIMES));
+    if (u && u.C) { setUT(u); setSrc("up"); } setXt(maArr(x));
+  })(); }, []);
+  const T = src === "up" && uT ? uT : sT;
+  if (!T || xt === null) return <div className="ma-card p-8 text-center font-bold text-gray-400">⏳ جاري تحميل الجدول والأسماء…</div>;
+  const tms = src === "up" && uT && uT.times ? uT.times : times;
+  const plan = D.plan; const k0 = maKey(new Date());
+  const tName = ti => ttClean(T.T[ti]);
+  const allNames = [...new Set([...xt.map(x => x.n), ...cvTeachers(plan).map(x => x.name), ...T.T.map(ttClean)])].filter(Boolean);
+  const visOf = name => { const tk = cvTkOf(plan, name); return Object.values(plan).filter(r => r && r.tk === tk).sort((a, b) => a.v - b.v); };
+  const evOf = (tk, vv) => ptObj(ptObj(D.ev[tk])[vv]);
+  const saveXt = async L => { setXt(L); const ok = await cvPatch({ [`${CV_CFG}/xt`]: L.length ? L : null }); toast(ok ? `✅ حُفظت القائمة (${maAr(L.length)} معلماً)` : "📱 حُفظت على الجهاز"); };
+  const upNames = async e => { const fl = e.target.files && e.target.files[0]; e.target.value = ""; if (!fl) return; setBusy("n"); try { const L = await cvReadNames(fl); if (!L.length) toast("⚠️ لم أجد أسماء في الملف — تأكد أن عمود الأسماء عنوانه «الاسم» أو «اسم المعلم»"); else { const seen = new Set(xt.map(x => cvNorm(x.n))); const add = L.filter(x => !seen.has(cvNorm(x.n))); await saveXt([...xt, ...add]); toast(`✅ أُضيف ${maAr(add.length)} معلماً من الملف${L.length - add.length ? ` (و${maAr(L.length - add.length)} موجودون مسبقاً)` : ""}`); setShowL(true); } } catch { toast("⚠️ تعذّرت قراءة الملف"); } setBusy(""); };
+  const upTT = async e => { const fl = e.target.files && e.target.files[0]; e.target.value = ""; if (!fl) return; setBusy("t"); try { const X = await loadXLSX(); const wb = X.read(await fl.arrayBuffer(), { type: "array" }); const tt = ttParseWorkbook(X, wb); const val = { ...tt, at: Date.now(), src: fl.name, by }; const ok = await maPut(CV_TT, val); if (ok) { setUT(val); setSrc("up"); } toast(ok ? `✅ رُفع الجدول: ${maAr(tt.T.length)} معلماً • ${maAr(Object.keys(tt.C).length)} فصلاً` : "⚠️ تعذّر حفظ الجدول"); } catch (er) { toast("⚠️ " + ((er && er.message) || "تعذّرت قراءة الملف")); } setBusy(""); };
+  // ── إنشاء/نقل زيارة
+  const mk = (base, { t, s, p, tm, c, date: dt, v: vv }) => {
+    const tk = cvTkOf(plan, t); const ex = Object.values(plan).find(r => r && r.tk === tk && +r.v === +vv);
+    const hij = cvHijOf(dt); const wk = cvWkOf(plan, dt);
+    if (ex) return { ...ex, date: dt, hij, wk, p, tm, c, s: s || ex.s, moved: ex.moved || ex.date, mby: by, mat: Date.now() };
+    const T0 = cvTeachers(plan).find(x => x.tk === tk);
+    return { id: "x" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), n: base, v: +vv, wk, date: dt, hij, t: T0 ? T0.name : t, s: s || "", p, tm, c, tk, add: 1, by, at: Date.now() };
+  };
+  const commit = async rows => {
+    if (!rows.length) return false; const o = {}; const links = { ...D.cfg.links };
+    rows.forEach(r => { o[`${CV_PLAN}/${r.id}`] = r; if (!links[r.tk]) { const rid = cvMatch(r.t, D.lic); if (rid) { links[r.tk] = rid; o[`${CV_CFG}/links/${r.tk}`] = rid; } } });
+    const ok = await cvPatch(o);
+    setD(d => ({ ...d, plan: { ...d.plan, ...Object.fromEntries(rows.map(r => [r.id, r])) }, cfg: { ...d.cfg, links } }));
+    toast(ok ? `✅ ${rows.length > 1 ? `أُضيفت ${maAr(rows.length)} زيارات` : rows[0].moved && rows[0].mat ? "نُقلت الزيارة إلى الموعد الجديد" : "أُضيفت الزيارة"} — تظهر في الجدول وللمعلم` : "📱 حُفظ على الجهاز وسيُرفع عند عودة الاتصال");
+    return true;
+  };
+  const nBase = () => Math.max(0, ...Object.values(plan).map(r => +(r && r.n) || 0)) + 1;
+  const dateBar = () => <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 13.5 }}>📅 اليوم:</b><input type="date" className="ma-inp" style={{ width: 160, height: 38 }} value={date} onChange={e => { if (e.target.value) { setDate(e.target.value); setSlot(null); setSel({}); } }} /><span className="pt-st" style={{ background: "#f0fdfa", color: "#0f766e" }}>{maDay(maDate(date))} {cvHij(cvHijOf(date))}</span>{maDate(date).getDay() >= 5 ? <span className="pt-st" style={{ background: "#fee2e2", color: "#b91c1c" }}>ليس يوم دراسة</span> : null}{cvHol(date) && <span className="pt-st" style={{ background: "#fef3c7", color: "#92400e" }}>🏖️ {cvHol(date)}</span>}</div>;
+
+  // ── (١) اختيار معلم
+  const ti = tn ? cvTiOf(T, tn) : -1; const slots = ti >= 0 ? cvSlots(T, ti, date) : [];
+  const tk = tn ? cvTkOf(plan, tn) : ""; const myV = tn ? visOf(tn) : [];
+  const exV = myV.find(r => +r.v === +v); const exDone = exV && evOf(tk, v).fin;
+  const dayVis = Object.values(plan).filter(r => r && r.date === date);
+  const pickT = n => { setTn(n); setSlot(null); const t2 = cvTkOf(plan, n); setV(cvNextV(plan, D.ev, t2)); const L = xt.find(x => cvNorm(x.n) === cvNorm(n)); const pv = visOf(n)[0]; setMan(m => ({ ...m, s: (L && L.s) || (pv && pv.s) || "" })); };
+  const saveOne = async () => {
+    if (!tn.trim()) { toast("👤 اختر المعلم"); return; } if (exDone) { toast("✅ هذه الزيارة منفذة ومعتمدة — اختر رقم زيارة آخر"); return; }
+    const x = slot ? { p: TT_ORD[slot.p], tm: cvTmOf(tms, slot.p), c: cvCkC(slot.ck), s: slot.s || man.s } : { p: man.p, tm: man.tm, c: man.c, s: man.s };
+    if (!slot && !man.c && man.p !== "بالتنسيق" && !window.confirm("لم تحدد الفصل — حفظ الزيارة بدون فصل؟")) return;
+    const r = mk(nBase(), { t: tn.trim(), ...x, date, v });
+    if (exV && !window.confirm(`لدى ${tn} زيارة ${CV_VN[v - 1]} بتاريخ ${maDay(maDate(exV.date))} ${cvHij(exV.hij)} — نقلها إلى ${maDay(maDate(date))} ${cvHij(cvHijOf(date))}؟`)) return;
+    setBusy("s"); await commit([r]); setBusy(""); setSlot(null);
+  };
+
+  // ── (٢) حسب حصص اليوم
+  const di = ttDayIdx(T, maDate(date)); const P = T.P || 7;
+  const listTi = new Set(xt.map(x => cvTiOf(T, x.n)).filter(i => i >= 0));
+  const useL = onlyL && listTi.size > 0;
+  const byP = Array.from({ length: P }, (_, p) => { const L = []; if (di >= 0) Object.keys(T.C).forEach(ck => { const c = maArr(T.C[ck][di])[p]; if (c && c[1] >= 0 && !/احتياط/.test((T.S && T.S[c[0]]) || "") && (!useL || listTi.has(c[1]))) L.push({ ti: c[1], ck, s: (T.S && T.S[c[0]]) || "", p }); }); return L.sort((a, b) => tName(a.ti).localeCompare(tName(b.ti), "ar")); });
+  const selL = Object.values(sel).sort((a, b) => a.p - b.p);
+  const addSel = async () => {
+    if (!selL.length) return; let n = nBase(); const usedV = {}; const rows = [];
+    for (const x of selL) { const nmT = tName(x.ti); const t2 = cvTkOf(plan, nmT); let vv = usedV[t2] ? usedV[t2] + 1 : cvNextV(plan, D.ev, t2); if (vv > 3) continue; usedV[t2] = vv; if (evOf(t2, vv).fin) continue; const r = mk(n++, { t: nmT, s: x.s, p: TT_ORD[x.p], tm: cvTmOf(tms, x.p), c: cvCkC(x.ck), date, v: vv }); rows.push(r); }
+    const mv = rows.filter(r => r.mat).length;
+    if (mv && !window.confirm(`${maAr(mv)} من المحددين لديهم زيارة مجدولة بنفس الرقم في يوم آخر — ستُنقل إلى هذا اليوم. متابعة؟`)) return;
+    setBusy("d"); if (await commit(rows)) setSel({}); setBusy("");
+  };
+
+  // ── (٣) توزيع تلقائي
+  const runAuto = () => {
+    const names = au.from === "list" ? xt.map(x => x.n) : au.from === "plan" ? cvTeachers(plan).map(x => x.name) : T.T.map(ttClean);
+    const miss = [], Q = [];
+    names.forEach(nmT => { const t2 = cvTkOf(plan, nmT); const ti2 = cvTiOf(T, nmT); if (ti2 < 0) { miss.push(nmT); return; } let vv = null; const has = vx => Object.values(plan).some(r => r && r.tk === t2 && +r.v === vx); if (au.v === "auto") { for (let x = 1; x <= 3; x++) if (!has(x)) { vv = x; break; } } else if (!has(+au.v)) vv = +au.v; if (vv) Q.push({ n: nmT, tk: t2, ti: ti2, v: vv }); });
+    const busyD = {}, used = {}; Object.values(plan).forEach(r => { if (!r || !r.date) return; busyD[r.date] = (busyD[r.date] || 0) + 1; const pi = cvPIdx(r.p); if (pi >= 0) (used[r.date] = used[r.date] || []).push(pi); });
+    const out = []; let n = nBase(); const d = maDate(au.start);
+    for (let i = 0; i < 160 && Q.length; i++, d.setDate(d.getDate() + 1)) {
+      const dk = maKey(d); const w = d.getDay(); if (w > 4 || cvHol(dk) || ttDayIdx(T, d) < 0) continue;
+      let cap = Math.max(0, (+au.per || 2) - (busyD[dk] || 0)); if (!cap) continue;
+      for (let j = 0; j < Q.length && cap > 0; ) { const x = Q[j]; const opts = cvSlots(T, x.ti, dk).filter(o => !(used[dk] || []).includes(o.p)); const o = opts.find(o2 => o2.p >= 1 && o2.p <= 5) || opts[0]; if (!o) { j++; continue; } (used[dk] = used[dk] || []).push(o.p); busyD[dk] = (busyD[dk] || 0) + 1; cap--; out.push(mk(n++, { t: x.n, s: o.s, p: TT_ORD[o.p], tm: cvTmOf(tms, o.p), c: cvCkC(o.ck), date: dk, v: x.v })); Q.splice(j, 1); }
+    }
+    setPrev({ rows: out, miss, left: Q.map(x => x.n) });
+  };
+  const applyAuto = async () => { if (!prev || !prev.rows.length) return; if (!window.confirm(`إضافة ${maAr(prev.rows.length)} زيارة إلى الجدول؟`)) return; setBusy("a"); if (await commit(prev.rows)) setPrev(null); setBusy(""); };
+
+  const notInTT = xt.filter(x => cvTiOf(T, x.n) < 0);
+  return (
+    <div className="grid gap-3">
+      <div className="ma-card p-3 grid gap-2">
+        <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 14 }}>🗓️ الجدول المستخدم:</b><button className={`in-chip ${src === "school" ? "on" : ""}`} onClick={() => setSrc("school")}>🏫 جدول المدرسة</button>{uT && <button className={`in-chip ${src === "up" ? "on" : ""}`} onClick={() => setSrc("up")}>📤 الجدول المرفوع ({uT.src || "Excel"})</button>}<input ref={tRef} type="file" accept=".xlsx,.xls" hidden onChange={upTT} /><button className="ma-btn" style={{ marginRight: "auto" }} disabled={busy === "t"} onClick={() => tRef.current && tRef.current.click()}>{busy === "t" ? "⏳" : "📤 رفع جدول الحصص (Excel)"}</button></div>
+        <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 14 }}>👥 قائمة المعلمين المطلوب زيارتهم:</b><span className="pt-st" style={{ background: xt.length ? "#dcfce7" : "#f1f5f9", color: xt.length ? "#15803d" : "#64748b" }}>{xt.length ? `${maAr(xt.length)} معلماً` : "لم تُرفع بعد"}</span>{xt.length > 0 && <button className="ma-btn" style={{ padding: "4px 12px" }} onClick={() => setShowL(!showL)}>{showL ? "إخفاء" : "عرض وتعديل"}</button>}<input ref={nRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={upNames} /><button className="ma-btn" style={{ marginRight: "auto" }} disabled={busy === "n"} onClick={() => nRef.current && nRef.current.click()}>{busy === "n" ? "⏳" : "📤 رفع الأسماء (Excel)"}</button></div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>ملف الأسماء: عمود بعنوان «الاسم» أو «اسم المعلم» (و«التخصص» اختياري). ملف الجدول: تصدير aSc نفسه المستخدم في جدول المدرسة. الجدول المرفوع هنا لا يغيّر جدول المدرسة.</div>
+        {showL && <div className="grid gap-2" style={{ background: "#f8fafc", borderRadius: 14, padding: 10 }}>
+          <div className="flex gap-1 flex-wrap">{xt.map((x, i) => <span key={i} className="in-fl" style={{ background: cvTiOf(T, x.n) >= 0 ? "#fff" : "#fff7ed", color: "#0f172a", border: "1px solid #e2e8f0", fontSize: 12.5 }}>{cvTiOf(T, x.n) >= 0 ? "" : "⚠️ "}{x.n}{x.s ? ` • ${x.s}` : ""}<button onClick={() => saveXt(xt.filter((_, j) => j !== i))} style={{ border: "none", background: "none", color: "#dc2626", fontWeight: 900, cursor: "pointer", padding: "0 2px" }}>×</button></span>)}</div>
+          <div className="flex gap-2"><input className="ma-inp" style={{ flex: 1, height: 36 }} list="cv-all-names" placeholder="إضافة معلم للقائمة" value={newN} onChange={e => setNewN(e.target.value)} /><button className="ma-btn pri" onClick={() => { const n = newN.trim(); if (!n || xt.some(x => cvNorm(x.n) === cvNorm(n))) return; saveXt([...xt, { n, s: "" }]); setNewN(""); }}>＋ إضافة</button></div>
+          {notInTT.length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#9a3412" }}>⚠️ غير موجودين في الجدول المختار (تُضاف زياراتهم يدوياً بالحصة والفصل): {notInTT.map(x => x.n).join("، ")}</div>}
+        </div>}
+        <datalist id="cv-all-names">{allNames.map(n => <option key={n} value={n} />)}</datalist>
+      </div>
+
+      <div className="ma-tabs">{[["t", "👤 اختيار المعلم واليوم"], ["d", "🗓️ معلمو اليوم حسب الحصص"], ["a", "⚡ توزيع تلقائي من القائمة"]].map(([k, l]) => <button key={k} className={`ma-tab ${mode === k ? "on" : ""}`} onClick={() => setMode(k)}>{l}</button>)}</div>
+
+      {mode === "t" && <div className="ma-card p-4 grid gap-3">
+        {dateBar()}
+        <div className="grid gap-2" style={{ gridTemplateColumns: "1fr auto" }}><input className="ma-inp" list="cv-all-names" placeholder="👤 اكتب أو اختر اسم المعلم" value={tn} onChange={e => pickT(e.target.value)} />{tn && <button className="ma-btn" onClick={() => pickT("")}>مسح</button>}</div>
+        {xt.length > 0 && !tn && <div className="flex gap-1 flex-wrap">{xt.map((x, i) => <button key={i} className="cv-chip" onClick={() => pickT(x.n)}>{x.n}</button>)}</div>}
+        {tn && <>
+          <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 13 }}>رقم الزيارة:</b>{[1, 2, 3].map(x => { const r = myV.find(y => +y.v === x); const dn = evOf(tk, x).fin; return <button key={x} className="cv-chip" style={v === x ? { background: "#0f766e", color: "#fff" } : null} onClick={() => setV(x)}>{CV_VN[x - 1]} {dn ? "✅" : r ? `📅 ${maDay(maDate(r.date))} ${cvHij(r.hij)}` : "• جديدة"}</button>; })}</div>
+          {exV && !exDone && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#7c3aed" }}>🔁 الزيارة {CV_VN[v - 1]} مجدولة {maDay(maDate(exV.date))} {cvHij(exV.hij)} — عند الحفظ تُنقل إلى اليوم المختار</div>}
+          {exDone && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#15803d" }}>✅ الزيارة {CV_VN[v - 1]} منفذة ومعتمدة — اختر رقماً آخر</div>}
+          <div><b style={{ fontSize: 13.5 }}>📚 حصص {tn} يوم {maDay(maDate(date))}</b>{ti < 0 && <span style={{ fontSize: 12, fontWeight: 800, color: "#9a3412" }}> — الاسم غير موجود في الجدول المختار، حدّد الحصة يدوياً</span>}</div>
+          {ti >= 0 && <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))" }}>{slots.map(o => { const taken = dayVis.some(r => cvPIdx(r.p) === o.p && r.tk !== tk); const on = slot && slot.p === o.p && slot.ck === o.ck; return <button key={o.p + o.ck} type="button" onClick={() => setSlot(on ? null : o)} style={{ textAlign: "right", border: `2px solid ${on ? "#0f766e" : "#e2e8f0"}`, background: on ? "#f0fdfa" : "#fff", borderRadius: 16, padding: "10px 12px", fontFamily: "inherit", cursor: "pointer" }}><div style={{ fontWeight: 900, fontSize: 14 }}>الحصة {TT_ORD[o.p]}</div><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{cvTm(cvTmOf(tms, o.p)) || "—"}</div><div style={{ fontSize: 12.5, fontWeight: 800 }}>{maClassName(o.ck)} • {o.s}</div>{taken && <div style={{ fontSize: 11, fontWeight: 800, color: "#b45309" }}>⚠️ لديك زيارة أخرى في هذه الحصة</div>}</button>; })}{!slots.length && <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا حصص لهذا المعلم في هذا اليوم حسب الجدول</div>}</div>}
+          {!slot && <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))" }}>
+            <label style={{ fontSize: 12, fontWeight: 800 }}>الحصة<select className="ma-inp" value={man.p} onChange={e => setMan({ ...man, p: e.target.value, tm: cvTmOf(tms, cvPIdx(e.target.value)) || man.tm })}>{[...TT_ORD.slice(0, P), "بالتنسيق"].map(p => <option key={p}>{p}</option>)}</select></label>
+            <label style={{ fontSize: 12, fontWeight: 800 }}>الوقت<input className="ma-inp" placeholder="8:30-9:15" value={man.tm} onChange={e => setMan({ ...man, tm: e.target.value })} /></label>
+            <label style={{ fontSize: 12, fontWeight: 800 }}>الفصل (فصل/صف مثل 5/1)<input className="ma-inp" placeholder="5/1" value={man.c} onChange={e => setMan({ ...man, c: e.target.value })} /></label>
+            <label style={{ fontSize: 12, fontWeight: 800 }}>التخصص<input className="ma-inp" placeholder="المادة" value={man.s} onChange={e => setMan({ ...man, s: e.target.value })} /></label>
+          </div>}
+          <button className="ma-btn pri" style={{ justifyContent: "center", padding: 12, fontSize: 14.5 }} disabled={busy === "s" || exDone} onClick={saveOne}>{busy === "s" ? "⏳" : exV ? `📆 نقل الزيارة ${CV_VN[v - 1]} إلى ${maDay(maDate(date))}` : `➕ إضافة الزيارة ${CV_VN[v - 1]} يوم ${maDay(maDate(date))}`}</button>
+        </>}
+        {dayVis.length > 0 && <div className="grid gap-1"><b style={{ fontSize: 13 }}>📌 زيارات {maDay(maDate(date))} المجدولة ({maAr(dayVis.length)})</b>{dayVis.sort((a, b) => cvPIdx(a.p) - cvPIdx(b.p)).map(r => <div key={r.id} className="in-row" style={{ padding: "6px 10px" }}><span className="pt-st" style={{ background: "#ccfbf1", color: "#0f766e" }}>{r.p}</span><b style={{ fontSize: 13 }}>{r.t}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>{r.s} • {cvCls(r.c)} • الزيارة {CV_VN[r.v - 1] || maAr(r.v)}</span></div>)}</div>}
+      </div>}
+
+      {mode === "d" && <div className="ma-card p-4 grid gap-3">
+        {dateBar()}
+        <div className="flex gap-2 items-center flex-wrap">{listTi.size > 0 && <label style={{ fontSize: 12.5, fontWeight: 800, display: "flex", gap: 4, alignItems: "center" }}><input type="checkbox" checked={onlyL} onChange={e => setOnlyL(e.target.checked)} />فقط المعلمون في القائمة المرفوعة</label>}<span style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>اضغط على المعلم لتحديده ثم «إضافة المحددين» — تُرتب الزيارات حسب الحصص</span></div>
+        {di < 0 ? <div style={{ color: "#94a3b8", fontWeight: 800, textAlign: "center", padding: 16 }}>هذا اليوم ليس من أيام الجدول</div> :
+          <div className="grid gap-2">{byP.map((L, p) => { const vd = dayVis.filter(r => cvPIdx(r.p) === p); return <div key={p} style={{ border: "1px solid #eef2f6", borderRadius: 16, padding: "8px 10px", background: "#fff" }}>
+            <div className="flex gap-2 items-center flex-wrap" style={{ marginBottom: 6 }}><b style={{ fontSize: 13.5, color: "#0f766e" }}>الحصة {TT_ORD[p]}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{cvTm(cvTmOf(tms, p))}</span>{vd.map(r => <span key={r.id} className="in-fl" style={{ background: "#ede9fe", color: "#6d28d9" }}>📌 {r.t}</span>)}</div>
+            <div className="flex gap-1 flex-wrap">{L.map(x => { const key = `${p}_${x.ti}`; const on = !!sel[key]; const vs = visOf(tName(x.ti)); const dn = vs.filter(r => evOf(r.tk, r.v).fin).length; return <button key={key + x.ck} className="cv-chip" style={on ? { background: "#0f766e", color: "#fff" } : null} onClick={() => setSel(s => { const n = { ...s }; if (n[key]) delete n[key]; else n[key] = x; return n; })}>{on ? "✓ " : ""}{tName(x.ti)} <small style={{ opacity: .75 }}>• {maClassName(x.ck)} • {x.s}{vs.length ? ` • ${maAr(dn)}/${maAr(vs.length)}` : ""}</small></button>; })}{!L.length && <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 800 }}>لا يوجد</span>}</div>
+          </div>; })}</div>}
+        {selL.length > 0 && <div style={{ position: "sticky", bottom: 8 }}><button className="ma-btn pri" style={{ width: "100%", justifyContent: "center", padding: 12, fontSize: 14.5 }} disabled={busy === "d"} onClick={addSel}>{busy === "d" ? "⏳" : `➕ إضافة المحددين (${maAr(selL.length)}) — ${selL.map(x => `${TT_ORD[x.p]}: ${tName(x.ti).split(" ")[0]}`).join(" • ")}`}</button></div>}
+      </div>}
+
+      {mode === "a" && <div className="ma-card p-4 grid gap-3">
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.9 }}>يوزّع الزيارات على أيام الدراسة ابتداءً من التاريخ المختار، ويختار لكل معلم حصة من جدوله في ذلك اليوم دون تعارض مع زياراتك الأخرى، ويتخطى الإجازات. الزيارات الموجودة لا تتغير.</div>
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))" }}>
+          <label style={{ fontSize: 12, fontWeight: 800 }}>البداية<input type="date" className="ma-inp" value={au.start} onChange={e => e.target.value && setAu({ ...au, start: e.target.value })} /></label>
+          <label style={{ fontSize: 12, fontWeight: 800 }}>زيارات في اليوم<select className="ma-inp" value={au.per} onChange={e => setAu({ ...au, per: +e.target.value })}>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{maAr(n)}</option>)}</select></label>
+          <label style={{ fontSize: 12, fontWeight: 800 }}>رقم الزيارة<select className="ma-inp" value={au.v} onChange={e => setAu({ ...au, v: e.target.value })}><option value="auto">التالية لكل معلم</option>{[1, 2, 3].map(n => <option key={n} value={n}>{CV_VN[n - 1]}</option>)}</select></label>
+          <label style={{ fontSize: 12, fontWeight: 800 }}>المعلمون<select className="ma-inp" value={au.from} onChange={e => setAu({ ...au, from: e.target.value })}><option value="list">القائمة المرفوعة ({maAr(xt.length)})</option><option value="plan">معلمو جدول الزيارات</option><option value="tt">كل معلمي الجدول</option></select></label>
+        </div>
+        <div className="flex gap-2"><button className="ma-btn pri" onClick={runAuto}>👁 معاينة التوزيع</button>{prev && <button className="ma-btn" onClick={() => setPrev(null)}>إلغاء</button>}</div>
+        {prev && <>
+          {prev.rows.length > 0 ? <div style={{ maxHeight: 420, overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 14 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}><thead><tr style={{ background: "#0f766e", color: "#fff", position: "sticky", top: 0 }}><th style={{ padding: 6 }}>اليوم</th><th>الحصة</th><th>المعلم</th><th>الفصل والمادة</th><th>الزيارة</th></tr></thead><tbody>{prev.rows.map(r => <tr key={r.id} style={{ borderBottom: "1px solid #eef2f6" }}><td style={{ padding: "5px 8px", fontWeight: 800 }}>{maDay(maDate(r.date))} {cvHij(r.hij)}</td><td style={{ textAlign: "center" }}>{r.p} <small style={{ color: "#64748b" }}>{cvTm(r.tm)}</small></td><td style={{ fontWeight: 800 }}>{r.t}</td><td>{cvCls(r.c)} • {r.s}</td><td style={{ textAlign: "center" }}>{CV_VN[r.v - 1]}</td></tr>)}</tbody></table></div> : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد زيارات جديدة لإضافتها</div>}
+          {prev.miss.length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#9a3412" }}>⚠️ غير موجودين في الجدول: {prev.miss.join("، ")}</div>}
+          {prev.left.length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#9a3412" }}>⚠️ لم يُعثر لهم على حصة متاحة: {prev.left.join("، ")}</div>}
+          {prev.rows.length > 0 && <button className="ma-btn pri" style={{ justifyContent: "center", padding: 12 }} disabled={busy === "a"} onClick={applyAuto}>{busy === "a" ? "⏳" : `✅ اعتماد وإضافة ${maAr(prev.rows.length)} زيارة`}</button>}
+        </>}
+      </div>}
+    </div>
+  );
+}
+
+class PamSafe extends React.Component {
+  constructor(p) { super(p); this.state = { err: false }; }
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch(e) { try { console.warn("[PamGuard]", e); } catch {} }
+  render() { return this.state.err ? null : this.props.children; }
+}
+
 export default function SchoolWebsite(props) {
-  return <SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary>;
+  return <><PamSafe><PamGuard /></PamSafe><SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary></>;
 }
 
 function SchoolWebsiteInner() {
@@ -38202,7 +39013,7 @@ function SchoolWebsiteInner() {
   const [teachers, setTeachers] = useState(DEFAULT_TEACHERS);
   const [week, setWeek] = useState(DEFAULT_WEEK);
   const [attendance, setAttendance] = useState({});
-  const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState([]);
   const [activities, setActivities] = useState(DEFAULT_ACTIVITIES);
   const [classList, setClassList] = useState([]);
   const [users] = useState(DEFAULT_USERS);
@@ -38210,6 +39021,8 @@ function SchoolWebsiteInner() {
   const [messages, setMessages] = useState([]);
   const [surveys, setSurveys] = useState([]);
   const [weekArchive, setWeekArchive] = useState([]);
+  useEffect(() => { try { window.__pamUser = user ? (user.name || user.username || "") : ""; } catch {} }, [user]);
+  useEffect(() => { try { const t = HUB_GROUPS.flatMap(g => g.tools).find(x => x.id === page); window.__pamPageLabel = t ? t.label : page; } catch {} }, [page]);
 
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [attPortal, setAttPortal] = useState(() => ["attend", "absence", "ghiab"].includes(window.location.hash.replace("#", "")));
@@ -38255,7 +39068,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -38292,7 +39105,6 @@ function SchoolWebsiteInner() {
             const byId = new Map(itemsArr.map(a => [String(a.id), a]));
             const toMigrate = legacyArr.filter(a => a && a.id != null && !byId.has(String(a.id)));
             toMigrate.forEach(a => { byId.set(String(a.id), a); annPut(a.id, a); });
-            if (!byId.size) DEFAULT_ANNOUNCEMENTS.forEach(a => byId.set(String(a.id), a));
             const outA = [...byId.values()].sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
             if (itemsArr.length || toMigrate.length) annBuildMeta(outA);
             return outA;
@@ -38363,7 +39175,7 @@ function SchoolWebsiteInner() {
         }
         // Firebase يحذف المصفوفات الفارغة ويحوّل المتقطعة إلى كائنات — نوحّد الشكل
         const asArr = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === "object" ? Object.values(v).filter(x => x != null) : []);
-        setTeachers(asArr(t)); setWeek(validWeek); setAttendance(finalAtt || {}); setAnnouncements(asArr(ann));
+        setTeachers(asArr(t)); setWeek(validWeek); setAttendance(finalAtt || {}); setAnnouncements(asArr(ann).filter(a => !annIsSample(a)));
         actLoadedRef.current = act && act.ok; actSavedRef.current = act && act.ok ? Object.fromEntries(act.list.map(a => [String(a.id), JSON.stringify(a)])) : null; setActivities(act ? act.list : []); setSiteFont(font);
         setMessages(Array.isArray(msgs) ? msgs : []);
         setSurveys(Array.isArray(survs) ? survs : []);
@@ -38582,6 +39394,7 @@ function SchoolWebsiteInner() {
     { id: "insights", label: "مركز المؤشرات", icon: "🧠" },
     { id: "nafes", label: "منصة نافس التدريبية", icon: "🎯" },
     { id: "behavior", label: "الملاحظات السلوكية", icon: "📝" },
+    { id: "conduct", label: "متابعة السلوك اليومي", icon: "🚸" },
     { id: "morningboard", label: "شاشة الصباح", icon: "📺" },
     { id: "formative",      label: "التقويم التكويني",    icon: "📘" },
     { id: "stulevels",      label: "سجل مستويات الطلاب",    icon: "📊" },
@@ -38632,16 +39445,18 @@ function SchoolWebsiteInner() {
     { id: "prolicense",     label: "الرخصة المهنية",         icon: "🏅" },
     { id: "teacherreports", label: "ملفات المعلمين",       icon: "🗄️" },
     { id: "classvisits", label: "الزيارات الصفية", icon: "🎯" },
+    { id: "alreport", label: "تقرير الغياب والتأخر المتكرر", icon: "🔁" },
+    { id: "trash", label: "سلة المحذوفات والاسترجاع", icon: "🗃️" },
   ];
   const extraPages = [...classToolPages, ...reportPages];
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
-    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","insights","behavior","students","formative","studentclassify","stulevels","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","alreport","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","insights","behavior","conduct","students","formative","studentclassify","stulevels","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","officialforms","timetable","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","officialforms","timetable","trash","settings"] },
   ];
 
   return (
@@ -38926,7 +39741,7 @@ function SchoolWebsiteInner() {
                 {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}
                 {page === "termplan" && <TermPlanPage />}
                 {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
                 {page === "portals" && <PortalsAdminPage />}
@@ -39102,7 +39917,7 @@ function SchoolWebsiteInner() {
         {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}
                 {page === "termplan" && <TermPlanPage />}
         {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
         {page === "portals" && <PortalsAdminPage />}
