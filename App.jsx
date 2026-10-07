@@ -1938,7 +1938,448 @@ const HUB_GROUPS = [
     tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
-function HomePage({ teachers, announcements, activities, navigate, attendance, week, messages, classList, weekArchive }) {
+// ═══════════════════════════════════════════════════════════════
+// مفكرة المهام اليومية — تنبيه قبل الموعد
+// • لوحة كاملة في الرئيسية (AgendaBoard) + تنبيه عائم في كل صفحات الإدارة (AgendaWatcher)
+// • الحفظ: Firebase عبر DB ← admin-agenda/<اسم المستخدم>
+// • حذف المهمة = إخفاء (deleted:true) ولا يُمسح شيء من الخادم
+// ═══════════════════════════════════════════════════════════════
+const AG_TYPES = [
+  { id: "visit",  l: "زيارة معلم",    ic: "👨‍🏫", c: "#4338ca", bg: "#eef2ff", who: "المعلم",            ph: "زيارة صفية" },
+  { id: "tour",   l: "جولة تفقدية",   ic: "🔍",  c: "#0f766e", bg: "#ccfbf1", who: "المرافق (اختياري)",  ph: "جولة تفقدية على المدرسة" },
+  { id: "floors", l: "زيارة الأدوار", ic: "🏢",  c: "#b45309", bg: "#fef3c7", who: "المرافق (اختياري)",  ph: "المرور على الأدوار" },
+  { id: "pro",    l: "لقاء مهني",     ic: "🤝",  c: "#be185d", bg: "#fce7f3", who: "مع من",              ph: "لقاء مهني" },
+  { id: "meet",   l: "اجتماع",        ic: "📋",  c: "#0369a1", bg: "#e0f2fe", who: "الجهة / اللجنة",     ph: "اجتماع" },
+  { id: "other",  l: "مهمة أخرى",     ic: "✏️",  c: "#475569", bg: "#f1f5f9", who: "المسؤول (اختياري)",  ph: "اكتب المهمة" },
+];
+const agType = id => AG_TYPES.find(t => t.id === id) || AG_TYPES[AG_TYPES.length - 1];
+const AG_REM = [5, 10, 15, 30, 60];
+const AG_DUR = [15, 30, 45, 60, 90];
+const AG_REP = [["none", "مرة واحدة"], ["daily", "كل يوم دراسي"], ["weekly", "أسبوعياً"]];
+const agPad = n => String(n).padStart(2, "0");
+const agKey = d => `${d.getFullYear()}-${agPad(d.getMonth() + 1)}-${agPad(d.getDate())}`;
+const agDate = k => { const [y, m, d] = String(k).split("-").map(Number); return new Date(y, m - 1, d, 12); };
+const agMin = t => { const [h, m] = String(t || "").split(":").map(Number); return isNaN(h) ? 0 : h * 60 + (m || 0); };
+const agAr = n => String(n ?? "").replace(/\d/g, x => "٠١٢٣٤٥٦٧٨٩"[x]);
+const agFmt = t => { const v = agMin(t); const h = Math.floor(v / 60), m = v % 60; return `${agAr(h % 12 || 12)}:${agAr(agPad(m))} ${h < 12 ? "ص" : "م"}`; };
+const agTs = (k, t) => { const d = agDate(k); d.setHours(0, agMin(t), 0, 0); return d.getTime(); };
+const agLeft = ms => { const m = Math.max(1, Math.ceil(ms / 60000)); if (m < 60) return `${agAr(m)} دقيقة`; const h = Math.floor(m / 60), r = m % 60; return r ? `${agAr(h)} س و${agAr(r)} د` : `${agAr(h)} ساعة`; };
+const agDayName = k => agDate(k).toLocaleDateString("ar-SA", { weekday: "long" });
+const agHij = k => { try { return agDate(k).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long" }); } catch { return ""; } };
+const agUk = u => String(u || "admin").replace(/[.#$\[\]\/\s]/g, "_");
+const agList = v => (Array.isArray(v) ? v : (v && typeof v === "object" ? Object.values(v) : [])).filter(Boolean);
+const agNorm = v => { const x = v && typeof v === "object" ? v : {}; return { tasks: agList(x.tasks), done: x.done && typeof x.done === "object" ? x.done : {}, snooze: x.snooze && typeof x.snooze === "object" ? x.snooze : {} }; };
+
+// هل المهمة موجودة في هذا اليوم؟
+const agOn = (t, k) => {
+  if (!t || t.deleted || !t.date || k < t.date) return false;
+  if (t.repeat === "daily") return agDate(k).getDay() <= 4; // الأحد → الخميس
+  if (t.repeat === "weekly") return agDate(k).getDay() === agDate(t.date).getDay();
+  return t.date === k;
+};
+const agDay = (S, k) => (S ? S.tasks : []).filter(t => agOn(t, k))
+  .map(t => ({ ...t, k, ok: `${t.id}_${k}`, ts: agTs(k, t.time), done: !!S.done[`${t.id}_${k}`] }))
+  .sort((a, b) => a.ts - b.ts);
+const agPhase = (o, now) => {
+  if (o.done) return "done";
+  const r = o.ts - (o.remind ?? 15) * 60000, e = o.ts + (o.dur || 30) * 60000;
+  if (now < r) return "wait"; if (now < o.ts) return "soon"; if (now < e) return "now"; return "late";
+};
+
+// ── مخزن مشترك بين اللوحة والتنبيه العائم ──
+const agStore = { uk: null, S: null, subs: new Set(), wAt: 0, dis: (() => { try { return JSON.parse(localStorage.getItem("ag_dis") || "{}"); } catch { return {}; } })() };
+const agEmit = () => agStore.subs.forEach(f => f());
+async function agLoad(uk) {
+  const key = `admin-agenda/${uk}`;
+  if (agStore.uk !== uk) { agStore.uk = uk; agStore.S = null; }
+  else if (agStore.S && (Date.now() - agStore.wAt < 15000 || dbQueue.load().some(i => i.key === key))) return; // لا تكتب فوق تعديل لم يصل للخادم بعد
+  const v = await DB.get(key, null);
+  if (agStore.uk !== uk) return;
+  agStore.S = agNorm(v); agEmit();
+}
+function agSave(fn) {
+  if (!agStore.uk) return;
+  agStore.S = fn(agStore.S || agNorm(null)); agStore.wAt = Date.now(); agEmit();
+  DB.set(`admin-agenda/${agStore.uk}`, agStore.S);
+}
+function agDismiss(k) {
+  const today = agKey(new Date());
+  const d = Object.fromEntries(Object.entries(agStore.dis).filter(([x]) => x.includes(today)));
+  d[k] = Date.now(); agStore.dis = d;
+  try { localStorage.setItem("ag_dis", JSON.stringify(d)); } catch {}
+  agEmit();
+}
+function useAgenda(uk, poll = false) {
+  const [, setV] = useState(0);
+  useEffect(() => {
+    const f = () => setV(v => v + 1); agStore.subs.add(f);
+    if (agStore.uk !== uk || !agStore.S) agLoad(uk); else f();
+    const t = poll ? setInterval(() => agLoad(uk), 60000) : null;
+    return () => { agStore.subs.delete(f); if (t) clearInterval(t); };
+  }, [uk, poll]);
+  return agStore.uk === uk ? agStore.S : null;
+}
+// التنبيهات النشطة الآن (قبل الموعد بالمدة المحددة، أو عند حلول الموعد)
+const agAlerts = (S, now) => !S ? [] : agDay(S, agKey(new Date(now)))
+  .map(o => ({ o, ph: agPhase(o, now) }))
+  .filter(({ o, ph }) => (ph === "soon" || ph === "now") && !((S.snooze[o.ok] || 0) > now) && !agStore.dis[`${o.ok}_${ph}`]);
+
+function agChime() {
+  try {
+    if (localStorage.getItem("ag_sound") === "off") return;
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    const a = agChime.ctx || (agChime.ctx = new C()); if (a.state === "suspended") a.resume();
+    [[784, 0], [1047, .2], [1319, .4]].forEach(([f, d]) => {
+      const o = a.createOscillator(), g = a.createGain(), t0 = a.currentTime + d;
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.22, t0 + .03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + .6);
+      o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + .65);
+    });
+  } catch {}
+}
+function agNotify(o, ph, now) {
+  try { if (navigator.vibrate) navigator.vibrate([180, 90, 180]); } catch {}
+  try {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const T = agType(o.type);
+    new Notification(ph === "soon" ? `⏰ بعد ${agLeft(o.ts - now)}: ${o.title}` : `🔔 حان الآن: ${o.title}`,
+      { body: [T.l, agFmt(o.time), o.who, o.place].filter(Boolean).join(" • "), tag: `${o.ok}_${ph}`, dir: "rtl", lang: "ar" });
+  } catch {}
+}
+
+const AG_CSS = `
+.ag{container-type:inline-size;font-family:'Cairo','Noto Naskh Arabic',sans-serif;margin:0 0 18px}
+.ag *{box-sizing:border-box}
+.ag-box{background:#fff;border-radius:26px;border:1px solid #d9e6e1;overflow:hidden;box-shadow:0 22px 40px -32px rgba(6,48,43,.7)}
+.ag-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 18px;background:#0b3d36;color:#fff}
+.ag-hd h3{margin:0;font-size:19px;font-weight:900}
+.ag-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:800;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
+.ag-btn{font-family:inherit;cursor:pointer;border:none;border-radius:14px;padding:9px 16px;font-weight:900;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;transition:transform .15s,box-shadow .15s}
+.ag-btn:focus-visible,.ag-chip:focus-visible,.ag-ck:focus-visible,.ag-day:focus-visible,.ag-ic:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
+.ag-add{background:#fbbf24;color:#3b2a00;box-shadow:0 8px 18px -10px rgba(251,191,36,.9)}
+.ag-add:hover{transform:translateY(-1px)}
+.ag-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);padding:7px 12px;font-size:12.5px}
+.ag-body{padding:16px 18px 18px;display:grid;gap:14px}
+.ag-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px}
+.ag-next{border-radius:22px;padding:16px 18px;background:linear-gradient(160deg,#f0fdf9,#fff 70%);border:1.5px solid #bfe3d6;display:flex;flex-direction:column;gap:6px;min-height:132px}
+.ag-next small{font-size:12px;font-weight:800;color:#0f766e}
+.ag-next b{font-size:19px;font-weight:900;color:#0b3d36;line-height:1.4}
+.ag-cd{font-size:30px;font-weight:900;color:#0b3d36;line-height:1.1;font-variant-numeric:tabular-nums}
+.ag-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.ag-day{font-family:inherit;cursor:pointer;border-radius:16px;border:1.5px solid #e5ece9;background:#fff;padding:8px 2px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;color:#334155}
+.ag-day span{font-size:11px;font-weight:800;opacity:.75}
+.ag-day b{font-size:17px;font-weight:900}
+.ag-day i{font-style:normal;font-size:10.5px;font-weight:900;border-radius:999px;padding:0 7px;background:#f1f5f9;color:#64748b;min-height:16px}
+.ag-day.has i{background:#ccfbf1;color:#0f766e}
+.ag-day.off{opacity:.5}
+.ag-day.on{background:#0b3d36;border-color:#0b3d36;color:#fff;opacity:1}
+.ag-day.on i{background:#fbbf24;color:#3b2a00}
+.ag-rail{position:relative;height:112px;border-radius:20px;background:#f7faf9;border:1px solid #e5ece9;overflow:hidden}
+.ag-axis{position:absolute;right:16px;left:16px;top:76px;height:2px;background:#d9e6e1}
+.ag-tick{position:absolute;top:84px;transform:translateX(50%);font-size:10.5px;font-weight:800;color:#94a3b8;white-space:nowrap}
+.ag-tick::before{content:"";position:absolute;top:-10px;right:50%;width:1px;height:6px;background:#cbd5e1}
+.ag-span{position:absolute;height:6px;top:74px;border-radius:999px;opacity:.55}
+.ag-mk{position:absolute;transform:translateX(50%);display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;border:none;background:none;cursor:pointer;padding:0}
+.ag-mk em{font-style:normal;width:34px;height:34px;border-radius:12px;display:grid;place-items:center;font-size:17px;border:2px solid #fff;box-shadow:0 6px 14px -8px rgba(0,0,0,.6)}
+.ag-mk small{font-size:10px;font-weight:900;white-space:nowrap}
+.ag-mk.dn em{filter:grayscale(1);opacity:.45}
+.ag-now{position:absolute;top:6px;bottom:6px;width:2px;background:#dc2626;transform:translateX(50%)}
+.ag-now::before{content:"الآن";position:absolute;top:-2px;right:50%;transform:translateX(50%);background:#dc2626;color:#fff;font-size:10px;font-weight:900;border-radius:999px;padding:0 7px;white-space:nowrap}
+.ag-list{display:grid;gap:8px}
+.ag-row{display:grid;grid-template-columns:auto 76px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;border-radius:18px;border:1.5px solid #edf2f0;background:#fff}
+.ag-row.late{border-color:#fecaca;background:#fff7f7}
+.ag-row.soon,.ag-row.now{border-color:#fbbf24;background:#fffbeb}
+.ag-row.done{opacity:.62}
+.ag-row.done .ag-tt{text-decoration:line-through}
+.ag-ck{width:30px;height:30px;border-radius:50%;border:2.5px solid #94a3b8;background:#fff;cursor:pointer;display:grid;place-items:center;font-size:15px;font-weight:900;color:#fff;padding:0}
+.ag-ck.y{background:#0f766e;border-color:#0f766e}
+.ag-time{font-size:15px;font-weight:900;color:#0b3d36;font-variant-numeric:tabular-nums}
+.ag-tt{font-size:14.5px;font-weight:900;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ag-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;font-size:11.5px;font-weight:800;color:#64748b}
+.ag-tag{border-radius:999px;padding:1px 9px;font-size:11px;font-weight:900}
+.ag-acts{display:flex;gap:4px}
+.ag-ic{font-family:inherit;border:1px solid #e5ece9;background:#fff;border-radius:11px;padding:5px 9px;cursor:pointer;font-size:12px;font-weight:900;color:#334155}
+.ag-ic:hover{background:#f0fdf9}
+.ag-empty{text-align:center;padding:26px 12px;border:2px dashed #d9e6e1;border-radius:20px;color:#64748b;font-weight:800;font-size:14px}
+.ag-al{position:relative;border-radius:22px;padding:14px 16px;background:linear-gradient(120deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;display:flex;gap:12px;align-items:center;flex-wrap:wrap;animation:agRing 1.6s ease-in-out infinite}
+.ag-al.now{background:linear-gradient(120deg,#fef2f2,#fee2e2);border-color:#dc2626;animation-name:agRingR}
+.ag-al-ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:#fff;box-shadow:0 8px 18px -10px rgba(0,0,0,.5);animation:agBell 1.6s ease-in-out infinite;transform-origin:50% 10%}
+.ag-al h4{margin:0;font-size:12.5px;font-weight:900;color:#b45309}
+.ag-al.now h4{color:#b91c1c}
+.ag-al b{display:block;font-size:17px;font-weight:900;color:#1f2937}
+.ag-al p{margin:2px 0 0;font-size:12.5px;font-weight:800;color:#57534e}
+.ag-al-b{display:flex;gap:6px;flex-wrap:wrap;margin-inline-start:auto}
+.ag-ok{background:#0f766e;color:#fff}
+.ag-sn{background:#fff;color:#92400e;border:1.5px solid #fcd34d}
+.ag-x{background:transparent;color:#78716c;padding:9px 10px}
+@keyframes agRing{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.45)}50%{box-shadow:0 0 0 8px rgba(245,158,11,0)}}
+@keyframes agRingR{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
+@keyframes agBell{0%,60%,100%{transform:rotate(0)}10%,30%{transform:rotate(-14deg)}20%,40%{transform:rotate(14deg)}}
+.ag-float{position:fixed;left:16px;bottom:16px;z-index:9999;width:min(400px,calc(100vw - 32px));display:grid;gap:8px}
+.ag-float .ag-al{box-shadow:0 24px 48px -20px rgba(0,0,0,.55)}
+.ag-ov{position:fixed;inset:0;z-index:10000;background:rgba(6,30,27,.55);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow-y:auto;font-family:'Cairo','Noto Naskh Arabic',sans-serif}
+.ag-md{width:100%;max-width:560px;background:#fff;border-radius:26px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
+.ag-md-h{background:#0b3d36;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.ag-md-h b{font-size:17px;font-weight:900}
+.ag-md-b{padding:16px 18px;display:grid;gap:12px}
+.ag-f label{display:block;font-size:12.5px;font-weight:900;color:#334155;margin-bottom:5px}
+.ag-in{width:100%;font-family:inherit;font-size:14px;font-weight:700;border:1.5px solid #dbe4e1;border-radius:13px;padding:9px 12px;background:#fbfdfc;color:#0f172a}
+.ag-in:focus{outline:none;border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.15)}
+.ag-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ag-chips{display:flex;gap:6px;flex-wrap:wrap}
+.ag-chip{font-family:inherit;cursor:pointer;border-radius:12px;border:1.5px solid #e2e8f0;background:#fff;padding:6px 11px;font-size:12.5px;font-weight:900;color:#475569}
+.ag-chip.on{background:#0b3d36;border-color:#0b3d36;color:#fff}
+.ag-md-f{display:flex;gap:8px;padding:0 18px 18px;flex-wrap:wrap}
+.ag-err{color:#b91c1c;font-size:12.5px;font-weight:900}
+@container (max-width:720px){
+  .ag-top{grid-template-columns:1fr}
+  .ag-row{grid-template-columns:auto 64px minmax(0,1fr);row-gap:6px}
+  .ag-acts{grid-column:1/-1;justify-content:flex-end}
+  .ag-hd h3{font-size:17px}
+}
+@container (max-width:460px){
+  .ag-body{padding:12px}
+  .ag-week{grid-template-columns:repeat(7,minmax(38px,1fr));overflow-x:auto}
+  .ag-cd{font-size:25px}
+  .ag-tick.odd{display:none}
+  .ag-al-b{margin-inline-start:0;width:100%}
+}
+@media (max-width:520px){.ag-2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.ag-al,.ag-al-ic{animation:none}}
+`;
+
+// بطاقة التنبيه (تُستخدم في الرئيسية وفي التنبيه العائم)
+function AgAlertCard({ o, ph, now, onOpen }) {
+  const T = agType(o.type);
+  const done = () => agSave(S => ({ ...S, done: { ...S.done, [o.ok]: Date.now() } }));
+  const snooze = () => agSave(S => ({ ...S, snooze: { ...S.snooze, [o.ok]: Date.now() + 5 * 60000 } }));
+  return <div className={`ag-al ${ph === "now" ? "now" : ""}`} role="alert">
+    <div className="ag-al-ic" style={{ color: T.c }}>{ph === "now" ? "🔔" : "⏰"}</div>
+    <div style={{ minWidth: 0, flex: "1 1 180px" }}>
+      <h4>{ph === "now" ? "حان موعد المهمة الآن" : `تبدأ بعد ${agLeft(o.ts - now)}`}</h4>
+      <b>{T.ic} {o.title}</b>
+      <p>{[agFmt(o.time), o.who, o.place].filter(Boolean).join(" • ")}</p>
+    </div>
+    <div className="ag-al-b">
+      <button className="ag-btn ag-ok" onClick={done}>✓ تمّت</button>
+      <button className="ag-btn ag-sn" onClick={snooze}>⏱ ذكّرني بعد ٥ د</button>
+      {onOpen && <button className="ag-btn ag-sn" onClick={onOpen}>فتح المفكرة</button>}
+      <button className="ag-btn ag-x" aria-label="إغلاق التنبيه" onClick={() => agDismiss(`${o.ok}_${ph}`)}>✕</button>
+    </div>
+  </div>;
+}
+
+// تنبيه عائم يعمل في كل صفحات الإدارة + الصوت وإشعار المتصفح
+function AgendaWatcher({ uk, page, navigate }) {
+  const key = agUk(uk);
+  const S = useAgenda(key, true);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 15000); return () => clearInterval(t); }, []);
+  const list = agAlerts(S, now);
+  const sig = list.map(x => `${x.o.ok}_${x.ph}`).join("|");
+  useEffect(() => {
+    if (!list.length) return;
+    let fired = {}; try { fired = JSON.parse(localStorage.getItem("ag_fired") || "{}"); } catch {}
+    const today = agKey(new Date()); fired = Object.fromEntries(Object.entries(fired).filter(([k]) => k.includes(today)));
+    let ring = false;
+    list.forEach(({ o, ph }) => { const k = `${o.ok}_${ph}`; if (!fired[k]) { fired[k] = Date.now(); ring = true; agNotify(o, ph, Date.now()); } });
+    if (ring) agChime();
+    try { localStorage.setItem("ag_fired", JSON.stringify(fired)); } catch {}
+  }, [sig]);
+  if (page === "home" || !list.length) return null;
+  return <div className="ag" dir="rtl" style={{ margin: 0 }}><style>{AG_CSS}</style>
+    <div className="ag-float">{list.slice(0, 2).map(({ o, ph }) => <AgAlertCard key={o.ok + ph} o={o} ph={ph} now={now} onOpen={navigate ? () => navigate("home") : null} />)}</div>
+  </div>;
+}
+
+// نافذة إضافة / تعديل مهمة
+function AgForm({ init, teachers, onClose }) {
+  const [f, setF] = useState(() => init || { type: "visit", title: "", who: "", place: "", date: agKey(new Date()), time: "", dur: 30, remind: 15, repeat: "none", notes: "" });
+  const [err, setErr] = useState("");
+  const set = (k, v) => setF(x => ({ ...x, [k]: v }));
+  const T = agType(f.type);
+  const names = (teachers || []).map(t => typeof t === "string" ? t : t && t.name).filter(Boolean);
+  const save = () => {
+    if (!f.time) { setErr("حدّد وقت المهمة حتى يصلك التنبيه."); return; }
+    if (!f.date) { setErr("حدّد تاريخ المهمة."); return; }
+    const title = (f.title || "").trim() || (f.type === "visit" && f.who ? `زيارة صفية — ${f.who}` : T.l);
+    const t = { ...f, title, id: f.id || `ag${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, at: f.at || Date.now() };
+    agSave(S => ({ ...S, tasks: f.id ? S.tasks.map(x => x.id === f.id ? t : x) : [...S.tasks, t] }));
+    onClose();
+  };
+  const hide = () => {
+    if (!window.confirm(f.repeat !== "none" ? "إخفاء هذه المهمة المتكررة من كل الأيام؟" : "إخفاء هذه المهمة؟")) return;
+    agSave(S => ({ ...S, tasks: S.tasks.map(x => x.id === f.id ? { ...x, deleted: true, deletedAt: Date.now() } : x) }));
+    onClose();
+  };
+  useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, []);
+  return <div className="ag-ov" dir="rtl" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="ag-md" role="dialog" aria-modal="true" aria-label={f.id ? "تعديل مهمة" : "مهمة جديدة"}>
+      <div className="ag-md-h"><b>{f.id ? "✎ تعديل مهمة" : "＋ مهمة جديدة"}</b><button className="ag-btn ag-ghost" onClick={onClose} aria-label="إغلاق">✕</button></div>
+      <div className="ag-md-b">
+        <div className="ag-f"><label>نوع المهمة</label>
+          <div className="ag-chips">{AG_TYPES.map(t => <button key={t.id} type="button" className={`ag-chip ${f.type === t.id ? "on" : ""}`} onClick={() => set("type", t.id)}>{t.ic} {t.l}</button>)}</div>
+        </div>
+        <div className="ag-f"><label htmlFor="ag-title">عنوان المهمة</label><input id="ag-title" className="ag-in" value={f.title} onChange={e => set("title", e.target.value)} placeholder={T.ph} /></div>
+        <div className="ag-2">
+          <div className="ag-f"><label htmlFor="ag-who">{T.who}</label>
+            <input id="ag-who" className="ag-in" list="ag-teachers" value={f.who} onChange={e => set("who", e.target.value)} placeholder={f.type === "visit" ? "اكتب أو اختر اسم المعلم" : ""} />
+            <datalist id="ag-teachers">{names.map(n => <option key={n} value={n} />)}</datalist>
+          </div>
+          <div className="ag-f"><label htmlFor="ag-place">المكان / الدور / الفصل</label><input id="ag-place" className="ag-in" value={f.place} onChange={e => set("place", e.target.value)} placeholder="مثال: الدور الثاني — ٢/٣" /></div>
+        </div>
+        <div className="ag-2">
+          <div className="ag-f"><label htmlFor="ag-date">التاريخ</label><input id="ag-date" type="date" className="ag-in" value={f.date} onChange={e => set("date", e.target.value)} /></div>
+          <div className="ag-f"><label htmlFor="ag-time">الوقت</label><input id="ag-time" type="time" className="ag-in" value={f.time} onChange={e => { set("time", e.target.value); setErr(""); }} /></div>
+        </div>
+        <div className="ag-f"><label>نبّهني قبل الموعد بـ</label>
+          <div className="ag-chips">{AG_REM.map(m => <button key={m} type="button" className={`ag-chip ${+f.remind === m ? "on" : ""}`} onClick={() => set("remind", m)}>{m === 60 ? "ساعة" : `${agAr(m)} دقيقة`}</button>)}</div>
+        </div>
+        <div className="ag-2">
+          <div className="ag-f"><label>المدة المتوقعة</label>
+            <div className="ag-chips">{AG_DUR.map(m => <button key={m} type="button" className={`ag-chip ${+f.dur === m ? "on" : ""}`} onClick={() => set("dur", m)}>{agAr(m)} د</button>)}</div>
+          </div>
+          <div className="ag-f"><label>التكرار</label>
+            <div className="ag-chips">{AG_REP.map(([v, l]) => <button key={v} type="button" className={`ag-chip ${f.repeat === v ? "on" : ""}`} onClick={() => set("repeat", v)}>{l}</button>)}</div>
+          </div>
+        </div>
+        <div className="ag-f"><label htmlFor="ag-notes">ملاحظات</label><textarea id="ag-notes" className="ag-in" rows={2} value={f.notes} onChange={e => set("notes", e.target.value)} placeholder="اختياري" /></div>
+        {err && <div className="ag-err">{err}</div>}
+      </div>
+      <div className="ag-md-f">
+        <button className="ag-btn ag-add" onClick={save}>{f.id ? "حفظ التعديل" : "إضافة المهمة"}</button>
+        <button className="ag-btn ag-ic" onClick={onClose}>إلغاء</button>
+        {f.id && <button className="ag-btn ag-ic" style={{ marginInlineStart: "auto", color: "#b91c1c", borderColor: "#fecaca" }} onClick={hide}>إخفاء المهمة</button>}
+      </div>
+    </div>
+  </div>;
+}
+
+// لوحة المفكرة في الصفحة الرئيسية
+function AgendaBoard({ uk, teachers, navigate }) {
+  const key = agUk(uk);
+  const S = useAgenda(key);
+  const today = agKey(new Date());
+  const [dk, setDk] = useState(today);
+  const [form, setForm] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  const [perm, setPerm] = useState(() => ("Notification" in window ? Notification.permission : "na"));
+  const [snd, setSnd] = useState(() => { try { return localStorage.getItem("ag_sound") !== "off"; } catch { return true; } });
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 15000); return () => clearInterval(t); }, []);
+  if (!S) return <div className="ag" dir="rtl"><style>{AG_CSS}</style><div className="ag-box"><div className="ag-hd"><h3>🗓️ مفكرتي اليومية</h3><span className="ag-pill">جارٍ التحميل…</span></div></div></div>;
+
+  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return agKey(d); });
+  const todayL = agDay(S, today);
+  const L = agDay(S, dk);
+  const alerts = agAlerts(S, now);
+  const doneN = todayL.filter(o => o.done).length;
+  const next = todayL.find(o => ["wait", "soon", "now"].includes(agPhase(o, now)));
+  const toggle = o => agSave(X => { const d = { ...X.done }; if (d[o.ok]) delete d[o.ok]; else d[o.ok] = Date.now(); return { ...X, done: d }; });
+  const askPerm = async () => { try { const p = await Notification.requestPermission(); setPerm(p); if (p === "granted") agChime(); } catch {} };
+  const toggleSnd = () => { const v = !snd; setSnd(v); try { localStorage.setItem("ag_sound", v ? "on" : "off"); } catch {} if (v) agChime(); };
+  const openNew = () => setForm({ type: "visit", title: "", who: "", place: "", date: dk, time: "", dur: 30, remind: 15, repeat: "none", notes: "" });
+
+  // شريط الوقت
+  const mins = L.map(o => agMin(o.time));
+  const s0 = Math.max(0, Math.min(390, ...(mins.length ? mins.map(m => m - 20) : [390])));
+  const e0 = Math.min(1440, Math.max(840, ...(L.length ? L.map(o => agMin(o.time) + (o.dur || 30) + 20) : [840])));
+  const pos = m => `calc(16px + (100% - 32px) * ${(m - s0) / (e0 - s0)})`;
+  const nowMin = new Date(now).getHours() * 60 + new Date(now).getMinutes();
+  const step = e0 - s0 > 600 ? 120 : 60; const ticks = []; for (let h = Math.ceil(s0 / step) * step; h <= e0; h += step) ticks.push(h);
+  let lastP = -1, lane = 0;
+  const marks = L.map(o => { const p = (agMin(o.time) - s0) / (e0 - s0); lane = lastP >= 0 && p - lastP < .07 ? 1 - lane : 0; lastP = p; return { o, lane }; });
+
+  return <div className="ag" dir="rtl"><style>{AG_CSS}</style>
+    <div className="ag-box">
+      <div className="ag-hd">
+        <h3>🗓️ مفكرتي اليومية</h3>
+        <span className="ag-pill">{agDayName(today)} {agHij(today)}</span>
+        {todayL.length > 0 && <span className="ag-pill" style={{ background: doneN === todayL.length ? "#16a34a" : undefined }}>✓ أنجزت {agAr(doneN)} من {agAr(todayL.length)}</span>}
+        <span style={{ marginInlineStart: "auto" }} className="flex gap-2 flex-wrap items-center">
+          {perm !== "na" && perm !== "granted" && <button className="ag-btn ag-ghost" onClick={askPerm} title={perm === "denied" ? "الإشعارات محظورة من إعدادات المتصفح" : ""}>{perm === "denied" ? "🔕 الإشعارات محظورة" : "🔔 فعّل إشعارات المتصفح"}</button>}
+          <button className="ag-btn ag-ghost" onClick={toggleSnd} aria-pressed={snd}>{snd ? "🔊 الصوت يعمل" : "🔇 الصوت مغلق"}</button>
+          <button className="ag-btn ag-add" onClick={openNew}>＋ مهمة جديدة</button>
+        </span>
+      </div>
+
+      <div className="ag-body">
+        {alerts.map(({ o, ph }) => <AgAlertCard key={o.ok + ph} o={o} ph={ph} now={now} />)}
+
+        <div className="ag-top">
+          <div className="ag-next">
+            {next ? <>
+              <small>{agPhase(next, now) === "now" ? "جارية الآن" : "المهمة القادمة"} • {agFmt(next.time)}</small>
+              <b>{agType(next.type).ic} {next.title}</b>
+              <div className="ag-cd">{agPhase(next, now) === "now" ? "الآن" : `بعد ${agLeft(next.ts - now)}`}</div>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{[next.who, next.place, `تنبيه قبلها بـ ${agAr(next.remind ?? 15)} د`].filter(Boolean).join(" • ")}</span>
+            </> : todayL.length ? <>
+              <small>اليوم</small><b>لا مهام متبقية اليوم 🎉</b>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>أنجزت {agAr(doneN)} من {agAr(todayL.length)}{todayL.length - doneN > 0 ? ` • فاتت ${agAr(todayL.length - doneN)} دون تأشير` : ""}</span>
+            </> : <>
+              <small>اليوم</small><b>لا مهام مسجلة لليوم</b>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>أضف زيارة أو جولة، وسيظهر لك تنبيه هنا قبل موعدها.</span>
+            </>}
+          </div>
+          <div style={{ display: "grid", gap: 8, alignContent: "start" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#334155" }}>الأيام القادمة</div>
+            <div className="ag-week">
+              {days.map(k => { const n = agDay(S, k).length; const g = agDate(k).getDay(); return (
+                <button key={k} className={`ag-day ${k === dk ? "on" : ""} ${g >= 5 ? "off" : ""} ${n ? "has" : ""}`} onClick={() => setDk(k)} aria-pressed={k === dk}>
+                  <span>{k === today ? "اليوم" : agDayName(k).replace("ال", "")}</span><b>{agAr(agDate(k).getDate())}</b><i>{n ? agAr(n) : ""}</i>
+                </button>); })}
+            </div>
+            {dk !== today && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f766e" }}>تعرض الآن مهام {agDayName(dk)} {agHij(dk)}</div>}
+          </div>
+        </div>
+
+        {L.length > 0 && <div className="ag-rail" aria-hidden="true">
+          <div className="ag-axis" />
+          {ticks.map((h, i) => <span key={h} className={`ag-tick ${i % 2 ? "odd" : ""}`} style={{ right: pos(h) }}>{agFmt(`${Math.floor(h / 60)}:00`).replace(":٠٠", "")}</span>)}
+          {L.map(o => <span key={"s" + o.ok} className="ag-span" style={{ right: pos(agMin(o.time)), width: `calc((100% - 32px) * ${(o.dur || 30) / (e0 - s0)})`, background: agType(o.type).c }} />)}
+          {marks.map(({ o, lane }) => { const T = agType(o.type); return (
+            <button key={o.ok} className={`ag-mk ${o.done ? "dn" : ""}`} style={{ right: pos(agMin(o.time)), top: lane ? 30 : 8 }} onClick={() => setForm(S.tasks.find(t => t.id === o.id))} tabIndex={-1}>
+              <em style={{ background: T.bg, color: T.c }}>{o.done ? "✓" : T.ic}</em>
+              {!lane && <small style={{ color: T.c }}>{agFmt(o.time)}</small>}
+            </button>); })}
+          {dk === today && nowMin >= s0 && nowMin <= e0 && <span className="ag-now" style={{ right: pos(nowMin) }} />}
+        </div>}
+
+        <div className="ag-list">
+          {L.length ? L.map(o => { const T = agType(o.type); const ph = dk === today ? agPhase(o, now) : (o.done ? "done" : dk < today ? "late" : "wait"); return (
+            <div key={o.ok} className={`ag-row ${ph}`}>
+              <button className={`ag-ck ${o.done ? "y" : ""}`} onClick={() => toggle(o)} aria-label={o.done ? "إلغاء التأشير" : "تأشير كمنجزة"}>{o.done ? "✓" : ""}</button>
+              <div className="ag-time">{agFmt(o.time)}</div>
+              <div style={{ minWidth: 0 }}>
+                <div className="ag-tt">{T.ic} {o.title}</div>
+                <div className="ag-meta">
+                  <span className="ag-tag" style={{ background: T.bg, color: T.c }}>{T.l}</span>
+                  {o.who && <span>👤 {o.who}</span>}
+                  {o.place && <span>📍 {o.place}</span>}
+                  {o.repeat !== "none" && o.repeat && <span>🔁 {o.repeat === "daily" ? "يومي" : "أسبوعي"}</span>}
+                  <span>⏰ قبلها {agAr(o.remind ?? 15)} د</span>
+                  {ph === "late" && <span className="ag-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>فات موعدها</span>}
+                  {ph === "now" && <span className="ag-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>جارية الآن</span>}
+                  {ph === "soon" && <span className="ag-tag" style={{ background: "#fef3c7", color: "#92400e" }}>بعد {agLeft(o.ts - now)}</span>}
+                </div>
+                {o.notes && <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginTop: 3 }}>📝 {o.notes}</div>}
+              </div>
+              <div className="ag-acts">
+                {o.type === "visit" && navigate && <button className="ag-ic" onClick={() => navigate("classvisits")}>الزيارات الصفية</button>}
+                <button className="ag-ic" onClick={() => setForm(S.tasks.find(t => t.id === o.id))}>✎ تعديل</button>
+              </div>
+            </div>); }) : <div className="ag-empty">
+              لا مهام في {dk === today ? "هذا اليوم" : agDayName(dk)}.
+              <div style={{ marginTop: 10 }}><button className="ag-btn ag-add" onClick={openNew}>＋ أضف مهمة</button></div>
+            </div>}
+        </div>
+      </div>
+    </div>
+    {form && <AgForm init={form} teachers={teachers} onClose={() => setForm(null)} />}
+  </div>;
+}
+
+
+function HomePage({ teachers, announcements, activities, navigate, attendance, week, messages, classList, weekArchive, agendaUser }) {
   const today = new Date();
   const todayStr = today.toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
   const jsDay = today.getDay();
@@ -2045,6 +2486,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
           ))}
         </div>
       </div>
+      <AgendaBoard uk={agendaUser} teachers={teachers} navigate={navigate} />
       <TtNowBoard navigate={navigate} />
       <DutyTodayHome navigate={navigate} />
       <AdminLiveBoard navigate={navigate} />
@@ -39955,6 +40397,7 @@ function SchoolWebsiteInner() {
         </div>
       </div>
 
+      {user && <AgendaWatcher uk={user.username || user.name} page={page} navigate={navigate} />}
       {/* ══════════════════════════════════════════
           وضع الجوال — إطار هاتف
       ══════════════════════════════════════════ */}
@@ -40002,7 +40445,7 @@ function SchoolWebsiteInner() {
             {/* ── محتوى الصفحة (قابل للتمرير) ── */}
             <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", background:"#f8fafc" }}>
               <div style={{ direction:"rtl" }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
-                {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} />}
+                {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
                 {page === "student-absence" && <StudentAbsencePage />}
                 {page === "admin-attendance"&& <AdminAttendancePage />}
                 {page === "attendance"     && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
@@ -40178,7 +40621,7 @@ function SchoolWebsiteInner() {
         </div>
       </nav>
       <main className="w-full py-3"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
-        {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} />}
+        {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
         {page === "student-absence" && <StudentAbsencePage />}
         {page === "admin-attendance" && <AdminAttendancePage />}
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
