@@ -26760,7 +26760,265 @@ function QuizPage() {
 }
 
 // ===== مؤقت الحصة =====
+// ═══════════════════════════════════════════════════════════════
+// عجلة السحب — تستورد أسماء المتأخرين صباحاً أو الغائبين (school-mlate / school-mattend)
+// السحب عشوائي من كل الفصول، ويمكن تكراره، مع خيار عدم تكرار الاسم المسحوب
+// ═══════════════════════════════════════════════════════════════
+const SW_LV = [["#0f766e", "#14b8a6"], ["#1d4ed8", "#3b82f6"], ["#6d28d9", "#8b5cf6"]];
+const SW_C = 260, SW_R = 228;
+const swShort = n => { const p = String(n || "").trim().split(/\s+/); const s = p.length > 2 ? `${p[0]} ${p[p.length - 1]}` : p.join(" "); return s.length > 16 ? s.slice(0, 15) + "…" : s; };
+const swRand = n => { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; } catch { return Math.floor(Math.random() * n); } };
+const swShuffle = A => { const a = [...A]; for (let i = a.length - 1; i > 0; i--) { const j = swRand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const swPt = (deg, r) => { const t = deg * Math.PI / 180; return [SW_C + r * Math.sin(t), SW_C - r * Math.cos(t)]; };
+const swSlice = (s, e) => { const [x1, y1] = swPt(s, SW_R), [x2, y2] = swPt(e, SW_R); return `M${SW_C} ${SW_C}L${x1.toFixed(2)} ${y1.toFixed(2)}A${SW_R} ${SW_R} 0 ${e - s > 180 ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}Z`; };
+let swAC = null;
+const swAudio = () => { try { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; swAC = swAC || new C(); if (swAC.state === "suspended") swAC.resume(); return swAC; } catch { return null; } };
+const swTone = (f, d, len, vol, type = "sine") => { const a = swAudio(); if (!a) return; const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + d; o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(0.0001, t + len); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + len + .02); };
+const swTick = () => swTone(1400, 0, .03, .06, "square");
+const swFanfare = () => { [[523, 0], [659, .12], [784, .24], [1047, .38]].forEach(([f, d]) => swTone(f, d, .5, .2)); };
+// أيام الأسبوع الدراسي (الأحد ← التاريخ المختار)
+const swWeekDays = dk => { const d = maDate(dk); const out = []; for (let i = d.getDay(); i >= 0; i--) { const x = new Date(d); x.setDate(d.getDate() - i); if (x.getDay() <= 4) out.push(maKey(x)); } return out; };
+async function swLoad(days) {
+  const res = await Promise.all(days.flatMap(k => [maGet(`${MA_ATT}/${k}`), maGet(`${MA_LATE}/${k}`)]));
+  const M = {};
+  days.forEach((k, i) => {
+    Object.entries(maNormDay(res[i * 2])).forEach(([ck, r]) => r.absent.forEach(x => {
+      if (!x || !x.name) return; const id = String(x.id || x.name); const key = "a|" + id;
+      const e = M[key] || (M[key] = { key, id, name: x.name, ck, src: "abs", n: 0 }); e.n++;
+    }));
+    ptVals(res[i * 2 + 1]).forEach(x => {
+      if (!x.name) return; const id = String(x.id || x.name); const key = "l|" + id;
+      const e = M[key] || (M[key] = { key, id, name: x.name, ck: x.ck || "", src: "late", n: 0, time: x.time, mins: +x.mins || 0 }); e.n++;
+    });
+  });
+  return Object.values(M);
+}
+const swLv = x => { const l = +String(x.ck || "")[0] - 1; return l >= 0 && l < 3 ? l : -1; };
+
+const SW_CSS = `
+.sw{font-family:'Cairo','Noto Naskh Arabic',sans-serif;container-type:inline-size}
+.sw *{box-sizing:border-box}
+.sw-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:22px;padding:12px 14px;margin-bottom:14px}
+.sw-grp{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sw-grp>span{font-size:12px;font-weight:900;color:#64748b;margin-inline-end:2px}
+.sw-chip{font-family:inherit;cursor:pointer;border-radius:999px;border:1.5px solid #e2e8f0;background:#fff;padding:6px 13px;font-size:13px;font-weight:900;color:#475569;display:inline-flex;gap:6px;align-items:center}
+.sw-chip i{font-style:normal;background:#f1f5f9;color:#475569;border-radius:999px;padding:0 8px;font-size:12px}
+.sw-chip.on{background:#06302b;border-color:#06302b;color:#fff}
+.sw-chip.on i{background:#d4a017;color:#2a1d00}
+.sw-chip:focus-visible,.sw-wheel:focus-visible,.sw-go:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
+.sw-in{font-family:inherit;font-weight:800;font-size:13px;border:1.5px solid #e2e8f0;border-radius:12px;padding:5px 10px;color:#0f172a}
+.sw-sep{width:1px;align-self:stretch;background:#e2e8f0}
+.sw-main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px}
+.sw-stage{position:relative;border-radius:30px;padding:22px 16px 20px;overflow:hidden;color:#fff;background:radial-gradient(600px 380px at 50% 38%,#0f5c50 0%,#06302b 55%,#031c19 100%);display:flex;flex-direction:column;align-items:center;gap:16px}
+.sw-wheel{position:relative;width:min(100%,540px);aspect-ratio:1;border:none;background:none;padding:0;cursor:pointer;border-radius:50%}
+.sw-wheel:disabled{cursor:default}
+.sw-wheel .sw-disc{width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 30px 40px rgba(0,0,0,.45))}
+.sw-wheel .sw-ptr{position:absolute;top:-4px;left:50%;width:9%;height:auto;aspect-ratio:46/58;transform:translateX(-50%);transform-origin:50% 18%;z-index:2;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))}
+.sw-wheel .sw-ptr.k{animation:swK .12s ease-out}
+@keyframes swK{0%{transform:translateX(-50%) rotate(0)}40%{transform:translateX(-50%) rotate(-14deg)}100%{transform:translateX(-50%) rotate(0)}}
+.sw-bulb{fill:#fde68a;opacity:.45}
+.sw-run .sw-bulb{animation:swB .5s steps(1) infinite}
+.sw-run .sw-bulb.b{animation-delay:.25s}
+@keyframes swB{0%{opacity:1;fill:#fff7cc}50%{opacity:.3;fill:#d4a017}}
+.sw-go{font-family:inherit;cursor:pointer;border:none;border-radius:18px;padding:13px 34px;font-size:18px;font-weight:900;background:linear-gradient(180deg,#fcd34d,#d4a017);color:#2a1d00;box-shadow:0 14px 26px -12px rgba(212,160,23,.9),inset 0 -3px 0 rgba(0,0,0,.15)}
+.sw-go:disabled{opacity:.5;cursor:default}
+.sw-leg{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-size:12.5px;font-weight:800;opacity:.9}
+.sw-leg b{display:inline-block;width:11px;height:11px;border-radius:4px;margin-inline-end:5px;vertical-align:-1px}
+.sw-tools{position:absolute;top:12px;inset-inline-start:12px;display:flex;gap:6px}
+.sw-t{font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;border-radius:12px;padding:5px 10px;font-size:12.5px;font-weight:900}
+.sw-side{display:grid;gap:12px;align-content:start}
+.sw-win{border-radius:26px;padding:20px;text-align:center;background:#fff;border:2px solid #fcd34d;box-shadow:0 20px 40px -28px rgba(180,120,0,.8);animation:swPop .55s cubic-bezier(.2,1.5,.4,1)}
+@keyframes swPop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.sw-win small{font-size:13px;font-weight:900;color:#b45309}
+.sw-win h2{margin:6px 0 8px;font-size:clamp(24px,4.6cqi,40px);font-weight:900;color:#06302b;line-height:1.3}
+.sw-tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:900;margin:2px}
+.sw-wait{border-radius:26px;padding:22px;text-align:center;background:#f8fafc;border:2px dashed #e2e8f0;color:#64748b;font-weight:800}
+.sw-hist{background:#fff;border:1px solid #e2e8f0;border-radius:22px;padding:12px 14px}
+.sw-hr{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13.5px;font-weight:800}
+.sw-hr:last-child{border-bottom:none}
+.sw-hr em{font-style:normal;width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:#fef3c7;color:#92400e;font-size:12px;font-weight:900}
+.sw-conf{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.sw-conf i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:swF 2.4s ease-in forwards}
+@keyframes swF{to{transform:translateY(720px) rotate(720deg);opacity:0}}
+.sw:fullscreen{background:#031c19;padding:16px;overflow:auto}
+.sw:fullscreen .sw-main{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);min-height:calc(100vh - 32px)}
+.sw:fullscreen .sw-wheel{width:min(100%,78vh)}
+.sw:fullscreen .sw-bar{display:none}
+@container (max-width:760px){.sw-main{grid-template-columns:1fr}.sw-sep{display:none}.sw-tools{position:static;align-self:flex-end;margin-bottom:-8px}}
+@media (prefers-reduced-motion:reduce){.sw-run .sw-bulb,.sw-win,.sw-conf i,.sw-wheel .sw-ptr.k{animation:none}}
+`;
+
+function StudentDrawWheel() {
+  const today = maKey(new Date());
+  const [dk, setDk] = useState(today);
+  const [week, setWeek] = useState(false);
+  const [src, setSrc] = useState("late");
+  const [lv, setLv] = useState(-1);
+  const [all, setAll] = useState(null);
+  const [noRep, setNoRep] = useState(true);
+  const [snd, setSnd] = useState(() => { try { return localStorage.getItem("sw_snd") !== "off"; } catch { return true; } });
+  const [order, setOrder] = useState([]);
+  const [win, setWin] = useState(null);
+  const [spinning, setSpinning] = useState(false);
+  const [conf, setConf] = useState(0);
+  const histKey = `sw_hist_${week ? "w" : "d"}_${dk}`;
+  const [hist, setHist] = useState([]);
+  const rot = useRef(0), gRef = useRef(null), ptrRef = useRef(null), boxRef = useRef(null), histRef = useRef([]);
+  histRef.current = hist;
+
+  useEffect(() => { let alive = true; setAll(null); setWin(null); swLoad(week ? swWeekDays(dk) : [dk]).then(r => { if (alive) setAll(r); }); return () => { alive = false; }; }, [dk, week]);
+  useEffect(() => { try { setHist(JSON.parse(localStorage.getItem(histKey) || "[]")); } catch { setHist([]); } }, [histKey]);
+  const saveHist = h => { setHist(h); try { localStorage.setItem(histKey, JSON.stringify(h.slice(0, 200))); } catch {} };
+
+  // المصدر + الصف (الغائب والمتأخر نفسه يظهر مرة واحدة في «الكل»)
+  const filtered = (all || []).filter(x => (src === "all" || x.src === src) && (lv < 0 || swLv(x) === lv))
+    .filter((x, i, A) => src !== "all" || A.findIndex(y => y.id === x.id) === i);
+  const cnt = s => (all || []).filter(x => (s === "all" || x.src === s) && (lv < 0 || swLv(x) === lv)).filter((x, i, A) => s !== "all" || A.findIndex(y => y.id === x.id) === i).length;
+  const sig = filtered.map(x => x.key).join(",") + "|" + noRep;
+  useEffect(() => {
+    if (spinning) return;
+    let H = []; try { H = JSON.parse(localStorage.getItem(histKey) || "[]"); } catch {}
+    const drawn = new Set(H.map(h => h.id));
+    setOrder(swShuffle(noRep ? filtered.filter(x => !drawn.has(x.id)) : filtered)); setWin(null);
+  }, [sig, histKey]);
+
+  const spin = () => {
+    if (spinning) return;
+    let L = order; if (noRep && win) L = order.filter(x => x.key !== win.key);
+    if (!L.length) return;
+    if (L !== order) setOrder(L);
+    setWin(null); setSpinning(true); swAudio();
+    const n = L.length, a = 360 / n, i = swRand(n);
+    const jit = (Math.random() - .5) * a * .6;
+    const cur = rot.current;
+    const want = ((360 - ((i + .5) * a + jit)) % 360 + 360) % 360;
+    let target = cur - (cur % 360) + 360 * 7 + want; if (target - cur < 360 * 6) target += 360;
+    const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const dur = reduced ? 1200 : 6000 + Math.random() * 900;
+    const t0 = performance.now(); let last = -1;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+      const R = cur + (target - cur) * e; rot.current = R;
+      if (gRef.current) gRef.current.setAttribute("transform", `rotate(${R.toFixed(3)} ${SW_C} ${SW_C})`);
+      const idx = Math.floor((((360 - R % 360) % 360) + 360) % 360 / a) % n;
+      if (idx !== last) { last = idx; if (snd && n > 1) swTick(); const el = ptrRef.current; if (el) { el.classList.remove("k"); void el.getBoundingClientRect(); el.classList.add("k"); } }
+      if (p < 1) { requestAnimationFrame(step); return; }
+      const w = L[i];
+      setWin(w); setSpinning(false); setConf(c => c + 1);
+      saveHist([{ id: w.id, key: w.key, name: w.name, ck: w.ck, src: w.src, time: w.time || "", at: Date.now() }, ...histRef.current]);
+      if (snd) swFanfare();
+    };
+    requestAnimationFrame(step);
+  };
+  const reset = () => { if (hist.length && !window.confirm("مسح سجل السحب لهذا اليوم وإرجاع كل الأسماء للعجلة؟")) return; saveHist([]); setOrder(swShuffle(filtered)); setWin(null); };
+  const full = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else boxRef.current && boxRef.current.requestFullscreen(); } catch {} };
+  const toggleSnd = () => { const v = !snd; setSnd(v); try { localStorage.setItem("sw_snd", v ? "on" : "off"); } catch {} };
+
+  const n = order.length, a = n ? 360 / n : 360;
+  const showTxt = n <= 48, fs = n <= 8 ? 19 : n <= 14 ? 16 : n <= 24 ? 13 : n <= 36 ? 10.5 : 8.5;
+  const bulbs = Array.from({ length: 28 }, (_, k) => swPt(k * 360 / 28, SW_R + 14));
+  const empty = all && !filtered.length;
+  const srcL = { late: "المتأخرين صباحاً", abs: "الغائبين", all: "المتأخرين والغائبين" }[src];
+
+  return <div className="sw" dir="rtl" ref={boxRef}><style>{SW_CSS}</style>
+    <div className="sw-bar">
+      <div className="sw-grp"><span>الأسماء من</span>
+        {[["late", "🌅 المتأخرون صباحاً"], ["abs", "🚫 الغائبون"], ["all", "الاثنان معاً"]].map(([k, l]) => <button key={k} className={`sw-chip ${src === k ? "on" : ""}`} onClick={() => setSrc(k)} aria-pressed={src === k}>{l}<i>{all ? maAr(cnt(k)) : "…"}</i></button>)}
+      </div>
+      <div className="sw-sep" />
+      <div className="sw-grp"><span>الصف</span>
+        <button className={`sw-chip ${lv < 0 ? "on" : ""}`} onClick={() => setLv(-1)}>كل الفصول</button>
+        {MA_LV.map((L, k) => <button key={k} className={`sw-chip ${lv === k ? "on" : ""}`} onClick={() => setLv(k)}>{L.s} متوسط</button>)}
+      </div>
+      <div className="sw-sep" />
+      <div className="sw-grp"><span>اليوم</span>
+        <input type="date" className="sw-in" value={dk} max={today} onChange={e => e.target.value && setDk(e.target.value)} />
+        {dk !== today && <button className="sw-chip" onClick={() => setDk(today)}>اليوم</button>}
+        <button className={`sw-chip ${week ? "on" : ""}`} onClick={() => setWeek(!week)} aria-pressed={week}>📅 الأسبوع كامل</button>
+      </div>
+      <div className="sw-grp" style={{ marginInlineStart: "auto" }}>
+        <button className={`sw-chip ${noRep ? "on" : ""}`} onClick={() => setNoRep(!noRep)} aria-pressed={noRep}>{noRep ? "✓ لا يتكرر الاسم" : "يمكن تكرار الاسم"}</button>
+      </div>
+    </div>
+
+    <div className="sw-main">
+      <div className={`sw-stage ${spinning ? "sw-run" : ""}`}>
+        <div className="sw-tools">
+          <button className="sw-t" onClick={toggleSnd} aria-pressed={snd}>{snd ? "🔊" : "🔇"}</button>
+          <button className="sw-t" onClick={full}>⛶ ملء الشاشة</button>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 20, fontWeight: 900 }}>🎡 عجلة السحب</div>
+          <div style={{ fontSize: 13, fontWeight: 800, opacity: .8 }}>{srcL} • {week ? `الأسبوع حتى ${maDay(maDate(dk))}` : dk === today ? "اليوم" : maDay(maDate(dk))} {asmHij(maDate(dk))} • في العجلة {maAr(n)} اسم</div>
+        </div>
+        <button className="sw-wheel" onClick={spin} disabled={spinning || !n} aria-label="أدر العجلة">
+          <svg ref={ptrRef} className="sw-ptr" viewBox="0 0 46 58" aria-hidden="true"><path d="M23 56 L4 14 A20 20 0 1 1 42 14 Z" fill="#d4a017" stroke="#fff7cc" strokeWidth="3" /><circle cx="23" cy="18" r="7" fill="#fff7cc" /></svg>
+          <svg className="sw-disc" viewBox="0 0 520 520" aria-hidden="true">
+            <circle cx={SW_C} cy={SW_C} r={SW_R + 24} fill="#d4a017" />
+            <circle cx={SW_C} cy={SW_C} r={SW_R + 6} fill="#7a5a06" />
+            {bulbs.map(([x, y], k) => <circle key={k} cx={x} cy={y} r="5" className={`sw-bulb ${k % 2 ? "b" : ""}`} />)}
+            <g ref={gRef} transform={`rotate(${rot.current} ${SW_C} ${SW_C})`}>
+              {!n ? <circle cx={SW_C} cy={SW_C} r={SW_R} fill="#0b3d36" /> : n === 1 ? <circle cx={SW_C} cy={SW_C} r={SW_R} fill={SW_LV[Math.max(0, swLv(order[0]))][1]} /> :
+                order.map((x, k) => { const l = swLv(x); const pal = l < 0 ? ["#475569", "#64748b"] : SW_LV[l]; return <path key={x.key} d={swSlice(k * a, (k + 1) * a)} fill={pal[k % 2]} stroke="rgba(255,255,255,.55)" strokeWidth={n > 60 ? .5 : 1.5} />; })}
+              {showTxt && order.map((x, k) => <g key={"t" + x.key} transform={`rotate(${(k + .5) * a} ${SW_C} ${SW_C})`}>
+                <text x={SW_C} y={SW_C - SW_R * .6} transform={`rotate(-90 ${SW_C} ${SW_C - SW_R * .6})`} textAnchor="middle" dominantBaseline="central" fill="#fff" fontFamily="Cairo, sans-serif" fontWeight="800" fontSize={fs}>{swShort(x.name)}</text>
+              </g>)}
+            </g>
+            <circle cx={SW_C} cy={SW_C} r="58" fill="#fff" stroke="#d4a017" strokeWidth="6" />
+            <image href={SCHOOL_LOGO} x={SW_C - 50} y={SW_C - 50} width="100" height="100" />
+          </svg>
+        </button>
+        <button className="sw-go" onClick={spin} disabled={spinning || !n}>{spinning ? "تدور…" : win ? "🎡 اسحب مرة أخرى" : "🎡 أدِر العجلة"}</button>
+        <div className="sw-leg">{MA_LV.map((L, k) => <span key={k}><b style={{ background: SW_LV[k][1] }} />{L.n}</span>)}</div>
+        {conf > 0 && win && <div className="sw-conf" key={conf}>{Array.from({ length: 36 }, (_, k) => <i key={k} style={{ left: `${(k * 37) % 100}%`, background: ["#fcd34d", "#14b8a6", "#3b82f6", "#8b5cf6", "#f472b6", "#fff"][k % 6], animationDelay: `${(k % 9) * .08}s` }} />)}</div>}
+      </div>
+
+      <div className="sw-side">
+        {win ? <div className="sw-win" key={win.key + conf}>
+          <small>🎉 وقعت العجلة على</small>
+          <h2>{win.name}</h2>
+          <div>
+            {win.ck && <span className="sw-tag" style={{ background: "#ecfdf5", color: "#065f46" }}>🚪 {maClassName(win.ck)}</span>}
+            {win.src === "late" ? <span className="sw-tag" style={{ background: "#ffedd5", color: "#9a3412" }}>🌅 متأخر{win.time ? ` — ${mlFmtT(win.time)}` : ""}{win.n > 1 ? ` • ${maAr(win.n)} مرات` : ""}</span>
+              : <span className="sw-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 غائب{win.n > 1 ? ` • ${maAr(win.n)} أيام` : ""}</span>}
+          </div>
+        </div> : <div className="sw-wait">
+          {!all ? "جارٍ تحميل الأسماء…" : empty ? <>لا يوجد {srcL} {week ? "هذا الأسبوع" : "في هذا اليوم"}{lv >= 0 ? ` في ${MA_LV[lv].n}` : ""}.<div style={{ fontSize: 13, marginTop: 6 }}>غيّر المصدر أو التاريخ، أو فعّل «الأسبوع كامل».</div></>
+            : !n ? <>سُحبت كل الأسماء ({maAr(filtered.length)}).<div style={{ marginTop: 10 }}><button className="sw-chip on" onClick={reset}>↺ أرجع كل الأسماء</button></div></>
+              : spinning ? "العجلة تدور…" : <>اضغط على العجلة أو زر «أدِر العجلة».<div style={{ fontSize: 13, marginTop: 6 }}>السحب عشوائي من كل الفصول.</div></>}
+        </div>}
+
+        <div className="sw-hist">
+          <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+            <b style={{ fontSize: 14.5 }}>📜 سجل السحب</b>
+            <span className="sw-tag" style={{ background: "#f1f5f9", color: "#475569" }}>{maAr(hist.length)}</span>
+            {hist.length > 0 && <button className="sw-chip" style={{ marginInlineStart: "auto", padding: "3px 10px", fontSize: 12 }} onClick={reset}>↺ مسح السجل</button>}
+          </div>
+          {hist.length ? hist.slice(0, 30).map((h, k) => <div key={h.at} className="sw-hr">
+            <em>{maAr(hist.length - k)}</em>
+            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name} <small style={{ color: "#94a3b8" }}>{h.ck ? `• ${sttCk(h.ck)}` : ""} • {h.src === "late" ? "متأخر" : "غائب"}</small></span>
+            <small style={{ color: "#94a3b8", fontWeight: 800 }}>{new Date(h.at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</small>
+          </div>) : <div style={{ fontSize: 13, fontWeight: 800, color: "#94a3b8", padding: "8px 0" }}>لم يُسحب أي اسم بعد.</div>}
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
 function LuckyWheelPage() {
+  const [tab, setTab] = useState(() => { try { return localStorage.getItem("lw_tab") || "draw"; } catch { return "draw"; } });
+  const go = t => { setTab(t); try { localStorage.setItem("lw_tab", t); } catch {} };
+  return <div dir="rtl">
+    <div className="flex gap-2 flex-wrap mb-4" style={{ fontFamily: "'Cairo',sans-serif" }}>
+      {[["draw", "🎡 سحب من التأخر والغياب"], ["manual", "✍️ عجلة بأسماء يدوية"]].map(([k, l]) => <button key={k} onClick={() => go(k)} style={{ fontFamily: "inherit", cursor: "pointer", borderRadius: 999, padding: "8px 18px", fontWeight: 900, fontSize: 14, border: tab === k ? "none" : "1.5px solid #e2e8f0", background: tab === k ? "#06302b" : "#fff", color: tab === k ? "#fff" : "#475569" }}>{l}</button>)}
+    </div>
+    {tab === "draw" ? <StudentDrawWheel /> : <LuckyWheelManual />}
+  </div>;
+}
+
+
+// العجلة اليدوية الأصلية (محفوظة كما هي — تبويب «عجلة بأسماء يدوية»)
+function LuckyWheelManual() {
   const [names, setNames] = useState("");
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState(null);
