@@ -2460,6 +2460,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
               <h1 className="hr-title">مدرسة <span>الأمير عبدالمجيد</span> المتوسطة</h1>
               <div className="hr-sub">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div>
               <div className="hr-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 معاً نحو مدرسة متميزة</b></div>
+              <PamQuote />
             </div>
           </div>
           <div className="hr-glass">
@@ -40968,6 +40969,103 @@ export default function SchoolWebsite(props) {
   return <><PamSafe><PamGuard /></PamSafe><SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary></>;
 }
 
+// ══════════ 🎨 هوية الواجهة: خلفية تعليمية • تكبير الخط • افتتاحية ترحيبية ══════════
+const PAM_QUOTES = ["العلم نورٌ يضيء طريق الأجيال", "معاً نصنع جيلاً واعياً مبدعاً", "كل طالب يستحق معلماً يؤمن بقدراته", "بالانضباط نرتقي، وبالإتقان نتميّز", "خطوة اليوم إنجاز الغد", "مدرستنا… بيئة تعلّم محفّزة وآمنة", "التعليم رسالة قبل أن يكون مهنة"];
+// نقش تعليمي خفيف (كتب، أقلام، ذرة، قبعة تخرج، مصباح، كرة أرضية، حروف وأرقام)
+const PAM_EDU_SVG = (() => { const c = "#0f766e"; const g = `<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'><g fill='none' stroke='${c}' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='.55'>
+<path d='M22 52q18-8 36 0v38q-18-8-36 0zM58 52q18-8 36 0v38q-18-8-36 0z'/>
+<g transform='rotate(-35 205 60)'><rect x='170' y='54' width='62' height='13' rx='2'/><path d='M232 54l14 6.5-14 6.5M182 54v13'/></g>
+<g transform='translate(250 150)'><ellipse rx='26' ry='9'/><ellipse rx='26' ry='9' transform='rotate(60)'/><ellipse rx='26' ry='9' transform='rotate(-60)'/><circle r='3.5' fill='${c}'/></g>
+<g transform='translate(70 175)'><path d='M-34 0l34-14 34 14-34 14z'/><path d='M-20 6v14q20 10 40 0v-14M34 0v20'/></g>
+<g transform='translate(170 250)'><path d='M-13 4a17 17 0 1 1 26 0q-5 5-5 12h-16q0-7-5-12z'/><path d='M-7 22h14M-5 27h10'/></g>
+<g transform='translate(270 270)'><circle r='22'/><path d='M-22 0h44M0-22q14 22 0 44M0-22q-14 22 0 44'/></g>
+<g transform='rotate(15 150 130)'><rect x='118' y='120' width='70' height='16' rx='2'/><path d='M130 120v7M142 120v5M154 120v7M166 120v5M178 120v7'/></g>
+</g><g fill='${c}' opacity='.5' font-family='Cairo,Tahoma' font-weight='900'><text x='30' y='280' font-size='26'>أ ب ت</text><text x='230' y='40' font-size='24'>π</text><text x='130' y='200' font-size='22'>x²</text><text x='290' y='210' font-size='22'>∑</text><text x='120' y='40' font-size='20'>١+٢</text></g></svg>`; return `url("data:image/svg+xml,${encodeURIComponent(g)}")`; })();
+const PAM_FS = { m: ["عادي", 0], l: ["كبير", 1.5], xl: ["أكبر", 3] };
+const PAM_UI_CSS = (() => {
+  const sz = []; for (let v = 9; v <= 16; v += 0.5) sz.push(v);
+  const rules = (k, d) => sz.map(v => `html.pam-fs-${k} [style*="font-size: ${v}px"]{font-size:${(v + d).toFixed(1)}px!important}`).join("\n");
+  return `
+html.pam-fs-l{font-size:17px}html.pam-fs-xl{font-size:18.5px}
+${rules("l", 1.5)}
+${rules("xl", 3)}
+.pam-ui{background:radial-gradient(900px 520px at 100% -10%,rgba(45,212,191,.16),transparent 60%),radial-gradient(800px 500px at -10% 20%,rgba(99,102,241,.12),transparent 60%),radial-gradient(700px 520px at 50% 110%,rgba(251,191,36,.14),transparent 60%),linear-gradient(180deg,#f7faf9,#f3f6fb)!important}
+.pam-edu-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:${PAM_EDU_SVG};background-size:320px 320px;opacity:.07;mask-image:linear-gradient(180deg,rgba(0,0,0,.9),rgba(0,0,0,.5))}
+.pam-ui nav.bg-white{background:rgba(255,255,255,.84)!important;backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);border-bottom:none!important;box-shadow:0 14px 34px -26px rgba(15,23,42,.55)!important}
+.pam-ui nav.bg-white::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#0d9488,#6366f1,#f59e0b,#ec4899,#0d9488);background-size:200% 100%;animation:pamLine 12s linear infinite}
+@keyframes pamLine{to{background-position:200% 0}}
+.pam-ui .ma-card{box-shadow:0 1px 0 #fff inset,0 18px 34px -30px rgba(15,23,42,.55)}
+.pam-fsc{display:inline-flex;align-items:center;gap:2px;background:#f1f5f9;border-radius:999px;padding:3px;border:1.5px solid #e2e8f0}
+.pam-fsc button{border:none;background:transparent;cursor:pointer;font-family:inherit;font-weight:900;color:#475569;border-radius:999px;padding:3px 10px;line-height:1.4}
+.pam-fsc button.on{background:#0f766e;color:#fff;box-shadow:0 6px 12px -8px #0f766e}
+.pam-fsc button:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
+/* الافتتاحية الترحيبية */
+.pam-sp{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;overflow:hidden;color:#fff;font-family:'Cairo',Tahoma,sans-serif;
+  background:radial-gradient(900px 600px at 80% -10%,rgba(45,212,191,.55),transparent 60%),radial-gradient(800px 600px at 0% 110%,rgba(99,102,241,.55),transparent 60%),linear-gradient(135deg,#042f2e,#0f766e 45%,#1e3a8a);animation:pamSpIn .5s ease-out}
+.pam-sp.out{animation:pamSpOut .55s ease-in forwards}
+@keyframes pamSpIn{from{opacity:0}to{opacity:1}}@keyframes pamSpOut{to{opacity:0;transform:scale(1.06);visibility:hidden}}
+.pam-sp::before{content:"";position:absolute;inset:0;background-image:${PAM_EDU_SVG};background-size:300px 300px;opacity:.09;filter:invert(1)}
+.pam-sp .fl{position:absolute;font-size:34px;opacity:.85;animation:pamFloat 6s ease-in-out infinite;filter:drop-shadow(0 8px 10px rgba(0,0,0,.3))}
+@keyframes pamFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-18px) rotate(6deg)}}
+.pam-sp .bx{position:relative;text-align:center;display:grid;justify-items:center;gap:10px;padding:24px;max-width:720px}
+.pam-sp .lg{width:132px;height:132px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 8px rgba(255,255,255,.18),0 0 0 18px rgba(255,255,255,.08),0 30px 60px -20px rgba(0,0,0,.6);animation:pamPop .9s cubic-bezier(.2,1.5,.4,1) both}
+.pam-sp .lg img{width:112px;height:112px;object-fit:contain}
+@keyframes pamPop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.pam-sp .gr{font-size:clamp(16px,2.4vw,20px);font-weight:800;opacity:.92;animation:pamUp .7s .25s both}
+.pam-sp h1{margin:0;font-size:clamp(28px,5vw,48px);font-weight:900;line-height:1.25;animation:pamUp .7s .4s both}
+.pam-sp h1 span{background:linear-gradient(90deg,#fde68a,#fbbf24,#fde68a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pam-sp .sc{font-size:clamp(14px,2vw,17px);font-weight:800;opacity:.9;animation:pamUp .7s .55s both}
+.pam-sp .qt{margin-top:6px;font-size:clamp(17px,2.6vw,23px);font-weight:900;padding:10px 22px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(8px);animation:pamUp .7s .7s both}
+.pam-sp .dt{font-size:14px;font-weight:800;opacity:.85;animation:pamUp .7s .85s both}
+.pam-sp .go{margin-top:8px;font-family:inherit;cursor:pointer;border:none;border-radius:16px;padding:12px 30px;font-size:17px;font-weight:900;color:#2a1d00;background:linear-gradient(180deg,#fde68a,#f59e0b);box-shadow:0 14px 26px -12px rgba(245,158,11,.9);animation:pamUp .7s 1s both}
+.pam-sp .go:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.pam-sp .pb{position:absolute;bottom:0;left:0;height:4px;background:linear-gradient(90deg,#fde68a,#2dd4bf);animation:pamPb 4.2s linear forwards}
+@keyframes pamPb{from{width:0}to{width:100%}}
+@keyframes pamUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.pam-qr{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;font-weight:900;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22)}
+.pam-qr span{animation:pamFade 6s infinite}
+@keyframes pamFade{0%{opacity:0;transform:translateY(6px)}6%,90%{opacity:1;transform:none}100%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.pam-sp,.pam-sp *,.pam-ui nav.bg-white::after,.pam-qr span{animation:none!important}}
+`; })();
+const pamGreet = () => { const h = new Date().getHours(); return h < 12 ? "☀️ صباح الخير" : h < 17 ? "🌤️ طاب يومك" : "🌙 مساء الخير"; };
+// التحكم بحجم الخط (يُحفظ على الجهاز)
+function PamFontCtl() {
+  const [fs, setFs] = useState(() => { try { return localStorage.getItem("pam-fs") || "l"; } catch { return "l"; } });
+  useEffect(() => { const H = document.documentElement; Object.keys(PAM_FS).forEach(k => H.classList.remove(`pam-fs-${k}`)); H.classList.add(`pam-fs-${fs}`); try { localStorage.setItem("pam-fs", fs); } catch {} }, [fs]);
+  return <div className="pam-fsc" role="group" aria-label="حجم الخط">{Object.entries(PAM_FS).map(([k, [l]], i) => <button key={k} type="button" className={fs === k ? "on" : ""} style={{ fontSize: 12 + i * 2.5 }} onClick={() => setFs(k)} title={`الخط: ${l}`} aria-pressed={fs === k}>أ</button>)}</div>;
+}
+// تطبيق حجم الخط حتى قبل ظهور شريط التنقل (البوابات وصفحة الدخول)
+try { const f = localStorage.getItem("pam-fs") || "l"; document.documentElement.classList.add(`pam-fs-${f}`); } catch {}
+// الافتتاحية الترحيبية — مرة في كل جلسة
+function PamSplash({ name }) {
+  const [st, setSt] = useState(() => { try { return sessionStorage.getItem("pam-splash") ? "off" : "on"; } catch { return "on"; } });
+  const q = useRef(PAM_QUOTES[Math.floor(Math.random() * PAM_QUOTES.length)]);
+  const close = () => { setSt("out"); try { sessionStorage.setItem("pam-splash", "1"); } catch {} setTimeout(() => setSt("off"), 560); };
+  useEffect(() => { if (st !== "on") return; const t = setTimeout(close, 4300); const k = e => { if (e.key === "Escape" || e.key === "Enter") close(); }; window.addEventListener("keydown", k); return () => { clearTimeout(t); window.removeEventListener("keydown", k); }; }, [st]);
+  if (st === "off") return null;
+  const D = new Date(); const first = String(name || "").split(" ")[0];
+  const F = [["📚", "8%", "18%", 0], ["✏️", "86%", "14%", .8], ["🎓", "12%", "74%", 1.6], ["🔬", "84%", "70%", .4], ["💡", "50%", "8%", 1.2], ["🌍", "70%", "88%", 2], ["📐", "26%", "88%", 2.6], ["🧮", "92%", "42%", 1.8], ["🏆", "4%", "46%", 2.2]];
+  return <div className={`pam-sp ${st === "out" ? "out" : ""}`} dir="rtl" role="dialog" aria-label="ترحيب" onClick={close}>
+    {F.map(([e, l, t, d], i) => <span key={i} className="fl" style={{ left: l, top: t, animationDelay: `${d}s` }} aria-hidden="true">{e}</span>)}
+    <div className="bx" onClick={e => e.stopPropagation()}>
+      <div className="lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div>
+      <div className="gr">{pamGreet()}{first ? `، أ. ${first}` : ""} 👋</div>
+      <h1>أهلاً بك في <span>بوابة مدرسة الأمير عبدالمجيد</span></h1>
+      <div className="sc">المتوسطة الأولى • الإدارة العامة للتعليم بمحافظة جدة</div>
+      <div className="qt">✨ {q.current}</div>
+      <div className="dt">{maDay(D)} • {asmHij(D)} • {maGreg(D)}</div>
+      <button className="go" onClick={close} autoFocus>ابدأ يومك ←</button>
+    </div>
+    {st === "on" && <div className="pb" />}
+  </div>;
+}
+// عبارة تعليمية متجددة في واجهة الرئيسية
+function PamQuote() {
+  const [i, setI] = useState(() => Math.floor(Math.random() * PAM_QUOTES.length));
+  useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % PAM_QUOTES.length), 6000); return () => clearInterval(t); }, []);
+  return <div className="pam-qr" aria-live="polite">✨ <span key={i}>{PAM_QUOTES[i]}</span></div>;
+}
+
 function SchoolWebsiteInner() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -41511,8 +41609,11 @@ function SchoolWebsiteInner() {
       .annhtml img, .annhtml video, .annhtml iframe { height:auto !important; }
       .annhtml table { display:block !important; overflow-x:auto !important; width:100% !important; }
       .annhtml td, .annhtml th { white-space:normal !important; }
+      ${PAM_UI_CSS}
     `}</style>
-    <div dir="rtl" className="min-h-screen relative overflow-x-hidden" style={{ fontFamily: siteFont, background: "linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%)" }}>
+    <div dir="rtl" className="pam-ui min-h-screen relative overflow-x-hidden" style={{ fontFamily: siteFont, background: "linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%)" }}>
+      <div className="pam-edu-bg" aria-hidden="true" />
+      {user && <PamSplash name={user.name} />}
 
       {/* - رذاذ الزوايا المتحرك - */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -41660,7 +41761,7 @@ function SchoolWebsiteInner() {
         </div>
         {/* مفتاح الوضع */}
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ color:"#64748b", fontSize:10, fontWeight:600 }}>وضع العرض:</span>
+          <PamFontCtl /><span style={{ color:"#64748b", fontSize:10, fontWeight:600 }}>وضع العرض:</span>
           <div style={{
             display:"flex", background:"#0f172a", borderRadius:20,
             border:"1px solid #334155", padding:2, gap:2,
@@ -41855,8 +41956,8 @@ function SchoolWebsiteInner() {
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("home")}>
               <SchoolLogo size="sm" animate={false} />
               <div>
-                <h1 className="font-black text-teal-900" style={{fontSize:"15px",letterSpacing:"-0.3px"}}>مدرسة الأمير عبدالمجيد</h1>
-                <p className="text-gray-400 font-bold" style={{fontSize:"11px"}}>المتوسطة — ١٤٤٧ هـ</p>
+                <h1 className="font-black" style={{fontSize:"19px",letterSpacing:"-0.3px",background:"linear-gradient(90deg,#0f766e,#1e3a8a)",WebkitBackgroundClip:"text",backgroundClip:"text",color:"transparent"}}>مدرسة الأمير عبدالمجيد</h1>
+                <p className="text-gray-500 font-bold" style={{fontSize:"12.5px"}}>المتوسطة الأولى — {(() => { try { return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", { year: "numeric" }).format(new Date()); } catch { return "١٤٤٨ هـ"; } })()}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
