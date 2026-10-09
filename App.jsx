@@ -26230,11 +26230,21 @@ const SW_CSS = `
 @media (prefers-reduced-motion:reduce){.sw-run .sw-bulb,.sw-win,.sw-conf i,.sw-wheel .sw-ptr.k{animation:none}}
 `;
 
+// الطلاب المنضبطون: غير متكرري الغياب وقليلو التأخر الصباحي خلال فترة
+const swGRange = r => { const t = maWorkDay(); const d = maDate(t); if (r === "week") { const s = new Date(d); s.setDate(d.getDate() - d.getDay()); return [maKey(s), t]; } if (r === "month") { const s = new Date(d); s.setDate(d.getDate() - 29); return [maKey(s), t]; } const y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1; return [`${y}-08-01`, t]; };
+async function swLoadGood(rng) {
+  const [f, t] = swGRange(rng); const [ros, att, late] = await Promise.all([maGet(MA_ROSTER), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t)]); const A = {}, L = {};
+  Object.entries(ptObj(att)).forEach(([dk, day]) => { if (maOff(dk)) return; Object.values(ptObj(day)).forEach(r => maArr(r && r.absent).forEach(x => { if (x && x.id) A[x.id] = (A[x.id] || 0) + 1; })); });
+  Object.entries(ptObj(late)).forEach(([dk, day]) => { if (maOff(dk)) return; ptVals(day).forEach(x => { if (x && x.id) L[x.id] = (L[x.id] || 0) + 1; }); });
+  const out = []; Object.entries(ptObj(ros)).forEach(([ck, r]) => maArr(r && r.students).forEach(s => { if (s && s.id && s.name) out.push({ key: "g|" + s.id, id: String(s.id), name: s.name, ck, src: "good", a: A[s.id] || 0, l: L[s.id] || 0 }); }));
+  return out;
+}
 function StudentDrawWheel() {
   const today = maKey(new Date());
   const [dk, setDk] = useState(today);
   const [week, setWeek] = useState(false);
-  const [src, setSrc] = useState("late");
+  const [src, setSrc] = useState("good");
+  const [gRng, setGRng] = useState("month"); const [gAbs, setGAbs] = useState(1); const [gLate, setGLate] = useState(1); const [good, setGood] = useState(null);
   const [lv, setLv] = useState(-1);
   const [all, setAll] = useState(null);
   const [noRep, setNoRep] = useState(true);
@@ -26243,19 +26253,21 @@ function StudentDrawWheel() {
   const [win, setWin] = useState(null);
   const [spinning, setSpinning] = useState(false);
   const [conf, setConf] = useState(0);
-  const histKey = `sw_hist_${week ? "w" : "d"}_${dk}`;
+  const histKey = src === "good" ? `sw_hist_g_${gRng}_${maWorkDay()}` : `sw_hist_${week ? "w" : "d"}_${dk}`;
   const [hist, setHist] = useState([]);
   const rot = useRef(0), gRef = useRef(null), ptrRef = useRef(null), boxRef = useRef(null), histRef = useRef([]);
   histRef.current = hist;
 
   useEffect(() => { let alive = true; setAll(null); setWin(null); swLoad(week ? swWeekDays(dk) : [dk]).then(r => { if (alive) setAll(r); }); return () => { alive = false; }; }, [dk, week]);
+  useEffect(() => { let alive = true; setGood(null); swLoadGood(gRng).then(r => { if (alive) setGood(r); }).catch(() => alive && setGood([])); return () => { alive = false; }; }, [gRng]);
   useEffect(() => { try { setHist(JSON.parse(localStorage.getItem(histKey) || "[]")); } catch { setHist([]); } }, [histKey]);
   const saveHist = h => { setHist(h); try { localStorage.setItem(histKey, JSON.stringify(h.slice(0, 200))); } catch {} };
 
   // المصدر + الصف (الغائب والمتأخر نفسه يظهر مرة واحدة في «الكل»)
-  const filtered = (all || []).filter(x => (src === "all" || x.src === src) && (lv < 0 || swLv(x) === lv))
+  const goodF = (good || []).filter(x => x.a <= gAbs && x.l <= gLate && (lv < 0 || swLv(x) === lv));
+  const filtered = src === "good" ? goodF : (all || []).filter(x => (src === "all" || x.src === src) && (lv < 0 || swLv(x) === lv))
     .filter((x, i, A) => src !== "all" || A.findIndex(y => y.id === x.id) === i);
-  const cnt = s => (all || []).filter(x => (s === "all" || x.src === s) && (lv < 0 || swLv(x) === lv)).filter((x, i, A) => s !== "all" || A.findIndex(y => y.id === x.id) === i).length;
+  const cnt = s => s === "good" ? goodF.length : (all || []).filter(x => (s === "all" || x.src === s) && (lv < 0 || swLv(x) === lv)).filter((x, i, A) => s !== "all" || A.findIndex(y => y.id === x.id) === i).length;
   const sig = filtered.map(x => x.key).join(",") + "|" + noRep;
   useEffect(() => {
     if (spinning) return;
@@ -26299,13 +26311,15 @@ function StudentDrawWheel() {
   const n = order.length, a = n ? 360 / n : 360;
   const showTxt = n <= 48, fs = n <= 8 ? 19 : n <= 14 ? 16 : n <= 24 ? 13 : n <= 36 ? 10.5 : 8.5;
   const bulbs = Array.from({ length: 28 }, (_, k) => swPt(k * 360 / 28, SW_R + 14));
-  const empty = all && !filtered.length;
-  const srcL = { late: "المتأخرين صباحاً", abs: "الغائبين", all: "المتأخرين والغائبين" }[src];
+  const ready = src === "good" ? !!good : !!all;
+  const empty = ready && !filtered.length;
+  const srcL = { good: "الطلاب المنضبطين", late: "المتأخرين صباحاً", abs: "الغائبين", all: "المتأخرين والغائبين" }[src];
+  const gLbl = { week: "هذا الأسبوع", month: "آخر ٣٠ يوماً", term: "منذ بداية العام" }[gRng];
 
   return <div className="sw" dir="rtl" ref={boxRef}><style>{SW_CSS}</style>
     <div className="sw-bar">
       <div className="sw-grp"><span>الأسماء من</span>
-        {[["late", "🌅 المتأخرون صباحاً"], ["abs", "🚫 الغائبون"], ["all", "الاثنان معاً"]].map(([k, l]) => <button key={k} className={`sw-chip ${src === k ? "on" : ""}`} onClick={() => setSrc(k)} aria-pressed={src === k}>{l}<i>{all ? maAr(cnt(k)) : "…"}</i></button>)}
+        {[["good", "🌟 المنضبطون"], ["late", "🌅 المتأخرون صباحاً"], ["abs", "🚫 الغائبون"], ["all", "الاثنان معاً"]].map(([k, l]) => <button key={k} className={`sw-chip ${src === k ? "on" : ""}`} onClick={() => setSrc(k)} aria-pressed={src === k}>{l}<i>{(k === "good" ? good : all) ? maAr(cnt(k)) : "…"}</i></button>)}
       </div>
       <div className="sw-sep" />
       <div className="sw-grp"><span>الصف</span>
@@ -26313,11 +26327,14 @@ function StudentDrawWheel() {
         {MA_LV.map((L, k) => <button key={k} className={`sw-chip ${lv === k ? "on" : ""}`} onClick={() => setLv(k)}>{L.s} متوسط</button>)}
       </div>
       <div className="sw-sep" />
+      {src === "good" ? <div className="sw-grp"><span>الفترة</span>{[["week", "هذا الأسبوع"], ["month", "آخر ٣٠ يوماً"], ["term", "منذ بداية العام"]].map(([k, l]) => <button key={k} className={`sw-chip ${gRng === k ? "on" : ""}`} onClick={() => setGRng(k)}>{l}</button>)}
+        <span style={{ marginInlineStart: 6 }}>غياب ≤</span>{[0, 1, 2, 3].map(n => <button key={"a" + n} className={`sw-chip ${gAbs === n ? "on" : ""}`} style={{ padding: "4px 10px" }} onClick={() => setGAbs(n)}>{maAr(n)}</button>)}
+        <span style={{ marginInlineStart: 6 }}>تأخر ≤</span>{[0, 1, 2, 3].map(n => <button key={"l" + n} className={`sw-chip ${gLate === n ? "on" : ""}`} style={{ padding: "4px 10px" }} onClick={() => setGLate(n)}>{maAr(n)}</button>)}</div> : <>
       <div className="sw-grp"><span>اليوم</span>
         <input type="date" className="sw-in" value={dk} max={today} onChange={e => e.target.value && setDk(e.target.value)} />
         {dk !== today && <button className="sw-chip" onClick={() => setDk(today)}>اليوم</button>}
         <button className={`sw-chip ${week ? "on" : ""}`} onClick={() => setWeek(!week)} aria-pressed={week}>📅 الأسبوع كامل</button>
-      </div>
+      </div></>}
       <div className="sw-grp" style={{ marginInlineStart: "auto" }}>
         <button className={`sw-chip ${noRep ? "on" : ""}`} onClick={() => setNoRep(!noRep)} aria-pressed={noRep}>{noRep ? "✓ لا يتكرر الاسم" : "يمكن تكرار الاسم"}</button>
       </div>
@@ -26331,7 +26348,7 @@ function StudentDrawWheel() {
         </div>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 20, fontWeight: 900 }}>🎡 عجلة السحب</div>
-          <div style={{ fontSize: 13, fontWeight: 800, opacity: .8 }}>{srcL} • {week ? `الأسبوع حتى ${maDay(maDate(dk))}` : dk === today ? "اليوم" : maDay(maDate(dk))} {asmHij(maDate(dk))} • في العجلة {maAr(n)} اسم</div>
+          <div style={{ fontSize: 13, fontWeight: 800, opacity: .8 }}>{srcL} • {src === "good" ? `${gLbl} • غياب ≤ ${maAr(gAbs)} • تأخر ≤ ${maAr(gLate)}` : <>{week ? `الأسبوع حتى ${maDay(maDate(dk))}` : dk === today ? "اليوم" : maDay(maDate(dk))} {asmHij(maDate(dk))}</>} • في العجلة {maAr(n)} اسم</div>
         </div>
         <button className="sw-wheel" onClick={spin} disabled={spinning || !n} aria-label="أدر العجلة">
           <svg ref={ptrRef} className="sw-ptr" viewBox="0 0 46 58" aria-hidden="true"><path d="M23 56 L4 14 A20 20 0 1 1 42 14 Z" fill="#d4a017" stroke="#fff7cc" strokeWidth="3" /><circle cx="23" cy="18" r="7" fill="#fff7cc" /></svg>
@@ -26361,11 +26378,11 @@ function StudentDrawWheel() {
           <h2>{win.name}</h2>
           <div>
             {win.ck && <span className="sw-tag" style={{ background: "#ecfdf5", color: "#065f46" }}>🚪 {maClassName(win.ck)}</span>}
-            {win.src === "late" ? <span className="sw-tag" style={{ background: "#ffedd5", color: "#9a3412" }}>🌅 متأخر{win.time ? ` — ${mlFmtT(win.time)}` : ""}{win.n > 1 ? ` • ${maAr(win.n)} مرات` : ""}</span>
+            {win.src === "good" ? <span className="sw-tag" style={{ background: "#dcfce7", color: "#15803d" }}>🌟 منضبط • غياب {maAr(win.a)} • تأخر {maAr(win.l)} ({gLbl})</span> : win.src === "late" ? <span className="sw-tag" style={{ background: "#ffedd5", color: "#9a3412" }}>🌅 متأخر{win.time ? ` — ${mlFmtT(win.time)}` : ""}{win.n > 1 ? ` • ${maAr(win.n)} مرات` : ""}</span>
               : <span className="sw-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 غائب{win.n > 1 ? ` • ${maAr(win.n)} أيام` : ""}</span>}
           </div>
         </div> : <div className="sw-wait">
-          {!all ? "جارٍ تحميل الأسماء…" : empty ? <>لا يوجد {srcL} {week ? "هذا الأسبوع" : "في هذا اليوم"}{lv >= 0 ? ` في ${MA_LV[lv].n}` : ""}.<div style={{ fontSize: 13, marginTop: 6 }}>غيّر المصدر أو التاريخ، أو فعّل «الأسبوع كامل».</div></>
+          {!ready ? "جارٍ تحميل الأسماء…" : empty ? <>لا يوجد {srcL} {src === "good" ? gLbl : week ? "هذا الأسبوع" : "في هذا اليوم"}{lv >= 0 ? ` في ${MA_LV[lv].n}` : ""}.<div style={{ fontSize: 13, marginTop: 6 }}>غيّر المصدر أو التاريخ، أو فعّل «الأسبوع كامل».</div></>
             : !n ? <>سُحبت كل الأسماء ({maAr(filtered.length)}).<div style={{ marginTop: 10 }}><button className="sw-chip on" onClick={reset}>↺ أرجع كل الأسماء</button></div></>
               : spinning ? "العجلة تدور…" : <>اضغط على العجلة أو زر «أدِر العجلة».<div style={{ fontSize: 13, marginTop: 6 }}>السحب عشوائي من كل الفصول.</div></>}
         </div>}
@@ -26378,7 +26395,7 @@ function StudentDrawWheel() {
           </div>
           {hist.length ? hist.slice(0, 30).map((h, k) => <div key={h.at} className="sw-hr">
             <em>{maAr(hist.length - k)}</em>
-            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name} <small style={{ color: "#94a3b8" }}>{h.ck ? `• ${sttCk(h.ck)}` : ""} • {h.src === "late" ? "متأخر" : "غائب"}</small></span>
+            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name} <small style={{ color: "#94a3b8" }}>{h.ck ? `• ${sttCk(h.ck)}` : ""} • {h.src === "good" ? "منضبط" : h.src === "late" ? "متأخر" : "غائب"}</small></span>
             <small style={{ color: "#94a3b8", fontWeight: 800 }}>{new Date(h.at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</small>
           </div>) : <div style={{ fontSize: 13, fontWeight: 800, color: "#94a3b8", padding: "8px 0" }}>لم يُسحب أي اسم بعد.</div>}
         </div>
@@ -26392,7 +26409,7 @@ function LuckyWheelPage() {
   const go = t => { setTab(t); try { localStorage.setItem("lw_tab", t); } catch {} };
   return <div dir="rtl">
     <div className="flex gap-2 flex-wrap mb-4" style={{ fontFamily: "'Cairo',sans-serif" }}>
-      {[["draw", "🎡 سحب من التأخر والغياب"], ["manual", "✍️ عجلة بأسماء يدوية"]].map(([k, l]) => <button key={k} onClick={() => go(k)} style={{ fontFamily: "inherit", cursor: "pointer", borderRadius: 999, padding: "8px 18px", fontWeight: 900, fontSize: 14, border: tab === k ? "none" : "1.5px solid #e2e8f0", background: tab === k ? "#06302b" : "#fff", color: tab === k ? "#fff" : "#475569" }}>{l}</button>)}
+      {[["draw", "🎡 سحب للطلاب المنضبطين"], ["manual", "✍️ عجلة بأسماء يدوية"]].map(([k, l]) => <button key={k} onClick={() => go(k)} style={{ fontFamily: "inherit", cursor: "pointer", borderRadius: 999, padding: "8px 18px", fontWeight: 900, fontSize: 14, border: tab === k ? "none" : "1.5px solid #e2e8f0", background: tab === k ? "#06302b" : "#fff", color: tab === k ? "#fff" : "#475569" }}>{l}</button>)}
     </div>
     {tab === "draw" ? <StudentDrawWheel /> : <LuckyWheelManual />}
   </div>;
@@ -31010,7 +31027,7 @@ function GuardianPortal({ onBack }) {
     setD(p => ({ ...p, notes: [v, ...p.notes] })); setNote(""); toast("✅ وصلت ملاحظتك للمدرسة");
   };
   const excSt = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
-  const tabs = [["tt", "🗓️ جدولي"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
+  const tabs = [["tt", "🗓️ جدولي"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["alerts", `📨 التنبيهات والدعوات${d && d.reps && d.reps.filter(GD_PENDING).length ? ` (${maAr(d.reps.filter(GD_PENDING).length)} جديد)` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
   return (
     <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eff6ff,#f8fafc)" }}>
       <style>{MA_CSS + PT_CSS + (typeof scCSS !== "undefined" ? scCSS : "")}</style>
@@ -31030,6 +31047,8 @@ function GuardianPortal({ onBack }) {
             <div style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>🚫 أيام الغياب / ⏰ التأخر</div><div style={{ fontSize: 20, fontWeight: 900 }}>{maAr(d.abs.length)} / {maAr(d.lat.length)}</div></div>
           </div>}
         </div>
+        {d && d.reps && d.reps.some(GD_PENDING) && (() => { const P = d.reps.filter(GD_PENDING); const inv = P.filter(r => r.type === "invite"); return <button type="button" onClick={() => setTab("alerts")} style={{ border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "right", borderRadius: 20, padding: "12px 16px", color: "#fff", display: "flex", alignItems: "center", gap: 12, background: inv.length ? "linear-gradient(135deg,#4c1d95,#7c3aed)" : "linear-gradient(135deg,#7f1d1d,#dc2626)", boxShadow: "0 14px 28px -18px rgba(124,58,237,.8)" }}>
+          <span style={{ fontSize: 30 }}>{inv.length ? "📩" : "🔔"}</span><span><b style={{ fontSize: 16 }}>{inv.length ? `دعوة من المدرسة لحضوركم${inv[0].date ? ` يوم ${maDay(maDate(inv[0].date))} ${mlFmtT(inv[0].time)}` : ""}` : `لديكم ${maAr(P.length)} تنبيه من المدرسة`}</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .92 }}>اضغط للاطلاع والرد — غياب ابنكم {d.abs.length ? `${maAr(d.abs.length)} يوم` : "لا يوجد"} • تأخره {d.lat.length ? `${maAr(d.lat.length)} مرة` : "لا يوجد"}</div></span></button>; })()}
         <div className="ma-tabs">{tabs.map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
         {!d ? <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div> : (
           <div className="grid gap-3">
@@ -31040,6 +31059,7 @@ function GuardianPortal({ onBack }) {
                   {SC_DIMS.map(dm => <div key={dm.k} style={{ background: dm.soft, borderRadius: 14, padding: "8px 10px" }}><div style={{ fontSize: 12, fontWeight: 900, color: dm.ac }}>{dm.ic} {dm.t}</div><div style={{ marginTop: 4 }}>{badge(dm.k, r.it[dm.k])}</div>{r.it[SC_NK[dm.k]] && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", marginTop: 6 }}>📝 {r.it[SC_NK[dm.k]]}</div>}</div>)}
                 </div>
               </div>)) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لم يُسجَّل تصنيف للطالب بعد</div>)}
+            {tab === "alerts" && <GdAlerts reps={d.reps} onResp={(id, v) => setD(x => ({ ...x, reps: x.reps.map(r => r.id === id ? { ...r, resp: v } : r) }))} />}
             {tab === "daily" && <GuardianDaily me={me} />}
             {tab === "tt" && <GuardianTT me={me} />}
             {tab === "week" && <GuardianWeek me={me} reps={d.reps} />}
@@ -31327,8 +31347,10 @@ const HUB_CSS = `
 .hb-tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
 .hb-tab{position:relative;border:none;cursor:pointer;font-family:inherit;text-align:right;border-radius:22px;padding:14px 14px 12px;background:#fff;box-shadow:0 10px 24px -22px rgba(15,23,42,.6);border:1.5px solid #eef2f7;transition:transform .18s,box-shadow .18s;overflow:hidden;color:#0f172a}
 .hb-tab:hover{transform:translateY(-3px);box-shadow:0 18px 30px -22px var(--c)}
-.hb-tab .ic{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:23px;background:var(--t)}
-.hb-tab b{display:block;font-size:14.5px;font-weight:900;margin-top:8px;line-height:1.35}
+.hb-tab .ic{width:66px;height:66px;border-radius:20px;display:grid;place-items:center;font-size:36px;background:var(--t);box-shadow:0 10px 20px -14px var(--c);transition:transform .2s}
+.hb-tab:hover .ic{transform:scale(1.08) rotate(-4deg)}
+.hb-tab .dd{position:absolute;top:12px;left:12px;font-size:12px;font-weight:900;opacity:.6}
+.hb-tab b{display:block;font-size:15.5px;font-weight:900;margin-top:10px;line-height:1.35}
 .hb-tab small{display:block;font-size:11.5px;font-weight:800;color:#94a3b8;margin-top:2px}
 .hb-tab.on{background:linear-gradient(150deg,var(--c),var(--c2));color:#fff;border-color:transparent;box-shadow:0 20px 34px -20px var(--c)}
 .hb-tab.on .ic{background:rgba(255,255,255,.22)}.hb-tab.on small{color:rgba(255,255,255,.85)}
@@ -31346,29 +31368,134 @@ const HUB_CSS = `
 .hb-fav{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
 .hb-fav button{flex:none;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 14px;border:1.5px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:900;font-size:12.5px;color:#334155;cursor:pointer}
 .hb-fav button:hover{border-color:#0d9488;color:#0d9488}
+.hb-mn{position:fixed;z-index:9990;width:min(360px,calc(100vw - 16px));max-height:min(70vh,560px);overflow:auto;background:#fff;border-radius:22px;box-shadow:0 30px 60px -20px rgba(15,23,42,.55),0 0 0 1.5px var(--c);padding:8px;animation:hbIn .18s ease-out;transform-origin:top}
+@keyframes hbIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
+.hb-mn-h{display:flex;align-items:center;gap:10px;padding:8px 10px 10px;border-bottom:1.5px dashed #eef2f7;margin-bottom:6px}
+.hb-mn-h span{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:21px;color:#fff;background:linear-gradient(135deg,var(--c),var(--c2))}
+.hb-mi{width:100%;border:none;background:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:11px;padding:8px 9px;border-radius:15px;text-align:right;transition:background .12s}
+.hb-mi:hover,.hb-mi:focus-visible{background:var(--mt);outline:none}
+.hb-mi i{font-style:normal;flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:21px;background:linear-gradient(135deg,var(--mc),var(--mc2));box-shadow:0 8px 14px -10px var(--mc)}
+.hb-mi b{display:block;font-size:13.5px;font-weight:900;color:#0f172a}.hb-mi small{display:block;font-size:11px;font-weight:700;color:#64748b;line-height:1.5}
+.hb-mi em{font-style:normal;margin-inline-start:auto;color:var(--mc);font-weight:900}
+@media (prefers-reduced-motion:reduce){.hb-mn{animation:none}}
 @media (max-width:1100px){.hb-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:560px){.hb-tabs{display:flex;overflow-x:auto;gap:8px;padding-bottom:4px}.hb-tab{flex:none;width:132px;padding:10px}.hb-tab b{font-size:13px}.hb-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.hb-tool{flex-direction:column;padding:10px}.hb-tool small{-webkit-line-clamp:3}}
+@media (max-width:560px){.hb-tab .ic{width:54px;height:54px;font-size:29px}.hb-tabs{display:flex;overflow-x:auto;gap:8px;padding-bottom:4px}.hb-tab{flex:none;width:140px;padding:10px}.hb-tab b{font-size:13px}.hb-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.hb-tool{flex-direction:column;padding:10px}.hb-tool small{-webkit-line-clamp:3}}
 `;
 const HUB_C2 = ["#0ea5e9", "#c026d3", "#10b981", "#f59e0b", "#fb7185", "#8b5cf6"];
+const HUB_MC = [["#0ea5e9", "#38bdf8"], ["#8b5cf6", "#a78bfa"], ["#f59e0b", "#fbbf24"], ["#10b981", "#34d399"], ["#ef4444", "#f87171"], ["#ec4899", "#f472b6"], ["#14b8a6", "#2dd4bf"], ["#6366f1", "#818cf8"], ["#f97316", "#fb923c"], ["#84cc16", "#a3e635"]];
+const hubMc = id => { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return HUB_MC[h % HUB_MC.length]; };
+// ══════════ 🧭 أقسام الموقع — أيقونات ثلاثية الأبعاد + قوائم منسدلة + ترتيب حسب رغبتك (يُحفظ على الجهاز) ══════════
+const hubShade = (hex, p) => { const n = parseInt(String(hex).replace("#", ""), 16); if (isNaN(n)) return hex; const f = x => Math.max(0, Math.min(255, Math.round(x + (p < 0 ? x : 255 - x) * p))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
+const HUB3_CSS = `
+.hb3-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb3-btn{font-family:inherit;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;border-radius:14px;padding:7px 13px;font-weight:900;font-size:12.5px;color:#334155;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.hb3-btn:hover{border-color:#0d9488;color:#0d9488}.hb3-btn.on{background:#0f172a;color:#fff;border-color:#0f172a}
+.hb3-btn:focus-visible,.hb3-card:focus-visible,.hb3-mi:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
+.hb3-tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;perspective:900px}
+.hb3-card{position:relative;font-family:inherit;cursor:pointer;text-align:center;border-radius:26px;padding:18px 12px 14px;border:1.5px solid #eef2f7;color:#0f172a;
+  background:linear-gradient(180deg,#fff 0%,#fff 45%,var(--t) 100%);box-shadow:0 1px 0 #fff inset,0 16px 30px -24px rgba(15,23,42,.7);
+  transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;transition:transform .18s ease-out,box-shadow .25s,border-color .25s;display:grid;justify-items:center;gap:6px;user-select:none}
+.hb3-card:hover{box-shadow:0 1px 0 #fff inset,0 26px 40px -26px var(--c)}
+.hb3-card.on{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent),0 26px 44px -26px var(--c)}
+.hb3-ic{width:78px;height:78px;border-radius:26px;display:grid;place-items:center;font-size:40px;margin:2px 0 12px;transform:translateZ(18px);transition:transform .25s cubic-bezier(.2,1.4,.4,1);
+  background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.8) 0 12%,rgba(255,255,255,0) 44%),linear-gradient(150deg,var(--c2),var(--c));
+  box-shadow:inset 0 -8px 14px rgba(0,0,0,.22),inset 0 5px 10px rgba(255,255,255,.45),0 7px 0 var(--cd),0 22px 26px -14px var(--c)}
+.hb3-ic span{filter:drop-shadow(0 4px 3px rgba(0,0,0,.3));transform:translateY(-1px)}
+.hb3-card:hover .hb3-ic,.hb3-card.on .hb3-ic{transform:translateZ(26px) translateY(-4px) scale(1.05)}
+.hb3-card b{font-size:15.5px;font-weight:900;line-height:1.35;transform:translateZ(8px)}
+.hb3-card small{font-size:11.5px;font-weight:900;color:var(--c);background:color-mix(in srgb,var(--c) 10%,#fff);border-radius:999px;padding:1px 10px;transform:translateZ(6px)}
+.hb3-car{position:absolute;top:12px;left:12px;width:24px;height:24px;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:900;color:var(--c);background:color-mix(in srgb,var(--c) 10%,#fff);transition:transform .25s}
+.hb3-card.on .hb3-car{transform:rotate(180deg)}
+.hb3-card.edit{animation:hb3wig .9s ease-in-out infinite;cursor:grab;border-style:dashed}
+.hb3-card.edit:nth-child(2n){animation-delay:-.45s}
+.hb3-card.drag{opacity:.45}.hb3-card.over{border-color:var(--c);border-style:solid;transform:scale(1.04)}
+@keyframes hb3wig{0%,100%{transform:rotate(-.8deg)}50%{transform:rotate(.8deg)}}
+.hb3-mv{position:absolute;bottom:8px;display:flex;gap:4px;left:50%;transform:translateX(-50%)}
+.hb3-mv button{width:26px;height:26px;border-radius:9px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;font-weight:900;font-size:12px;color:#334155}
+.hb3-mn{position:fixed;z-index:9990;width:min(380px,calc(100vw - 16px));max-height:min(72vh,600px);overflow:auto;border-radius:26px;padding:0 0 8px;
+  background:rgba(255,255,255,.9);backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);
+  border:1.5px solid color-mix(in srgb,var(--c) 35%,transparent);box-shadow:0 40px 70px -24px rgba(15,23,42,.55),0 0 0 6px color-mix(in srgb,var(--c) 7%,transparent);
+  animation:hb3pop .26s cubic-bezier(.2,1.3,.4,1);transform-origin:top right}
+@keyframes hb3pop{from{opacity:0;transform:translateY(-10px) scale(.94)}to{opacity:1;transform:none}}
+.hb3-mh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:14px 14px 12px;color:#fff;background:linear-gradient(135deg,var(--c),var(--c2));border-radius:24px 24px 0 0}
+.hb3-mh .ic{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:24px;background:rgba(255,255,255,.2);box-shadow:inset 0 2px 6px rgba(255,255,255,.35)}
+.hb3-mh b{font-size:16px}.hb3-mh small{display:block;font-size:11.5px;font-weight:800;opacity:.9}
+.hb3-mh button{margin-inline-start:auto;border:none;background:rgba(255,255,255,.2);color:#fff;border-radius:11px;min-width:32px;height:32px;cursor:pointer;font-weight:900;font-family:inherit;font-size:12px;padding:0 9px}
+.hb3-mi{width:calc(100% - 16px);margin:4px 8px 0;border:1.5px solid transparent;background:transparent;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:17px;text-align:right;
+  animation:hb3in .34s cubic-bezier(.2,1.2,.4,1) both;transition:background .15s,transform .15s,border-color .15s,box-shadow .15s}
+@keyframes hb3in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+.hb3-mi:hover,.hb3-mi:focus-visible{background:var(--mt);border-color:color-mix(in srgb,var(--mc) 30%,transparent);transform:translateX(-4px);box-shadow:0 10px 18px -14px var(--mc);outline:none}
+.hb3-mic{flex:none;width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:23px;
+  background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.75) 0 12%,rgba(255,255,255,0) 45%),linear-gradient(150deg,var(--mc2),var(--mc));
+  box-shadow:inset 0 -5px 9px rgba(0,0,0,.2),inset 0 3px 6px rgba(255,255,255,.4),0 4px 0 var(--mcd),0 12px 16px -10px var(--mc);transition:transform .2s}
+.hb3-mic span{filter:drop-shadow(0 3px 2px rgba(0,0,0,.28))}
+.hb3-mi:hover .hb3-mic{transform:translateY(-2px) rotate(-6deg)}
+.hb3-mi b{display:block;font-size:13.8px;font-weight:900;color:#0f172a}.hb3-mi small{display:block;font-size:11px;font-weight:700;color:#64748b;line-height:1.5}
+.hb3-mi em{font-style:normal;margin-inline-start:auto;color:var(--mc);font-weight:900;transition:transform .2s}.hb3-mi:hover em{transform:translateX(-4px)}
+.hb3-mi .ord{margin-inline-start:auto;display:flex;gap:3px}.hb3-mi .ord span{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#fff;border:1.5px solid #e2e8f0;font-size:11px;font-weight:900;color:#334155}
+.hb3-mf{display:flex;gap:6px;justify-content:center;padding:10px 8px 2px}
+@media (prefers-reduced-motion:reduce){.hb3-card,.hb3-card.edit,.hb3-mn,.hb3-mi,.hb3-ic{animation:none!important;transition:none!important}}
+@media (max-width:1100px){.hb3-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.hb3-tabs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 2px 10px}.hb3-card{flex:none;width:146px;scroll-snap-align:start;padding:14px 8px 12px}.hb3-ic{width:64px;height:64px;font-size:33px;border-radius:21px}.hb3-card b{font-size:13.5px}}
+`;
 function HomeHub({ navigate, initSel = 0 }) {
-  const [sel, setSel] = useState(() => { try { const v = +localStorage.getItem("hub-sel"); return isNaN(v) ? initSel : Math.min(v, HUB_GROUPS.length - 1); } catch { return initSel; } });
+  const N = HUB_GROUPS.length;
+  const [sel, setSel] = useState(() => { try { const v = +localStorage.getItem("hub-sel"); return isNaN(v) ? initSel : Math.min(v, N - 1); } catch { return initSel; } });
   const [q, setQ] = useState("");
   const [use, setUse] = useState(() => { try { return JSON.parse(localStorage.getItem("hub-use") || "{}") || {}; } catch { return {}; } });
+  const [ord, setOrd] = useState(() => { try { const o = JSON.parse(localStorage.getItem("hub-order") || "null"); if (Array.isArray(o) && o.length === N && [...o].sort((a, b) => a - b).every((x, i) => x === i)) return o; } catch {} return HUB_GROUPS.map((_, i) => i); });
+  const [tord, setTord] = useState(() => { try { return JSON.parse(localStorage.getItem("hub-torder") || "{}") || {}; } catch { return {}; } });
+  const [edit, setEdit] = useState(false); const [tEdit, setTEdit] = useState(false); const [drag, setDrag] = useState(null); const [over, setOver] = useState(null);
+  const [dd, setDd] = useState(null); const mnRef = useRef(null);
+  const toolsOf = gi => { const T = HUB_GROUPS[gi].tools; const o = tord[gi]; if (!Array.isArray(o)) return T; const m = Object.fromEntries(T.map(t => [t.id, t])); return [...o.filter(id => m[id]).map(id => m[id]), ...T.filter(t => !o.includes(t.id))]; };
   const all = HUB_GROUPS.flatMap((g, gi) => g.tools.map(t => ({ ...t, gi })));
   const desc = id => (typeof NAV_TOOL_DESC !== "undefined" && NAV_TOOL_DESC[id]) || "";
   const go = t => { const n = { ...use, [t.id]: (use[t.id] || 0) + 1 }; setUse(n); try { localStorage.setItem("hub-use", JSON.stringify(n)); } catch {} navigate(t.id); };
   const pick = i => { setSel(i); setQ(""); try { localStorage.setItem("hub-sel", String(i)); } catch {} };
+  const saveOrd = o => { setOrd(o); try { localStorage.setItem("hub-order", JSON.stringify(o)); } catch {} };
+  const saveTord = o => { setTord(o); try { localStorage.setItem("hub-torder", JSON.stringify(o)); } catch {} };
+  const moveG = (from, to) => { if (from === to || to < 0 || to >= N) return; const o = [...ord]; const [x] = o.splice(from, 1); o.splice(to, 0, x); saveOrd(o); };
+  const moveT = (gi, idx, d) => { const L = toolsOf(gi).map(t => t.id); const j = idx + d; if (j < 0 || j >= L.length) return; [L[idx], L[j]] = [L[j], L[idx]]; saveTord({ ...tord, [gi]: L }); };
+  const reset = () => { if (!window.confirm("إرجاع ترتيب الأقسام والأدوات إلى الوضع الافتراضي؟")) return; saveOrd(HUB_GROUPS.map((_, i) => i)); saveTord({}); };
   const fav = all.filter(t => use[t.id]).sort((a, b) => use[b.id] - use[a.id]).filter((t, i, A) => A.findIndex(x => x.id === t.id) === i).slice(0, 8);
   const G = HUB_GROUPS[sel]; const c2 = HUB_C2[sel % HUB_C2.length];
-  const list = q ? all.filter((t, i, A) => A.findIndex(x => x.id === t.id) === i && (cvNorm(t.label).includes(cvNorm(q)) || cvNorm(desc(t.id)).includes(cvNorm(q)))) : G.tools.map(t => ({ ...t, gi: sel }));
-  return <div className="hb" dir="rtl"><style>{HUB_CSS}</style>
-    <div className="hb-top"><h2>🧭 أقسام الموقع</h2><span style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>{maAr(all.length)} أداة في {maAr(HUB_GROUPS.length)} أقسام</span>
-      <label className="hb-q"><span>🔎</span><input value={q} onChange={e => setQ(e.target.value)} placeholder="ابحث عن أي أداة… (غياب، زيارات، جدول…)" />{q && <button onClick={() => setQ("")} style={{ border: "none", background: "none", cursor: "pointer", fontWeight: 900, color: "#94a3b8" }}>✕</button>}</label></div>
-    {fav.length > 0 && !q && <div className="hb-fav"><span style={{ flex: "none", alignSelf: "center", fontSize: 12.5, fontWeight: 900, color: "#64748b" }}>⭐ الأكثر استخداماً:</span>{fav.map(t => <button key={t.id} onClick={() => go(t)}>{t.icon} {t.label}</button>)}</div>}
-    {!q && <div className="hb-tabs">{HUB_GROUPS.map((g, i) => <button key={i} className={`hb-tab ${sel === i ? "on" : ""}`} style={{ "--c": g.c, "--c2": HUB_C2[i % HUB_C2.length], "--t": g.tint }} onClick={() => pick(i)}><div className="ic">{g.icon}</div><b>{g.title}</b><small>{maAr(g.tools.length)} أداة</small></button>)}</div>}
+  const list = q ? all.filter((t, i, A) => A.findIndex(x => x.id === t.id) === i && (cvNorm(t.label).includes(cvNorm(q)) || cvNorm(desc(t.id)).includes(cvNorm(q)))) : toolsOf(sel).map(t => ({ ...t, gi: sel }));
+  const openDd = (i, el) => { pick(i); if (dd && dd.i === i) { setDd(null); return; } setTEdit(false); const r = el.getBoundingClientRect(); const W = Math.min(380, window.innerWidth - 16); let right = window.innerWidth - r.right; if (window.innerWidth - right - W < 8) right = window.innerWidth - W - 8; right = Math.max(8, right); setDd({ i, top: Math.min(r.bottom + 10, window.innerHeight - 240), right }); };
+  useEffect(() => { if (!dd) return; const k = e => { if (e.key === "Escape") { setDd(null); return; } if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return; const B = mnRef.current ? [...mnRef.current.querySelectorAll(".hb3-mi")] : []; if (!B.length) return; e.preventDefault(); const i = B.indexOf(document.activeElement); const n = e.key === "ArrowDown" ? (i + 1) % B.length : (i - 1 + B.length) % B.length; B[n].focus(); };
+    const rs = () => setDd(null); window.addEventListener("keydown", k); window.addEventListener("resize", rs); setTimeout(() => { const b = mnRef.current && mnRef.current.querySelector(".hb3-mi"); if (b) b.focus({ preventScroll: true }); }, 60);
+    return () => { window.removeEventListener("keydown", k); window.removeEventListener("resize", rs); }; }, [dd && dd.i]);
+  const tilt = e => { if (edit) return; const el = e.currentTarget; const r = el.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; el.style.setProperty("--ry", `${(x * 14).toFixed(1)}deg`); el.style.setProperty("--rx", `${(-y * 12).toFixed(1)}deg`); };
+  const untilt = e => { e.currentTarget.style.setProperty("--ry", "0deg"); e.currentTarget.style.setProperty("--rx", "0deg"); };
+  const gStyle = i => { const g = HUB_GROUPS[i]; const cc2 = HUB_C2[i % HUB_C2.length]; return { "--c": g.c, "--c2": cc2, "--cd": hubShade(g.c, -0.35), "--t": g.tint }; };
+  return <div className="hb" dir="rtl"><style>{HUB_CSS + HUB3_CSS}</style>
+    <div className="hb-top"><h2>🧭 أقسام الموقع</h2><span style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>{maAr(all.length)} أداة في {maAr(N)} أقسام</span>
+      <label className="hb-q"><span>🔎</span><input value={q} onChange={e => setQ(e.target.value)} placeholder="ابحث عن أي أداة… (غياب، زيارات، جدول…)" />{q && <button onClick={() => setQ("")} style={{ border: "none", background: "none", cursor: "pointer", fontWeight: 900, color: "#94a3b8" }}>✕</button>}</label>
+      <div className="hb3-bar"><button className={`hb3-btn ${edit ? "on" : ""}`} onClick={() => { setEdit(v => !v); setDd(null); }} aria-pressed={edit}>{edit ? "✓ تم الترتيب" : "↕️ ترتيب الأقسام"}</button>{edit && <button className="hb3-btn" onClick={reset}>↺ الافتراضي</button>}</div></div>
+    {edit && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f766e", background: "#f0fdfa", border: "1px dashed #5eead4", borderRadius: 14, padding: "8px 12px" }}>اسحب أي قسم وأفلته في المكان الذي تريده، أو استخدم الأسهم → ←. الترتيب يُحفظ على هذا الجهاز. ولترتيب الأدوات داخل القسم: افتح القائمة واضغط «↕️ ترتيب الأدوات».</div>}
+    {fav.length > 0 && !q && !edit && <div className="hb-fav"><span style={{ flex: "none", alignSelf: "center", fontSize: 12.5, fontWeight: 900, color: "#64748b" }}>⭐ الأكثر استخداماً:</span>{fav.map(t => <button key={t.id} onClick={() => go(t)}>{t.icon} {t.label}</button>)}</div>}
+    {!q && <div className="hb3-tabs">{ord.map((gi, pos) => { const g = HUB_GROUPS[gi]; const on = sel === gi && (!!dd || !edit);
+      return <div key={gi} role="button" tabIndex={0} className={`hb3-card ${on ? "on" : ""} ${edit ? "edit" : ""} ${drag === pos ? "drag" : ""} ${over === pos && drag !== pos ? "over" : ""}`} style={gStyle(gi)}
+        aria-expanded={!!(dd && dd.i === gi)} aria-haspopup="menu"
+        onMouseMove={tilt} onMouseLeave={untilt}
+        onClick={ev => { if (!edit) openDd(gi, ev.currentTarget); }} onKeyDown={ev => { if (!edit && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); openDd(gi, ev.currentTarget); } }}
+        draggable={edit} onDragStart={ev => { setDrag(pos); try { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", String(pos)); } catch {} }} onDragOver={ev => { if (edit) { ev.preventDefault(); setOver(pos); } }} onDragLeave={() => setOver(o => o === pos ? null : o)} onDrop={ev => { ev.preventDefault(); if (drag != null) moveG(drag, pos); setDrag(null); setOver(null); }} onDragEnd={() => { setDrag(null); setOver(null); }}>
+        {!edit && <span className="hb3-car">▾</span>}
+        <div className="hb3-ic"><span>{g.icon}</span></div><b>{g.title}</b><small>{maAr(g.tools.length)} أداة</small>
+        {edit && <div className="hb3-mv"><button type="button" aria-label="تقديم" onClick={ev => { ev.stopPropagation(); moveG(pos, pos - 1); }}>→</button><button type="button" aria-label="تأخير" onClick={ev => { ev.stopPropagation(); moveG(pos, pos + 1); }}>←</button></div>}
+      </div>; })}</div>}
+    {dd && !q && !edit && (() => { const g = HUB_GROUPS[dd.i]; const T = toolsOf(dd.i); return <>
+      <div style={{ position: "fixed", inset: 0, zIndex: 9989 }} onClick={() => setDd(null)} />
+      <div ref={mnRef} className="hb3-mn" role="menu" aria-label={g.title} style={{ top: dd.top, right: dd.right, ...gStyle(dd.i) }}>
+        <div className="hb3-mh"><span className="ic">{g.icon}</span><div><b>{g.title}</b><small>{maAr(T.length)} أداة{g.desc ? ` • ${g.desc}` : ""}</small></div><button onClick={() => setDd(null)} aria-label="إغلاق">✕</button></div>
+        {T.map((t, i) => { const [mc, mc2] = hubMc(t.id); return <button key={t.id} role="menuitem" className="hb3-mi" style={{ "--mc": mc, "--mc2": mc2, "--mcd": hubShade(mc, -0.35), "--mt": mc + "14", animationDelay: `${Math.min(i, 14) * 28}ms` }}
+          onClick={() => { if (tEdit) return; setDd(null); go(t); }}>
+          <span className="hb3-mic"><span>{t.icon}</span></span><span style={{ minWidth: 0 }}><b>{t.label}</b>{desc(t.id) ? <small>{desc(t.id)}</small> : null}</span>
+          {tEdit ? <span className="ord"><span role="button" aria-label="لأعلى" onClick={ev => { ev.stopPropagation(); moveT(dd.i, i, -1); }}>▲</span><span role="button" aria-label="لأسفل" onClick={ev => { ev.stopPropagation(); moveT(dd.i, i, 1); }}>▼</span></span> : <em>←</em>}</button>; })}
+        <div className="hb3-mf"><button className={`hb3-btn ${tEdit ? "on" : ""}`} onClick={() => setTEdit(v => !v)}>{tEdit ? "✓ تم" : "↕️ ترتيب الأدوات"}</button>{tord[dd.i] && <button className="hb3-btn" onClick={() => { const o = { ...tord }; delete o[dd.i]; saveTord(o); }}>↺ الافتراضي</button>}</div>
+      </div></>; })()}
     <div className="hb-panel" style={{ "--c": q ? "#0d9488" : G.c, "--t": q ? "#f0fdfa" : G.tint }}>
-      <div className="hb-ph">{q ? <><span style={{ fontSize: 26 }}>🔎</span><div><b style={{ fontSize: 16.5 }}>نتائج البحث عن «{q}»</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maAr(list.length)} أداة</div></div></> : <><span style={{ width: 50, height: 50, borderRadius: 16, display: "grid", placeItems: "center", fontSize: 25, color: "#fff", background: `linear-gradient(135deg,${G.c},${c2})`, boxShadow: `0 12px 22px -14px ${G.c}` }}>{G.icon}</span><div style={{ minWidth: 0 }}><b style={{ fontSize: 17, color: G.c }}>{G.title}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{G.desc}</div></div><span style={{ marginRight: "auto", fontSize: 12, fontWeight: 900, color: G.c, background: "#fff", borderRadius: 999, padding: "4px 12px", border: `1.5px solid ${G.c}33` }}>{maAr(G.tools.length)} أداة</span></>}</div>
-      <div className="hb-grid">{list.map(t => { const g = HUB_GROUPS[t.gi]; return <button key={t.id + t.gi} className="hb-tool" style={{ "--c": g.c, "--t": g.tint }} onClick={() => go(t)}><span className="ti">{t.icon}</span><span style={{ minWidth: 0 }}><b>{t.label}</b>{desc(t.id) ? <small>{desc(t.id)}</small> : q ? <small>{g.title}</small> : null}</span><span className="go">←</span></button>; })}
+      <div className="hb-ph">{q ? <><span style={{ fontSize: 26 }}>🔎</span><div><b style={{ fontSize: 16.5 }}>نتائج البحث عن «{q}»</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maAr(list.length)} أداة</div></div></> : <><span style={{ width: 50, height: 50, borderRadius: 16, display: "grid", placeItems: "center", fontSize: 25, color: "#fff", background: `linear-gradient(135deg,${G.c},${c2})`, boxShadow: `0 12px 22px -14px ${G.c}` }}>{G.icon}</span><div style={{ minWidth: 0 }}><b style={{ fontSize: 16.5, color: G.c }}>{G.title}</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{G.desc}</div></div><span style={{ marginRight: "auto", fontSize: 12, fontWeight: 900, color: G.c, background: "#fff", border: `1.5px solid ${G.c}33`, borderRadius: 999, padding: "4px 12px" }}>{maAr(G.tools.length)} أداة</span></>}</div>
+      <div className="hb-grid">{list.map(t => { const g = HUB_GROUPS[t.gi]; const [mc, mc2] = hubMc(t.id); return <button key={t.id + t.gi} className="hb-tool" style={{ "--c": g.c, "--t": g.tint }} onClick={() => go(t)}><span className="ti" style={{ background: `radial-gradient(circle at 30% 22%,rgba(255,255,255,.75) 0 12%,rgba(255,255,255,0) 45%),linear-gradient(150deg,${mc2},${mc})`, boxShadow: `inset 0 -4px 8px rgba(0,0,0,.18),0 3px 0 ${hubShade(mc, -0.35)},0 10px 14px -10px ${mc}` }}>{t.icon}</span><span style={{ minWidth: 0 }}><b>{t.label}</b>{desc(t.id) ? <small>{desc(t.id)}</small> : q ? <small>{g.title}</small> : null}</span><span className="go">←</span></button>; })}
         {!list.length && <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 24, color: "#94a3b8", fontWeight: 800 }}>لا توجد أداة بهذا الاسم</div>}</div>
     </div>
   </div>;
@@ -35315,6 +35442,46 @@ const OB_CSS = `
 const obLvPill = (l, big) => l && OB_LV[l] ? <span className="ob-pill" style={{ background: OB_LV[l][2], color: OB_LV[l][1], fontSize: big ? 14 : 12 }}>{OB_LV[l][3]} {OB_LV[l][0]}</span> : null;
 
 // ══════════ إدخال الرصد (الزائر — مناسب للجوال) ══════════
+// ══════════ ✅ قائمة الملاحظة السريعة (تظهر للزائر وللمعلم المقيَّم) ══════════
+const CVQ_ITEMS = [
+  { k: "log", ic: "📒", l: "سجل التقويم", c: "#0f766e", opts: [["full", "مكتمل", "✅", "#15803d", "#dcfce7"], ["part", "ناقص", "⚠️", "#b45309", "#fef3c7"], ["off", "غير مفعّل", "⛔", "#b91c1c", "#fee2e2"]] },
+  { k: "wt", ic: "🧾", l: "كتابة العنوان على السبورة", c: "#2563eb" },
+  { k: "wd", ic: "📅", l: "كتابة التاريخ", c: "#7c3aed" },
+  { k: "wl", ic: "📖", l: "كتابة الدرس", c: "#0891b2" },
+  { k: "wg", ic: "🎯", l: "كتابة الأهداف", c: "#db2777" },
+  { k: "cl", ic: "🧹", l: "نظافة الفصل", c: "#16a34a", tri: 1 },
+  { k: "st", ic: "🪑", l: "توزيع الطلاب بشكل متناسق في الحصة", c: "#ea580c", tri: 1 },
+];
+const CVQ_YN = [["y", "متحقق", "✓", "#15803d", "#dcfce7"], ["n", "غير متحقق", "✗", "#b91c1c", "#fee2e2"]];
+const CVQ_TRI = [["y", "ممتاز", "✓", "#15803d", "#dcfce7"], ["m", "مقبول", "🔸", "#b45309", "#fef3c7"], ["n", "يحتاج متابعة", "✗", "#b91c1c", "#fee2e2"]];
+const cvqOpts = it => it.opts || (it.tri ? CVQ_TRI : CVQ_YN);
+const CVQ_CSS = `.cvq{border-radius:22px;background:#fff;border:1.5px solid #e9d5ff;overflow:hidden;box-shadow:0 16px 30px -26px rgba(109,40,217,.7)}
+.cvq-h{display:flex;align-items:center;gap:10px;padding:11px 14px;color:#fff;background:linear-gradient(135deg,#6d28d9,#0f766e)}
+.cvq-h b{font-size:15.5px}.cvq-h span{margin-inline-start:auto;background:rgba(255,255,255,.2);border-radius:999px;padding:2px 12px;font-weight:900;font-size:12.5px}
+.cvq-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;padding:12px}
+.cvq-i{border-radius:16px;border:1.5px solid #eef2f7;padding:9px 10px;display:grid;gap:7px;background:linear-gradient(180deg,var(--t),#fff 70%)}
+.cvq-i .t{display:flex;align-items:center;gap:8px;font-weight:900;font-size:13.5px;color:#0f172a}
+.cvq-i .t i{font-style:normal;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:18px;background:#fff;box-shadow:0 4px 10px -6px var(--c);border:1.5px solid var(--c)}
+.cvq-o{display:flex;gap:6px;flex-wrap:wrap}
+.cvq-o button{font-family:inherit;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;border-radius:999px;padding:5px 11px;font-weight:900;font-size:12.5px;color:#475569;transition:all .15s}
+.cvq-o button.on{color:#fff;border-color:transparent;box-shadow:0 6px 14px -8px rgba(0,0,0,.5)}
+.cvq-o button:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
+.cvq-ro{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 12px;font-weight:900;font-size:12.5px}`;
+function CvQuick({ e, onChange, ro }) {
+  const q = ptObj(e && e.qc); const done = CVQ_ITEMS.filter(it => q[it.k]).length;
+  if (ro && !done) return null;
+  return <div className="cvq" dir="rtl"><style>{CVQ_CSS}</style>
+    <div className="cvq-h"><span style={{ fontSize: 22, background: "none", padding: 0 }}>✅</span><b>قائمة الملاحظة السريعة</b><span>{maAr(done)} / {maAr(CVQ_ITEMS.length)}</span></div>
+    <div className="cvq-g">{CVQ_ITEMS.map(it => { const v = q[it.k]; const O = cvqOpts(it); const cur = O.find(o => o[0] === v);
+      return <div key={it.k} className="cvq-i" style={{ "--c": it.c, "--t": it.c + "10" }}>
+        <div className="t"><i>{it.ic}</i><span style={{ flex: 1 }}>{it.l}</span></div>
+        {ro ? (cur ? <span className="cvq-ro" style={{ background: cur[4], color: cur[3], justifySelf: "start" }}>{cur[2]} {cur[1]}</span> : <span className="cvq-ro" style={{ background: "#f1f5f9", color: "#94a3b8", justifySelf: "start" }}>— لم يُرصد</span>)
+          : <div className="cvq-o">{O.map(([ok, ol, oi, oc]) => <button key={ok} type="button" className={v === ok ? "on" : ""} style={v === ok ? { background: oc } : null} aria-pressed={v === ok} onClick={() => onChange({ ...q, [it.k]: v === ok ? "" : ok })}>{oi} {ol}</button>)}</div>}
+      </div>; })}</div>
+  </div>;
+}
+const cvQuickHtml = e => { const q = ptObj(e && e.qc); if (!CVQ_ITEMS.some(it => q[it.k])) return "";
+  return `<div style="margin:8px 0;border:1.5px solid #e9d5ff;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#6d28d9,#0f766e);color:#fff;font-weight:900;padding:5px 10px;font-size:12.5px">✅ قائمة الملاحظة السريعة</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:6px">${CVQ_ITEMS.map(it => { const o = cvqOpts(it).find(x => x[0] === q[it.k]); return `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;border:1px solid #f1f5f9;border-radius:8px;padding:3px 8px;font-size:11.5px;font-weight:800"><span>${it.ic} ${ptEsc(it.l)}</span><b style="border-radius:999px;padding:1px 8px;background:${o ? o[4] : "#f1f5f9"};color:${o ? o[3] : "#94a3b8"}">${o ? `${o[2]} ${o[1]}` : "—"}</b></div>`; }).join("")}</div></div>`; };
 function ObsEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
   const [e, setE] = useState(null); const [st, setSt] = useState(""); const tm = useRef(null); const [pn, setPn] = useCvFlush(); const [nt, setNt] = useState({}); const [hdO, setHdO] = useState(true);
   useEffect(() => { if (!T) return; const x = ptObj(ptObj(D.ev[T.tk])[vn]); let n = { hd: ptObj(x.hd), obs: ptObj(x.obs), str: x.str || "", imp: x.imp || "", rec: x.rec || "", vnote: x.vnote || "", pub: !!x.pub, fin: x.fin || null, by: x.by || "" };
@@ -35354,6 +35521,7 @@ function ObsEval({ D, setD, TS, T, setTk, vn, setVn, by, toast }) {
         <div className="flex gap-1 flex-wrap"><button className="ma-btn" onClick={() => setTk(null)}>👥 معلم آخر</button><button className="ma-btn" onClick={() => obPrintTeacher(T, D, idx)}>🖨️ تقرير المعلم</button></div>
       </div>
       <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: 12.5, fontWeight: 800 }}><span style={{ color: st.startsWith("📱") ? "#b45309" : "#0f766e" }}>{st}</span>{pn > 0 && <span className="in-fl" style={{ background: "#fef3c7", color: "#92400e" }}>📱 {maAr(pn)} تغيير بانتظار الرفع</span>}</div>
+      <CvQuick e={e} onChange={qc => put({ qc })} />
       <details className="ma-card p-3" open={hdO} onToggle={ev => setHdO(ev.currentTarget.open)}><summary style={{ fontWeight: 900, cursor: "pointer", fontSize: 14 }}>📋 بيانات الحصة (رصد بطاقة الملاحظة الصفية)</summary>
         <div className="grid gap-2 mt-3">
           <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 12.5 }}>رتبة المعلم:</b>{OB_RANK.map(x => <button key={x} className="cv-chip" style={hd.rank === x ? { background: "#7c3aed", color: "#fff" } : null} onClick={() => setHd("rank", hd.rank === x ? "" : x)}>{x}</button>)}</div>
@@ -35407,6 +35575,7 @@ function ObsSheet({ e, prev }) {
   return (
     <div className="grid gap-2">
       <style>{OB_CSS}</style>
+      <CvQuick e={e} ro />
       <label style={{ fontSize: 12, fontWeight: 800, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={all} onChange={ev => setAll(ev.target.checked)} />إظهار المشاهدات غير المرصودة أيضاً</label>
       {OB_FORM.map((g, gi) => (
         <div key={gi} className="grid gap-2">
@@ -35473,7 +35642,7 @@ async function obPrintTeacher(T, D, idx, opts = {}) {
     ${strong.length ? `<div class="box" style="background:#f0fdf4;border-right:5px solid #15803d"><b style="color:#15803d">🌟 عناصر متحققة بتميز</b>${strong.map(x => `• ${ptEsc(x.it.t)}`).join("<br>")}</div>` : ""}
     ${weak.length ? `<div class="box" style="background:#fffbeb;border-right:5px solid #b45309"><b style="color:#b45309">🎯 عناصر للتطوير</b>${weak.map(x => `• ${ptEsc(x.it.t)}`).join("<br>")}</div>` : ""}
     <div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر (الوكيل)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`;
-  const visits = V.map(r => `<section class="pg">${obVisitHTML(T, r, ptObj(E[r.v]), IM[r.v] || { a: [], t: [] }, opts.full)}<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر<br><b class="pn">${ptEsc(ptObj(E[r.v]).by || "")}</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`).join("");
+  const visits = V.map(r => `<section class="pg">${obVisitHTML(T, r, ptObj(E[r.v]), IM[r.v] || { a: [], t: [] }, opts.full)}${cvQuickHtml(ptObj(E[r.v]))}<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر<br><b class="pn">${ptEsc(ptObj(E[r.v]).by || "")}</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`).join("");
   printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>رصد الملاحظة الصفية — ${ptEsc(T.name)}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${OB_PCSS}</style></head><body>${cover}${visits}<script>setTimeout(()=>print(),1200)</script></body></html>`);
 }
 // ══════════ التقييم النهائي والمؤشرات العامة ══════════
@@ -40488,6 +40657,47 @@ function DcReport({ classes, by }) {
 // ══════════════════════════════════════════════════════════════════════
 // 🔁 تقرير الغياب والتأخر الصباحي — الفصول الأكثر والطلاب المتكررون
 // ══════════════════════════════════════════════════════════════════════
+// ══════════ 📨 تنبيهات المدرسة ودعوات ولي الأمر للحضور (school-preports type: warn | invite) ══════════
+const GD_PENDING = r => r && (r.type === "invite" ? !(r.resp && r.resp.st) : r.type === "warn" ? !(r.resp && r.resp.at) : false);
+function GdAlerts({ reps, onResp }) {
+  const L = (reps || []).filter(r => r.type === "warn" || r.type === "invite").sort((a, b) => (GD_PENDING(b) - GD_PENDING(a)) || ((b.type === "invite") - (a.type === "invite")) || (b.at || 0) - (a.at || 0));
+  const [other, setOther] = useState(null); const [busy, setBusy] = useState("");
+  const answer = async (r, resp) => { setBusy(r.id); const v = { ...resp, at: Date.now() }; const ok = await fbPatch({ [`${PT_PREP}/${r.id}/resp`]: v }); setBusy(""); if (ok) onResp(r.id, v); else alert("تعذّر الإرسال — تحقق من الاتصال"); };
+  if (!L.length) return <div className="pt-item text-center" style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا توجد تنبيهات أو دعوات من المدرسة</div>;
+  return <div className="grid gap-3">{L.map(r => { const inv = r.type === "invite"; const pend = GD_PENDING(r); const R = r.resp || {};
+    return <div key={r.id} className="pt-item" style={{ borderRight: `5px solid ${inv ? "#7c3aed" : "#dc2626"}`, background: pend ? (inv ? "linear-gradient(90deg,#f5f3ff,#fff)" : "linear-gradient(90deg,#fef2f2,#fff)") : "#fff" }}>
+      <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15 }}>{inv ? "📩 دعوة لحضور ولي الأمر" : (r.title || "🔔 تنبيه من المدرسة")}</b>{pend && <span className="pt-st" style={{ background: inv ? "#7c3aed" : "#dc2626", color: "#fff" }}>جديد</span>}<span style={{ marginRight: "auto", fontSize: 11.5, fontWeight: 700, color: "#94a3b8" }}>{ptWhen(r.at)}</span></div>
+      {inv && <div className="flex gap-2 flex-wrap mt-2">{r.date && <span className="pt-st" style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 13 }}>📅 {maDay(maDate(r.date))} {maHijri(maDate(r.date))}</span>}{r.time && <span className="pt-st" style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 13 }}>🕘 {mlFmtT(r.time)}</span>}{r.place && <span className="pt-st" style={{ background: "#f1f5f9", color: "#334155", fontSize: 13 }}>📍 {r.place}</span>}</div>}
+      <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2, whiteSpace: "pre-wrap", marginTop: 6 }}>{r.text}</div>
+      {inv ? (R.st ? <div className="pt-st" style={{ marginTop: 8, background: R.st === "ok" ? "#dcfce7" : "#fef3c7", color: R.st === "ok" ? "#15803d" : "#92400e", fontSize: 13 }}>{R.st === "ok" ? "✅ أكّدتم الحضور في الموعد" : `📅 طلبتم موعداً آخر${R.note ? `: ${R.note}` : ""}`}{r.reply ? ` • ردّ المدرسة: ${r.reply}` : ""}</div>
+        : <div className="flex gap-2 flex-wrap mt-2"><button className="ma-btn pri" disabled={busy === r.id} onClick={() => answer(r, { st: "ok" })}>✅ سأحضر في الموعد</button><button className="ma-btn" disabled={busy === r.id} onClick={() => setOther({ r, note: "" })}>📅 أطلب موعداً آخر</button></div>)
+        : (R.at ? <div style={{ fontSize: 12.5, fontWeight: 800, color: "#15803d", marginTop: 6 }}>✓ اطّلعتم على التنبيه</div> : <button className="ma-btn pri" style={{ marginTop: 8 }} disabled={busy === r.id} onClick={() => answer(r, { st: "seen" })}>✅ اطّلعت على التنبيه</button>)}
+    </div>; })}
+    {other && <div style={{ position: "fixed", inset: 0, zIndex: 700, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 12 }} onClick={() => setOther(null)}><div className="ma-card p-4 grid gap-2" style={{ width: "min(480px,100%)" }} onClick={e => e.stopPropagation()}>
+      <b>📅 طلب موعد آخر</b><textarea className="ma-inp" style={{ minHeight: 80, padding: 10 }} value={other.note} onChange={e => setOther({ ...other, note: e.target.value })} placeholder="اذكر اليوم والوقت المناسب لكم…" />
+      <div className="flex gap-2"><button className="ma-btn pri" disabled={!other.note.trim()} onClick={() => { answer(other.r, { st: "other", note: other.note.trim() }); setOther(null); }}>إرسال</button><button className="ma-btn" onClick={() => setOther(null)}>إلغاء</button></div></div></div>}
+  </div>;
+}
+// إرسال تنبيه أو دعوة لولي الأمر من تقرير الغياب والتأخر
+function AlNotify({ stu, by, per }) {
+  const [L, setL] = useState(null); const [inv, setInv] = useState(null); const [busy, setBusy] = useState(false);
+  const load = async () => setL(ptVals(await maGet(PT_PREP)).filter(r => r && r.nh === stu.nh && (r.type === "warn" || r.type === "invite")).sort((a, b) => b.at - a.at));
+  useEffect(() => { if (stu.nh) load(); }, [stu.nh]);
+  if (!stu.nh) return <div style={{ fontSize: 12.5, fontWeight: 800, color: "#b45309" }}>⚠️ الطالب غير مربوط برقم هوية — لا يمكن الإرسال لبوابة ولي الأمر</div>;
+  const summary = `ولي أمر الطالب ${stu.name} — ${maClassName(stu.ck)}\nنحيطكم علماً بأنه سُجّل على ابنكم${stu.abs.length ? ` غياب ${maAr(stu.abs.length)} يوم (${[...stu.abs].sort().map(d => `${maDay(maDate(d))} ${maHijri(maDate(d))}`).join("، ")})` : ""}${stu.abs.length && stu.late.length ? " و" : ""}${stu.late.length ? ` تأخر صباحي ${maAr(stu.late.length)} مرة` : ""} خلال الفترة من ${maHijri(maDate(per[0]))} إلى ${maHijri(maDate(per[1]))}.\nنأمل متابعته والحرص على انتظامه، شاكرين تعاونكم.`;
+  const send = async (type, extra = {}) => { setBusy(true); const id = (type === "invite" ? "iv" : "wr") + Date.now().toString(36); const v = { id, nh: stu.nh, sname: stu.name, ck: stu.ck, type, title: type === "invite" ? "📩 دعوة لحضور ولي الأمر" : "🔔 تنبيه من المدرسة — الغياب والتأخر", text: summary, at: Date.now(), by, ...extra }; const ok = await maPut(`${PT_PREP}/${id}`, v); setBusy(false); if (ok) { setInv(null); load(); } else alert("تعذّر الإرسال"); };
+  return <div className="grid gap-2" style={{ border: "1.5px solid #e9d5ff", borderRadius: 16, padding: 12, background: "#faf5ff" }}>
+    <b>📨 إشعار ولي الأمر (يظهر في بوابته)</b>
+    <div className="flex gap-2 flex-wrap"><button className="ma-btn" style={{ background: "#dc2626", color: "#fff", border: "none" }} disabled={busy} onClick={() => send("warn")}>🔔 إرسال تنبيه بالغياب والتأخر</button><button className="ma-btn" style={{ background: "#7c3aed", color: "#fff", border: "none" }} onClick={() => setInv({ date: maWorkDay() > maKey(new Date()) ? maWorkDay() : (() => { const d = new Date(); for (let i = 1; i < 8; i++) { d.setDate(d.getDate() + 1); if (!maOff(maKey(d))) return maKey(d); } return maKey(d); })(), time: "08:00", place: "مكتب وكيل شؤون الطلاب", note: "" })}>📩 دعوة ولي الأمر للحضور</button></div>
+    {inv && <div className="grid gap-2" style={{ background: "#fff", borderRadius: 12, padding: 10 }}>
+      <div className="flex gap-2 flex-wrap"><label style={{ fontSize: 12.5, fontWeight: 800 }}>اليوم {inv.date ? `(${maDay(maDate(inv.date))})` : ""}<br /><input className="ma-inp" type="date" value={inv.date} onChange={e => setInv({ ...inv, date: e.target.value })} /></label><label style={{ fontSize: 12.5, fontWeight: 800 }}>الوقت<br /><input className="ma-inp" type="time" value={inv.time} onChange={e => setInv({ ...inv, time: e.target.value })} /></label><label style={{ fontSize: 12.5, fontWeight: 800, flex: 1 }}>المكان<br /><input className="ma-inp" value={inv.place} onChange={e => setInv({ ...inv, place: e.target.value })} /></label></div>
+      <input className="ma-inp" placeholder="سبب الدعوة أو ملاحظة إضافية (اختياري)" value={inv.note} onChange={e => setInv({ ...inv, note: e.target.value })} />
+      <div className="flex gap-2"><button className="ma-btn pri" disabled={busy || !inv.date || !inv.time} onClick={() => send("invite", { date: inv.date, time: inv.time, place: inv.place, ...(inv.note ? { text: summary + "\n" + inv.note } : {}) })}>📤 إرسال الدعوة</button><button className="ma-btn" onClick={() => setInv(null)}>إلغاء</button></div></div>}
+    {L && L.length > 0 && <div className="grid gap-1">{L.map(r => { const R = r.resp || {}; return <div key={r.id} className="flex items-center gap-2 flex-wrap" style={{ fontSize: 12.5, fontWeight: 800, background: "#fff", borderRadius: 10, padding: "5px 9px" }}>
+      <span>{r.type === "invite" ? "📩 دعوة" : "🔔 تنبيه"}{r.date ? ` ${maDay(maDate(r.date))} ${mlFmtT(r.time)}` : ""}</span><span style={{ color: "#94a3b8" }}>{ptWhen(r.at)}</span>
+      <span className="in-fl" style={{ marginInlineStart: "auto", background: R.st === "ok" ? "#dcfce7" : R.st === "other" ? "#fef3c7" : R.at ? "#e0f2fe" : "#f1f5f9", color: R.st === "ok" ? "#15803d" : R.st === "other" ? "#92400e" : R.at ? "#0369a1" : "#64748b" }}>{R.st === "ok" ? "✅ أكّد الحضور" : R.st === "other" ? `📅 طلب موعداً آخر: ${R.note || ""}` : R.at ? "✓ اطّلع" : "⏳ لم يطّلع بعد"}</span></div>; })}</div>}
+  </div>;
+}
 function AbsLateReportPage({ by = "الإدارة" }) {
   const [per, setPer] = useState({ kind: "month", from: maKey(new Date()), to: maKey(new Date()) });
   const [f, t] = inPeriod(per.kind, per.from, per.to);
@@ -40550,6 +40760,7 @@ function AbsLateReportPage({ by = "الإدارة" }) {
         <div className="p-4 grid gap-3">
           {stu.abs.length > 0 && <div><b>🚫 أيام الغياب</b><div className="flex gap-1 flex-wrap mt-2">{[...stu.abs].sort().map(d => <span key={d} className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c" }}>{maDay(maDate(d))} {maHijri(maDate(d))}</span>)}</div></div>}
           {stu.late.length > 0 && <div><b>⏰ التأخر الصباحي</b><div className="grid gap-1 mt-2">{[...stu.late].sort((a, b) => a.dk.localeCompare(b.dk)).map((x, i) => <div key={i} className="in-row" style={{ padding: "6px 10px" }}><b style={{ fontSize: 12.5 }}>{maDay(maDate(x.dk))} {maHijri(maDate(x.dk))}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>حضر {mlFmtT(x.time)} • {maAr(x.mins)} دقيقة{x.reason ? ` • ${x.reason}` : ""}</span></div>)}</div></div>}
+          <AlNotify stu={stu} by={by} per={[f, t]} />
           <div className="flex justify-end"><button className="ma-btn" onClick={() => setStu(null)}>إغلاق</button></div>
         </div>
       </div></div>}
