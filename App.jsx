@@ -2050,9 +2050,9 @@ function agNotify(o, ph, now) {
 const AG_CSS = `
 .ag{container-type:inline-size;font-family:'Cairo','Noto Naskh Arabic',sans-serif;margin:0 0 18px}
 .ag *{box-sizing:border-box}
-.ag-box{background:#fff;border-radius:26px;border:1px solid #d9e6e1;overflow:hidden;box-shadow:0 22px 40px -32px rgba(6,48,43,.7)}
-.ag-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 18px;background:#0b3d36;color:#fff}
-.ag-hd h3{margin:0;font-size:19px;font-weight:900}
+.ag-box{background:rgba(255,255,255,.92);border-radius:30px;border:1px solid rgba(203,213,225,.7);overflow:hidden;box-shadow:0 26px 50px -36px rgba(30,64,175,.6);backdrop-filter:blur(8px)}
+.ag-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 20px;color:#fff;background:radial-gradient(420px 160px at 100% 0,rgba(45,212,191,.45),transparent 60%),radial-gradient(380px 160px at 0 100%,rgba(251,191,36,.3),transparent 60%),linear-gradient(120deg,#0f766e,#1d4ed8 70%,#5b21b6)}
+.ag-hd h3{margin:0;font-size:21px;font-weight:900;text-shadow:0 3px 12px rgba(0,0,0,.25)}
 .ag-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:800;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
 .ag-btn{font-family:inherit;cursor:pointer;border:none;border-radius:14px;padding:9px 16px;font-weight:900;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;transition:transform .15s,box-shadow .15s}
 .ag-btn:focus-visible,.ag-chip:focus-visible,.ag-ck:focus-visible,.ag-day:focus-visible,.ag-ic:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
@@ -2072,7 +2072,7 @@ const AG_CSS = `
 .ag-day i{font-style:normal;font-size:10.5px;font-weight:900;border-radius:999px;padding:0 7px;background:#f1f5f9;color:#64748b;min-height:16px}
 .ag-day.has i{background:#ccfbf1;color:#0f766e}
 .ag-day.off{opacity:.5}
-.ag-day.on{background:#0b3d36;border-color:#0b3d36;color:#fff;opacity:1}
+.ag-day.on{background:linear-gradient(150deg,#0f766e,#1d4ed8);border-color:transparent;color:#fff;opacity:1;box-shadow:0 12px 22px -14px #1d4ed8}
 .ag-day.on i{background:#fbbf24;color:#3b2a00}
 .ag-rail{position:relative;height:112px;border-radius:20px;background:#f7faf9;border:1px solid #e5ece9;overflow:hidden}
 .ag-axis{position:absolute;right:16px;left:16px;top:76px;height:2px;background:#d9e6e1}
@@ -2449,9 +2449,30 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         .hr-q:hover{transform:translateY(-2px);box-shadow:0 16px 26px -14px rgba(0,0,0,.7)}
         .hr-q span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:15px}
         @media (max-width:900px){.hr-in{grid-template-columns:1fr;padding:22px 18px}.hr-quick{padding:0 18px 20px}.hr-logo{width:88px;height:88px}}
+        /* ═══ تصميم الواجهة الإبداعي ═══ */
+        .hr-wrap{border-radius:34px;background:radial-gradient(620px 320px at 92% -8%,rgba(45,212,191,.6),transparent 62%),radial-gradient(560px 340px at 6% 104%,rgba(251,191,36,.45),transparent 60%),radial-gradient(520px 320px at 48% 125%,rgba(236,72,153,.32),transparent 62%),radial-gradient(640px 380px at -4% -6%,rgba(129,140,248,.55),transparent 60%),linear-gradient(125deg,#053d38 0%,#0f766e 36%,#1d4ed8 76%,#5b21b6 100%);background-size:150% 150%;animation:hrMesh 20s ease-in-out infinite alternate;box-shadow:0 36px 70px -34px rgba(30,64,175,.7),inset 0 1px 0 rgba(255,255,255,.18)}
+        @keyframes hrMesh{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+        .hr-wrap::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 30%);pointer-events:none}
+        .hr-title{font-size:clamp(30px,3.8vw,48px)!important;text-shadow:0 6px 24px rgba(0,0,0,.25)}
+        .hr-glass{background:linear-gradient(160deg,rgba(255,255,255,.2),rgba(255,255,255,.07))!important;border:1px solid rgba(255,255,255,.3)!important;border-radius:26px!important;box-shadow:0 20px 40px -24px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.3)!important}
+        .hr-stat{background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.2)!important;border-top:3px solid var(--sc,#fde68a)!important}
+        .hr-deco{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+        .hr-deco span{position:absolute;font-size:30px;opacity:.5;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));animation:hrBob 7s ease-in-out infinite}
+        @keyframes hrBob{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-14px) rotate(8deg)}}
+        .hr-ovs{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:12px;padding:4px 30px 28px}
+        .hr-ov{font-family:inherit;cursor:pointer;color:#fff;border-radius:24px;padding:14px 6px 12px;display:grid;justify-items:center;gap:9px;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .22s cubic-bezier(.2,1.4,.4,1),background .2s,box-shadow .2s}
+        .hr-ov:hover,.hr-ov:focus-visible{transform:translateY(-6px);background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.1));box-shadow:0 18px 30px -16px var(--a);outline:none}
+        .hr-ov:focus-visible{box-shadow:0 0 0 3px #fde68a}
+        .hr-ov .egg{width:74px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:30px;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.9) 0 9%,rgba(255,255,255,0) 42%),linear-gradient(150deg,var(--b),var(--a));box-shadow:inset 0 -7px 12px rgba(0,0,0,.22),inset 0 4px 8px rgba(255,255,255,.4),0 5px 0 var(--d),0 16px 24px -12px var(--a);transition:transform .25s}
+        .hr-ov .egg i{font-style:normal;filter:drop-shadow(0 3px 2px rgba(0,0,0,.3))}
+        .hr-ov:hover .egg{transform:scale(1.08) rotate(-4deg)}
+        .hr-ov b{font-size:14px;font-weight:900;line-height:1.35;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.3)}
+        @media (max-width:900px){.hr-ovs{padding:4px 16px 22px;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.hr-ov .egg{width:62px;height:48px;font-size:25px}.hr-ov b{font-size:12.5px}.hr-deco span{font-size:22px}}
+        @media (prefers-reduced-motion:reduce){.hr-wrap,.hr-deco span{animation:none!important}}
       `}</style>
       <div className="hr-wrap">
         <div className="hr-pat" />
+        <div className="hr-deco" aria-hidden="true">{[["📚", "46%", "10%", 0], ["✏️", "58%", "70%", 1.2], ["🔬", "3%", "58%", 2.1], ["🌍", "40%", "62%", .6], ["💡", "64%", "14%", 1.7], ["🎓", "30%", "6%", 2.6], ["📐", "52%", "40%", 3.1]].map(([e, l, t, d], i) => <span key={i} style={{ left: l, top: t, animationDelay: `${d}s` }}>{e}</span>)}</div>
         <div className="hr-in">
           <div className="flex items-center gap-5 flex-wrap">
             <div className="hr-logo"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div>
@@ -2475,15 +2496,15 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
               </div>
             </div>
             <div className="hr-stats">
-              <button className="hr-stat" onClick={() => navigate("attendance")}><b>{attendRate}٪</b><small>حضور المعلمين اليوم</small></button>
-              <button className="hr-stat" onClick={() => navigate("students")}><b>{totalStudents}</b><small>طالباً مسجّلاً</small></button>
-              <button className="hr-stat" onClick={() => navigate("messages")}><b>{unreadMsgs}</b><small>رسالة جديدة</small></button>
+              <button className="hr-stat" style={{ "--sc": "#34d399" }} onClick={() => navigate("attendance")}><b>{attendRate}٪</b><small>حضور المعلمين اليوم</small></button>
+              <button className="hr-stat" style={{ "--sc": "#93c5fd" }} onClick={() => navigate("students")}><b>{totalStudents}</b><small>طالباً مسجّلاً</small></button>
+              <button className="hr-stat" style={{ "--sc": "#f9a8d4" }} onClick={() => navigate("messages")}><b>{unreadMsgs}</b><small>رسالة جديدة</small></button>
             </div>
           </div>
         </div>
-        <div className="hr-quick">
-          {[["morningattend", "غياب الطلاب", "📋", "#dcfce7"], ["attendstats", "إحصائية الغياب", "📊", "#fee2e2"], ["morninglate", "التأخر الصباحي", "🌅", "#ffedd5"], ["attendance", "الحضور اليومي", "📅", "#ccfbf1"], ["announcements", "الإعلانات", "📣", "#fce7f3"], ["formative", "التقويم التكويني", "📘", "#dbeafe"], ["studentclassify", "تصنيف الطلاب", "🏷️", "#ede9fe"], ["prolicense", "الرخصة المهنية", "🪪", "#fef3c7"], ["student-absence", "غياب الطلاب", "🎒", "#ede9fe"]].map(([id, l, ic, bg]) => (
-            <button key={id} className="hr-q" onClick={() => navigate(id)}><span style={{ background: bg }}>{ic}</span>{l}</button>
+        <div className="hr-ovs">
+          {[["morningattend", "غياب الطلاب", "📋", "#059669", "#34d399"], ["attendstats", "إحصائية الغياب", "📊", "#dc2626", "#fb7185"], ["morninglate", "التأخر الصباحي", "🌅", "#ea580c", "#fbbf24"], ["attendance", "الحضور اليومي", "📅", "#0891b2", "#67e8f9"], ["announcements", "الإعلانات", "📣", "#db2777", "#f9a8d4"], ["formative", "التقويم التكويني", "📘", "#2563eb", "#93c5fd"], ["studentclassify", "تصنيف الطلاب", "🏷️", "#7c3aed", "#c4b5fd"], ["prolicense", "الرخصة المهنية", "🪪", "#ca8a04", "#fde047"], ["student-absence", "سجل غياب الطلاب", "🎒", "#9333ea", "#f0abfc"]].map(([id, l, ic, a, b]) => (
+            <button key={id} className="hr-ov" style={{ "--a": a, "--b": b, "--d": hubShade(a, -0.35) }} onClick={() => navigate(id)}><span className="egg"><i>{ic}</i></span><b>{l}</b></button>
           ))}
         </div>
       </div>
@@ -40989,8 +41010,16 @@ const PAM_UI_CSS = (() => {
 html.pam-fs-l{font-size:17px}html.pam-fs-xl{font-size:18.5px}
 ${rules("l", 1.5)}
 ${rules("xl", 3)}
-.pam-ui{background:radial-gradient(900px 520px at 100% -10%,rgba(45,212,191,.16),transparent 60%),radial-gradient(800px 500px at -10% 20%,rgba(99,102,241,.12),transparent 60%),radial-gradient(700px 520px at 50% 110%,rgba(251,191,36,.14),transparent 60%),linear-gradient(180deg,#f7faf9,#f3f6fb)!important}
-.pam-edu-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:${PAM_EDU_SVG};background-size:320px 320px;opacity:.07;mask-image:linear-gradient(180deg,rgba(0,0,0,.9),rgba(0,0,0,.5))}
+.pam-ui{background:linear-gradient(180deg,#f6fbfa 0%,#f4f6fd 50%,#fbf8f1 100%)!important}
+.pam-mesh{position:fixed;inset:-10%;pointer-events:none;z-index:0;filter:blur(40px);opacity:.75}
+.pam-mesh i{position:absolute;border-radius:50%;animation:pamDrift 26s ease-in-out infinite alternate}
+.pam-mesh i:nth-child(1){width:46vw;height:46vw;right:-6vw;top:-8vw;background:radial-gradient(circle,rgba(45,212,191,.42),transparent 65%)}
+.pam-mesh i:nth-child(2){width:42vw;height:42vw;left:-8vw;top:18vh;background:radial-gradient(circle,rgba(129,140,248,.36),transparent 65%);animation-delay:-6s}
+.pam-mesh i:nth-child(3){width:40vw;height:40vw;right:18vw;bottom:-14vw;background:radial-gradient(circle,rgba(251,191,36,.34),transparent 65%);animation-delay:-12s}
+.pam-mesh i:nth-child(4){width:30vw;height:30vw;left:22vw;top:-6vw;background:radial-gradient(circle,rgba(244,114,182,.22),transparent 65%);animation-delay:-18s}
+.pam-mesh i:nth-child(5){width:34vw;height:34vw;left:-6vw;bottom:-10vw;background:radial-gradient(circle,rgba(56,189,248,.26),transparent 65%);animation-delay:-9s}
+@keyframes pamDrift{0%{transform:translate(0,0) scale(1)}50%{transform:translate(3vw,2vh) scale(1.08)}100%{transform:translate(-2vw,-3vh) scale(.96)}}
+.pam-edu-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:${PAM_EDU_SVG};background-size:320px 320px;opacity:.085;mask-image:linear-gradient(180deg,rgba(0,0,0,.9),rgba(0,0,0,.5))}
 .pam-ui nav.bg-white{background:rgba(255,255,255,.84)!important;backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);border-bottom:none!important;box-shadow:0 14px 34px -26px rgba(15,23,42,.55)!important}
 .pam-ui nav.bg-white::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#0d9488,#6366f1,#f59e0b,#ec4899,#0d9488);background-size:200% 100%;animation:pamLine 12s linear infinite}
 @keyframes pamLine{to{background-position:200% 0}}
@@ -41025,7 +41054,7 @@ ${rules("xl", 3)}
 .pam-qr{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;font-weight:900;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22)}
 .pam-qr span{animation:pamFade 6s infinite}
 @keyframes pamFade{0%{opacity:0;transform:translateY(6px)}6%,90%{opacity:1;transform:none}100%{opacity:.15}}
-@media (prefers-reduced-motion:reduce){.pam-sp,.pam-sp *,.pam-ui nav.bg-white::after,.pam-qr span{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.pam-sp,.pam-sp *,.pam-ui nav.bg-white::after,.pam-qr span,.pam-mesh i{animation:none!important}}
 `; })();
 const pamGreet = () => { const h = new Date().getHours(); return h < 12 ? "☀️ صباح الخير" : h < 17 ? "🌤️ طاب يومك" : "🌙 مساء الخير"; };
 // التحكم بحجم الخط (يُحفظ على الجهاز)
@@ -41612,6 +41641,7 @@ function SchoolWebsiteInner() {
       ${PAM_UI_CSS}
     `}</style>
     <div dir="rtl" className="pam-ui min-h-screen relative overflow-x-hidden" style={{ fontFamily: siteFont, background: "linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%)" }}>
+      <div className="pam-mesh" aria-hidden="true"><i /><i /><i /><i /><i /></div>
       <div className="pam-edu-bg" aria-hidden="true" />
       {user && <PamSplash name={user.name} />}
 
