@@ -2470,44 +2470,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         @media (max-width:900px){.hr-ovs{padding:4px 16px 22px;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.hr-ov .egg{width:62px;height:48px;font-size:25px}.hr-ov b{font-size:12.5px}.hr-deco span{font-size:22px}}
         @media (prefers-reduced-motion:reduce){.hr-wrap,.hr-deco span{animation:none!important}}
       `}</style>
-      <div className="hr-wrap">
-        <div className="hr-pat" />
-        <div className="hr-deco" aria-hidden="true">{[["📚", "46%", "10%", 0], ["✏️", "58%", "70%", 1.2], ["🔬", "3%", "58%", 2.1], ["🌍", "40%", "62%", .6], ["💡", "64%", "14%", 1.7], ["🎓", "30%", "6%", 2.6], ["📐", "52%", "40%", 3.1]].map(([e, l, t, d], i) => <span key={i} style={{ left: l, top: t, animationDelay: `${d}s` }}>{e}</span>)}</div>
-        <div className="hr-in">
-          <div className="flex items-center gap-5 flex-wrap">
-            <div className="hr-logo"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div>
-            <div style={{ flex: "1 1 260px", minWidth: 0 }}>
-              <div className="hr-kicker"><i />بوابة الإدارة المدرسية • {greet}</div>
-              <h1 className="hr-title">مدرسة <span>الأمير عبدالمجيد</span> المتوسطة</h1>
-              <div className="hr-sub">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div>
-              <div className="hr-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 معاً نحو مدرسة متميزة</b></div>
-              <PamQuote />
-            </div>
-          </div>
-          <div className="hr-glass">
-            <div className="flex items-end justify-between gap-3 flex-wrap">
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, opacity: .8 }}>{dayName}</div>
-                <div className="hr-clock">{clock}</div>
-              </div>
-              <div style={{ textAlign: "left", fontSize: 12.5, fontWeight: 800, lineHeight: 1.8 }}>
-                <div>🌙 {hijri}</div>
-                <div style={{ opacity: .75 }}>📅 {greg}</div>
-              </div>
-            </div>
-            <div className="hr-stats">
-              <button className="hr-stat" style={{ "--sc": "#34d399" }} onClick={() => navigate("attendance")}><b>{attendRate}٪</b><small>حضور المعلمين اليوم</small></button>
-              <button className="hr-stat" style={{ "--sc": "#93c5fd" }} onClick={() => navigate("students")}><b>{totalStudents}</b><small>طالباً مسجّلاً</small></button>
-              <button className="hr-stat" style={{ "--sc": "#f9a8d4" }} onClick={() => navigate("messages")}><b>{unreadMsgs}</b><small>رسالة جديدة</small></button>
-            </div>
-          </div>
-        </div>
-        <div className="hr-ovs">
-          {[["morningattend", "غياب الطلاب", "📋", "#059669", "#34d399"], ["attendstats", "إحصائية الغياب", "📊", "#dc2626", "#fb7185"], ["morninglate", "التأخر الصباحي", "🌅", "#ea580c", "#fbbf24"], ["attendance", "الحضور اليومي", "📅", "#0891b2", "#67e8f9"], ["announcements", "الإعلانات", "📣", "#db2777", "#f9a8d4"], ["formative", "التقويم التكويني", "📘", "#2563eb", "#93c5fd"], ["studentclassify", "تصنيف الطلاب", "🏷️", "#7c3aed", "#c4b5fd"], ["prolicense", "الرخصة المهنية", "🪪", "#ca8a04", "#fde047"], ["student-absence", "سجل غياب الطلاب", "🎒", "#9333ea", "#f0abfc"]].map(([id, l, ic, a, b]) => (
-            <button key={id} className="hr-ov" style={{ "--a": a, "--b": b, "--d": hubShade(a, -0.35) }} onClick={() => navigate(id)}><span className="egg"><i>{ic}</i></span><b>{l}</b></button>
-          ))}
-        </div>
-      </div>
+      <LeadDash navigate={navigate} clock={clock} dayName={dayName} hijri={hijri} greg={greg} greet={greet} attendRate={attendRate} totalStudents={totalStudents} unreadMsgs={unreadMsgs} tN={teachers.length} tPresent={todayPresent} tAbsent={todayAbsent} tLate={todayLate} recentAnn={recentAnn} upcomingAct={upcomingAct} />
       <HdAbsAlert navigate={navigate} by={agendaUser} />
       <AgendaBoard uk={agendaUser} teachers={teachers} navigate={navigate} />
       <TtNowBoard navigate={navigate} />
@@ -41095,6 +41058,165 @@ function PamQuote() {
   return <div className="pam-qr" aria-live="polite">✨ <span key={i}>{PAM_QUOTES[i]}</span></div>;
 }
 
+// ══════════ 🧭 القائمة الجانبية (سطح المكتب) — أقسام بأيقونات بيضاوية + قوائم منسدلة ══════════
+const PS2_CSS = `
+.pam-row{display:flex;align-items:flex-start;gap:0}
+.pam-main{flex:1;min-width:0}
+.pside{position:sticky;top:96px;flex:none;width:300px;height:calc(100vh - 108px);margin:10px 10px 10px 0;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;color:#fff;font-family:'Cairo',Tahoma,sans-serif;
+  background:radial-gradient(320px 220px at 100% 0,rgba(45,212,191,.38),transparent 60%),radial-gradient(300px 260px at 0 100%,rgba(168,85,247,.35),transparent 60%),linear-gradient(170deg,#052e2b 0%,#0b4f45 32%,#1e3a8a 72%,#3b0764 100%);
+  box-shadow:0 30px 60px -30px rgba(30,58,138,.7);transition:width .28s cubic-bezier(.2,1,.3,1)}
+.pside.mini{width:92px}
+.pside-h{padding:16px 14px 12px;display:grid;justify-items:center;gap:6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.12)}
+.pside-h .lg{width:74px;height:74px;border-radius:50%;background:#fff;padding:4px;box-shadow:0 0 0 4px rgba(253,230,138,.6),0 14px 26px -12px rgba(0,0,0,.6)}
+.pside-h .lg img{width:100%;height:100%;border-radius:50%;object-fit:contain}
+.pside-h b{font-size:17px;font-weight:900}.pside-h small{font-size:12.5px;font-weight:700;opacity:.82;line-height:1.5}
+.pside.mini .pside-h b,.pside.mini .pside-h small,.pside.mini .pside-q{display:none}.pside.mini .pside-h .lg{width:56px;height:56px}
+.pside-q{margin:10px 12px 4px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:6px 10px}
+.pside-q input{flex:1;min-width:0;border:none;outline:none;background:transparent;color:#fff;font-family:inherit;font-weight:800;font-size:13.5px}
+.pside-q input::placeholder{color:rgba(255,255,255,.65)}
+.pside-b{flex:1;overflow:auto;padding:6px 10px 10px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+.pside-it{width:100%;display:flex;align-items:center;gap:11px;padding:8px 9px;border-radius:18px;border:none;background:transparent;color:#fff;cursor:pointer;font-family:inherit;text-align:right;transition:background .18s,transform .18s;margin-top:4px}
+.pside-it:hover{background:rgba(255,255,255,.1)}.pside-it:focus-visible{outline:3px solid #fde68a;outline-offset:1px}
+.pside-it.on{background:linear-gradient(135deg,rgba(253,230,138,.95),rgba(245,158,11,.95));color:#3b2300;box-shadow:0 12px 22px -14px #f59e0b}
+.pside-it.open{background:rgba(255,255,255,.12)}
+.pside-eg{flex:none;width:50px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:21px;
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.85) 0 9%,rgba(255,255,255,0) 42%),linear-gradient(150deg,var(--b),var(--a));box-shadow:inset 0 -5px 9px rgba(0,0,0,.22),inset 0 3px 6px rgba(255,255,255,.35),0 4px 0 var(--d),0 10px 16px -10px var(--a)}
+.pside-eg i{font-style:normal;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.pside-it b{font-size:15.5px;font-weight:900;flex:1;line-height:1.35}
+.pside-it small{font-size:11.5px;font-weight:900;background:rgba(255,255,255,.16);border-radius:999px;padding:1px 9px}
+.pside-it .cv{font-size:12px;opacity:.8;transition:transform .25s}.pside-it.open .cv{transform:rotate(-90deg)}
+.pside.mini .pside-it{justify-content:center;padding:8px 4px}.pside.mini .pside-it b,.pside.mini .pside-it small,.pside.mini .pside-it .cv{display:none}
+.pside-sub{overflow:hidden;display:grid;gap:2px;padding:4px 6px 6px 0;margin-inline-start:24px;border-inline-start:2px solid rgba(255,255,255,.15);animation:psideDown .28s cubic-bezier(.2,1.2,.3,1)}
+@keyframes psideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.pside-tl{display:flex;align-items:center;gap:9px;border:none;background:transparent;color:#fff;cursor:pointer;font-family:inherit;text-align:right;padding:6px 10px;border-radius:13px;font-size:14px;font-weight:800;transition:background .15s,transform .15s;animation:psideIn .3s both}
+@keyframes psideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+.pside-tl:hover{background:rgba(255,255,255,.12);transform:translateX(-3px)}.pside-tl:focus-visible{outline:2px solid #fde68a}
+.pside-tl.on{background:#fff;color:#0f172a;font-weight:900}
+.pside-tl .e{width:30px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:14px;background:linear-gradient(150deg,var(--b),var(--a));box-shadow:inset 0 -3px 5px rgba(0,0,0,.2);flex:none}
+.pside-f{padding:10px 12px 12px;border-top:1px solid rgba(255,255,255,.12);display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pside-f button{font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#fff;border-radius:12px;padding:6px 10px;font-weight:900;font-size:12.5px}
+.pside.mini .pside-f{justify-content:center}.pside.mini .pside-f .lbl{display:none}
+@media (max-width:1023px){.pside{display:none}}
+@media (prefers-reduced-motion:reduce){.pside,.pside-sub,.pside-tl{animation:none!important;transition:none!important}}
+`;
+const PS2_COL = [["#0d9488", "#5eead4"], ["#2563eb", "#93c5fd"], ["#7c3aed", "#c4b5fd"], ["#db2777", "#f9a8d4"], ["#ea580c", "#fdba74"], ["#ca8a04", "#fde047"], ["#16a34a", "#86efac"], ["#0891b2", "#67e8f9"]];
+function PamSide({ groups, pageById, page, navigate, onLogout }) {
+  const [mini, setMini] = useState(() => { try { return localStorage.getItem("pside-mini") === "1"; } catch { return false; } });
+  const cur = groups.findIndex(g => g.ids.includes(page));
+  const [open, setOpen] = useState(cur);
+  const [q, setQ] = useState("");
+  useEffect(() => { if (cur >= 0) setOpen(cur); }, [page]);
+  const tgl = () => { const v = !mini; setMini(v); try { localStorage.setItem("pside-mini", v ? "1" : "0"); } catch {} };
+  const ql = q.trim() ? groups.flatMap((g, gi) => g.ids.map(id => ({ id, gi, p: pageById[id] }))).filter(x => x.p && (cvNorm(x.p.label).includes(cvNorm(q)))).filter((x, i, A) => A.findIndex(y => y.id === x.id) === i) : null;
+  const col = gi => { const g = groups[gi]; const c = g.color || PS2_COL[gi % PS2_COL.length][0]; const c2 = PS2_COL[gi % PS2_COL.length][1]; return { "--a": c, "--b": c2, "--d": hubShade(c, -0.35) }; };
+  const tool = (id, gi, k) => { const p = pageById[id]; if (!p) return null; const [mc, mc2] = hubMc(id); return <button key={id} className={`pside-tl ${page === id ? "on" : ""}`} style={{ "--a": mc, "--b": mc2, animationDelay: `${Math.min(k, 14) * 22}ms` }} onClick={() => navigate(id)} title={p.label}><span className="e">{p.icon}</span><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.label}</span></button>; };
+  return <aside className={`pside ${mini ? "mini" : ""}`} dir="rtl" aria-label="أقسام الموقع">
+    <div className="pside-h"><div className="lg"><img src={SCHOOL_LOGO} alt="" /></div><b>إدارة المدرسة</b><small>مدرسة الأمير عبدالمجيد<br />المتوسطة الأولى</small></div>
+    <label className="pside-q"><span>🔎</span><input value={q} onChange={e => setQ(e.target.value)} placeholder="ابحث عن أداة…" /></label>
+    <div className="pside-b">
+      <button className={`pside-it ${page === "home" ? "on" : ""}`} onClick={() => navigate("home")} title="لوحة القيادة"><span className="pside-eg" style={{ "--a": "#d97706", "--b": "#fde68a", "--d": "#92400e" }}><i>🏠</i></span><b>لوحة القيادة</b></button>
+      {ql ? <div className="pside-sub" style={{ marginInlineStart: 6 }}>{ql.length ? ql.map((x, k) => tool(x.id, x.gi, k)) : <div style={{ fontSize: 13, opacity: .75, padding: 8 }}>لا نتائج</div>}</div>
+        : groups.map((g, gi) => { const on = open === gi; const has = g.ids.includes(page); return <div key={gi}>
+          <button className={`pside-it ${on ? "open" : ""}`} style={has && !on ? { boxShadow: "inset 0 0 0 1.5px rgba(253,230,138,.6)" } : null} onClick={() => { if (mini) { setMini(false); try { localStorage.setItem("pside-mini", "0"); } catch {} setOpen(gi); return; } setOpen(on ? -1 : gi); }} aria-expanded={on} title={g.title}>
+            <span className="pside-eg" style={col(gi)}><i>{g.icon}</i></span><b>{g.title}</b><small>{maAr(g.ids.filter(id => pageById[id]).length)}</small><span className="cv">‹</span></button>
+          {on && !mini && <div className="pside-sub">{g.ids.map((id, k) => tool(id, gi, k))}</div>}
+        </div>; })}
+    </div>
+    <div className="pside-f"><button onClick={tgl} title={mini ? "توسيع القائمة" : "تصغير القائمة"}>{mini ? "⟨⟨" : "⟩⟩"}<span className="lbl">{mini ? "" : " تصغير"}</span></button>{onLogout && <button onClick={onLogout} title="تسجيل الخروج">🚪<span className="lbl"> خروج</span></button>}</div>
+  </aside>;
+}
+
+// ══════════ 🏫 لوحة قيادة المدرسة (رأس الصفحة الرئيسية) ══════════
+const LD_CSS = `
+.ld{display:grid;gap:16px;margin-bottom:18px;font-family:'Cairo',Tahoma,sans-serif}
+.ld-top{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.ld-top h1{margin:0;font-size:clamp(26px,3vw,34px);font-weight:900;background:linear-gradient(90deg,#0f766e,#1d4ed8,#7c3aed);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.3}
+.ld-top p{margin:0;font-size:15px;font-weight:800;color:#64748b}
+.ld-chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 14px;font-weight:900;font-size:13.5px;background:#fff;border:1.5px solid #e2e8f0;color:#334155;box-shadow:0 8px 16px -14px rgba(15,23,42,.5)}
+.ld-hd{position:relative;overflow:hidden;border-radius:32px;color:#fff;padding:22px 24px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:18px;align-items:center;
+  background:radial-gradient(520px 260px at 96% -10%,rgba(45,212,191,.6),transparent 62%),radial-gradient(460px 280px at 4% 110%,rgba(251,191,36,.45),transparent 60%),radial-gradient(420px 260px at 50% 130%,rgba(236,72,153,.32),transparent 62%),linear-gradient(120deg,#053d38 0%,#0f766e 34%,#1d4ed8 74%,#5b21b6 100%);background-size:150% 150%;animation:hrMesh 20s ease-in-out infinite alternate;box-shadow:0 34px 64px -34px rgba(30,64,175,.7)}
+.ld-hd::before{content:"";position:absolute;inset:0;background-image:${typeof PAM_EDU_SVG !== "undefined" ? PAM_EDU_SVG : "none"};background-size:280px 280px;opacity:.08;filter:invert(1);pointer-events:none}
+.ld-id{position:relative;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.ld-lg{width:104px;height:104px;border-radius:50%;background:#fff;padding:5px;flex:none;box-shadow:0 0 0 5px rgba(253,230,138,.7),0 0 0 12px rgba(255,255,255,.12),0 18px 34px -14px rgba(0,0,0,.6);animation:hrFloat 6s ease-in-out infinite}
+.ld-lg img{width:100%;height:100%;border-radius:50%;object-fit:contain}
+.ld-id h2{margin:0;font-size:clamp(24px,2.6vw,32px);font-weight:900;line-height:1.3;text-shadow:0 5px 20px rgba(0,0,0,.25)}.ld-id h2 span{color:#fde68a}
+.ld-id .sl{font-size:15px;font-weight:800;opacity:.9}
+.ld-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ld-tags b{font-size:12.5px;font-weight:900;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22)}
+.ld-gl{position:relative;border-radius:26px;padding:16px 18px;background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.ld-clk{display:flex;align-items:center;gap:12px}.ld-clk .t{font-size:clamp(36px,3.6vw,48px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.ld-clk .d{font-size:14px;font-weight:800;line-height:1.8;opacity:.92}
+.ld-st{position:relative;grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ld-sb{font-family:inherit;cursor:pointer;color:#fff;display:flex;align-items:center;gap:12px;border-radius:22px;padding:12px 14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);transition:transform .2s,background .2s;text-align:right}
+.ld-sb:hover{transform:translateY(-3px);background:rgba(255,255,255,.2)}.ld-sb:focus-visible{outline:3px solid #fde68a}
+.ld-sb b{display:block;font-size:26px;font-weight:900;line-height:1.1}.ld-sb small{font-size:13.5px;font-weight:800;opacity:.92}
+.ld-eg{flex:none;width:62px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:25px;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.9) 0 9%,rgba(255,255,255,0) 42%),linear-gradient(150deg,var(--b),var(--a));box-shadow:inset 0 -6px 10px rgba(0,0,0,.22),inset 0 4px 8px rgba(255,255,255,.4),0 5px 0 var(--d),0 14px 20px -10px var(--a)}
+.ld-eg i{font-style:normal;filter:drop-shadow(0 3px 2px rgba(0,0,0,.3))}
+.ld-q{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ld-qb{font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:22px;background:rgba(255,255,255,.95);border:1.5px solid #eef2f7;text-align:right;transition:transform .2s cubic-bezier(.2,1.4,.4,1),box-shadow .2s,border-color .2s;box-shadow:0 14px 26px -24px rgba(15,23,42,.6)}
+.ld-qb:hover,.ld-qb:focus-visible{transform:translateY(-4px);border-color:var(--a);box-shadow:0 20px 30px -20px var(--a);outline:none}
+.ld-qb b{display:block;font-size:16.5px;font-weight:900;color:#0f172a}.ld-qb small{display:block;font-size:12.5px;font-weight:700;color:#64748b}
+.ld-qb .ar{margin-inline-start:auto;color:var(--a);font-weight:900;font-size:18px;transition:transform .2s}.ld-qb:hover .ar{transform:translateX(-4px)}
+.ld-k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ld-kb{font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:24px;text-align:right;background:linear-gradient(160deg,#fff,var(--t));border:1.5px solid #eef2f7;transition:transform .2s;box-shadow:0 16px 30px -26px var(--a)}
+.ld-kb:hover{transform:translateY(-3px)}.ld-kb:focus-visible{outline:3px solid #fbbf24}
+.ld-kb b{display:block;font-size:30px;font-weight:900;color:var(--a);line-height:1.1}.ld-kb small{font-size:14px;font-weight:900;color:#334155}.ld-kb i.s{display:block;font-style:normal;font-size:12px;font-weight:800;color:#64748b}
+.ld-2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+.ld-c{background:rgba(255,255,255,.95);border-radius:26px;border:1.5px solid #eef2f7;overflow:hidden;box-shadow:0 20px 38px -32px rgba(15,23,42,.6)}
+.ld-ch{display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(90deg,var(--t),#fff)}
+.ld-ch b{font-size:17px;font-weight:900;color:#0f172a}.ld-ch button{margin-inline-start:auto;font-family:inherit;cursor:pointer;border:none;background:none;color:var(--a);font-weight:900;font-size:13.5px}
+.ld-tb{width:100%;border-collapse:separate;border-spacing:0;font-size:14.5px}
+.ld-tb th{font-size:13px;font-weight:900;color:#475569;background:#f8fafc;padding:8px;text-align:center}
+.ld-tb td{padding:9px 8px;text-align:center;font-weight:800;border-top:1px solid #f1f5f9}.ld-tb td.n{text-align:right;font-weight:900}
+.ld-tb tr.tot td{background:linear-gradient(90deg,#fef9c3,#fff);font-weight:900}
+.ld-bar{height:9px;border-radius:999px;background:#f1f5f9;overflow:hidden;min-width:70px}.ld-bar i{display:block;height:100%;border-radius:999px}
+.ld-li{display:flex;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid #f1f5f9;cursor:pointer;transition:background .15s}.ld-li:hover{background:#f8fafc}
+.ld-li b{font-size:14.5px;font-weight:900;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ld-li small{font-size:12px;font-weight:800;color:#64748b}
+@media (max-width:1100px){.ld-q{grid-template-columns:repeat(2,minmax(0,1fr))}.ld-k{grid-template-columns:repeat(2,minmax(0,1fr))}.ld-2{grid-template-columns:1fr}}
+@media (max-width:760px){.ld-hd{grid-template-columns:1fr;padding:18px}.ld-st{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ld-sb{flex-direction:column;text-align:center;padding:10px 6px;gap:6px}.ld-sb b{font-size:20px}.ld-sb small{font-size:11.5px}.ld-sb .ld-eg{width:48px;height:38px;font-size:19px}.ld-q{grid-template-columns:1fr 1fr;gap:9px}.ld-qb{flex-direction:column;text-align:center;gap:8px}.ld-qb .ar{display:none}.ld-qb small{display:none}}
+@media (prefers-reduced-motion:reduce){.ld-hd,.ld-lg{animation:none!important}}
+`;
+const ldEgg = (a, b) => ({ "--a": a, "--b": b, "--d": hubShade(a, -0.35) });
+function LeadGrades({ navigate }) {
+  const [S, setS] = useState(null);
+  useEffect(() => { (async () => { const dk = maWorkDay(); const [att, ros, meta, late] = await Promise.all([maGet(`${MA_ATT}/${dk}`), maGet(MA_ROSTER), maGet(MA_META), maGet(`${MA_LATE}/${dk}`)]);
+    const L = MA_LV.map((x, i) => ({ i, n: x.n, c: x.c, st: 0, ab: 0, lt: 0, cls: 0, rec: 0 }));
+    Object.entries(ptObj(ros)).forEach(([ck, r]) => { const lv = +ck[0] - 1; if (L[lv]) { L[lv].st += maArr(r && r.students).filter(s => s && s.name).length; L[lv].cls++; } });
+    Object.entries(ptObj(att)).forEach(([ck, r]) => { const lv = +ck[0] - 1; if (L[lv] && r) { L[lv].ab += maArr(r.absent).length; L[lv].rec++; if (!L[lv].st && r.total) L[lv].st += +r.total || 0; } });
+    ptVals(late).forEach(x => { const lv = +String(x.ck || "")[0] - 1; if (L[lv]) L[lv].lt++; });
+    setS({ dk, L: L.filter(x => x.st || x.ab || x.cls) }); })().catch(() => setS({ dk: "", L: [] })); }, []);
+  const T = S ? S.L.reduce((a, x) => ({ st: a.st + x.st, ab: a.ab + x.ab, lt: a.lt + x.lt }), { st: 0, ab: 0, lt: 0 }) : null;
+  const pc = (a, b) => b ? Math.round(a / b * 1000) / 10 : 0;
+  return <div className="ld-c" style={{ "--a": "#dc2626", "--t": "#fef2f2" }}>
+    <div className="ld-ch"><span className="ld-eg" style={{ ...ldEgg("#dc2626", "#fda4af"), width: 46, height: 36, fontSize: 19 }}><i>📊</i></span><b>ملخص الغياب والتأخر حسب الصف</b><span className="ld-chip" style={{ fontSize: 12, padding: "2px 10px" }}>{S && S.dk ? `${maDay(maDate(S.dk))} ${asmHij(maDate(S.dk))}` : "…"}</span><button onClick={() => navigate("attendstats")}>عرض التفاصيل ←</button></div>
+    {!S ? <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>⏳</div> : !S.L.length ? <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا توجد بيانات رصد بعد</div> :
+      <div style={{ overflowX: "auto" }}><table className="ld-tb"><thead><tr><th style={{ textAlign: "right" }}>الصف</th><th>الطلاب</th><th>الغائبون</th><th>نسبة الغياب</th><th>المتأخرون</th></tr></thead><tbody>
+        {S.L.map(x => <tr key={x.i}><td className="n" style={{ color: x.c }}>{x.n}</td><td>{maAr(x.st)}</td><td style={{ color: "#dc2626" }}>{maAr(x.ab)}</td><td><div className="flex items-center gap-2 justify-center"><b style={{ minWidth: 44 }}>{maAr(pc(x.ab, x.st))}٪</b><div className="ld-bar"><i style={{ width: `${Math.min(100, pc(x.ab, x.st) * 5)}%`, background: pc(x.ab, x.st) > 10 ? "#dc2626" : pc(x.ab, x.st) > 5 ? "#f59e0b" : "#16a34a" }} /></div></div></td><td style={{ color: "#ea580c" }}>{maAr(x.lt)}</td></tr>)}
+        <tr className="tot"><td className="n">الإجمالي</td><td>{maAr(T.st)}</td><td style={{ color: "#dc2626" }}>{maAr(T.ab)}</td><td><b>{maAr(pc(T.ab, T.st))}٪</b></td><td style={{ color: "#ea580c" }}>{maAr(T.lt)}</td></tr></tbody></table></div>}
+  </div>;
+}
+function LeadDash({ navigate, clock, dayName, hijri, greg, greet, attendRate, totalStudents, unreadMsgs, tN, tPresent, tAbsent, tLate, recentAnn, upcomingAct }) {
+  const Q = [["morningattend", "غياب الطلاب", "📋", "#059669", "#34d399", "رصد غياب الحصة الثانية"], ["attendstats", "إحصائية الغياب", "📊", "#dc2626", "#fb7185", "نسب ومؤشرات يومية"], ["morninglate", "التأخر الصباحي", "🌅", "#ea580c", "#fbbf24", "سجل وتقارير التأخر"],
+    ["attendance", "الحضور اليومي", "📅", "#0891b2", "#67e8f9", "حضور المعلمين"], ["announcements", "الإعلانات", "📣", "#db2777", "#f9a8d4", "نشر وتصميم الإعلانات"], ["formative", "التقويم التكويني", "📘", "#2563eb", "#93c5fd", "سجل الدرجات"],
+    ["studentclassify", "تصنيف الطلاب", "🏷️", "#7c3aed", "#c4b5fd", "دراسياً وسلوكياً"], ["prolicense", "الرخصة المهنية", "🪪", "#ca8a04", "#fde047", "متابعة الرخص"], ["student-absence", "سجل غياب الطلاب", "🎒", "#9333ea", "#f0abfc", "الأيام والأعذار"]];
+  const K = [["students", "إجمالي الطلاب", maAr(totalStudents), "طالباً مسجلاً", "👥", "#0369a1", "#7dd3fc", "#e0f2fe"], ["attendance", "حضور المعلمين", maAr(tPresent), `من ${maAr(tN)} • ${maAr(attendRate)}٪`, "✅", "#059669", "#6ee7b7", "#dcfce7"], ["hdisc", "غياب المعلمين", maAr(tAbsent), "اليوم", "🚫", "#dc2626", "#fda4af", "#fee2e2"], ["hdisc", "تأخر المعلمين", maAr(tLate), "اليوم", "⏰", "#d97706", "#fde68a", "#fef3c7"]];
+  const news = [...(recentAnn || []).map(a => ({ k: "a" + a.id, t: a.title, s: a.date || "", ic: "📣", go: "announcements" })), ...(upcomingAct || []).map(a => ({ k: "v" + a.id, t: a.title, s: a.date || "", ic: "🎉", go: "activities" }))].slice(0, 5);
+  return <div className="ld" dir="rtl"><style>{LD_CSS}</style>
+    <div className="ld-top"><div style={{ flex: "1 1 260px" }}><h1>لوحة قيادة المدرسة</h1><p>متابعة اليوم الدراسي وإدارة أعمال المدرسة • {greet}</p></div><span className="ld-chip">📆 {dayName}</span><span className="ld-chip">🌙 {hijri}</span><span className="ld-chip" style={{ display: "inline-flex" }}><PamQuoteMini /></span></div>
+    <div className="ld-hd">
+      <div className="ld-id"><div className="ld-lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div><div style={{ flex: "1 1 240px", minWidth: 0 }}><h2>مدرسة <span>الأمير عبدالمجيد</span> المتوسطة الأولى</h2><div className="sl">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div><div className="ld-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 بناء جيل متميز لوطن طموح</b></div><PamQuote /></div></div>
+      <div className="ld-gl"><div className="ld-clk"><span className="ld-eg" style={ldEgg("#f59e0b", "#fde68a")}><i>🕰️</i></span><div><div className="t">{clock}</div><div className="d">{dayName} • {hijri}<br />الموافق {greg}</div></div></div></div>
+      <div className="ld-st">{[["attendance", `${maAr(attendRate)}٪`, "حضور المعلمين اليوم", "📈", "#10b981", "#6ee7b7"], ["students", maAr(totalStudents), "طالباً مسجّلاً", "🎓", "#3b82f6", "#93c5fd"], ["messages", maAr(unreadMsgs), "رسالة جديدة", "✉️", "#ec4899", "#f9a8d4"]].map(([id, v, l, ic, a, b]) => <button key={id} className="ld-sb" onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span><b>{v}</b><small>{l}</small></span></button>)}</div>
+    </div>
+    <div className="ld-q">{Q.map(([id, l, ic, a, b, d]) => <button key={id} className="ld-qb" style={ldEgg(a, b)} onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span style={{ minWidth: 0 }}><b>{l}</b><small>{d}</small></span><span className="ar">←</span></button>)}</div>
+    <div className="ld-k">{K.map(([id, l, v, s, ic, a, b, t], i) => <button key={i} className="ld-kb" style={{ ...ldEgg(a, b), "--t": t }} onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span><small>{l}</small><b>{v}</b><i className="s">{s}</i></span></button>)}</div>
+    <div className="ld-2"><LeadGrades navigate={navigate} />
+      <div className="ld-c" style={{ "--a": "#db2777", "--t": "#fdf2f8" }}><div className="ld-ch"><span className="ld-eg" style={{ ...ldEgg("#db2777", "#f9a8d4"), width: 46, height: 36, fontSize: 19 }}><i>📣</i></span><b>آخر الإعلانات والأنشطة</b><button onClick={() => navigate("announcements")}>عرض الكل ←</button></div>
+        {news.length ? news.map(n => <div key={n.k} className="ld-li" onClick={() => navigate(n.go)} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && navigate(n.go)}><span style={{ fontSize: 22 }}>{n.ic}</span><span style={{ minWidth: 0, flex: 1 }}><b style={{ display: "block" }}>{n.t}</b>{n.s && <small>{n.s}</small>}</span><span style={{ color: "#db2777", fontWeight: 900 }}>←</span></div>) : <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا توجد إعلانات حديثة</div>}</div>
+    </div>
+  </div>;
+}
+function PamQuoteMini() { const [i, setI] = useState(() => Math.floor(Math.random() * PAM_QUOTES.length)); useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % PAM_QUOTES.length), 8000); return () => clearInterval(t); }, []); return <>✨ {PAM_QUOTES[i]}</>; }
+
 function SchoolWebsiteInner() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -41639,6 +41761,7 @@ function SchoolWebsiteInner() {
       .annhtml table { display:block !important; overflow-x:auto !important; width:100% !important; }
       .annhtml td, .annhtml th { white-space:normal !important; }
       ${PAM_UI_CSS}
+      ${PS2_CSS}
     `}</style>
     <div dir="rtl" className="pam-ui min-h-screen relative overflow-x-hidden" style={{ fontFamily: siteFont, background: "linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 25%, #f5f5f4 60%, #fefce8 100%)" }}>
       <div className="pam-mesh" aria-hidden="true"><i /><i /><i /><i /><i /></div>
@@ -42039,7 +42162,8 @@ function SchoolWebsiteInner() {
           )}
         </div>
       </nav>
-      <main className="w-full py-3"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
+      <div className="pam-row"><PamSide groups={navGroups} pageById={pageById} page={page} navigate={navigate} onLogout={() => setUser(null)} />
+      <main className="w-full py-3 pam-main"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
         {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
         {page === "student-absence" && <StudentAbsencePage />}
         {page === "admin-attendance" && <AdminAttendancePage />}
@@ -42098,7 +42222,7 @@ function SchoolWebsiteInner() {
                 {page === "assessment"     && <AssessmentPage teachers={teachers} />}
                 {page === "studentexcuses" && <StudentExcusePortal isAdmin={true} siteFont={siteFont} />}
         {page === "settings"      && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} weekArchive={weekArchive} archiveCurrentWeek={archiveCurrentWeek} />}
-      </SiteErrorBoundary></main>
+      </SiteErrorBoundary></main></div>
       <footer className="relative text-center py-6 text-xs border-t bg-white mt-8 overflow-hidden" style={{borderColor:"rgba(13,148,136,.15)"}}>
         <div className="absolute inset-0 opacity-5" style={{background:"linear-gradient(135deg,#0d9488,transparent)"}} />
         <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة الأمير عبدالمجيد المتوسطة الأولى — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
