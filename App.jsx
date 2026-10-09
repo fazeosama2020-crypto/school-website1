@@ -1935,7 +1935,7 @@ const HUB_GROUPS = [
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
-    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"officialforms",label:"النماذج الرسمية",icon:"📃"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -3906,7 +3906,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
                                   timestamp: Date.now(),
                                 }));
                               } catch {}
-                              if (navigate) navigate("officialforms");
+                              if (navigate) navigate("hfx");
                             }}
                             title="فتح نموذج المساءلة الرسمي"
                             style={{
@@ -11949,7 +11949,292 @@ function SurveysPage({ surveys, setSurveys, saveSurveys }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🎨 استوديو التصميم — إعلان أو تقرير نشاط بالصور (لصق Ctrl+V / سحب وإفلات / تحريك / تكبير وتصغير / تدوير)
+// الصفحة A4 مقسّمة إلى ١٠٠٠ وحدة عرضاً؛ كل شيء يُرسم بنفس الإحداثيات على الشاشة وفي الطباعة
+// الحفظ: school-designs/{id} (التصميم كاملاً) + school-designs-idx/{id} (فهرس خفيف) — الحذف إخفاء
+// ═══════════════════════════════════════════════════════════════
+const PS_NODE = "school-designs", PS_IDX = "school-designs-idx";
+const PS_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة الأولى", PS_MGR = "فازع القرني";
+const PS_FONT = "'Cairo','Noto Naskh Arabic',Tahoma,sans-serif";
+const PS_TH = {
+  emerald: { n: "زمردي", a: "#0b3d36", b: "#0f766e", g: "#d4a017", ink: "#0b3d36", soft: "#ecfdf5", page: "#fbfdfb" },
+  night: { n: "كحلي ذهبي", a: "#0f1e3d", b: "#1e3a8a", g: "#e0b13a", ink: "#0f1e3d", soft: "#eef2ff", page: "#fdfcf7" },
+  joy: { n: "بهجة", a: "#7c3aed", b: "#db2777", g: "#f59e0b", ink: "#4c1d95", soft: "#fdf4ff", page: "#ffffff" },
+  formal: { n: "رسمي", a: "#334155", b: "#0f766e", g: "#0f766e", ink: "#0f172a", soft: "#f1f5f9", page: "#ffffff" },
+};
+const PS_FR = [["none", "بدون"], ["round", "زوايا ناعمة"], ["circle", "دائري"], ["polaroid", "بولارويد"], ["shadow", "ظل"], ["gold", "إطار ذهبي"]];
+const psH = d => d.orient === "l" ? 707 : 1414;
+const psId = () => "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const psEsc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const psU = v => `calc(${(+v).toFixed(2)} * var(--u))`;
+const psTxt = h => { try { const d = document.createElement("div"); d.innerHTML = String(h || "").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|h\d)>/gi, "\n"); return (d.textContent || "").replace(/\n{3,}/g, "\n\n").trim(); } catch { return String(h || ""); } };
+const psImgs = h => { const out = []; String(h || "").replace(/<img[^>]+src=["']([^"']+)["']/gi, (_, s) => { out.push(s); return ""; }); return out; };
+// ضغط الصورة قبل الحفظ (حتى ١٦٠٠ بكسل، JPEG)
+function psCompress(src, max = 1600) {
+  return new Promise(res => { const im = new Image(); im.onload = () => { const sc = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement("canvas"); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); try { res({ src: c.toDataURL("image/jpeg", 0.85), ar: im.width / im.height }); } catch { res({ src, ar: im.width / im.height }); } }; im.onerror = () => res(null); if (/^https?:/.test(src)) im.crossOrigin = "anonymous"; im.src = src; });
+}
+const psFileUrl = f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(null); fr.readAsDataURL(f); });
+// ترتيب الصور تلقائياً كشبكة في المساحة الحرة
+function psArrange(doc, y0) {
+  const H = psH(doc); const imgs = doc.els.filter(e => e.t === "img"); if (!imgs.length) return doc;
+  const top = Math.max(y0 ?? 0, ...doc.els.filter(e => e.t !== "img").map(e => e.y + e.h)) + 20; const bottom = H - (doc.footer ? 125 : 40); const n = imgs.length;
+  const cols = n === 1 ? 1 : n <= 4 ? 2 : 3; const rows = Math.ceil(n / cols); const gap = 18, X0 = 50, W = 900;
+  const cw = (W - gap * (cols - 1)) / cols; const ch = Math.max(90, Math.min(cw * 0.75, (bottom - top - gap * (rows - 1)) / rows));
+  let k = 0; const map = {};
+  for (let r = 0; r < rows; r++) { const inRow = Math.min(cols, n - r * cols); const off = (W - (inRow * cw + (inRow - 1) * gap)) / 2; for (let c = 0; c < inRow; c++) { const im = imgs[k++]; map[im.id] = { x: X0 + off + c * (cw + gap), y: top + r * (ch + gap), w: cw, h: ch, r: 0, img: { ...im.img, fit: "cover" } }; } }
+  return { ...doc, els: doc.els.map(e => map[e.id] ? { ...e, ...map[e.id] } : e) };
+}
+function psNew(kind = "ann", pre = {}) {
+  const th = pre.theme || (kind === "rep" ? "emerald" : "night"); const els = [];
+  if (kind === "rep") {
+    els.push({ id: psId(), t: "text", x: 80, y: 190, w: 840, h: 80, text: { s: "تقرير نشاط", fs: 26, c: "", b: 1, al: "center", bg: "ribbon" } });
+    els.push({ id: psId(), t: "text", x: 60, y: 275, w: 880, h: 80, text: { s: pre.title || "اسم النشاط", fs: 40, c: "", b: 1, al: "center", bg: "none" } });
+    els.push({ id: psId(), t: "info", x: 60, y: 365, w: 880, h: 150, info: { rows: [["التاريخ", pre.date || ""], ["المكان", pre.place || "مدرسة الأمير عبدالمجيد"], ["المستهدفون", pre.target || "طلاب المدرسة"], ["المنفّذ", pre.by || ""], ["المجال", pre.type || ""], ["عدد المستفيدين", ""]] } });
+    els.push({ id: psId(), t: "text", x: 60, y: 530, w: 880, h: 150, text: { s: pre.body ? pre.body : "الأهداف:\n• \n• \n\nوصف تنفيذ النشاط:", fs: 19, c: "#1f2937", b: 0, al: "right", bg: "soft" } });
+  } else {
+    els.push({ id: psId(), t: "text", x: 60, y: 200, w: 880, h: 110, text: { s: pre.title || "عنوان الإعلان", fs: 52, c: "", b: 1, al: "center", bg: "none" } });
+    const sub = pre.sub || (pre.title ? "" : "سطر مميز: الموعد أو المكان");
+    if (sub) els.push({ id: psId(), t: "text", x: 250, y: 315, w: 500, h: 50, text: { s: sub, fs: 20, c: "", b: 1, al: "center", bg: "ribbon" } });
+    els.push({ id: psId(), t: "text", x: 70, y: 385, w: 860, h: 230, text: { s: pre.body || "اكتب نص الإعلان هنا…", fs: 24, c: "#1f2937", b: 0, al: "center", bg: "none" } });
+  }
+  let doc = { id: "d" + Date.now().toString(36), kind, theme: th, orient: "p", header: true, footer: true, prep: pre.prepBy || "", ref: pre.ref || "", date: maKey(new Date()), els: els.map((e, i) => ({ ...e, r: 0, z: i + 1 })) };
+  (pre.imgs || []).forEach((src, i) => { doc.els.push({ id: psId(), t: "img", x: 100 + i * 20, y: 700 + i * 20, w: 300, h: 220, r: 0, z: 50 + i, img: { src, fit: "cover", frame: "round" } }); });
+  if ((pre.imgs || []).length) doc = psArrange(doc);
+  return doc;
+}
+// ── طبقة الثيم (خلفية + ترويسة + تذييل) — نص HTML واحد للشاشة والطباعة
+function psThemeHtml(d) {
+  const T = PS_TH[d.theme] || PS_TH.emerald; const H = psH(d); const D = maDate(d.date || maKey(new Date()));
+  const hij = (() => { try { return D.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long", year: "numeric" }); } catch { return ""; } })();
+  const lbl = d.kind === "rep" ? "تقرير نشاط" : "إعلان";
+  const bg = {
+    emerald: `<svg viewBox="0 0 1000 ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><defs><pattern id="pst" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M40 6 L48 32 L74 40 L48 48 L40 74 L32 48 L6 40 L32 32 Z" fill="none" stroke="${T.b}" stroke-opacity=".07" stroke-width="2"/></pattern></defs><rect width="1000" height="${H}" fill="${T.page}"/><rect width="1000" height="${H}" fill="url(#pst)"/><rect x="18" y="18" width="964" height="${H - 36}" rx="26" fill="none" stroke="${T.g}" stroke-width="3"/><rect x="28" y="28" width="944" height="${H - 56}" rx="20" fill="none" stroke="${T.b}" stroke-opacity=".35" stroke-width="1.5"/></svg>`,
+    night: `<svg viewBox="0 0 1000 ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><rect width="1000" height="${H}" fill="${T.page}"/><path d="M0 ${H - 160} C 250 ${H - 230}, 600 ${H - 90}, 1000 ${H - 190} L1000 ${H} L0 ${H} Z" fill="${T.a}" fill-opacity=".06"/><circle cx="930" cy="${H * 0.45}" r="190" fill="${T.g}" fill-opacity=".06"/><circle cx="60" cy="${H * 0.6}" r="120" fill="${T.b}" fill-opacity=".05"/><rect x="16" y="16" width="968" height="${H - 32}" rx="10" fill="none" stroke="${T.g}" stroke-width="2.5" stroke-dasharray="2 0"/></svg>`,
+    joy: `<svg viewBox="0 0 1000 ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><rect width="1000" height="${H}" fill="#fff"/><circle cx="-40" cy="${H * 0.35}" r="200" fill="#f59e0b" fill-opacity=".12"/><circle cx="1040" cy="${H * 0.55}" r="230" fill="#db2777" fill-opacity=".10"/><circle cx="520" cy="${H + 60}" r="260" fill="#7c3aed" fill-opacity=".08"/><circle cx="880" cy="${H * 0.2}" r="60" fill="#14b8a6" fill-opacity=".12"/><circle cx="120" cy="${H * 0.85}" r="45" fill="#f59e0b" fill-opacity=".16"/></svg>`,
+    formal: `<svg viewBox="0 0 1000 ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><rect width="1000" height="${H}" fill="#fff"/><rect x="22" y="22" width="956" height="${H - 44}" fill="none" stroke="${T.b}" stroke-width="2"/></svg>`,
+  }[d.theme] || "";
+  const hdr = !d.header ? "" : `<div style="position:absolute;left:${psU(30)};right:${psU(30)};top:${psU(30)};height:${psU(140)};border-radius:${psU(22)};background:linear-gradient(135deg,${T.a},${T.b});display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 ${psU(30)};color:#fff;box-shadow:0 ${psU(8)} ${psU(22)} rgba(0,0,0,.18)">
+    <div style="font-size:${psU(15.5)};font-weight:800;line-height:1.75;text-align:right">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b style="font-size:${psU(17)};color:${T.g === "#0f766e" ? "#fff" : T.g}">${PS_SCHOOL}</b></div>
+    <div style="width:${psU(104)};height:${psU(104)};border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 ${psU(4)} ${T.g}"><img src="${SCHOOL_LOGO}" style="width:${psU(92)};height:${psU(92)}"></div>
+    <div style="text-align:left;font-size:${psU(15.5)};font-weight:800;line-height:1.8"><span style="display:inline-block;background:${T.g};color:${T.a};border-radius:999px;padding:${psU(3)} ${psU(16)};font-weight:900;font-size:${psU(18)}">${lbl}</span><br>${psEsc(maDay(D))}<br>${psEsc(hij)}</div></div>
+    <div style="position:absolute;left:${psU(120)};right:${psU(120)};top:${psU(176)};height:${psU(4)};border-radius:9px;background:linear-gradient(90deg,transparent,${T.g},transparent)"></div>`;
+  const ftr = !d.footer ? "" : `<div style="position:absolute;left:${psU(40)};right:${psU(40)};bottom:${psU(36)};height:${psU(78)};border-top:${psU(2.5)} solid ${T.g};display:grid;grid-template-columns:1fr auto 1fr;align-items:end;color:${T.ink};font-weight:800;font-size:${psU(16)}">
+    <div style="text-align:right;line-height:1.6">${d.prep ? `المُعِد<br><b style="font-size:${psU(18)}">${psEsc(d.prep)}</b>` : ""}</div>
+    <div style="text-align:center;font-size:${psU(13)};opacity:.75;padding-bottom:${psU(4)}">${PS_SCHOOL}</div>
+    <div style="text-align:left;line-height:1.6">مدير المدرسة<br><b style="font-size:${psU(20)};color:${T.a}">${PS_MGR}</b></div></div>`;
+  return bg + hdr + ftr;
+}
+// نمط العنصر + محتواه
+function psElStyle(e) { return { position: "absolute", left: psU(e.x), top: psU(e.y), width: psU(e.w), height: psU(e.h), transform: e.r ? `rotate(${e.r}deg)` : undefined, zIndex: e.z || 1 }; }
+function psImgBox(e, T) {
+  const f = e.img.frame; const base = { width: "100%", height: "100%", objectFit: e.img.fit || "cover", display: "block" };
+  if (f === "polaroid") return { wrap: { width: "100%", height: "100%", background: "#fff", padding: psU(10), paddingBottom: psU(34), boxShadow: `0 ${psU(10)} ${psU(24)} rgba(0,0,0,.25)`, borderRadius: psU(4), boxSizing: "border-box" }, img: { ...base, borderRadius: psU(2) } };
+  if (f === "circle") return { wrap: { width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", boxShadow: `0 0 0 ${psU(5)} #fff, 0 ${psU(8)} ${psU(20)} rgba(0,0,0,.25)` }, img: base };
+  if (f === "gold") return { wrap: { width: "100%", height: "100%", padding: psU(7), background: `linear-gradient(135deg,${T.g},#fff3c4,${T.g})`, borderRadius: psU(14), boxSizing: "border-box", boxShadow: `0 ${psU(8)} ${psU(20)} rgba(0,0,0,.2)` }, img: { ...base, borderRadius: psU(9) } };
+  if (f === "shadow") return { wrap: { width: "100%", height: "100%", boxShadow: `0 ${psU(14)} ${psU(30)} rgba(0,0,0,.3)`, borderRadius: psU(6), overflow: "hidden" }, img: base };
+  if (f === "round") return { wrap: { width: "100%", height: "100%", borderRadius: psU(22), overflow: "hidden", boxShadow: `0 ${psU(6)} ${psU(16)} rgba(0,0,0,.18)` }, img: base };
+  return { wrap: { width: "100%", height: "100%" }, img: base };
+}
+function psTextBox(e, T) {
+  const x = e.text; const c = x.c || T.ink; const bg = x.bg;
+  return { width: "100%", height: "100%", boxSizing: "border-box", fontFamily: PS_FONT, fontSize: psU(x.fs || 20), fontWeight: x.b ? 900 : 600, color: bg === "ribbon" || bg === "solid" ? "#fff" : c, textAlign: x.al || "right", lineHeight: x.lh || 1.65, whiteSpace: "pre-wrap", overflowWrap: "break-word", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", padding: bg && bg !== "none" ? `${psU(10)} ${psU(18)}` : 0, borderRadius: bg === "ribbon" ? psU(999) : psU(18), background: bg === "soft" ? T.soft : bg === "solid" ? T.a : bg === "ribbon" ? `linear-gradient(135deg,${T.a},${T.b})` : "transparent", border: bg === "soft" ? `${psU(2)} solid ${T.g}55` : "none", direction: "rtl" };
+}
+function psInfoHtml(e, T) {
+  const rows = (e.info.rows || []).filter(r => r && (r[0] || r[1]));
+  return `<div style="width:100%;height:100%;display:grid;grid-template-columns:repeat(${e.info.cols || 2},1fr);gap:${psU(8)};direction:rtl;font-family:${PS_FONT}">${rows.map(([l, v]) => `<div style="display:flex;align-items:center;gap:${psU(10)};background:${T.soft};border:${psU(2)} solid ${T.g}44;border-radius:${psU(14)};padding:0 ${psU(14)};min-height:0;overflow:hidden"><span style="background:${T.a};color:#fff;border-radius:${psU(10)};padding:${psU(3)} ${psU(10)};font-size:${psU(15)};font-weight:900;white-space:nowrap">${psEsc(l)}</span><b style="font-size:${psU(17)};color:${T.ink};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${psEsc(v)}</b></div>`).join("")}</div>`;
+}
+const psCss = st => Object.entries(st).filter(([, v]) => v !== undefined).map(([k, v]) => `${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}:${v}`).join(";");
+function psElHtml(e, T) {
+  const inner = e.t === "img" ? (() => { const b = psImgBox(e, T); return `<div style="${psCss(b.wrap)}"><img src="${e.img.src}" style="${psCss(b.img)}"></div>`; })() : e.t === "info" ? psInfoHtml(e, T) : `<div style="${psCss(psTextBox(e, T))}">${psEsc(e.text.s)}</div>`;
+  return `<div style="${psCss(psElStyle(e))}">${inner}</div>`;
+}
+function psPrint(d) {
+  const T = PS_TH[d.theme] || PS_TH.emerald; const L = d.orient === "l";
+  const els = [...d.els].sort((a, b) => (a.z || 0) - (b.z || 0)).map(e => psElHtml(e, T)).join("");
+  printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${psEsc((d.els.find(e => e.t === "text" && e.text.fs >= 36) || {}).text?.s || "تصميم")}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet"><style>@page{size:A4 ${L ? "landscape" : "portrait"};margin:0}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;background:#e5e7eb}.pg{position:relative;width:${L ? "297mm" : "210mm"};height:${L ? "210mm" : "297mm"};margin:0 auto;overflow:hidden;container-type:inline-size;--u:calc(100cqw / 1000);font-family:${PS_FONT};background:#fff}@media print{html,body{background:#fff}}</style></head><body><div class="pg">${psThemeHtml(d)}${els}</div><script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},400)})</script></body></html>`);
+}
+
+const PS_CSS = `
+.ps{position:fixed;inset:0;z-index:8000;background:#0f172a;display:grid;grid-template-rows:auto minmax(0,1fr);font-family:${PS_FONT};color:#0f172a}
+.ps *{box-sizing:border-box}
+.ps-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#111c33;color:#fff;border-bottom:1px solid #1e2b4a}
+.ps-b{font-family:inherit;cursor:pointer;border:1px solid #334155;background:#1e293b;color:#e2e8f0;border-radius:11px;padding:7px 12px;font-weight:800;font-size:13px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.ps-b:hover{background:#273449}.ps-b.on{background:#d4a017;color:#1a1300;border-color:#d4a017}.ps-b.pri{background:#0f766e;border-color:#0f766e;color:#fff}.ps-b:disabled{opacity:.4;cursor:default}
+.ps-b:focus-visible,.ps-side button:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
+.ps-main{display:grid;grid-template-columns:minmax(0,1fr) 330px;min-height:0}
+.ps-stage{overflow:auto;padding:26px;display:flex;justify-content:center;align-items:flex-start;background:radial-gradient(900px 500px at 50% 0,#1e293b,#0f172a)}
+.ps-page{position:relative;flex:none;container-type:inline-size;--u:calc(100cqw / 1000);box-shadow:0 30px 70px -20px rgba(0,0,0,.7);overflow:hidden;background:#fff;user-select:none;touch-action:none}
+.ps-el{cursor:move}
+.ps-el.sel{outline:2px solid #38bdf8;outline-offset:2px}
+.ps-h{position:absolute;width:14px;height:14px;background:#fff;border:2px solid #0ea5e9;border-radius:4px;z-index:5}
+.ps-guide{position:absolute;background:#f43f5e;z-index:9999;pointer-events:none}
+.ps-side{background:#fff;overflow:auto;padding:14px;display:grid;gap:12px;align-content:start;border-inline-start:1px solid #e2e8f0}
+.ps-sec{display:grid;gap:8px;border:1px solid #e2e8f0;border-radius:16px;padding:12px}
+.ps-sec>b{font-size:13.5px}
+.ps-in{width:100%;font-family:inherit;font-size:14px;font-weight:700;border:1.5px solid #dbe4e1;border-radius:11px;padding:7px 10px;color:#0f172a;background:#fbfdfc}
+.ps-chips{display:flex;gap:6px;flex-wrap:wrap}
+.ps-chip{font-family:inherit;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;border-radius:999px;padding:5px 11px;font-weight:800;font-size:12.5px;color:#334155}
+.ps-chip.on{background:#0b3d36;color:#fff;border-color:#0b3d36}
+.ps-drop{position:absolute;inset:0;z-index:99999;background:rgba(14,165,233,.18);border:4px dashed #0ea5e9;display:grid;place-items:center;color:#0369a1;font-weight:900;font-size:28px;pointer-events:none}
+.ps-hint{font-size:12px;font-weight:700;color:#64748b;line-height:1.7}
+@media (max-width:900px){.ps-main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.ps-side{max-height:42vh;border-top:1px solid #e2e8f0}.ps-stage{padding:12px}}
+`;
+
+function PosterStudio({ init, onClose, by = "" }) {
+  const [doc, setDoc] = useState(() => init && init.els ? init : psNew(init && init.kind, init || {}));
+  const [sel, setSel] = useState(null); const [zoom, setZoom] = useState(0); const [guides, setGuides] = useState([]); const [drop, setDrop] = useState(false);
+  const [msg, setMsg] = useState(""); const [list, setList] = useState(null); const [busy, setBusy] = useState(false);
+  const pageRef = useRef(null); const stageRef = useRef(null); const fileRef = useRef(null); const hist = useRef([]); const docRef = useRef(doc); docRef.current = doc;
+  const T = PS_TH[doc.theme] || PS_TH.emerald; const H = psH(doc);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 2800); };
+  const commit = (fn, keep) => setDoc(d => { if (!keep) { hist.current.push(d); if (hist.current.length > 60) hist.current.shift(); } return typeof fn === "function" ? fn(d) : fn; });
+  const undo = () => { const p = hist.current.pop(); if (p) setDoc(p); };
+  const upd = (id, patch, keep) => commit(d => ({ ...d, els: d.els.map(e => e.id === id ? (typeof patch === "function" ? patch(e) : { ...e, ...patch }) : e) }), keep);
+  const S = doc.els.find(e => e.id === sel);
+  const maxZ = () => Math.max(0, ...docRef.current.els.map(e => e.z || 0));
+  // عرض الصفحة بحسب المساحة
+  const [stW, setStW] = useState(800);
+  useEffect(() => { const f = () => { const el = stageRef.current; if (el) setStW(el.clientWidth - 52); }; f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  const fitW = Math.max(280, Math.min(stW, (window.innerHeight - 120) * 1000 / H));
+  const pw = zoom ? Math.max(280, Math.min(2000, fitW * zoom)) : fitW;
+  // إضافة صور
+  const addImages = async srcs => {
+    if (!srcs.length) return; setBusy(true); const out = [];
+    for (const s of srcs) { const r = await psCompress(s); if (r) out.push(r); }
+    setBusy(false); if (!out.length) return;
+    commit(d => { let z = Math.max(0, ...d.els.map(e => e.z || 0)); const n = d.els.filter(e => e.t === "img").length;
+      const add = out.map((r, i) => { const w = 360, h = Math.round(w / Math.max(0.3, Math.min(3, r.ar))); return { id: psId(), t: "img", x: 320 + ((n + i) % 5) * 22 - 80, y: Math.min(H - h - 140, 420 + ((n + i) % 5) * 26), w, h, r: 0, z: ++z, img: { src: r.src, fit: "cover", frame: "round", ar: r.ar } }; });
+      setTimeout(() => setSel(add[add.length - 1].id), 0); return { ...d, els: [...d.els, ...add] }; });
+    toast(`🖼️ أُضيفت ${maAr(out.length)} صورة — اسحبها وغيّر حجمها من الزوايا`);
+  };
+  useEffect(() => {
+    const onPaste = async e => { const items = Array.from((e.clipboardData && e.clipboardData.items) || []).filter(i => i.type && i.type.startsWith("image/")); if (!items.length) return; e.preventDefault(); const urls = []; for (const it of items) { const f = it.getAsFile(); if (f) { const u = await psFileUrl(f); if (u) urls.push(u); } } addImages(urls); };
+    const onKey = e => { const tg = e.target; const typing = tg && (tg.tagName === "INPUT" || tg.tagName === "TEXTAREA" || tg.isContentEditable);
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); undo(); return; }
+      if (typing || !sel) return; const s = docRef.current.els.find(x => x.id === sel); if (!s) return;
+      if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); commit(d => ({ ...d, els: d.els.filter(x => x.id !== sel) })); setSel(null); }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") { e.preventDefault(); dup(); }
+      else if (e.key.startsWith("Arrow")) { e.preventDefault(); const st = e.shiftKey ? 10 : 2; const dx = e.key === "ArrowLeft" ? -st : e.key === "ArrowRight" ? st : 0, dy = e.key === "ArrowUp" ? -st : e.key === "ArrowDown" ? st : 0; upd(sel, { x: s.x + dx, y: s.y + dy }); }
+      else if (e.key === "Escape") setSel(null); };
+    document.addEventListener("paste", onPaste); document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("paste", onPaste); document.removeEventListener("keydown", onKey); };
+  }, [sel]);
+  // السحب وتغيير الحجم
+  const startDrag = (ev, el, mode) => {
+    ev.preventDefault(); ev.stopPropagation(); setSel(el.id);
+    const rect = pageRef.current.getBoundingClientRect(); const k = 1000 / rect.width; const sx = ev.clientX, sy = ev.clientY; const o = { ...el }; let moved = false;
+    hist.current.push(docRef.current);
+    const mv = e => { const dx = (e.clientX - sx) * k, dy = (e.clientY - sy) * k; if (!moved && Math.abs(dx) + Math.abs(dy) < 1) return; moved = true; let n = { x: o.x, y: o.y, w: o.w, h: o.h }; const G = [];
+      if (mode === "move") { n.x = o.x + dx; n.y = o.y + dy;
+        const cx = n.x + n.w / 2; if (Math.abs(cx - 500) < 7) { n.x = 500 - n.w / 2; G.push({ v: 1, p: 500 }); }
+        if (Math.abs(n.x - 50) < 7) { n.x = 50; G.push({ v: 1, p: 50 }); } if (Math.abs(n.x + n.w - 950) < 7) { n.x = 950 - n.w; G.push({ v: 1, p: 950 }); }
+        const cy = n.y + n.h / 2; if (Math.abs(cy - H / 2) < 7) { n.y = H / 2 - n.h / 2; G.push({ v: 0, p: H / 2 }); } }
+      else { const lock = o.t === "img" && mode.length === 2 && !e.shiftKey; const ar = o.w / o.h;
+        if (mode.includes("e")) n.w = Math.max(30, o.w + dx); if (mode.includes("w")) { n.w = Math.max(30, o.w - dx); n.x = o.x + o.w - n.w; }
+        if (mode.includes("s")) n.h = Math.max(24, o.h + dy); if (mode.includes("n")) { n.h = Math.max(24, o.h - dy); n.y = o.y + o.h - n.h; }
+        if (lock) { const nh = n.w / ar; if (mode.includes("n")) n.y = o.y + o.h - nh; n.h = nh; } }
+      setGuides(G); setDoc(d => ({ ...d, els: d.els.map(x => x.id === o.id ? { ...x, ...n } : x) })); };
+    const up = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); setGuides([]); if (!moved) hist.current.pop(); };
+    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
+  };
+  const dup = () => { const s = docRef.current.els.find(x => x.id === sel); if (!s) return; const n = { ...JSON.parse(JSON.stringify(s)), id: psId(), x: s.x + 24, y: s.y + 24, z: maxZ() + 1 }; commit(d => ({ ...d, els: [...d.els, n] })); setSel(n.id); };
+  const addText = (preset) => { const z = maxZ() + 1; const P = { title: { s: "عنوان", fs: 44, b: 1, al: "center", bg: "none", w: 700, h: 90 }, body: { s: "اكتب النص هنا…", fs: 22, b: 0, al: "right", bg: "none", w: 760, h: 140 }, ribbon: { s: "شريط مميز", fs: 22, b: 1, al: "center", bg: "ribbon", w: 420, h: 56 }, card: { s: "بطاقة نص", fs: 20, b: 0, al: "right", bg: "soft", w: 600, h: 140 } }[preset];
+    const n = { id: psId(), t: "text", x: (1000 - P.w) / 2, y: H / 2 - P.h / 2, w: P.w, h: P.h, r: 0, z, text: { s: P.s, fs: P.fs, c: "", b: P.b, al: P.al, bg: P.bg } }; commit(d => ({ ...d, els: [...d.els, n] })); setSel(n.id); };
+  const layer = dir => { if (!S) return; const zs = doc.els.map(e => e.z || 0); upd(S.id, { z: dir > 0 ? Math.max(...zs) + 1 : Math.min(...zs) - 1 }); };
+  // الحفظ والفتح
+  const save = async () => { setBusy(true); const d = { ...doc, at: Date.now(), by: by || doc.by || "" }; const title = (d.els.filter(e => e.t === "text").sort((a, b) => (b.text.fs || 0) - (a.text.fs || 0))[0] || {}).text?.s || "تصميم";
+    const size = JSON.stringify(d).length; if (size > 9.5e6) { setBusy(false); alert("⚠️ حجم التصميم كبير جداً — قلّل عدد الصور"); return; }
+    const ok = await maPut(`${PS_NODE}/${d.id}`, d); if (ok) await maPut(`${PS_IDX}/${d.id}`, { id: d.id, title: String(title).slice(0, 80), kind: d.kind, theme: d.theme, at: d.at, by: d.by, n: d.els.filter(e => e.t === "img").length, ref: d.ref || "" });
+    setBusy(false); toast(ok ? "✅ حُفظ التصميم على الخادم" : "⚠️ تعذّر الحفظ — تحقق من الاتصال"); };
+  const openList = async () => { setList("loading"); const L = Object.values(ptObj(await maGet(PS_IDX))).filter(x => x && x.id && !x.hid).sort((a, b) => (b.at || 0) - (a.at || 0)); setList(L); };
+  const openDoc = async id => { setBusy(true); const d = await maGet(`${PS_NODE}/${id}`); setBusy(false); if (d && d.els) { hist.current = []; setDoc({ ...d, els: maArr(d.els) }); setSel(null); setList(null); } else alert("تعذّر فتح التصميم"); };
+  const hideDoc = async x => { if (!window.confirm(`إخفاء «${x.title}» من القائمة؟ (يبقى محفوظاً في الخادم)`)) return; await maPut(`${PS_IDX}/${x.id}/hid`, Date.now()); openList(); };
+
+  const onDrop = async e => { e.preventDefault(); setDrop(false); const fs = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith("image/")); const urls = []; for (const f of fs) { const u = await psFileUrl(f); if (u) urls.push(u); } addImages(urls); };
+  const handles = el => { const pos = { nw: ["0%", "0%"], n: ["50%", "0%"], ne: ["100%", "0%"], e: ["100%", "50%"], se: ["100%", "100%"], s: ["50%", "100%"], sw: ["0%", "100%"], w: ["0%", "50%"] };
+    const cur = { nw: "nwse", se: "nwse", ne: "nesw", sw: "nesw", n: "ns", s: "ns", e: "ew", w: "ew" };
+    return Object.entries(pos).map(([k, [l, t]]) => <div key={k} className="ps-h" style={{ left: l, top: t, transform: "translate(-50%,-50%)", cursor: cur[k] + "-resize" }} onPointerDown={ev => startDrag(ev, el, k)} />); };
+
+  const renderEl = e => {
+    const on = e.id === sel;
+    const body = e.t === "img" ? (() => { const b = psImgBox(e, T); return <div style={b.wrap}><img src={e.img.src} alt="" style={b.img} draggable={false} /></div>; })()
+      : e.t === "info" ? <div style={{ width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: psInfoHtml(e, T) }} />
+      : <div style={psTextBox(e, T)}>{e.text.s}</div>;
+    return <div key={e.id} className={`ps-el ${on ? "sel" : ""}`} style={psElStyle(e)} onPointerDown={ev => startDrag(ev, e, "move")} onDoubleClick={() => { setSel(e.id); setTimeout(() => { const t = document.getElementById("ps-txt"); if (t) t.focus(); }, 30); }}>
+      {body}{on && handles(e)}</div>;
+  };
+
+  const fixIfOrient = o => commit(d => { const nh = o === "l" ? 707 : 1414; const k = nh / psH(d); return { ...d, orient: o, els: d.els.map(e => ({ ...e, y: e.y * k, h: e.t === "img" ? e.h : e.h })) }; });
+  return <div className="ps" dir="rtl"><style>{PS_CSS}</style>
+    <div className="ps-top">
+      <b style={{ fontSize: 15.5 }}>🎨 استوديو التصميم</b>
+      <div className="ps-chips">{[["ann", "📢 إعلان"], ["rep", "📝 تقرير نشاط"]].map(([k, l]) => <button key={k} className={`ps-b ${doc.kind === k ? "on" : ""}`} onClick={() => commit(d => ({ ...d, kind: k }))}>{l}</button>)}</div>
+      <span style={{ width: 1, alignSelf: "stretch", background: "#334155" }} />
+      <button className="ps-b pri" onClick={() => fileRef.current && fileRef.current.click()}>🖼️ إضافة صور</button>
+      <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={async e => { const fs = Array.from(e.target.files || []); e.target.value = ""; const u = []; for (const f of fs) { const x = await psFileUrl(f); if (x) u.push(x); } addImages(u); }} />
+      <button className="ps-b" onClick={() => addText("title")}>🔤 عنوان</button><button className="ps-b" onClick={() => addText("body")}>📝 نص</button><button className="ps-b" onClick={() => addText("ribbon")}>🎗️ شريط</button><button className="ps-b" onClick={() => addText("card")}>🗂️ بطاقة</button>
+      <button className="ps-b" onClick={() => commit(d => psArrange(d))} title="ترتيب كل الصور تلقائياً كمعرض">🧩 ترتيب الصور</button>
+      <button className="ps-b" disabled={!hist.current.length} onClick={undo} title="Ctrl+Z">↶ تراجع</button>
+      <span style={{ marginInlineStart: "auto" }} className="ps-chips">
+        <button className="ps-b" onClick={() => setZoom(z => z ? Math.max(0.5, +(z - 0.25).toFixed(2)) : 0.75)}>−</button><button className="ps-b" onClick={() => setZoom(0)}>{zoom ? `${Math.round(zoom * 100)}٪` : "ملاءمة"}</button><button className="ps-b" onClick={() => setZoom(z => Math.min(2.5, +((z || 1) + 0.25).toFixed(2)))}>+</button>
+        <button className="ps-b" onClick={openList}>📂 تصاميمي</button><button className="ps-b" disabled={busy} onClick={save}>💾 حفظ</button><button className="ps-b on" onClick={() => { setSel(null); psPrint(doc); }}>🖨 طباعة / PDF</button><button className="ps-b" onClick={onClose}>✕ إغلاق</button>
+      </span>
+    </div>
+    <div className="ps-main">
+      <div className="ps-stage" ref={stageRef} onPointerDown={() => setSel(null)} onDragOver={e => { e.preventDefault(); setDrop(true); }} onDragLeave={() => setDrop(false)} onDrop={onDrop}>
+        <div ref={pageRef} className="ps-page" style={{ width: pw, height: pw * H / 1000 }} onPointerDown={e => { if (e.target === e.currentTarget) setSel(null); }}>
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }} dangerouslySetInnerHTML={{ __html: psThemeHtml(doc) }} />
+          {[...doc.els].sort((a, b) => (a.z || 0) - (b.z || 0)).map(renderEl)}
+          {guides.map((g, i) => <div key={i} className="ps-guide" style={g.v ? { left: psU(g.p), top: 0, bottom: 0, width: 1.5 } : { top: psU(g.p), left: 0, right: 0, height: 1.5 }} />)}
+          {drop && <div className="ps-drop">أفلت الصور هنا</div>}
+        </div>
+      </div>
+      <div className="ps-side">
+        {!S && <>
+          <div className="ps-sec"><b>📋 الصق الصور مباشرة</b><div className="ps-hint">انسخ صورة أو عدة صور ثم اضغط <b>Ctrl+V</b> هنا، أو اسحبها من جهازك وأفلتها على الصفحة، أو استخدم «🖼️ إضافة صور». حرّك أي عنصر بالسحب، وغيّر حجمه من المقابض (الزوايا تحافظ على نسبة الصورة، اضغط Shift للتحرر).</div></div>
+          <div className="ps-sec"><b>🎨 الثيم</b><div className="ps-chips">{Object.entries(PS_TH).map(([k, t]) => <button key={k} className={`ps-chip ${doc.theme === k ? "on" : ""}`} onClick={() => commit(d => ({ ...d, theme: k }))}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: `linear-gradient(135deg,${t.a},${t.g})`, marginInlineEnd: 5 }} />{t.n}</button>)}</div>
+            <div className="ps-chips">{[["p", "▯ طولي"], ["l", "▭ عرضي"]].map(([k, l]) => <button key={k} className={`ps-chip ${doc.orient === k ? "on" : ""}`} onClick={() => doc.orient !== k && fixIfOrient(k)}>{l}</button>)}</div></div>
+          <div className="ps-sec"><b>🏫 الترويسة والتذييل</b>
+            <label className="ps-chips" style={{ alignItems: "center", fontSize: 13, fontWeight: 800 }}><input type="checkbox" checked={doc.header} onChange={e => commit(d => ({ ...d, header: e.target.checked }))} /> ترويسة المدرسة والشعار والتاريخ</label>
+            <label className="ps-chips" style={{ alignItems: "center", fontSize: 13, fontWeight: 800 }}><input type="checkbox" checked={doc.footer} onChange={e => commit(d => ({ ...d, footer: e.target.checked }))} /> التذييل: مدير المدرسة {PS_MGR}</label>
+            <div><div className="ps-hint">التاريخ</div><input className="ps-in" type="date" value={doc.date || ""} onChange={e => commit(d => ({ ...d, date: e.target.value }), true)} /></div>
+            <div><div className="ps-hint">المُعِد (اختياري)</div><input className="ps-in" value={doc.prep || ""} onChange={e => commit(d => ({ ...d, prep: e.target.value }), true)} placeholder="مثال: رائد النشاط" /></div></div>
+          <div className="ps-hint">العناصر: {maAr(doc.els.length)} • الصور: {maAr(doc.els.filter(e => e.t === "img").length)} — اضغط على عنصر لتعديله.</div>
+        </>}
+        {S && <>
+          <div className="ps-sec"><div className="flex items-center gap-2"><b>{S.t === "img" ? "🖼️ صورة" : S.t === "info" ? "📋 بطاقة البيانات" : "🔤 نص"}</b><button className="ps-chip" style={{ marginInlineStart: "auto" }} onClick={() => setSel(null)}>تم ✓</button></div>
+            {S.t === "text" && <>
+              <textarea id="ps-txt" className="ps-in" rows={5} value={S.text.s} onChange={e => upd(S.id, x => ({ ...x, text: { ...x.text, s: e.target.value } }), true)} onFocus={() => hist.current.push(doc)} />
+              <div className="flex gap-2 items-center"><span className="ps-hint">الحجم</span><input type="range" min="10" max="110" value={S.text.fs} onChange={e => upd(S.id, x => ({ ...x, text: { ...x.text, fs: +e.target.value } }), true)} style={{ flex: 1 }} /><b style={{ fontSize: 13, width: 28 }}>{maAr(S.text.fs)}</b></div>
+              <div className="ps-chips">{[["right", "يمين"], ["center", "وسط"], ["left", "يسار"]].map(([k, l]) => <button key={k} className={`ps-chip ${S.text.al === k ? "on" : ""}`} onClick={() => upd(S.id, x => ({ ...x, text: { ...x.text, al: k } }))}>{l}</button>)}<button className={`ps-chip ${S.text.b ? "on" : ""}`} onClick={() => upd(S.id, x => ({ ...x, text: { ...x.text, b: x.text.b ? 0 : 1 } }))}>عريض</button></div>
+              <div className="ps-chips">{[["none", "شفاف"], ["soft", "بطاقة"], ["ribbon", "شريط"], ["solid", "خلفية داكنة"]].map(([k, l]) => <button key={k} className={`ps-chip ${(S.text.bg || "none") === k ? "on" : ""}`} onClick={() => upd(S.id, x => ({ ...x, text: { ...x.text, bg: k } }))}>{l}</button>)}</div>
+              <div className="ps-chips" style={{ alignItems: "center" }}><span className="ps-hint">اللون</span>{["", "#1f2937", T.a, T.b, T.g, "#b91c1c", "#ffffff"].map(c => <button key={c || "th"} className={`ps-chip ${(S.text.c || "") === c ? "on" : ""}`} style={{ width: 30, height: 30, padding: 0, background: c || T.ink, borderColor: "#cbd5e1" }} title={c ? c : "لون الثيم"} onClick={() => upd(S.id, x => ({ ...x, text: { ...x.text, c } }))} />)}</div>
+            </>}
+            {S.t === "info" && <div className="grid gap-1">{S.info.rows.map((r, i) => <div key={i} className="flex gap-1"><input className="ps-in" style={{ flex: "0 0 38%" }} value={r[0]} onFocus={() => hist.current.push(doc)} onChange={e => upd(S.id, x => ({ ...x, info: { ...x.info, rows: x.info.rows.map((y, j) => j === i ? [e.target.value, y[1]] : y) } }), true)} /><input className="ps-in" value={r[1]} onFocus={() => hist.current.push(doc)} onChange={e => upd(S.id, x => ({ ...x, info: { ...x.info, rows: x.info.rows.map((y, j) => j === i ? [y[0], e.target.value] : y) } }), true)} /></div>)}
+              <div className="ps-chips"><button className="ps-chip" onClick={() => upd(S.id, x => ({ ...x, info: { ...x.info, rows: [...x.info.rows, ["", ""]] } }))}>＋ سطر</button><button className="ps-chip" onClick={() => upd(S.id, x => ({ ...x, info: { ...x.info, rows: x.info.rows.slice(0, -1) } }))}>− سطر</button>{[1, 2, 3].map(n => <button key={n} className={`ps-chip ${(S.info.cols || 2) === n ? "on" : ""}`} onClick={() => upd(S.id, x => ({ ...x, info: { ...x.info, cols: n } }))}>{maAr(n)} أعمدة</button>)}</div></div>}
+            {S.t === "img" && <>
+              <div className="ps-hint">الإطار</div><div className="ps-chips">{PS_FR.map(([k, l]) => <button key={k} className={`ps-chip ${S.img.frame === k ? "on" : ""}`} onClick={() => upd(S.id, x => ({ ...x, img: { ...x.img, frame: k } }))}>{l}</button>)}</div>
+              <div className="ps-chips">{[["cover", "ملء الإطار (قص)"], ["contain", "الصورة كاملة"]].map(([k, l]) => <button key={k} className={`ps-chip ${(S.img.fit || "cover") === k ? "on" : ""}`} onClick={() => upd(S.id, x => ({ ...x, img: { ...x.img, fit: k } }))}>{l}</button>)}{S.img.ar && <button className="ps-chip" onClick={() => upd(S.id, x => ({ ...x, h: x.w / x.img.ar }))}>النسبة الأصلية</button>}</div>
+            </>}
+            <div className="flex gap-2 items-center"><span className="ps-hint">تدوير</span><input type="range" min="-45" max="45" value={S.r || 0} onPointerDown={() => hist.current.push(doc)} onChange={e => upd(S.id, { r: +e.target.value }, true)} style={{ flex: 1 }} /><b style={{ fontSize: 13, width: 34 }}>{maAr(S.r || 0)}°</b></div>
+            <div className="ps-chips"><button className="ps-chip" onClick={() => upd(S.id, { x: 500 - S.w / 2 })}>توسيط أفقي</button><button className="ps-chip" onClick={() => upd(S.id, { x: 50, w: 900, ...(S.t === "img" && S.img.ar ? { h: 900 / S.img.ar } : {}) })}>بعرض الصفحة</button></div>
+            <div className="ps-chips"><button className="ps-chip" onClick={() => layer(1)}>⬆ للأمام</button><button className="ps-chip" onClick={() => layer(-1)}>⬇ للخلف</button><button className="ps-chip" onClick={dup}>⧉ نسخ</button><button className="ps-chip" style={{ color: "#b91c1c", borderColor: "#fecaca" }} onClick={() => { commit(d => ({ ...d, els: d.els.filter(x => x.id !== S.id) })); setSel(null); }}>🗑 حذف</button></div>
+          </div>
+          <div className="ps-hint">⌨️ الأسهم للتحريك الدقيق (Shift أسرع) • Delete للحذف • Ctrl+D نسخ • Ctrl+Z تراجع</div>
+        </>}
+      </div>
+    </div>
+    {list && <div style={{ position: "fixed", inset: 0, zIndex: 8500, background: "rgba(2,6,23,.6)", display: "grid", placeItems: "center", padding: 14 }} onClick={() => setList(null)}><div onClick={e => e.stopPropagation()} style={{ width: "min(560px,100%)", maxHeight: "80vh", overflow: "auto", background: "#fff", borderRadius: 22, padding: 16 }} dir="rtl">
+      <div className="flex items-center gap-2" style={{ marginBottom: 10 }}><b style={{ fontSize: 16 }}>📂 تصاميمي المحفوظة</b><button className="ps-chip" style={{ marginInlineStart: "auto" }} onClick={() => { hist.current.push(doc); setDoc(psNew(doc.kind)); setSel(null); setList(null); }}>＋ تصميم جديد فارغ</button></div>
+      {list === "loading" ? <div className="ps-hint">⏳</div> : !list.length ? <div className="ps-hint">لا توجد تصاميم محفوظة بعد.</div> : <div className="grid gap-2">{list.map(x => <div key={x.id} className="flex items-center gap-2" style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: "8px 10px" }}><span style={{ fontSize: 22 }}>{x.kind === "rep" ? "📝" : "📢"}</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 14, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.title}</b><span className="ps-hint">{(PS_TH[x.theme] || {}).n} • {maAr(x.n || 0)} صورة • {new Date(x.at).toLocaleDateString("ar-SA")}</span></div><button className="ps-chip on" onClick={() => openDoc(x.id)}>فتح</button><button className="ps-chip" onClick={() => hideDoc(x)}>✕</button></div>)}</div>}
+    </div></div>}
+    {(msg || busy) && <div style={{ position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)", zIndex: 9000, background: "#0b3d36", color: "#fff", padding: "11px 20px", borderRadius: 14, fontWeight: 800, fontSize: 13.5 }}>{busy ? "⏳ جارٍ المعالجة…" : msg}</div>}
+  </div>;
+}
+
 function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements, viewMode = "desktop" }) {
+  const [studio, setStudio] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [newAnn, setNewAnn] = useState({ title: "", content: "", category: "إعلانات", priority: "عادي", bgColor: "", titleColor: "#1f2937", titleSize: "text-xl", titleAlign: "right" });
   const [filter, setFilter] = useState("الكل");
@@ -12063,6 +12348,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
   /* ══════════════════════════════════════════
      📱 وضع الجوال
   ══════════════════════════════════════════ */
+  if (studio) return <PosterStudio init={studio} onClose={() => setStudio(null)} />;
   if (viewMode === "mobile") {
     return (
       <div dir="rtl" style={{ fontFamily:"'Cairo','Noto Naskh Arabic',sans-serif", minHeight:"100%", background:"#f8fafc" }}>
@@ -12251,6 +12537,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                           <button onClick={()=>startEdit(ann)} style={{ flex:"1 1 auto", padding:"8px 6px", borderRadius:10, border:"1.5px solid #dbeafe", background:"#eff6ff", color:"#2563eb", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>✏️ تعديل</button>
                           <button onClick={()=>pin(ann.id)} style={{ flex:"1 1 auto", padding:"8px 6px", borderRadius:10, border:"1.5px solid #fef3c7", background:"#fffbeb", color:"#92400e", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>{ann.pinned?"📌 إلغاء":"📌 تثبيت"}</button>
                           <button onClick={()=>printAnn(ann)} style={{ flex:"1 1 auto", padding:"8px 6px", borderRadius:10, border:"1.5px solid #f3e8ff", background:"#faf5ff", color:"#7c3aed", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>🖨️</button>
+                          <button onClick={()=>setStudio({ kind: "ann", title: ann.title, body: psTxt(ann.content), imgs: psImgs(ann.content), ref: "ann-" + ann.id })} title="تصميم بالصور" style={{ flex:"1 1 auto", padding:"8px 6px", borderRadius:10, border:"1.5px solid #fde68a", background:"#fffbeb", color:"#b45309", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>🎨</button>
                           <button onClick={()=>{if(confirm("حذف هذا الإعلان؟"))del(ann.id);}} style={{ flex:"1 1 auto", padding:"8px 6px", borderRadius:10, border:"1.5px solid #fee2e2", background:"#fff5f5", color:"#dc2626", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>🗑️ حذف</button>
                         </div>
                         {/* قسم الردود والتعليقات */}
@@ -12331,9 +12618,12 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
             <span>{creativeMode?"العرض الكلاسيكي":"العرض الإبداعي"}</span>
           </button>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700">
-          {showForm ? "✕ إلغاء" : "+ إعلان جديد"}
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setStudio({ kind: "ann" })} style={{ background: "linear-gradient(135deg,#0f1e3d,#d4a017)", color: "#fff", border: "none", borderRadius: 12, padding: "10px 16px", fontWeight: 900, fontSize: 13.5, cursor: "pointer", fontFamily: "'Cairo',sans-serif" }}>🎨 تصميم إعلان بالصور</button>
+          <button onClick={() => setShowForm(!showForm)} className="bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700">
+            {showForm ? "✕ إلغاء" : "+ إعلان جديد"}
+          </button>
+        </div>
       </div>
       {showForm && (
         <div className="bg-white rounded-2xl p-5 shadow-md border border-teal-200 mb-6">
@@ -12461,6 +12751,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                   <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
                     <button onClick={() => { const url = window.location.origin + window.location.pathname + "#ann-" + ann.id; navigator.clipboard.writeText(url).then(() => alert("✅ تم نسخ الرابط!\n" + url)); }} className="text-xs px-2 py-1.5 rounded-lg hover:bg-green-50 text-green-600 font-bold border border-green-100">🔗 رابط</button>
                     <button onClick={() => printAnn(ann)} className="text-xs px-2 py-1.5 rounded-lg hover:bg-purple-50 text-purple-600 font-bold border border-purple-100">🖨️ طباعة</button>
+                    <button onClick={() => setStudio({ kind: "ann", title: ann.title, body: psTxt(ann.content), imgs: psImgs(ann.content), ref: "ann-" + ann.id })} className="text-xs px-2 py-1.5 rounded-lg hover:bg-amber-50 text-amber-700 font-bold border border-amber-200">🎨 تصميم</button>
                     <button onClick={() => startEdit(ann)} className="text-xs px-2 py-1.5 rounded-lg hover:bg-blue-50 text-blue-500 font-bold border border-blue-100">✏️ تعديل</button>
                     <button onClick={() => pin(ann.id)} className="text-xs px-2 py-1.5 rounded-lg hover:bg-yellow-50 font-bold border border-gray-100">{ann.pinned ? "📌 إلغاء" : "📌"}</button>
                     <button onClick={() => del(ann.id)} className="text-xs px-2 py-1.5 rounded-lg hover:bg-red-50 text-red-500 font-bold border border-red-100">🗑️</button>
@@ -12526,6 +12817,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
 }
 
 function ActivitiesPage({ activities, setActivities, saveActivities }) {
+  const [studio, setStudio] = useState(null);
   const [f, setF] = useState("الكل");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -12648,10 +12940,13 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
     </div>
   );
 
+  if (studio) return <PosterStudio init={studio} onClose={() => setStudio(null)} />;
+  const actStudio = act => setStudio({ kind: "rep", title: act.title, date: act.date || "", by: act.responsible || "", type: act.type || "", body: psTxt(act.description), imgs: psImgs(act.description), ref: "act-" + act.id, theme: "emerald" });
   return (
     <div dir="rtl" style={{ maxWidth: 1100, margin: "0 auto", width: "100%" }}>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="text-2xl font-black text-teal-900">الأنشطة المدرسية</h2>
+        <button onClick={() => setStudio({ kind: "rep", theme: "emerald" })} style={{ background: "linear-gradient(135deg,#0b3d36,#d4a017)", color: "#fff", border: "none", borderRadius: 12, padding: "10px 16px", fontWeight: 900, fontSize: 13.5, cursor: "pointer", fontFamily: "'Cairo',sans-serif" }}>🎨 تقرير نشاط بالصور</button>
         {actMsg && <span style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: 999, padding: "4px 12px" }}>{actMsg}</span>}
         <button onClick={() => { setShowForm(!showForm); setEditId(null); }}
           className="bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700">
@@ -12693,6 +12988,7 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
                   <span className="text-5xl">{act.image}</span>
                   <div className="absolute top-2 left-2 flex gap-1">
                     <button onClick={() => printAct(act)} className="bg-white bg-opacity-20 hover:bg-opacity-40 text-white text-xs px-2 py-1 rounded-lg font-bold">🖨️</button>
+                    <button onClick={() => actStudio(act)} title="تقرير نشاط بالصور" className="bg-white bg-opacity-20 hover:bg-opacity-40 text-white text-xs px-2 py-1 rounded-lg font-bold">🎨 تقرير</button>
                     <button onClick={() => startEdit(act)} className="bg-white bg-opacity-20 hover:bg-opacity-40 text-white text-xs px-2 py-1 rounded-lg font-bold">✏️</button>
                     <button onClick={() => del(act.id)} className="bg-red-500 bg-opacity-80 hover:bg-opacity-100 text-white text-xs px-2 py-1 rounded-lg font-bold">🗑️</button>
                   </div>
@@ -20613,921 +20909,6 @@ function TeacherNoteBox({ planId, initialNote, onSave }) {
 
 
 
-// ===== النماذج الرسمية — الدليل الإجرائي =====
-const SCHOOL_NAME = "مدرسة الأمير عبدالمجيد المتوسطة الأولى";
-const FORM_GREEN = "#2d6a4f";
-const FORM_LIGHT = "#d8f3dc";
-
-function OfficialFormsPage({ teachers, attendance, week }) {
-  const [accounts,         setAccounts]        = useState([]);
-  const [localAccounts,    setLocalAccounts]   = useState([]);
-  useEffect(() => {
-    DB.get("school-official-teachers", null).then(fb => {
-      if (Array.isArray(fb) && fb.length > 0) {
-        setLocalAccounts(fb);
-        try { localStorage.setItem("official_form_teachers_v1", JSON.stringify(fb)); } catch {}
-      } else {
-        try {
-          const cached = JSON.parse(localStorage.getItem("official_form_teachers_v1") || "[]");
-          setLocalAccounts(cached);
-          if (cached.length > 0) DB.set("school-official-teachers", cached);
-        } catch {}
-      }
-    });
-  }, []);
-  const [showImportXlsx,   setShowImportXlsx]  = useState(false);
-  const [showAddManual,    setShowAddManual]    = useState(false);
-  const [manualName,       setManualName]       = useState("");
-  const [manualId,         setManualId]         = useState("");
-  const [selectedTeacher,  setSelectedTeacher]  = useState("");
-  const [formType,         setFormType]         = useState("warning");
-  const [formData,         setFormData]         = useState({
-    date:"", dateH:"", timeFrom:"", timeTo:"", absFrom:"", absTo:"",
-    type:"تأخر", days:"", spec:"", rank:"", jobNo:"", jobTitle:"",
-    nationalId:"", reason:"", lateHours:"",
-    calType:"hijri", dateDay:"", dateMonth:"", dateYear:"1447",
-    timeFromH:"", timeFromM:"00", timeFromP:"ص",
-    timeToH:"",   timeToM:"00", timeToP:"ص",
-  });
-  const [lateRecords,  setLateRecords]  = useState({}); // { teacherName: [{date, mins, type, saved}] }
-  const [alertShown,   setAlertShown]   = useState(false);
-  const [savedBanner,  setSavedBanner]  = useState("");
-
-  useEffect(() => {
-    DB.get("school-teacher-accounts", []).then(d => setAccounts(Array.isArray(d)?d:[]));
-    DB.get("school-late-records", {}).then(d => setLateRecords(typeof d==="object"&&d?d:{}));
-
-    // قراءة بيانات المساءلة المُمررة من صفحة الحضور
-    try {
-      const raw = localStorage.getItem("mosala_prefill");
-      if (raw) {
-        const pre = JSON.parse(raw);
-        // تجاهل البيانات القديمة (أكثر من 5 دقائق)
-        if (Date.now() - (pre.timestamp || 0) < 5 * 60 * 1000) {
-          localStorage.removeItem("mosala_prefill");
-          const isLate = pre.status === "متأخر";
-          setFormType(isLate ? "warning" : "deduction");
-          // تحويل التاريخ الهجري من الشكل dd/mm/yyyy هـ
-          let dH = "", mH = "", yH = "1447", dM = "", mM = "", yM = "";
-          if (pre.dateH) {
-            const parts = pre.dateH.replace(" هـ","").split("/");
-            if (parts.length === 3) { dH = parts[0]; mH = parts[1]; yH = parts[2]; }
-          }
-          if (pre.dateM) {
-            const parts = pre.dateM.replace(" م","").split("/");
-            if (parts.length === 3) { dM = parts[0]; mM = parts[1]; yM = parts[2]; }
-          }
-          setTimeout(() => {
-            setSelectedTeacher(pre.teacherName || "");
-            setFormData(p => ({
-              ...p,
-              type: isLate ? "تأخر" : "غياب",
-              dateDay: dH, dateMonth: mH, dateYear: yH,
-              lateHours: pre.lateMinutes ? String(Math.ceil(pre.lateMinutes / 60)) : "",
-              days: !isLate ? "1" : "",
-              spec: pre.dayName || "",
-            }));
-          }, 300);
-        }
-      }
-    } catch {}
-  }, []);
-
-  const saveLateRecords = (rec) => { setLateRecords(rec); DB.set("school-late-records", rec); };
-
-  // دمج المعلمين من الحسابات + المستوردين محلياً + قائمة المعلمين الرئيسية
-  const allTeacherList = (() => {
-    const map = new Map();
-    // 1) من قائمة المعلمين الرئيسية
-    teachers.forEach(name => { if (!map.has(name)) map.set(name, { name, id: "" }); });
-    // 2) من حسابات بوابة المعلمين
-    accounts.forEach(a => { if (a.name) map.set(a.name, { name: a.name, id: a.id || "" }); });
-    // 3) من استيراد Excel المحلي (يأخذ الأولوية في الهوية)
-    localAccounts.forEach(a => { if (a.name) map.set(a.name, { name: a.name, id: a.id || map.get(a.name)?.id || "" }); });
-    return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name, "ar"));
-  })();
-
-  // استيراد Excel
-  const handleImportXlsx = async (file) => {
-    await loadXLSX();
-    const buf = await file.arrayBuffer();
-    const wb  = window.XLSX.read(buf);
-    const ws  = wb.Sheets[wb.SheetNames[0]];
-    const rows = window.XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
-    if (!rows.length) { alert("الملف فارغ"); return; }
-    // محاولة اكتشاف عمود الاسم والهوية تلقائياً
-    const header = rows[0].map(c => String(c||"").trim());
-    const nameIdx = header.findIndex(h => /اسم|معلم|الاسم/i.test(h));
-    const idIdx   = header.findIndex(h => /هوي|رقم|هوية|الهوية|id/i.test(h));
-    const dataRows = rows.slice(nameIdx >= 0 ? 1 : 0);
-    const imported = [];
-    dataRows.forEach(row => {
-      const name = String(row[nameIdx >= 0 ? nameIdx : 0] || "").trim();
-      const id   = String(row[idIdx   >= 0 ? idIdx   : 1] || "").trim();
-      if (name.length > 2) imported.push({ name, id });
-    });
-    if (!imported.length) { alert("لم يُعثر على بيانات. تأكد من وجود عمود الاسم."); return; }
-    const merged = [...localAccounts];
-    let added = 0;
-    imported.forEach(imp => {
-      const idx = merged.findIndex(a => a.name === imp.name);
-      if (idx >= 0) { if (imp.id) merged[idx].id = imp.id; }
-      else { merged.push(imp); added++; }
-    });
-    setLocalAccounts(merged);
-    try { localStorage.setItem("official_form_teachers_v1", JSON.stringify(merged)); } catch {}
-    DB.set("school-official-teachers", merged);
-    setShowImportXlsx(false);
-    alert(`✅ تم الاستيراد بنجاح\n${added} معلم جديد أُضيف\n${imported.length - added} تم تحديثه`);
-  };
-
-  // احتساب مدة التأخير من القوائم المنسدلة
-  const calcLateMins = () => {
-    const toMins = (h,m,p) => {
-      if (!h||!m) return null;
-      let hh = parseInt(h);
-      if (p==="م" && hh!==12) hh+=12;
-      if (p==="ص" && hh===12) hh=0;
-      return hh*60 + parseInt(m);
-    };
-    const from = toMins(formData.timeFromH, formData.timeFromM, formData.timeFromP);
-    const to   = toMins(formData.timeToH,   formData.timeToM,   formData.timeToP);
-    if (from===null || to===null) return null;
-    const diff = to - from;
-    return diff > 0 ? diff : null;
-  };
-
-  // إجمالي دقائق التأخر المتراكمة للمعلم
-  const totalLateMins = (name) => {
-    const recs = lateRecords[name] || [];
-    return recs.reduce((s,r) => s + (r.mins||0), 0);
-  };
-
-  // تنسيق الدقائق → ساعات ودقائق
-  const fmtMins = (mins) => {
-    if (!mins) return "٠ دقيقة";
-    const h = Math.floor(mins/60);
-    const m = mins%60;
-    return h>0 ? `${h} ساعة${m>0?" و "+m+" دقيقة":""}` : `${m} دقيقة`;
-  };
-
-  // حفظ التنبيه وإضافة التأخر للسجل
-  const saveWarningRecord = () => {
-    if (!selectedTeacher) return;
-    const mins = calcLateMins();
-    if (!mins) { alert("حدد وقت البداية والنهاية أولاً"); return; }
-    const dateLabel = `${formData.dateDay||"?"}/${formData.dateMonth||"?"}/${formData.dateYear||"1447"} ${(formData.calType||"hijri")==="greg"?"م":"هـ"}`;
-    const newRec = { id:Date.now(), date:dateLabel, mins, type:formData.type, savedAt:new Date().toLocaleDateString("ar-SA") };
-    const updated = { ...lateRecords, [selectedTeacher]: [...(lateRecords[selectedTeacher]||[]), newRec] };
-    saveLateRecords(updated);
-    const total = totalLateMins(selectedTeacher) + mins;
-    setSavedBanner(`✅ تم حفظ التنبيه — مجموع التأخر: ${fmtMins(total)}`);
-    setTimeout(()=>setSavedBanner(""),4000);
-    if (total >= 7*60 && !alertShown) {
-      setAlertShown(true);
-      setTimeout(()=>alert(`⚠️ تنبيه هام!
-
-المعلم ${selectedTeacher} تجاوز ٧ ساعات تأخر متراكمة (${fmtMins(total)}).
-
-يستوجب إصدار قرار الحسم وفق النظام.`), 300);
-    }
-  };
-
-  const addManualTeacher = () => {
-    if (!manualName.trim()) return;
-    if (allTeacherList.find(a => a.name === manualName.trim())) {
-      alert("هذا الاسم موجود بالفعل في القائمة"); return;
-    }
-    const newEntry = { name: manualName.trim(), id: manualId.trim() };
-    const updated  = [...localAccounts, newEntry];
-    setLocalAccounts(updated);
-    try { localStorage.setItem("official_form_teachers_v1", JSON.stringify(updated)); } catch {}
-                    DB.set("school-official-teachers", updated);
-    handleSelectTeacher(newEntry.name);
-    setManualName(""); setManualId(""); setShowAddManual(false);
-  };
-
-  // اختيار معلم — يملأ بياناته تلقائياً
-  const handleSelectTeacher = (name) => {
-    setSelectedTeacher(name);
-    setAlertShown(false);
-    // ابحث عن الهوية في allTeacherList أولاً ثم accounts
-    const found = allTeacherList.find(a => a.name === name) || accounts.find(a => a.name === name) || {};
-    const ti = teachers.indexOf(name);
-    const absDays = ti >= 0 ? week.days.filter((_,di) => (attendance[ti]?.[di]?.status||"حاضر")==="غائب").length : 0;
-    setFormData(p => ({ ...p, nationalId: found.id || "", days: absDays > 0 ? String(absDays) : "" }));
-    // تنبيه تلقائي إذا تجاوز ٧ ساعات
-    const total = totalLateMins(name);
-    if (total >= 7*60) {
-      setTimeout(()=>alert(`⚠️ انتبه!
-
-مجموع تأخرات ${name} = ${fmtMins(total)}
-يستوجب إصدار قرار الحسم فوراً.`), 200);
-    }
-  };
-
-  const FORM_TYPES = [
-    { id:"warning",           label:"تنبيه على تأخر / انصراف", code:"و.م.ع.ن.-٠٢-٠٢" },
-    { id:"deduct_late",       label:"قرار حسم ساعات تأخر وخروج مبكر", code:"و.م.ع.ن.-٠٣-٠٢" },
-    { id:"absence_investigate",label:"مساءلة غياب", code:"و.م.ع.ن.-٠٤-٠٢" },
-    { id:"absence_deduct",    label:"قرار حسم غياب", code:"و.م.ع.ن.-٠٥-٠٢" },
-  ];
-
-  const currentForm = FORM_TYPES.find(f => f.id === formType);
-
-  const printForm = () => {
-    const t = selectedTeacher || "___________";
-    const nid = formData.nationalId || "___________";
-    // بناء التاريخ من القوائم المنسدلة
-    const _day   = formData.dateDay   ? String(formData.dateDay).padStart(2,"0") : "  ";
-    const _month = formData.dateMonth ? String(formData.dateMonth).padStart(2,"0") : "  ";
-    const _year  = formData.dateYear  || "١٤";
-    const _suf   = (formData.calType||"hijri")==="greg" ? "م" : "هـ";
-    const dateH  = `${_day} / ${_month} / ${_year} ${_suf}`;
-    // بناء الوقت من القوائم المنسدلة
-    const fmtTime = (h,m,p) => h&&m ? `${String(h).padStart(2,"0")}:${m} ${p||"ص"}` : "  :  ";
-    const timeFromStr = fmtTime(formData.timeFromH, formData.timeFromM, formData.timeFromP);
-    const timeToStr   = fmtTime(formData.timeToH,   formData.timeToM,   formData.timeToP);
-    // مجموع التأخر المتراكم
-    const totalMins = totalLateMins(selectedTeacher);
-    const totalLateStr = totalMins > 0 ? fmtMins(totalMins) : (formData.lateHours||"  ");
-    const spec = formData.spec || "___________";
-    const rank = formData.rank || "___________";
-    const jobNo = formData.jobNo || "___________";
-    const jobTitle = formData.jobTitle || "___________";
-
-    const headerStyle = `background:${FORM_GREEN};color:#fff;padding:6px 10px;font-weight:bold;font-size:13px`;
-    const cellStyle = `border:1px solid #aaa;padding:6px 10px;font-size:12px`;
-    const tableHdr = `<table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:12px;margin-bottom:12px">
-      <tr style="${headerStyle}">
-        <th>الاسم</th><th>التخصص</th><th>المستوى / المرتبة</th><th>رقم الوظيفة</th><th>العمل الحالي</th>
-      </tr>
-      <tr>
-        <td style="${cellStyle}">${t}</td>
-        <td style="${cellStyle}">${spec}</td>
-        <td style="${cellStyle}">${rank}</td>
-        <td style="${cellStyle}">${jobNo}</td>
-        <td style="${cellStyle}">${jobTitle}</td>
-      </tr>
-    </table>`;
-
-    let body = "";
-
-    if (formType === "warning") {
-      const currentMins = calcLateMins();
-      const lateDurStr = currentMins ? `بمقدار ( ${fmtMins(currentMins)} )` : "";
-      const warnType = formData.type === "تأخر" ?
-        `تأخركم من بداية العمل ، وحضوركم الساعة ( ${timeFromStr} ) ${lateDurStr}` :
-        formData.type === "مغادرة" ?
-        `عدم تواجدكم أثناء العمل من الساعة ( ${timeFromStr} ) إلى الساعة ( ${timeToStr} ) ${lateDurStr}` :
-        `انصرافكم مبكراً قبل نهاية العمل من الساعة ( ${timeFromStr} ) ${lateDurStr}`;
-
-      body = `
-        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-          <div><b>اسم النموذج : تنبيه على تأخر / انصراف</b></div>
-          <div><b>رمز النموذج : (و.م.ع.ن.-٠٢-٠٢)</b></div>
-        </div>
-        <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;margin-bottom:12px">
-          <tr><td style="${headerStyle};text-align:right" colspan="2">المدرسة</td><td colspan="3">${SCHOOL_NAME}</td></tr>
-          <tr><td style="${headerStyle};text-align:right" colspan="2">السجل المدني</td><td colspan="3">${nid}</td></tr>
-        </table>
-        ${tableHdr}
-        <p>المكرم المعلم / <u>${t}</u> وفقه الله</p>
-        <p>السلام عليكم ورحمة الله وبركاته &nbsp;&nbsp;&nbsp;&nbsp; وبعد :</p>
-        <p>إنه في يوم ............... الموافق ${dateH} اتضح ما يلي :</p>
-        <p style="margin-right:20px">- ${warnType}</p>
-        <p>عليه نأمل توضيح أسباب ذلك مع إرفاق ما يؤيد عذركم ،،، ولكم تحياتي</p>
-        <div style="display:flex;justify-content:space-between;margin-top:15px">
-          <div>التاريخ : ${dateH}</div>
-          <div>التوقيع : ___________</div>
-          <div>قائد المدرسة : ___________</div>
-        </div>
-        <div style="border-top:2px dashed #aaa;margin:20px 0"></div>
-        <p><b>المكرم / مدير مدرسة ___________</b></p>
-        <p>السلام عليكم ورحمة الله وبركاته<br>أفيدكم بأن أسباب ذلك ما يلي :</p>
-        <div style="border-bottom:1px solid #aaa;height:25px;margin:8px 0"></div>
-        <div style="border-bottom:1px solid #aaa;height:25px;margin:8px 0"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:15px">
-          <div>التاريخ : ${dateH}</div>
-          <div>التوقيع : ___________</div>
-          <div>الاسم : ${t}</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:20px;border:1px solid #aaa;padding:10px;border-radius:8px">
-          <div><b>رأي قائد المدرسة :</b></div>
-          <div>□ عذره مقبول</div>
-          <div>□ عذره غير مقبول ويحسم عليه</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:10px">
-          <div>التاريخ : ${dateH}</div>
-          <div>التوقيع : ___________</div>
-          <div>قائد المدرسة : ___________</div>
-        </div>
-        <p style="font-size:11px;margin-top:15px;color:#555"><b>ملاحظة :</b> ترفق بطاقة المساءلة مع أصل القرار في حالة عدم قبول العذر ، أصله للملفه بالإدارة.</p>
-      `;
-    } else if (formType === "deduct_late") {
-      body = `
-        <div style="text-align:center;margin-bottom:15px"><h3>نموذج رقم (١٩)</h3></div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-          <div><b>اسم النموذج : قرار حسم مجموع ساعات تأخر وخروج مبكر</b></div>
-          <div><b>رمز النموذج : (و.م.ع.ن.-٠٣-٠٢)</b></div>
-        </div>
-        <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;margin-bottom:12px">
-          <tr><td style="${headerStyle};text-align:right" colspan="2">المدرسة</td><td colspan="3">${SCHOOL_NAME}</td></tr>
-          <tr><td style="${headerStyle};text-align:right" colspan="2">السجل المدني</td><td colspan="3">${nid}</td></tr>
-        </table>
-        ${tableHdr}
-        <p>إن مدير المدرسة ، وبناءً على صلاحياته ، وبناءً على المادة (٢١) من نظام الخدمة المدنية وبناءً على موافقة معالي الوزير على إعطاء بعض الصلاحيات لمديري المدارس بالقرار رقم ١/١١٣٩ وتاريخ ١٤٣١/٣/١٧هـ ، ولبلوغ ساعات التأخر عن العمل والخروج المبكر من العمل ( <u>${totalLateStr}</u> ) ساعة ، وحيث إن عذره غير مقبول ، وبمقتضى النظام .</p>
-        <p><b>يقرر ما يلي :</b></p>
-        <p>(١) حسم مدة الغياب الموضحة بعاليه وعددها ( <u>${formData.days||"    "}</u> ) يوماً من راتبه .</p>
-        <p>(٢) على إدارة شؤون الموظفين ( تنفيذ الأنظمة ) تنفيذ إجراء الحسم واستبعادها من خدماته وإرسال القرار للملف بالإدارة .</p>
-        <p style="text-align:center"><b>والله الموفق</b></p>
-        <div style="margin-top:20px">
-          <p>الرئيس المباشر</p>
-          <p>الاسم : ___________</p>
-          <p>الختم</p>
-          <p>التوقيع : ___________</p>
-          <p>التاريخ : ${dateH}</p>
-        </div>
-        <div style="font-size:11px;margin-top:15px;color:#555">
-          <p>صورة / للموظفين لمتابعة تنفيذ الحسم ( تنفيذ الأنظمة )</p>
-          <p>صورة / لمكتب التعليم</p>
-          <p>صورة/ للملف بالمدرسة</p>
-        </div>
-      `;
-    } else if (formType === "absence_investigate") {
-      body = `
-        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-          <div><b>اسم النموذج : مساءلة غياب</b></div>
-          <div><b>رمز النموذج : (و.م.ع.ن.-٠٤-٠٢)</b></div>
-        </div>
-        <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;margin-bottom:12px">
-          <tr><td style="${headerStyle};text-align:right" colspan="2">المدرسة</td><td colspan="5">${SCHOOL_NAME}</td></tr>
-          <tr><td style="${headerStyle};text-align:right" colspan="2">السجل المدني</td><td colspan="5">${nid}</td></tr>
-        </table>
-        <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:12px;margin-bottom:12px">
-          <tr style="${headerStyle}"><th>الاسم</th><th>التخصص</th><th>المستوى/المرتبة</th><th>رقم الوظيفة</th><th>العمل الحالي</th><th>عدد أيام الغياب</th></tr>
-          <tr><td>${t}</td><td>${spec}</td><td>${rank}</td><td>${jobNo}</td><td>${jobTitle}</td><td style="text-align:center;font-weight:bold;color:red">${formData.days||"    "}</td></tr>
-        </table>
-        <div style="display:flex;justify-content:space-between;border:1px solid #aaa;padding:8px;margin-bottom:15px">
-          <span>إنه في يوم .......... الموافق ${dateH} تغيبت عن العمل إلى يوم</span>
-          <span>الموافق ${dateH}</span>
-        </div>
-        <p><b>(١) طلب الإفادة</b></p>
-        <p>المكرم / <u>${t}</u> وفقه الله</p>
-        <p>السلام عليكم ورحمة الله وبركاته ،،،</p>
-        <p>من خلال متابعة سجل العمل تبين تغيابكم خلال الفترة الموضحة بعاليه ، أمل الإفادة عن أسباب ذلك وعليكم تقديم ما يؤيد عذركم خلال أسبوع من تاريخه ، علماً بأنه في حالة عدم الالتزام سيتم اتخاذ اللازم حسب التعليمات .</p>
-        <div style="display:flex;justify-content:space-between;margin-top:10px">
-          <div>التاريخ : ${dateH}</div>
-          <div>التوقيع : ___________</div>
-          <div>اسم الرئيس المباشر : ___________</div>
-        </div>
-        <div style="border-top:2px dashed #aaa;margin:20px 0"></div>
-        <p><b>(٢) الإفادة</b></p>
-        <p>المكرم / قائد المدرسة وفقه الله</p>
-        <p>السلام عليكم ورحمة الله وبركاته وبعد:</p>
-        <p>أفيدكم أن غيابي كان للأسباب التالية :</p>
-        <div style="border-bottom:1px solid #aaa;height:25px;margin:8px 0"></div>
-        <div style="border-bottom:1px solid #aaa;height:25px;margin:8px 0"></div>
-        <p>وسأقوم بتقديم ما يثبت ذلك خلال أسبوع من تاريخه</p>
-        <div style="display:flex;justify-content:space-between;margin-top:10px">
-          <div>التاريخ : ${dateH}</div><div>التوقيع : ___________</div><div>اسم المعلم : ${t}</div>
-        </div>
-        <div style="border-top:2px dashed #aaa;margin:20px 0"></div>
-        <p><b>(٣) مدير المدرسة :</b></p>
-        <p style="margin-right:15px">أ. تحتسب له إجازة مرضية بعد التأكد من نظامية التقرير</p>
-        <p style="margin-right:15px">ب. يحتسب من رصيده للإجازات الاضطرارية لقبول عذره إذا كان له رصيد وإلا يحسم عليه</p>
-        <p style="margin-right:15px">ج. يعتمد الحسم لعدم قبول عذره</p>
-        <div style="display:flex;justify-content:space-between;margin-top:10px">
-          <div>التاريخ : ${dateH}</div><div>التوقيع : ___________</div><div>اسم الرئيس المباشر : ___________</div>
-        </div>
-        <div style="border:1px solid #aaa;padding:10px;margin-top:15px;border-radius:6px;font-size:11px">
-          <p><b>ملحوظات هامة :</b></p>
-          <p>١ - تستكمل الاستمارة من المدير المباشر وإصدار القرار بموجبه.</p>
-          <p>٢ - إذا سبق إجازة الأسبوع غياب وألحقها غياب تحتسب مدة الغياب كاملة.</p>
-          <p>٣ - يجب أن يوضح المتغيب أسباب غيابه فور تسلمه الاستمارة ويعيدها لمديره المباشر.</p>
-          <p>٤ - يعطي المتغيب مدة أسبوع لتقديم ما يؤيد عذره فإذا انقضت المدة الزمنية واستمر عذره يتم الاستمارة تستكمل لإصدار قرار الحسم.</p>
-        </div>
-      `;
-    } else if (formType === "absence_deduct") {
-      body = `
-        <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-          <div><b>النموذج : قرار حسم غياب</b></div>
-          <div><b>رمز النموذج : (و.م.ع.ن.-٠٥-٠٢)</b></div>
-        </div>
-        <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;margin-bottom:12px">
-          <tr><td style="${headerStyle};text-align:right" colspan="2">المدرسة</td><td colspan="5">${SCHOOL_NAME}</td></tr>
-          <tr><td style="${headerStyle};text-align:right" colspan="2">السجل المدني</td><td colspan="5">${nid}</td></tr>
-        </table>
-        <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;font-size:12px;margin-bottom:15px">
-          <tr style="${headerStyle}"><th>الاسم</th><th>التخصص</th><th>المستوى/المرتبة</th><th>الدرجة</th><th>رقم الوظيفة</th><th>العمل الحالي</th><th>عدد أيام الغياب</th></tr>
-          <tr><td>${t}</td><td>${spec}</td><td>${rank}</td><td></td><td>${jobNo}</td><td>${jobTitle}</td><td style="text-align:center;font-weight:bold;color:red">${formData.days||"    "}</td></tr>
-        </table>
-        <div style="border:1px solid #aaa;padding:6px;margin-bottom:10px">الأيام الواجب حسمها ليحدد التاريخ</div>
-        <p>إن قائد المدرسة ...............</p>
-        <p>بناءً على صلاحياته ، وبناءً على المادة (٢١) من نظام الخدمة المدنية ، وبناءً على موافقة معالي الوزير على إعطاء بعض الصلاحيات لمديري المدارس بالقرار رقم ١/١١٣٩ وتاريخ ١٤٢١/٣/١٧هـ ، ولغياب المعلم الموضح أسمه أعلاه ، حيث إن عذره غير مقبول ، وبمقتضى النظام .</p>
-        <p><b>يقرر ما يلي :</b></p>
-        <p>(١) حسم مدة الغياب الموضحة بعاليه وعددها ( <u>${formData.days||"    "}</u> ) يوماً من راتبه .</p>
-        <p>(٢) على إدارة شؤون الموظفين ( تنفيذ الأنظمة ) تنفيذ إجراء الحسم واستبعادها من خدماته وأصل القرار للملف بالإدارة مع الأساس .</p>
-        <p style="text-align:center"><b>والله الموفق ......</b></p>
-        <div style="margin-top:20px">
-          <p>الرئيس المباشر</p>
-          <p>الختم</p>
-          <p>الاسم : ___________</p>
-          <p>التوقيع : ___________</p>
-          <p>التاريخ : ${dateH}</p>
-        </div>
-        <div style="font-size:11px;margin-top:20px;color:#555">
-          <p><b>ملاحظة / لن يتم استلام قرار الحسم بدون المساءلة</b></p>
-          <p>صورة/ لشؤون الموظفين لمتابعة تنفيذ الحسم ( تنفيذ الأنظمة ) .</p>
-          <p>صورة / لمكتب التعليم .</p>
-          <p>صورة / للملف بالمدرسة .</p>
-        </div>
-      `;
-    }
-
-    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
-    <title>${currentForm?.label}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-      *{margin:0;padding:0;box-sizing:border-box}
-      body{font-family:'Cairo',sans-serif;direction:rtl;padding:25px 30px;color:#1a1a1a;font-size:13px;line-height:1.8}
-      p{margin:6px 0}
-      u{border-bottom:1px solid #333;text-decoration:none;display:inline-block;min-width:80px}
-      h3{font-size:16px;font-weight:900;text-align:center}
-      @media print{@page{size:A4;margin:1.5cm}body{padding:0}}
-    </style></head>
-    <body>${body}<script>window.onload=()=>window.print()</script></body></html>`);
-  };
-
-  return (
-    <div dir="rtl" className="space-y-4">
-      {/* رأس الصفحة */}
-      <div className="rounded-b-2xl overflow-hidden shadow-xl" style={{background:`linear-gradient(135deg,${FORM_GREEN},#40916c)`}}>
-        <div className="p-6 text-white">
-          <h2 className="text-2xl font-black mb-1">📋 النماذج الرسمية</h2>
-          <p className="opacity-80 text-sm">نماذج الدليل الإجرائي — وزارة التعليم السعودية</p>
-        </div>
-      </div>
-
-      {/* بانر المساءلة المُحوَّلة */}
-      {selectedTeacher && (() => {
-        const isFromAttendance = !!formData.spec;
-        if (!isFromAttendance) return null;
-        return (
-          <div style={{
-            background:"linear-gradient(135deg,#1e3a5f,#2563eb)", borderRadius:14,
-            padding:"12px 16px", display:"flex", alignItems:"center", gap:10,
-            fontFamily:"'Cairo','Noto Naskh Arabic',sans-serif",
-          }}>
-            <span style={{ fontSize:22 }}>📋</span>
-            <div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:13 }}>
-                تم التحويل من سجل الحضور
-              </div>
-              <div style={{ color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:1 }}>
-                المعلم: <strong>{selectedTeacher}</strong>
-                {" — "}{formData.type === "تأخر" ? "🕐 تأخر" : "❌ غياب"}
-                {formData.spec ? ` — ${formData.spec}` : ""}
-              </div>
-            </div>
-            <div style={{ marginRight:"auto", color:"rgba(255,255,255,0.6)", fontSize:10, fontWeight:700 }}>
-              تم ملء البيانات تلقائياً ↓
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* اختيار النموذج */}
-      <div className="grid grid-cols-2 gap-3">
-        {FORM_TYPES.map(ft=>(
-          <button key={ft.id} onClick={()=>setFormType(ft.id)}
-            className="p-4 rounded-2xl border-2 text-right transition-all"
-            style={{
-              borderColor: formType===ft.id ? FORM_GREEN : "#e5e7eb",
-              background: formType===ft.id ? FORM_LIGHT : "#fff",
-            }}>
-            <div className="font-black text-sm" style={{color:formType===ft.id?FORM_GREEN:"#374151"}}>{ft.label}</div>
-            <div className="text-xs mt-1 font-bold" style={{color:"#6b7280"}}>{ft.code}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* بيانات النموذج */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
-        <h3 className="font-black text-sm" style={{color:FORM_GREEN}}>📝 {currentForm?.label}</h3>
-
-        {/* اختيار المعلم */}
-        <div>
-          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-            <label className="text-xs font-bold text-gray-500">اسم المعلم *</label>
-            <div className="flex gap-2">
-              <button onClick={() => setShowAddManual(p=>!p)}
-                className="flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg border-2 transition-all"
-                style={{ borderColor:"#2563eb", color:"#2563eb", background:"#eff6ff" }}>
-                ➕ إضافة يدوي
-              </button>
-              <button onClick={() => setShowImportXlsx(true)}
-                className="flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-lg border-2 transition-all"
-                style={{ borderColor: FORM_GREEN, color: FORM_GREEN, background: FORM_LIGHT }}>
-                📥 استيراد من Excel
-                {localAccounts.length > 0 && (
-                  <span className="bg-green-600 text-white rounded-full px-1.5 text-xs">{localAccounts.length}</span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* نموذج الإضافة اليدوية */}
-          {showAddManual && (
-            <div style={{ background:"#eff6ff", border:"1.5px solid #bfdbfe", borderRadius:12,
-              padding:"12px 14px", marginBottom:10, display:"flex", flexWrap:"wrap", gap:8, alignItems:"flex-end" }}>
-              <div style={{ flex:"1 1 160px" }}>
-                <label style={{ fontSize:10, fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>اسم المعلم *</label>
-                <input value={manualName} onChange={e=>setManualName(e.target.value)}
-                  placeholder="الاسم الرباعي"
-                  className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-400 text-xs focus:outline-none"
-                  style={{fontFamily:"inherit"}} />
-              </div>
-              <div style={{ flex:"1 1 120px" }}>
-                <label style={{ fontSize:10, fontWeight:700, color:"#64748b", display:"block", marginBottom:3 }}>رقم الهوية</label>
-                <input value={manualId} onChange={e=>setManualId(e.target.value)}
-                  placeholder="1xxxxxxxxx"
-                  className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 focus:border-blue-400 text-xs focus:outline-none"
-                  style={{fontFamily:"inherit"}} />
-              </div>
-              <div style={{ display:"flex", gap:6 }}>
-                <button onClick={addManualTeacher}
-                  style={{ padding:"7px 16px", borderRadius:10, border:"none", background:"#2563eb",
-                           color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>
-                  ✅ إضافة
-                </button>
-                <button onClick={()=>{ setShowAddManual(false); setManualName(""); setManualId(""); }}
-                  style={{ padding:"7px 12px", borderRadius:10, border:"1.5px solid #e2e8f0",
-                           background:"#f8fafc", color:"#64748b", fontWeight:700, fontSize:11, cursor:"pointer" }}>
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          )}
-
-          <select value={selectedTeacher} onChange={e=>handleSelectTeacher(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border-2 text-sm font-bold focus:outline-none"
-            style={{fontFamily:"inherit", borderColor:selectedTeacher?FORM_GREEN:"#e5e7eb"}}>
-            <option value="">— اختر المعلم ({allTeacherList.length}) —</option>
-            {allTeacherList.map(t=>(
-              <option key={t.name} value={t.name}>
-                {t.name}{t.id ? ` — ${t.id}` : ""}
-              </option>
-            ))}
-          </select>
-          {allTeacherList.length === 0 && (
-            <div className="text-xs text-amber-600 font-bold mt-1.5 flex items-center gap-1">
-              ⚠️ لا يوجد معلمون — اضغط "إضافة يدوي" أو "استيراد من Excel"
-            </div>
-          )}
-        </div>
-
-        {selectedTeacher && (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1">رقم الهوية / السجل المدني</label>
-              <input value={formData.nationalId} onChange={e=>setFormData(p=>({...p,nationalId:e.target.value}))}
-                placeholder="يُجلب تلقائياً من الحسابات" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm focus:outline-none"
-                style={{fontFamily:"inherit"}}/>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1">التخصص</label>
-              <input value={formData.spec} onChange={e=>setFormData(p=>({...p,spec:e.target.value}))}
-                placeholder="التخصص" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm focus:outline-none"
-                style={{fontFamily:"inherit"}}/>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1">المستوى / المرتبة</label>
-              <input value={formData.rank} onChange={e=>setFormData(p=>({...p,rank:e.target.value}))}
-                placeholder="مثال: الثامنة" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm focus:outline-none"
-                style={{fontFamily:"inherit"}}/>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1">رقم الوظيفة</label>
-              <input value={formData.jobNo} onChange={e=>setFormData(p=>({...p,jobNo:e.target.value}))}
-                placeholder="رقم الوظيفة" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm focus:outline-none"
-                style={{fontFamily:"inherit"}}/>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 block mb-1">العمل الحالي</label>
-              <input value={formData.jobTitle} onChange={e=>setFormData(p=>({...p,jobTitle:e.target.value}))}
-                placeholder="مثال: معلم" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm focus:outline-none"
-                style={{fontFamily:"inherit"}}/>
-            </div>
-            {/* منتقي التاريخ */}
-            <div className="col-span-2">
-              <label className="text-xs font-bold text-gray-500 block mb-1">التاريخ</label>
-              <div className="flex gap-2 items-center">
-                <select value={formData.calType||"hijri"} onChange={e=>setFormData(p=>({...p,calType:e.target.value,dateH:""}))}
-                  className="px-2 py-2 rounded-xl border-2 border-gray-200 text-xs font-bold focus:outline-none" style={{fontFamily:"inherit"}}>
-                  <option value="hijri">🌙 هجري</option>
-                  <option value="greg">☀️ ميلادي</option>
-                </select>
-                <select value={formData.dateDay||""} onChange={e=>setFormData(p=>({...p,dateDay:e.target.value}))}
-                  className="flex-1 px-2 py-2 rounded-xl border-2 border-gray-200 text-sm font-bold focus:outline-none text-center" style={{fontFamily:"inherit"}}>
-                  <option value="">يوم</option>
-                  {Array.from({length:30},(_,i)=>i+1).map(d=><option key={d} value={d}>{String(d).padStart(2,"0")}</option>)}
-                </select>
-                <span className="text-gray-400 font-bold">/</span>
-                <select value={formData.dateMonth||""} onChange={e=>setFormData(p=>({...p,dateMonth:e.target.value}))}
-                  className="flex-1 px-2 py-2 rounded-xl border-2 border-gray-200 text-sm font-bold focus:outline-none text-center" style={{fontFamily:"inherit"}}>
-                  <option value="">شهر</option>
-                  {(formData.calType==="greg"
-                    ?["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]
-                    :["محرم","صفر","ربيع الأول","ربيع الثاني","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"]
-                  ).map((m,i)=><option key={i} value={i+1}>{m}</option>)}
-                </select>
-                <span className="text-gray-400 font-bold">/</span>
-                <select value={formData.dateYear||""} onChange={e=>setFormData(p=>({...p,dateYear:e.target.value}))}
-                  className="flex-1 px-2 py-2 rounded-xl border-2 border-gray-200 text-sm font-bold focus:outline-none text-center" style={{fontFamily:"inherit"}}>
-                  <option value="">سنة</option>
-                  {Array.from({length:5},(_,i)=>(formData.calType==="greg"?2025:1447)+i).map(y=><option key={y} value={y}>{y}</option>)}
-                </select>
-                <span className="text-xs font-bold text-gray-400">{formData.calType==="greg"?"م":"هـ"}</span>
-              </div>
-            </div>
-
-            {(formType==="warning") && (
-              <>
-                <div>
-                  <label className="text-xs font-bold text-gray-500 block mb-1">نوع المخالفة</label>
-                  <select value={formData.type} onChange={e=>setFormData(p=>({...p,type:e.target.value}))}
-                    className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm focus:outline-none"
-                    style={{fontFamily:"inherit"}}>
-                    <option>تأخر</option>
-                    <option>مغادرة أثناء العمل</option>
-                    <option>انصراف مبكر</option>
-                  </select>
-                </div>
-                {/* منتقي الوقت — الساعة من */}
-                <div>
-                  <label className="text-xs font-bold text-gray-500 block mb-1">الساعة من</label>
-                  <div className="flex gap-1 items-center">
-                    <select value={formData.timeFromH||""} onChange={e=>setFormData(p=>({...p,timeFromH:e.target.value}))}
-                      className="flex-1 px-1 py-2 rounded-xl border-2 border-gray-200 text-sm font-bold text-center focus:outline-none" style={{fontFamily:"inherit"}}>
-                      <option value="">س</option>
-                      {Array.from({length:12},(_,i)=>i+1).map(h=><option key={h} value={h}>{String(h).padStart(2,"0")}</option>)}
-                    </select>
-                    <span className="font-black text-gray-400">:</span>
-                    <select value={formData.timeFromM||""} onChange={e=>setFormData(p=>({...p,timeFromM:e.target.value}))}
-                      className="flex-1 px-1 py-2 rounded-xl border-2 border-gray-200 text-sm font-bold text-center focus:outline-none" style={{fontFamily:"inherit"}}>
-                      <option value="">د</option>
-                      {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m=><option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <select value={formData.timeFromP||"ص"} onChange={e=>setFormData(p=>({...p,timeFromP:e.target.value}))}
-                      className="px-1 py-2 rounded-xl border-2 border-gray-200 text-xs font-bold text-center focus:outline-none" style={{fontFamily:"inherit"}}>
-                      <option>ص</option><option>م</option>
-                    </select>
-                  </div>
-                </div>
-                {/* منتقي الوقت — إلى الساعة */}
-                <div>
-                  <label className="text-xs font-bold text-gray-500 block mb-1">إلى الساعة</label>
-                  <div className="flex gap-1 items-center">
-                    <select value={formData.timeToH||""} onChange={e=>setFormData(p=>({...p,timeToH:e.target.value}))}
-                      className="flex-1 px-1 py-2 rounded-xl border-2 border-gray-200 text-sm font-bold text-center focus:outline-none" style={{fontFamily:"inherit"}}>
-                      <option value="">س</option>
-                      {Array.from({length:12},(_,i)=>i+1).map(h=><option key={h} value={h}>{String(h).padStart(2,"0")}</option>)}
-                    </select>
-                    <span className="font-black text-gray-400">:</span>
-                    <select value={formData.timeToM||""} onChange={e=>setFormData(p=>({...p,timeToM:e.target.value}))}
-                      className="flex-1 px-1 py-2 rounded-xl border-2 border-gray-200 text-sm font-bold text-center focus:outline-none" style={{fontFamily:"inherit"}}>
-                      <option value="">د</option>
-                      {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m=><option key={m} value={m}>{m}</option>)}
-                    </select>
-                    <select value={formData.timeToP||"ص"} onChange={e=>setFormData(p=>({...p,timeToP:e.target.value}))}
-                      className="px-1 py-2 rounded-xl border-2 border-gray-200 text-xs font-bold text-center focus:outline-none" style={{fontFamily:"inherit"}}>
-                      <option>ص</option><option>م</option>
-                    </select>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {(formType==="absence_investigate"||formType==="absence_deduct") && (
-              <div>
-                <label className="text-xs font-bold text-gray-500 block mb-1">عدد أيام الغياب</label>
-                <input value={formData.days} onChange={e=>setFormData(p=>({...p,days:e.target.value}))}
-                  placeholder="يُحسب تلقائياً من سجل الحضور"
-                  className="w-full px-3 py-2 rounded-xl border-2 text-sm focus:outline-none font-black text-center"
-                  style={{fontFamily:"inherit", borderColor:formData.days?"#dc2626":"#e5e7eb", color:formData.days?"#dc2626":"#374151"}}/>
-              </div>
-            )}
-
-            {formType==="deduct_late" && (
-              <div>
-                <label className="text-xs font-bold text-gray-500 block mb-1">مجموع ساعات التأخر</label>
-                <input value={formData.lateHours} onChange={e=>setFormData(p=>({...p,lateHours:e.target.value}))}
-                  placeholder="يُحسب تلقائياً" className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 text-sm focus:outline-none"
-                  style={{fontFamily:"inherit"}}/>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* مدة التأخير المحتسبة تلقائياً */}
-        {selectedTeacher && formType==="warning" && (formData.timeFromH||formData.timeToH) && (()=>{
-          const mins = calcLateMins();
-          return mins ? (
-            <div className="rounded-2xl p-4 border-2 border-amber-300 bg-amber-50 flex items-center gap-3">
-              <span className="text-2xl">⏱️</span>
-              <div>
-                <div className="font-black text-amber-800 text-sm">مدة التأخير المحتسبة تلقائياً</div>
-                <div className="text-xl font-black text-amber-600">{fmtMins(mins)}</div>
-              </div>
-            </div>
-          ) : null;
-        })()}
-
-        {/* سجل التأخرات المتراكمة */}
-        {selectedTeacher && (()=>{
-          const recs = lateRecords[selectedTeacher]||[];
-          const total = totalLateMins(selectedTeacher);
-          const pct = Math.min(total/(7*60)*100,100);
-          const danger = total >= 7*60;
-          const warn   = total >= 5*60;
-          return (
-            <div className="rounded-2xl p-4 border-2 space-y-3"
-              style={{borderColor:danger?"#dc2626":warn?"#f59e0b":"#e5e7eb", background:danger?"#fef2f2":warn?"#fffbeb":"#f9fafb"}}>
-              <div className="flex items-center justify-between">
-                <div className="font-black text-sm" style={{color:danger?"#dc2626":warn?"#b45309":"#374151"}}>
-                  {danger?"🚨 تجاوز حد الحسم!":warn?"⚠️ اقترب من حد الحسم":"📊"} سجل التأخرات المتراكمة
-                </div>
-                <div className="font-black text-lg" style={{color:danger?"#dc2626":warn?"#b45309":"#6366f1"}}>
-                  {fmtMins(total)} / ٧ ساعات
-                </div>
-              </div>
-              {/* شريط تقدم */}
-              <div className="h-4 rounded-full overflow-hidden" style={{background:"#e5e7eb"}}>
-                <div className="h-full rounded-full transition-all"
-                  style={{width:pct+"%", background:danger?"#dc2626":warn?"#f59e0b":"#10b981"}}/>
-              </div>
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>٠</span>
-                <span style={{color:"#f59e0b",fontWeight:"bold"}}>٥ ساعات</span>
-                <span style={{color:"#dc2626",fontWeight:"bold"}}>٧ ساعات (حسم)</span>
-              </div>
-              {recs.length>0 && (
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {recs.map((r,i)=>(
-                    <div key={r.id||i} className="flex items-center justify-between bg-white rounded-xl px-3 py-2 text-xs border border-gray-100">
-                      <span className="font-bold text-gray-700">{r.date}</span>
-                      <span className="font-bold text-gray-500">{r.type}</span>
-                      <span className="font-black text-amber-600">{fmtMins(r.mins)}</span>
-                      <button onClick={()=>{
-                        if(!confirm("حذف هذا السجل؟")) return;
-                        const updated={...lateRecords,[selectedTeacher]:recs.filter((_,j)=>j!==i)};
-                        saveLateRecords(updated);
-                      }} className="text-red-400 hover:text-red-600 px-1">✕</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {recs.length===0 && <div className="text-xs text-gray-400 text-center py-2">لا توجد تنبيهات مسجلة بعد</div>}
-              {danger && (
-                <button onClick={()=>setFormType("deduct_late")}
-                  className="w-full py-2.5 rounded-xl font-black text-white text-sm"
-                  style={{background:"#dc2626"}}>
-                  📋 إصدار قرار حسم ساعات التأخر
-                </button>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* شريط الحفظ */}
-        {savedBanner && (
-          <div className="rounded-2xl p-3 text-center font-black text-sm text-green-700 bg-green-50 border border-green-200">
-            {savedBanner}
-          </div>
-        )}
-
-        {/* معاينة */}
-        {selectedTeacher && (
-          <div className="rounded-2xl p-4 border-2" style={{background:FORM_LIGHT, borderColor:FORM_GREEN+"44"}}>
-            <div className="text-xs font-black mb-2" style={{color:FORM_GREEN}}>👁️ معاينة البيانات</div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div><span className="text-gray-500">الاسم:</span> <strong>{selectedTeacher}</strong></div>
-              <div><span className="text-gray-500">الهوية:</span> <strong>{formData.nationalId||"—"}</strong></div>
-              <div><span className="text-gray-500">المدرسة:</span> <strong>{SCHOOL_NAME}</strong></div>
-              {formData.days&&<div><span className="text-gray-500">الغياب:</span> <strong className="text-red-600">{formData.days} أيام</strong></div>}
-              {calcLateMins()&&<div><span className="text-gray-500">التأخر الحالي:</span> <strong className="text-amber-600">{fmtMins(calcLateMins())}</strong></div>}
-              {totalLateMins(selectedTeacher)>0&&<div className="col-span-2"><span className="text-gray-500">المتراكم:</span> <strong className="text-red-600">{fmtMins(totalLateMins(selectedTeacher))}</strong></div>}
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          {formType==="warning" && selectedTeacher && (
-            <button onClick={saveWarningRecord}
-              className="flex-1 py-4 rounded-2xl font-black text-base transition-all hover:shadow-xl flex items-center justify-center gap-2"
-              style={{background:"linear-gradient(135deg,#f59e0b,#d97706)",color:"#fff"}}>
-              💾 حفظ في السجل
-            </button>
-          )}
-          <button onClick={printForm} disabled={!selectedTeacher}
-            className="flex-1 py-4 rounded-2xl text-white font-black text-base disabled:opacity-40 transition-all hover:shadow-xl flex items-center justify-center gap-2"
-            style={{background:`linear-gradient(135deg,${FORM_GREEN},#40916c)`}}>
-            🖨️ طباعة النموذج
-          </button>
-        </div>
-      </div>
-
-      {/* ═══ نافذة استيراد Excel ═══ */}
-      {showImportXlsx && (
-        <div className="fixed inset-0 bg-black bg-opacity-55 flex items-center justify-center z-50 p-4"
-          style={{ fontFamily:"'Cairo','Noto Naskh Arabic',sans-serif" }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" dir="rtl">
-            <div style={{ background:`linear-gradient(135deg,${FORM_GREEN},#40916c)`, borderRadius:"16px 16px 0 0", padding:"16px 20px" }}>
-              <div className="flex items-center justify-between">
-                <div className="text-white font-black text-base">📥 استيراد المعلمين من Excel</div>
-                <button onClick={() => setShowImportXlsx(false)}
-                  style={{ background:"rgba(255,255,255,0.2)", border:"none", borderRadius:8,
-                           color:"#fff", fontSize:18, fontWeight:900, cursor:"pointer", padding:"2px 10px" }}>✕</button>
-              </div>
-            </div>
-            <div style={{ padding:"20px" }}>
-              <div style={{ background:"#f0fdf4", borderRadius:12, padding:14, marginBottom:16,
-                border:"1.5px solid #86efac", fontSize:12, lineHeight:1.9, color:"#166534" }}>
-                <div className="font-black mb-1">📋 تنسيق الملف المطلوب:</div>
-                <div>• عمود <strong>الاسم</strong> — يحتوي على اسم المعلم</div>
-                <div>• عمود <strong>الهوية</strong> — يحتوي على رقم الهوية الوطنية</div>
-                <div className="mt-1 text-xs text-green-700">يدعم .xlsx و .xls — يكتشف الأعمدة تلقائياً</div>
-              </div>
-
-              {localAccounts.length > 0 && (
-                <div style={{ background:"#fffbeb", borderRadius:12, padding:12, marginBottom:14,
-                  border:"1.5px solid #fde68a", fontSize:12 }}>
-                  <div style={{ fontWeight:800, color:"#92400e", marginBottom:6 }}>
-                    📊 المعلمون المستوردون حالياً ({localAccounts.length})
-                  </div>
-                  <div style={{ maxHeight:120, overflowY:"auto", display:"flex", flexDirection:"column", gap:4 }}>
-                    {localAccounts.map((a,i) => (
-                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
-                        background:"rgba(255,255,255,0.7)", borderRadius:8, padding:"4px 10px" }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:"#374151" }}>{a.name}</span>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontSize:10, color:"#94a3b8" }}>{a.id || "—"}</span>
-                          <button onClick={() => {
-                            const updated = localAccounts.filter((_,j) => j !== i);
-                            setLocalAccounts(updated);
-                            try { localStorage.setItem("official_form_teachers_v1", JSON.stringify(updated)); } catch {}
-                    DB.set("school-official-teachers", updated);
-                          }}
-                            style={{ background:"#fee2e2", border:"none", borderRadius:6, color:"#dc2626",
-                                     fontSize:10, fontWeight:800, padding:"1px 6px", cursor:"pointer" }}>حذف</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => {
-                    if (!confirm("حذف جميع المعلمين المستوردين؟")) return;
-                    setLocalAccounts([]);
-                    try { localStorage.removeItem("official_form_teachers_v1"); } catch {}
-                  }}
-                    style={{ marginTop:8, width:"100%", padding:"6px", borderRadius:8, border:"1.5px solid #fca5a5",
-                             background:"#fff5f5", color:"#dc2626", fontWeight:700, fontSize:11, cursor:"pointer",
-                             fontFamily:"'Cairo',sans-serif" }}>
-                    🗑️ حذف الكل
-                  </button>
-                </div>
-              )}
-
-              <label style={{
-                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                border:`2px dashed ${FORM_GREEN}`, borderRadius:14, padding:"28px 20px",
-                cursor:"pointer", background:FORM_LIGHT, transition:"all .2s",
-              }}>
-                <div style={{ fontSize:40, marginBottom:8 }}>📂</div>
-                <div style={{ fontWeight:900, fontSize:14, color:FORM_GREEN }}>اضغط لاختيار ملف Excel</div>
-                <div style={{ fontSize:11, color:"#6b7280", marginTop:4 }}>يدعم .xlsx و .xls</div>
-                <input type="file" accept=".xlsx,.xls" style={{ display:"none" }}
-                  onChange={e => { const f = e.target.files?.[0]; if (f) handleImportXlsx(f); }} />
-              </label>
-
-              <button onClick={() => setShowImportXlsx(false)}
-                style={{ width:"100%", marginTop:12, padding:"10px", borderRadius:12,
-                         border:"1.5px solid #e2e8f0", background:"#f8fafc", color:"#64748b",
-                         fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>
-                إغلاق
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-// -
-// صفحة ملف الطالب الشامل
-// -
 function MeetingsPage({ teachers }) {
   const [meetings, setMeetings] = useState([]);
   const [form,     setForm]     = useState({title:"",teacher:"",date:"",dateH:"",time:"",type:"حضوري",notes:""});
@@ -29390,7 +28771,7 @@ const NAV_TOOL_DESC = {
   activities:"خطة الأنشطة والبرامج", gallery:"صور ومعرض الأنشطة", meetings:"محاضر الاجتماعات", committeemeeting:"اجتماعات اللجان المدرسية",
   monthlyreport:"التقرير الشهري الشامل", report:"توثيق تقارير البرامج", qiyas:"قياس أثر البرامج",
   conduct:"مخالفات الطلاب والفصول مع الصور والتقرير", alreport:"الفصول الأكثر غياباً وتأخراً والطلاب المتكررون", trash:"استرجاع أي شيء حُذف أو استُبدل",
-  surveys:"استبيانات ونماذج رأي", officialforms:"نماذج رسمية جاهزة", hfx:"مساءلات الدوام طبق الأصل + واتساب + توقيع المعلم", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
+  surveys:"استبيانات ونماذج رأي", hfx:"مساءلات الدوام طبق الأصل + واتساب + توقيع المعلم", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
 };
 
 const NAV_GROUP_STYLE = {
@@ -30687,6 +30068,23 @@ const maHijri = d => { try { return d.toLocaleDateString("ar-SA-u-ca-islamic-uma
 const maGreg = d => d.toLocaleDateString("ar-EG-u-nu-arab", { day: "numeric", month: "long", year: "numeric" }) + " م";
 const maAr = n => String(n ?? "").replace(/\d/g, x => "٠١٢٣٤٥٦٧٨٩"[x]);
 const maClassName = ck => { const [l, s] = String(ck).split("-"); return `${MA_LV[+l - 1]?.s || ""} متوسط / ${maAr(s)}`; };
+// ── أيام الإجازة: الجمعة والسبت + الإجازات الرسمية المسجلة في سجل المناوبة (DU_OFF_H)
+const maOffName = k => { try { const d = maDate(k); const w = d.getDay(); if (w === 5 || w === 6) return "إجازة نهاية الأسبوع"; const H = typeof DU_OFF_H !== "undefined" ? DU_OFF_H : null; return (H && H[k]) || ""; } catch { return ""; } };
+const maOff = k => !!maOffName(k);
+const maLastWork = k => { const d = maDate(k); for (let i = 0; i < 20; i++) { const x = maKey(d); if (!maOff(x)) return x; d.setDate(d.getDate() - 1); } return k; };
+const maWorkDay = () => maLastWork(maKey(new Date())); // اليوم إن كان دواماً، وإلا آخر يوم دوام
+function MaOffCard({ dk, what = "الرصد", onLast, onReports }) {
+  const last = maLastWork(dk); const D = maDate(dk), L = maDate(last);
+  return <div className="ma-card p-6 text-center grid gap-2" style={{ border: "2px solid #c7d2fe", background: "linear-gradient(180deg,#eef2ff,#fff)", justifyItems: "center" }}>
+    <div style={{ fontSize: 44 }}>🌙</div>
+    <b style={{ fontSize: 18, color: "#312e81" }}>{maDay(D)} {maHijri(D)} — {maOffName(dk)}</b>
+    <div style={{ fontSize: 14, fontWeight: 800, color: "#475569" }}>لا يُطلب {what} في أيام الإجازة. المتاح الآن مراجعة التقارير السابقة فقط.</div>
+    {(onLast || onReports) && <div className="flex gap-2 justify-center flex-wrap mt-1">
+      {onReports && <button className="ma-btn pri" onClick={onReports}>📊 مراجعة التقارير</button>}
+      {onLast && last !== dk && <button className="ma-btn" onClick={() => onLast(last)}>📅 عرض آخر يوم دوام: {maDay(L)} {maHijri(L)}</button>}
+    </div>}
+  </div>;
+}
 const maClasses = (counts) => counts.flatMap((n, li) => Array.from({ length: n }, (_, i) => ({ ck: `${li + 1}-${i + 1}`, lv: li, sec: i + 1 })));
 async function maGet(path) { try { const r = await fetch(`${FIREBASE_URL}/school/${path}.json`); return await r.json(); } catch { return null; } }
 async function maPut(path, v) { return dbFirebasePut(path, v); }
@@ -31408,7 +30806,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   useEffect(() => {
     if (!me || !isStaff) return;
     (async () => {
-      const t = maKey(new Date());
+      const t = maWorkDay();
       const [idx, meta, late, exc, notes] = await Promise.all([maGet(`${MA_IDX}/${t}`), maGet(MA_META), maGet(`${MA_LATE}/${t}`), maGet(PT_EXC), maGet(PT_NOTES)]);
       const cnt = meta && Array.isArray(meta.counts) ? meta.counts.reduce((a, b) => a + (+b || 0), 0) : 14;
       setSum({ absent: idx?.absent || 0, total: idx?.total || 0, classes: idx?.classes || 0, allCls: cnt, late: ptVals(late).length, exc: ptVals(exc).filter(x => !x.status || x.status === "new").length, notes: ptVals(notes).filter(x => !x.reply).length });
@@ -31473,9 +30871,9 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
         ) : isStaff ? (
           <>
             {sum && <div className="pt-kpis">
-              <button className="pt-kpi" style={{ "--c": "#dc2626" }} onClick={() => setView("stats")}><b>{maAr(sum.absent)}</b><small>غائب اليوم من {maAr(sum.total)}</small></button>
+              <button className="pt-kpi" style={{ "--c": "#dc2626" }} onClick={() => setView("stats")}><b>{maAr(sum.absent)}</b><small>{maOff(maKey(new Date())) ? "غائب آخر يوم دوام" : "غائب اليوم"} من {maAr(sum.total)}</small></button>
               <button className="pt-kpi" style={{ "--c": "#0d9488" }} onClick={() => setView("stats")}><b>{maAr(sum.classes)} من {maAr(sum.allCls)}</b><small>فصول رصدت الغياب</small></button>
-              <button className="pt-kpi" style={{ "--c": "#ea580c" }} onClick={() => setView("late")}><b>{maAr(sum.late)}</b><small>متأخر صباحاً اليوم</small></button>
+              <button className="pt-kpi" style={{ "--c": "#ea580c" }} onClick={() => setView("late")}><b>{maAr(sum.late)}</b><small>{maOff(maKey(new Date())) ? "متأخر صباحاً (آخر يوم دوام)" : "متأخر صباحاً اليوم"}</small></button>
               <button className="pt-kpi" style={{ "--c": "#7c3aed" }} onClick={() => setView("inbox")}><b>{maAr(sum.exc)}</b><small>عذر جديد</small></button>
               <button className="pt-kpi" style={{ "--c": "#2563eb" }} onClick={() => setView("inbox")}><b>{maAr(sum.notes)}</b><small>ملاحظة بلا رد</small></button>
             </div>}
@@ -31975,7 +31373,7 @@ const RL_CSS = `.rl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));g
 .rl-row .x{font-size:11.5px;font-weight:900;border-radius:999px;padding:1px 8px;white-space:nowrap}
 .rl-tg{display:flex;gap:6px;flex-wrap:wrap}.rl-tg button{border:1.5px solid #e2e8f0;background:#fff;border-radius:999px;padding:4px 12px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;color:#475569}.rl-tg button.on{background:#0f172a;color:#fff;border-color:#0f172a}
 @media (max-width:760px){.rl{grid-template-columns:minmax(0,1fr)}}`;
-function RosterLists({ abs, late, navigate }) {
+function RosterLists({ abs, late, navigate, off }) {
   const [mode, setMode] = useState("cls"); const [open, setOpen] = useState(true);
   const ord = ck => { const [l, s] = String(ck || "9-99").split("-").map(Number); return (l || 9) * 100 + (s || 99); };
   const byName = (a, b) => String(a.name).localeCompare(String(b.name), "ar");
@@ -31986,7 +31384,7 @@ function RosterLists({ abs, late, navigate }) {
       : flat.map(x => <div key={x.id + x.ck} className="rl-row"><span className="n">{maAr(++k)}</span><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.name} <small style={{ color: "#94a3b8" }}>• {x.ck ? sttCk(x.ck) : ""}</small></span>{extra(x)}</div>)}</div>
   </div>; };
   return <div style={{ marginTop: 12 }}><style>{RL_CSS}</style>
-    <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14.5 }}>📋 أسماء الطلاب اليوم</b><div className="rl-tg">{[["cls", "حسب الفصل"], ["abc", "أبجدياً"], ["time", "حسب وقت الحضور"]].map(([k, l]) => <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{l}</button>)}</div><button onClick={() => setOpen(!open)} style={{ marginRight: "auto", border: "none", background: "#f1f5f9", borderRadius: 10, padding: "4px 12px", fontFamily: "inherit", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>{open ? "إخفاء ▴" : "إظهار ▾"}</button></div>
+    <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14.5 }}>📋 أسماء الطلاب {off ? "(آخر يوم دوام)" : "اليوم"}</b><div className="rl-tg">{[["cls", "حسب الفصل"], ["abc", "أبجدياً"], ["time", "حسب وقت الحضور"]].map(([k, l]) => <button key={k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{l}</button>)}</div><button onClick={() => setOpen(!open)} style={{ marginRight: "auto", border: "none", background: "#f1f5f9", borderRadius: 10, padding: "4px 12px", fontFamily: "inherit", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>{open ? "إخفاء ▴" : "إظهار ▾"}</button></div>
     {open && <div className="rl">
       <Box t="الغائبون — الحصة الثانية" ic="🚫" c="#b91c1c" bg="#fee2e2" b="#fecaca" L={abs} go="attendstats" empty="لا غياب مسجّل حتى الآن" extra={x => x.cnt > 1 ? <span className="x" style={{ background: "#fef2f2", color: "#b91c1c" }} title="أيام الغياب هذا الأسبوع">{maAr(x.cnt)} أيام</span> : <span />} />
       <Box t="المتأخرون صباحاً" ic="🌅" c="#c2410c" bg="#ffedd5" b="#fed7aa" L={late} go="morninglate" empty="لا متأخرين اليوم 🌟" extra={x => <span className="x" style={{ background: x.mins >= 30 ? "#fee2e2" : "#fff7ed", color: x.mins >= 30 ? "#b91c1c" : "#9a3412" }}>{x.time ? mlFmtT(x.time) : ""}{x.mins ? ` • ${mlDur(+x.mins)}` : ""}</span>} />
@@ -32000,7 +31398,7 @@ function AdminLiveBoard({ navigate }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const t = maKey(new Date());
+      const t = maWorkDay(); const off = t !== maKey(new Date());
       const [att, meta, late, ros, sc, ex, nt, cm, pm] = await Promise.all([maGet(`${MA_ATT}/${t}`), maGet(MA_META), maGet(`${MA_LATE}/${t}`), maGet(MA_ROSTER), maGet(SC_NODE), maGet(PT_EXC), maGet(PT_NOTES), maGet(PT_COMM), maGet(SC_META)]);
       const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4];
       const cls = maClasses(counts); const day = maNormDay(att);
@@ -32011,7 +31409,7 @@ function AdminLiveBoard({ navigate }) {
       const since = Date.now() - 86400000; let nc = 0; Object.values(ptObj(cm)).forEach(o => ptVals(o).forEach(c => { if (c.at > since) nc++; }));
       const lateL = ptVals(late).filter(x => x && x.name);
       const absL = done.flatMap(c => maArr(day[c.ck].absent).filter(x => x && x.name).map(x => ({ id: x.id || x.name, name: x.name, ck: c.ck })));
-      if (alive) setS({ done: done.length, all: cls.length, missing, absent, present, late: lateL.length, lateNames: lateL.slice(0, 6), absL, lateL: lateL.map(x => ({ id: x.id || x.name, name: x.name, ck: x.ck, time: x.time, mins: +x.mins || 0 })), tot, clsd, flag, exc: ptVals(ex).filter(x => !x.status || x.status === "new").length, notes: ptVals(nt).filter(x => !x.reply).length, nc, dl: meta?.deadline || "08:30" });
+      if (alive) setS({ done: done.length, all: cls.length, missing, absent, present, late: lateL.length, lateNames: lateL.slice(0, 6), absL, lateL: lateL.map(x => ({ id: x.id || x.name, name: x.name, ck: x.ck, time: x.time, mins: +x.mins || 0 })), tot, clsd, flag, exc: ptVals(ex).filter(x => !x.status || x.status === "new").length, notes: ptVals(nt).filter(x => !x.reply).length, nc, dl: meta?.deadline || "08:30", off, t });
     })();
     return () => { alive = false; };
   }, []);
@@ -32021,16 +31419,16 @@ function AdminLiveBoard({ navigate }) {
     <div className="pt" dir="rtl" style={{ margin: "14px 0" }}>
       <style>{PT_CSS}</style>
       <div className="ma-card" style={{ padding: 16, borderRadius: 22, background: "#fff", border: "1px solid #eef2f6", boxShadow: "0 14px 30px -26px rgba(15,23,42,.5)" }}>
-        <div className="flex items-center justify-between flex-wrap gap-2 mb-3"><div style={{ fontWeight: 900, fontSize: 16 }}>🛰️ لوحة المتابعة — كل ما يجري اليوم</div><div className="flex gap-2 flex-wrap"><button className="ma-btn" style={{ fontSize: 12, background: "linear-gradient(135deg,#0f766e,#0c4a6e)", color: "#fff", border: "none" }} onClick={() => navigate("morningboard")}>📺 شاشة الصباح</button><button className="ma-btn" style={{ fontSize: 12, background: "linear-gradient(135deg,#b91c1c,#f97316)", color: "#fff", border: "none" }} onClick={() => navigate("insights")}>🧠 مركز المؤشرات</button><button className="ma-btn" style={{ fontSize: 12 }} onClick={() => navigate("portals")}>🔐 بوابات الدخول</button></div></div>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3"><div style={{ fontWeight: 900, fontSize: 16 }}>{s.off ? `🌙 اليوم ${maOffName(maKey(new Date()))} — ملخص آخر يوم دوام: ${maDay(maDate(s.t))} ${asmHij(maDate(s.t))}` : "🛰️ لوحة المتابعة — كل ما يجري اليوم"}</div><div className="flex gap-2 flex-wrap"><button className="ma-btn" style={{ fontSize: 12, background: "linear-gradient(135deg,#0f766e,#0c4a6e)", color: "#fff", border: "none" }} onClick={() => navigate("morningboard")}>📺 شاشة الصباح</button><button className="ma-btn" style={{ fontSize: 12, background: "linear-gradient(135deg,#b91c1c,#f97316)", color: "#fff", border: "none" }} onClick={() => navigate("insights")}>🧠 مركز المؤشرات</button><button className="ma-btn" style={{ fontSize: 12 }} onClick={() => navigate("portals")}>🔐 بوابات الدخول</button></div></div>
         <div className="pt-kpis">
-          {card("#0d9488", "📋", `${maAr(s.done)} من ${maAr(s.all)}`, "فصول رصدت غياب الحصة الثانية", "attendstats", s.missing.length ? `متبقٍّ ${maAr(s.missing.length)} — الموعد ${s.dl}` : "✓ اكتمل الرصد")}
-          {card("#dc2626", "🚫", maAr(s.absent), "غائب اليوم", "attendstats", s.present ? `من ${maAr(s.present)} طالب (${maAr(Math.round(s.absent / s.present * 100))}٪)` : "")}
+          {card("#0d9488", "📋", `${maAr(s.done)} من ${maAr(s.all)}`, "فصول رصدت غياب الحصة الثانية", "attendstats", s.missing.length ? (s.off ? `لم يُرصد ذلك اليوم: ${maAr(s.missing.length)}` : `متبقٍّ ${maAr(s.missing.length)} — الموعد ${s.dl}`) : "✓ اكتمل الرصد")}
+          {card("#dc2626", "🚫", maAr(s.absent), s.off ? "غائب ذلك اليوم" : "غائب اليوم", "attendstats", s.present ? `من ${maAr(s.present)} طالب (${maAr(Math.round(s.absent / s.present * 100))}٪)` : "")}
           {card("#ea580c", "🌅", maAr(s.late), "متأخر صباحاً", "morninglate", s.late ? `أول حضور ${mlFmtT([...s.lateL].sort((a, b) => String(a.time).localeCompare(String(b.time)))[0].time)}` : "✓ لا متأخرين")}
           {card("#7c3aed", "🏷️", `${maAr(s.clsd)} من ${maAr(s.tot)}`, "طالب مصنَّف", "studentclassify", s.flag ? `${maAr(s.flag)} يحتاجون متابعة` : "")}
           {card("#2563eb", "📨", maAr(s.exc + s.notes), "طلبات أولياء الأمور", "parentinbox", `${maAr(s.exc)} عذر • ${maAr(s.notes)} ملاحظة • ${maAr(s.nc)} تعليق`)}
         </div>
-        <RosterLists abs={s.absL} late={s.lateL} navigate={navigate} />
-        {s.missing.length > 0 && <div className="flex gap-1 flex-wrap mt-3" style={{ fontSize: 12, fontWeight: 800, color: "#b45309" }}>⏳ لم تُرصد بعد: {s.missing.map(c => <span key={c.ck} className="sc-badge" style={{ background: "#fef3c7", color: "#92400e" }}>{maClassName(c.ck)}</span>)}</div>}
+        <RosterLists abs={s.absL} late={s.lateL} navigate={navigate} off={s.off} />
+        {s.missing.length > 0 && <div className="flex gap-1 flex-wrap mt-3" style={{ fontSize: 12, fontWeight: 800, color: "#b45309" }}>{s.off ? "لم تُرصد ذلك اليوم:" : "⏳ لم تُرصد بعد:"} {s.missing.map(c => <span key={c.ck} className="sc-badge" style={{ background: "#fef3c7", color: "#92400e" }}>{maClassName(c.ck)}</span>)}</div>}
       </div>
     </div>
   );
@@ -32591,12 +31989,12 @@ const ML_CSS = `
 `;
 
 function MorningLatePage({ by = "الإدارة", canConfig = true, admin = false }) {
-  const [tab, setTab] = useState("rec");
+  const [tab, setTab] = useState(() => maOff(maKey(new Date())) ? "rep" : "rec");
   const [cfg, setCfg] = useState({ lineup: "06:45", p1: "07:00" });
   const [cfgEd, setCfgEd] = useState(null);
   const [counts, setCounts] = useState([6, 4, 4]);
   const [rosters, setRosters] = useState({});
-  const [dateK, setDateK] = useState(maKey(new Date()));
+  const [dateK, setDateK] = useState(() => maWorkDay());
   const [dayLate, setDayLate] = useState({});   // sid -> rec (كل الفصول)
   const [dayCls, setDayCls] = useState({});     // ck -> اعتماد
   const [ck, setCk] = useState(null);
@@ -32911,7 +32309,8 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
         </div>}
         <div className="ma-tabs">{[["rec", `📝 الرصد اليومي${totalDay ? ` (${maAr(totalDay)})` : ""}`], ["rep", "📊 التقارير"], ...(admin ? [["cls", "📥 الفصول (١٤)"], ["staff", "👥 الإداريون المصرّح لهم"]] : [])].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
-        {tab === "rec" && <>
+        {tab === "rec" && maOff(dateK) && <MaOffCard dk={dateK} what="رصد التأخر الصباحي" onReports={() => setTab("rep")} onLast={k => setDateK(k)} />}
+        {tab === "rec" && !maOff(dateK) && <>
           <div className="ml-gs">
             <input className="ma-inp" style={{ height: 50, fontSize: 15, borderColor: "#fdba74", borderWidth: 2, borderRadius: 16 }} value={gq} onChange={e => setGq(e.target.value)} placeholder="⚡ رصد سريع: اكتب اسم الطالب المتأخر من أي فصل…" />
             {gq.trim().length >= 2 && (() => { const t = gq.trim(); const res = []; classes.forEach(c => studentsOf(c.ck).forEach(x => { if (res.length < 10 && x.name.includes(t)) res.push([c.ck, x]); })); return (
@@ -33758,7 +33157,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   const [tab, setTab] = useState(isStats ? (initTab || "stats") : "take");
   const [counts, setCounts] = useState([6, 4, 4]);
   const [rosters, setRosters] = useState({});        // ck -> {students:[{id,name}]}
-  const [dateK, setDateK] = useState(maKey(new Date()));
+  const [dateK, setDateK] = useState(() => isStats ? maWorkDay() : maKey(new Date()));
   const [day, setDay] = useState({});                 // ck -> record for dateK
   const [ck, setCk] = useState(null);
   const [absent, setAbsent] = useState({});           // working set: id -> true
@@ -33815,12 +33214,12 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   }, []);
   useEffect(() => { (async () => { const d = await maGet(`${MA_ATT}/${dateK}`); setDay(maNormDay(d)); })(); }, [dateK]);
   const followToday = useRef(true);
-  useEffect(() => { const f = () => { const t = maKey(new Date()); if (followToday.current) setDateK(d => d === t ? d : t); }; f(); document.addEventListener("visibilitychange", f); window.addEventListener("focus", f); return () => { document.removeEventListener("visibilitychange", f); window.removeEventListener("focus", f); }; }, []);
+  useEffect(() => { const f = () => { const t = isStats ? maWorkDay() : maKey(new Date()); if (followToday.current) setDateK(d => d === t ? d : t); }; f(); document.addEventListener("visibilitychange", f); window.addEventListener("focus", f); return () => { document.removeEventListener("visibilitychange", f); window.removeEventListener("focus", f); }; }, []);
   useEffect(() => {
     const t = setInterval(async () => {
       setTick(Date.now());
-      const today = maKey(new Date());
-      // الرابط نفسه كل يوم: يتحول التاريخ تلقائياً لليوم الجديد
+      const today = isStats ? maWorkDay() : maKey(new Date());
+      // الرابط نفسه كل يوم: يتحول التاريخ تلقائياً لليوم الجديد (وفي الإجازة تعرض الإحصائية آخر يوم دوام)
       if (followToday.current && today !== dateK) { setDateK(today); setCk(null); return; }
       if (dateK === today && !isT) { const d = maNormDay(await maGet(`${MA_ATT}/${dateK}`)); setDay(p => JSON.stringify(p) === JSON.stringify(d) ? p : d); }
     }, 30000);
@@ -34016,7 +33415,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
 
   useEffect(() => {
     if (isT || loading) return;
-    const today = maKey(new Date());
+    const today = maKey(new Date()); if (maOff(today)) return;
     const nm = new Date(tick); const past = dateK === today && nm.getHours() * 60 + nm.getMinutes() >= dlMin;
     const miss = classes.filter(c => studentsOf(c.ck).length && !day[c.ck]);
     if (past && miss.length && !notified.current[today] && typeof Notification !== "undefined" && Notification.permission === "granted") {
@@ -34110,7 +33509,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
           <span style={{ fontWeight: 900, fontSize: 13.5, color: "#92400e" }}>🔗 رابط التحضير للمعلمين (ثابت — يتجدد تاريخه يومياً):</span>
           <span dir="ltr" style={{ flex: "1 1 220px", minWidth: 0, background: "#fff", border: "1px solid #fde68a", borderRadius: 10, padding: "6px 10px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", userSelect: "all" }}>{portalLink}</span>
           <button className="ma-btn" style={{ padding: "6px 12px" }} onClick={() => { try { navigator.clipboard.writeText(portalLink); toast("✅ تم نسخ الرابط"); } catch {} }}>📋 نسخ</button>
-          <a className="ma-btn gold" style={{ padding: "6px 12px" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`🔔 تذكير التحضير — ${maDay(new Date())} ${maHijri(new Date())} الموافق ${maGreg(new Date())}\nنأمل إدخال غياب الحصة الثانية واعتماده قبل الساعة ${deadline} صباحاً (الدخول برقم السجل المدني):\n` + portalLink)}`}>💬 إرسال تذكير اليوم</a>
+          {!maOff(maKey(new Date())) && <a className="ma-btn gold" style={{ padding: "6px 12px" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`🔔 تذكير التحضير — ${maDay(new Date())} ${maHijri(new Date())} الموافق ${maGreg(new Date())}\nنأمل إدخال غياب الحصة الثانية واعتماده قبل الساعة ${deadline} صباحاً (الدخول برقم السجل المدني):\n` + portalLink)}`}>💬 إرسال تذكير اليوم</a>}
         </div>
       )}
 
@@ -34170,7 +33569,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
         )}
       </div>
 
-      {!isT && isToday && tab !== "manage" && tab !== "late" && (
+      {!isT && isToday && !maOff(dateK) && tab !== "manage" && tab !== "late" && (
         missing.length === 0 && savedToday > 0 ? (
           <div className="ma-alert mb-4" style={{ background: "#f0fdf4", border: "1.5px solid #86efac", color: "#15803d" }}>✅ تم تحضير واعتماد جميع الفصول لهذا اليوم</div>
         ) : pastDeadline && missing.length ? (
@@ -34192,7 +33591,8 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
       )}
 
       {/* ═══ التحضير ═══ */}
-      {(tab === "take" || isT) && (
+      {(tab === "take" || isT) && maOff(dateK) && <MaOffCard dk={dateK} what="رصد غياب الحصة الثانية" onLast={isT ? null : k => { followToday.current = false; setDateK(k); setCk(null); }} />}
+      {(tab === "take" || isT) && !maOff(dateK) && (
         <div className="grid gap-4">
           <div className="ma-card p-4">
             <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
@@ -35184,7 +34584,7 @@ function InMonthly({ D, by }) {
 function InMorning({ go }) {
   const [d, setD] = useState(null); const [now, setNow] = useState(new Date()); const [warn, setWarn] = useState(null); const ref = useRef(null);
   const load = async () => {
-    const t = maKey(new Date());
+    const t = maWorkDay();
     const [att, meta, late, ap, ros, T, cfg, log, ex, nt, cvp] = await Promise.all([maGet(`${MA_ATT}/${t}`), maGet(MA_META), maGet(`${MA_LATE}/${t}`), maGet(`${ML_DAY}/${t}`), maGet(MA_ROSTER), maGet(TT_NODE).then(ttFresh), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(PT_EXC), maGet(PT_NOTES), maGet(CV_PLAN)]);
     const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4]; const cls = maClasses(counts); const day = maNormDay(att);
     const done = cls.filter(c => day[c.ck]); const absent = done.reduce((a, c) => a + day[c.ck].absent.length, 0), total = done.reduce((a, c) => a + (day[c.ck].total || 0), 0);
@@ -35210,7 +34610,7 @@ function InMorning({ go }) {
     <div ref={ref} className="grid gap-3" style={{ background: "#f8fafc", borderRadius: 24, padding: 4, overflow: "auto" }}>
       <div className="in-hero" style={{ background: "linear-gradient(135deg,#0c4a6e,#0f766e 60%,#f59e0b)" }}>
         <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
-          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>🌅 صباح الخير — مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style={{ fontSize: 44, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1 }}>{now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" })}</div><div style={{ fontSize: 14, fontWeight: 800 }}>{maDay(now)} • {maHijri(now)} • {maGreg(now)}{pNow >= 0 ? ` • الحصة ${TT_ORD[pNow]} الآن` : ""}</div></div>
+          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{maOff(maKey(new Date())) ? `🌙 اليوم ${maOffName(maKey(new Date()))} — البيانات المعروضة لآخر يوم دوام: ${maDay(maDate(maWorkDay()))} ${asmHij(maDate(maWorkDay()))}` : "🌅 صباح الخير — مدرسة الأمير عبدالمجيد المتوسطة الأولى"}</div><div style={{ fontSize: 44, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1 }}>{now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" })}</div><div style={{ fontSize: 14, fontWeight: 800 }}>{maDay(now)} • {maHijri(now)} • {maGreg(now)}{pNow >= 0 ? ` • الحصة ${TT_ORD[pNow]} الآن` : ""}</div></div>
           <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={load}>🔄 تحديث</button><button className="ma-btn" onClick={fs}>⛶ ملء الشاشة</button></div>
         </div>
       </div>
@@ -37080,6 +36480,10 @@ function HfxPage({ by = "الإدارة" }) {
   const loadCases = async () => setCases(Object.values(ptObj(await maGet(HFX_NODE))).filter(c => c && c.id && !c.hid).sort((a, b) => (b.at || 0) - (a.at || 0)));
   const loadT = async () => setT(await hfxLoadTeachers());
   useEffect(() => { (async () => { setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
+  // قادم من زر «📋 مساءلة» في سجل حضور المعلمين: يفتح النموذج المناسب للمعلم مباشرة
+  useEffect(() => { if (!T || !cfg) return; let p = null; try { p = JSON.parse(localStorage.getItem("mosala_prefill") || "null"); } catch {} if (!p || !p.teacherName || Date.now() - (p.timestamp || 0) > 10 * 60000) return; localStorage.removeItem("mosala_prefill");
+    const t = T.find(x => cvNorm(x.n) === cvNorm(p.teacherName)) || T.find(x => cvMatch(x.n, { e: { name: p.teacherName } }) === "e"); const fk = /absent|غائب|غياب/.test(String(p.status)) ? "gh" : "ta";
+    if (t) newCase(fk, t); else { setTab("new"); setPick(fk); setQ(String(p.teacherName).split(" ")[0]); } }, [T, cfg]);
   if (!cfg || !T || !cases) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
   const ids = hfxIds();
   const saveCfg = async p => { const n = { ...cfg, ...p }; setCfg(n); await maPut(HFX_CFG, n); toast("✅ حُفظت الإعدادات"); };
@@ -40741,7 +40145,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","officialforms","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -41111,7 +40515,6 @@ function SchoolWebsiteInner() {
     { id: "monthlyreport",  label: "التقرير الشهري",        icon: "📑" },
     { id: "absencestats",   label: "إحصائيات الغياب",      icon: "📉" },
     { id: "attendancereport",label: "تحليل الحضور",        icon: "🗂️" },
-    { id: "officialforms",  label: "النماذج الرسمية",      icon: "📃" },
     { id: "hfx",            label: "نماذج متابعة الدوام (حضوري)", icon: "📑" },
     { id: "meetings",       label: "الاجتماعات",           icon: "🤝" },
     { id: "committeemeeting",label: "اجتماعات اللجان",     icon: "👔" },
@@ -41132,7 +40535,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","officialforms","hfx","timetable","ttnow","trash","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","hfx","timetable","ttnow","trash","settings"] },
   ];
 
   return (
@@ -41448,7 +40851,6 @@ function SchoolWebsiteInner() {
                 {page === "gradeanalysis"  && <GradeAnalysisPage />}
                 {page === "attendancereport"&& <AttendanceAnalysisPage />}
                 {page === "dailyquiz"      && <DailyQuizPage classList={classList} />}
-                {page === "officialforms"  && <OfficialFormsPage teachers={teachers} attendance={attendance} week={week} />}
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "meetings"       && <MeetingsPage teachers={teachers} />}
                 {page === "committeemeeting"&& <CommitteeMeetingPage teachers={teachers} />}
@@ -41625,7 +41027,6 @@ function SchoolWebsiteInner() {
         {page === "gradeanalysis" && <GradeAnalysisPage />}
         {page === "attendancereport" && <AttendanceAnalysisPage />}
         {page === "dailyquiz"      && <DailyQuizPage classList={classList} />}
-        {page === "officialforms"  && <OfficialFormsPage teachers={teachers} attendance={attendance} week={week} />}
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
         {page === "meetings"       && <MeetingsPage teachers={teachers} />}
         {page === "committeemeeting" && <CommitteeMeetingPage teachers={teachers} />}
