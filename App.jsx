@@ -2479,14 +2479,8 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
 
       <HomeHub navigate={navigate} initSel={hubSel} />
 
-      {/* ── المؤشرات + مهامي اليوم ── */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px] mb-4">
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#e0f2fe"}}>👥</div><div><div className="text-2xl font-black">{totalStudents}</div><div className="text-xs text-gray-400">إجمالي الطلاب</div></div></div>
-          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#dcfce7"}}>✅</div><div><div className="text-2xl font-black" style={{color:"#059669"}}>{todayPresent}</div><div className="text-xs text-gray-400">حضور المعلمين · {attendRate}%</div></div></div>
-          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#fee2e2"}}>❌</div><div><div className="text-2xl font-black" style={{color:"#dc2626"}}>{todayAbsent}</div><div className="text-xs text-gray-400">غياب المعلمين</div></div></div>
-          <div className="bg-white rounded-2xl p-4 flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"#fef3c7"}}>⏰</div><div><div className="text-2xl font-black" style={{color:"#d97706"}}>{todayLate}</div><div className="text-xs text-gray-400">تأخّر المعلمين</div></div></div>
-        </div>
+      {/* ── مهامي اليوم (المؤشرات القديمة المحسوبة من أرقام مخزنة في الكود أُزيلت — الأرقام الفعلية في لوحة القيادة أعلاه) ── */}
+      <div className="grid gap-4 mb-4" style={{ maxWidth: 420 }}>
         <div className="bg-white rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">📋 مهامي اليوم</b></div>
           {["متابعة طابور الصباح","مراجعة غياب الطلاب","الرد على الرسائل","متابعة تقارير المعلمين"].map((t,i)=>(
@@ -36903,6 +36897,10 @@ function hdDay(r, cfg) {
   if (!r) return null; const c = hdEff(cfg);
   const st = String(r.st || "").trim(); const S = hdMin(c.start), E = hdMin(c.end), R = Math.max(30, E - S), g = +c.grace || 0;
   const a = hdMin(r.a), d = hdMin(r.d); const fl = [];
+  // رفع الصباح: يُحسب التأخر فقط، ولا يُحكم بالغياب أو الانصراف قبل رفع نهاية الدوام
+  if (r.ph === "m") { if (/عطلة/.test(st)) return { kind: "off", st }; if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
+    if (a == null) return { kind: "pend", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
+    const perm = /استئذان/.test(st); const late = Math.max(0, a - S - g); return { kind: perm ? "perm" : "work", st, a, d: null, late, early: 0, permMin: perm ? late : 0, lost: perm ? 0 : late, pct: Math.max(0, Math.round((R - (perm ? 0 : late)) / R * 100)), fl, morning: 1 }; }
   if (/عطلة/.test(st)) return { kind: "off", st };
   if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl };
   if (/غياب/.test(st)) return { kind: "abs", st, a, d, late: 0, early: 0, lost: 0, pct: 0, fl };
@@ -36913,7 +36911,7 @@ function hdDay(r, cfg) {
   const lost = perm ? 0 : late + early;
   return { kind: perm ? "perm" : "work", st, a, d, late, early, permMin: perm ? late + early : 0, lost, pct: Math.max(0, Math.round((R - lost) / R * 100)), fl };
 }
-const HD_KIND = { work: { l: "حضور", c: "#15803d", bg: "#dcfce7" }, perm: { l: "مستأذن", c: "#0369a1", bg: "#e0f2fe" }, abs: { l: "غياب", c: "#b91c1c", bg: "#fee2e2" }, leave: { l: "إجازة", c: "#7c3aed", bg: "#ede9fe" } };
+const HD_KIND = { pend: { l: "لم يسجّل حضوره بعد", c: "#64748b", bg: "#f1f5f9" }, work: { l: "حضور", c: "#15803d", bg: "#dcfce7" }, perm: { l: "مستأذن", c: "#0369a1", bg: "#e0f2fe" }, abs: { l: "غياب", c: "#b91c1c", bg: "#fee2e2" }, leave: { l: "إجازة", c: "#7c3aed", bg: "#ede9fe" } };
 const hdPctC = p => p == null ? "#64748b" : p >= 95 ? "#15803d" : p >= 85 ? "#0f766e" : p >= 70 ? "#b45309" : "#b91c1c";
 // تجميع فترة
 function hdAgg(recs, cfg, f, t) {
@@ -37011,6 +37009,8 @@ function HdTeacherView({ me }) {
   return <div className="hd grid gap-3" dir="rtl"><style>{HD_CSS}</style>
     <div className="hd-hero"><h2>📈 انضباطي اليومي</h2><p>أ. {me.name} • من تقرير «حضوري» وسجل الطابور ومتابعة الحصص</p></div>
     <HdAbsTeacher me={me} />
+    {(() => { const W = [...new Set(Object.keys(recs).filter(k => !maOff(k)).map(hdWeekOf))].sort().reverse(); const me1 = { [hk]: recs }; const nm = { [hk]: { n: me.name, job: "معلم" } }; const won = W.filter(w => hdWeekStars(me1, nm, cfg, w).length); if (!won.length) return null; const cur = won[0] === W[0];
+      return <div style={{ borderRadius: 22, padding: "14px 16px", background: "linear-gradient(135deg,#78350f,#b45309 45%,#f59e0b)", color: "#fff", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 18px 32px -20px #b45309" }}><span style={{ fontSize: 38, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.35))" }}>⭐</span><span><b style={{ fontSize: 17, display: "block" }}>{cur ? "أنت من المعلمين المميزين في الانضباط هذا الأسبوع" : "سبق أن كنت من المعلمين المميزين في الانضباط"}</b><small style={{ fontWeight: 800, opacity: .92 }}>حققت الانضباط الكامل في {maAr(won.length)} {won.length > 2 && won.length < 11 ? "أسابيع" : "أسبوع"} • آخرها {hdWeekLbl(won[0])}</small></span></div>; })()}
     {ext && ext.ti >= 0 && <div className="hd-card"><b style={{ fontSize: 15 }}>🏫 فصولي وجدولي اليوم</b>
       <div className="flex gap-1 flex-wrap">{ext.mineCls.map(ck => <span key={ck} className="hd-pill" style={{ background: (MA_LV[+ck[0] - 1] || {}).soft || "#f1f5f9", color: (MA_LV[+ck[0] - 1] || {}).c || "#334155" }}>🚪 {maClassName(ck)}</span>)}</div>
       {maOff(maKey(new Date())) ? <div style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>🌙 اليوم إجازة</div> : !ext.today.length ? <div style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>لا حصص لك اليوم حسب الجدول</div> :
@@ -37066,12 +37066,17 @@ function HdTeacherView({ me }) {
 function HdBanner({ me, onOpen }) {
   const [s, setS] = useState(null);
   useEffect(() => { (async () => { const hk = hdK(me.hash); const [c, r, a] = await Promise.all([maGet(HD_CFG), maGet(`${HD_NODE}/${hk}`), maGet(`${HD_ACK}/${hk}`)]); const cfg = { ...HD_DEF, ...ptObj(c) }; if (!cfg.on) return;
-    const ks = Object.keys(ptObj(r)).filter(k => !maOff(k)).sort(); const k = ks[ks.length - 1]; if (!k) return; const d = hdDay(ptObj(r)[k], cfg); if (!d || d.kind === "off") return; setS({ k, d, seen: !!ptObj(a)[k] }); })(); }, []);
-  if (!s) return null; const c = hdPctC(s.d.pct);
-  return <button type="button" onClick={onOpen} style={{ width: "100%", border: "none", borderRadius: 20, padding: "12px 16px", color: "#fff", textAlign: "right", fontFamily: "inherit", cursor: "pointer", background: `linear-gradient(135deg,#0f1e3d,${c})`, display: "flex", alignItems: "center", gap: 12 }}>
-    <span style={{ fontSize: 28, fontWeight: 900, background: "rgba(255,255,255,.15)", borderRadius: 14, padding: "4px 12px" }}>{s.d.pct == null ? "—" : `${maAr(s.d.pct)}٪`}</span>
-    <span><b style={{ fontSize: 15 }}>📈 انضباطك يوم {maDay(maDate(s.k))}{s.seen ? "" : " — جديد"}</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .92 }}>{s.d.kind === "abs" ? "غياب" : s.d.kind === "perm" ? `مستأذن (${s.d.st})` : `تأخر ${hdDur(s.d.late)} • انصراف مبكر ${hdDur(s.d.early)}`} — اضغط للتفاصيل</div></span></button>;
+    const ks = Object.keys(ptObj(r)).filter(k => !maOff(k)).sort(); const k = ks[ks.length - 1]; if (!k) return; const d = hdDay(ptObj(r)[k], cfg); if (!d || d.kind === "off") return;
+    const star = hdWeekStars({ [hk]: ptObj(r) }, { [hk]: { n: me.name, job: "معلم" } }, cfg, hdWeekOf(k)).length > 0; setS({ k, d, seen: !!ptObj(a)[k], star }); })(); }, []);
+  if (!s) return null; const c = s.d.kind === "pend" ? "#64748b" : hdPctC(s.d.pct); const D = s.d;
+  const txt = D.morning ? (D.kind === "pend" ? "لم يُسجَّل حضورك حتى رفع الصباح" : D.late ? `حضرت ${hdHM(D.a)} — متأخر ${hdDur(D.late)}${D.kind === "perm" ? " (مستأذن)" : ""}` : `حضرت ${hdHM(D.a)} — في الوقت 👏`)
+    : D.kind === "abs" ? "غياب" : D.kind === "perm" ? `مستأذن (${D.st})` : D.kind === "leave" ? "إجازة" : `تأخر ${hdDur(D.late)} • انصراف مبكر ${hdDur(D.early)}`;
+  return <button type="button" onClick={onOpen} style={{ width: "100%", border: "none", borderRadius: 20, padding: "12px 16px", color: "#fff", textAlign: "right", fontFamily: "inherit", cursor: "pointer", background: s.star ? "linear-gradient(135deg,#78350f,#b45309 50%,#f59e0b)" : `linear-gradient(135deg,#0f1e3d,${c})`, display: "flex", alignItems: "center", gap: 12 }}>
+    <span style={{ fontSize: 28, fontWeight: 900, background: "rgba(255,255,255,.15)", borderRadius: 14, padding: "4px 12px" }}>{D.pct == null ? (D.kind === "pend" ? "⏳" : "—") : `${maAr(D.pct)}٪`}</span>
+    <span style={{ flex: 1 }}><b style={{ fontSize: 15 }}>{D.morning ? "🌅 حالتك صباح" : "📈 انضباطك يوم"} {maDay(maDate(s.k))}{s.seen ? "" : " — جديد"}</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .92 }}>{txt} — اضغط للتفاصيل</div></span>
+    {s.star && <span title="معلم مميز في الانضباط هذا الأسبوع" style={{ fontSize: 30, filter: "drop-shadow(0 4px 6px rgba(0,0,0,.35))" }}>⭐</span>}</button>;
 }
+
 
 // ── غياب الموظفين من «حضوري» ومتابعة إدخاله في «فارس»
 // school-hd-faris/{hk}/{dk} = {at, by, t}  • cfg.farisFrom: بداية المتابعة (ما قبله يُعتبر مُعالَجاً)
@@ -37081,7 +37086,7 @@ const HD_FT = [["abs", "غياب"], ["sick", "إجازة مرضية"], ["emg", "
 function hdAbsList(all, names, faris, cfg) {
   const from = ptObj(cfg).farisFrom || ""; const out = [];
   Object.entries(ptObj(all)).forEach(([hk, r]) => Object.entries(ptObj(r)).forEach(([dk, rec]) => {
-    if (maOff(dk) || !/غياب/.test(String(rec && rec.st || ""))) return;
+    if (maOff(dk) || !rec || rec.ph === "m" || !/غياب/.test(String(rec.st || ""))) return;
     const f = ptObj(ptObj(faris)[hk])[dk]; out.push({ hk, dk, n: (ptObj(names[hk]).n) || "—", job: ptObj(names[hk]).job || "", f: f && f.at ? f : null, old: !!(from && dk < from) });
   }));
   return out.sort((a, b) => b.dk.localeCompare(a.dk) || a.n.localeCompare(b.n, "ar"));
@@ -37131,6 +37136,32 @@ function HdAbsTeacher({ me, compact }) {
       {!compact && D.slice(0, 8).map(x => <div key={x.dk} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13, fontWeight: 800, color: "#475569" }}><span style={{ background: "#f1f5f9", borderRadius: 999, padding: "2px 10px" }}>{maDay(maDate(x.dk))} {asmHij(maDate(x.dk))}</span><span style={{ color: "#15803d" }}>✓ أُدخل في «فارس»{x.f.t && x.f.t !== "abs" ? ` (${(HD_FT.find(t => t[0] === x.f.t) || [])[1] || ""})` : ""}</span></div>)}
       {P.length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>إن كان لديك عذر (تقرير طبي أو مهمة رسمية) فقدّمه للإدارة أو اكتب «💬 اعتراض / توضيح» على اليوم في سجل انضباطك.</div>}
     </div></div>;
+}
+// ══════════ ⭐ المعلم المميز في الانضباط أسبوعياً ══════════
+// المعيار: في كل أيام الأسبوع المرفوعة نهاية الدوام (٣ أيام فأكثر): حضور كامل دون تأخر ولا انصراف مبكر ولا استئذان ولا غياب ولا قراءة ناقصة
+const hdWeekOf = k => { const d = maDate(k); d.setDate(d.getDate() - d.getDay()); return maKey(d); };
+const hdWeekDays = ws => { const out = []; const d = maDate(ws); for (let i = 0; i < 5; i++) { const k = maKey(d); if (!maOff(k)) out.push(k); d.setDate(d.getDate() + 1); } return out; };
+function hdWeekStars(all, names, cfg, ws, tOnly = true) {
+  const D = hdWeekDays(ws); const res = [];
+  Object.entries(ptObj(all)).forEach(([hk, r]) => { const R = ptObj(r); if (tOnly && !/معلم/.test(ptObj(names[hk]).job || "")) return;
+    const days = D.filter(k => R[k] && R[k].ph !== "m"); if (days.length < 3) return;
+    const ok = days.every(k => { const d = hdDay(R[k], cfg); return d && d.kind === "work" && !d.late && !d.early && !d.fl.length; });
+    if (ok) res.push({ hk, n: ptObj(names[hk]).n || "—", days: days.length }); });
+  return res.sort((a, b) => a.n.localeCompare(b.n, "ar"));
+}
+const hdWeeksIn = all => { const W = new Set(); Object.values(ptObj(all)).forEach(r => Object.keys(ptObj(r)).forEach(k => { if (!maOff(k)) W.add(hdWeekOf(k)); })); return [...W].sort().reverse(); };
+const hdWeekLbl = ws => { const D = hdWeekDays(ws); return D.length ? `${asmHij(maDate(D[0]), false)} – ${asmHij(maDate(D[D.length - 1]), false)}` : ""; };
+function HdStarsTab({ all, names, cfg }) {
+  const W = hdWeeksIn(all); const [ws, setWs] = useState(W[0] || ""); if (!W.length) return <div className="hd-card" style={{ textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا توجد بيانات بعد</div>;
+  const L = hdWeekStars(all, names, cfg, ws); const done = hdWeekDays(ws).filter(k => Object.values(ptObj(all)).some(r => ptObj(r)[k] && ptObj(r)[k].ph !== "m")).length;
+  const pr = () => inOpen(`<section class="pg">${inHdr("⭐ المعلمون المميزون في الانضباط", `الأسبوع: ${hdWeekLbl(ws)}`)}<div style="text-align:center;font-weight:900;margin:10px 0;color:#92400e">حضور كامل دون غياب ولا تأخر ولا انصراف مبكر ولا استئذان طوال أيام الأسبوع</div><table><thead><tr><th>م</th><th class="r">المعلم</th><th>أيام الدوام المحتسبة</th><th>التقدير</th></tr></thead><tbody>${L.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>⭐ ${ptEsc(x.n)}</b></td><td>${maAr(x.days)}</td><td style="color:#b45309;font-weight:900">متميز في الانضباط</td></tr>`).join("")}</tbody></table>${inSig("فازع القرني", "مدير المدرسة")}</section>`, "المعلمون المميزون");
+  return <div className="grid gap-3">
+    <div className="flex gap-2 flex-wrap items-center"><select className="hd-in" value={ws} onChange={e => setWs(e.target.value)}>{W.map(w => <option key={w} value={w}>أسبوع {hdWeekLbl(w)}</option>)}</select><span className="hd-note" style={{ padding: "5px 10px" }}>رُفع نهاية الدوام لـ {maAr(done)} من {maAr(hdWeekDays(ws).length)} أيام</span><button className="hd-b gold" style={{ marginInlineStart: "auto" }} onClick={pr}>🖨 طباعة القائمة</button></div>
+    {!L.length ? <div className="hd-card" style={{ textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا يوجد معلم حقق الانضباط الكامل في هذا الأسبوع{done < 3 ? " (تحتاج ٣ أيام مرفوعة على الأقل)" : ""}</div> :
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))" }}>{L.map(x => <div key={x.hk} style={{ borderRadius: 22, padding: "14px 16px", background: "linear-gradient(150deg,#fffbeb,#fef3c7 60%,#fde68a)", border: "1.5px solid #fbbf24", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 16px 28px -22px #b45309" }}>
+        <span style={{ fontSize: 34, filter: "drop-shadow(0 4px 6px rgba(180,83,9,.4))" }}>⭐</span><span><b style={{ fontSize: 16, display: "block" }}>{x.n}</b><small style={{ fontWeight: 800, color: "#92400e" }}>انضباط كامل • {maAr(x.days)} أيام</small></span></div>)}</div>}
+    <div className="hd-note">المعيار: في كل أيام الأسبوع التي رُفعت لها بيانات نهاية الدوام (٣ أيام فأكثر) — حضور كامل دون تأخر ولا انصراف مبكر ولا استئذان ولا غياب. يظهر للمعلم المميز في حسابه بعلامة ⭐.</div>
+  </div>;
 }
 // ── بطاقة التوقيت الصيفي/الشتوي (بداية الدوام • نهاية حصر الطابور • الانصراف • أوقات الحصص)
 function HdSeasons({ cfg, saveCfg, toast }) {
@@ -37190,18 +37221,20 @@ function HdAdminPage({ by = "الإدارة" }) {
   const saveCfg = async p => { const n = { ...cfg, ...p }; setCfg(n); const ok = await maPut(HD_CFG, n); toast(ok ? "✅ حُفظت الإعدادات" : "⚠️ تعذّر الحفظ"); };
   const nm = hk => (names[hk] && names[hk].n) || "—";
   const isT = hk => !tOnly || /معلم/.test((names[hk] || {}).job || "");
-  const pick = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setBusy(true); try { const r = await hdParse(f); setBusy(false); if (!r.rows.length) { alert("لم أجد في الملف أعمدة «السجل المدني» و«التاريخ» و«حالة التحضير» — تأكد أنه تقرير الحضور والانصراف من «حضوري»"); return; } setImp(r); } catch (err) { setBusy(false); alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
-  const doImport = async () => { setBusy(true); const P = {}; const H = {}; for (const x of imp.rows) { if (!H[x.nid]) H[x.nid] = hdK(await licHash(x.nid)); const hk = H[x.nid]; P[`${HD_NODE}/${hk}/${x.dk}`] = { st: x.st, a: x.a, d: x.d, pl: x.pl, po: x.po }; P[`${HD_T}/${hk}`] = { n: x.n, job: x.job, n4: x.nid.slice(-4) }; }
+  const pick = async (e, ph = "e") => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setBusy(true); try { const r = await hdParse(f); r.ph = ph; setBusy(false); if (!r.rows.length) { alert("لم أجد في الملف أعمدة «السجل المدني» و«التاريخ» و«حالة التحضير» — تأكد أنه تقرير الحضور والانصراف من «حضوري»"); return; } setImp(r); } catch (err) { setBusy(false); alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
+  const doImport = async () => { setBusy(true); const P = {}; const H = {}; let kept = 0; for (const x of imp.rows) { if (!H[x.nid]) H[x.nid] = hdK(await licHash(x.nid)); const hk = H[x.nid]; const ph = imp.ph === "m" && x.dk === imp.to ? "m" : "e";
+      const old = ptObj(ptObj(all[hk])[x.dk]); if (ph === "m" && old.st && old.ph !== "m") { kept++; } else P[`${HD_NODE}/${hk}/${x.dk}`] = { st: x.st, a: x.a, d: ph === "m" ? "" : x.d, pl: x.pl, po: ph === "m" ? "" : x.po, ph, up: Date.now() }; P[`${HD_T}/${hk}`] = { n: x.n, job: x.job, n4: x.nid.slice(-4) }; }
     const ks = Object.keys(P); let ok = true; for (let i = 0; i < ks.length; i += 400) { const ch = Object.fromEntries(ks.slice(i, i + 400).map(k => [k, P[k]])); if (!(await fbPatch(ch))) ok = false; }
-    const emp = Object.keys(H).length; await maPut(`${HD_UP}/u${Date.now()}`, { at: Date.now(), by, f: imp.from, t: imp.to, n: imp.rows.length, emp });
-    setBusy(false); setImp(null); await load(); setDk(imp.to && !maOff(imp.to) ? imp.to : null); toast(ok ? `✅ رُفع سجل ${maAr(emp)} موظفاً من ${hfxHijTxt(imp.from)} إلى ${hfxHijTxt(imp.to)}` : "⚠️ رُفع جزء من البيانات — أعد الرفع"); };
+    const emp = Object.keys(H).length; await maPut(`${HD_UP}/u${Date.now()}`, { at: Date.now(), by, f: imp.from, t: imp.to, n: imp.rows.length, emp, ph: imp.ph || "e" });
+    setBusy(false); setImp(null); await load(); setDk(imp.to && !maOff(imp.to) ? imp.to : null); toast(ok ? `✅ ${imp.ph === "m" ? "رفع الصباح: " : "رفع نهاية الدوام: "}${maAr(emp)} موظفاً ${imp.from === imp.to ? hfxHijTxt(imp.to) : `من ${hfxHijTxt(imp.from)} إلى ${hfxHijTxt(imp.to)}`}${kept ? ` • لم يُستبدل ${maAr(kept)} سجلاً مكتملاً برفع صباحي` : ""}` : "⚠️ رُفع جزء من البيانات — أعد الرفع"); };
   // جدول اليوم
   const dayRows = dk ? Object.entries(all).filter(([hk]) => isT(hk)).map(([hk, r]) => { const rec = ptObj(r)[dk]; if (!rec) return null; const d = hdDay(rec, cfg); if (!d || d.kind === "off") return null; const n = nm(hk);
     const am = ext ? hdFindAsm(ext.ac, n) : null; const as = am ? ptObj(ext.ad)[am.k] : null; const ti = ext ? sttFindMe(ext.T, n) : -1; const cl = ext && ti >= 0 ? Object.values(ext.lg).filter(v => v && +v.ti === ti && v.st !== "ok") : [];
     return { hk, n, job: (names[hk] || {}).job || "", rec, d, as, cl, ob: ptObj(objs[hk])[dk], ack: ptObj(acks[hk])[dk] }; }).filter(Boolean).filter(x => !q || cvNorm(x.n).includes(cvNorm(q))).sort((a, b) => sortK === "name" ? a.n.localeCompare(b.n, "ar") : sortK === "late" ? (b.d.late - a.d.late) : ((a.d.pct ?? 101) - (b.d.pct ?? 101))) : [];
   const ASMS = { p: "✅", l: "⏰", a: "❌", x: "📝", g: "🚫" };
   const printDay = () => { const D = maDate(dk); const avg = dayRows.filter(x => x.d.pct != null); const A = avg.length ? Math.round(avg.reduce((s, x) => s + x.d.pct, 0) / avg.length) : 0;
-    inOpen(`<section class="pg">${inHdr("تقرير الانضباط اليومي للمعلمين (حضوري)", `${maDay(D)}<br>${maHijri(D)}<br>${maGreg(D)}`)}<div class="kp"><div><b>${maAr(A)}٪</b>متوسط الانضباط</div><div><b style="color:#c2410c">${maAr(dayRows.filter(x => x.d.kind === "work" && x.d.late).length)}</b>متأخرون</div><div><b style="color:#7c3aed">${maAr(dayRows.filter(x => x.d.kind === "work" && x.d.early).length)}</b>انصراف مبكر</div><div><b style="color:#0369a1">${maAr(dayRows.filter(x => x.d.kind === "perm").length)}</b>مستأذنون</div></div>
+    const mor = dayRows.some(x => x.d.morning);
+    inOpen(`<section class="pg">${inHdr(mor ? "تقرير التأخر الصباحي للمعلمين (حضوري — رفع الصباح)" : "تقرير الانضباط اليومي للمعلمين (حضوري — نهاية الدوام)", `${maDay(D)}<br>${maHijri(D)}<br>${maGreg(D)}`)}<div class="kp"><div><b>${maAr(A)}٪</b>متوسط الانضباط</div><div><b style="color:#c2410c">${maAr(dayRows.filter(x => x.d.kind === "work" && x.d.late).length)}</b>متأخرون</div><div><b style="color:#7c3aed">${maAr(dayRows.filter(x => x.d.kind === "work" && x.d.early).length)}</b>انصراف مبكر</div><div><b style="color:#0369a1">${maAr(dayRows.filter(x => x.d.kind === "perm").length)}</b>مستأذنون</div></div>
     <table><thead><tr><th>م</th><th class="r">الاسم</th><th>الحالة</th><th>الحضور</th><th>الانصراف</th><th>التأخر (د)</th><th>المبكر (د)</th><th>الطابور</th><th>ملاحظات الحصص</th><th>النسبة</th></tr></thead><tbody>${dayRows.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(x.n)}</b></td><td>${HD_KIND[x.d.kind].l}${x.d.kind === "perm" ? `<br><small>${ptEsc(x.d.st)}</small>` : ""}</td><td>${hdHM(x.d.a)}</td><td>${hdHM(x.d.d)}</td><td>${x.d.late ? maAr(x.d.late) : "—"}</td><td>${x.d.early ? maAr(x.d.early) : "—"}</td><td>${x.as && ASMS[x.as.st] ? ASMS[x.as.st] : "—"}</td><td>${x.cl.length ? maAr(x.cl.length) : "—"}</td><td><b style="color:${hdPctC(x.d.pct)}">${x.d.pct == null ? "—" : maAr(x.d.pct) + "٪"}</b></td></tr>`).join("")}</tbody></table>
     <div style="font-size:10px;color:#64748b;margin-top:6px">${cfg.season ? HD_SEASON[cfg.season] + " • " : ""}الدوام ${hdHM(hdMin(hdEff(cfg).start))}–${hdHM(hdMin(hdEff(cfg).end))} • المصدر: تقرير «حضوري» + سجل الطابور + متابعة الحصص</div>${inSig(by, "وكيل الشؤون التعليمية")}</section>`, "تقرير الانضباط اليومي"); };
   // المؤشرات والفعالية
@@ -37220,12 +37253,15 @@ function HdAdminPage({ by = "الإدارة" }) {
   return <div className="hd px-2 md:px-6 py-3" dir="rtl"><style>{HD_CSS}</style>
     <div className="grid gap-3" style={{ maxWidth: 1250, margin: "0 auto" }}>
       <div className="hd-hero"><h2>📈 سجل الانضباط اليومي (حضوري)</h2><p>ارفع تقرير «الحضور والانصراف لجميع الموظفين» بعد الدوام ← يظهر لكل معلم انضباطه في حسابه بهويته، ويظهر لك أثر المتابعة بالأرقام</p></div>
-      <div className="hd-tabs">{[["day", "📅 اليوم"], ["up", "📥 رفع ملف حضوري"], ["kpi", "📊 المؤشرات والفعالية"], ["abs", "🚫 الغياب وفارس"], ["obj", `💬 الاعتراضات${objL.filter(x => x.st === "new").length ? ` (${maAr(objL.filter(x => x.st === "new").length)})` : ""}`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hd-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+      <div className="hd-tabs">{[["day", "📅 اليوم"], ["up", "📥 رفع ملف حضوري"], ["kpi", "📊 المؤشرات والفعالية"], ["stars", "⭐ المميزون"], ["abs", "🚫 الغياب وفارس"], ["obj", `💬 الاعتراضات${objL.filter(x => x.st === "new").length ? ` (${maAr(objL.filter(x => x.st === "new").length)})` : ""}`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hd-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
       {tab === "up" && <div className="grid gap-3">
         <div className="hd-card"><b>📥 رفع تقرير «حضوري»</b><div className="hd-note">من نظام «حضوري»: تقرير <b>الحضور والانصراف لجميع الموظفين</b> بصيغة Excel — ليوم واحد بعد نهاية الدوام، أو لفترة كاملة. إعادة رفع نفس اليوم تحدّث بياناته ولا تكررها. رقم الهوية لا يُحفظ؛ تُحفظ بصمته فقط للمطابقة مع دخول المعلم.</div>
-          <label className="hd-b gold" style={{ justifySelf: "start", cursor: busy ? "default" : "pointer" }}>{busy ? "⏳ جاري القراءة…" : "📂 اختيار ملف Excel"}<input type="file" accept=".xlsx,.xls" style={{ display: "none" }} disabled={busy} onChange={pick} /></label></div>
-        {imp && (() => { const emp = new Set(imp.rows.map(r => r.nid)).size; const St = {}; imp.rows.forEach(r => { const s = r.st.trim() || "—"; St[s] = (St[s] || 0) + 1; }); return <div className="hd-card" style={{ borderColor: "#fcd34d" }}><b>معاينة الملف</b>
+          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}>
+            <label className="hd-card" style={{ cursor: busy ? "default" : "pointer", borderColor: "#fcd34d", background: "linear-gradient(160deg,#fffbeb,#fff)", gap: 6 }}><b style={{ fontSize: 16 }}>🌅 الرفع الأول — صباحاً</b><span style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>بعد بداية الدوام: يظهر المتأخرون ومدة تأخر كل معلم، ومن لم يسجّل حضوره بعد. لا يُحكم بالغياب أو الانصراف.</span><span className="hd-b gold" style={{ justifySelf: "start" }}>{busy ? "⏳" : "📂 ملف الصباح"}</span><input type="file" accept=".xlsx,.xls" style={{ display: "none" }} disabled={busy} onChange={e => pick(e, "m")} /></label>
+            <label className="hd-card" style={{ cursor: busy ? "default" : "pointer", borderColor: "#93c5fd", background: "linear-gradient(160deg,#eff6ff,#fff)", gap: 6 }}><b style={{ fontSize: 16 }}>🏁 الرفع الثاني — نهاية الدوام</b><span style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>الحساب الكامل: التأخر، والاستئذان، والانصراف، والانصراف المبكر دون استئذان، والغياب.</span><span className="hd-b pri" style={{ justifySelf: "start" }}>{busy ? "⏳" : "📂 ملف نهاية الدوام"}</span><input type="file" accept=".xlsx,.xls" style={{ display: "none" }} disabled={busy} onChange={e => pick(e, "e")} /></label>
+          </div></div>
+        {imp && (() => { const emp = new Set(imp.rows.map(r => r.nid)).size; const St = {}; imp.rows.forEach(r => { const s = r.st.trim() || "—"; St[s] = (St[s] || 0) + 1; }); return <div className="hd-card" style={{ borderColor: "#fcd34d" }}><b>معاينة الملف — {imp.ph === "m" ? "🌅 رفع الصباح" : "🏁 رفع نهاية الدوام"}</b>
           <div className="hd-kp"><div style={{ "--c": "#0f1e3d" }}><b>{maAr(emp)}</b><small>موظفاً</small></div><div style={{ "--c": "#0f766e" }}><b>{maAr(imp.rows.length)}</b><small>سجلاً يومياً</small></div><div style={{ "--c": "#b45309" }}><b style={{ fontSize: 15 }}>{hfxHijTxt(imp.from)}<br />{hfxHijTxt(imp.to)}</b><small>الفترة</small></div></div>
           <div className="flex gap-1 flex-wrap">{Object.entries(St).sort((a, b) => b[1] - a[1]).map(([s, n]) => <span key={s} className="hd-pill" style={{ background: "#f1f5f9", color: "#334155" }}>{s}: {maAr(n)}</span>)}</div>
           <div className="flex gap-2"><button className="hd-b pri" disabled={busy} onClick={doImport}>{busy ? "⏳ جاري الرفع…" : "✅ اعتماد ورفع"}</button><button className="hd-b" onClick={() => setImp(null)}>إلغاء</button></div></div>; })()}
@@ -37243,7 +37279,10 @@ function HdAdminPage({ by = "الإدارة" }) {
           <div style={{ "--c": "#c2410c" }}><b>{maAr(dayRows.filter(x => x.d.kind === "work" && x.d.late).length)}</b><small>متأخرون</small></div>
           <div style={{ "--c": "#7c3aed" }}><b>{maAr(dayRows.filter(x => x.d.kind === "work" && x.d.early).length)}</b><small>انصراف مبكر</small></div>
           <div style={{ "--c": "#0369a1" }}><b>{maAr(dayRows.filter(x => x.d.kind === "perm").length)}</b><small>مستأذنون</small></div>
-          <div style={{ "--c": "#b91c1c" }}><b>{maAr(dayRows.filter(x => x.d.kind === "abs").length)}</b><small>غائبون</small></div></div>; })()}
+          <div style={{ "--c": "#b91c1c" }}><b>{maAr(dayRows.filter(x => x.d.kind === "abs").length)}</b><small>غائبون</small></div>
+          {dayRows.some(x => x.d.kind === "pend") && <div style={{ "--c": "#64748b" }}><b>{maAr(dayRows.filter(x => x.d.kind === "pend").length)}</b><small>لم يسجّلوا حضورهم بعد</small></div>}
+          <div style={{ "--c": "#9a3412" }}><b>{hdDur(dayRows.filter(x => x.d.kind === "work").reduce((a, x) => a + x.d.late, 0))}</b><small>مجموع دقائق التأخر</small></div></div>; })()}
+        {dayRows.some(x => x.d.morning) && <div className="hd-note" style={{ background: "#fffbeb", borderColor: "#fde68a" }}>🌅 <b>بيانات رفع الصباح</b> — يظهر التأخر ومدته فقط. يكتمل حساب الاستئذان والانصراف والانصراف المبكر والغياب بعد «🏁 رفع نهاية الدوام» لنفس اليوم.</div>}
         <div className="hd-card" style={{ padding: 0, overflow: "auto", maxHeight: "65vh" }}><table className="hd-tbl" style={{ minWidth: 820 }}><thead><tr><th>الاسم</th><th>الحالة</th><th>الحضور</th><th>الانصراف</th><th>التأخر</th><th>المبكر</th><th>الطابور</th><th>الحصص</th><th>النسبة</th><th>المعلم</th></tr></thead>
           <tbody>{dayRows.map(x => { const K = HD_KIND[x.d.kind]; return <tr key={x.hk}><td className="n">{x.n}<div style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 700 }}>{x.job}{x.rec.pl && !/عبدالمجيد/.test(x.rec.pl) ? ` • سُجّل من: ${x.rec.pl}` : ""}</div></td><td><span className="hd-pill" style={{ background: K.bg, color: K.c }}>{K.l}</span>{x.d.kind === "perm" && <div style={{ fontSize: 10.5, color: "#0369a1" }}>{x.d.st}</div>}{x.d.fl.map(f => <div key={f} style={{ fontSize: 10.5, color: "#b45309" }}>⚠️ {f}</div>)}</td><td>{hdHM(x.d.a)}</td><td>{hdHM(x.d.d)}</td><td style={{ color: x.d.late ? "#c2410c" : "#cbd5e1" }}>{x.d.late ? maAr(x.d.late) : "—"}</td><td style={{ color: x.d.early ? "#7c3aed" : "#cbd5e1" }}>{x.d.early ? maAr(x.d.early) : "—"}</td><td>{x.as && ASMS[x.as.st] ? ASMS[x.as.st] : "·"}</td><td style={{ color: x.cl.length ? "#4338ca" : "#cbd5e1" }}>{x.cl.length ? maAr(x.cl.length) : "—"}</td><td><b style={{ color: hdPctC(x.d.pct) }}>{x.d.pct == null ? "—" : `${maAr(x.d.pct)}٪`}</b></td><td>{x.ob ? <span className="hd-pill" style={{ background: "#fef3c7", color: "#92400e" }}>💬 اعتراض</span> : x.ack ? <span style={{ color: "#15803d" }}>✓ اطّلع</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td></tr>; })}</tbody></table></div>
       </div>)}
@@ -37267,6 +37306,7 @@ function HdAdminPage({ by = "الإدارة" }) {
       </div>}
 
       {tab === "abs" && <HdAbsTab all={all} names={names} cfg={cfg} by={by} saveCfg={saveCfg} />}
+      {tab === "stars" && <HdStarsTab all={all} names={names} cfg={cfg} />}
       {tab === "obj" && <div className="grid gap-2">{!objL.length ? <div className="hd-card" style={{ textAlign: "center", fontWeight: 900, color: "#64748b" }}>لا توجد اعتراضات.</div> : objL.map(x => <div key={x.hk + x.k} className="hd-card" style={{ borderColor: x.st === "new" ? "#fcd34d" : "#e2e8f0" }}>
         <div className="flex gap-2 items-center flex-wrap"><b>{x.n || nm(x.hk)}</b><span className="hd-pill" style={{ background: "#f1f5f9", color: "#334155" }}>{maDay(maDate(x.k))} {asmHij(maDate(x.k))}</span><span className="hd-pill" style={{ background: x.st === "new" ? "#fef3c7" : "#dcfce7", color: x.st === "new" ? "#92400e" : "#15803d" }}>{x.st === "new" ? "جديد" : "تمت المراجعة"}</span></div>
         <div style={{ fontSize: 13.5, fontWeight: 700 }}>{x.t}</div>{x.reply && <div className="hd-note">ردّك: {x.reply}</div>}
@@ -41194,18 +41234,38 @@ function LeadGrades({ navigate }) {
         <tr className="tot"><td className="n">الإجمالي</td><td>{maAr(T.st)}</td><td style={{ color: "#dc2626" }}>{maAr(T.ab)}</td><td><b>{maAr(pc(T.ab, T.st))}٪</b></td><td style={{ color: "#ea580c" }}>{maAr(T.lt)}</td></tr></tbody></table></div>}
   </div>;
 }
+// أرقام اللوحة من البيانات المرصودة فعلياً (لا أرقام مخزنة في الكود)
+async function leadLive() {
+  const out = { stu: null, tch: null, stars: null };
+  let d = maDate(maWorkDay()); for (let i = 0; i < 10; i++) { const k = maKey(d); if (!maOff(k)) { const att = ptObj(await maGet(`${MA_ATT}/${k}`)); const R = Object.values(att).filter(r => r && typeof r === "object"); if (R.length) { const total = R.reduce((a, r) => a + (+r.total || 0), 0), ab = R.reduce((a, r) => a + maArr(r.absent).length, 0); out.stu = { dk: k, total, ab, cls: R.length }; break; } } d.setDate(d.getDate() - 1); }
+  const [all, nm, c] = await Promise.all([maGet(HD_NODE), maGet(HD_T), maGet(HD_CFG)]); const A = ptObj(all), N = ptObj(nm), cfg = { ...HD_DEF, ...ptObj(c) };
+  const T = Object.keys(A).filter(hk => /معلم/.test(ptObj(N[hk]).job || "")); let last = ""; T.forEach(hk => Object.keys(ptObj(A[hk])).forEach(k => { if (!maOff(k) && k > last) last = k; }));
+  if (last) { const L = T.map(hk => ptObj(A[hk])[last] ? { r: ptObj(A[hk])[last], d: hdDay(ptObj(A[hk])[last], cfg) } : null).filter(x => x && x.d && x.d.kind !== "off");
+    out.tch = { dk: last, n: L.length, mor: L.some(x => x.r.ph === "m"), present: L.filter(x => (x.d.kind === "work" || x.d.kind === "perm") && x.d.a != null).length, abs: L.filter(x => x.d.kind === "abs").length, pend: L.filter(x => x.d.kind === "pend").length, leave: L.filter(x => x.d.kind === "leave").length, late: L.filter(x => x.d.kind === "work" && x.d.late > 0).length, lateMin: L.filter(x => x.d.kind === "work").reduce((a, x) => a + x.d.late, 0), perm: L.filter(x => x.d.kind === "perm").length, early: L.filter(x => x.d.kind === "work" && x.d.early > 0).length };
+    let ws = hdWeekOf(last); let st = hdWeekStars(A, N, cfg, ws); const up = hdWeekDays(ws).filter(k => T.some(hk => ptObj(A[hk])[k] && ptObj(A[hk])[k].ph !== "m")).length;
+    if (up < 3) { const p = maDate(ws); p.setDate(p.getDate() - 7); ws = maKey(p); st = hdWeekStars(A, N, cfg, ws); }
+    out.stars = { ws, L: st }; }
+  return out;
+}
 function LeadDash({ navigate, clock, dayName, hijri, greg, greet, attendRate, totalStudents, unreadMsgs, tN, tPresent, tAbsent, tLate, recentAnn, upcomingAct }) {
+  const [live, setLive] = useState(null);
+  useEffect(() => { let a = true; leadLive().then(v => a && setLive(v)).catch(() => a && setLive({})); const t = setInterval(() => leadLive().then(v => a && setLive(v)).catch(() => {}), 180000); return () => { a = false; clearInterval(t); }; }, []);
+  const S = live && live.stu, TC = live && live.tch; const dl = k => k ? `${maDay(maDate(k))} ${asmHij(maDate(k), false)}` : "";
+  const tRate = TC && TC.n ? Math.round(TC.present / TC.n * 100) : null;
   const Q = [["morningattend", "غياب الطلاب", "📋", "#059669", "#34d399", "رصد غياب الحصة الثانية"], ["attendstats", "إحصائية الغياب", "📊", "#dc2626", "#fb7185", "نسب ومؤشرات يومية"], ["morninglate", "التأخر الصباحي", "🌅", "#ea580c", "#fbbf24", "سجل وتقارير التأخر"],
     ["attendance", "الحضور اليومي", "📅", "#0891b2", "#67e8f9", "حضور المعلمين"], ["announcements", "الإعلانات", "📣", "#db2777", "#f9a8d4", "نشر وتصميم الإعلانات"], ["formative", "التقويم التكويني", "📘", "#2563eb", "#93c5fd", "سجل الدرجات"],
     ["studentclassify", "تصنيف الطلاب", "🏷️", "#7c3aed", "#c4b5fd", "دراسياً وسلوكياً"], ["prolicense", "الرخصة المهنية", "🪪", "#ca8a04", "#fde047", "متابعة الرخص"], ["student-absence", "سجل غياب الطلاب", "🎒", "#9333ea", "#f0abfc", "الأيام والأعذار"]];
-  const K = [["students", "إجمالي الطلاب", maAr(totalStudents), "طالباً مسجلاً", "👥", "#0369a1", "#7dd3fc", "#e0f2fe"], ["attendance", "حضور المعلمين", maAr(tPresent), `من ${maAr(tN)} • ${maAr(attendRate)}٪`, "✅", "#059669", "#6ee7b7", "#dcfce7"], ["hdisc", "غياب المعلمين", maAr(tAbsent), "اليوم", "🚫", "#dc2626", "#fda4af", "#fee2e2"], ["hdisc", "تأخر المعلمين", maAr(tLate), "اليوم", "⏰", "#d97706", "#fde68a", "#fef3c7"]];
+  const K = [["attendstats", "إجمالي الطلاب (حسب الرصد)", S ? maAr(S.total) : live ? "—" : "…", S ? `غائب ${maAr(S.ab)} (${maAr(S.total ? Math.round(S.ab / S.total * 1000) / 10 : 0)}٪) • ${dl(S.dk)}` : live ? "لم يُرصد غياب بعد" : "", "👥", "#0369a1", "#7dd3fc", "#e0f2fe"],
+    ["hdisc", "حضور المعلمين", TC ? maAr(TC.present) : live ? "—" : "…", TC ? `من ${maAr(TC.n)} • ${maAr(tRate)}٪ • ${TC.mor ? "🌅 صباحاً" : "🏁 نهاية الدوام"} ${dl(TC.dk)}` : live ? "لم يُرفع «حضوري» بعد" : "", "✅", "#059669", "#6ee7b7", "#dcfce7"],
+    ["hdisc", TC && TC.mor ? "لم يسجّلوا حضورهم بعد" : "غياب المعلمين", TC ? maAr(TC.mor ? TC.pend : TC.abs) : live ? "—" : "…", TC ? (TC.mor ? "يُحسم الغياب بعد رفع نهاية الدوام" : `مستأذنون ${maAr(TC.perm)}${TC.leave ? ` • إجازة ${maAr(TC.leave)}` : ""}`) : "", "🚫", "#dc2626", "#fda4af", "#fee2e2"],
+    ["hdisc", "تأخر المعلمين", TC ? maAr(TC.late) : live ? "—" : "…", TC ? `${hdDur(TC.lateMin)}${!TC.mor ? ` • انصراف مبكر ${maAr(TC.early)}` : ""}` : "", "⏰", "#d97706", "#fde68a", "#fef3c7"]];
   const news = [...(recentAnn || []).map(a => ({ k: "a" + a.id, t: a.title, s: a.date || "", ic: "📣", go: "announcements" })), ...(upcomingAct || []).map(a => ({ k: "v" + a.id, t: a.title, s: a.date || "", ic: "🎉", go: "activities" }))].slice(0, 5);
   return <div className="ld" dir="rtl"><style>{LD_CSS}</style>
     <div className="ld-top"><div style={{ flex: "1 1 260px" }}><h1>لوحة قيادة المدرسة</h1><p>متابعة اليوم الدراسي وإدارة أعمال المدرسة • {greet}</p></div><span className="ld-chip">📆 {dayName}</span><span className="ld-chip">🌙 {hijri}</span><span className="ld-chip" style={{ display: "inline-flex" }}><PamQuoteMini /></span></div>
     <div className="ld-hd">
       <div className="ld-id"><div className="ld-lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div><div style={{ flex: "1 1 240px", minWidth: 0 }}><h2>مدرسة <span>الأمير عبدالمجيد</span> المتوسطة الأولى</h2><div className="sl">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div><div className="ld-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 بناء جيل متميز لوطن طموح</b></div><PamQuote /></div></div>
       <div className="ld-gl"><div className="ld-clk"><span className="ld-eg" style={ldEgg("#f59e0b", "#fde68a")}><i>🕰️</i></span><div><div className="t">{clock}</div><div className="d">{dayName} • {hijri}<br />الموافق {greg}</div></div></div></div>
-      <div className="ld-st">{[["attendance", `${maAr(attendRate)}٪`, "حضور المعلمين اليوم", "📈", "#10b981", "#6ee7b7"], ["students", maAr(totalStudents), "طالباً مسجّلاً", "🎓", "#3b82f6", "#93c5fd"], ["messages", maAr(unreadMsgs), "رسالة جديدة", "✉️", "#ec4899", "#f9a8d4"]].map(([id, v, l, ic, a, b]) => <button key={id} className="ld-sb" onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span><b>{v}</b><small>{l}</small></span></button>)}</div>
+      <div className="ld-st">{[["hdisc", tRate == null ? "—" : `${maAr(tRate)}٪`, "حضور المعلمين (حضوري)", "📈", "#10b981", "#6ee7b7"], ["attendstats", S ? maAr(S.total) : "—", "طالباً حسب الرصد اليومي", "🎓", "#3b82f6", "#93c5fd"], ["messages", maAr(unreadMsgs), "رسالة جديدة", "✉️", "#ec4899", "#f9a8d4"]].map(([id, v, l, ic, a, b]) => <button key={id} className="ld-sb" onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span><b>{v}</b><small>{l}</small></span></button>)}</div>
     </div>
     <div className="ld-q">{Q.map(([id, l, ic, a, b, d]) => <button key={id} className="ld-qb" style={ldEgg(a, b)} onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span style={{ minWidth: 0 }}><b>{l}</b><small>{d}</small></span><span className="ar">←</span></button>)}</div>
     <div className="ld-k">{K.map(([id, l, v, s, ic, a, b, t], i) => <button key={i} className="ld-kb" style={{ ...ldEgg(a, b), "--t": t }} onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span><small>{l}</small><b>{v}</b><i className="s">{s}</i></span></button>)}</div>
@@ -41213,6 +41273,9 @@ function LeadDash({ navigate, clock, dayName, hijri, greg, greet, attendRate, to
       <div className="ld-c" style={{ "--a": "#db2777", "--t": "#fdf2f8" }}><div className="ld-ch"><span className="ld-eg" style={{ ...ldEgg("#db2777", "#f9a8d4"), width: 46, height: 36, fontSize: 19 }}><i>📣</i></span><b>آخر الإعلانات والأنشطة</b><button onClick={() => navigate("announcements")}>عرض الكل ←</button></div>
         {news.length ? news.map(n => <div key={n.k} className="ld-li" onClick={() => navigate(n.go)} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && navigate(n.go)}><span style={{ fontSize: 22 }}>{n.ic}</span><span style={{ minWidth: 0, flex: 1 }}><b style={{ display: "block" }}>{n.t}</b>{n.s && <small>{n.s}</small>}</span><span style={{ color: "#db2777", fontWeight: 900 }}>←</span></div>) : <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا توجد إعلانات حديثة</div>}</div>
     </div>
+    {live && live.stars && <div className="ld-c" style={{ "--a": "#b45309", "--t": "#fffbeb" }}><div className="ld-ch"><span className="ld-eg" style={{ ...ldEgg("#d97706", "#fde68a"), width: 46, height: 36, fontSize: 19 }}><i>⭐</i></span><b>المعلمون المميزون في الانضباط</b><span className="ld-chip" style={{ fontSize: 12, padding: "2px 10px" }}>أسبوع {hdWeekLbl(live.stars.ws)}</span><button onClick={() => navigate("hdisc")}>التفاصيل ←</button></div>
+      <div style={{ padding: "12px 16px", display: "flex", gap: 8, flexWrap: "wrap" }}>{live.stars.L.length ? live.stars.L.map(x => <span key={x.hk} style={{ display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 999, padding: "6px 14px", fontWeight: 900, fontSize: 14.5, background: "linear-gradient(135deg,#fef3c7,#fde68a)", border: "1.5px solid #fbbf24", color: "#78350f", boxShadow: "0 8px 14px -10px #b45309" }}>⭐ {x.n}</span>) : <span style={{ color: "#94a3b8", fontWeight: 800 }}>لا يوجد معلم حقق الانضباط الكامل في هذا الأسبوع</span>}</div>
+      <div style={{ padding: "0 16px 12px", fontSize: 12.5, fontWeight: 800, color: "#92400e" }}>حضور كامل دون غياب ولا تأخر ولا انصراف مبكر ولا استئذان طوال أيام الأسبوع</div></div>}
   </div>;
 }
 function PamQuoteMini() { const [i, setI] = useState(() => Math.floor(Math.random() * PAM_QUOTES.length)); useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % PAM_QUOTES.length), 8000); return () => clearInterval(t); }, []); return <>✨ {PAM_QUOTES[i]}</>; }
