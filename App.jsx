@@ -35202,6 +35202,7 @@ function ClassVisitsPage({ by = "الإدارة" }) {
   const toast = t => { setMsg(t); clearTimeout(toast.t); toast.t = setTimeout(() => setMsg(""), 3000); };
   const load = async () => { const d = await cvLoad(); if (!Object.keys(d.plan).length) { const p0 = cvSeedPlan(); const p = { ...p0, ...cvReflow(p0, {}, "2026-09-30", typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null, TT_DEF_TIMES) }; d.cfg.resched = "2026-09-30"; cvPatch({ [`${CV_CFG}/resched`]: "2026-09-30" }); const ok = await maPut(CV_PLAN, p); if (ok) d.plan = p; const links = {}; cvTeachers(p).forEach(T => { const rid = cvMatch(T.name, d.lic); if (rid) links[T.tk] = rid; }); d.cfg.links = links; await cvPatch({ [`${CV_CFG}/links`]: links }); } setD(d); };
   useEffect(() => { load(); }, []);
+  useEffect(() => { if (!D) return; try { const o = JSON.parse(localStorage.getItem("cv-open") || "null"); if (o && o.tk && Date.now() - (o.at || 0) < 180000) { localStorage.removeItem("cv-open"); setTk(o.tk); setVn(o.v || 1); setTab("eval"); } } catch {} }, [!!D]);
   if (!D) return <div className="ma-card p-10 text-center font-bold text-gray-400">⏳ جاري تحميل الزيارات الصفية…</div>;
   const TS = cvTeachers(D.plan); const k = maKey(new Date());
   const all = Object.values(D.plan).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date) || a.n - b.n);
@@ -35719,18 +35720,61 @@ function cvReflow(plan, ev, start, TT, times) {
   }
   return out;
 }
+// ══ جدولة مُنوَّعة: عدد محدد من الزيارات يومياً، وكل يوم يجمع تخصصات مختلفة (رياضيات • علوم • إنجليزي • عربي • دين • …)
+const CV_GRP = [["math", "رياضيات", /رياض/], ["sci", "علوم", /علوم|فيزياء|كيمياء|أحياء/], ["eng", "إنجليزي", /انجليز|إنجليز|english/i], ["ar", "لغة عربية", /لغتي|عربي|العربية/], ["isl", "دراسات إسلامية", /إسلام|اسلام|قرآن|قران|تجويد|دين|فقه|توحيد|حديث/], ["soc", "اجتماعيات", /اجتماع|تاريخ|جغراف|وطنية/], ["dig", "رقمية", /رقمي|حاسب|حاسوب|تقني/], ["art", "فنية", /فني|فنون/], ["pe", "بدنية", /بدني|رياضة/], ["life", "مهارات حياتية", /حياتي|أسري|مهني|تفكير/]];
+const cvGrp = s => { const x = CV_GRP.find(g => g[2].test(String(s || ""))); return x ? x[0] : "oth"; };
+const cvGrpL = k => (CV_GRP.find(g => g[0] === k) || [0, "أخرى"])[1];
+function cvReflowMix(plan, ev, start, TT, times, perDay = 4, mix = true) {
+  const V = Object.values(plan).filter(Boolean).sort((a, b) => a.v - b.v || a.n - b.n);
+  const done = r => ptObj(ptObj(ev[r.tk])[r.v]).fin;
+  const mov = V.filter(r => !done(r) && !(r.date < start && r.moved));
+  const fixed = V.filter(r => !mov.includes(r));
+  const wkOf = {}; CV_SEED.forEach(x => { wkOf[wkStart(x[3])] = x[2]; });
+  const wkNum = d => { const w = wkStart(d); if (wkOf[w]) return wkOf[w]; const ks = Object.keys(wkOf).sort(); const b = ks[ks.length - 1]; return b ? wkOf[b] + Math.round((maDate(w) - maDate(b)) / 6048e5) : 0; };
+  const hij = d => { const h = hfxHij(d); return h ? `${h.y}/${h.m}/${h.d}` : ""; };
+  const tIdx = {}; if (TT && TT.T) TT.T.forEach((n, i) => { tIdx[i] = { name: ttClean(n) }; });
+  const ORD = ["الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة"];
+  const pTime = {}; CV_SEED.forEach(x => { if (x[8] && !pTime[x[7]]) pTime[x[7]] = x[8]; });
+  const lastOf = {}; fixed.forEach(r => { if (!lastOf[r.tk] || r.date > lastOf[r.tk]) lastOf[r.tk] = r.date; });
+  const busy = {}; fixed.forEach(r => { busy[r.date] = (busy[r.date] || 0) + 1; });
+  const optsFor = (r, d) => { if (!(TT && TT.T && TT.C) || r.p === "بالتنسيق") return null; const ti = cvMatch(r.t, tIdx); const dIdx = ttDayIdx(TT, maDate(d)); if (ti == null || dIdx < 0) return null; const o = []; const gR = cvGrp(r.s); Object.keys(TT.C).forEach(ck => maArr(TT.C[ck][dIdx]).forEach((c, p) => { if (!c || c[1] !== +ti) return; const sn = String((TT.S && TT.S[c[0]]) || ""); if (/نشاط|احتياط/.test(sn)) return; o.push({ ck, p, same: cvGrp(sn) === gR ? 1 : 0 }); })); return o; };
+  const gapOk = (r, d) => !lastOf[r.tk] || (maDate(d) - maDate(lastOf[r.tk])) / 864e5 >= 7;
+  const q = [...mov]; const out = {}; const d0 = maDate(start); let guard = 0;
+  while (q.length && guard++ < 400) {
+    const d = maKey(d0); d0.setDate(d0.getDate() + 1); if (maOff(d)) continue;
+    const used = []; const gU = new Set(), tU = new Set(); let n = busy[d] || 0;
+    const tryPick = (strictG, strictGap) => { for (let i = 0; i < q.length && n < perDay; i++) { const r = q[i]; const g = cvGrp(r.s);
+      if (tU.has(r.tk) || (mix && strictG && gU.has(g)) || (strictGap && !gapOk(r, d))) continue;
+      const prevV = q.slice(0, i).some(x => x.tk === r.tk); if (prevV) continue; // لا تسبق زيارةٌ زيارةً قبلها لنفس المعلم
+      const op = optsFor(r, d); let pick = null;
+      if (op) { const want = Math.max(0, ORD.indexOf(r.p)); const free = op.filter(o => !used.includes(o.p)).sort((a, b) => (b.same - a.same) || Math.abs(a.p - want) - Math.abs(b.p - want) || a.p - b.p); if (!free.length) continue; pick = free[0]; }
+      const nr = { ...r, date: d, hij: hij(d) || r.hij, wk: wkNum(d) || r.wk, resched: start, grp: g };
+      if (pick) { const tm = (times && times[pick.p] && times[pick.p][0]) ? times[pick.p] : pTime[ORD[pick.p]] ? pTime[ORD[pick.p]].split("-") : []; const f = z => String(z || "").replace(/^0/, ""); const [lv, sec] = pick.ck.split("-"); nr.p = ORD[pick.p] || nr.p; nr.tm = tm[0] ? `${f(tm[0])}-${f(tm[1])}` : nr.tm; nr.c = `${sec}/${lv}`; nr.ttok = 1; used.push(pick.p); }
+      else nr.ttok = op ? 0 : undefined;
+      out[r.id] = nr; lastOf[r.tk] = d; tU.add(r.tk); gU.add(g); n++; q.splice(i, 1); i--; } };
+    tryPick(true, true); tryPick(false, true); if (n < perDay && guard > 60) tryPick(false, false);
+  }
+  q.forEach(r => { out[r.id] = { ...r }; });
+  return out;
+}
 function CvResched({ D, setD, toast }) {
-  const [start, setStart] = useState(ptObj(D.cfg).resched || "2026-09-30"); const [prev, setPrev] = useState(null); const [busy, setBusy] = useState(false);
-  const run = async () => { setBusy(true); const [tt, cfg] = await Promise.all([maGet(TT_NODE).then(ttFresh), maGet(TT_CFG)]); const T = tt && tt.C ? tt : (typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null); const times = cfg && Array.isArray(cfg.times) ? cfg.times : TT_DEF_TIMES; setPrev({ out: cvReflow(D.plan, D.ev, start, T, times), src: tt && tt.C ? "جدول المدرسة المرفوع" : "الجدول المرجعي" }); setBusy(false); };
+  const [start, setStart] = useState(() => { const r = ptObj(D.cfg).resched; return r && r > "2026-10-11" ? r : "2026-10-11"; }); const [prev, setPrev] = useState(null); const [busy, setBusy] = useState(false);
+  const [perDay, setPerDay] = useState(4); const [mix, setMix] = useState(true);
+  const run = async () => { setBusy(true); const [tt, cfg] = await Promise.all([maGet(TT_NODE).then(ttFresh), maGet(TT_CFG)]); const T = tt && tt.C ? tt : (typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null); const times = ttFixTimes(cfg && Array.isArray(cfg.times) ? cfg.times : (T && T.times) || TT_DEF_TIMES); setPrev({ out: cvReflowMix(D.plan, D.ev, start, T, times, perDay, mix), src: tt && tt.C ? "جدول المدرسة المرفوع" : "الجدول المرجعي" }); setBusy(false); };
   const apply = async () => { if (!window.confirm(`تطبيق الجدولة الجديدة لـ ${maAr(Object.keys(prev.out).length)} زيارة ابتداءً من ${maDay(maDate(start))}؟`)) return; setBusy(true); const np = { ...D.plan, ...prev.out }; const ok = await maPut(CV_PLAN, np); if (ok) { await cvPatch({ [`${CV_CFG}/resched`]: start }); setD(d => ({ ...d, plan: np, cfg: { ...d.cfg, resched: start } })); setPrev(null); } setBusy(false); toast(ok ? "✅ طُبّقت الجدولة الجديدة — يراها المعلمون فوراً" : "⚠️ تعذّر الحفظ"); };
   const ch = prev ? Object.values(prev.out).sort((a, b) => a.date.localeCompare(b.date) || a.n - b.n) : [];
   return (
     <div className="ma-card p-4 grid gap-3" style={{ border: "2px solid #7c3aed" }}>
       <b style={{ fontSize: 15 }}>↪️ إعادة جدولة الزيارات ابتداءً من تاريخ</b>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.9 }}>تُنقل الزيارات غير المنفذة بنفس ترتيبها (زيارتان في اليوم) على أيام الجدول الدراسية ثم أيام التعويض، وتُختار <b>الحصة من جدول المعلم الفعلي</b> في اليوم الجديد (أقرب حصة لحصته الأصلية)، دون تعارض بين زيارتي اليوم الواحد. الزيارات المعتمدة لا تتغير.</div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.9 }}>تُوزَّع الزيارات غير المنفذة على أيام الدوام ابتداءً من التاريخ المختار (تُستثنى الجمعة والسبت والإجازات الرسمية)، <b>بعدد ثابت من الزيارات يومياً</b>، و<b>يجمع كل يوم تخصصات مختلفة</b> (رياضيات • علوم • إنجليزي • لغة عربية • دراسات إسلامية • اجتماعيات • …). تُختار <b>الحصة من جدول المعلم الفعلي</b> دون تعارض بين حصص زيارات اليوم، ولا يُزار المعلم مرتين في أقل من أسبوع، وتبقى زيارته الأولى قبل الثانية. الزيارات المعتمدة لا تتغير.</div>
+      <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 13 }}>عدد الزيارات في اليوم:</b>{[2, 3, 4, 5].map(n => <button key={n} className={`in-chip ${perDay === n ? "on" : ""}`} onClick={() => { setPerDay(n); setPrev(null); }}>{maAr(n)}</button>)}
+        <label className={`in-chip ${mix ? "on" : ""}`} style={{ cursor: "pointer" }}><input type="checkbox" checked={mix} onChange={e => { setMix(e.target.checked); setPrev(null); }} style={{ marginInlineEnd: 6 }} />التنويع بين التخصصات يومياً</label></div>
       <div className="flex gap-2 items-center flex-wrap"><label style={{ fontWeight: 800, fontSize: 13 }}>البداية: <input type="date" className="ma-inp" style={{ width: 170, display: "inline-block" }} value={start} onChange={e => setStart(e.target.value)} /></label><span style={{ fontWeight: 800, color: "#7c3aed" }}>{maDay(maDate(start))}</span><button className="ma-btn pri" disabled={busy} onClick={run}>{busy ? "⏳" : "👁 معاينة الجدولة"}</button>{D.cfg.resched && <span className="in-fl" style={{ background: "#ede9fe", color: "#6d28d9" }}>آخر جدولة: من {maDay(maDate(D.cfg.resched))}</span>}</div>
       {prev && <>
         <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>مصدر الحصص: {prev.src} • ✓ = الحصة من جدول المعلم</div>
+        {(() => { const byD = {}; ch.forEach(r => (byD[r.date] = byD[r.date] || []).push(r)); const ds = Object.keys(byD).sort(); return <div className="grid gap-1" style={{ maxHeight: 260, overflow: "auto", border: "1px solid #ede9fe", borderRadius: 14, padding: 8 }}>
+          <b style={{ fontSize: 13, color: "#6d28d9" }}>📅 توزيع الأيام: {maAr(ds.length)} يوماً • من {maDay(maDate(ds[0]))} {cvHij(byD[ds[0]][0].hij)} إلى {maDay(maDate(ds[ds.length - 1]))} {cvHij(byD[ds[ds.length - 1]][0].hij)}</b>
+          {ds.map(d => <div key={d} className="flex items-center gap-1 flex-wrap" style={{ fontSize: 12, fontWeight: 800 }}><span style={{ width: 150, color: "#334155" }}>{maDay(maDate(d))} {cvHij(byD[d][0].hij)}</span>{byD[d].map(r => <span key={r.id} className="in-fl" style={{ background: "#f5f3ff", color: "#5b21b6" }}>{cvGrpL(cvGrp(r.s))} • {String(r.t).split(" ")[0]}</span>)}</div>)}</div>; })()}
         <div style={{ maxHeight: 420, overflow: "auto", border: "1px solid #ede9fe", borderRadius: 14 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}><thead><tr style={{ background: "#7c3aed", color: "#fff", position: "sticky", top: 0 }}><th style={{ padding: 6 }}>المعلم</th><th>الزيارة</th><th>الموعد السابق</th><th>الموعد الجديد</th></tr></thead><tbody>{ch.map(r => { const o = D.plan[r.id]; const same = o.date === r.date && o.p === r.p; return <tr key={r.id} style={{ borderBottom: "1px solid #f3e8ff", background: same ? "#fff" : "#faf5ff" }}><td style={{ padding: "5px 8px", fontWeight: 800 }}>{r.t}</td><td style={{ textAlign: "center" }}>{CV_VN[r.v - 1]}</td><td style={{ color: "#94a3b8" }}>{maDay(maDate(o.date))} {cvHij(o.hij)} • {o.p}</td><td style={{ fontWeight: 800, color: same ? "#334155" : "#6d28d9" }}>{maDay(maDate(r.date))} {cvHij(r.hij)} • الحصة {r.p}{r.tm ? ` (${cvTm(r.tm)})` : ""} • {cvCls(r.c)} {r.ttok ? "✓" : r.ttok === 0 ? "⚠️" : ""}</td></tr>; })}</tbody></table></div>
         <div className="flex gap-2"><button className="ma-btn pri" disabled={busy} onClick={apply}>✅ تطبيق الجدولة الجديدة</button><button className="ma-btn" onClick={() => setPrev(null)}>إلغاء</button></div>
       </>}
@@ -35818,6 +35862,62 @@ function CvAlert({ T, E }) {
   );
 }
 // ── بانر مختصر في بوابة المعلم
+// ══════════ 🔔 تنبيه عاجل لموعد الزيارة الصفية (للزائر — يظهر في كل صفحات الإدارة) ══════════
+const CVW_CSS = `
+.cvw{position:fixed;z-index:9800;left:50%;top:14px;transform:translateX(-50%);width:min(620px,calc(100vw - 20px));border-radius:26px;color:#fff;font-family:'Cairo',Tahoma,sans-serif;overflow:hidden;
+  background:radial-gradient(420px 180px at 100% 0,rgba(253,230,138,.35),transparent 60%),linear-gradient(135deg,#7c2d12,#c2410c 45%,#ea580c);box-shadow:0 30px 60px -20px rgba(124,45,18,.8);animation:cvPulse 1.8s infinite,cvwIn .45s cubic-bezier(.2,1.3,.4,1)}
+.cvw.now{background:radial-gradient(420px 180px at 100% 0,rgba(254,202,202,.35),transparent 60%),linear-gradient(135deg,#7f1d1d,#b91c1c 50%,#dc2626)}
+@keyframes cvwIn{from{opacity:0;transform:translate(-50%,-30px) scale(.95)}to{opacity:1;transform:translate(-50%,0)}}
+.cvw-in{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 18px}
+.cvw .bell{font-size:44px;display:inline-block;animation:cvShake 1.2s infinite;transform-origin:50% 10%}
+.cvw h3{margin:0;font-size:15px;font-weight:900;opacity:.92}.cvw .who{font-size:21px;font-weight:900;line-height:1.3}
+.cvw .det{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}.cvw .det b{font-size:12.5px;font-weight:900;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:2px 10px}
+.cvw .cd{text-align:center;background:rgba(0,0,0,.18);border-radius:18px;padding:8px 12px;min-width:118px}
+.cvw .cd .n{font-size:34px;font-weight:900;line-height:1;direction:ltr;font-variant-numeric:tabular-nums}.cvw .cd small{display:block;font-size:11.5px;font-weight:800;opacity:.9;margin-top:3px}
+.cvw-act{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 14px}
+.cvw-act button{font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;border-radius:13px;padding:8px 14px;font-weight:900;font-size:13.5px}
+.cvw-act button.go{background:#fff;color:#9a3412;border-color:#fff}.cvw-act button:focus-visible{outline:3px solid #fde68a;outline-offset:2px}
+.cvw-nx{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 18px 12px;border-top:1px solid rgba(255,255,255,.18);font-size:12px;font-weight:800}
+.cvw-nx span{background:rgba(255,255,255,.14);border-radius:999px;padding:2px 10px}
+.cvw-pill{position:fixed;z-index:9790;left:16px;bottom:16px;border:none;cursor:pointer;font-family:'Cairo',Tahoma,sans-serif;color:#fff;border-radius:999px;padding:9px 16px;font-weight:900;font-size:13.5px;
+  background:linear-gradient(135deg,#0f766e,#1d4ed8);box-shadow:0 14px 28px -14px rgba(29,78,216,.8);display:flex;gap:8px;align-items:center}
+.cvw-pill:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
+@media (max-width:600px){.cvw-in{grid-template-columns:auto minmax(0,1fr)}.cvw .cd{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px}.cvw .who{font-size:18px}}
+@media (prefers-reduced-motion:reduce){.cvw,.cvw .bell{animation:none!important}}
+`;
+const cvwFmt = sec => { const a = Math.abs(sec); const m = Math.floor(a / 60), x = a % 60; return `${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`; };
+function CvAdminWatcher({ navigate }) {
+  const [V, setV] = useState([]); const [now, setNow] = useState(Date.now());
+  const [lead, setLead] = useState(() => { try { return +localStorage.getItem("cv-alead") || 15; } catch { return 15; } });
+  const [snz, setSnz] = useState({}); const [hid, setHid] = useState(() => { try { return JSON.parse(sessionStorage.getItem("cv-ahid") || "{}"); } catch { return {}; } });
+  const fired = useRef({});
+  const load = async () => { try { const k = maKey(new Date()); const [plan, ev] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL)]); const E = ptObj(ev);
+    setV(Object.values(ptObj(plan)).filter(r => r && r.date === k && cvAt(r) && !ptObj(ptObj(E[r.tk])[r.v]).fin).sort((a, b) => cvAt(a) - cvAt(b))); } catch {} };
+  useEffect(() => { load(); const a = setInterval(load, 120000); const t = setInterval(() => setNow(Date.now()), 1000); return () => { clearInterval(a); clearInterval(t); }; }, []);
+  const winOf = r => { const at = +cvAt(r); return { at, from: at - lead * 60000, to: at + 45 * 60000 }; };
+  const cur = V.find(r => { const w = winOf(r); return now >= w.from && now <= w.to && !hid[r.id] && !(snz[r.id] > now); });
+  const next = V.find(r => +cvAt(r) > now && r !== cur);
+  useEffect(() => { if (!cur) return; const w = winOf(cur); const f = fired.current[cur.id] = fired.current[cur.id] || {};
+    const say = (t, b) => { try { if ("Notification" in window && Notification.permission === "granted") new Notification(t, { body: b, tag: "cv-" + cur.id }); } catch {} };
+    if (!f.pre && now < w.at) { f.pre = 1; cvChime(3); say(`🔔 زيارة صفية بعد ${maAr(Math.max(1, Math.round((w.at - now) / 60000)))} دقيقة`, `${cur.t} • ${cur.s} • الحصة ${cur.p} • ${cvCls(cur.c)}`); }
+    if (!f.start && now >= w.at && now < w.at + 60000) { f.start = 1; cvChime(4); say("⏰ حان موعد الزيارة الصفية الآن", `${cur.t} • ${cvCls(cur.c)}`); } }, [cur && cur.id, now >= (cur ? winOf(cur).at : 0)]);
+  const open = r => { try { localStorage.setItem("cv-open", JSON.stringify({ tk: r.tk, v: r.v, at: Date.now() })); } catch {} navigate("classvisits"); };
+  const hide = r => { const n = { ...hid, [r.id]: 1 }; setHid(n); try { sessionStorage.setItem("cv-ahid", JSON.stringify(n)); } catch {} };
+  const rest = V.filter(r => r !== cur && +cvAt(r) > now);
+  if (cur) { const at = winOf(cur).at; const left = Math.round((at - now) / 1000); const started = left <= 0;
+    return <div className={`cvw ${started ? "now" : ""}`} dir="rtl" role="alert" aria-live="assertive"><style>{CV_ALERT_CSS + CVW_CSS}</style>
+      <div className="cvw-in"><span className="bell" aria-hidden="true">🔔</span>
+        <div style={{ minWidth: 0 }}><h3>{started ? "⏰ حان موعد الزيارة الصفية الآن" : "🎯 تنبيه عاجل: زيارة صفية قريبة"}</h3><div className="who">أ. {cur.t}</div>
+          <div className="det"><b>📘 {cur.s}</b><b>🚪 {cvCls(cur.c)}</b><b>🕘 الحصة {cur.p}{cur.tm ? ` • ${cvTm(cur.tm)}` : ""}</b><b>🔢 الزيارة {CV_VN[cur.v - 1]}</b></div></div>
+        <div className="cd"><div className="n">{cvwFmt(left)}</div><small>{started ? "منذ بداية الحصة" : "متبقٍ على الموعد"}</small></div></div>
+      <div className="cvw-act"><button className="go" onClick={() => open(cur)}>🔭 ابدأ الرصد</button>{!started && <button onClick={() => setSnz(s => ({ ...s, [cur.id]: Date.now() + 5 * 60000 }))}>⏰ ذكّرني بعد ٥ دقائق</button>}<button onClick={() => hide(cur)}>✕ إخفاء</button>
+        <button onClick={() => { const n = lead === 15 ? 10 : lead === 10 ? 5 : 15; setLead(n); try { localStorage.setItem("cv-alead", String(n)); } catch {} }} title="مدة التنبيه قبل الموعد">⏱ قبل {maAr(lead)} د</button></div>
+      {rest.length > 0 && <div className="cvw-nx"><span style={{ background: "none", paddingInline: 0 }}>بقية زيارات اليوم:</span>{rest.map(r => <span key={r.id}>{cvTm(r.tm).split(" ")[0] || r.p} • {String(r.t).split(" ")[0]}</span>)}</div>}
+    </div>; }
+  if (next) { const left = Math.round((+cvAt(next) - now) / 60000);
+    return <button className="cvw-pill" dir="rtl" onClick={() => open(next)} title="فتح الزيارات الصفية"><style>{CVW_CSS}</style>🎯 الزيارة القادمة {cvTm(next.tm).split(" ")[0]} • أ. {String(next.t).split(" ").slice(0, 2).join(" ")} • بعد {left >= 60 ? `${maAr(Math.floor(left / 60))} س ${maAr(left % 60)} د` : `${maAr(left)} د`}</button>; }
+  return null;
+}
 function CvHomeBanner({ me, onOpen }) {
   const [x, setX] = useState(null);
   useEffect(() => { (async () => { const D = await cvLoad(); const TS = cvTeachers(D.plan); const T = TS.find(t => D.cfg.links[t.tk] === me.rid) || TS.find(t => !D.cfg.links[t.tk] && cvMatch(t.name, { me: { name: me.name } }) === "me"); if (!T) return; const k = maKey(new Date()); const E = ptObj(D.ev[T.tk]); const nx = T.vis.find(r => r.date >= k && cvTotal(ptObj(E[r.v])) == null); if (nx) setX(nx); })(); }, []);
@@ -42012,6 +42112,7 @@ function SchoolWebsiteInner() {
       </div>
 
       {user && <AgendaWatcher uk={user.username || user.name} page={page} navigate={navigate} />}
+      {user && <CvAdminWatcher navigate={navigate} />}
       {/* ══════════════════════════════════════════
           وضع الجوال — إطار هاتف
       ══════════════════════════════════════════ */}
