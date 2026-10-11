@@ -37045,7 +37045,19 @@ async function hdParse(file) {
       out.push({ nid, n: g("n").replace(/\s+/g, " "), job: g("job"), dk, st: g("st"), a: tm(g("a")), d: tm(g("d")), pl: g("pl").replace(/^-$/, ""), po: g("po").replace(/^-$/, "") });
       if (!from || dk < from) from = dk; if (!to || dk > to) to = dk; });
   });
-  return { rows: out, from, to };
+  if (out.length) return { rows: out, from, to, kind: "full" };
+  // ── تقارير «حضوري» اليومية المختصرة (المسجلين / غير المسجلين / المتأخرين): بلا عمود تاريخ — التاريخ من اسم الملف أو اليوم
+  const fm = String(file && file.name || "").match(/(20\d{2})-(\d{2})-(\d{2})/); const dk = fm ? `${fm[1]}-${fm[2]}-${fm[3]}` : maKey(new Date()); let kind = "";
+  wb.SheetNames.forEach(sn => {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "", raw: false }); let hi = -1, C = {};
+    for (let i = 0; i < Math.min(rows.length, 30) && hi < 0; i++) { const r = rows[i].map(x => String(x ?? "").trim()); const f = re => r.findIndex(x => re.test(x));
+      if (f(/السجل المدني|رقم الهوية/) >= 0) { hi = i; C = { id: f(/السجل المدني|رقم الهوية/), n: f(/الإسم|الاسم|الموظف/), job: f(/المسمى/), a: f(/توقيت الحضور|وقت الحضور|الحضور/), st: f(/حالة/) }; } }
+    if (hi < 0) return;
+    const title = sn + " " + rows.slice(0, hi + 1).flat().join(" ") + " " + String(file && file.name || ""); const notReg = /غير\s*(ال)?مسجل/.test(title); kind = kind || (notReg ? "notreg" : "daily");
+    rows.slice(hi + 1).forEach(r => { const nid = licNormId(r[C.id]); if (nid.length !== 10) return; const g = k => C[k] >= 0 ? String(r[C[k]] ?? "").trim() : ""; const a = (g("a").match(/\d{1,2}:\d{2}/) || [""])[0];
+      out.push({ nid, n: g("n").replace(/\s+/g, " "), job: g("job"), dk, st: notReg ? "لم يسجّل حضوره" : (g("st") || (a ? "حضور" : "لم يسجّل حضوره")), a: a ? a.padStart(5, "0") : "", d: "", pl: "", po: "", daily: 1 }); });
+  });
+  return { rows: out, from: out.length ? dk : "", to: out.length ? dk : "", kind };
 }
 const HD_CSS = `
 .hd{font-family:'Cairo',Tahoma,sans-serif;color:#0f172a}
@@ -37254,7 +37266,7 @@ const hdWeekOf = k => { const d = maDate(k); d.setDate(d.getDate() - d.getDay())
 const hdWeekDays = ws => { const out = []; const d = maDate(ws); for (let i = 0; i < 5; i++) { const k = maKey(d); if (!maOff(k)) out.push(k); d.setDate(d.getDate() + 1); } return out; };
 function hdWeekStars(all, names, cfg, ws, tOnly = true) {
   const D = hdWeekDays(ws); const res = [];
-  Object.entries(ptObj(all)).forEach(([hk, r]) => { const R = ptObj(r); if (tOnly && !/معلم/.test(ptObj(names[hk]).job || "")) return;
+  Object.entries(ptObj(all)).forEach(([hk, r]) => { const R = ptObj(r); if (tOnly && ptObj(names[hk]).job && !/معلم/.test(ptObj(names[hk]).job)) return;
     const days = D.filter(k => R[k] && R[k].ph !== "m"); if (days.length < 3) return;
     const ok = days.every(k => { const d = hdDay(R[k], cfg); return d && d.kind === "work" && !d.late && !d.early && !d.fl.length; });
     if (ok) res.push({ hk, n: ptObj(names[hk]).n || "—", days: days.length }); });
@@ -37331,10 +37343,10 @@ function HdAdminPage({ by = "الإدارة" }) {
   if (!cfg || !all) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
   const saveCfg = async p => { const n = { ...cfg, ...p }; setCfg(n); const ok = await maPut(HD_CFG, n); toast(ok ? "✅ حُفظت الإعدادات" : "⚠️ تعذّر الحفظ"); };
   const nm = hk => (names[hk] && names[hk].n) || "—";
-  const isT = hk => !tOnly || /معلم/.test((names[hk] || {}).job || "");
-  const pick = async (e, ph = "e") => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setBusy(true); try { const r = await hdParse(f); r.ph = ph; setBusy(false); if (!r.rows.length) { alert("لم أجد في الملف أعمدة «السجل المدني» و«التاريخ» و«حالة التحضير» — تأكد أنه تقرير الحضور والانصراف من «حضوري»"); return; } setImp(r); } catch (err) { setBusy(false); alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
+  const isT = hk => { const j = (names[hk] || {}).job || ""; return !tOnly || !j || /معلم/.test(j); };
+  const pick = async (e, ph = "e") => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setBusy(true); try { const r = await hdParse(f); r.ph = r.kind && r.kind !== "full" ? "m" : ph; r.forced = r.kind && r.kind !== "full" && ph === "e"; setBusy(false); if (!r.rows.length) { alert("لم أجد في الملف أعمدة «السجل المدني» و«التاريخ» و«حالة التحضير» — تأكد أنه تقرير الحضور والانصراف من «حضوري»"); return; } setImp(r); } catch (err) { setBusy(false); alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
   const doImport = async () => { setBusy(true); const P = {}; const H = {}; let kept = 0; for (const x of imp.rows) { if (!H[x.nid]) H[x.nid] = hdK(await licHash(x.nid)); const hk = H[x.nid]; const ph = imp.ph === "m" && x.dk === imp.to ? "m" : "e";
-      const old = ptObj(ptObj(all[hk])[x.dk]); if (ph === "m" && old.st && old.ph !== "m") { kept++; } else P[`${HD_NODE}/${hk}/${x.dk}`] = { st: x.st, a: x.a, d: ph === "m" ? "" : x.d, pl: x.pl, po: ph === "m" ? "" : x.po, ph, up: Date.now() }; P[`${HD_T}/${hk}`] = { n: x.n, job: x.job, n4: x.nid.slice(-4) }; }
+      const old = ptObj(ptObj(all[hk])[x.dk]); if (ph === "m" && old.st && old.ph !== "m") { kept++; } else P[`${HD_NODE}/${hk}/${x.dk}`] = { st: x.st, a: x.a, d: ph === "m" ? "" : x.d, pl: x.pl, po: ph === "m" ? "" : x.po, ph, up: Date.now() }; const on = ptObj(names[hk]); P[`${HD_T}/${hk}`] = { n: x.n || on.n || "", job: x.job || on.job || "", n4: x.nid.slice(-4) }; }
     const ks = Object.keys(P); let ok = true; for (let i = 0; i < ks.length; i += 400) { const ch = Object.fromEntries(ks.slice(i, i + 400).map(k => [k, P[k]])); if (!(await fbPatch(ch))) ok = false; }
     const emp = Object.keys(H).length; await maPut(`${HD_UP}/u${Date.now()}`, { at: Date.now(), by, f: imp.from, t: imp.to, n: imp.rows.length, emp, ph: imp.ph || "e" });
     setBusy(false); setImp(null); await load(); setDk(imp.to && !maOff(imp.to) ? imp.to : null); toast(ok ? `✅ ${imp.ph === "m" ? "رفع الصباح: " : "رفع نهاية الدوام: "}${maAr(emp)} موظفاً ${imp.from === imp.to ? hfxHijTxt(imp.to) : `من ${hfxHijTxt(imp.from)} إلى ${hfxHijTxt(imp.to)}`}${kept ? ` • لم يُستبدل ${maAr(kept)} سجلاً مكتملاً برفع صباحي` : ""}` : "⚠️ رُفع جزء من البيانات — أعد الرفع"); };
@@ -37372,7 +37384,9 @@ function HdAdminPage({ by = "الإدارة" }) {
             <label className="hd-card" style={{ cursor: busy ? "default" : "pointer", borderColor: "#fcd34d", background: "linear-gradient(160deg,#fffbeb,#fff)", gap: 6 }}><b style={{ fontSize: 16 }}>🌅 الرفع الأول — صباحاً</b><span style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>بعد بداية الدوام: يظهر المتأخرون ومدة تأخر كل معلم، ومن لم يسجّل حضوره بعد. لا يُحكم بالغياب أو الانصراف.</span><span className="hd-b gold" style={{ justifySelf: "start" }}>{busy ? "⏳" : "📂 ملف الصباح"}</span><input type="file" accept=".xlsx,.xls" style={{ display: "none" }} disabled={busy} onChange={e => pick(e, "m")} /></label>
             <label className="hd-card" style={{ cursor: busy ? "default" : "pointer", borderColor: "#93c5fd", background: "linear-gradient(160deg,#eff6ff,#fff)", gap: 6 }}><b style={{ fontSize: 16 }}>🏁 الرفع الثاني — نهاية الدوام</b><span style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>الحساب الكامل: التأخر، والاستئذان، والانصراف، والانصراف المبكر دون استئذان، والغياب.</span><span className="hd-b pri" style={{ justifySelf: "start" }}>{busy ? "⏳" : "📂 ملف نهاية الدوام"}</span><input type="file" accept=".xlsx,.xls" style={{ display: "none" }} disabled={busy} onChange={e => pick(e, "e")} /></label>
           </div></div>
-        {imp && (() => { const emp = new Set(imp.rows.map(r => r.nid)).size; const St = {}; imp.rows.forEach(r => { const s = r.st.trim() || "—"; St[s] = (St[s] || 0) + 1; }); return <div className="hd-card" style={{ borderColor: "#fcd34d" }}><b>معاينة الملف — {imp.ph === "m" ? "🌅 رفع الصباح" : "🏁 رفع نهاية الدوام"}</b>
+        {imp && (() => { const emp = new Set(imp.rows.map(r => r.nid)).size; const St = {}; imp.rows.forEach(r => { const s = r.st.trim() || "—"; St[s] = (St[s] || 0) + 1; }); return <div className="hd-card" style={{ borderColor: "#fcd34d" }}><b>معاينة الملف — {imp.ph === "m" ? "🌅 رفع الصباح" : "🏁 رفع نهاية الدوام"}{imp.kind === "notreg" ? " • تقرير «غير المسجلين»" : imp.kind === "daily" ? " • تقرير يومي مختصر" : ""}</b>
+          {imp.kind === "notreg" && <div className="hd-note" style={{ background: "#fffbeb", borderColor: "#fde68a" }}>هذا التقرير فيه <b>من لم يسجّل حضوره فقط</b> ({maAr(imp.rows.length)}) بدون أوقات، فيُعرض هؤلاء «لم يسجّلوا حضورهم بعد». <b>لمعرفة المتأخرين ومدة تأخرهم</b> ارفع صباحاً تقرير «الحضور والانصراف لجميع الموظفين» ليوم اليوم (من تاريخ اليوم إلى تاريخ اليوم) — ففيه وقت حضور كل معلم.</div>}
+          {imp.forced && <div className="hd-note" style={{ background: "#fef2f2", borderColor: "#fecaca" }}>التقرير اليومي المختصر لا يصلح لحساب نهاية الدوام (لا يحوي الانصراف)، فسيُرفع كـ«رفع صباح». لنهاية الدوام ارفع «الحضور والانصراف لجميع الموظفين».</div>}
           <div className="hd-kp"><div style={{ "--c": "#0f1e3d" }}><b>{maAr(emp)}</b><small>موظفاً</small></div><div style={{ "--c": "#0f766e" }}><b>{maAr(imp.rows.length)}</b><small>سجلاً يومياً</small></div><div style={{ "--c": "#b45309" }}><b style={{ fontSize: 15 }}>{hfxHijTxt(imp.from)}<br />{hfxHijTxt(imp.to)}</b><small>الفترة</small></div></div>
           <div className="flex gap-1 flex-wrap">{Object.entries(St).sort((a, b) => b[1] - a[1]).map(([s, n]) => <span key={s} className="hd-pill" style={{ background: "#f1f5f9", color: "#334155" }}>{s}: {maAr(n)}</span>)}</div>
           <div className="flex gap-2"><button className="hd-b pri" disabled={busy} onClick={doImport}>{busy ? "⏳ جاري الرفع…" : "✅ اعتماد ورفع"}</button><button className="hd-b" onClick={() => setImp(null)}>إلغاء</button></div></div>; })()}
@@ -41350,9 +41364,12 @@ async function leadLive() {
   const out = { stu: null, tch: null, stars: null };
   let d = maDate(maWorkDay()); for (let i = 0; i < 10; i++) { const k = maKey(d); if (!maOff(k)) { const att = ptObj(await maGet(`${MA_ATT}/${k}`)); const R = Object.values(att).filter(r => r && typeof r === "object"); if (R.length) { const total = R.reduce((a, r) => a + (+r.total || 0), 0), ab = R.reduce((a, r) => a + maArr(r.absent).length, 0); out.stu = { dk: k, total, ab, cls: R.length }; break; } } d.setDate(d.getDate() - 1); }
   const [all, nm, c] = await Promise.all([maGet(HD_NODE), maGet(HD_T), maGet(HD_CFG)]); const A = ptObj(all), N = ptObj(nm), cfg = { ...HD_DEF, ...ptObj(c) };
-  const T = Object.keys(A).filter(hk => /معلم/.test(ptObj(N[hk]).job || "")); let last = ""; T.forEach(hk => Object.keys(ptObj(A[hk])).forEach(k => { if (!maOff(k) && k > last) last = k; }));
+  const T = Object.keys(A).filter(hk => { const j = ptObj(N[hk]).job || ""; return !j || /معلم/.test(j); }); let last = ""; T.forEach(hk => Object.keys(ptObj(A[hk])).forEach(k => { if (!maOff(k) && k > last) last = k; }));
   if (last) { const L = T.map(hk => ptObj(A[hk])[last] ? { r: ptObj(A[hk])[last], d: hdDay(ptObj(A[hk])[last], cfg) } : null).filter(x => x && x.d && x.d.kind !== "off");
-    out.tch = { dk: last, n: L.length, mor: L.some(x => x.r.ph === "m"), present: L.filter(x => (x.d.kind === "work" || x.d.kind === "perm") && x.d.a != null).length, abs: L.filter(x => x.d.kind === "abs").length, pend: L.filter(x => x.d.kind === "pend").length, leave: L.filter(x => x.d.kind === "leave").length, late: L.filter(x => x.d.kind === "work" && x.d.late > 0).length, lateMin: L.filter(x => x.d.kind === "work").reduce((a, x) => a + x.d.late, 0), perm: L.filter(x => x.d.kind === "perm").length, early: L.filter(x => x.d.kind === "work" && x.d.early > 0).length };
+    const onlyNR = L.length > 0 && L.every(x => x.r.st === "لم يسجّل حضوره");
+    if (onlyNR) { const since = (() => { const d = maDate(last); d.setDate(d.getDate() - 30); return maKey(d); })(); const known = T.filter(hk => Object.keys(ptObj(A[hk])).some(k => k >= since && k < last && ptObj(A[hk])[k].ph !== "m")).length; const pend = L.length; const n = Math.max(known, pend);
+      out.tch = { dk: last, n, mor: true, nr: true, present: n - pend, abs: 0, pend, leave: 0, late: 0, lateMin: 0, perm: 0, early: 0 }; }
+    else out.tch = { dk: last, n: L.length, mor: L.some(x => x.r.ph === "m"), present: L.filter(x => (x.d.kind === "work" || x.d.kind === "perm") && x.d.a != null).length, abs: L.filter(x => x.d.kind === "abs").length, pend: L.filter(x => x.d.kind === "pend").length, leave: L.filter(x => x.d.kind === "leave").length, late: L.filter(x => x.d.kind === "work" && x.d.late > 0).length, lateMin: L.filter(x => x.d.kind === "work").reduce((a, x) => a + x.d.late, 0), perm: L.filter(x => x.d.kind === "perm").length, early: L.filter(x => x.d.kind === "work" && x.d.early > 0).length };
     let ws = hdWeekOf(last); let st = hdWeekStars(A, N, cfg, ws); const up = hdWeekDays(ws).filter(k => T.some(hk => ptObj(A[hk])[k] && ptObj(A[hk])[k].ph !== "m")).length;
     if (up < 3) { const p = maDate(ws); p.setDate(p.getDate() - 7); ws = maKey(p); st = hdWeekStars(A, N, cfg, ws); }
     out.stars = { ws, L: st }; }
@@ -41369,7 +41386,7 @@ function LeadDash({ navigate, clock, dayName, hijri, greg, greet, attendRate, to
   const K = [["attendstats", "إجمالي الطلاب (حسب الرصد)", S ? maAr(S.total) : live ? "—" : "…", S ? `غائب ${maAr(S.ab)} (${maAr(S.total ? Math.round(S.ab / S.total * 1000) / 10 : 0)}٪) • ${dl(S.dk)}` : live ? "لم يُرصد غياب بعد" : "", "👥", "#0369a1", "#7dd3fc", "#e0f2fe"],
     ["hdisc", "حضور المعلمين", TC ? maAr(TC.present) : live ? "—" : "…", TC ? `من ${maAr(TC.n)} • ${maAr(tRate)}٪ • ${TC.mor ? "🌅 صباحاً" : "🏁 نهاية الدوام"} ${dl(TC.dk)}` : live ? "لم يُرفع «حضوري» بعد" : "", "✅", "#059669", "#6ee7b7", "#dcfce7"],
     ["hdisc", TC && TC.mor ? "لم يسجّلوا حضورهم بعد" : "غياب المعلمين", TC ? maAr(TC.mor ? TC.pend : TC.abs) : live ? "—" : "…", TC ? (TC.mor ? "يُحسم الغياب بعد رفع نهاية الدوام" : `مستأذنون ${maAr(TC.perm)}${TC.leave ? ` • إجازة ${maAr(TC.leave)}` : ""}`) : "", "🚫", "#dc2626", "#fda4af", "#fee2e2"],
-    ["hdisc", "تأخر المعلمين", TC ? maAr(TC.late) : live ? "—" : "…", TC ? `${hdDur(TC.lateMin)}${!TC.mor ? ` • انصراف مبكر ${maAr(TC.early)}` : ""}` : "", "⏰", "#d97706", "#fde68a", "#fef3c7"]];
+    ["hdisc", "تأخر المعلمين", TC ? (TC.nr ? "—" : maAr(TC.late)) : live ? "—" : "…", TC ? (TC.nr ? "يحتاج تقرير الحضور الكامل" : `${hdDur(TC.lateMin)}${!TC.mor ? ` • انصراف مبكر ${maAr(TC.early)}` : ""}`) : "", "⏰", "#d97706", "#fde68a", "#fef3c7"]];
   const news = [...(recentAnn || []).map(a => ({ k: "a" + a.id, t: a.title, s: a.date || "", ic: "📣", go: "announcements" })), ...(upcomingAct || []).map(a => ({ k: "v" + a.id, t: a.title, s: a.date || "", ic: "🎉", go: "activities" }))].slice(0, 5);
   return <div className="ld" dir="rtl"><style>{LD_CSS}</style>
     <div className="ld-top"><div style={{ flex: "1 1 260px" }}><h1>لوحة قيادة المدرسة</h1><p>متابعة اليوم الدراسي وإدارة أعمال المدرسة • {greet}</p></div><span className="ld-chip">📆 {dayName}</span><span className="ld-chip">🌙 {hijri}</span><span className="ld-chip" style={{ display: "inline-flex" }}><PamQuoteMini /></span></div>
