@@ -33418,7 +33418,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
     const tdk = maKey(new Date()); const [tt, tl, tab] = await Promise.all([maGet(TT_NODE), maGet(`${TT_LOG}/${tdk}`), maGet(`${TT_ABS}/${tdk}`)]); const T = ttFresh(tt); const ti = sttFindMe(T, me.name); if (ti < 0) { if (alive) setMyTT({ ti: -1 }); return; }
     const di = ttDayIdx(T, new Date()); const cks = Object.keys(T.C); const mine = cks.filter(ck => T.C[ck].some(d => d.some(c => c && c[1] === ti)));
     const p2 = di >= 0 ? cks.filter(ck => T.C[ck][di] && T.C[ck][di][1] && T.C[ck][di][1][1] === ti) : [];
-    const absL = Object.values(ptObj(tab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti); const plan = di >= 0 ? sttPlan(T, di, absL, ptObj(tl)) : {};
+    const absL = Object.values(ptObj(tab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti); const plan = di >= 0 ? sttPlan(T, di, absL, ptObj(tl), ttAbsRng(tab)) : {};
     const subs = di >= 0 ? cks.filter(ck => { const k = ttK(di, 1, ck); const v = ptObj(tl)[k]; return (v && v.st === "sub" && +v.sub === ti) || (!v && plan[k] && plan[k].sub === ti); }) : [];
     if (alive) setMyTT({ ti, mine, p2, subs });
   } catch { if (alive) setMyTT({ ti: -1 }); } })(); return () => { alive = false; }; }, [isT, me && me.name]);
@@ -36305,7 +36305,7 @@ const ttKindOf = r => r.st === "sub" ? "absent" : r.st;
 const ttRk = r => `${r.dk}_${r.d}_${r.p}_${r.ck}`;
 // هل يحتاج السجل اطّلاع المعلم؟ (أي حالة غير «حضر»، أو أي ملاحظة مكتوبة — ولمعلم الانتظار ملاحظات حصته)
 const ttAutoNote = n => /^غياب المعلم/.test(String(n || ""));
-const ttNeedAck = (r, ti) => +r.ti === ti && !r._cov ? (r.st !== "ok" || !!r.cn || !!(r.note && !ttAutoNote(r.note))) : (r.st === "sub" && +r.sub === ti && (!!r.cn || !!(r.note && !ttAutoNote(r.note))));
+const ttNeedAck = (r, ti) => +r.ti === ti && !r._cov ? (r.st !== "ok" || !!r.cn || !!(r.note && !ttAutoNote(r.note))) : (r.st === "sub" && +r.sub === ti && (!!r.cn || !!(r.note && !ttAutoNote(r.note)) || (!!r.so && r.so !== "ok") || !!r.act));
 const ttTKey = (T, ti) => asmK(ttClean(T.T[ti] || ""));
 async function ttLoadRows(F0, T0) { const L = await fbRange(TT_LOG, F0, T0); const out = []; Object.entries(ptObj(L)).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([k, v]) => { if (!v || typeof v !== "object") return; const [d, p, c] = k.split("_"); out.push({ dk, d: +d, p: +p, ck: c, ...v }); })); return out.sort((a, b) => b.dk.localeCompare(a.dk) || a.p - b.p); }
 function ttStats(rows, ti) {
@@ -36384,6 +36384,7 @@ function TeacherTtNotes({ me }) {
           <div style={{ textAlign: "center", minWidth: 64 }}><div style={{ fontSize: 11.5, fontWeight: 900, color: "#334155" }}>{maDay(maDate(r.dk))}</div><div style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>{asmHij(maDate(r.dk))}</div><div style={{ fontSize: 12, fontWeight: 900, color: x.c }}>ح {maAr(r.p + 1)}</div></div>
           <div style={{ minWidth: 0 }}><div className="flex gap-2 items-center flex-wrap"><span className="stt-lv" style={{ background: x.c, color: "#fff" }}>{x.ic} {r._cov ? `غطّيت بدلاً عن أ. ${ttClean(T.T[r.ti] || "")}` : r.st === "sub" ? "غياب — عُيّن بديل" : x.l}</span><b style={{ fontSize: 13.5 }}>{maClassName(r.ck)} • {subName(r.si)}</b></div>
             {!r._cov && ttDetail(T, r) && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", marginTop: 3 }}>{ttDetail(T, r)}</div>}
+            {r._cov && r.so && TT_SO[r.so] && <div style={{ fontSize: 12.5, fontWeight: 900, color: TT_SO[r.so].c, marginTop: 3 }}>🛡️ {TT_SO[r.so].ic} {ttSoTxt(r)}</div>}
             {(r.note || r.cn) && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0369a1", marginTop: 2 }}>📝 {[r.note, r.cn ? `على الفصل: ${[r.cn.c, r.cn.t].filter(Boolean).join(" — ")}` : ""].filter(Boolean).join(" • ")}</div>}</div>
           <div>{ttNeedAck(r, ti) && (a ? <span className="stt-lv" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اطّلعت</span> : <button className="ma-btn" style={{ padding: "4px 10px" }} onClick={() => doAck(r)}>✍️ اطّلعت</button>)}</div>
         </div>; })}</div>}
@@ -37112,7 +37113,7 @@ function HdTeacherView({ me }) {
     const cases = Object.values(ptObj(hf)).filter(c => c && c.h && c.h === me.hash && !c.hid);
     // جدولي اليوم + حصص الاحتياط
     const times = ttFixTimes(Array.isArray(ptObj(tc).times) ? ptObj(tc).times : TT_PDF.times).slice(0, T.P); const di = ttDayIdx(T, new Date()); const today = [];
-    if (ti >= 0 && di >= 0 && !maOff(tdk)) { const absL = Object.values(ptObj(tab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti); const plan = sttPlan(T, di, absL, ptObj(tl));
+    if (ti >= 0 && di >= 0 && !maOff(tdk)) { const absL = Object.values(ptObj(tab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti); const plan = sttPlan(T, di, absL, ptObj(tl), ttAbsRng(tab));
       Object.keys(T.C).forEach(ck => times.forEach((t, p) => { const c = T.C[ck][di] && T.C[ck][di][p]; if (!c || c[0] < 0) return; const v = ptObj(tl)[ttK(di, p, ck)]; const pk = plan[ttK(di, p, ck)];
         if (c[1] === ti) today.push({ p, ck, si: c[0], t, mine: 1, away: absL.includes(ti), v });
         else if ((v && v.st === "sub" && +v.sub === ti) || (!v && pk && pk.sub === ti)) today.push({ p, ck, si: c[0], t, sub: 1, firm: !!(v && v.st === "sub"), for: ttClean(T.T[c[1]]) }); })); }
@@ -37126,7 +37127,7 @@ function HdTeacherView({ me }) {
   const cum = G.lost; const lim = +cfg.lim || 420; const cycle = cum % lim; const times = Math.floor(cum / lim);
   const doAck = async k => { const v = Date.now(); setAck(a => ({ ...a, [k]: v })); await maPut(`${HD_ACK}/${hk}/${k}`, v); };
   const sendObj = async () => { const t = String(ob.t || "").trim(); if (!t) return; const v = { t, at: Date.now(), st: "new", n: me.name }; setObj(o => ({ ...o, [ob.k]: v })); setOb(null); await maPut(`${HD_OBJ}/${hk}/${ob.k}`, v); };
-  const ASM = { p: ["✅ حضر الطابور", "#15803d"], l: ["⏰ تأخر عن الطابور", "#c2410c"], a: ["❌ لم يحضر الطابور", "#b91c1c"], x: ["📝 مستأذن من الطابور", "#b45309"], g: ["🚫 غائب", "#7f1d1d"] };
+  const ASM = { p: ["✅ حضر الطابور", "#15803d"], l: ["⏰ تأخر عن الطابور", "#c2410c"], lx: ["🕐 تأخر لظرف", "#0e7490"], a: ["❌ لم يحضر الطابور", "#b91c1c"], x: ["📝 مستأذن", "#b45309"], o: ["🏃 خرج دون إذن", "#9d174d"], g: ["🚫 غائب", "#7f1d1d"] };
   const clsTxt = r => r.st === "late" ? `تأخر ${maAr(r.mins || 0)} د عن الحصة ${maAr(r.p + 1)}` : r.st === "early" ? `خروج قبل نهاية الحصة ${maAr(r.p + 1)} بـ ${maAr(r.out || 0)} د` : r.st === "absent" || r.st === "sub" ? `غياب عن الحصة ${maAr(r.p + 1)}` : `ملاحظة على الحصة ${maAr(r.p + 1)}`;
   const k0 = last && last.k; const D0 = k0 && maDate(k0);
   return <div className="hd grid gap-3" dir="rtl"><style>{HD_CSS}</style>
@@ -37149,7 +37150,7 @@ function HdTeacherView({ me }) {
           <div className="hd-ring" style={{ "--p": last.pct ?? 100, "--c": hdPctC(last.pct) }}><div><b>{last.pct == null ? "—" : `${maAr(last.pct)}٪`}</b><small>انضباط اليوم</small></div></div>
           <div style={{ flex: 1, minWidth: 200 }} className="grid gap-1">
             <b style={{ fontSize: 16 }}>{maDay(D0)} {asmHij(D0)}</b>
-            <div className="flex gap-1 flex-wrap"><span className="hd-pill" style={{ background: HD_KIND[last.kind].bg, color: HD_KIND[last.kind].c }}>{HD_KIND[last.kind].l}{last.kind === "perm" ? ` — ${last.st}` : ""}</span>{asmOf(k0) && ASM[asmOf(k0).st] && <span className="hd-pill" style={{ background: "#f8fafc", color: ASM[asmOf(k0).st][1] }}>{ASM[asmOf(k0).st][0]}{asmOf(k0).note ? ` — ${asmOf(k0).note}` : ""}</span>}</div>
+            <div className="flex gap-1 flex-wrap"><span className="hd-pill" style={{ background: HD_KIND[last.kind].bg, color: HD_KIND[last.kind].c }}>{HD_KIND[last.kind].l}{last.kind === "perm" ? ` — ${last.st}` : ""}</span>{asmOf(k0) && ASM[asmOf(k0).st] && <span className="hd-pill" style={{ background: "#f8fafc", color: ASM[asmOf(k0).st][1] }}>{ASM[asmOf(k0).st][0]}{asmOf(k0).note ? ` — ${asmOf(k0).note}` : ""}{asmOf(k0).out ? ` • خرج ${mlFmtT(asmOf(k0).out)}` : ""}{asmOf(k0).ret ? ` • عاد ${mlFmtT(asmOf(k0).ret)}` : ""}</span>}</div>
             {last.kind !== "abs" && <div style={{ fontSize: 13.5, fontWeight: 800 }}>🕖 الحضور {hdHM(last.a)} • 🏁 الانصراف {hdHM(last.d)}</div>}
             <div className="flex gap-1 flex-wrap">
               {last.late > 0 && <span className="hd-pill" style={{ background: last.kind === "perm" ? "#e0f2fe" : "#ffedd5", color: last.kind === "perm" ? "#0369a1" : "#c2410c" }}>⏰ تأخر {hdDur(last.late)}{last.kind === "perm" ? " (مستأذن)" : ""}</span>}
@@ -37407,6 +37408,7 @@ function HdAdminPage({ by = "الإدارة" }) {
           <div style={{ "--c": "#b91c1c" }}><b>{maAr(dayRows.filter(x => x.d.kind === "abs").length)}</b><small>غائبون</small></div>
           {dayRows.some(x => x.d.kind === "pend") && <div style={{ "--c": "#64748b" }}><b>{maAr(dayRows.filter(x => x.d.kind === "pend").length)}</b><small>لم يسجّلوا حضورهم بعد</small></div>}
           <div style={{ "--c": "#9a3412" }}><b>{hdDur(dayRows.filter(x => x.d.kind === "work").reduce((a, x) => a + x.d.late, 0))}</b><small>مجموع دقائق التأخر</small></div></div>; })()}
+        {dayRows.length > 0 && dayRows.every(x => x.rec.st === "لم يسجّل حضوره") && <div className="hd-note" style={{ background: "#fef2f2", borderColor: "#fecaca" }}>⚠️ <b>هذا اليوم مرفوع له تقرير «غير المسجلين» فقط</b> — فيه من لم يسجّل حضوره دون أوقات، لذلك لا يظهر الحاضرون ولا المتأخرون. لعرضهم ارفع تقرير <b>«الحضور والانصراف لجميع الموظفين»</b> لتاريخ اليوم (من اليوم إلى اليوم) في «🌅 ملف الصباح».</div>}
         {dayRows.some(x => x.d.morning) && <div className="hd-note" style={{ background: "#fffbeb", borderColor: "#fde68a" }}>🌅 <b>بيانات رفع الصباح</b> — يظهر التأخر ومدته فقط. يكتمل حساب الاستئذان والانصراف والانصراف المبكر والغياب بعد «🏁 رفع نهاية الدوام» لنفس اليوم.</div>}
         <div className="hd-card" style={{ padding: 0, overflow: "auto", maxHeight: "65vh" }}><table className="hd-tbl" style={{ minWidth: 820 }}><thead><tr><th>الاسم</th><th>الحالة</th><th>الحضور</th><th>الانصراف</th><th>التأخر</th><th>المبكر</th><th>الطابور</th><th>الحصص</th><th>النسبة</th><th>المعلم</th></tr></thead>
           <tbody>{dayRows.map(x => { const K = HD_KIND[x.d.kind]; return <tr key={x.hk}><td className="n">{x.n}<div style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 700 }}>{x.job}{x.rec.pl && !/عبدالمجيد/.test(x.rec.pl) ? ` • سُجّل من: ${x.rec.pl}` : ""}</div></td><td><span className="hd-pill" style={{ background: K.bg, color: K.c }}>{K.l}</span>{x.d.kind === "perm" && <div style={{ fontSize: 10.5, color: "#0369a1" }}>{x.d.st}</div>}{x.d.fl.map(f => <div key={f} style={{ fontSize: 10.5, color: "#b45309" }}>⚠️ {f}</div>)}</td><td>{hdHM(x.d.a)}</td><td>{hdHM(x.d.d)}</td><td style={{ color: x.d.late ? "#c2410c" : "#cbd5e1" }}>{x.d.late ? maAr(x.d.late) : "—"}</td><td style={{ color: x.d.early ? "#7c3aed" : "#cbd5e1" }}>{x.d.early ? maAr(x.d.early) : "—"}</td><td>{x.as && ASMS[x.as.st] ? ASMS[x.as.st] : "·"}</td><td style={{ color: x.cl.length ? "#4338ca" : "#cbd5e1" }}>{x.cl.length ? maAr(x.cl.length) : "—"}</td><td><b style={{ color: hdPctC(x.d.pct) }}>{x.d.pct == null ? "—" : `${maAr(x.d.pct)}٪`}</b></td><td>{x.ob ? <span className="hd-pill" style={{ background: "#fef3c7", color: "#92400e" }}>💬 اعتراض</span> : x.ack ? <span style={{ color: "#15803d" }}>✓ اطّلع</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td></tr>; })}</tbody></table></div>
@@ -37459,7 +37461,8 @@ const MOE_LOGO = hfxAbs(moeLogoImg);
 // school-circ/{id} (بيانات خفيفة) • school-circ-pg/{id} (الصفحات/الصور) • school-circ-sig/{id}/{hk} (التوقيع) • school-circ-seen/{id}/{hk}
 // المعلم يُعرَّف ببصمة هويته (hdK(me.hash)) — نفس مفتاح سجل الانضباط
 // ═══════════════════════════════════════════════════════════════
-const CR_NODE = "school-circ", CR_PG = "school-circ-pg", CR_SIG = "school-circ-sig", CR_SEEN = "school-circ-seen", CR_CFG = "school-circ-cfg";
+const CR_NODE = "school-circ", CR_PG = "school-circ-pg", CR_SIG = "school-circ-sig", CR_SEEN = "school-circ-seen", CR_CFG = "school-circ-cfg", CR_READ = "school-circ-read";
+const crLink = id => { try { return `${location.origin}${location.pathname}#circ=${id}`; } catch { return `#circ=${id}`; } };
 const CR_SZ = [["full", "كامل العرض", 100], ["lg", "كبير", 86], ["md", "متوسط", 68]];
 const CR_LAY = [["v", "تحت بعضها"], ["h", "بجانب بعضها"], ["book", "كتاب (صفحة صفحة)"]];
 const crId = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -37507,8 +37510,11 @@ const CR_CSS = `
 @media (max-width:600px){.cr-doc-h{grid-template-columns:1fr auto}.cr-doc-h .l{display:none}.cr-grid2{grid-template-columns:1fr}}
 `;
 // ── عرض التعميم (للمعلم وللإدارة) بنفس القالب
-function CircViewer({ c, pages, logo }) {
+function CircViewer({ c, pages, logo, onRead }) {
   const [pi, setPi] = useState(0); const [zoom, setZoom] = useState(null); const P = Array.isArray(pages) ? pages : [];
+  const endRef = useRef(null); const [endVis, setEndVis] = useState(false); const readDone = useRef(false);
+  useEffect(() => { const el = endRef.current; if (!el || !("IntersectionObserver" in window)) { setEndVis(true); return; } const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && setEndVis(true)), { threshold: .2 }); io.observe(el); return () => io.disconnect(); }, []);
+  useEffect(() => { const book = (c.lay || (c.src === "pdf" ? "book" : "v")) === "book" && P.length > 1; if (!readDone.current && onRead && endVis && (!book || pi >= P.length - 1)) { readDone.current = true; onRead(); } }, [endVis, pi, P.length]);
   const D = maDate(c.date || maKey(new Date())); const lay = c.lay || (c.src === "pdf" ? "book" : "v"); const W = (CR_SZ.find(x => x[0] === c.size) || CR_SZ[0])[2];
   const tx = useRef(0);
   return <div className="cr-doc">
@@ -37523,17 +37529,20 @@ function CircViewer({ c, pages, logo }) {
         </div>
         : lay === "h" ? <div className="cr-grid2">{P.map((s, i) => <img key={i} src={s} alt="" onClick={() => setZoom(s)} />)}</div>
         : P.map((s, i) => <img key={i} src={s} alt="" style={{ width: `${W}%` }} onClick={() => setZoom(s)} />))}
+      <div ref={endRef} style={{ height: 2, width: "100%" }} />
     </div>
     {zoom && <div className="cr-ov" style={{ alignItems: "flex-start", overflow: "auto", padding: 0 }} onClick={() => setZoom(null)}><img src={zoom} alt="" style={{ width: "max(900px,100%)", background: "#fff" }} /></div>}
   </div>;
 }
 // ── الطباعة الاحترافية: الكليشة + العنوان + التعميم مكبّراً + سجل الاطلاع والتوقيع
-function circPrint(c, pages, sigs, rec, logo) {
+function circPrint(c, pages, sigs, rec, logo, ex = {}) {
   const D = maDate(c.date || maKey(new Date())); const P = Array.isArray(pages) ? pages : []; const W = (CR_SZ.find(x => x[0] === c.size) || CR_SZ[0])[2]; const lay = c.lay || (c.src === "pdf" ? "book" : "v");
   const head = `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>${ptEsc(HFX_SCHOOL)}</b></div><div class="c"><img src="${logo || MOE_LOGO}"></div><div class="l">${c.no ? `رقم التعميم: <b>${ptEsc(maAr(c.no))}</b><br>` : ""}التاريخ: ${ptEsc(asmHij(D))}<br>${ptEsc(maDay(D))}<br>الموافق: ${ptEsc(maGreg(D))}</div></div>`;
   const title = `<div class="ti"><span>تعميم</span><b>${ptEsc(c.title)}</b></div>`;
   const imgs = lay === "h" ? `<div class="g2">${P.map(s => `<img src="${s}">`).join("")}</div>` : P.map((s, i) => `<div class="pgimg${i === 0 && !c.text ? " first" : ""}" style="width:${W}%"><img src="${s}">${P.length > 1 ? `<span>${maAr(i + 1)} / ${maAr(P.length)}</span>` : ""}</div>`).join("");
-  const S = rec.map((t, i) => { const s = ptObj(sigs)[t.hk]; return `<tr><td>${maAr(i + 1)}</td><td class="n">${ptEsc(t.n)}</td><td>${s && s.at ? ptEsc(new Date(s.at).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "numeric", year: "numeric" })) : "—"}</td><td class="sg">${s && s.sig ? `<img src="${s.sig}">` : s && s.at ? "✓ اطّلع" : ""}</td></tr>`; }).join("");
+  const fmtT = ts => ptEsc(new Date(ts).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "numeric" }) + " " + new Date(ts).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }));
+  const S = rec.map((t, i) => { const s = ptObj(sigs)[t.hk]; const rd = ptObj(ex.read)[t.hk], sn = ptObj(ex.seen)[t.hk]; const stt = s && s.at ? "" : rd ? `<span class="st b">📖 قرأه ولم يوقّع</span>` : sn ? `<span class="st y">👁️ فتحه</span>` : `<span class="st r">لم يفتحه</span>`;
+    return `<tr><td>${maAr(i + 1)}</td><td class="n">${ptEsc(t.n)}</td><td>${s && s.at ? fmtT(s.at) : stt}</td><td class="nt">${s && s.note ? ptEsc(s.note) : ""}</td><td class="sg">${s && s.sig ? `<img src="${s.sig}">` : s && s.at ? "✓ اطّلع" : ""}</td></tr>`; }).join("");
   const done = rec.filter(t => ptObj(sigs)[t.hk] && ptObj(sigs)[t.hk].at).length;
   printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${ptEsc(c.title)}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet"><style>
 @page{size:A4;margin:9mm 9mm 12mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}
@@ -37552,11 +37561,14 @@ function circPrint(c, pages, sigs, rec, logo) {
 .st{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:15px;font-weight:900;color:#064e3b}.st::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,#a7f3d0,transparent)}
 .st small{font-size:11.5px;color:#475569;font-weight:800}
 table{width:100%;border-collapse:collapse;font-size:12px}th{background:#064e3b;color:#fff;padding:7px;font-weight:900}td{border:1px solid #d1fae5;padding:5px 7px;text-align:center;font-weight:700;height:40px}td.n{text-align:right;font-weight:900}td.sg img{height:34px;max-width:150px;object-fit:contain}
-tr{break-inside:avoid}tr:nth-child(even) td{background:#f8fffb}
+tr{break-inside:avoid}tr:nth-child(even) td{background:#f8fffb}td.nt{text-align:right;font-size:11px;font-weight:700;color:#334155}
+.st{display:inline-block;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:900}.st.b{background:#e0f2fe;color:#0369a1}.st.y{background:#fef3c7;color:#92400e}.st.r{background:#fee2e2;color:#b91c1c}
+.sm{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}.sm div{border:1.5px solid #d1fae5;border-radius:12px;text-align:center;padding:6px;font-size:11px;font-weight:800;color:#475569}.sm b{display:block;font-size:20px;font-weight:900;color:#064e3b}
 .ft{display:flex;justify-content:space-between;margin-top:22px;font-size:13px;font-weight:800}.ft b{display:block;font-size:15px;color:#064e3b;margin-top:4px}
 </style></head><body>${head}${title}${c.text ? `<div class="txt">${ptEsc(c.text)}</div>` : ""}${imgs}
 <div class="sec">${P.length ? head + `<div class="ti" style="margin:16px auto 6px"><span>تعميم</span><b>${ptEsc(c.title)}</b></div>` : ""}<div class="st">✍️ سجل اطلاع وتوقيع المعلمين على التعميم <small>(${maAr(done)} من ${maAr(rec.length)})</small></div>
-<table><thead><tr><th style="width:6%">م</th><th style="width:40%">الاسم</th><th style="width:20%">تاريخ الاطلاع</th><th>التوقيع</th></tr></thead><tbody>${S}</tbody></table>
+<div class="sm"><div><b>${maAr(rec.length)}</b>المرسل إليهم</div><div><b style="color:#15803d">${maAr(done)}</b>${c.need ? "وقّعوا" : "اطّلعوا"}</div><div><b style="color:#0369a1">${maAr(rec.filter(t => !(ptObj(sigs)[t.hk] && ptObj(sigs)[t.hk].at) && ptObj(ex.seen)[t.hk]).length)}</b>فتحوه ولم يوقّعوا</div><div><b style="color:#b91c1c">${maAr(rec.filter(t => !(ptObj(sigs)[t.hk] && ptObj(sigs)[t.hk].at) && !ptObj(ex.seen)[t.hk]).length)}</b>لم يفتحوه</div></div>
+<table><thead><tr><th style="width:5%">م</th><th style="width:30%">الاسم</th><th style="width:16%">الاطلاع / التوقيع</th><th style="width:25%">ملاحظة المعلم</th><th>التوقيع</th></tr></thead><tbody>${S}</tbody></table>
 <div class="ft"><div>وكيل المدرسة<b>..............................</b></div><div>مدير المدرسة<b>فازع القرني</b></div></div></div>
 <script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},500)})</script></body></html>`);
 }
@@ -37566,7 +37578,8 @@ function CircAdminPage({ by = "الإدارة" }) {
   const [tab, setTab] = useState("list"); const [list, setList] = useState(null); const [staff, setStaff] = useState([]); const [sigAll, setSigAll] = useState({}); const [seenAll, setSeenAll] = useState({}); const [cfg, setCfg] = useState({});
   const [ed, setEd] = useState(null); const [open, setOpen] = useState(null); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(""); const [q, setQ] = useState(""); const [phones, setPhones] = useState({});
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
-  const load = async () => { const [l, s, se, st, cf, ph] = await Promise.all([maGet(CR_NODE), maGet(CR_SIG), maGet(CR_SEEN), crStaff(), maGet(CR_CFG), maGet(PH_NODE)]); setList(Object.values(ptObj(l)).filter(c => c && c.id && !c.hid).sort((a, b) => (b.at || 0) - (a.at || 0))); setSigAll(ptObj(s)); setSeenAll(ptObj(se)); setStaff(st); setCfg(ptObj(cf)); setPhones(ptObj(ph)); };
+  const [readAll, setReadAll] = useState({});
+  const load = async () => { const [l, s, se, st, cf, ph, rd] = await Promise.all([maGet(CR_NODE), maGet(CR_SIG), maGet(CR_SEEN), crStaff(), maGet(CR_CFG), maGet(PH_NODE), maGet(CR_READ)]); setReadAll(ptObj(rd)); setList(Object.values(ptObj(l)).filter(c => c && c.id && !c.hid).sort((a, b) => (b.at || 0) - (a.at || 0))); setSigAll(ptObj(s)); setSeenAll(ptObj(se)); setStaff(st); setCfg(ptObj(cf)); setPhones(ptObj(ph)); };
   useEffect(() => { load(); }, []);
   const blank = () => ({ id: crId(), title: "", no: "", date: maKey(new Date()), src: "img", text: "", pages: [], lay: "v", size: "full", to: "all", need: true });
   const addFiles = async (files) => { const out = []; setBusy("⏳ تجهيز الملفات…");
@@ -37579,24 +37592,25 @@ function CircAdminPage({ by = "الإدارة" }) {
   const save = async () => { const e = ed; if (!e.title.trim()) { toast("⚠️ اكتب عنوان التعميم"); return; } if (!e.text.trim() && !e.pages.length) { toast("⚠️ أضف نص التعميم أو صورته أو ملف PDF"); return; } if (Array.isArray(e.to) && !e.to.length) { toast("⚠️ اختر المعلمين المرسل إليهم"); return; }
     setBusy("⏳ جاري النشر…"); const meta = { id: e.id, title: e.title.trim(), no: e.no || "", date: e.date || maKey(new Date()), src: e.src, text: e.text || "", lay: e.lay, size: e.size, to: e.to, need: !!e.need, n: e.pages.length, at: e.at || Date.now(), by: e.by || by, up: Date.now() };
     const ok1 = await maPut(`${CR_PG}/${e.id}`, e.pages.length ? e.pages : null); const ok2 = ok1 && await maPut(`${CR_NODE}/${e.id}`, meta); setBusy("");
-    if (ok2) { toast("✅ نُشر التعميم — يظهر الآن للمعلمين ويبقى معلّقاً حتى يوقّعوا"); setEd(null); setTab("list"); load(); } else toast("⚠️ تعذّر النشر — قد يكون حجم الملف كبيراً أو الاتصال ضعيفاً"); };
-  const openC = async c => { setOpen({ c, pages: null }); const [p, sg, se] = await Promise.all([maGet(`${CR_PG}/${c.id}`), maGet(`${CR_SIG}/${c.id}`), maGet(`${CR_SEEN}/${c.id}`)]); setSigAll(x => ({ ...x, [c.id]: ptObj(sg) })); setSeenAll(x => ({ ...x, [c.id]: ptObj(se) })); setOpen({ c, pages: maArr(p) }); };
+    if (ok2) { toast("✅ نُشر التعميم — أرسله الآن بالواتساب للمجموعة أو لكل معلم"); setEd(null); setTab("list"); await load(); openC(meta); } else toast("⚠️ تعذّر النشر — قد يكون حجم الملف كبيراً أو الاتصال ضعيفاً"); };
+  const openC = async c => { setOpen({ c, pages: null }); const [p, sg, se, rd] = await Promise.all([maGet(`${CR_PG}/${c.id}`), maGet(`${CR_SIG}/${c.id}`), maGet(`${CR_SEEN}/${c.id}`), maGet(`${CR_READ}/${c.id}`)]); setSigAll(x => ({ ...x, [c.id]: ptObj(sg) })); setSeenAll(x => ({ ...x, [c.id]: ptObj(se) })); setReadAll(x => ({ ...x, [c.id]: ptObj(rd) })); setOpen({ c, pages: maArr(p) }); };
   const portal = (() => { try { return `${location.origin}${location.pathname}#teacher`; } catch { return "#teacher"; } })();
-  const waAll = c => window.open(`https://wa.me/?text=${encodeURIComponent(`📜 تعميم جديد: ${c.title}\n${HFX_SCHOOL}\n${c.need ? "نأمل الاطلاع والتوقيع" : "نأمل الاطلاع"} عبر بوابة المعلمين (الدخول برقم الهوية):\n${portal}`)}`, "_blank");
-  const waOne = (c, t) => { const ph = phOf(phones, t.n); window.open(waUrl(ph, `المكرم الأستاذ/ ${t.n}\nنذكّركم بالاطلاع على التعميم «${c.title}» ${c.need ? "والتوقيع عليه " : ""}عبر بوابة المعلمين:\n${portal}`), "_blank"); };
+  const waAll = c => window.open(`https://wa.me/?text=${encodeURIComponent(`📜 تعميم: ${c.title}\n${HFX_SCHOOL}\n${c.need ? "نأمل الاطلاع والتوقيع" : "نأمل الاطلاع"} من الرابط التالي (يُفتح برقم الهوية، وفيه مكان التوقيع والملاحظات):\n${crLink(c.id)}`)}`, "_blank");
+  const waOne = (c, t, again) => { const ph = phOf(phones, t.n); window.open(waUrl(ph, `المكرم الأستاذ/ ${t.n}\n${again ? "نذكّركم بالاطلاع على" : "نأمل الاطلاع على"} التعميم «${c.title}»${c.need ? " والتوقيع عليه" : ""} من الرابط:\n${crLink(c.id)}`), "_blank"); };
   const hide = async c => { if (!window.confirm(`أرشفة وإخفاء «${c.title}» من القائمة؟ (يبقى محفوظاً بتوقيعاته في الخادم)`)) return; await maPut(`${CR_NODE}/${c.id}/hid`, Date.now()); load(); };
   const L = list.filter(c => !q || c.title.includes(q) || String(c.no || "").includes(q));
 
   if (open) { const c = open.c; const rec = recOf(c); const S = ptObj(sigAll[c.id]), V = ptObj(seenAll[c.id]); const done = rec.filter(t => S[t.hk] && S[t.hk].at);
     return <div className="cr px-2 md:px-6 py-3" dir="rtl"><style>{CR_CSS}</style><div className="grid gap-3" style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div className="flex gap-2 flex-wrap items-center"><button className="cr-b" onClick={() => { setOpen(null); load(); }}>→ التعاميم</button><b style={{ fontSize: 17 }}>📜 {c.title}</b><button className="cr-b" onClick={() => openC(c)} title="تحديث">↻</button>
-        <span style={{ marginInlineStart: "auto" }} className="flex gap-2 flex-wrap"><button className="cr-b gold" disabled={!open.pages} onClick={() => circPrint(c, open.pages, S, rec, cfg.logo)}>🖨 طباعة احترافية</button><button className="cr-b wa" onClick={() => waAll(c)}>📲 إشعار المجموعة</button><button className="cr-b" onClick={async () => { setOpen(null); const p = await maGet(`${CR_PG}/${c.id}`); setEd({ ...c, pages: maArr(p) }); setTab("new"); }}>✎ تعديل</button></span></div>
+        <span style={{ marginInlineStart: "auto" }} className="flex gap-2 flex-wrap"><button className="cr-b gold" disabled={!open.pages} onClick={() => circPrint(c, open.pages, S, rec, cfg.logo, { seen: V, read: ptObj(readAll[c.id]) })}>🖨 طباعة احترافية</button><button className="cr-b" onClick={() => { try { navigator.clipboard.writeText(crLink(c.id)); toast("📋 نُسخ رابط التعميم"); } catch {} }}>🔗 نسخ الرابط</button><button className="cr-b wa" onClick={() => waAll(c)}>📲 إشعار المجموعة</button><button className="cr-b" onClick={async () => { setOpen(null); const p = await maGet(`${CR_PG}/${c.id}`); setEd({ ...c, pages: maArr(p) }); setTab("new"); }}>✎ تعديل</button></span></div>
       <div className="cr-card"><div className="flex items-center gap-2 flex-wrap"><b>✍️ {c.need ? "التوقيع" : "الاطلاع"}: {maAr(done.length)} من {maAr(rec.length)}</b><div className="cr-bar" style={{ flex: "1 1 200px" }}><i style={{ width: `${rec.length ? done.length / rec.length * 100 : 0}%` }} /></div></div>
         <div style={{ maxHeight: 340, overflow: "auto", display: "grid", gap: 6 }}>{rec.map(t => { const s = S[t.hk], v = V[t.hk]; return <div key={t.hk} className="flex items-center gap-2 flex-wrap" style={{ padding: "6px 10px", borderRadius: 12, background: s && s.at ? "#f0fdf4" : v ? "#fffbeb" : "#fff", border: "1px solid #eef2f6" }}>
           <b style={{ fontSize: 13.5, flex: "1 1 160px" }}>{t.n}</b>
           {s && s.at ? <><span className="cr-pill" style={{ background: "#dcfce7", color: "#15803d" }}>✓ {c.need ? "وقّع" : "اطّلع"} {new Date(s.at).toLocaleString("ar-SA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>{s.sig && <img src={s.sig} alt="توقيع" style={{ height: 30, background: "#fff", borderRadius: 6 }} />}</>
-            : v ? <span className="cr-pill" style={{ background: "#fef3c7", color: "#92400e" }}>👁️ فتحه ولم يوقّع</span> : <span className="cr-pill" style={{ background: "#fee2e2", color: "#b91c1c" }}>⏳ لم يطّلع</span>}
-          {!(s && s.at) && <button className="cr-b" style={{ padding: "3px 9px", fontSize: 12 }} onClick={() => waOne(c, t)}>📲 تذكير</button>}</div>; })}</div></div>
+            : ptObj(readAll[c.id])[t.hk] ? <span className="cr-pill" style={{ background: "#e0f2fe", color: "#0369a1" }}>📖 قرأه كاملاً ولم يوقّع</span> : v ? <span className="cr-pill" style={{ background: "#fef3c7", color: "#92400e" }}>👁️ فتحه ولم يكمل</span> : <span className="cr-pill" style={{ background: "#fee2e2", color: "#b91c1c" }}>⏳ لم يفتحه</span>}
+          {s && s.note && <div style={{ flexBasis: "100%", fontSize: 13, fontWeight: 700, background: "#fff", border: "1px dashed #a7f3d0", borderRadius: 10, padding: "5px 10px" }}>💬 {s.note}</div>}
+          {!(s && s.at) && <button className="cr-b" style={{ padding: "3px 9px", fontSize: 12 }} onClick={() => waOne(c, t, !!v)}>📲 {v ? "تذكير" : "إرسال"}</button>}</div>; })}</div></div>
       {open.pages ? <CircViewer c={c} pages={open.pages} logo={cfg.logo} /> : <div className="cr-card">⏳</div>}
     </div>{msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9500, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}</div>; }
 
@@ -37644,6 +37658,40 @@ function CircAdminPage({ by = "الإدارة" }) {
   </div>;
 }
 
+// ── صندوق الإقرار والتوقيع + ملاحظة/رد المعلم (مشترك بين البوابة والرابط المباشر)
+function CircSignBox({ c, name, hk, onDone }) {
+  const [note, setNote] = useState(""); const [pad, setPad] = useState(false); const [busy, setBusy] = useState(false);
+  const save = async sig => { setBusy(true); const v = { n: name, at: Date.now(), ...(sig ? { sig } : {}), ...(note.trim() ? { note: note.trim() } : {}) }; const ok = await maPut(`${CR_SIG}/${c.id}/${hk}`, v); setBusy(false); if (ok) onDone(v); else alert("تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); };
+  return <div className="cr-card" style={{ borderColor: "#86efac", background: "linear-gradient(180deg,#f0fdf4,#fff)" }}>
+    <b style={{ fontSize: 16 }}>{c.need ? "✍️ الإقرار والتوقيع" : "✓ الإقرار بالاطلاع"}</b>
+    <div style={{ fontSize: 13.5, fontWeight: 800, color: "#475569" }}>أقرّ أنا <b style={{ color: "#064e3b" }}>{name}</b> بأنني اطّلعت على التعميم «{c.title}»{c.need ? " وأوقّع على ذلك" : ""}.</div>
+    <label style={{ fontSize: 13, fontWeight: 900 }}>ملاحظة أو رد على الإدارة (اختياري)<textarea className="cr-in" rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="اكتب ملاحظتك أو استفسارك إن وجد…" style={{ marginTop: 4 }} /></label>
+    <button className="cr-b pri" style={{ justifyContent: "center", padding: 13, fontSize: 16 }} disabled={busy} onClick={() => c.need ? setPad(true) : save(null)}>{busy ? "⏳ جاري الحفظ…" : c.need ? "✍️ التوقيع والإرسال" : "✓ اطّلعت — إرسال"}</button>
+    {pad && <HfxSigPad title="توقيعك على التعميم" onCancel={() => setPad(false)} onDone={s => { setPad(false); save(s); }} />}
+  </div>;
+}
+// ── الرابط المباشر للتعميم (#circ=ID) — يصل بالواتساب: يتحقق من الهوية، يعرض التعميم، ويوقّع المعلم ويكتب ملاحظته
+function CircDirect({ onBack }) {
+  const id = (() => { try { return decodeURIComponent(window.location.hash.replace(/^#circ=/, "")).split(/[?&]/)[0]; } catch { return ""; } })();
+  const [c, setC] = useState(undefined); const [pages, setPages] = useState(null); const [logo, setLogo] = useState(""); const [nid, setNid] = useState(""); const [err, setErr] = useState(""); const [me, setMe] = useState(null); const [my, setMy] = useState(null);
+  useEffect(() => { (async () => { const [x, cf] = await Promise.all([id ? maGet(`${CR_NODE}/${id}`) : null, maGet(CR_CFG)]); setLogo(ptObj(cf).logo || ""); setC(x && x.id && !x.hid ? x : null);
+    try { const m = JSON.parse(localStorage.getItem("circ-me") || "null"); if (m && m.hk && x && (x.to === "all" || (Array.isArray(x.to) && x.to.includes(m.hk)))) enter(m, x); } catch {} })(); }, []);
+  const enter = async (m, cc) => { setMe(m); const [p, sg] = await Promise.all([maGet(`${CR_PG}/${cc.id}`), maGet(`${CR_SIG}/${cc.id}/${m.hk}`)]); setPages(maArr(p)); setMy(sg && sg.at ? sg : null); maPut(`${CR_SEEN}/${cc.id}/${m.hk}`, Date.now()); };
+  const verify = async () => { setErr(""); const n = licNormId(nid); if (n.length !== 10) { setErr("أدخل رقم الهوية كاملاً (١٠ أرقام)"); return; } const hk = hdK(await licHash(n)); const st = await crStaff(); const t = st.find(x => x.hk === hk);
+    if (!t) { setErr("رقم الهوية غير مسجل في بيانات المعلمين — تواصل مع الإدارة"); return; } if (!(c.to === "all" || (Array.isArray(c.to) && c.to.includes(hk)))) { setErr("هذا التعميم غير موجه لك"); return; }
+    const m = { hk, n: t.n }; try { localStorage.setItem("circ-me", JSON.stringify(m)); } catch {} enter(m, c); };
+  const wrap = ch => <div className="cr" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f8fafc 55%,#fefce8)", padding: "14px 10px 40px" }}><style>{CR_CSS}</style><div style={{ maxWidth: 820, margin: "0 auto" }} className="grid gap-3">{ch}</div></div>;
+  if (c === undefined) return wrap(<div className="cr-card" style={{ textAlign: "center" }}>⏳ جاري فتح التعميم…</div>);
+  if (!c) return wrap(<div className="cr-card" style={{ textAlign: "center" }}><div style={{ fontSize: 40 }}>🔗</div><b>الرابط غير صالح أو أُرشف التعميم</b>{onBack && <button className="cr-b" style={{ justifySelf: "center" }} onClick={onBack}>الصفحة الرئيسية</button>}</div>);
+  if (!me) return wrap(<><div className="cr-hero"><img src={logo || MOE_LOGO} alt="" /><div><h2>📜 {c.title}</h2><p>{HFX_SCHOOL} • {asmHij(maDate(c.date))}</p></div></div>
+    <div className="cr-card" style={{ maxWidth: 460, justifySelf: "center", width: "100%" }}><b style={{ fontSize: 16 }}>🔐 للاطلاع على التعميم أدخل رقم هويتك</b><input className="cr-in" inputMode="numeric" maxLength={10} value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && verify()} placeholder="رقم الهوية الوطنية" style={{ fontSize: 18, textAlign: "center", letterSpacing: 3 }} />
+      {err && <div style={{ color: "#b91c1c", fontWeight: 900, fontSize: 13.5 }}>⚠️ {err}</div>}<button className="cr-b pri" style={{ justifyContent: "center", padding: 12, fontSize: 15 }} onClick={verify}>فتح التعميم</button>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>لا يُحفظ رقم هويتك؛ يُستخدم للتحقق فقط.</div></div></>);
+  return wrap(<><div className="flex items-center gap-2 flex-wrap"><span className="cr-pill" style={{ background: "#ecfdf5", color: "#064e3b", fontSize: 13 }}>👤 أ. {me.n}</span>{my ? <span className="cr-pill" style={{ background: "#dcfce7", color: "#15803d", fontSize: 13 }}>✓ {c.need ? "وقّعت" : "اطّلعت"} {new Date(my.at).toLocaleString("ar-SA")}</span> : <span className="cr-pill" style={{ background: "#fef3c7", color: "#92400e", fontSize: 13 }}>⏳ بانتظار {c.need ? "توقيعك" : "اطلاعك"}</span>}<button className="cr-b" style={{ marginInlineStart: "auto", padding: "3px 10px", fontSize: 12 }} onClick={() => { try { localStorage.removeItem("circ-me"); } catch {} setMe(null); setPages(null); }}>لستُ {String(me.n).split(" ")[0]}؟</button></div>
+    {pages ? <CircViewer c={c} pages={pages} logo={logo} onRead={() => maPut(`${CR_READ}/${c.id}/${me.hk}`, Date.now())} /> : <div className="cr-card">⏳</div>}
+    {pages && !my && <CircSignBox c={c} name={me.n} hk={me.hk} onDone={setMy} />}
+    {my && <div className="cr-card" style={{ borderColor: "#86efac" }}><b>✅ تم استلام {c.need ? "توقيعك" : "إقرارك"} — شكراً لك</b>{my.sig && <img src={my.sig} alt="توقيعك" style={{ height: 60, justifySelf: "start" }} />}{my.note && <div style={{ fontSize: 13.5, fontWeight: 700, background: "#f8fafc", borderRadius: 12, padding: "8px 12px" }}>💬 ملاحظتك: {my.note}</div>}</div>}</>);
+}
 // ── المعلم: قائمة التعاميم + الاطلاع والتوقيع
 async function crMine(me) { const hk = hdK(me.hash); const [l, s] = await Promise.all([maGet(CR_NODE), maGet(CR_SIG)]); const S = ptObj(s);
   return Object.values(ptObj(l)).filter(c => c && c.id && !c.hid && (c.to === "all" || (Array.isArray(c.to) && c.to.includes(hk)))).map(c => ({ ...c, my: ptObj(S[c.id])[hk] || null })).sort((a, b) => (!!a.my?.at - !!b.my?.at) || (b.at || 0) - (a.at || 0)); }
@@ -37664,11 +37712,9 @@ function CircTeacherView({ me }) {
   if (cur) { const c = cur.c; const done = c.my && c.my.at;
     return <div className="cr grid gap-3" dir="rtl"><style>{CR_CSS}</style>
       <div className="flex gap-2 items-center flex-wrap"><button className="cr-b" onClick={() => setCur(null)}>→ التعاميم</button>{done ? <span className="cr-pill" style={{ background: "#dcfce7", color: "#15803d", fontSize: 13 }}>✓ {c.need ? "وقّعت" : "اطّلعت"} {new Date(c.my.at).toLocaleString("ar-SA")}</span> : <span className="cr-pill" style={{ background: "#fef3c7", color: "#92400e", fontSize: 13 }}>⏳ بانتظار {c.need ? "توقيعك" : "اطلاعك"}</span>}</div>
-      {cur.pages ? <CircViewer c={c} pages={cur.pages} logo={logo} /> : <div className="cr-card">⏳</div>}
-      {!done && cur.pages && <div className="cr-card" style={{ borderColor: "#86efac", background: "#f0fdf4" }}>
-        <b style={{ fontSize: 15 }}>{c.need ? "✍️ أقرّ بأنني اطّلعت على التعميم وأوقّع على ذلك" : "✓ أقرّ بالاطلاع على التعميم"}</b>
-        <button className="cr-b pri" style={{ justifyContent: "center", padding: 13, fontSize: 16 }} disabled={busy} onClick={() => c.need ? setPad(true) : sign(null)}>{busy ? "⏳" : c.need ? "✍️ اطّلعت — التوقيع" : "✓ اطّلعت"}</button></div>}
-      {done && c.my.sig && <div className="cr-card"><b>توقيعك</b><img src={c.my.sig} alt="توقيعك" style={{ height: 60, justifySelf: "start" }} /></div>}
+      {cur.pages ? <CircViewer c={c} pages={cur.pages} logo={logo} onRead={() => maPut(`${CR_READ}/${c.id}/${hk}`, Date.now())} /> : <div className="cr-card">⏳</div>}
+      {!done && cur.pages && <CircSignBox c={c} name={me.name} hk={hk} onDone={v => { setCur(x => ({ ...x, c: { ...x.c, my: v } })); load(); }} />}
+      {done && (c.my.sig || c.my.note) && <div className="cr-card"><b>توقيعك</b>{c.my.sig && <img src={c.my.sig} alt="توقيعك" style={{ height: 60, justifySelf: "start" }} />}{c.my.note && <div style={{ fontSize: 13.5, fontWeight: 700 }}>💬 ملاحظتك: {c.my.note}</div>}</div>}
       {pad && <HfxSigPad title="توقيعك على التعميم" onCancel={() => setPad(false)} onDone={s => { setPad(false); sign(s); }} />}
     </div>; }
   const P = L.filter(c => !(c.my && c.my.at)), D = L.filter(c => c.my && c.my.at);
@@ -37792,7 +37838,7 @@ async function ttDayReport({ T, times, dk, di, log, absList, plan, by, subName }
 
 function TtNowBoard({ navigate, big = false }) {
   const [S, setS] = useState(null); const [now, setNow] = useState(new Date()); const [sel, setSel] = useState(null);
-  const load = async () => { const t = maKey(new Date()); const [a, c, l, ab] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(`${TT_ABS}/${t}`)]); const T = ttFresh(a); const tm = ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : (T.times || TT_PDF.times)); ttFixCfg(c); setS({ T, times: tm.slice(0, T.P), log: ptObj(l), abs: Object.values(ptObj(ab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti) }); };
+  const load = async () => { const t = maKey(new Date()); const [a, c, l, ab] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(`${TT_ABS}/${t}`)]); const T = ttFresh(a); const tm = ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : (T.times || TT_PDF.times)); ttFixCfg(c); setS({ T, times: tm.slice(0, T.P), log: ptObj(l), absR: ttAbsRng(ptObj(ab)), abs: Object.values(ptObj(ab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti) }); };
   useEffect(() => { load(); const a = setInterval(() => setNow(new Date()), 15000); const b = setInterval(load, 60000); return () => { clearInterval(a); clearInterval(b); }; }, []);
   // الرجوع تلقائياً للحصة الحالية بعد ٣ دقائق من التصفح
   useEffect(() => { if (sel == null) return; const t = setTimeout(() => setSel(null), 180000); return () => clearTimeout(t); }, [sel]);
@@ -37808,7 +37854,7 @@ function TtNowBoard({ navigate, big = false }) {
   const manual = p !== autoP;
   const [s0, e0] = [mlToMin(times[p][0]), mlToMin(times[p][1])];
   const prog = p === curP ? Math.min(100, Math.max(0, (nowM - s0) / Math.max(1, e0 - s0) * 100)) : e0 <= nowM ? 100 : 0;
-  const plan = sttPlan(T, di, abs, log);
+  const plan = sttPlan(T, di, abs, log, S.absR);
   const cks = Object.keys(T.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
   const subName = si => si >= 0 ? (T.SA && T.SA[si]) || T.S[si] : "";
   const sc = si => TT_SUBC[si % TT_SUBC.length] || "#64748b";
@@ -37824,8 +37870,8 @@ function TtNowBoard({ navigate, big = false }) {
     const [si, ti] = c; const v = log[ttK(di, p, ck)]; const pk = plan[ttK(di, p, ck)]; let bd = null, who = ttClean(T.T[ti]);
     if (v && v.st === "sub" && v.sub != null) { bd = { t: "🔄 حصة انتظار", c: "#0369a1", bg: "#e0f2fe" }; who = ttClean(T.T[v.sub]); }
     else if (v && ST2[v.st]) { const x = ST2[v.st]; bd = { t: `${x.ic} ${v.st === "late" ? `تأخر ${maAr(v.mins)} د` : v.st === "early" ? "خرج قبل النهاية" : x.l}`, c: x.c, bg: x.bg }; }
-    else if (abs.includes(ti) && pk && pk.sub != null) { bd = { t: `🚫 غائب • البديل المقترح`, c: "#b45309", bg: "#fef3c7" }; who = ttClean(T.T[pk.sub]); }
-    else if (abs.includes(ti)) bd = { t: "🚫 المعلم غائب", c: "#b91c1c", bg: "#fee2e2" };
+    else if (abs.includes(ti) && ttAbsAt(S.absR, ti, p) && pk && pk.sub != null) { bd = { t: `🚫 غائب • البديل المقترح`, c: "#b45309", bg: "#fef3c7" }; who = ttClean(T.T[pk.sub]); }
+    else if (abs.includes(ti) && ttAbsAt(S.absR, ti, p)) bd = { t: "🚫 المعلم غائب", c: "#b91c1c", bg: "#fee2e2" };
     return { ck, lv, si, ti, who, orig: ttClean(T.T[ti]), bd, nt: v && v.st !== "note" && (v.cn || (v.note && !ttAutoNote(v.note))) };
   };
   const L = cks.map(card); const F = big ? 1.35 : 1;
@@ -37903,20 +37949,30 @@ function sttFindMe(T, name) {
 const sttRes = (T, d, p) => { const day = T.D[d]; const r = T.RS && T.RS[day] ? T.RS[day][p] : (T.R && T.R[day] ? T.R[day][p] : null); const arr = Array.isArray(r) ? r : (r && typeof r === "object" ? Object.values(r) : []); return arr.filter(x => x !== null && x !== undefined && x !== "").map(Number).slice(0, 3); };
 const sttClassOf = (T, d, p, ti) => Object.keys(T.C).find(ck => T.C[ck][d] && T.C[ck][d][p] && T.C[ck][d][p][1] === ti);
 const sttBusy = (T, d, p) => new Set(Object.keys(T.C).map(ck => T.C[ck][d][p][1]).filter(x => x >= 0));
+// ── غياب جزئي: خرج (من حصة) / عاد (حتى حصة) — school-tt-abs/{date}/t{ti} = {ti,o,fromP?,toP?,out?,ret?}
+const ttAbsRng = o => { const r = {}; Object.values(ptObj(o)).forEach(x => { if (x && x.ti != null && (x.fromP != null || x.toP != null)) r[+x.ti] = [x.fromP != null ? +x.fromP : 0, x.toP != null ? +x.toP : 99]; }); return r; };
+const ttAbsAt = (rng, ti, p) => { const r = rng && rng[ti]; return !r || (p >= r[0] && p <= r[1]); };
+const ttPFrom = (times, hm) => { const m = mlToMin(hm); if (m == null) return 0; const i = (times || []).findIndex(t => mlToMin(t[1]) > m); return i < 0 ? 99 : i; };
+const ttPTo = (times, hm) => { const m = mlToMin(hm); if (m == null) return 99; let k = -1; (times || []).forEach((t, i) => { if (mlToMin(t[0]) < m) k = i; }); return k; };
+const ttAbsLbl = (x, times) => { if (!x) return ""; const a = []; if (x.fromP != null && +x.fromP > 0) a.push(`خرج ${x.out ? mlFmtT(x.out) : ""} • من الحصة ${TT_ORD[+x.fromP] || ""}`); if (x.toP != null && +x.toP < 99) a.push(+x.toP < 0 ? `عاد ${x.ret ? mlFmtT(x.ret) : ""} قبل الحصص` : `عاد ${x.ret ? mlFmtT(x.ret) : ""} • بعد الحصة ${TT_ORD[+x.toP] || ""}`); return a.join(" • "); };
+// ── متابعة حصة الانتظار
+const TT_SO = { ok: { l: "حضر الانتظار", ic: "✅", c: "#15803d", bg: "#dcfce7" }, late: { l: "تأخر عن الانتظار", ic: "⏰", c: "#c2410c", bg: "#ffedd5" }, left: { l: "ترك حصة الانتظار", ic: "🚪", c: "#7c3aed", bg: "#ede9fe" }, no: { l: "لم يحضر الانتظار", ic: "❌", c: "#b91c1c", bg: "#fee2e2" }, ref: { l: "لم يوافق / اعتذر", ic: "🙅", c: "#9d174d", bg: "#fce7f3" } };
+const TT_SO_ACT = ["تنبيه شفهي", "توجيه كتابي", "إشعار مدير المدرسة", "تكليف بديل آخر", "عذر مقبول"];
+const ttSoTxt = v => v && v.so && TT_SO[v.so] ? `${TT_SO[v.so].l}${v.so === "late" && v.som ? ` ${maAr(v.som)} د` : ""}${v.act ? ` — الإجراء: ${v.act}` : ""}` : "";
 // توزيع الاحتياط: أول غائب ← احتياط ١ ، الثاني ← احتياط ٢ ، الثالث ← احتياط ٣ ، ثم المتفرغون الأقل تغطية
-function sttPlan(T, d, absList, log) {
+function sttPlan(T, d, absList, log, rng) {
   const plan = {}; if (d < 0 || !T) return plan;
   const absSet = new Set(absList); const cover = {};
   Object.values(log || {}).forEach(v => { if (v && v.st === "sub" && v.sub != null) cover[v.sub] = (cover[v.sub] || 0) + 1; });
   for (let p = 0; p < T.P; p++) {
-    const used = new Set(); const todo = [];
-    absList.forEach(a => { const ck = sttClassOf(T, d, p, a); if (!ck) return; const k = ttK(d, p, ck); const v = log[k]; if (v && v.st === "sub" && v.sub != null) { used.add(v.sub); plan[k] = { a, ck, p, sub: v.sub, lvl: v.lvl || 0, done: true }; } else if (v && v.st && v.st !== "absent") { /* حضر فعلياً */ } else todo.push({ a, ck, k }); });
+    const used = new Set(); const todo = []; const absP = t => absSet.has(t) && ttAbsAt(rng, t, p);
+    absList.forEach(a => { if (!ttAbsAt(rng, a, p)) return; const ck = sttClassOf(T, d, p, a); if (!ck) return; const k = ttK(d, p, ck); const v = log[k]; if (v && v.st === "sub" && v.sub != null) { used.add(v.sub); plan[k] = { a, ck, p, sub: v.sub, lvl: v.lvl || 0, done: true }; } else if (v && v.st && v.st !== "absent") { /* حضر فعلياً */ } else todo.push({ a, ck, k }); });
     Object.entries(log || {}).forEach(([k, v]) => { const [dd, pp] = k.split("_"); if (+dd === d && +pp === p && v && v.st === "sub" && v.sub != null) used.add(v.sub); });
     const res = sttRes(T, d, p); const busy = sttBusy(T, d, p);
     todo.forEach(({ a, ck, k }) => {
       let sub = null, lvl = 0;
-      for (let i = 0; i < res.length; i++) { const t = res[i]; if (t >= 0 && !absSet.has(t) && !used.has(t) && !busy.has(t)) { sub = t; lvl = i + 1; break; } }
-      if (sub == null) { const fr = T.T.map((_, i) => i).filter(i => !busy.has(i) && !res.includes(i) && !absSet.has(i) && !used.has(i)).sort((x, y) => (cover[x] || 0) - (cover[y] || 0)); if (fr.length) { sub = fr[0]; lvl = 4; } }
+      for (let i = 0; i < res.length; i++) { const t = res[i]; if (t >= 0 && !absP(t) && !used.has(t) && !busy.has(t)) { sub = t; lvl = i + 1; break; } }
+      if (sub == null) { const fr = T.T.map((_, i) => i).filter(i => !busy.has(i) && !res.includes(i) && !absP(i) && !used.has(i)).sort((x, y) => (cover[x] || 0) - (cover[y] || 0)); if (fr.length) { sub = fr[0]; lvl = 4; } }
       if (sub != null) { used.add(sub); cover[sub] = (cover[sub] || 0) + 1; }
       plan[k] = { a, ck, p, sub, lvl, done: false };
     });
@@ -37990,7 +38046,7 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
   const autoLate = inP ? Math.max(1, nowM - s0) : 5;
   const autoOut = inP ? Math.max(1, e0 - nowM) : 10;
   const pk = plan[ttK(d, p, ck)];
-  const [f, setF] = useState({ st: st0, mins: cur.mins || autoLate, out: cur.out || autoOut, sub: cur.sub != null ? cur.sub : (pk && pk.sub != null ? pk.sub : ""), lvl: cur.lvl || (pk ? pk.lvl : 0), note: cur.note || "", rsn: cur.rsn || "", cnc: (cur.cn && cur.cn.c) || "", cnt: (cur.cn && cur.cn.t) || "" });
+  const [f, setF] = useState({ st: st0, mins: cur.mins || autoLate, out: cur.out || autoOut, sub: cur.sub != null ? cur.sub : (pk && pk.sub != null ? pk.sub : ""), lvl: cur.lvl || (pk ? pk.lvl : 0), note: cur.note || "", rsn: cur.rsn || "", cnc: (cur.cn && cur.cn.c) || "", cnt: (cur.cn && cur.cn.t) || "", so: cur.so || "", som: cur.som || 5, act: cur.act || "" });
   const res = sttRes(T, d, p); const busy = sttBusy(T, d, p);
   const usedBy = {}; Object.entries(log).forEach(([k, v]) => { if (!v || v.st !== "sub" || v.sub == null) return; const [dd, pp, c2] = k.split("_"); if (+dd === d && +pp === p && c2 !== ck) usedBy[v.sub] = c2; });
   Object.values(plan).forEach(x => { if (x.p === p && x.ck !== ck && x.sub != null && usedBy[x.sub] == null) usedBy[x.sub] = x.ck; });
@@ -38006,7 +38062,7 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
     if (f.st === "late" && f.rsn) v.rsn = f.rsn;
     if (f.st === "late") { v.mins = +f.mins || 0; v.tm = sttHM(s0 + v.mins); }
     if (f.st === "early") { v.out = +f.out || 0; v.tm = sttHM(e0 - v.out); }
-    if (f.st === "absent" && f.sub !== "" && f.sub != null) { v.st = "sub"; v.sub = +f.sub; v.lvl = f.lvl || 0; }
+    if (f.st === "absent" && f.sub !== "" && f.sub != null) { v.st = "sub"; v.sub = +f.sub; v.lvl = f.lvl || 0; if (f.so) { v.so = f.so; if (f.so === "late") v.som = +f.som || 0; if (f.act.trim()) v.act = f.act.trim(); v.soAt = Date.now(); } }
     if (f.note.trim()) v.note = f.note.trim();
     onSave(v);
   };
@@ -38025,7 +38081,7 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
         <div style={{ fontSize: 14, fontWeight: 800, marginTop: 2 }}>👤 {ttClean(T.T[ti])}{abs.includes(ti) ? " • 🚫 غائب اليوم" : ""}</div>
       </div>
       {ro ? <div className="p-4 grid gap-3">
-        {cur.st ? (() => { const x = ST2[cur.st === "sub" ? "absent" : cur.st]; return <div style={{ padding: "12px 14px", borderRadius: 16, background: x.bg, color: x.c, fontWeight: 900, fontSize: 15 }}>{x.ic} {x.l}{cur.st === "late" ? ` — ${maAr(cur.mins)} دقيقة` : cur.st === "early" ? ` — قبل النهاية بـ ${maAr(cur.out)} دقيقة` : ""}{cur.st === "sub" ? <div style={{ fontSize: 13.5, marginTop: 4 }}>🔄 البديل: {ttClean(T.T[cur.sub])}</div> : null}</div>; })() : <div style={{ padding: 12, borderRadius: 14, background: "#f1f5f9", fontWeight: 800, color: "#64748b", textAlign: "center" }}>لا توجد متابعة مسجلة لهذه الحصة</div>}
+        {cur.st ? (() => { const x = ST2[cur.st === "sub" ? "absent" : cur.st]; return <div style={{ padding: "12px 14px", borderRadius: 16, background: x.bg, color: x.c, fontWeight: 900, fontSize: 15 }}>{x.ic} {x.l}{cur.st === "late" ? ` — ${maAr(cur.mins)} دقيقة` : cur.st === "early" ? ` — قبل النهاية بـ ${maAr(cur.out)} دقيقة` : ""}{cur.st === "sub" ? <div style={{ fontSize: 13.5, marginTop: 4 }}>🔄 البديل: {ttClean(T.T[cur.sub])}{cur.so && TT_SO[cur.so] ? <div style={{ marginTop: 4 }}>{TT_SO[cur.so].ic} {ttSoTxt(cur)}</div> : null}</div> : null}</div>; })() : <div style={{ padding: 12, borderRadius: 14, background: "#f1f5f9", fontWeight: 800, color: "#64748b", textAlign: "center" }}>لا توجد متابعة مسجلة لهذه الحصة</div>}
         <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 900, color: "#64748b", marginBottom: 6 }}>🛡️ الاحتياط في هذه الحصة</div><div className="flex gap-1 flex-wrap">{res.map((t, i) => <span key={i} className="stt-lv" style={{ background: TT_LVC[i + 1].bg, color: TT_LVC[i + 1].c }}>{TT_LVC[i + 1].l}: {ttClean(T.T[t])}</span>)}</div></div>
         <button className="ma-btn" onClick={onClose}>إغلاق</button>
       </div> : <div className="p-4 grid gap-3">
@@ -38048,6 +38104,14 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
           {res.map((t, i) => { const why = abs.includes(t) ? "🚫 غائب اليوم" : usedBy[t] != null ? `يغطي ${maClassName(usedBy[t])}` : busy.has(t) ? "لديه حصة" : ""; return <Cand key={i} i={t} lvl={i + 1} dis={!!why} why={why} />; })}
           {free.length > 0 && <details><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#0f766e", padding: "6px 2px" }}>🟢 معلمون متفرّغون في هذه الحصة ({maAr(free.length)})</summary><div className="grid gap-2 mt-2">{free.map(i => <Cand key={i} i={i} lvl={4} dis={usedBy[i] != null} why={usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : ""} />)}</div></details>}
           <button type="button" className={`stt-chip ${f.sub === "" ? "on" : ""}`} style={{ "--cc": "#b91c1c", justifySelf: "start" }} onClick={() => setF({ ...f, sub: "", lvl: 0 })}>بدون بديل</button>
+          {f.sub !== "" && f.sub != null && <div className="grid gap-2" style={{ background: "#f8fafc", border: "1.5px solid #c7d2fe", borderRadius: 18, padding: 12 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 900, color: "#312e81" }}>🛡️ متابعة حصة الانتظار — أ. {ttClean(T.T[+f.sub])}</div>
+            <div className="flex gap-1 flex-wrap">{Object.entries(TT_SO).map(([k, x]) => <button key={k} type="button" className="stt-chip" style={f.so === k ? { background: x.c, color: "#fff", borderColor: x.c, padding: "6px 11px" } : { "--cc": x.c, padding: "6px 11px" }} onClick={() => setF({ ...f, so: f.so === k ? "" : k })}>{x.ic} {x.l}</button>)}</div>
+            {f.so === "late" && <div className="flex gap-1 flex-wrap items-center"><small style={{ fontWeight: 900, color: "#9a3412" }}>تأخر</small>{[3, 5, 10, 15, 20].map(m => <button key={m} className={`stt-chip ${+f.som === m ? "on" : ""}`} style={{ "--cc": "#c2410c", padding: "4px 10px" }} onClick={() => setF({ ...f, som: m })}>{maAr(m)} د</button>)}</div>}
+            {f.so && f.so !== "ok" && <><div className="flex gap-1 flex-wrap items-center"><small style={{ fontWeight: 900, color: "#334155" }}>الإجراء:</small>{TT_SO_ACT.map(a => <button key={a} className={`stt-chip ${f.act === a ? "on" : ""}`} style={{ "--cc": "#334155", padding: "4px 10px", fontSize: 12 }} onClick={() => setF({ ...f, act: f.act === a ? "" : a })}>{a}</button>)}</div>
+              <input className="ma-inp" value={f.act} onChange={e => setF({ ...f, act: e.target.value })} placeholder="✍️ اكتب الإجراء المتخذ…" /></>}
+            <small style={{ fontWeight: 700, color: "#64748b" }}>تظهر نتيجة المتابعة والإجراء لمعلم الانتظار في صفحته «ملاحظات حصصي».</small>
+          </div>}
         </div>}
         <input className="ma-inp" value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder={f.st === "late" ? "✍️ سبب آخر / ملاحظة على التأخر… (تظهر للمعلم)" : "✍️ ملاحظة على المعلم أو الحصة — تظهر للمعلم في صفحته"} />
         <div style={{ background: "#f0f9ff", border: "1.5px solid #bae6fd", borderRadius: 16, padding: 10 }} className="grid gap-2">
@@ -38095,7 +38159,8 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const nowM = now.getHours() * 60 + now.getMinutes();
   const curP = isToday ? times.findIndex(([a, b]) => nowM >= mlToMin(a) && nowM < mlToMin(b)) : -1;
   const absList = Object.values(absO).filter(x => x && x.ti != null).sort((a, b) => (a.o || 0) - (b.o || 0)).map(x => +x.ti);
-  const plan = sttPlan(T, di, absList, log);
+  const absRng = ttAbsRng(absO);
+  const plan = sttPlan(T, di, absList, log, absRng);
   const subName = si => si >= 0 ? (T.SA && T.SA[si]) || T.S[si] : "—";
   const sc = si => TT_SUBC[si % TT_SUBC.length] || "#64748b";
   const canRec = !ro && (isToday || canEdit);
@@ -38114,6 +38179,13 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
     const n = di >= 0 ? cks.filter(ck => T.C[ck][di].some(c => c[1] === ti)).length : 0;
     toast(`🚫 ${ttClean(T.T[ti])} غائب (${maAr(o)}) — ${maAr(n)} حصة ستُغطّى من احتياط ${maAr(Math.min(o, 3))}`);
   };
+  // عودة المعلم الغائب أثناء اليوم: تُغطّى بالاحتياط فقط الحصص التي بدأت قبل عودته
+  const retAbs = async ti => { const now = new Date(); const def = maPad(now.getHours()) + ":" + maPad(now.getMinutes()); const hm = (window.prompt(`وقت عودة ${ttClean(T.T[ti])} (مثال 09:20):`, def) || "").trim(); if (!/^\d{1,2}:\d{2}$/.test(hm)) return;
+    const cur = absO["t" + ti] || { ti }; const toP = ttPTo(times, hm.padStart(5, "0")); const rec = { ...cur, toP, ret: hm.padStart(5, "0"), retBy: by };
+    setAbsO(x => ({ ...x, ["t" + ti]: rec })); const ok = await maPut(`${TT_ABS}/${dateK}/t${ti}`, rec);
+    const kill = Object.entries(log).filter(([k, v]) => v && +v.ti === ti && (v.st === "absent" || v.st === "sub") && +k.split("_")[0] === di && +k.split("_")[1] > toP).map(([k]) => k);
+    if (kill.length && window.confirm(`عاد المعلم — حذف ${maAr(kill.length)} توزيع احتياط لحصصه بعد عودته؟`)) for (const k of kill) { const [d, p, ck] = k.split("_"); await putLog(+d, +p, ck, null); }
+    toast(ok ? `↩️ ${ttClean(T.T[ti])} عاد ${mlFmtT(rec.ret)} — ${toP < 0 ? "قبل حصصه" : `غطّى الاحتياط حتى الحصة ${TT_ORD[toP]}`}` : "⚠️ تعذّر الحفظ"); };
   const delAbs = async ti => {
     if (!window.confirm(`إلغاء غياب ${ttClean(T.T[ti])}؟`)) return;
     const rest = absList.filter(x => x !== ti); const n = {}; rest.forEach((t, i) => { n["t" + t] = { ...(absO["t" + t] || { ti: t }), o: i + 1 }; });
@@ -38131,9 +38203,9 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const infoCls = (d, p, ck) => {
     const [si, ti] = T.C[ck][d][p]; if (si < 0) return null;
     const isD = d === di; const v = isD ? log[ttK(d, p, ck)] : null; const pk = isD ? plan[ttK(d, p, ck)] : null;
-    const absent = isD && absList.includes(ti);
+    const absent = isD && absList.includes(ti) && ttAbsAt(absRng, ti, p);
     let bd = null;
-    if (v && v.st === "sub") { const L = TT_LVC[v.lvl || 4]; bd = { t: `🔄 ${ttShort(T, v.sub)}`, c: L.c, bg: L.bg }; }
+    if (v && v.st === "sub") { const L = TT_LVC[v.lvl || 4]; bd = { t: `🔄 ${ttShort(T, v.sub)}${v.so && v.so !== "ok" && TT_SO[v.so] ? " " + TT_SO[v.so].ic : v.so === "ok" ? " ✓" : ""}`, c: L.c, bg: L.bg }; }
     else if (v && ST2[v.st]) { const x = ST2[v.st]; bd = { t: `${x.ic} ${v.st === "late" ? maAr(v.mins) + "د" : v.st === "early" ? "-" + maAr(v.out) + "د" : x.l}`, c: x.c, bg: x.bg }; }
     else if (pk && pk.sub != null) { const L = TT_LVC[pk.lvl]; bd = { t: `↩ ${ttShort(T, pk.sub)}`, c: L.c, bg: L.bg, sug: true }; }
     else if (absent) bd = { t: "🚫 غائب", c: "#b91c1c", bg: "#fee2e2" };
@@ -38249,7 +38321,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
         {!ro && di >= 0 && <div className="ma-card p-3 grid gap-2" style={{ border: absList.length ? "2px solid #fecaca" : undefined }}>
           <div className="flex items-center gap-2 flex-wrap">
             <b style={{ fontSize: 15 }}>🚫 المعلمون الغائبون {isToday ? "اليوم" : ""}</b>
-            {absList.map((t, i) => <span key={t} className="stt-abs"><em style={{ background: TT_LVC[Math.min(i + 1, 3)].c }}>{maAr(i + 1)}</em>{ttClean(T.T[t])}{canRec && <button onClick={() => delAbs(t)} title="إلغاء">×</button>}</span>)}
+            {absList.map((t, i) => { const ax = absO["t" + t]; const lb = ttAbsLbl(ax, times); return <span key={t} className="stt-abs"><em style={{ background: TT_LVC[Math.min(i + 1, 3)].c }}>{maAr(i + 1)}</em>{ttClean(T.T[t])}{ax && ax.src === "asm" ? <small style={{ fontSize: 10.5, opacity: .75, marginInlineStart: 4 }}>🎺</small> : null}{lb && <small style={{ fontSize: 11, fontWeight: 800, color: "#7c2d12", marginInlineStart: 4 }}>({lb})</small>}{canRec && isToday && !(ax && ax.toP != null && ax.toP < 99) && <button onClick={() => retAbs(t)} title="عاد المعلم" style={{ width: "auto", padding: "0 6px", fontSize: 11 }}>↩️ عاد</button>}{canRec && <button onClick={() => delAbs(t)} title="إلغاء">×</button>}</span>; })}
             {canRec && <button className="ma-btn" style={{ background: "#dc2626", color: "#fff", border: "none", marginRight: absList.length ? 0 : "auto" }} onClick={() => setAddA(true)}>＋ معلم غائب</button>}
           </div>
           {!absList.length ? <div style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>عند إضافة غائب يستعرض الجدول تلقائياً <b style={{ color: TT_LVC[1].c }}>الاحتياط الأول</b> المتاح لحصصه، والغائب الثاني <b style={{ color: TT_LVC[2].c }}>الاحتياط الثاني</b>، والثالث <b style={{ color: TT_LVC[3].c }}>الاحتياط الثالث</b>.</div> : <>
@@ -38316,12 +38388,15 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
 const ASM_NODE = "school-asm", ASM_CFG = "school-asm-cfg", ASM_Q = "pam-asm-q";
 const ASM_ST = {
   p: { l: "حضر", ic: "✅", c: "#15803d", bg: "#dcfce7" },
-  a: { l: "لم يحضر", ic: "❌", c: "#b91c1c", bg: "#fee2e2" },
-  x: { l: "مستأذن", ic: "📝", c: "#b45309", bg: "#fef3c7" },
   l: { l: "متأخر", ic: "⏰", c: "#c2410c", bg: "#ffedd5" },
+  lx: { l: "تأخر لظرف", ic: "🕐", c: "#0e7490", bg: "#cffafe" },
+  x: { l: "مستأذن", ic: "📝", c: "#b45309", bg: "#fef3c7" },
+  o: { l: "خرج دون إذن", ic: "🏃", c: "#9d174d", bg: "#fce7f3" },
+  a: { l: "لم يحضر", ic: "❌", c: "#b91c1c", bg: "#fee2e2" },
   g: { l: "غائب اليوم", ic: "🚫", c: "#7f1d1d", bg: "#fecaca" },
 };
-const ASM_LATE_OK = ["l", "g"]; // يُسمح برصدها بعد انتهاء وقت الحصر (وصول متأخر / غياب عن المدرسة)
+const ASM_NOTE = { x: { t: "📝 مستأذن", r: ["استئذان مسبق", "ظرف طارئ", "مهمة رسمية", "إجازة", "مناوبة خارج الساحة", "خروج بإذن"], ph: "سبب الاستئذان (اختياري)", out: "وقت الخروج من المدرسة (إن خرج — اتركه فارغاً لاستئذان الطابور فقط)" }, lx: { t: "🕐 تأخر لظرف", r: ["ظرف صحي", "ظرف أسري", "ازدحام أو حادث مروري", "مراجعة جهة حكومية", "مهمة رسمية"], ph: "الظرف (اختياري)", at: "وقت الوصول" }, o: { t: "🏃 خرج دون إذن", r: ["خرج دون إبلاغ الإدارة", "لم يُعثر عليه في المدرسة", "ترك حصته وخرج"], ph: "ملاحظة (اختياري)", out: "وقت الخروج", req: 1 } };
+const ASM_LATE_OK = ["l", "lx", "g", "o", "x"]; // يُسمح برصدها بعد انتهاء وقت الحصر (وصول متأخر / غياب عن المدرسة)
 const asmK = n => { const s = cvNorm(String(n || "").replace(/\(.*?\)/g, "")); let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return "k" + h.toString(36); };
 const asmHij = (D, yr = true) => { try { const p = {}; new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { day: "numeric", month: "numeric", year: "numeric" }).formatToParts(D).forEach(x => { p[x.type] = x.value; }); return maAr(yr ? `${String(p.year).replace(/\D/g, "")}/${p.month}/${p.day}` : `${p.month}/${p.day}`) + (yr ? "هـ" : ""); } catch { return ""; } };
 const asmWeek = k => { const d = maDate(k); const w = d.getDay(); const s = new Date(d); s.setDate(d.getDate() + (w >= 5 ? 7 - w : -w)); return [0, 1, 2, 3, 4].map(i => { const x = new Date(s); x.setDate(s.getDate() + i); return maKey(x); }); };
@@ -38382,6 +38457,45 @@ const ASM_PCSS = `.pg{border-color:#6d28d9}.pg::before{background:linear-gradien
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.cols div{border-radius:12px;border:1.5px solid #e2e8f0;padding:8px}.cols h4{margin:0 0 6px;font-size:12.5px}.cols ol{margin:0;padding-right:18px;font-size:11.5px;line-height:1.9}
 .lt{font-size:13.5px;line-height:2.2;text-align:justify;margin:12px 6px}.lt b{color:#6d28d9}`;
 
+// ══════════ 📋 تقارير حضور المعلمين اليومية (من سجل الطابور): لكل المعلمين أو لمعلم واحد ══════════
+const ASM_ORD = ["p", "l", "lx", "x", "o", "a", "g"];
+function AsmReports({ cfg, L, single }) {
+  const [rk, setRk] = useState("month"); const [f, setF] = useState(""); const [t, setT] = useState(maKey(new Date())); const [data, setData] = useState(null); const [sel, setSel] = useState(single ? L[0] && L[0].k : null); const [q, setQ] = useState(""); const [flt, setFlt] = useState("");
+  const range = () => { const now = new Date(); if (rk === "week") { const W = asmWeek(maKey(now)); return [W[0], W[4]]; } if (rk === "month") { const s0 = new Date(now); s0.setDate(now.getDate() - 29); return [maKey(s0), maKey(now)]; } if (rk === "term") return [cfg && cfg.term ? cfg.term : `${now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1}-08-01`, maKey(now)]; return [f, t]; };
+  const [F0, T0] = range();
+  useEffect(() => { if (!F0 || !T0) return; let a = true; setData(null); fbRange(ASM_NODE, F0, T0).then(d => a && setData(ptObj(d))).catch(() => a && setData({})); return () => { a = false; }; }, [F0, T0]);
+  const days = data ? Object.keys(data).filter(k => !maOff(k) && asmHas(data[k])).sort() : [];
+  const rows = L.map(tc => { const c = {}; ASM_ORD.forEach(k => { c[k] = 0; }); const det = []; days.forEach(k => { const e = asmEff(cfg, data[k], k, tc.k); if (e.st) { c[e.st] = (c[e.st] || 0) + 1; det.push({ k, st: e.st, r: e.r || {}, auto: e.auto }); } }); const iss = c.l + c.a + c.o + c.g; const pc = days.length ? Math.round((c.p + c.lx + c.x) / days.length * 100) : 100; return { t: tc, c, det, iss, pc }; });
+  const view = rows.filter(r => (!q || cvNorm(r.t.n).includes(cvNorm(q))) && (!flt || r.c[flt] > 0)).sort((a, b) => b.iss - a.iss || a.t.n.localeCompare(b.t.n, "ar"));
+  const S = sel ? rows.find(r => r.t.k === sel) : null;
+  const pcC = p => p >= 95 ? "#15803d" : p >= 85 ? "#0f766e" : p >= 70 ? "#b45309" : "#b91c1c";
+  const lbl = `${asmHij(maDate(F0))} — ${asmHij(maDate(T0))}`;
+  const printAll = () => inOpen(`<section class="pg">${inHdr("تقرير حضور المعلمين اليومي (الطابور والدوام)", `الفترة<br>${lbl}<br>أيام الرصد: ${maAr(days.length)}`)}<table><thead><tr><th>م</th><th class="r">المعلم</th>${ASM_ORD.map(k => `<th>${ASM_ST[k].ic}<br>${ASM_ST[k].l}</th>`).join("")}<th>نسبة الحضور</th></tr></thead><tbody>${view.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(r.t.n)}</b></td>${ASM_ORD.map(k => `<td style="background:${r.c[k] && k !== "p" ? ASM_ST[k].bg : "#fff"};font-weight:900;color:${r.c[k] && k !== "p" ? ASM_ST[k].c : "#94a3b8"}">${r.c[k] ? maAr(r.c[k]) : "—"}</td>`).join("")}<td><b style="color:${pcC(r.pc)}">${maAr(r.pc)}٪</b></td></tr>`).join("")}</tbody></table>${inSig("فازع القرني", "مدير المدرسة")}</section>`, "تقرير حضور المعلمين");
+  const printOne = r => inOpen(`<section class="pg">${inHdr(`تقرير حضور المعلم: ${ptEsc(r.t.n)}`, `الفترة<br>${lbl}`)}<div class="kp">${ASM_ORD.map(k => `<div><b style="color:${ASM_ST[k].c}">${maAr(r.c[k])}</b>${ASM_ST[k].ic} ${ASM_ST[k].l}</div>`).join("")}</div><table><thead><tr><th>م</th><th>اليوم</th><th>التاريخ</th><th>الحالة</th><th>الوقت</th><th class="r">ملاحظة / خروج / عودة</th></tr></thead><tbody>${r.det.filter(x => x.st !== "p").map((x, i) => `<tr><td>${maAr(i + 1)}</td><td>${maDay(maDate(x.k))}</td><td>${asmHij(maDate(x.k))}</td><td style="background:${ASM_ST[x.st].bg};color:${ASM_ST[x.st].c};font-weight:900">${ASM_ST[x.st].ic} ${ASM_ST[x.st].l}${x.auto ? " (تلقائي)" : ""}</td><td>${x.r.t ? mlFmtT(x.r.t) : "—"}</td><td class="r">${ptEsc([x.r.note, x.r.out ? `خرج ${mlFmtT(x.r.out)}` : "", x.r.ret ? `عاد ${mlFmtT(x.r.ret)}` : ""].filter(Boolean).join(" • "))}</td></tr>`).join("") || `<tr><td colspan="6">🌟 لا ملاحظات — حضور منتظم</td></tr>`}</tbody></table>${inSig("فازع القرني", "مدير المدرسة")}</section>`, "تقرير المعلم");
+  return <div className="grid gap-3" dir="rtl"><style>{HD_CSS}</style>
+    <div className="ma-card p-3 flex gap-2 flex-wrap items-center">
+      <div className="ma-tabs" style={{ padding: 4 }}>{[["week", "هذا الأسبوع"], ["month", "آخر ٣٠ يوماً"], ["term", "منذ بداية الفصل"], ["custom", "فترة محددة"]].map(([k, l]) => <button key={k} className={`ma-tab ${rk === k ? "on" : ""}`} onClick={() => setRk(k)}>{l}</button>)}</div>
+      {rk === "custom" && <><input type="date" className="ma-inp" style={{ width: 150 }} value={f} onChange={e => setF(e.target.value)} /><input type="date" className="ma-inp" style={{ width: 150 }} value={t} onChange={e => setT(e.target.value)} /></>}
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{lbl} • أيام الرصد {maAr(days.length)}</span>
+      {!single && <button className="ma-btn gold" style={{ marginRight: "auto" }} disabled={!data} onClick={printAll}>🖨 تقرير كل المعلمين</button>}
+    </div>
+    {!data ? <div className="p-8 text-center text-gray-400 font-bold">⏳</div> : <>
+      {!single && <><div className="flex gap-1 flex-wrap items-center"><input className="ma-inp" style={{ maxWidth: 220 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث بالاسم" />{[["", "الكل"], ...ASM_ORD.filter(k => k !== "p").map(k => [k, `${ASM_ST[k].ic} ${ASM_ST[k].l}`])].map(([k, l]) => <button key={k || "all"} className="stt-chip" style={flt === k ? { background: k ? ASM_ST[k].c : "#0f172a", color: "#fff", borderColor: "transparent" } : null} onClick={() => setFlt(k)}>{l}{k ? ` (${maAr(rows.filter(r => r.c[k] > 0).length)})` : ""}</button>)}</div>
+        <div className="ma-card" style={{ padding: 0, overflow: "auto" }}><table className="hd-tbl" style={{ minWidth: 760, width: "100%" }}><thead><tr><th style={{ textAlign: "right" }}>المعلم</th>{ASM_ORD.map(k => <th key={k} title={ASM_ST[k].l}>{ASM_ST[k].ic}<br /><span style={{ fontSize: 10.5 }}>{ASM_ST[k].l}</span></th>)}<th>الحضور</th></tr></thead>
+          <tbody>{view.map(r => <tr key={r.t.k} style={{ cursor: "pointer" }} onClick={() => setSel(r.t.k)}><td className="n" style={{ textAlign: "right", fontWeight: 900, padding: "8px 10px" }}>{r.t.n}</td>{ASM_ORD.map(k => <td key={k} style={{ textAlign: "center" }}>{r.c[k] ? <span className="stt-lv" style={{ background: k === "p" ? "#f1f5f9" : ASM_ST[k].bg, color: k === "p" ? "#334155" : ASM_ST[k].c }}>{maAr(r.c[k])}</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td>)}<td style={{ textAlign: "center" }}><b style={{ color: pcC(r.pc) }}>{maAr(r.pc)}٪</b></td></tr>)}</tbody></table></div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>اضغط على أي معلم لعرض سجله يوماً بيوم وطباعته.</div></>}
+      {S && <div style={single ? null : { position: "fixed", inset: 0, zIndex: 700, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 10 }} onClick={() => !single && setSel(null)}>
+        <div className="ma-card p-4 grid gap-3" style={{ width: "min(720px,100%)", maxHeight: single ? undefined : "88vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
+          <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 17 }}>👤 {S.t.n}</b><span className="stt-lv" style={{ background: "#f1f5f9", color: pcC(S.pc) }}>الحضور {maAr(S.pc)}٪</span><span style={{ marginRight: "auto" }} className="flex gap-2"><button className="ma-btn gold" onClick={() => printOne(S)}>🖨 طباعة</button>{!single && <button className="ma-btn" onClick={() => setSel(null)}>إغلاق</button>}</span></div>
+          <div className="flex gap-1 flex-wrap">{ASM_ORD.map(k => <span key={k} className="stt-lv" style={{ background: ASM_ST[k].bg, color: ASM_ST[k].c, fontSize: 13 }}>{ASM_ST[k].ic} {ASM_ST[k].l}: {maAr(S.c[k])}</span>)}</div>
+          <div className="grid gap-1">{S.det.filter(x => x.st !== "p").map(x => <div key={x.k} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: ASM_ST[x.st].bg + "88", border: `1px solid ${ASM_ST[x.st].c}33` }}>
+            <b style={{ fontSize: 13.5, minWidth: 140 }}>{maDay(maDate(x.k))} {asmHij(maDate(x.k), false)}</b><span className="stt-lv" style={{ background: "#fff", color: ASM_ST[x.st].c }}>{ASM_ST[x.st].ic} {ASM_ST[x.st].l}{x.auto ? " (تلقائي)" : ""}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: "#334155" }}>{[x.r.t ? `${x.st === "l" || x.st === "lx" ? "وصل" : "رُصد"} ${mlFmtT(x.r.t)}` : "", x.r.note, x.r.out ? `خرج ${mlFmtT(x.r.out)}` : "", x.r.ret ? `عاد ${mlFmtT(x.r.ret)}` : ""].filter(Boolean).join(" • ")}</span></div>)}
+            {!S.det.some(x => x.st !== "p") && <div style={{ textAlign: "center", fontWeight: 900, color: "#15803d", padding: 14 }}>🌟 حضور منتظم — لا ملاحظات في هذه الفترة</div>}</div>
+        </div></div>}
+    </>}
+  </div>;
+}
 function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = null }) {
   const [cfg, setCfg] = useState(null); const [tab, setTab] = useState(ro ? "me" : "day");
   const [dateK, setDateK] = useState(maKey(new Date())); const [day, setDay] = useState({});
@@ -38389,8 +38503,8 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
   const [q, setQ] = useState(""); const [flt, setFlt] = useState(""); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
   const [pend, setPend] = useState(Object.keys(asmQGet()).length); const [unlock, setUnlock] = useState(false); const [now, setNow] = useState(new Date());
   const [note, setNote] = useState(null); const [addN, setAddN] = useState(""); const [imp, setImp] = useState(null);
-  const [ttT, setTtT] = useState(null); const [tAbs, setTAbs] = useState({}); // ربط «غائب اليوم» بغياب جدول الحصص
-  useEffect(() => { if (ro) return; maGet(TT_NODE).then(a => setTtT(ttFresh(a))).catch(() => {}); }, []);
+  const [ttT, setTtT] = useState(null); const [tAbs, setTAbs] = useState({}); const [ttTimes, setTtTimes] = useState(null); // ربط «غائب اليوم» بغياب جدول الحصص
+  useEffect(() => { if (ro) return; maGet(TT_NODE).then(a => setTtT(ttFresh(a))).catch(() => {}); maGet(TT_CFG).then(c => setTtTimes(ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : TT_PDF.times))).catch(() => setTtTimes(ttFixTimes(TT_PDF.times))); }, []);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 20000); const f = async () => setPend(await asmFlush()); f(); const t2 = setInterval(f, 12000); window.addEventListener("online", f); return () => { clearInterval(t); clearInterval(t2); window.removeEventListener("online", f); }; }, []);
   useEffect(() => { (async () => { const c = await maGet(ASM_CFG); setCfg(c && typeof c === "object" ? c : { cut: "07:05", warn: 3, T: {} }); })(); }, []);
@@ -38422,10 +38536,11 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
   const lateOK = k => canEdit && isToday && work && ASM_LATE_OK.includes(k);
   // مزامنة «غائب اليوم» مع غياب جدول الحصص (school-tt-abs) لتوزيع حصص الانتظار تلقائياً
   const ttIdx = t => ttT ? sttFindMe(ttT, t.n) : -1;
-  const syncAbs = async (t, on) => {
+  const syncAbs = async (t, on, opt = {}) => {
     const ti = ttIdx(t); if (ti < 0) return on ? " — لم يُعثر على اسمه في جدول الحصص" : "";
-    const cur = ptObj(tAbs); const key = "t" + ti;
-    if (on) { if (cur[key]) return " — مسجّل غائباً في جدول الحصص"; const o = Object.values(cur).filter(x => x && x.ti != null).length + 1; const rec = { ti, o, at: Date.now(), by, src: "asm" }; setTAbs({ ...cur, [key]: rec }); const ok = await maPut(`${TT_ABS}/${dateK}/${key}`, rec); return ok ? ` — أُضيف لغياب جدول الحصص (احتياط ${maAr(Math.min(o, 3))})` : " — ⚠️ تعذّر إضافته لجدول الحصص"; }
+    const cur = ptObj(tAbs); const key = "t" + ti; const tms = ttTimes || ttFixTimes(TT_PDF.times);
+    if (on && cur[key] && (opt.from || opt.ret)) { const rec = { ...cur[key], ...(opt.from ? { fromP: ttPFrom(tms, opt.from), out: opt.from } : {}), ...(opt.ret ? { toP: ttPTo(tms, opt.ret), ret: opt.ret } : {}) }; setTAbs({ ...cur, [key]: rec }); const ok = await maPut(`${TT_ABS}/${dateK}/${key}`, rec); return ok ? (opt.ret ? ` — عُدّل في جدول الحصص (${ttAbsLbl(rec, tms)})` : ` — من الحصة ${TT_ORD[rec.fromP] || ""} في جدول الحصص`) : " — ⚠️ تعذّر تحديث جدول الحصص"; }
+    if (on) { if (cur[key]) return " — مسجّل غائباً في جدول الحصص"; const o = Object.values(cur).filter(x => x && x.ti != null).length + 1; const rec = { ti, o, at: Date.now(), by, src: "asm", ...(opt.from ? { fromP: ttPFrom(tms, opt.from), out: opt.from } : {}) }; setTAbs({ ...cur, [key]: rec }); const ok = await maPut(`${TT_ABS}/${dateK}/${key}`, rec); return ok ? ` — أُضيف لغياب جدول الحصص (احتياط ${maAr(Math.min(o, 3))})` : " — ⚠️ تعذّر إضافته لجدول الحصص"; }
     if (!cur[key] || cur[key].src !== "asm") return "";
     const rest = Object.values(cur).filter(x => x && x.ti != null && +x.ti !== ti).sort((a, b) => (a.o || 0) - (b.o || 0)); const n = {}; rest.forEach((x, i) => { n["t" + x.ti] = { ...x, o: i + 1 }; });
     setTAbs(n); await maPut(`${TT_ABS}/${dateK}`, Object.keys(n).length ? n : null); return " — أُزيل من غياب جدول الحصص";
@@ -38433,12 +38548,16 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
   const setSt = async (t, st, extra = {}) => {
     if (locked && !lateOK(st)) { toast(past ? `⏹ انتهى وقت الحصر (${mlFmtT(cut)}) — يمكنك تسجيل «متأخر» أو «غائب اليوم»` : "🔒 الرصد لليوم الحالي فقط"); return; }
     const cur = day[t.k]; const path = `${ASM_NODE}/${dateK}/${t.k}`;
-    if (cur && cur.st === st && !extra.note) { setDay(d => { const n = { ...d }; delete n[t.k]; return n; }); const ok = await asmWrite({ [path]: null }); setPend(Object.keys(asmQGet()).length); const m = st === "g" ? await syncAbs(t, false) : ""; if (!ok) toast("📴 حُفظ على الجهاز — سيُرفع عند عودة الاتصال"); else if (m) toast("↩ أُلغي الغياب" + m); return; }
-    const rec = { st, t: nowHM, by, at: Date.now(), ...extra }; if (!rec.note) delete rec.note;
+    if (cur && cur.st === st && !extra.note && !extra.out) { setDay(d => { const n = { ...d }; delete n[t.k]; return n; }); const ok = await asmWrite({ [path]: null }); setPend(Object.keys(asmQGet()).length); const m = st === "g" || cur.out ? await syncAbs(t, false) : ""; if (!ok) toast("📴 حُفظ على الجهاز — سيُرفع عند عودة الاتصال"); else if (m) toast("↩ أُلغي الغياب" + m); return; }
+    const rec = { st, t: nowHM, by, at: Date.now(), ...extra }; if (!rec.note) delete rec.note; if (!rec.out) delete rec.out;
     setDay(d => ({ ...d, [t.k]: rec })); const ok = await asmWrite({ [path]: rec }); setPend(Object.keys(asmQGet()).length);
-    const m = st === "g" ? await syncAbs(t, true) : cur && cur.st === "g" ? await syncAbs(t, false) : "";
-    if (!ok) toast("📴 حُفظ على الجهاز — سيُرفع عند عودة الاتصال"); else if (st === "g") toast(`🚫 ${t.n} غائب اليوم${m}`); else if (st === "l") toast(`⏰ ${t.n} متأخر — وصل ${mlFmtT(nowHM)}${m}`); else if (m) toast("✓ تم" + m);
+    const linked = r => r && (r.st === "g" || (r.out && (r.st === "o" || r.st === "x")));
+    const m = st === "g" ? await syncAbs(t, true) : linked(rec) ? await syncAbs(t, true, { from: rec.out }) : linked(cur) ? await syncAbs(t, false) : "";
+    if (!ok) toast("📴 حُفظ على الجهاز — سيُرفع عند عودة الاتصال"); else if (st === "g") toast(`🚫 ${t.n} غائب اليوم${m}`); else if (st === "l") toast(`⏰ ${t.n} متأخر — وصل ${mlFmtT(nowHM)}${m}`); else if (st === "o") toast(`🏃 ${t.n} خرج دون إذن ${rec.out ? mlFmtT(rec.out) : ""}${m}`); else if (m) toast("✓ تم" + m);
   };
+  // عودة معلم غائب/خارج: تُسجَّل ساعة العودة وتتوقف تغطية حصصه بعد عودته في جدول الحصص
+  const retT = async t => { const cur = day[t.k]; if (!cur) return; const hm = (window.prompt(`وقت عودة ${t.n} (مثال 09:20):`, nowHM) || "").trim(); if (!/^\d{1,2}:\d{2}$/.test(hm)) return; const ret = hm.padStart(5, "0");
+    const rec = { ...cur, ret }; setDay(d => ({ ...d, [t.k]: rec })); await asmWrite({ [`${ASM_NODE}/${dateK}/${t.k}`]: rec }); const m = await syncAbs(t, true, { ret }); toast(`↩️ ${t.n} عاد ${mlFmtT(ret)}${m}`); };
   const allPresent = async () => {
     const rest = L.filter(t => !(day[t.k] && day[t.k].st)); if (!rest.length) return; if (!window.confirm(`تسجيل «حضر» لـ ${maAr(rest.length)} معلم غير مرصود؟`)) return;
     const o = {}; const n = { ...day }; rest.forEach(t => { const r = { st: "p", t: nowHM, by, at: Date.now() }; o[`${ASM_NODE}/${dateK}/${t.k}`] = r; n[t.k] = r; }); setDay(n); const ok = await asmWrite(o); setPend(Object.keys(asmQGet()).length); toast(ok ? `✅ سُجّل حضور ${maAr(rest.length)} معلم` : "📴 حُفظ على الجهاز");
@@ -38518,7 +38637,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
       <div className="flex gap-2 justify-center"><button className="ma-btn" onClick={() => setDateK(maKey(new Date(maDate(W[0]).getTime() - 7 * 864e5)))}>→ الأسبوع السابق</button>{!isToday && <button className="ma-btn" onClick={() => setDateK(maKey(new Date()))}>هذا الأسبوع</button>}</div>
     </div>;
   };
-  if (ro) return <div className="ma px-2 md:px-5 py-3" dir="rtl"><style>{MA_CSS + STT_CSS + ASM_CSS}</style><div style={{ maxWidth: 720, margin: "0 auto" }} className="grid gap-3"><div className="asm-hero"><div style={{ fontSize: 22, fontWeight: 900 }}>🎺 حضوري للطابور الصباحي</div><div style={{ fontSize: 13, fontWeight: 800, opacity: .9 }}>{maDay(new Date())} • {asmHij(new Date())}</div></div>{wk ? <MeView /> : <div className="p-8 text-center text-gray-400 font-bold">⏳</div>}</div></div>;
+  if (ro) return <div className="ma px-2 md:px-5 py-3" dir="rtl"><style>{MA_CSS + STT_CSS + ASM_CSS}</style><div style={{ maxWidth: 720, margin: "0 auto" }} className="grid gap-3"><div className="asm-hero"><div style={{ fontSize: 22, fontWeight: 900 }}>🎺 حضوري للطابور الصباحي</div><div style={{ fontSize: 13, fontWeight: 800, opacity: .9 }}>{maDay(new Date())} • {asmHij(new Date())}</div></div>{wk ? <MeView /> : <div className="p-8 text-center text-gray-400 font-bold">⏳</div>}{mine && <><b style={{ fontSize: 15 }}>🗂️ سجلي في الفترة</b><AsmReports cfg={cfg} L={[mine]} single /></>}</div></div>;
 
   const shown = L.filter(t => (!q || cvNorm(t.n).includes(cvNorm(q))) && (!flt || (flt === "u" ? !eff(t.k).st : eff(t.k).st === flt)));
   const avC = ["#6d28d9", "#0891b2", "#db2777", "#059669", "#ea580c", "#2563eb", "#9333ea"];
@@ -38543,7 +38662,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
           </div>
         </div>
 
-        <div className="ma-tabs">{[["day", "📋 حصر اليوم"], ["week", "📊 الأسبوع"], ["rng", "📈 الشهر والفصل"], ...(canEdit ? [["cfg", "⚙️ المعلمون والإعدادات"]] : [])].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+        <div className="ma-tabs">{[["day", "📋 حصر اليوم"], ["week", "📊 الأسبوع"], ["rng", "📈 الشهر والفصل"], ["rep", "🗂️ تقارير المعلمين"], ...(canEdit ? [["cfg", "⚙️ المعلمون والإعدادات"]] : [])].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
         {!L.length && tab !== "cfg" && <div className="ma-card p-6 text-center grid gap-3"><div style={{ fontSize: 44 }}>👥</div><b style={{ fontSize: 16 }}>لا توجد قائمة معلمين للطابور بعد</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>استورد الأسماء بضغطة واحدة</div>{canEdit && <div className="flex gap-2 flex-wrap justify-center"><button className="ma-btn pri" disabled={busy} onClick={() => doImport("cv")}>🎯 من الزيارات الصفية</button><button className="ma-btn grn" disabled={busy} onClick={() => doImport("lic")}>🪪 من هويات المعلمين</button><button className="ma-btn" disabled={busy} onClick={() => doImport("tt")}>🗓️ من الجدول المدرسي</button><button className="ma-btn" disabled={busy} onClick={() => doImport("site")}>📋 من قائمة الموقع</button></div>}</div>}
 
@@ -38565,8 +38684,8 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
           <div className="grid gap-2">{shown.map((t, i) => { const e = eff(t.k); const s = ASM_ST[e.st]; const n = wkAbs(t.k); const lv = asmLvl(n, warn); return (
             <div key={t.k} className="asm-row" style={{ background: s ? s.bg + "88" : "#fff", borderColor: s ? s.c + "44" : "#eef2f7" }}>
               <div className="asm-av" style={{ background: avC[i % avC.length] }}>{t.n.trim()[0]}</div>
-              <div className="nm"><b>{t.n}</b><small>{t.s ? t.s + " • " : ""}{e.r && e.r.t ? `رُصد ${maAr(e.r.t)}` : e.auto ? "بعد انتهاء الحصر" : "لم يُرصد"}{e.r && e.r.note ? ` • ${e.r.note}` : ""}</small>{n > 0 && <span className="asm-wk" style={{ background: lv.bg, color: lv.c, marginRight: 4 }}>❌ {maAr(n)} هذا الأسبوع</span>}</div>
-              <div className="asm-bt">{Object.entries(ASM_ST).map(([k, x]) => <button key={k} disabled={locked && !lateOK(k)} onClick={() => k === "x" && !(day[t.k] && day[t.k].st === "x") ? setNote({ t, st: k, v: "" }) : setSt(t, k)} style={e.st === k && !e.auto ? { background: x.c, borderColor: x.c, color: "#fff" } : e.st === k ? { borderColor: x.c, color: x.c, borderStyle: "dashed" } : null}><span>{x.ic}</span>{x.l}</button>)}</div>
+              <div className="nm"><b>{t.n}</b><small>{t.s ? t.s + " • " : ""}{e.r && e.r.t ? `${e.r.st === "lx" || e.r.st === "l" ? "وصل" : "رُصد"} ${maAr(e.r.t)}` : e.auto ? "بعد انتهاء الحصر" : "لم يُرصد"}{e.r && e.r.note ? ` • ${e.r.note}` : ""}{e.r && e.r.out ? ` • خرج ${mlFmtT(e.r.out)}` : ""}{e.r && e.r.ret ? ` • عاد ${mlFmtT(e.r.ret)}` : ""}</small>{e.r && !e.r.ret && (e.r.st === "g" || e.r.st === "o" || (e.r.st === "x" && e.r.out)) && isToday && canEdit && <button className="asm-wk" style={{ background: "#0f766e", color: "#fff", border: "none", cursor: "pointer", marginRight: 4 }} onClick={() => retT(t)}>↩️ عاد</button>}{n > 0 && <span className="asm-wk" style={{ background: lv.bg, color: lv.c, marginRight: 4 }}>❌ {maAr(n)} هذا الأسبوع</span>}</div>
+              <div className="asm-bt">{Object.entries(ASM_ST).map(([k, x]) => <button key={k} disabled={locked && !lateOK(k)} onClick={() => ASM_NOTE[k] && !(day[t.k] && day[t.k].st === k) ? setNote({ t, st: k, v: "", tm: nowHM, out: k === "o" ? nowHM : "" }) : setSt(t, k)} style={e.st === k && !e.auto ? { background: x.c, borderColor: x.c, color: "#fff" } : e.st === k ? { borderColor: x.c, color: x.c, borderStyle: "dashed" } : null}><span>{x.ic}</span>{x.l}</button>)}</div>
             </div>); })}{!shown.length && <div className="ma-card p-6 text-center text-gray-400 font-bold">لا يوجد</div>}</div>
         </>}
 
@@ -38599,6 +38718,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
           </div>; })()}
         </div>}
 
+        {tab === "rep" && L.length > 0 && <AsmReports cfg={cfg} L={L} />}
         {tab === "cfg" && canEdit && <div className="grid gap-3">
           <div className="ma-card p-4 grid gap-3">
             <b>⏱ الإعدادات</b>
@@ -38618,10 +38738,14 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
       </div>
 
       {note && <div className="stt-sheet" style={{ position: "fixed", inset: 0, zIndex: 700, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setNote(null)}><div style={{ width: "min(520px,100%)", background: "#fff", borderRadius: "24px 24px 0 0", padding: 16 }} onClick={e => e.stopPropagation()} dir="rtl">
-        <b style={{ fontSize: 16 }}>📝 مستأذن — {note.t.n}</b>
-        <div className="flex gap-1 flex-wrap mt-2">{["استئذان مسبق", "ظرف طارئ", "مهمة رسمية", "إجازة", "مناوبة خارج الساحة"].map(r => <button key={r} className="stt-chip" style={note.v === r ? { background: "#b45309", color: "#fff", borderColor: "#b45309" } : null} onClick={() => setNote({ ...note, v: r })}>{r}</button>)}</div>
-        <input className="ma-inp" style={{ marginTop: 8 }} value={note.v} onChange={e => setNote({ ...note, v: e.target.value })} placeholder="سبب الاستئذان (اختياري)" />
-        <div className="flex gap-2 justify-end mt-3"><button className="ma-btn" onClick={() => setNote(null)}>إلغاء</button><button className="ma-btn pri" style={{ background: "#b45309", borderColor: "#b45309" }} onClick={async () => { await setSt(note.t, "x", { note: note.v.trim() }); setNote(null); }}>حفظ</button></div>
+        {(() => { const N = ASM_NOTE[note.st || "x"]; const C = ASM_ST[note.st || "x"]; return <>
+        <b style={{ fontSize: 16 }}>{N.t} — {note.t.n}</b>
+        <div className="flex gap-1 flex-wrap mt-2">{N.r.map(r => <button key={r} className="stt-chip" style={note.v === r ? { background: C.c, color: "#fff", borderColor: C.c } : null} onClick={() => setNote({ ...note, v: r })}>{r}</button>)}</div>
+        <input className="ma-inp" style={{ marginTop: 8 }} value={note.v} onChange={e => setNote({ ...note, v: e.target.value })} placeholder={N.ph} />
+        {N.at && <label style={{ display: "block", marginTop: 8, fontSize: 13, fontWeight: 800 }}>{N.at}<input type="time" className="ma-inp" style={{ marginTop: 4 }} value={note.tm || ""} onChange={e => setNote({ ...note, tm: e.target.value })} /></label>}
+        {N.out && <label style={{ display: "block", marginTop: 8, fontSize: 13, fontWeight: 800 }}>{N.out}<input type="time" className="ma-inp" style={{ marginTop: 4 }} value={note.out || ""} onChange={e => setNote({ ...note, out: e.target.value })} /></label>}
+        {N.out && <div style={{ fontSize: 12, fontWeight: 800, color: "#0369a1", marginTop: 6 }}>🗓️ عند تحديد وقت الخروج تُضاف حصصه المتبقية لجدول الحصص لتُغطّى بالانتظار، وعند عودته اضغط «↩️ عاد».</div>}
+        <div className="flex gap-2 justify-end mt-3"><button className="ma-btn" onClick={() => setNote(null)}>إلغاء</button><button className="ma-btn pri" style={{ background: C.c, borderColor: C.c }} onClick={async () => { if (N.req && !note.out) { alert("حدد وقت الخروج"); return; } await setSt(note.t, note.st || "x", { note: note.v.trim(), ...(N.at && note.tm ? { t: note.tm } : {}), ...(N.out && note.out ? { out: note.out } : {}) }); setNote(null); }}>حفظ</button></div></>; })()}
       </div></div>}
       {imp && <div style={{ position: "fixed", inset: 0, zIndex: 700, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 14 }} onClick={() => setImp(null)}><div className="ma-card" style={{ width: "min(520px,100%)", maxHeight: "85vh", overflow: "auto", padding: 16 }} onClick={e => e.stopPropagation()} dir="rtl">
         <b style={{ fontSize: 16 }}>📥 استيراد الأسماء</b>
@@ -41460,6 +41584,7 @@ function SchoolWebsiteInner() {
 
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [hfxPortal, setHfxPortal] = useState(() => /^#hfx=/.test(window.location.hash));
+  const [circPortal, setCircPortal] = useState(() => /^#circ=/.test(window.location.hash));
   const [attPortal, setAttPortal] = useState(() => ["attend", "absence", "ghiab"].includes(window.location.hash.replace("#", "")));
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
   const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late", "visits", "duty", "nafes"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
@@ -41500,6 +41625,7 @@ function SchoolWebsiteInner() {
         return;
       }
       if (hash.startsWith("hfx=")) { setHfxPortal(true); return; }
+      if (hash.startsWith("circ=")) { setCircPortal(true); return; }
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
@@ -41785,6 +41911,7 @@ function SchoolWebsiteInner() {
   );
 
   if (hfxPortal) return <HfxTeacherPortal onBack={() => { setHfxPortal(false); window.location.hash = ""; }} />;
+  if (circPortal) return <CircDirect onBack={() => { setCircPortal(false); window.location.hash = ""; }} />;
   const hubBack = () => { setHubPortal(""); window.location.hash = ""; };
   if (hubPortal === "weekly") return <WeeklyPlanPublic onBack={hubBack} />;
   if (hubPortal === "visits") return <VisitsPublicPortal onBack={hubBack} />;
