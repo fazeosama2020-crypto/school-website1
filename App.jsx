@@ -37389,6 +37389,7 @@ function HdAdminPage({ by = "الإدارة" }) {
   return <div className="hd px-2 md:px-6 py-3" dir="rtl"><style>{HD_CSS}</style>
     <div className="grid gap-3" style={{ maxWidth: 1250, margin: "0 auto" }}>
       <div className="hd-hero"><h2>📈 سجل الانضباط اليومي (حضوري)</h2><p>ارفع تقرير «الحضور والانصراف لجميع الموظفين» بعد الدوام ← يظهر لكل معلم انضباطه في حسابه بهويته، ويظهر لك أثر المتابعة بالأرقام</p></div>
+      {(() => { const E = hdEff(cfg); return <button type="button" onClick={() => setTab("cfg")} style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 8, border: "1.5px solid #fcd34d", background: "#fffbeb", color: "#78350f", borderRadius: 999, padding: "6px 14px", fontWeight: 900, fontSize: 13.5, cursor: "pointer", fontFamily: "inherit" }}>⏰ {cfg.season ? HD_SEASON[cfg.season] + " • " : ""}بداية الدوام {hdHM(hdMin(E.start))} (يُحسب التأخر بعدها) • حصر الطابور حتى {E.asm ? hdHM(hdMin(E.asm)) : "—"} • الانصراف {hdHM(hdMin(E.end))} — <u>تعديل</u></button>; })()}
       <div className="hd-tabs">{[["day", "📅 اليوم"], ["up", "📥 رفع ملف حضوري"], ["kpi", "📊 المؤشرات والفعالية"], ["stars", "⭐ المميزون"], ["abs", "🚫 الغياب وفارس"], ["obj", `💬 الاعتراضات${objL.filter(x => x.st === "new").length ? ` (${maAr(objL.filter(x => x.st === "new").length)})` : ""}`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hd-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
       {tab === "up" && <div className="grid gap-3">
@@ -37516,6 +37517,7 @@ const CR_CSS = `
 .cr-title{margin:14px auto 6px;width:fit-content;max-width:92%;text-align:center;font-size:20px;font-weight:900;color:#064e3b;padding:6px 26px;border-radius:999px;background:linear-gradient(135deg,#ecfdf5,#fff);border:2px solid #0f766e}
 .cr-body{padding:10px 14px 16px;display:grid;gap:10px;justify-items:center}
 .cr-body .txt{white-space:pre-wrap;font-size:16.5px;font-weight:700;line-height:2;width:100%}
+.cr-body .txt.rich ul,.cr-body .txt.rich ol{padding-inline-start:26px}.cr-body .txt.rich h3{font-size:1.3em;font-weight:900;color:#064e3b;margin:6px 0}.cr-body .txt.rich hr{border:none;border-top:2px dashed #a7f3d0;margin:10px 0}.cr-body .txt.rich blockquote{border-inline-start:4px solid #0f766e;background:#f0fdfa;margin:6px 0;padding:6px 12px;border-radius:8px}
 .cr-body img{max-width:100%;border-radius:8px;box-shadow:0 8px 20px -14px rgba(0,0,0,.5);cursor:zoom-in}
 .cr-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
 .cr-book{width:100%;display:grid;gap:8px;justify-items:center}
@@ -37525,6 +37527,66 @@ const CR_CSS = `
 .cr-md{width:min(640px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;padding:16px;display:grid;gap:10px}
 @media (max-width:600px){.cr-doc-h{grid-template-columns:1fr auto}.cr-doc-h .l{display:none}.cr-grid2{grid-template-columns:1fr}}
 `;
+// ══════════ ✍️ محرر نص التعميم (تنسيق كامل: حجم، ألوان، تظليل، محاذاة، قوائم، رموز، ملصقات، أقواس، صناديق) ══════════
+const CR_ALLOW_T = new Set(["B", "STRONG", "I", "EM", "U", "S", "SPAN", "FONT", "P", "DIV", "BR", "UL", "OL", "LI", "H2", "H3", "H4", "HR", "BLOCKQUOTE", "MARK", "SMALL", "BIG", "SUB", "SUP"]);
+const CR_ALLOW_S = /^(color|background-color|background|font-size|font-weight|font-style|text-align|text-decoration|line-height|border|border-right|border-left|border-radius|padding|margin|display)$/;
+function crSan(html) { try { const d = document.createElement("div"); d.innerHTML = String(html || "");
+  const walk = n => { [...n.childNodes].forEach(c => { if (c.nodeType === 3) return; if (c.nodeType !== 1 || !CR_ALLOW_T.has(c.tagName)) { if (c.nodeType === 1 && !/^(SCRIPT|STYLE|IFRAME|OBJECT)$/.test(c.tagName)) { walk(c); c.replaceWith(...c.childNodes); } else c.remove(); return; }
+    [...c.attributes].forEach(a => { const nm = a.name.toLowerCase(); if (nm === "style") { const keep = String(a.value).split(";").map(x => x.trim()).filter(x => { const [p, v] = x.split(":").map(y => (y || "").trim().toLowerCase()); return p && v && CR_ALLOW_S.test(p) && !/url\(|expression|javascript/.test(v); }).join(";"); if (keep) c.setAttribute("style", keep); else c.removeAttribute("style"); } else if (!(c.tagName === "FONT" && (nm === "size" || nm === "color")) && nm !== "align" && nm !== "dir") c.removeAttribute(a.name); }); walk(c); }); };
+  walk(d); return d.innerHTML; } catch { return ""; } }
+const crPlain = html => { try { const d = document.createElement("div"); d.innerHTML = String(html || "").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|h\d)>/gi, "\n"); return (d.textContent || "").replace(/\n{3,}/g, "\n\n").trim(); } catch { return ""; } };
+const CR_TXT_C = ["#0f172a", "#b91c1c", "#c2410c", "#b45309", "#15803d", "#0f766e", "#1d4ed8", "#6d28d9", "#db2777", "#64748b"];
+const CR_HL_C = ["#fef08a", "#fecaca", "#bbf7d0", "#bfdbfe", "#e9d5ff", "#fed7aa", "#f1f5f9"];
+const CR_EMO = ["📌", "📢", "⚠️", "❗", "✅", "☑️", "❌", "⭐", "🌟", "🔔", "📅", "⏰", "🕒", "📍", "📎", "📝", "📚", "🎓", "🏫", "🏆", "💡", "🎯", "👏", "🤝", "🇸🇦", "➡️", "⬅️", "🔹", "🔸", "🟢", "🔴", "🟡"];
+const CR_MRK = ["•", "◆", "■", "●", "★", "✓", "✗", "➤", "◀", "▶", "←", "→", "①", "②", "③", "④", "⑤", "☐", "☑", "※", "—", "ـــ"];
+const CR_BRK = [["«", "»"], ["(", ")"], ["[", "]"], ["{", "}"], ["﴿", "﴾"], ["\"", "\""], ["⟨", "⟩"]];
+const CR_ED_CSS = `.cre{border:1.5px solid #dbe4e1;border-radius:16px;overflow:hidden;background:#fff}
+.cre-tb{display:flex;flex-wrap:wrap;gap:4px;padding:6px;background:linear-gradient(180deg,#f8fafc,#f1f5f9);border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:2}
+.cre-tb button,.cre-tb select{font-family:inherit;cursor:pointer;border:1px solid #e2e8f0;background:#fff;border-radius:9px;min-width:32px;height:32px;padding:0 7px;font-weight:900;font-size:13.5px;color:#0f172a}
+.cre-tb button:hover{border-color:#0f766e;color:#0f766e}.cre-tb button.on{background:#064e3b;color:#fff;border-color:#064e3b}
+.cre-tb .sep{width:1px;background:#e2e8f0;margin:2px 3px}
+.cre-pop{display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:#fff;border-bottom:1px solid #e2e8f0}
+.cre-pop button{font-family:inherit;cursor:pointer;border:1px solid #e2e8f0;background:#fff;border-radius:8px;min-width:34px;height:34px;font-size:18px}
+.cre-pop .sw{width:26px;height:26px;min-width:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1}
+.cre-area{min-height:180px;max-height:52vh;overflow:auto;padding:12px 14px;outline:none;font-size:16px;font-weight:500;line-height:2;color:#0f172a}
+.cre-area b,.cre-area strong,.rich b,.rich strong{font-weight:900}
+.cre-area:empty:before{content:attr(data-ph);color:#94a3b8}
+.rich ul,.rich ol,.cre-area ul,.cre-area ol{padding-inline-start:26px;margin:4px 0}.rich h3,.cre-area h3{font-size:1.3em;font-weight:900;color:#064e3b;margin:6px 0}.rich hr,.cre-area hr{border:none;border-top:2px dashed #a7f3d0;margin:10px 0}
+.rich blockquote,.cre-area blockquote{border-inline-start:4px solid #0f766e;background:#f0fdfa;margin:6px 0;padding:6px 12px;border-radius:8px}`;
+function CrEditor({ html, onChange, base = 16, lh = 2 }) {
+  const ref = useRef(null); const [pop, setPop] = useState(""); const sel = useRef(null);
+  useEffect(() => { if (ref.current && ref.current.innerHTML !== (html || "")) ref.current.innerHTML = html || ""; try { document.execCommand("styleWithCSS", false, true); } catch {} }, []);
+  const save = () => { const s0 = window.getSelection(); if (s0 && s0.rangeCount && ref.current && ref.current.contains(s0.anchorNode)) sel.current = s0.getRangeAt(0).cloneRange(); };
+  const restore = () => { ref.current && ref.current.focus(); const r = sel.current; if (r) { const s0 = window.getSelection(); s0.removeAllRanges(); s0.addRange(r); } };
+  const emit = () => onChange(ref.current ? ref.current.innerHTML : "");
+  const cmd = (c, v = null) => { restore(); try { document.execCommand(c, false, v); } catch {} save(); emit(); };
+  const ins = t => { restore(); try { document.execCommand("insertText", false, t); } catch {} save(); emit(); };
+  // إدراج عنصر كتلة (صندوق) كما هو دون أن يدمجه المتصفح في السطر
+  const insH = h => { restore(); const s0 = window.getSelection(); if (!s0 || !s0.rangeCount) return; const r = s0.getRangeAt(0); r.deleteContents(); const fr = r.createContextualFragment(h); const last = fr.lastChild; r.insertNode(fr); if (last) { const nr = document.createRange(); nr.setStartAfter(last); nr.collapse(true); s0.removeAllRanges(); s0.addRange(nr); } save(); emit(); };
+  // وضع الأقواس حول التحديد مع الحفاظ على تنسيقه
+  const wrap = ([a, b]) => { restore(); const s0 = window.getSelection(); if (!s0 || !s0.rangeCount) return; const r = s0.getRangeAt(0); const e = r.cloneRange(); e.collapse(false); e.insertNode(document.createTextNode(b)); const st = r.cloneRange(); st.collapse(true); st.insertNode(document.createTextNode(a)); save(); emit(); };
+  const B = ({ t, on, ti, c }) => <button type="button" title={ti} onMouseDown={e => e.preventDefault()} onClick={on} style={c ? { color: c } : null}>{t}</button>;
+  return <div className="cre"><style>{CR_ED_CSS}</style>
+    <div className="cre-tb">
+      <B t="↶" ti="تراجع" on={() => cmd("undo")} /><B t="↷" ti="إعادة" on={() => cmd("redo")} /><span className="sep" />
+      <B t={<b>B</b>} ti="عريض" on={() => cmd("bold")} /><B t={<i>I</i>} ti="مائل" on={() => cmd("italic")} /><B t={<u>U</u>} ti="تسطير" on={() => cmd("underline")} /><B t={<s>S</s>} ti="شطب" on={() => cmd("strikeThrough")} /><span className="sep" />
+      <select title="حجم النص المحدد" onMouseDown={save} onChange={e => { if (e.target.value) cmd("fontSize", e.target.value); e.target.value = ""; }} defaultValue=""><option value="">حجم</option><option value="2">صغير</option><option value="3">عادي</option><option value="4">متوسط</option><option value="5">كبير</option><option value="6">كبير جداً</option><option value="7">ضخم</option></select>
+      <B t="A+" ti="تكبير التحديد" on={() => { restore(); const v = +(document.queryCommandValue("fontSize") || 3); cmd("fontSize", String(Math.min(7, v + 1))); }} /><B t="A−" ti="تصغير التحديد" on={() => { restore(); const v = +(document.queryCommandValue("fontSize") || 3); cmd("fontSize", String(Math.max(1, v - 1))); }} />
+      <B t="🎨" ti="لون النص" on={() => { save(); setPop(pop === "c" ? "" : "c"); }} /><B t="🖍️" ti="تظليل" on={() => { save(); setPop(pop === "h" ? "" : "h"); }} /><span className="sep" />
+      <B t="⇥" ti="محاذاة يمين" on={() => cmd("justifyRight")} /><B t="≡" ti="توسيط" on={() => cmd("justifyCenter")} /><B t="⇤" ti="محاذاة يسار" on={() => cmd("justifyLeft")} /><B t="☰" ti="ضبط" on={() => cmd("justifyFull")} /><span className="sep" />
+      <B t="• قائمة" ti="قائمة نقطية" on={() => cmd("insertUnorderedList")} /><B t="١. قائمة" ti="قائمة مرقمة" on={() => cmd("insertOrderedList")} /><B t="عنوان" ti="عنوان فرعي" on={() => cmd("formatBlock", "h3")} /><B t="فقرة" ti="نص عادي" on={() => cmd("formatBlock", "div")} /><B t="❝" ti="اقتباس" on={() => cmd("formatBlock", "blockquote")} /><B t="―" ti="خط فاصل" on={() => cmd("insertHorizontalRule")} /><span className="sep" />
+      <B t="« »" ti="أقواس" on={() => { save(); setPop(pop === "b" ? "" : "b"); }} /><B t="★" ti="رموز وعلامات" on={() => { save(); setPop(pop === "m" ? "" : "m"); }} /><B t="😀" ti="ملصقات" on={() => { save(); setPop(pop === "e" ? "" : "e"); }} /><B t="⚠️ صندوق" ti="صندوق ملاحظة" on={() => { save(); setPop(pop === "x" ? "" : "x"); }} /><span className="sep" />
+      <B t="⌫ تنسيق" ti="إزالة التنسيق" on={() => cmd("removeFormat")} />
+    </div>
+    {pop === "c" && <div className="cre-pop">{CR_TXT_C.map(c => <button key={c} type="button" className="sw" style={{ background: c }} onMouseDown={e => e.preventDefault()} onClick={() => { cmd("foreColor", c); setPop(""); }} />)}</div>}
+    {pop === "h" && <div className="cre-pop">{CR_HL_C.map(c => <button key={c} type="button" className="sw" style={{ background: c }} onMouseDown={e => e.preventDefault()} onClick={() => { cmd("hiliteColor", c === "#f1f5f9" ? "transparent" : c); setPop(""); }} />)}</div>}
+    {pop === "b" && <div className="cre-pop">{CR_BRK.map(p => <button key={p[0]} type="button" style={{ fontSize: 15, padding: "0 10px", width: "auto" }} onMouseDown={e => e.preventDefault()} onClick={() => { wrap(p); setPop(""); }}>{p[0]} … {p[1]}</button>)}<span style={{ fontSize: 12, fontWeight: 800, color: "#64748b", alignSelf: "center" }}>حدّد كلمة لتُوضع بين القوسين</span></div>}
+    {pop === "m" && <div className="cre-pop">{CR_MRK.map(m => <button key={m} type="button" onMouseDown={e => e.preventDefault()} onClick={() => ins(m + " ")}>{m}</button>)}</div>}
+    {pop === "e" && <div className="cre-pop">{CR_EMO.map(m => <button key={m} type="button" onMouseDown={e => e.preventDefault()} onClick={() => ins(m + " ")}>{m}</button>)}</div>}
+    {pop === "x" && <div className="cre-pop">{[["⚠️ ملاحظة مهمة: ", "#f59e0b", "#fffbeb"], ["✅ مطلوب: ", "#16a34a", "#f0fdf4"], ["📅 موعد: ", "#2563eb", "#eff6ff"], ["❗ تنبيه: ", "#dc2626", "#fef2f2"]].map(([t, c, bg]) => <button key={t} type="button" style={{ width: "auto", padding: "0 10px", fontSize: 13.5, fontWeight: 900, background: bg, borderColor: c, color: c }} onMouseDown={e => e.preventDefault()} onClick={() => { insH(`<div style="border:2px solid ${c};background:${bg};border-radius:12px;padding:8px 12px;margin:6px 0"><b style="color:${c}">${t}</b>اكتب هنا…</div><div><br></div>`); setPop(""); }}>{t}</button>)}</div>}
+    <div ref={ref} className="cre-area" contentEditable suppressContentEditableWarning dir="rtl" data-ph="اكتب نص التعميم هنا… حدّد أي كلمة ثم اختر التنسيق من الشريط" style={{ fontSize: base, lineHeight: lh }} onInput={() => { save(); emit(); }} onKeyUp={save} onMouseUp={save} onBlur={() => { save(); emit(); }} />
+  </div>;
+}
 // ── عرض التعميم (للمعلم وللإدارة) بنفس القالب
 function CircViewer({ c, pages, logo, onRead }) {
   const [pi, setPi] = useState(0); const [zoom, setZoom] = useState(null); const P = Array.isArray(pages) ? pages : [];
@@ -37537,7 +37599,7 @@ function CircViewer({ c, pages, logo, onRead }) {
     <div className="cr-doc-h"><div className="r">المملكة العربية السعودية<br />وزارة التعليم<br />الإدارة العامة للتعليم بمحافظة جدة<br /><b>{HFX_SCHOOL}</b></div><img src={logo || MOE_LOGO} alt="وزارة التعليم" /><div className="l">{c.no ? <>رقم التعميم: <b>{maAr(c.no)}</b><br /></> : null}التاريخ: {asmHij(D)}<br />{maDay(D)}</div></div>
     <div className="cr-title">📜 {c.title}</div>
     <div className="cr-body">
-      {c.text && <div className="txt">{c.text}</div>}
+      {c.html ? <div className="txt rich" style={{ whiteSpace: "normal", fontWeight: 500, fontSize: c.fs || 16.5, lineHeight: c.lh || 2 }} dangerouslySetInnerHTML={{ __html: crSan(c.html) }} /> : c.text && <div className="txt">{c.text}</div>}
       {P.length > 0 && (lay === "book" ? <div className="cr-book" onTouchStart={e => { tx.current = e.touches[0].clientX; }} onTouchEnd={e => { const d = e.changedTouches[0].clientX - tx.current; if (Math.abs(d) > 50) setPi(i => Math.max(0, Math.min(P.length - 1, i + (d > 0 ? 1 : -1)))); }}>
           <div className="pg" style={{ maxWidth: `${Math.min(820, 820 * W / 100)}px` }}><img src={P[pi]} alt={`صفحة ${pi + 1}`} onClick={() => setZoom(P[pi])} /></div>
           <div className="flex items-center gap-2"><button className="cr-b" disabled={pi >= P.length - 1} onClick={() => setPi(i => i + 1)}>→ التالية</button><b style={{ fontSize: 14 }}>صفحة {maAr(pi + 1)} من {maAr(P.length)}</b><button className="cr-b" disabled={pi <= 0} onClick={() => setPi(i => i - 1)}>السابقة ←</button></div>
@@ -37569,6 +37631,7 @@ function circPrint(c, pages, sigs, rec, logo, ex = {}) {
 .ti span{background:#064e3b;color:#fff;font-weight:900;font-size:15px;padding:7px 18px;border-radius:0 999px 999px 0}
 .ti b{border:2.5px solid #064e3b;border-right:none;font-size:20px;font-weight:900;color:#064e3b;padding:4px 22px;border-radius:999px 0 0 999px;background:#fff}
 .txt{white-space:pre-wrap;font-size:16px;font-weight:700;line-height:2.1;padding:6px 10px;margin-bottom:8px}
+.rich b,.rich strong{font-weight:900}.rich ul,.rich ol{padding-inline-start:26px;margin:4px 0}.rich h3{font-size:1.3em;font-weight:900;color:#064e3b;margin:6px 0}.rich hr{border:none;border-top:2px dashed #a7f3d0;margin:10px 0}.rich blockquote{border-right:4px solid #0f766e;background:#f0fdfa;margin:6px 0;padding:6px 12px;border-radius:8px}
 .pgimg{margin:0 auto 10px;position:relative;break-inside:avoid;text-align:center}.pgimg img{width:auto;max-width:100%;max-height:268mm;display:block;margin:0 auto;border:1px solid #e2e8f0;border-radius:6px;object-fit:contain}.pgimg.first img{max-height:218mm}
 .pgimg span{position:absolute;bottom:6px;left:8px;background:rgba(6,78,59,.85);color:#fff;font-size:10px;font-weight:900;border-radius:999px;padding:1px 9px}
 .pgimg+.pgimg{break-before:page}
@@ -37581,7 +37644,7 @@ tr{break-inside:avoid}tr:nth-child(even) td{background:#f8fffb}td.nt{text-align:
 .st{display:inline-block;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:900}.st.b{background:#e0f2fe;color:#0369a1}.st.y{background:#fef3c7;color:#92400e}.st.r{background:#fee2e2;color:#b91c1c}
 .sm{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}.sm div{border:1.5px solid #d1fae5;border-radius:12px;text-align:center;padding:6px;font-size:11px;font-weight:800;color:#475569}.sm b{display:block;font-size:20px;font-weight:900;color:#064e3b}
 .ft{display:flex;justify-content:space-between;margin-top:22px;font-size:13px;font-weight:800}.ft b{display:block;font-size:15px;color:#064e3b;margin-top:4px}
-</style></head><body>${head}${title}${c.text ? `<div class="txt">${ptEsc(c.text)}</div>` : ""}${imgs}
+</style></head><body>${head}${title}${c.html ? `<div class="txt rich" style="white-space:normal;font-weight:500;font-size:${c.fs || 16}px;line-height:${c.lh || 2.1}">${crSan(c.html)}</div>` : c.text ? `<div class="txt">${ptEsc(c.text)}</div>` : ""}${imgs}
 <div class="sec">${P.length ? head + `<div class="ti" style="margin:16px auto 6px"><span>تعميم</span><b>${ptEsc(c.title)}</b></div>` : ""}<div class="st">✍️ سجل اطلاع وتوقيع المعلمين على التعميم <small>(${maAr(done)} من ${maAr(rec.length)})</small></div>
 <div class="sm"><div><b>${maAr(rec.length)}</b>المرسل إليهم</div><div><b style="color:#15803d">${maAr(done)}</b>${c.need ? "وقّعوا" : "اطّلعوا"}</div><div><b style="color:#0369a1">${maAr(rec.filter(t => !(ptObj(sigs)[t.hk] && ptObj(sigs)[t.hk].at) && ptObj(ex.seen)[t.hk]).length)}</b>فتحوه ولم يوقّعوا</div><div><b style="color:#b91c1c">${maAr(rec.filter(t => !(ptObj(sigs)[t.hk] && ptObj(sigs)[t.hk].at) && !ptObj(ex.seen)[t.hk]).length)}</b>لم يفتحوه</div></div>
 <table><thead><tr><th style="width:5%">م</th><th style="width:30%">الاسم</th><th style="width:16%">الاطلاع / التوقيع</th><th style="width:25%">ملاحظة المعلم</th><th>التوقيع</th></tr></thead><tbody>${S}</tbody></table>
@@ -37605,8 +37668,8 @@ function CircAdminPage({ by = "الإدارة" }) {
   useEffect(() => { if (!ed) return; const f = async e => { const it = Array.from((e.clipboardData && e.clipboardData.items) || []).filter(i => i.type.startsWith("image/")); if (!it.length) return; e.preventDefault(); addFiles(it.map(i => i.getAsFile()).filter(Boolean)); }; document.addEventListener("paste", f); return () => document.removeEventListener("paste", f); }, [!!ed]);
   if (!list) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
   const recOf = c => crRecips(c, staff);
-  const save = async () => { const e = ed; if (!e.title.trim()) { toast("⚠️ اكتب عنوان التعميم"); return; } if (!e.text.trim() && !e.pages.length) { toast("⚠️ أضف نص التعميم أو صورته أو ملف PDF"); return; } if (Array.isArray(e.to) && !e.to.length) { toast("⚠️ اختر المعلمين المرسل إليهم"); return; }
-    setBusy("⏳ جاري النشر…"); const meta = { id: e.id, title: e.title.trim(), no: e.no || "", date: e.date || maKey(new Date()), src: e.src, text: e.text || "", lay: e.lay, size: e.size, to: e.to, need: !!e.need, n: e.pages.length, at: e.at || Date.now(), by: e.by || by, up: Date.now() };
+  const save = async () => { const e = ed; if (!e.title.trim()) { toast("⚠️ اكتب عنوان التعميم"); return; } if (!String(e.text || "").trim() && !e.pages.length) { toast("⚠️ أضف نص التعميم أو صورته أو ملف PDF"); return; } if (Array.isArray(e.to) && !e.to.length) { toast("⚠️ اختر المعلمين المرسل إليهم"); return; }
+    setBusy("⏳ جاري النشر…"); const meta = { id: e.id, title: e.title.trim(), no: e.no || "", date: e.date || maKey(new Date()), src: e.src, text: e.text || "", ...(e.html ? { html: crSan(e.html) } : {}), ...(e.fs ? { fs: e.fs } : {}), ...(e.lh ? { lh: e.lh } : {}), lay: e.lay, size: e.size, to: e.to, need: !!e.need, n: e.pages.length, at: e.at || Date.now(), by: e.by || by, up: Date.now() };
     const ok1 = await maPut(`${CR_PG}/${e.id}`, e.pages.length ? e.pages : null); const ok2 = ok1 && await maPut(`${CR_NODE}/${e.id}`, meta); setBusy("");
     if (ok2) { toast("✅ نُشر التعميم — أرسله الآن بالواتساب للمجموعة أو لكل معلم"); setEd(null); setTab("list"); await load(); openC(meta); } else toast("⚠️ تعذّر النشر — قد يكون حجم الملف كبيراً أو الاتصال ضعيفاً"); };
   const openC = async c => { setOpen({ c, pages: null }); const [p, sg, se, rd] = await Promise.all([maGet(`${CR_PG}/${c.id}`), maGet(`${CR_SIG}/${c.id}`), maGet(`${CR_SEEN}/${c.id}`), maGet(`${CR_READ}/${c.id}`)]); setSigAll(x => ({ ...x, [c.id]: ptObj(sg) })); setSeenAll(x => ({ ...x, [c.id]: ptObj(se) })); setReadAll(x => ({ ...x, [c.id]: ptObj(rd) })); setOpen({ c, pages: maArr(p) }); };
@@ -37652,7 +37715,9 @@ function CircAdminPage({ by = "الإدارة" }) {
           {ed.pages.length > 0 && <div className="cr-thumbs">{ed.pages.map((s, i) => <div key={i}><img src={s} alt="" /><div className="bt"><button title="تقديم" disabled={i === 0} onClick={() => { const p = [...ed.pages]; [p[i - 1], p[i]] = [p[i], p[i - 1]]; setEd({ ...ed, pages: p }); }}>→</button><button title="حذف" onClick={() => setEd({ ...ed, pages: ed.pages.filter((_, j) => j !== i) })}>🗑</button><button title="تأخير" disabled={i === ed.pages.length - 1} onClick={() => { const p = [...ed.pages]; [p[i + 1], p[i]] = [p[i], p[i + 1]]; setEd({ ...ed, pages: p }); }}>←</button></div></div>)}</div>}
           {ed.pages.length > 0 && <><div style={{ fontWeight: 900, fontSize: 13 }}>طريقة العرض</div><div className="cr-chips">{CR_LAY.map(([k, l]) => <button key={k} className={`cr-chip ${ed.lay === k ? "on" : ""}`} onClick={() => setEd({ ...ed, lay: k })}>{l}</button>)}</div>
             <div style={{ fontWeight: 900, fontSize: 13 }}>الحجم</div><div className="cr-chips">{CR_SZ.map(([k, l]) => <button key={k} className={`cr-chip ${ed.size === k ? "on" : ""}`} onClick={() => setEd({ ...ed, size: k })}>{l}</button>)}</div></>}
-          <label style={{ fontWeight: 900, fontSize: 13 }}>نص التعميم (اختياري مع الصور)<textarea className="cr-in" rows={5} value={ed.text} onChange={e => setEd({ ...ed, text: e.target.value, src: ed.pages.length ? ed.src : "text" })} placeholder="اكتب نص التعميم أو ملخصه…" /></label>
+          <div style={{ fontWeight: 900, fontSize: 13 }}>نص التعميم (اختياري مع الصور) — حرّر وتنسّق كما تشاء</div>
+          <CrEditor key={ed.id} html={ed.html || (ed.text ? ptEsc(ed.text).replace(/\n/g, "<br>") : "")} base={ed.fs || 16} lh={ed.lh || 2} onChange={h => setEd(x => ({ ...x, html: h, text: crPlain(h), src: x.pages.length ? x.src : "text" }))} />
+          <div className="flex gap-2 flex-wrap items-center" style={{ fontSize: 12.5, fontWeight: 800 }}><span>حجم النص كله:</span>{[[14, "صغير"], [16, "عادي"], [18, "كبير"], [21, "أكبر"]].map(([v, l]) => <button key={v} className={`cr-chip ${(ed.fs || 16) === v ? "on" : ""}`} onClick={() => setEd({ ...ed, fs: v })}>{l}</button>)}<span style={{ marginInlineStart: 8 }}>تباعد الأسطر:</span>{[[1.6, "ضيق"], [2, "عادي"], [2.5, "واسع"]].map(([v, l]) => <button key={v} className={`cr-chip ${(ed.lh || 2) === v ? "on" : ""}`} onClick={() => setEd({ ...ed, lh: v })}>{l}</button>)}</div>
           <div style={{ fontWeight: 900, fontSize: 13 }}>المرسل إليهم</div>
           <div className="cr-chips"><button className={`cr-chip ${ed.to === "all" ? "on" : ""}`} onClick={() => setEd({ ...ed, to: "all" })}>👥 كل المعلمين ({maAr(staff.length)})</button><button className={`cr-chip ${Array.isArray(ed.to) ? "on" : ""}`} onClick={() => setEd({ ...ed, to: Array.isArray(ed.to) ? ed.to : [] })}>☑️ معلمون محددون{Array.isArray(ed.to) ? ` (${maAr(ed.to.length)})` : ""}</button></div>
           {Array.isArray(ed.to) && <div style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: 8, maxHeight: 260, overflow: "auto", display: "grid", gap: 4 }}>
