@@ -38986,6 +38986,7 @@ function DutyPublicPortal({ onBack }) {
   return <div className="ma pt px-3 md:px-6 py-4" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#ecfeff,#f8fafc)" }}><style>{MA_CSS + PT_CSS + STT_CSS}</style>
     <div style={{ maxWidth: 820, margin: "0 auto" }} className="grid gap-3">
       <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b><button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setMe(null); try { localStorage.removeItem("pam-duty"); } catch {} }}>خروج</button></div>
+      <button type="button" onClick={() => { window.location.hash = "f9=" + maKey(new Date()); }} style={{ border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "right", borderRadius: 18, padding: "12px 16px", color: "#fff", background: "linear-gradient(135deg,#14532d,#166534 50%,#1e3a8a)", display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 26 }}>📄</span><span><b style={{ fontSize: 15 }}>تقرير المناوبة اليومي — نموذج ٩</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>إن كنت مناوب اليوم: سجّل المتأخرين والمخالفين ووقّع</div></span></button>
       <DutyTeacherView me={me} />
     </div></div>;
 }
@@ -39085,6 +39086,147 @@ function DutyHomeBanner({ me, onOpen }) {
 }
 
 // ── صفحة الإدارة
+// ══════════ 📄 نموذج رقم (٩) — تقرير المناوبة اليومي (و.ت.ع.ن-٠١-٠٢) طبق الأصل ══════════
+// school-duty-f9/{dk} = { term, emp:[{n,st,note,sig,sigAt,role,for}], late:[{name,ck,tm,act,note}], viol:[…], mgr, upd, by }
+const DU_F9 = "school-duty-f9";
+const F9_EST = { p: { l: "حاضر", c: "#15803d", bg: "#dcfce7" }, l: { l: "متأخر", c: "#c2410c", bg: "#ffedd5" }, x: { l: "مستأذن", c: "#b45309", bg: "#fef3c7" }, a: { l: "غائب", c: "#b91c1c", bg: "#fee2e2" } };
+const F9_LACT = ["تنبيه شفهي", "تسجيل في سجل التأخر", "إشعار ولي الأمر", "إحالة للموجّه الطلابي", "أخذ تعهد"];
+const F9_VACT = ["تنبيه شفهي", "أخذ تعهد", "إشعار ولي الأمر", "إحالة للموجّه الطلابي", "إحالة لوكيل المدرسة", "مصادرة الجوال"];
+const F9_TERMS = ["الأول", "الثاني", "الثالث"];
+const f9Link = dk => { try { return `${location.origin}${location.pathname}#f9=${dk}`; } catch { return `#f9=${dk}`; } };
+const f9Cls = ck => { const [lv, sec] = String(ck || "").split("-"); return lv && sec ? `${maAr(lv)} / ${maAr(sec)}` : ""; };
+async function f9Load(dk) {
+  const [D, att, doc, late] = await Promise.all([duLoad(), maGet(`${DU_AT}/${dk}`), maGet(`${DU_F9}/${dk}`), maGet(`${MA_LATE}/${dk}`)]);
+  const main = ptObj(D.M)[dk] || ""; const sid = "m" + dk; const A = Object.values(ptObj(att)).find(r => r && r.sid === sid);
+  let d = doc && doc.emp ? { ...doc, emp: maArr(doc.emp), late: maArr(doc.late), viol: maArr(doc.viol) } : null;
+  if (!d) { const emp = []; if (main) { if (A && A.st && A.st !== "p") { emp.push({ n: main, st: A.st === "a" || A.st === "n" ? "a" : "x", note: `${A.st === "a" || A.st === "n" ? "غائب" : "مستأذن"}${A.sub ? ` — حلّ محله أ. ${A.sub}` : ""}${A.note ? ` — ${A.note}` : ""}`, role: "main" }); if (A.sub) emp.push({ n: A.sub, st: "p", note: `بديلاً عن أ. ${main}`, role: "sub", for: main }); } else emp.push({ n: main, st: "p", note: "", role: "main" }); }
+    d = { emp, late: [], viol: [], term: (() => { try { return localStorage.getItem("f9-term") || "الأول"; } catch { return "الأول"; } })(), mgr: "" }; }
+  return { D, d, lateL: Object.values(ptObj(late)).filter(r => r && r.name).sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""))), main };
+}
+// ── الطباعة طبق الأصل (A4 عمودي) — تُضاف صفحة تكميلية إن زاد العدد عن ١٥
+function f9Print(d, dk) {
+  const D = maDate(dk); const h = hfxHij(dk) || {}; const g = s => ptEsc(String(s ?? ""));
+  const empRows = [0, 1, 2, 3].map(i => { const e = d.emp[i]; return `<tr><td class="c">${maAr(i + 1)}</td><td>${e ? `<b>${g(e.n)}</b>${e.role === "sub" ? ` <small>(بديل)</small>` : ""}` : ""}</td><td class="c sg">${e && e.sig ? `<img src="${e.sig}">` : ""}</td><td class="nt">${e ? g(e.note || (e.st && e.st !== "p" ? F9_EST[e.st].l : "")) : ""}</td></tr>`; }).join("");
+  const stuTbl = (L, from) => Array.from({ length: 15 }, (_, i) => { const r = L[from + i]; return `<tr><td class="c">${maAr(from + i + 1)}</td><td>${r ? `<b>${g(r.name)}</b>` : ""}</td><td class="c">${r && r.ck ? f9Cls(r.ck) : "/"}</td><td class="c">${r && r.tm ? mlFmtT(r.tm).replace(/ ?[صم]$/, "") : ""}</td><td class="nt">${r ? g(r.act) : ""}</td><td class="nt">${r ? g(r.note) : ""}</td></tr>`; }).join("");
+  const head = cont => `<svg class="sw" viewBox="0 0 220 90"><path d="M0 0 H220 Q120 6 70 40 Q35 64 0 90 Z" fill="#cbd5e1"/><path d="M0 0 H150 Q80 10 45 38 Q20 58 0 72 Z" fill="#5b21b6" opacity=".55"/></svg>
+    <div class="no">نموذج رقم ( ${maAr(9)} )${cont ? " — تابع" : ""}</div>
+    <div class="r1"><span><b>اسم النموذج :</b> تقرير المناوبة اليومي</span><span><b>رمز النموذج :</b> و.ت.ع.ن - ${maAr("01")} - ${maAr("02")}</span></div>
+    <div class="r2"><span><b>العام الدراسي</b> ${maAr(h.y || "")}هـ <b>/ الفصل</b> ( ${g(d.term || "")} )</span><span><b>اليوم</b> ( ${g(maDay(D))} )</span><span><b>التاريخ:</b> ${maAr(h.d || "")} / ${maAr(h.m || "")} / ${maAr(h.y || "")}هـ</span></div>`;
+  const stuHead = `<tr><th style="width:5%">م</th><th style="width:31%">الاسم</th><th style="width:10%">الفصل</th><th style="width:9%">الزمن</th><th style="width:23%">الاجراء المتخذ</th><th style="width:22%">ملحوظات</th></tr>`;
+  const pages = Math.max(1, Math.ceil(Math.max(d.late.length, d.viol.length) / 15));
+  const body = Array.from({ length: pages }, (_, p) => `<section class="pg">${head(p > 0)}
+    ${p === 0 ? `<table><tr><th style="width:5%">م</th><th style="width:38%">اسم الموظف المناوب*</th><th style="width:22%">التوقيع</th><th>ملحوظات*</th></tr>${empRows}</table>` : ""}
+    <div class="sec">أسماء الطلاب المتأخرين:</div><table>${stuHead}${stuTbl(d.late, p * 15)}</table>
+    <div class="sec">أسماء الطلاب المخالفين:</div><table>${stuHead}${stuTbl(d.viol, p * 15)}</table>
+    <div class="ft">• يتم تسليم هذا التقرير إلى وكيل الشؤون التعليمية في اليوم التالي للمناوبة.</div>
+    ${p === pages - 1 && d.mgr ? `<div class="mg"><b>ملاحظة مدير المدرسة:</b> ${g(d.mgr)}</div>` : ""}</section>`).join("");
+  printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير المناوبة اليومي — ${g(maDay(D))} ${maAr(h.d || "")}/${maAr(h.m || "")}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet"><style>
+@page{size:A4;margin:7mm 9mm 7mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#000}
+.pg{position:relative;break-after:page;padding-top:2mm}.pg:last-child{break-after:auto}
+.sw{position:absolute;top:-7mm;left:-9mm;width:62mm;height:24mm}
+.no{font-weight:800;font-size:11.5px;margin-bottom:1mm}
+.r1{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:#14532d;padding-inline-end:58mm}.r1 b{color:#14532d}
+.r2{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin:1.5mm 0 1.5mm}.r2 b{font-weight:900}
+table{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:1mm}th{border:1.2px solid #000;background:#d9d9d9;font-weight:900;font-size:11px;padding:.8mm 1mm;height:5.6mm}
+td{border:1px solid #000;height:5.9mm;padding:0 1.6mm;font-weight:700;vertical-align:middle}td.c{text-align:center}td.nt{font-size:9.5px}
+td.sg img{height:5.2mm;max-width:100%;object-fit:contain;display:block;margin:0 auto}small{font-size:8.5px;color:#334155}
+.sec{font-weight:900;font-size:12.5px;margin:1.6mm 0 .6mm}
+.ft{font-size:10.5px;font-weight:800;margin-top:1.2mm}.mg{margin-top:2mm;border:1.2px dashed #64748b;border-radius:2mm;padding:1.5mm 2.5mm;font-size:10.5px;font-weight:700}
+</style></head><body>${body}<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},400)})</script></body></html>`);
+}
+// ── المحرر (للمناوب وللإدارة)
+function DuF9Editor({ dk, admin, me, by, onDk }) {
+  const [S, setS] = useState(null); const [d, setD] = useState(null); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(""); const [ros, setRos] = useState(null); const [add, setAdd] = useState(null); const [q, setQ] = useState(""); const [pad, setPad] = useState(null); const [staff, setStaff] = useState([]); const [phones, setPhones] = useState({});
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
+  const load = async () => { setS(null); const x = await f9Load(dk); setS(x); setD(x.d); };
+  useEffect(() => { load(); if (admin) { crStaff().then(setStaff).catch(() => {}); maGet(PH_NODE).then(p => setPhones(ptObj(p))).catch(() => {}); } }, [dk]);
+  if (!S || !d) return <div className="ma-card p-8 text-center font-bold text-gray-400">⏳ جاري تحميل النموذج…</div>;
+  const mineI = me ? d.emp.findIndex(e => duEq(e.n, me.name)) : -1;
+  const canEdit = admin || mineI >= 0;
+  const set = p => setD(x => ({ ...x, ...p }));
+  const save = async (x = d, silent) => { setBusy(true); const v = { ...x, dk, upd: Date.now(), by: by || (me && me.name) || "" }; const ok = await maPut(`${DU_F9}/${dk}`, v); setBusy(false); if (!silent) toast(ok ? "✅ حُفظ النموذج" : "⚠️ تعذّر الحفظ"); try { localStorage.setItem("f9-term", v.term || "الأول"); } catch {} return ok; };
+  const updEmp = (i, p) => set({ emp: d.emp.map((e, j) => j === i ? { ...e, ...p } : e) });
+  // تغيير حالة المناوب (غياب/استئذان) مع بديل: يُضاف البديل صفاً ويحلّ محله، ويُحدَّث سجل حضور المناوبة
+  const setEmpSt = async (i, st, sub) => { const e = d.emp[i]; let emp = d.emp.map((x, j) => j === i ? { ...x, st, note: st === "p" ? "" : `${F9_EST[st].l}${sub ? ` — حلّ محله أ. ${sub}` : ""}` } : x).filter(x => !(x.role === "sub" && x.for && duEq(x.for, e.n) && st === "p"));
+    if (sub && !emp.some(x => duEq(x.n, sub))) emp = [...emp, { n: sub, st: "p", note: `بديلاً عن أ. ${e.n}${st === "x" ? " (لاستئذانه)" : " (لغيابه)"}`, role: "sub", for: e.n }].slice(0, 4);
+    const nd = { ...d, emp }; setD(nd); await save(nd, true);
+    if (e.role === "main" || !e.role) { const k = `m${dk}_${asmK(e.n)}`; await maPut(`${DU_AT}/${dk}/${k}`, st === "p" ? null : { st: st === "a" ? "a" : "o", n: e.n, sid: "m" + dk, note: st === "x" ? "مستأذن" : st === "l" ? "متأخر" : "", sub: sub || "", by: by || "الإدارة", at: Date.now() }); }
+    toast(sub ? `🔄 أ. ${sub} بديلاً عن أ. ${e.n}` : `✓ ${e.n}: ${F9_EST[st].l}`); };
+  const addRow = (kind, r) => set({ [kind]: [...d[kind], r] });
+  const updRow = (kind, i, p) => set({ [kind]: d[kind].map((r, j) => j === i ? { ...r, ...p } : r) });
+  const delRow = (kind, i) => set({ [kind]: d[kind].filter((_, j) => j !== i) });
+  const importLate = () => { const have = new Set(d.late.map(r => r.name)); const L = S.lateL.filter(r => !have.has(r.name)).map(r => ({ name: r.name, ck: r.ck || "", tm: r.time || "", act: "تسجيل في سجل التأخر", note: `${+r.mins ? `تأخر ${maAr(r.mins)} د` : ""}${r.reason ? ` • ${r.reason}` : ""}`.replace(/^ • /, "") })); if (!L.length) { toast("لا جديد في سجل التأخر الصباحي لهذا اليوم"); return; } set({ late: [...d.late, ...L] }); toast(`⬇️ أُضيف ${maAr(L.length)} طالباً من سجل التأخر الصباحي`); };
+  const openAdd = async kind => { setAdd(kind); setQ(""); if (!ros) setRos(ptObj(await maGet(MA_ROSTER))); };
+  const stuL = ros && q.trim() ? Object.entries(ros).flatMap(([ck, r]) => maArr(r && r.students).map(x => ({ ...x, ck }))).filter(x => x && x.name && cvNorm(x.name).includes(cvNorm(q))).slice(0, 25) : [];
+  const nowHM = (() => { const n = new Date(); return maPad(n.getHours()) + ":" + maPad(n.getMinutes()); })();
+  const sendWA = e => { const ph = phOf(phones, e.n); window.open(waUrl(ph, `المكرم الأستاذ/ ${e.n}\nأنت المناوب اليوم ${maDay(maDate(dk))} ${asmHij(maDate(dk))}${e.role === "sub" ? ` (بديلاً عن أ. ${e.for})` : ""}.\nنأمل تعبئة «تقرير المناوبة اليومي — نموذج ٩» (المتأخرون والمخالفون) والتوقيع عليه من الرابط (الدخول برقم الهوية):\n${f9Link(dk)}`), "_blank"); };
+  const Tbl = ({ kind, title, acts, color }) => <div className="ma-card p-3 grid gap-2" style={{ borderTop: `4px solid ${color}` }}>
+    <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15.5 }}>{title} ({maAr(d[kind].length)})</b>{canEdit && <span style={{ marginRight: "auto" }} className="flex gap-2 flex-wrap">{kind === "late" && <button className="ma-btn" onClick={importLate}>⬇️ من سجل التأخر الصباحي ({maAr(S.lateL.length)})</button>}<button className="ma-btn pri" onClick={() => openAdd(kind)}>➕ إضافة طالب</button></span>}</div>
+    {!d[kind].length ? <div style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800, padding: 10 }}>لا يوجد</div> : d[kind].map((r, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1.4fr) minmax(0,1fr) auto", gap: 8, alignItems: "center", padding: "8px 10px", borderRadius: 14, background: "#f8fafc", border: "1px solid #eef2f7" }}>
+      <span style={{ width: 26, height: 26, borderRadius: 9, display: "grid", placeItems: "center", background: color, color: "#fff", fontWeight: 900, fontSize: 12 }}>{maAr(i + 1)}</span>
+      <div style={{ minWidth: 0 }}><b style={{ fontSize: 14 }}>{r.name}</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{r.ck ? maClassName(r.ck) : "—"}{canEdit ? <> • ⏰ <input type="time" value={r.tm || ""} onChange={e => updRow(kind, i, { tm: e.target.value })} style={{ border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 12, padding: "0 4px" }} /></> : r.tm ? ` • ⏰ ${mlFmtT(r.tm)}` : ""}</div></div>
+      <div className="grid gap-1">{canEdit ? <><select className="ma-inp" style={{ padding: "4px 6px", fontSize: 12.5 }} value={acts.includes(r.act) ? r.act : r.act ? "_o" : ""} onChange={e => updRow(kind, i, { act: e.target.value === "_o" ? (r.act || " ") : e.target.value })}><option value="">— الإجراء المتخذ —</option>{acts.map(a => <option key={a} value={a}>{a}</option>)}<option value="_o">أخرى…</option></select>{r.act && !acts.includes(r.act) && <input className="ma-inp" style={{ padding: "4px 6px", fontSize: 12.5 }} value={r.act.trim()} onChange={e => updRow(kind, i, { act: e.target.value })} placeholder="الإجراء" />}
+        <input className="ma-inp" style={{ padding: "4px 6px", fontSize: 12.5 }} value={r.note || ""} onChange={e => updRow(kind, i, { note: e.target.value })} placeholder={kind === "viol" ? "نوع المخالفة / ملحوظة" : "ملحوظة"} list={kind === "viol" ? "f9-viol" : undefined} /></> : <div style={{ fontSize: 12.5, fontWeight: 800 }}>{r.act}{r.note ? ` • ${r.note}` : ""}</div>}</div>
+      {canEdit ? <button className="ma-btn" style={{ color: "#b91c1c", padding: "4px 9px" }} onClick={() => delRow(kind, i)}>✕</button> : <span />}
+    </div>)}
+  </div>;
+  return <div className="grid gap-3" dir="rtl">
+    <datalist id="f9-viol">{DU_VIOL.map(v => <option key={v} value={v} />)}</datalist>
+    <div style={{ borderRadius: 24, padding: "14px 18px", color: "#fff", background: "radial-gradient(420px 160px at 100% 0,rgba(167,139,250,.45),transparent 60%),linear-gradient(135deg,#14532d,#166534 45%,#1e3a8a)" }}>
+      <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>نموذج رقم (٩) • رمز النموذج: و.ت.ع.ن - ٠١ - ٠٢</div>
+      <div style={{ fontSize: 21, fontWeight: 900 }}>📄 تقرير المناوبة اليومي</div>
+      <div className="flex gap-2 flex-wrap items-center" style={{ marginTop: 6, fontSize: 13.5, fontWeight: 800 }}>
+        <span>{maDay(maDate(dk))} • {asmHij(maDate(dk))}</span>
+        {admin && onDk && <input type="date" value={dk} onChange={e => e.target.value && onDk(e.target.value)} style={{ borderRadius: 10, border: "none", padding: "3px 8px", fontFamily: "inherit", fontWeight: 800 }} />}
+        <span>الفصل:</span>{admin ? <select value={d.term || "الأول"} onChange={e => set({ term: e.target.value })} style={{ borderRadius: 10, border: "none", padding: "3px 8px", fontFamily: "inherit", fontWeight: 800 }}>{F9_TERMS.map(t => <option key={t}>{t}</option>)}</select> : <b>{d.term}</b>}
+      </div>
+    </div>
+    {!d.emp.length && <div className="ma-card p-4" style={{ background: "#fffbeb", fontWeight: 800, color: "#92400e" }}>لا يوجد مناوب مسند لهذا اليوم في جدول المناوبة{admin ? " — أضف المناوب من الأسفل" : ""}.</div>}
+    {me && mineI < 0 && !admin && <div className="ma-card p-4" style={{ background: "#fef2f2", fontWeight: 800, color: "#b91c1c" }}>🔒 أ. {me.name} — لست مسجلاً مناوباً في هذا اليوم. إن كنت بديلاً عن زميلك فاطلب من الإدارة إضافتك في النموذج.</div>}
+    <div className="ma-card p-3 grid gap-2" style={{ borderTop: "4px solid #166534" }}>
+      <b style={{ fontSize: 15.5 }}>👤 الموظف المناوب</b>
+      {d.emp.map((e, i) => { const E = F9_EST[e.st || "p"]; const mine = mineI === i; return <div key={i} style={{ display: "grid", gap: 6, padding: "10px 12px", borderRadius: 16, background: e.st && e.st !== "p" ? E.bg + "88" : "#f8fafc", border: `1.5px solid ${mine ? "#16a34a" : "#eef2f7"}` }}>
+        <div className="flex items-center gap-2 flex-wrap"><span style={{ width: 26, height: 26, borderRadius: 9, display: "grid", placeItems: "center", background: "#166534", color: "#fff", fontWeight: 900, fontSize: 12 }}>{maAr(i + 1)}</span>
+          {admin ? <select className="ma-inp" style={{ maxWidth: 240, padding: "4px 8px" }} value={e.n} onChange={ev => updEmp(i, { n: ev.target.value })}><option value={e.n}>{e.n}</option>{staff.filter(t => !duEq(t.n, e.n)).map(t => <option key={t.hk} value={t.n}>{t.n}</option>)}</select> : <b style={{ fontSize: 15 }}>{e.n}</b>}
+          {e.role === "sub" && <span className="stt-lv" style={{ background: "#0369a1", color: "#fff" }}>🔄 بديل عن أ. {e.for}</span>}
+          <span className="stt-lv" style={{ background: E.bg, color: E.c }}>{E.l}</span>
+          {e.sig ? <img src={e.sig} alt="توقيع" style={{ height: 34, background: "#fff", borderRadius: 8, marginInlineStart: "auto" }} /> : mine ? <button className="ma-btn pri" style={{ marginInlineStart: "auto" }} onClick={() => setPad(i)}>✍️ وقّع</button> : <span style={{ marginInlineStart: "auto", fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>لم يوقّع</span>}
+          {admin && <button className="ma-btn" style={{ padding: "3px 9px", fontSize: 12 }} onClick={() => sendWA(e)}>📲 إرسال الرابط</button>}
+          {admin && <button className="ma-btn" style={{ color: "#b91c1c", padding: "3px 9px" }} onClick={() => set({ emp: d.emp.filter((_, j) => j !== i) })}>✕</button>}
+        </div>
+        {admin && <div className="flex gap-1 flex-wrap items-center"><small style={{ fontWeight: 900, color: "#475569" }}>حضور المناوب:</small>{Object.entries(F9_EST).map(([k, x]) => <button key={k} className="stt-chip" style={(e.st || "p") === k ? { background: x.c, color: "#fff", borderColor: x.c, padding: "4px 10px" } : { "--cc": x.c, padding: "4px 10px" }} onClick={() => { if (k === "a" || k === "x") { const sub = window.prompt(`${x.l}: اسم المعلم البديل الذي يحلّ محل أ. ${e.n} (اتركه فارغاً بدون بديل)`, ""); if (sub === null) return; setEmpSt(i, k, sub.trim()); } else setEmpSt(i, k, ""); }}>{x.l}</button>)}</div>}
+        {(admin || mine) ? <input className="ma-inp" value={e.note || ""} onChange={ev => updEmp(i, { note: ev.target.value })} placeholder="ملحوظات (تظهر في خانة الملحوظات بالنموذج)" /> : e.note ? <div style={{ fontSize: 13, fontWeight: 800, color: "#475569" }}>📝 {e.note}</div> : null}
+      </div>; })}
+      {admin && d.emp.length < 4 && <button className="ma-btn" style={{ justifySelf: "start" }} onClick={() => { const n = window.prompt("اسم الموظف المناوب:"); if (n && n.trim()) set({ emp: [...d.emp, { n: n.trim(), st: "p", note: "", role: d.emp.length ? "sub" : "main" }] }); }}>➕ إضافة مناوب</button>}
+    </div>
+    <Tbl kind="late" title="⏰ أسماء الطلاب المتأخرين" acts={F9_LACT} color="#c2410c" />
+    <Tbl kind="viol" title="⚠️ أسماء الطلاب المخالفين" acts={F9_VACT} color="#b91c1c" />
+    {admin && <div className="ma-card p-3 grid gap-2"><b>🗒️ ملاحظة مدير المدرسة (تُطبع أسفل النموذج)</b><textarea className="ma-inp" rows={2} value={d.mgr || ""} onChange={e => set({ mgr: e.target.value })} placeholder="مثال: غاب المناوب وحلّ محله … / حضر المناوب مبكراً وتابع بانضباط…" /></div>}
+    <div className="flex gap-2 flex-wrap" style={{ position: "sticky", bottom: 8, zIndex: 5, background: "rgba(255,255,255,.9)", padding: 8, borderRadius: 16, backdropFilter: "blur(8px)" }}>
+      {canEdit && <button className="ma-btn pri" disabled={busy} onClick={() => save()}>{busy ? "⏳" : "💾 حفظ"}</button>}
+      <button className="ma-btn gold" onClick={() => f9Print(d, dk)}>🖨 طباعة النموذج طبق الأصل</button>
+      {admin && <><button className="ma-btn" onClick={() => { try { navigator.clipboard.writeText(f9Link(dk)); toast("📋 نُسخ رابط النموذج"); } catch {} }}>🔗 نسخ الرابط</button><button className="ma-btn" onClick={load}>↻ تحديث</button></>}
+    </div>
+    {add && <div style={{ position: "fixed", inset: 0, zIndex: 700, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 10 }} onClick={() => setAdd(null)}><div className="ma-card p-4 grid gap-2" style={{ width: "min(560px,100%)", maxHeight: "80vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
+      <b>{add === "late" ? "⏰ إضافة طالب متأخر" : "⚠️ إضافة طالب مخالف"}</b>
+      <input className="ma-inp" autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 اكتب اسم الطالب…" />
+      {!ros ? <div>⏳</div> : stuL.map(x => <button key={x.ck + x.id + x.name} className="ma-btn" style={{ justifyContent: "space-between", display: "flex" }} onClick={() => { addRow(add, { name: x.name, ck: x.ck, tm: nowHM, act: "", note: "" }); setAdd(null); }}><b>{x.name}</b><small>{maClassName(x.ck)}</small></button>)}
+      {q.trim() && <button className="ma-btn" onClick={() => { addRow(add, { name: q.trim(), ck: "", tm: nowHM, act: "", note: "" }); setAdd(null); }}>➕ إضافة «{q.trim()}» يدوياً</button>}
+    </div></div>}
+    {pad != null && <HfxSigPad title="توقيع الموظف المناوب" onCancel={() => setPad(null)} onDone={async sg => { const i = pad; setPad(null); const nd = { ...d, emp: d.emp.map((e, j) => j === i ? { ...e, sig: sg, sigAt: Date.now() } : e) }; setD(nd); const ok = await save(nd, true); toast(ok ? "✅ تم التوقيع والحفظ" : "⚠️ تعذّر الحفظ"); }} />}
+    {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+  </div>;
+}
+function DuF9Admin({ by }) { const [dk, setDk] = useState(maKey(new Date())); return <DuF9Editor key={dk} dk={dk} admin by={by} onDk={setDk} />; }
+// ── رابط المناوب (#f9=YYYY-MM-DD): دخول برقم الهوية ثم تعبئة النموذج وتوقيعه
+function DuF9Portal({ onBack }) {
+  const dk = (() => { const m = String(window.location.hash).match(/f9=(\d{4}-\d{2}-\d{2})/); return m ? m[1] : maKey(new Date()); })();
+  const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-duty") || "null"); return m && m.name && (m.exp || 0) > Date.now() ? m : null; } catch { return null; } });
+  const login = async v => { const r = await ptStaffLogin(v); if (r.err) return r.err; const m = { ...r, exp: Date.now() + 60 * 864e5 }; setMe(m); try { localStorage.setItem("pam-duty", JSON.stringify(m)); } catch {} return ""; };
+  if (!me) return <PtLoginCard title="📄 تقرير المناوبة اليومي — نموذج ٩" sub="أدخل رقم هويتك لتعبئة تقرير المناوبة وتوقيعه" icon="📄" grad="linear-gradient(160deg,#14532d,#166534 50%,#1e3a8a)" onLogin={login} onBack={onBack} />;
+  return <div className="ma px-3 md:px-6 py-4" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f0fdf4,#f8fafc)" }}><style>{MA_CSS + STT_CSS}</style><div style={{ maxWidth: 820, margin: "0 auto" }}><DuF9Editor dk={dk} me={me} by={me.name} /></div></div>;
+}
+
 function DutyAdminPage({ by = "الإدارة" }) {
   const [D, setD] = useState(null); const [ed, setEd] = useState(null); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(""); const [names, setNames] = useState([]); const [tab, setTab] = useState("board"); const [pv, setPv] = useState(null); const [q, setQ] = useState(""); const fileRef = useRef(null); const xRef = useRef(null); const [TT0, setTT0] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
@@ -39144,8 +39286,9 @@ function DutyAdminPage({ by = "الإدارة" }) {
           <a className="ma-btn" style={{ background: "#25d366", color: "#fff", border: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent("🛡️ زملائي المعلمين: جدول الإشراف اليومي والمناوبة — اطّلعوا على مهامكم برقم الهوية عبر الرابط:\n" + duLink())}`}>💬 واتساب</a>
         </div>
         <DutyChangesAlert onOpen={() => setTab("board")} />
-        <div className="ma-tabs">{[["board", "📍 الفرق والحضور اليوم"], ["grid", "🗓️ الجدول والمهام"], ["reg", "📒 سجل المناوبة"], ["rep", "📝 تقارير المناوبة"], ["file", "📄 الملف الرسمي"], ["ack", `✅ الاطلاع (${maAr(ackN)})`]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+        <div className="ma-tabs">{[["board", "📍 الفرق والحضور اليوم"], ["f9", "📄 نموذج ٩ — تقرير المناوبة اليومي"], ["grid", "🗓️ الجدول والمهام"], ["reg", "📒 سجل المناوبة"], ["rep", "📝 تقارير المناوبة"], ["file", "📄 الملف الرسمي"], ["ack", `✅ الاطلاع (${maAr(ackN)})`]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
+        {tab === "f9" && <DuF9Admin by={by} />}
         {tab === "grid" && <div className="grid gap-3">
           <div className="flex gap-2 flex-wrap">
             {Object.entries(DU_TY).map(([k, T]) => <button key={k} className="ma-btn" style={{ borderColor: T.c, color: T.c }} onClick={() => newSlot(k)}>＋ {T.ic} {T.l}</button>)}
@@ -41666,6 +41809,7 @@ function SchoolWebsiteInner() {
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [hfxPortal, setHfxPortal] = useState(() => /^#hfx=/.test(window.location.hash));
   const [circPortal, setCircPortal] = useState(() => /^#circ=/.test(window.location.hash));
+  const [f9Portal, setF9Portal] = useState(() => /^#f9(=|$)/.test(window.location.hash));
   const [attPortal, setAttPortal] = useState(() => ["attend", "absence", "ghiab"].includes(window.location.hash.replace("#", "")));
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
   const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late", "visits", "duty", "nafes"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
@@ -41707,6 +41851,7 @@ function SchoolWebsiteInner() {
       }
       if (hash.startsWith("hfx=")) { setHfxPortal(true); return; }
       if (hash.startsWith("circ=")) { setCircPortal(true); return; }
+      if (hash === "f9" || hash.startsWith("f9=")) { setHubPortal(""); setF9Portal(true); return; }
       if (hash.startsWith("ann-")) { setDirectAnnId(hash.replace("ann-","")); return; }
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
@@ -41993,6 +42138,7 @@ function SchoolWebsiteInner() {
 
   if (hfxPortal) return <HfxTeacherPortal onBack={() => { setHfxPortal(false); window.location.hash = ""; }} />;
   if (circPortal) return <CircDirect onBack={() => { setCircPortal(false); window.location.hash = ""; }} />;
+  if (f9Portal) return <DuF9Portal key={window.location.hash} onBack={() => { setF9Portal(false); window.location.hash = ""; }} />;
   const hubBack = () => { setHubPortal(""); window.location.hash = ""; };
   if (hubPortal === "weekly") return <WeeklyPlanPublic onBack={hubBack} />;
   if (hubPortal === "visits") return <VisitsPublicPortal onBack={hubBack} />;
