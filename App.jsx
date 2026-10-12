@@ -30750,6 +30750,9 @@ const PT_CSS = `
 .pt-hero{border-radius:26px;color:#fff;padding:22px 24px;position:relative;overflow:hidden}
 .pt-hero::after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.08);left:-60px;top:-110px}
 .pt-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.pt-tile{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;height:100%}.pt-tile b,.pt-tile small{width:100%}
+.pt-bns{display:grid;gap:10px}.pt-bn:empty{display:none}.pt-bns:not(:has(.pt-bn:not(:empty))){display:none}
+.pt-sec h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:16px;font-weight:900;color:#0f1e3d}.pt-sec h3::after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradient(90deg,#e2e8f0,transparent)}
 .pt-tile{position:relative;text-align:right;border:1px solid #eef2f6;background:#fff;border-radius:22px;padding:18px;cursor:pointer;font-family:inherit;transition:transform .15s,box-shadow .2s;overflow:hidden}
 .pt-tile:hover{transform:translateY(-3px);box-shadow:0 20px 34px -24px var(--c)}
 .pt-tile::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--c),var(--c2))}
@@ -30851,6 +30854,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "cv") return wrap("🎯 زياراتي الصفية", <TeacherVisitsView me={me} />);
   if (view === "ttnotes") return wrap("📒 ملاحظات متابعة حصصي", <TeacherTtNotes me={me} />);
   if (view === "hd") return wrap("📈 انضباطي اليومي", <HdTeacherView me={me} />);
+  if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
   if (view === "circ") return wrap("📜 التعاميم", <CircTeacherView me={me} />);
   if (view === "circadmin" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("📜 التعاميم", <CircAdminPage by={me.name} />);
   if (view === "hdadmin" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("📈 سجل الانضباط اليومي (حضوري)", <HdAdminPage by={me.name} />);
@@ -30917,28 +30921,37 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             </div>
           </>
         ) : (
-          <div className="pt-tiles">
-            <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
-            <div style={{ gridColumn: "1/-1" }}><CircBanner me={me} onOpen={() => setView("circ")} /></div>
-            <div style={{ gridColumn: "1/-1" }}><HdAbsTeacher me={me} compact /></div>
-            <div style={{ gridColumn: "1/-1" }}><HdBanner me={me} onOpen={() => setView("hd")} /></div>
-            <div style={{ gridColumn: "1/-1" }}><TtNotesBanner me={me} onOpen={() => setView("ttnotes")} /></div>
+          <div className="grid gap-5">
+          <div className="pt-bns">
+            <div className="pt-bn"><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
+            <div className="pt-bn"><CircBanner me={me} onOpen={() => setView("circ")} /></div>
+            <div className="pt-bn"><HdAbsTeacher me={me} compact /></div>
+            <div className="pt-bn"><HdBanner me={me} onOpen={() => setView("hd")} /></div>
+            <div className="pt-bn"><TtNotesBanner me={me} onOpen={() => setView("ttnotes")} /></div>
+            <div className="pt-bn"><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>
+          </div>
+          <div className="pt-sec"><h3>⏱️ دوامي وانضباطي</h3><div className="pt-tiles">
+            {ptTile("hd", "📈", "انضباطي اليومي", "نسبة انضباطك ودقائق التأخر والانصراف المبكر والاستئذان من «حضوري» مع الطابور وملاحظات الحصص", "#0f1e3d", "#0f766e", () => setView("hd"))}
+            {ptTile("hdrep", "📑", "تقريري للفترة", "تقرير حضورك للفترة التي اعتمدتها الإدارة: التأخر والغياب والانصراف المبكر مع الطباعة", "#78350f", "#d4a017", () => setView("hdrep"))}
+            {ptTile("asm", "🎺", "حضوري للطابور", "حضورك للطابور الصباحي خلال الأسبوع وعدد مرات عدم الحضور", "#6d28d9", "#be185d", () => setView("asm"))}
+            {ptTile("ttnotes", "📒", "ملاحظات متابعة حصصي", "التأخر عن الحصص والخروج والغياب والملاحظات المرصودة عليك — مع تقرير ملون للطباعة", "#4f46e5", "#c2410c", () => setView("ttnotes"))}
+            {ptTile("sched", "🗓️", "جدولي المدرسي", "حصصك اليوم والأسبوع، وحصص الاحتياط المسندة إليك", "#3730a3", "#0e7490", () => setView("sched"))}
+            {ptTile("duty", "🛡️", "الإشراف والمناوبة", "مهامك في الإشراف والمناوبة بطريقة بطاقات مع التذكير والملف الرسمي", "#0c4a6e", "#0f766e", () => setView("duty"))}
+            {ptTile("cv", "🎯", "زياراتي الصفية", "موعد زيارتك القادمة، وتقييمك ومؤشراتك وعناصر التقييم والملاحظات", "#0f766e", "#0891b2", () => setView("cv"))}
+            {ptTile("circ", "📜", "التعاميم", "تعاميم الإدارة للاطلاع والتوقيع — صور وملفات PDF بشكل كتاب", "#064e3b", "#d4a017", () => setView("circ"))}
+          </div></div>
+          <div className="pt-sec"><h3>🎓 طلابي</h3><div className="pt-tiles">
             {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
+            {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
             {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
             {ptTile("stlv", "📊", "سجل مستويات الطلاب", "مميز • جيد • متوسط • متدنٍ — مع الملاحظات وطباعة السجل باسمك", "#6d28d9", "#db2777", () => setView("stlv"))}
             {ptTile("readwk", "📖", "حصر الضعف القرائي", "ضعف شديد / متوسط • المهارات • العلاج • المتابعة", "#c2410c", "#f59e0b", () => setView("readwk"))}
-            {ptTile("duty", "🛡️", "الإشراف والمناوبة", "مهامك في الإشراف والمناوبة بطريقة بطاقات مع التذكير والملف الرسمي", "#0c4a6e", "#0f766e", () => setView("duty"))}
-            {ptTile("asm", "🎺", "حضوري للطابور", "حضورك للطابور الصباحي خلال الأسبوع وعدد مرات عدم الحضور", "#6d28d9", "#be185d", () => setView("asm"))}
-            {ptTile("sched", "🗓️", "جدولي المدرسي", "حصصك اليوم والأسبوع، وحصص الاحتياط المسندة إليك", "#3730a3", "#0e7490", () => setView("sched"))}
-            {ptTile("ttnotes", "📒", "ملاحظات متابعة حصصي", "التأخر عن الحصص والخروج والغياب والملاحظات المرصودة عليك — مع تقرير ملون للطباعة", "#4f46e5", "#c2410c", () => setView("ttnotes"))}
-            {ptTile("circ", "📜", "التعاميم", "تعاميم الإدارة للاطلاع والتوقيع — صور وملفات PDF بشكل كتاب", "#064e3b", "#d4a017", () => setView("circ"))}
-            {ptTile("hd", "📈", "انضباطي اليومي", "نسبة انضباطك ودقائق التأخر والانصراف المبكر والاستئذان من «حضوري» مع الطابور وملاحظات الحصص", "#0f1e3d", "#0f766e", () => setView("hd"))}
             {ptTile("formative", "📘", "التقويم التكويني", "إعداد سجلك الخاص للدرجات وطباعته", "#2563eb", "#3b82f6", () => setView("formative"))}
-            <div style={{ gridColumn: "1/-1" }}><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>
-            {ptTile("cv", "🎯", "زياراتي الصفية", "موعد زيارتك القادمة، وتقييمك ومؤشراتك وعناصر التقييم والملاحظات", "#0f766e", "#0891b2", () => setView("cv"))}
+          </div></div>
+          <div className="pt-sec"><h3>📝 السلوك</h3><div className="pt-tiles">
             {ptTile("beh", "📝", "الملاحظات السلوكية", "سجّل ملاحظة سلوكية لطالب بلمستين — تُحفظ فوراً", "#7c3aed", "#db2777", () => setView("beh"))}
             {ptTile("conduct", "🚸", "متابعة السلوك اليومي", "رصد مخالفة طالب أو مخالفة على الفصل مع صورتين — يُحفظ حتى لو انقطع الاتصال", "#1e3a8a", "#0f766e", () => setView("conduct"))}
-            {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
+          </div></div>
           </div>
         )}
       </div>
@@ -37368,7 +37381,8 @@ function HdAbsTab({ all, names, cfg, by, saveCfg }) {
 //    يقرأ نفس بيانات «سجل الانضباط اليومي» (school-hd) — لا يغيّر شيئاً منها
 //    إعداداته تُحفظ في school-hd-cfg/rep وتُطبَّق في بوابة المعلم بعد «حفظ واعتماد»
 // ══════════════════════════════════════════════════════════
-const HDR_DEF = { line: "06:45", first: "07:00", end: "12:35", permLate: true, xd: [], xi: [], ex: [] };
+const HDR_DEF = { line: "06:45", first: "07:00", end: "12:35", permLate: true, xd: [], xi: [], ex: [], f: "", t: "" };
+const hdrSame = (a, b) => ["line", "first", "end", "permLate", "f", "t"].every(k => String(a[k] ?? "") === String(b[k] ?? "")) && ["xd", "xi", "ex"].every(k => JSON.stringify([...(a[k] || [])].sort()) === JSON.stringify([...(b[k] || [])].sort()));
 const HDR_MGR = "فازع القرني"; // مدير المدرسة — لا يدخل في تقرير المعلمين
 const hdRepOf = cfg => { const r = ptObj(ptObj(cfg).rep); const A = v => (Array.isArray(v) ? v : Object.values(ptObj(v))).filter(Boolean); return { ...HDR_DEF, ...r, xd: A(r.xd), xi: A(r.xi), ex: A(r.ex) }; };
 const hdrR1 = n => Math.round(n * 10) / 10;
@@ -37430,17 +37444,18 @@ function hdRepPrintTeacher(name, R, rep, f, t, by) {
 function HdPeriodReport({ cfg, all, names, by, saveCfg }) {
   const saved = hdRepOf(cfg);
   const allDates = React.useMemo(() => [...new Set(Object.values(ptObj(all)).flatMap(r => Object.keys(ptObj(r))))].filter(k => !maOff(k)).sort(), [all]);
-  const [f, setF] = useState(() => allDates[0] || hdRange("term")[0]);
-  const [t, setT] = useState(() => allDates[allDates.length - 1] || maWorkDay());
+  const [f, setF] = useState(() => saved.f || allDates[0] || hdRange("term")[0]);
+  const [t, setT] = useState(() => saved.t || allDates[allDates.length - 1] || maWorkDay());
   const [rep, setRep] = useState(saved);
   const [q, setQ] = useState(""); const [sk, setSk] = useState("rank"); const [sd, setSd] = useState(1); const [sel, setSel] = useState(null);
-  const dirty = JSON.stringify({ ...saved }) !== JSON.stringify({ ...rep });
+
   const isMgr = hk => cvNorm(ptObj(names[hk]).n) === cvNorm(HDR_MGR);
   const teachers = Object.keys(ptObj(all)).filter(hk => { const j = ptObj(names[hk]).job || ""; return (!j || /معلم/.test(j)) && !isMgr(hk); });
   // أيام غاب فيها الجميع تقريباً (إجازة رسمية لم تُسجَّل) — تُستبعد تلقائياً ويمكن إرجاعها
   const auto = React.useMemo(() => allDates.filter(k => k >= f && k <= t).filter(k => { let n = 0, a = 0; teachers.forEach(hk => { const r = ptObj(ptObj(all[hk])[k]); if (!r.st) return; n++; if (/غياب/.test(r.st)) a++; }); return n >= 5 && a / n >= 0.9; }), [allDates, f, t, all]);
   const xd = [...new Set([...auto, ...rep.xd])].filter(k => !rep.xi.includes(k)).sort();
   const eff = { ...rep, xd };
+  const dirty = !hdrSame(saved, { ...rep, xd, f, t });
   const togDay = k => setRep(r => xd.includes(k) ? { ...r, xd: r.xd.filter(x => x !== k), xi: [...new Set([...r.xi, k])] } : { ...r, xi: r.xi.filter(x => x !== k), xd: [...new Set([...r.xd, k])] });
   // تمييز الأسماء المتشابهة بآخر ٤ أرقام
   const nmCnt = {}; teachers.forEach(hk => { const n = cvNorm(ptObj(names[hk]).n); nmCnt[n] = (nmCnt[n] || 0) + 1; });
@@ -37499,7 +37514,7 @@ function HdPeriodReport({ cfg, all, names, by, saveCfg }) {
         <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13, fontWeight: 900, color: "#334155", padding: "8px 0" }}><input type="checkbox" checked={!!rep.permLate} onChange={e => setRep(r => ({ ...r, permLate: e.target.checked }))} />احتساب التأخر الصباحي حتى في أيام الاستئذان</label></div>
       {xd.length > 0 || auto.length > 0 || rep.xi.length > 0 ? <div className="flex gap-1 flex-wrap items-center"><small style={{ fontWeight: 900, color: "#64748b" }}>أيام مستبعدة (اضغط للإرجاع):</small>{[...new Set([...xd, ...auto, ...rep.xi])].sort().map(k => <button key={k} className="hd-pill" onClick={() => togDay(k)} style={{ border: "none", cursor: "pointer", background: xd.includes(k) ? "#fee2e2" : "#f1f5f9", color: xd.includes(k) ? "#b91c1c" : "#64748b", textDecoration: xd.includes(k) ? "none" : "line-through" }}>{hdrDayTxt(k)}{auto.includes(k) ? " • غاب الجميع" : ""}</button>)}</div> : null}
       {hidden.length > 0 && <div className="flex gap-1 flex-wrap items-center"><small style={{ fontWeight: 900, color: "#64748b" }}>مخفيون من التقرير:</small>{hidden.map(x => <button key={x.hk} className="hd-pill" style={{ border: "none", cursor: "pointer", background: "#f1f5f9", color: "#334155" }} onClick={() => setRep(r => ({ ...r, ex: r.ex.filter(h => h !== x.hk) }))}>↩ {x.n}</button>)}</div>}
-      <div className="flex gap-2 flex-wrap"><button className="hd-b pri" disabled={!dirty} onClick={() => { const v = { line: rep.line, first: rep.first, end: rep.end, permLate: !!rep.permLate, xd, xi: rep.xi, ex: rep.ex }; saveCfg({ rep: v }); setRep({ ...HDR_DEF, ...v }); }}>💾 حفظ واعتماد الإعدادات للمعلمين</button><button className="hd-b gold" disabled={!rows.length} onClick={printAll}>🖨 طباعة التقرير</button>{dirty && <small style={{ fontWeight: 900, color: "#b45309", alignSelf: "center" }}>لم تُحفظ التعديلات — المعلمون يرون الإعدادات المحفوظة فقط</small>}</div>
+      <div className="flex gap-2 flex-wrap"><button className="hd-b pri" disabled={!dirty} onClick={() => { const v = { line: rep.line, first: rep.first, end: rep.end, permLate: !!rep.permLate, xd, xi: rep.xi, ex: rep.ex, f, t }; saveCfg({ rep: v }); setRep({ ...HDR_DEF, ...v }); }}>💾 حفظ واعتماد الإعدادات للمعلمين</button><button className="hd-b gold" disabled={!rows.length} onClick={printAll}>🖨 طباعة التقرير</button>{dirty ? <small style={{ fontWeight: 900, color: "#b45309", alignSelf: "center" }}>لم تُحفظ التعديلات — المعلمون يرون الفترة والإعدادات المعتمدة فقط</small> : saved.f ? <small style={{ fontWeight: 900, color: "#15803d", alignSelf: "center" }}>✓ معتمد للمعلمين: من {hfxHijTxt(saved.f)} إلى {hfxHijTxt(saved.t)}</small> : null}</div>
     </div>
 
     {!rows.length ? <div className="hd-card" style={{ textAlign: "center", fontWeight: 900, color: "#64748b" }}>لا توجد بيانات للمعلمين في هذه الفترة — ارفع تقرير «حضوري» من تبويب «📥 رفع ملف حضوري».</div> : <>
@@ -37567,6 +37582,38 @@ function HdRepMine({ me, cfg, recs, f, t }) {
       <div style={{ "--c": "#92400e" }}><b>{maAr(s.miss)}</b><small>لم يُثبت انصراف</small></div>
     </div>
     <div className="hd-note">{hdrRules(rep)}</div></div>;
+}
+
+// ── بوابة المعلم: صفحة «تقريري للفترة» — الفترة والإعدادات التي اعتمدتها الإدارة
+function HdRepTeacherPage({ me }) {
+  const hk = hdK(me.hash); const [cfg, setCfg] = useState(null); const [recs, setRecs] = useState(null);
+  useEffect(() => { (async () => { const [c, r] = await Promise.all([maGet(HD_CFG), maGet(`${HD_NODE}/${hk}`)]); setCfg({ ...HD_DEF, ...ptObj(c) }); setRecs(ptObj(r)); })(); }, []);
+  const box = node => <div className="hd grid gap-3" dir="rtl" style={{ maxWidth: 980, margin: "0 auto" }}><style>{HD_CSS}</style>{node}</div>;
+  if (!cfg || !recs) return box(<div className="hd-card" style={{ textAlign: "center", fontWeight: 900, color: "#64748b" }}>⏳ جاري التحميل…</div>);
+  if (!cfg.rep) return box(<div className="hd-card" style={{ textAlign: "center", fontWeight: 900, color: "#64748b" }}>📑 لم تعتمد الإدارة تقرير الفترة بعد. سيظهر تقريرك هنا بعد اعتماده.</div>);
+  const rep = hdRepOf(cfg); const f = rep.f || hdRange("term")[0]; const t = rep.t || maWorkDay(); const R = hdRepCalc(recs, rep, f, t); const s = R.s;
+  if (!s.days) return box(<div className="hd-card" style={{ textAlign: "center", fontWeight: 900, color: "#64748b" }}>لا توجد بيانات حضور لك في الفترة المعتمدة ({hfxHijTxt(f)} – {hfxHijTxt(t)}).</div>);
+  const iss = hdRepIssues(s);
+  return box(<>
+    <div className="hd-hero"><h2>📑 تقريري للفترة</h2><p>أ. {me.name} • من {hfxHijTxt(f)} إلى {hfxHijTxt(t)} • من تقرير «حضوري»</p></div>
+    <div className="hd-card"><div className="flex items-center gap-3 flex-wrap">
+      <div className="hd-ring" style={{ "--p": R.pct ?? 0, "--c": hdrPC(R.pct) }}><div><b>{hdrPct(R.pct)}</b><small>نسبة الانضباط</small></div></div>
+      <div style={{ flex: 1, minWidth: 220 }} className="grid gap-2"><b style={{ fontSize: 15 }}>{iss.length ? "ملاحظات الفترة" : "🌟 لا ملاحظات عليك في هذه الفترة"}</b>
+        <div className="flex gap-1 flex-wrap">{iss.map(([c, l]) => <span key={l} className="hd-pill" style={{ background: c === "bad" ? "#fee2e2" : "#fef3c7", color: c === "bad" ? "#b91c1c" : "#92400e" }}>{l}</span>)}</div>
+        <button className="hd-b gold" style={{ justifySelf: "start" }} onClick={() => hdRepPrintTeacher(me.name, R, rep, f, t, "")}>🖨 طباعة تقريري</button></div></div></div>
+    <div className="hd-kp">
+      <div style={{ "--c": "#c2410c" }}><b>{hdHM(s.late)}</b><small>مجموع التأخر (س:د) • {maAr(s.lateDays)} يوم</small></div>
+      <div style={{ "--c": "#b91c1c" }}><b>{maAr(s.after7)}</b><small>وصول بعد بدء الحصة الأولى</small></div>
+      <div style={{ "--c": "#7f1d1d" }}><b>{maAr(s.abs)}</b><small>أيام الغياب</small></div>
+      <div style={{ "--c": "#7c3aed" }}><b>{maAr(s.earlyN)}</b><small>انصراف مبكر دون إذن ({maAr(s.earlyMin)} د)</small></div>
+      <div style={{ "--c": "#0369a1" }}><b>{maAr(s.perm)}</b><small>أيام الاستئذان</small></div>
+      <div style={{ "--c": "#92400e" }}><b>{maAr(s.miss)}</b><small>لم يُثبت انصراف</small></div>
+      <div style={{ "--c": "#0f1e3d" }}><b>{maAr(s.days)}</b><small>أيام الدوام</small></div>
+    </div>
+    <div className="hd-card" style={{ padding: 0, overflow: "auto" }}><table className="hd-tbl" style={{ minWidth: 640 }}><thead><tr><th>اليوم</th><th>الحالة</th><th>الحضور</th><th>الانصراف</th><th>التأخر (د)</th><th>مبكر دون إذن (د)</th><th>ملاحظة</th></tr></thead>
+      <tbody>{R.days.map(x => <tr key={x.k}><td className="n">{hdrDayTxt(x.k)}</td><td><span className="hd-pill" style={{ background: x.kind === "abs" ? "#fee2e2" : x.kind === "perm" ? "#e0f2fe" : x.kind === "leave" ? "#ede9fe" : "#dcfce7", color: x.kind === "abs" ? "#b91c1c" : x.kind === "perm" ? "#0369a1" : x.kind === "leave" ? "#7c3aed" : "#15803d" }}>{hdrStatus(x)}</span></td><td>{x.a == null ? "—" : hdHM(x.a)}</td><td>{x.d == null ? "—" : hdHM(x.d)}</td><td style={{ color: x.late ? "#c2410c" : "#cbd5e1" }}>{x.late ? maAr(x.late) : "—"}</td><td style={{ color: x.early ? "#7c3aed" : "#cbd5e1" }}>{x.early ? maAr(x.early) : "—"}</td><td style={{ textAlign: "right", fontSize: 12 }}>{hdrNote(x)}</td></tr>)}</tbody></table></div>
+    <div className="hd-note">{hdrRules(rep)}. إن وجدت خطأ في يوم معيّن فارجع إلى «انضباطي اليومي» واضغط «💬 اعتراض».</div>
+  </>);
 }
 
 function HdAdminPage({ by = "الإدارة" }) {
