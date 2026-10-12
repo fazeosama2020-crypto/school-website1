@@ -1947,7 +1947,7 @@ const HUB_GROUPS = [
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
-    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"staffcheck",label:"فحص وإضافة معلم",icon:"👤"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -28784,7 +28784,7 @@ const NAV_TOOL_DESC = {
   activities:"خطة الأنشطة والبرامج", gallery:"صور ومعرض الأنشطة", meetings:"محاضر الاجتماعات", committeemeeting:"اجتماعات اللجان المدرسية",
   monthlyreport:"التقرير الشهري الشامل", report:"توثيق تقارير البرامج", qiyas:"قياس أثر البرامج",
   conduct:"مخالفات الطلاب والفصول مع الصور والتقرير", alreport:"الفصول الأكثر غياباً وتأخراً والطلاب المتكررون", trash:"استرجاع أي شيء حُذف أو استُبدل",
-  surveys:"استبيانات ونماذج رأي", hfx:"مساءلات الدوام طبق الأصل + واتساب + توقيع المعلم", hdisc:"رفع تقرير حضوري ونسبة انضباط كل معلم ومؤشرات الفعالية", circulars:"تعاميم بالصور وPDF مع توقيع المعلمين والأرشفة", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
+  surveys:"استبيانات ونماذج رأي", hfx:"مساءلات الدوام طبق الأصل + واتساب + توقيع المعلم", hdisc:"رفع تقرير حضوري ونسبة انضباط كل معلم ومؤشرات الفعالية", circulars:"تعاميم بالصور وPDF مع توقيع المعلمين والأرشفة", staffcheck:"تأكد من وجود المعلم في كل الأقسام وأضفه لما ينقصه", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
 };
 
 const NAV_GROUP_STYLE = {
@@ -39298,6 +39298,85 @@ function DuF9Portal({ onBack }) {
   return <div className="ma px-3 md:px-6 py-4" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f0fdf4,#f8fafc)" }}><style>{MA_CSS + STT_CSS}</style><div style={{ maxWidth: 820, margin: "0 auto" }}><DuF9Editor dk={dk} me={me} by={me.name} /></div></div>;
 }
 
+// ══════════ 👤 فحص معلم وإضافته لكل الأقسام (الدخول • الطابور • الحضور • النماذج • التعاميم • حضوري • الجدول) ══════════
+function StaffCheck({ by = "الإدارة" }) {
+  const [f, setF] = useState({ n: "", nid: "", s: "", ph: "", sp: "" }); const [R, setR] = useState(null); const [busy, setBusy] = useState(""); const [msg, setMsg] = useState("");
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  const shortOf = n => { const t = String(n || "").trim().split(/\s+/).filter(w => w !== "بن"); return t.length > 2 ? `${t[0]} ${t[t.length - 1]}` : t.join(" "); };
+  const fillById = v => { const id = licNormId(v); const d = (typeof DEFAULT_TEACHERS_WITH_IDS !== "undefined" ? DEFAULT_TEACHERS_WITH_IDS : []).find(x => x.id === id); setF(x => ({ ...x, nid: v, ...(d && !x.n ? { n: d.name, s: shortOf(d.name) } : {}) })); };
+  const check = async () => {
+    const nid = licNormId(f.nid); if (nid.length !== 10) { toast("⚠️ أدخل رقم السجل المدني كاملاً"); return; } if (!f.n.trim()) { toast("⚠️ أدخل الاسم"); return; }
+    setBusy("⏳ جاري الفحص…"); const h = await licHash(nid); const hk = hdK(h); const name = f.n.trim(); const sn = (f.s || shortOf(name)).trim();
+    const [lic, staff, acfg, tt, hdt, hdr, tch, tp, plan, ttc] = await Promise.all([maGet(LIC_NODE), maGet(PT_STAFF), maGet(ASM_CFG), maGet(TT_NODE), maGet(`${HD_T}/${hk}`), maGet(`${HD_NODE}/${hk}`), maGet("school-teachers"), maGet(HFX_TP), maGet(CV_PLAN), maGet(TT_CFG)]);
+    const P = ptObj(plan); const vis = Object.values(P).filter(r => r && (duEq(r.t, name) || duEq(r.t, sn))).sort((a, b) => a.v - b.v);
+    const licE = Object.entries(ptObj(lic)).find(([, r]) => r && (r.idHash === h || duEq(r.name, name)));
+    const stE = ptVals(staff).find(r => r && r.idHash === h);
+    const asmE = Object.values(ptObj(ptObj(acfg).T)).find(t => t && !t.off && ((licE && t.rid === licE[0]) || duEq(t.n, name) || duEq(t.n, sn)));
+    const T = ttFresh(tt); const ti = sttFindMe(T, sn) >= 0 ? sttFindMe(T, sn) : sttFindMe(T, name);
+    const TL = Array.isArray(tch) ? tch : Object.values(ptObj(tch)); const attI = TL.findIndex(x => duEq(typeof x === "string" ? x : (x && x.name) || "", name) || duEq(typeof x === "string" ? x : "", sn));
+    const tpE = Object.values(ptObj(tp)).find(p => p && duEq(p.n, name));
+    const hdDays = Object.keys(ptObj(hdr)).length;
+    setR({ h, hk, nid, name, sn, licE, stE, asmE, ti, tn: ti >= 0 ? ttClean(T.T[ti]) : "", attI, TL, hdName: ptObj(hdt).n || "", hdDays, tpE, asmN: Object.values(ptObj(ptObj(acfg).T)).length, vis, P, T, times: ttFixTimes(ptObj(ttc).times && ptObj(ttc).times.length ? ptObj(ttc).times : (T.times || TT_PDF.times)) });
+    setBusy("");
+  };
+  const add = async which => { if (!R) return; setBusy("⏳ جاري الإضافة…"); const done = [];
+    if ((which === "lic" || which === "all") && !R.licE) { const rid = licId(); const ok = await maPut(`${LIC_NODE}/${rid}`, { id: rid, name: R.name, idHash: R.h, id4: R.nid.slice(-4), spec: f.sp || "", at: Date.now(), by }); if (ok) done.push("حساب الدخول والنماذج والتعاميم"); }
+    if ((which === "asm" || which === "all") && !R.asmE) { const lic = await maGet(LIC_NODE); const rid = (Object.entries(ptObj(lic)).find(([, r]) => r && r.idHash === R.h) || [""])[0]; const k = asmK(R.sn); const ok = await maPut(`${ASM_CFG}/T/${k}`, { k, n: R.sn, s: f.sp || "", rid, o: R.asmN + 1 }); if (ok) done.push("قائمة الطابور"); }
+    if ((which === "att" || which === "all") && R.attI < 0) { const L = [...R.TL, R.name]; const ok = await maPut("school-teachers", L); if (ok) done.push("حضور المعلمين"); }
+    if ((which === "tp" || which === "all") && (f.ph || f.sp) ) { const k = asmK(R.name); const ok = await maPut(`${HFX_TP}/${k}`, { ...(R.tpE || {}), k, n: R.name, ...(f.ph ? { ph: f.ph } : {}), ...(f.sp ? { sp: f.sp } : {}) }); if (ok) done.push("بيانات النماذج (الجوال/التخصص)"); }
+    if ((which === "cv" || which === "all") && !R.vis.length && R.ti >= 0) { const n = await addVisits(); if (n) done.push(`${maAr(n)} زيارات صفية`); }
+    setBusy(""); toast(done.length ? `✅ أُضيف إلى: ${done.join("، ")}` : "لا شيء ناقص للإضافة"); await check(); };
+  // ٣ زيارات صفية على حصصه الفعلية: أيام دوام قادمة بفاصل أسبوعين تقريباً، في يوم أقل ازدحاماً وحصة غير متعارضة
+  const addVisits = async () => { const { T, ti, P, times } = R; const ORD = TT_ORD; const tk = cvTkOf(P, R.sn); let nMax = Math.max(0, ...Object.values(P).map(r => +r.n || 0)); const out = {}; const d0 = new Date(); d0.setDate(d0.getDate() + 1); const used = {}; Object.values(P).forEach(r => { if (r && r.date) (used[r.date] = used[r.date] || []).push(r.p); });
+    for (let v = 1; v <= 3; v++) { const st = new Date(d0); st.setDate(d0.getDate() + (v - 1) * 14); let placed = false;
+      for (let i = 0; i < 25 && !placed; i++) { const d = new Date(st); d.setDate(st.getDate() + i); const k = maKey(d); if (maOff(k)) continue; if ((used[k] || []).length >= 4) continue; const di = ttDayIdx(T, d); if (di < 0) continue;
+        const L = []; Object.keys(T.C).forEach(ck => maArr(T.C[ck][di]).forEach((c, p) => { if (c && c[1] === ti && c[0] >= 0 && !/نشاط|احتياط/.test(String(T.S[c[0]] || "")) && !(used[k] || []).includes(ORD[p])) L.push({ ck, p, s: (T.SA && T.SA[c[0]]) || T.S[c[0]] || "" }); }));
+        if (!L.length) continue; const pk = L[Math.floor(L.length / 2)]; const [lv, sec] = pk.ck.split("-"); const tm = times[pk.p] || []; const f0 = z => String(z || "").replace(/^0/, ""); const h = hfxHij(k); const id = "v" + Date.now().toString(36) + v;
+        out[id] = { id, n: ++nMax, v, wk: 0, date: k, hij: h ? `${h.y}/${h.m}/${h.d}` : "", t: R.sn, s: f.sp || pk.s, p: ORD[pk.p], tm: tm[0] ? `${f0(tm[0])}-${f0(tm[1])}` : "", c: `${sec}/${lv}`, tk, added: Date.now(), by }; (used[k] = used[k] || []).push(ORD[pk.p]); placed = true; } }
+    const ks = Object.keys(out); if (!ks.length) return 0; const ok = await cvPatch(Object.fromEntries(ks.map(k => [`${CV_PLAN}/${k}`, out[k]]))); return ok ? ks.length : 0; };
+  // تعديل الاسم في كل الأقسام
+  const [nn, setNn] = useState({ n: "", s: "" });
+  const rename = async () => { if (!R) return; const N = nn.n.trim(), S0 = (nn.s || shortOf(N)).trim(); if (!N) { toast("⚠️ اكتب الاسم الجديد"); return; } if (!window.confirm(`تعديل الاسم إلى «${N}» (المختصر: «${S0}») في كل الأقسام؟`)) return; setBusy("⏳ جاري تعديل الاسم…"); const P = {};
+    if (R.licE) P[`${LIC_NODE}/${R.licE[0]}/name`] = N;
+    if (R.asmE) P[`${ASM_CFG}/T/${R.asmE.k}/n`] = S0;
+    if (R.attI >= 0) P[`school-teachers/${R.attI}`] = N;
+    P[`${HD_T}/${R.hk}/n`] = N;
+    R.vis.forEach(r => { P[`${CV_PLAN}/${r.id}/t`] = S0; });
+    if (R.tpE && R.tpE.k) P[`${HFX_TP}/${R.tpE.k}/n`] = N;
+    const ok = await fbPatch(P); setBusy(""); toast(ok ? `✅ عُدّل الاسم في ${maAr(Object.keys(P).length)} موضعاً` : "⚠️ تعذّر الحفظ"); setF(x => ({ ...x, n: N, s: S0 })); setNn({ n: "", s: "" }); setTimeout(check, 300); };
+  const Row = ({ ok, t, d, act, warn }) => <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 12px", borderRadius: 14, background: ok ? "#f0fdf4" : warn ? "#fffbeb" : "#fef2f2", border: `1.5px solid ${ok ? "#bbf7d0" : warn ? "#fde68a" : "#fecaca"}` }}>
+    <span style={{ fontSize: 20 }}>{ok ? "✅" : warn ? "⚠️" : "❌"}</span><div style={{ flex: "1 1 220px" }}><b style={{ fontSize: 14 }}>{t}</b><div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>{d}</div></div>{act}</div>;
+  return <div className="ma px-2 md:px-6 py-3" dir="rtl"><style>{MA_CSS}</style><div className="grid gap-3" style={{ maxWidth: 820, margin: "0 auto" }}>
+    <div style={{ borderRadius: 24, padding: "16px 18px", color: "#fff", background: "linear-gradient(135deg,#0f766e,#1d4ed8 60%,#6d28d9)" }}><div style={{ fontSize: 21, fontWeight: 900 }}>👤 فحص معلم وإضافته للأقسام</div><div style={{ fontSize: 13, fontWeight: 800, opacity: .9 }}>تأكد أن المعلم موجود في: الدخول بالهوية • الطابور • حضور المعلمين • النماذج والمساءلات • التعاميم • حضوري • الجدول المدرسي — وأضفه لما ينقصه بضغطة</div></div>
+    <div className="ma-card p-4 grid gap-2">
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
+        <label style={{ fontSize: 13, fontWeight: 800 }}>رقم السجل المدني<input className="ma-inp" inputMode="numeric" value={f.nid} onChange={e => fillById(e.target.value)} placeholder="١٠ أرقام" /></label>
+        <label style={{ fontSize: 13, fontWeight: 800 }}>الاسم الكامل<input className="ma-inp" value={f.n} onChange={e => setF({ ...f, n: e.target.value, s: f.s || "" })} placeholder="مثال: محمد موسى وراد الحربي" /></label>
+        <label style={{ fontSize: 13, fontWeight: 800 }}>الاسم المختصر (كما في الجدول والطابور)<input className="ma-inp" value={f.s} onChange={e => setF({ ...f, s: e.target.value })} placeholder={shortOf(f.n) || "محمد الحربي"} /></label>
+        <label style={{ fontSize: 13, fontWeight: 800 }}>الجوال (اختياري)<input className="ma-inp" inputMode="tel" value={f.ph} onChange={e => setF({ ...f, ph: e.target.value })} placeholder="05xxxxxxxx" /></label>
+        <label style={{ fontSize: 13, fontWeight: 800 }}>التخصص (اختياري)<input className="ma-inp" value={f.sp} onChange={e => setF({ ...f, sp: e.target.value })} placeholder="العلوم" /></label>
+      </div>
+      <div className="flex gap-2"><button className="ma-btn pri" disabled={!!busy} onClick={check}>🔎 فحص</button>{busy && <b style={{ color: "#0f766e" }}>{busy}</b>}</div>
+    </div>
+    {R && <div className="ma-card p-4 grid gap-2">
+      <b style={{ fontSize: 16 }}>نتيجة الفحص: {R.name} <span style={{ fontSize: 13, color: "#64748b" }}>({maAr(R.nid.slice(-4))}••••••)</span></b>
+      <Row ok={!!(R.licE || R.stE)} t="الدخول بالهوية (البوابة • النماذج • التعاميم • الرخصة المهنية)" d={R.licE ? `مسجّل باسم «${R.licE[1].name}»` : R.stE ? `مسجّل في الإداريين باسم «${R.stE.name}»` : "غير مسجّل — لن يستطيع الدخول ولن يظهر في قائمة النماذج والتعاميم"} act={!R.licE && !R.stE && <button className="ma-btn pri" onClick={() => add("lic")}>➕ إضافة</button>} />
+      <Row ok={!!R.asmE} t="قائمة الطابور الصباحي" d={R.asmE ? `موجود باسم «${R.asmE.n}»` : "غير موجود — لن يُرصد حضوره للطابور"} act={!R.asmE && <button className="ma-btn pri" onClick={() => add("asm")}>➕ إضافة باسم «{R.sn}»</button>} />
+      <Row ok={R.attI >= 0} t="حضور المعلمين (الرصد اليومي)" d={R.attI >= 0 ? `موجود في القائمة (رقم ${maAr(R.attI + 1)})` : "غير موجود — لا يظهر في صفحة حضور المعلمين"} act={R.attI < 0 && <button className="ma-btn pri" onClick={() => add("att")}>➕ إضافة</button>} />
+      <Row ok={R.hdDays > 0} warn={!R.hdDays} t="سجل «حضوري» (التأخر والغياب والانضباط)" d={R.hdDays ? `له ${maAr(R.hdDays)} يوماً مرفوعاً باسم «${R.hdName || R.name}» — يُطابق بالهوية تلقائياً` : "لا توجد له أيام مرفوعة بعد — تظهر تلقائياً بعد رفع تقرير «حضوري» الذي يحوي اسمه"} />
+      <Row ok={R.vis.length > 0} t="الزيارات الصفية" d={R.vis.length ? `له ${maAr(R.vis.length)} زيارات: ${R.vis.map(r => `${CV_VN[r.v - 1] || r.v} ${maDay(maDate(r.date))} ${cvHij(r.hij)}`).join(" • ")}` : R.ti >= 0 ? "لا توجد له زيارات — تُضاف ٣ زيارات على حصصه الفعلية من الجدول" : "لا توجد له زيارات، ولم يُعثر عليه في الجدول لتحديد حصصه"} act={!R.vis.length && R.ti >= 0 && <button className="ma-btn pri" onClick={() => add("cv")}>➕ إضافة ٣ زيارات</button>} />
+      <Row ok={R.ti >= 0} warn={R.ti < 0} t="الجدول المدرسي (الحصص والاحتياط والزيارات)" d={R.ti >= 0 ? `موجود باسم «${R.tn}»` : "لم يُعثر عليه في الجدول — يُضاف من صفحة الجدول المدرسي عند تحديثه"} />
+      <Row ok={!!(R.tpE && R.tpE.ph) || !!f.ph} warn t="بيانات النماذج (الجوال لإرسال الروابط بالواتساب)" d={R.tpE && R.tpE.ph ? `الجوال: ${R.tpE.ph}` : f.ph ? `سيُحفظ الجوال ${f.ph}` : "بدون جوال — أدخله بالأعلى ثم اضغط «إضافة للكل»"} />
+      <div className="flex gap-2 flex-wrap mt-1"><button className="ma-btn pri" disabled={!!busy} onClick={() => add("all")}>✅ إضافة إلى كل الأقسام الناقصة</button><button className="ma-btn" onClick={check}>↻ إعادة الفحص</button></div>
+      <div className="grid gap-2" style={{ marginTop: 6, padding: 12, borderRadius: 14, background: "#f8fafc", border: "1px dashed #cbd5e1" }}><b style={{ fontSize: 14 }}>✎ تعديل اسم المعلم في كل الأقسام</b>
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}><input className="ma-inp" value={nn.n} onChange={e => setNn({ ...nn, n: e.target.value })} placeholder={`الاسم الكامل الجديد (الحالي: ${R.name})`} /><input className="ma-inp" value={nn.s} onChange={e => setNn({ ...nn, s: e.target.value })} placeholder={`المختصر (الحالي: ${R.asmE ? R.asmE.n : R.sn})`} /></div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>يُعدَّل في: حساب الدخول والرخصة المهنية • الطابور • حضور المعلمين • سجل حضوري • الزيارات الصفية • بيانات النماذج. (اسمه في الجدول المدرسي يتبع ملف الجدول.)</div>
+        <button className="ma-btn" style={{ justifySelf: "start" }} disabled={!!busy || !nn.n.trim()} onClick={rename}>✎ تطبيق الاسم الجديد</button></div>
+    </div>}
+    {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+  </div></div>;
+}
+
 function DutyAdminPage({ by = "الإدارة" }) {
   const [D, setD] = useState(null); const [ed, setEd] = useState(null); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(""); const [names, setNames] = useState([]); const [tab, setTab] = useState("board"); const [pv, setPv] = useState(null); const [q, setQ] = useState(""); const fileRef = useRef(null); const xRef = useRef(null); const [TT0, setTT0] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
@@ -41927,7 +42006,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","staffcheck"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -42302,6 +42381,7 @@ function SchoolWebsiteInner() {
     { id: "hfx",            label: "نماذج متابعة الدوام (حضوري)", icon: "📑" },
     { id: "hdisc",          label: "سجل الانضباط اليومي (حضوري)", icon: "📈" },
     { id: "circulars",      label: "التعاميم", icon: "📜" },
+    { id: "staffcheck",     label: "فحص وإضافة معلم", icon: "👤" },
     { id: "meetings",       label: "الاجتماعات",           icon: "🤝" },
     { id: "committeemeeting",label: "اجتماعات اللجان",     icon: "👔" },
     { id: "teachereval",    label: "قياس أداء المعلم",     icon: "🎖️" },
@@ -42321,7 +42401,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","hfx","hdisc","timetable","ttnow","trash","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","staffcheck","hfx","hdisc","timetable","ttnow","trash","settings"] },
   ];
 
   return (
@@ -42646,6 +42726,7 @@ function SchoolWebsiteInner() {
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}
+                {page === "staffcheck" && <StaffCheck by={user?.name || "الإدارة"} />}
                 {page === "meetings"       && <MeetingsPage teachers={teachers} />}
                 {page === "committeemeeting"&& <CommitteeMeetingPage teachers={teachers} />}
                 {page === "aiteacher"      && <AITeacherPage />}
@@ -42825,6 +42906,7 @@ function SchoolWebsiteInner() {
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}
+                {page === "staffcheck" && <StaffCheck by={user?.name || "الإدارة"} />}
         {page === "meetings"       && <MeetingsPage teachers={teachers} />}
         {page === "committeemeeting" && <CommitteeMeetingPage teachers={teachers} />}
         {page === "aiteacher"      && <AITeacherPage />}
