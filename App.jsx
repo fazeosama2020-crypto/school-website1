@@ -6,6 +6,7 @@ import hfxImg_hdr from "./img/forms/hdr.png";
 import hfxImg_hsm from "./img/forms/hsm.png";
 import hfxImg_hsmT from "./img/forms/hsmT.png";
 import hfxImg_inq from "./img/forms/inq.png";
+import hfxImg_hs from "./img/forms/hs.png";
 import moeLogoImg from "./img/moe-logo.png";
 import schoolLogoImg from "./img/school-logo.svg";
 // الصور ملفات مستقلة في مجلد img (تُحمَّل عند الحاجة ويحفظها المتصفح) — الرابط مطلق ليعمل في نوافذ الطباعة أيضاً
@@ -36435,7 +36436,8 @@ const HFX_IMG = {
   hdr: hfxAbs(hfxImg_hdr),
   hsm: hfxAbs(hfxImg_hsm),
   hsmT: hfxAbs(hfxImg_hsmT),
-  inq: hfxAbs(hfxImg_inq)
+  inq: hfxAbs(hfxImg_inq),
+  hs: hfxAbs(hfxImg_hs)
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -36509,6 +36511,31 @@ const HFX_F = {
       { t: "tx", k: "$name", x: [325, 466], y: 665, fs: 12.5, nm: 11.5, al: "s", show: c => c.tv && (c.tv.rsn || c.ts) , dy: -2.5 }, { t: "sg", k: "ts", x: [172, 281], y: [646, 684] }, { t: "dt", k: "td", y: 665, yr: 84.6, yc: 1, m: [102.5, 120], d: [123.3, 139], fs: 10 , dy: -2.5 },
       { t: "ck", k: "dec", v: "1", cx: 519.4, cy: 724.5 }, { t: "ck", k: "dec", v: "2", cx: 519.4, cy: 743.5 },
       { t: "tx", k: "$mgr", x: [335, 500], y: 773, fs: 12.5, al: "s", show: c => c.v.dec , dy: -2.5 }, { t: "sg", k: "ms", x: [182, 292], y: [754, 792], show: c => c.v.dec }, { t: "dt", k: "dd", y: 773, yr: 91.6, yc: 1, m: [106.7, 124.2], d: [127.5, 143], fs: 10 , dy: -2.5 },
+    ],
+  },
+  hs: {
+    n: "مساءلة حصص", ic: "📚", c: "#4338ca", tch: "reply", dur: "يوضّح المعلم أسباب التأخر عن الحصة أو عدم دخولها أو عدم التواجد في الإشراف والمناوبة",
+    in: [{ k: "hd", l: "تاريخ النموذج", t: "date" }, { k: "d1", l: "اليوم (إنه في يوم)", t: "date" }, { k: "sp", l: "التخصص", t: "text" }, { k: "lv", l: "المستوى", t: "text" }, { k: "dg", l: "الدرجة", t: "text" }, { k: "jn", l: "رقم الوظيفة", t: "text" }, { k: "wk", l: "العمل الحالي", t: "text" }, { k: "cn", l: "رقم الحاسب الآلي (اختياري)", t: "text" },
+      { k: "c1", l: "تأخر عن الدوام والطابور الصباحي", t: "check" }, { k: "t1", l: "وقت الحضور", t: "time", show: v => v.c1 },
+      { k: "c2", l: "تأخر عن دخول الحصة", t: "check" }, { k: "p2", l: "الحصة (مثل: الثالثة)", t: "text", show: v => v.c2 }, { k: "f2", l: "الفصل (مثل: أول/٣)", t: "text", show: v => v.c2 }, { k: "m2", l: "مدة التأخر بالدقائق", t: "num", show: v => v.c2 },
+      { k: "c3", l: "عدم دخول الحصة", t: "check" }, { k: "p3", l: "الحصة", t: "text", show: v => v.c3 }, { k: "f3", l: "الفصل (مثل: ثاني/١)", t: "text", show: v => v.c3 },
+      { k: "c4", l: "عدم التحضير في منصة مدرستي", t: "check" }, { k: "c5", l: "عدم التواجد للإشراف في الفسحة", t: "check" }, { k: "c6", l: "عدم التواجد لمناوبة نهاية الدوام", t: "check" },
+      { k: "rsn", l: "إفادة المعلم: الأسباب", t: "area", who: "t" }, { k: "td", l: "تاريخ الإفادة", t: "date", who: "t" },
+      { k: "dec", l: "رأي مدير المدرسة", t: "radio", who: "d", opts: [["1", "عذر مقبول"], ["2", "عذر غير مقبول"]] }, { k: "act", l: "الإجراء المتخذ", t: "text", who: "d" }, { k: "dd", l: "تاريخ الرأي", t: "date", who: "d" }],
+    f: [
+      { t: "digs", k: "cn", xs: [57.6, 76.6, 95.5, 114.4, 133.3, 152.3, 171.2, 190.1, 209, 227.9, 246.8], y: 180, fs: 11 },
+      { t: "tx", k: "$name", x: [404, 546], y: 236.5, fs: 12, nm: 10 }, { t: "tx", k: "sp", x: [339, 403], y: 236.5, fs: 10.5 }, { t: "tx", k: "lv", x: [296, 338], y: 236.5, fs: 10 }, { t: "tx", k: "dg", x: [254, 295], y: 236.5, fs: 10.5 }, { t: "tx", k: "jn", x: [175, 253], y: 236.5, fs: 11 }, { t: "tx", k: "wk", x: [61, 174], y: 236.5, fs: 11.5 },
+      { t: "day", k: "d1", x: [395, 484], y: 264.5, fs: 11.5 }, { t: "dt", k: "d1", y: 264.5, m: [295.1, 315.1], d: [325.1, 345.1], fs: 11 },
+      { t: "ck", k: "c1", cx: 538.8, cy: 324.9 }, { t: "tx", k: "t1", x: [226, 268], y: 325.5, fs: 11, dir: "ltr" },
+      { t: "ck", k: "c2", cx: 538.8, cy: 345.9 }, { t: "tx", k: "p2", x: [355, 407], y: 346.5, fs: 10.5 }, { t: "tx", k: "f2", x: [241.5, 293.5], y: 346.5, fs: 10.5 }, { t: "tx", k: "m2", x: [171, 201], y: 346.5, fs: 10.5 },
+      { t: "ck", k: "c3", cx: 538.8, cy: 366.9 }, { t: "tx", k: "p3", x: [373, 425], y: 367.5, fs: 10.5 }, { t: "tx", k: "f3", x: [260, 312], y: 367.5, fs: 10.5 },
+      { t: "ck", k: "c4", cx: 538.8, cy: 387.9 }, { t: "ck", k: "c5", cx: 538.8, cy: 406.9 }, { t: "ck", k: "c6", cx: 538.8, cy: 425.9 },
+      { t: "sg", k: "ms", x: [200, 305], y: [440, 470] }, { t: "dt", k: "hd", y: 456, m: [110.7, 128.7], d: [138.2, 156.2], fs: 10 },
+      { t: "ml", k: "rsn", x: [50, 546], ys: [569, 592, 615, 638], fs: 13 },
+      { t: "tx", k: "$name", x: [362, 511], y: 667, fs: 11.5, nm: 10, show: c => c.tv && (c.tv.rsn || c.ts) }, { t: "sg", k: "ts", x: [206, 310], y: [650, 683] }, { t: "dt", k: "td", y: 667, m: [116.4, 134.4], d: [144.3, 162.3], fs: 10 },
+      { t: "ck", k: "dec", v: "1", cx: 538.8, cy: 719.9 }, { t: "ck", k: "dec", v: "2", cx: 538.8, cy: 738.9 },
+      { t: "tx", k: "act", x: [132, 461], y: 760, fs: 11, al: "s" },
+      { t: "sg", k: "ms", x: [200, 305], y: [771, 801], show: c => c.v.dec }, { t: "dt", k: "dd", y: 787, m: [110.7, 128.7], d: [138.2, 156.2], fs: 10 },
     ],
   },
   out: {
@@ -36599,7 +36626,7 @@ const HFX_F = {
     ],
   },
 };
-const HFX_ORDER = ["gh", "ta", "out", "hdr", "hsm", "hsmT", "inq"];
+const HFX_ORDER = ["gh", "ta", "hs", "out", "hdr", "hsm", "hsmT", "inq"];
 
 // ── أدوات مساعدة
 const hfxV = (c, k) => { const v = ptObj(c && c.v)[k]; if (v !== undefined && v !== null && v !== "") return v; const t = ptObj(c && c.tv)[k]; return t === undefined || t === null ? "" : t; };
@@ -36634,6 +36661,7 @@ function hfxItems(fk, c, x = {}) {
     else if (f.t === "htxt") T(hfxHijTxt(V(f.k)), f.x[0], f.x[1], f.y, f.fs || 11);
     else if (f.t === "tm") { const t = hfx12(V(f.k)); if (!t) return; const fs = f.fs || 11; T(t.h, f.h[0], f.h[1], f.y, fs, "c", "ltr"); T(t.m, f.m[0], f.m[1], f.y, fs, "c", "ltr"); if (f.sep) T(":", f.h[1], f.m[0], f.y, fs, "c", "ltr"); }
     else if (f.t === "id") { const n = String(x.nid || "").replace(/\D/g, ""); if (n.length !== 10) return; for (let i = 0; i < 10; i++) T(maAr(n[i]), f.xs[i], f.xs[i + 1], f.y, f.fs || 12, "c", "ltr"); }
+    else if (f.t === "digs") { const n = String(V(f.k) || "").replace(/[^\d٠-٩]/g, ""); for (let i = 0; i < Math.min(n.length, f.xs.length - 1); i++) T(maAr(n[i]), f.xs[i], f.xs[i + 1], f.y, f.fs || 11, "c", "ltr"); }
     else if (f.t === "ck") { const v = V(f.k); const on = f.v !== undefined ? String(v) === f.v : !!v && v !== "0"; if (on) out.push({ kd: "k", cx: f.cx, cy: f.cy }); }
     else if (f.t === "sg") { const src = f.k === "ts" ? c.ts : (c.v && c.v.msig === false ? null : cfg.sig); if (src) out.push({ kd: "i", src, x0: f.x[0], x1: f.x[1], y0: f.y[0], y1: f.y[1] }); }
     else if (f.t === "ml") { const s = V(f.k); if (!s) return; const w = f.x[1] - f.x[0]; let fs = f.fs || 11, L = hfxWrap(s, fs, w);
@@ -36907,6 +36935,9 @@ function HfxPage({ by = "الإدارة" }) {
 // ── محرر النموذج (الإدارة)
 function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeacher }) {
   const [hd, setHd] = useState(null); // أيام الغياب/التأخر للمعلم من «حضوري»
+  const [ttR, setTtR] = useState(null); // حصص تأخر عنها أو لم يدخلها من متابعة الجدول (لمساءلة الحصص)
+  useEffect(() => { if (init.f !== "hs") return; let alive = true; (async () => { const T = ttFresh(await maGet(TT_NODE)); const ti = sttFindMe(T, init.n); if (ti < 0) { if (alive) setTtR([]); return; } const t = new Date(); const f0 = new Date(t); f0.setDate(t.getDate() - 21);
+    const rows = (await ttLoadRows(maKey(f0), maKey(t))).filter(r => +r.ti === ti && (r.st === "late" || r.st === "absent")).sort((a, b) => String(b.dk).localeCompare(String(a.dk)) || a.p - b.p); if (alive) setTtR(rows); })().catch(() => alive && setTtR([])); return () => { alive = false; }; }, []);
   useEffect(() => { if (!init.h || !["gh", "ta"].includes(init.f)) return; let alive = true; (async () => { const [r, c] = await Promise.all([maGet(`${HD_NODE}/${hdK(init.h)}`), maGet(HD_CFG)]); const cfgH = { ...HD_DEF, ...ptObj(c) };
     const L = Object.entries(ptObj(r)).filter(([k]) => !maOff(k)).map(([k, x]) => ({ k, x, d: hdDay(x, cfgH) })).filter(o => o.d).sort((a, b) => b.k.localeCompare(a.k)); if (!alive) return; setHd(L);
     if (init.f === "gh" && !ptObj(init.v).d1) { const R = hfxLastAbsRun(L); if (R) setC(x => x.v.d1 ? x : ({ ...x, v: { ...x.v, d1: R.d1, d2: R.d2, days: String(R.n) } })); }
@@ -36926,6 +36957,7 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
   const send = async () => { if (!c.h) { toast("أضف رقم هوية المعلم أولاً — به يفتح المعلم النموذج"); return; }
     if (c.f === "gh" && !c.v.d1) { toast("⚠️ حدّد يوم الغياب وتاريخه أولاً (خانة «📅 أيام الغياب»)"); return; }
     if (c.f === "ta" && (!c.v.d1 || !(c.v.c1 || c.v.c2 || c.v.c3 || c.v.c4))) { toast("⚠️ حدّد اليوم ونوع المخالفة (تأخر / عدم تواجد / انصراف مبكر)"); return; }
+    if (c.f === "hs" && (!c.v.d1 || ![1, 2, 3, 4, 5, 6].some(i => c.v["c" + i]))) { toast("⚠️ حدّد اليوم وما اتضح (تأخر عن الحصة / عدم دخولها / …)"); return; }
     if (!cfg.sig && !window.confirm("لم تُضف توقيعك بعد (📷 رفع صورة التوقيع) — هل ترسل بدون توقيع؟")) return;
     const w = window.open("", "_blank"); const n = await save(c.st === "draft" ? { st: "sent", sentAt: Date.now(), v: { ...c.v, hd: maKey(new Date()) } } : { sentAt: Date.now() }); if (n) { const u = waUrl(ph, waTxt(n)); if (w) w.location.href = u; else window.location.href = u; } else if (w) w.close(); };
   const close = async () => { if (F.in.some(f => f.who === "d") && !c.v.dec) { toast("⚠️ اختر رأي الرئيس المباشر أولاً"); return; } const n = await save({ st: "closed", closedAt: Date.now(), v: { ...c.v, dd: c.v.dd || (c.v.dec ? maKey(new Date()) : "") } }); if (n) toast("🗂️ اكتمل النموذج"); };
@@ -36947,6 +36979,11 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
         <div className="hfx-f"><label>عدد أيام الغياب</label><input className="hfx-in" type="number" value={c.v.days || ""} onChange={e => set("days", e.target.value)} /></div></div>}
       {c.f === "ta" && hd && hd.some(o => o.d.kind === "work" && (o.d.late || o.d.early)) && <div className="hfx-pane"><div className="hfx-sec">⏰ من «حضوري» — اضغط اليوم لتعبئته</div>
         <div className="grid gap-1">{hd.filter(o => o.d.kind === "work" && (o.d.late || o.d.early)).slice(0, 12).map(o => <button key={o.k} className={`hfx-opt ${c.v.d1 === o.k ? "on" : ""}`} style={{ justifyContent: "space-between" }} onClick={() => setC(x => ({ ...x, v: { ...x.v, d1: o.k, c1: o.d.late ? 1 : "", t1: o.d.late ? o.x.a : "", c3: o.d.early ? 1 : "", t3: o.d.early ? o.x.d : "", c2: "", c4: "" } }))}><span>{maDay(maDate(o.k))} {hfxHijTxt(o.k)}</span><span style={{ fontSize: 12 }}>{o.d.late ? `⏰ حضر ${maAr(o.x.a)} (تأخر ${maAr(o.d.late)} د)` : ""} {o.d.early ? `🚪 انصرف ${maAr(o.x.d)} (مبكر ${maAr(o.d.early)} د)` : ""}</span></button>)}</div></div>}
+      {c.f === "hs" && <div className="hfx-pane"><div className="hfx-sec">📚 من متابعة الحصص (آخر ٣ أسابيع) — اضغط الحصة لتعبئتها</div>
+        {!ttR ? <div style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>⏳</div> : !ttR.length ? <div style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>لا توجد حصص مرصودة عليه (تأخر أو عدم دخول) في متابعة الجدول — عبّئ يدوياً.</div> :
+          <div className="grid gap-1">{ttR.slice(0, 14).map((r, i) => { const [lv, sec] = String(r.ck || "").split("-"); const cls = lv && sec ? `${["أول", "ثاني", "ثالث"][+lv - 1] || maAr(lv)}/${maAr(sec)}` : ""; const late = r.st === "late"; const sel = c.v.d1 === r.dk && (late ? c.v.c2 && c.v.p2 === TT_ORD[r.p] : c.v.c3 && c.v.p3 === TT_ORD[r.p]);
+            return <button key={i} className={`hfx-opt ${sel ? "on" : ""}`} style={{ justifyContent: "space-between" }} onClick={() => setC(x => ({ ...x, v: { ...x.v, d1: r.dk, ...(late ? { c2: 1, p2: TT_ORD[r.p], f2: cls, m2: r.mins ? String(r.mins) : x.v.m2 || "" } : { c3: 1, p3: TT_ORD[r.p], f3: cls }) } }))}>
+              <span>{maDay(maDate(r.dk))} {hfxHijTxt(r.dk)} • الحصة {TT_ORD[r.p]} • {maClassName(r.ck)}</span><span style={{ fontSize: 12, color: late ? "#c2410c" : "#b91c1c" }}>{late ? `⏰ تأخر ${r.mins ? maAr(r.mins) + " د" : ""}` : "🚫 لم يدخل الحصة"}</span></button>; })}</div>}</div>}
       <div className="hfx-pane"><div className="hfx-sec">١) بيانات الإدارة</div><HfxInputs fk={c.f} v={c.v} set={set} who="a" skip={c.f === "gh" ? ["d1", "d2", "days"] : []} />
         {<div className="hfx-f"><label>توقيع الرئيس المباشر — يُحفظ ويُستخدم في جميع النماذج (طلب الإفادة والرأي)</label><HfxSigButtons cfg={cfg} onSave={saveCfg} small />{cfg.sig && <label className={`hfx-opt ${c.v.msig !== false ? "on" : ""}`} style={{ marginTop: 6 }}><input type="checkbox" checked={c.v.msig !== false} onChange={e => set("msig", e.target.checked)} />وضع التوقيع على هذا النموذج</label>}</div>}</div>
       {F.in.some(f => f.who === "t") && <details className="hfx-pane" open={!!(c.tv && Object.keys(ptObj(c.tv)).length)}><summary style={{ cursor: "pointer", fontWeight: 900, fontSize: 13.5 }}>٢) جزء المعلم {c.st === "replied" || c.st === "closed" ? "— ✍️ أعاده المعلم" : "— يعبّئه المعلم من جواله"}</summary>
