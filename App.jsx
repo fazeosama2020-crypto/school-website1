@@ -37456,7 +37456,7 @@ function HdPeriodReport({ cfg, all, names, by, saveCfg }) {
   const teachers = Object.keys(ptObj(all)).filter(hk => { const j = ptObj(names[hk]).job || ""; return (!j || /معلم/.test(j)) && !isMgr(hk); });
   // أيام غاب فيها الجميع تقريباً (إجازة رسمية لم تُسجَّل) — تُستبعد تلقائياً ويمكن إرجاعها
   const auto = React.useMemo(() => allDates.filter(k => k >= f && k <= t).filter(k => { let n = 0, a = 0; teachers.forEach(hk => { const r = ptObj(ptObj(all[hk])[k]); if (!r.st) return; n++; if (/غياب/.test(r.st)) a++; }); return n >= 5 && a / n >= 0.9; }), [allDates, f, t, all]);
-  const xd = [...new Set([...auto, ...rep.xd])].filter(k => !rep.xi.includes(k)).sort();
+  const xd = [...new Set([...auto, ...rep.xd])].filter(k => !rep.xi.includes(k) && !maOff(k)).sort(); // أيام الإجازة الرسمية مستبعدة أصلاً من التقويم
   const eff = { ...rep, xd };
   const dirty = !hdrSame(saved, { ...rep, xd, f, t });
   const togDay = k => setRep(r => xd.includes(k) ? { ...r, xd: r.xd.filter(x => x !== k), xi: [...new Set([...r.xi, k])] } : { ...r, xi: r.xi.filter(x => x !== k), xd: [...new Set([...r.xd, k])] });
