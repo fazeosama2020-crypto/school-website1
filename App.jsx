@@ -36616,6 +36616,19 @@ const HFX_F = {
   },
 };
 const HFX_ORDER = ["gh", "ta", "out", "hdr", "hsm", "hsmT", "inq"];
+// سجلات قديمة محفوظة بمفتاح نوع غير معروف (مثل "hs"): يُستنتج النوع الصحيح تلقائياً من الحقول المعبّأة فعلاً
+// (في الذاكرة فقط — لا يُعدَّل أي شيء مخزّن في قاعدة البيانات)
+const HFX_ALIAS = { hs: "hsm" };
+const hfxGuess = c => {
+  const PRE = ["hd", "sp", "lv", "jn", "wk", "ttl", "kd", "msig"]; // حقول تُعبّأ تلقائياً لكل نموذج جديد فلا تدل على نوعه
+  const filled = o => Object.entries(ptObj(o)).filter(([k, x]) => !PRE.includes(k) && x !== "" && x != null && x !== false).map(([k]) => k);
+  const keys = new Set([...filled(c.v), ...filled(c.tv)]);
+  const owners = {}; HFX_ORDER.forEach(k => (HFX_F[k].in || []).forEach(f => { (owners[f.k] = owners[f.k] || new Set()).add(k); }));
+  let best = null, bs = 0;
+  HFX_ORDER.forEach(k => { const s = (HFX_F[k].in || []).reduce((a, f) => a + (keys.has(f.k) ? 1 / owners[f.k].size : 0), 0); if (s > bs + 1e-9) { bs = s; best = k; } });
+  return best;
+};
+const hfxFix = c => { if (!c || HFX_F[c.f]) return c; const g = hfxGuess(c) || HFX_ALIAS[c.f]; return g ? { ...c, f: g } : c; };
 
 // ── أدوات مساعدة
 const hfxV = (c, k) => { const v = ptObj(c && c.v)[k]; if (v !== undefined && v !== null && v !== "") return v; const t = ptObj(c && c.tv)[k]; return t === undefined || t === null ? "" : t; };
@@ -36837,7 +36850,7 @@ function HfxPage({ by = "الإدارة" }) {
   const [ttT, setTtT] = useState(null); useEffect(() => { maGet(TT_NODE).then(a => setTtT(ttFresh(a))).catch(() => {}); }, []);
   const [ed, setEd] = useState(null); const [pick, setPick] = useState(null); const [q, setQ] = useState(""); const [flt, setFlt] = useState("all"); const [msg, setMsg] = useState(""); const [sig, setSig] = useState(false); const [imp, setImp] = useState(null); const [pe, setPe] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
-  const loadCases = async () => setCases(Object.values(ptObj(await maGet(HFX_NODE))).filter(c => c && c.id && !c.hid).sort((a, b) => (b.at || 0) - (a.at || 0)));
+  const loadCases = async () => setCases(Object.values(ptObj(await maGet(HFX_NODE))).filter(c => c && c.id && !c.hid).map(hfxFix).sort((a, b) => (b.at || 0) - (a.at || 0)));
   const loadT = async () => setT(await hfxLoadTeachers());
   useEffect(() => { (async () => { setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
   // قادم من زر «📋 مساءلة» في سجل حضور المعلمين: يفتح النموذج المناسب للمعلم مباشرة
@@ -36996,7 +37009,7 @@ function HfxTeacherPortal({ onBack }) {
   const [id, tok] = raw.split(".");
   const [c, setC] = useState(undefined); const [cfg, setCfg] = useState({}); const [nid, setNid] = useState(""); const [ok, setOk] = useState(false); const [err, setErr] = useState("");
   const [tv, setTv] = useState({}); const [ts, setTs] = useState(""); const [sig, setSig] = useState(false); const [busy, setBusy] = useState(false); const [done, setDone] = useState(false); const [zoom, setZoom] = useState(false);
-  useEffect(() => { (async () => { const [x, g] = await Promise.all([id ? maGet(`${HFX_NODE}/${id}`) : null, maGet(HFX_CFG)]); setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(g) }); setC(x && x.id && x.tok === tok && !x.hid ? x : null); if (x) { setTv(ptObj(x.tv)); setTs(x.ts || ""); } })(); }, []);
+  useEffect(() => { (async () => { const [x, g] = await Promise.all([id ? maGet(`${HFX_NODE}/${id}`) : null, maGet(HFX_CFG)]); setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(g) }); setC(x && x.id && x.tok === tok && !x.hid ? hfxFix(x) : null); if (x) { setTv(ptObj(x.tv)); setTs(x.ts || ""); } })(); }, []);
   const verify = async () => { setErr(""); const n = licNormId(nid); if (n.length !== 10) { setErr("أدخل رقم الهوية كاملاً (١٠ أرقام)"); return; } const h = await licHash(n); if (h !== c.h) { setErr("رقم الهوية لا يطابق صاحب النموذج"); return; } setOk(true);
     if (["sent", "draft"].includes(c.st)) { const p = { st: "opened", openAt: Date.now() }; setC(x => ({ ...x, ...p })); fbPatch({ [`${HFX_NODE}/${c.id}/st`]: "opened", [`${HFX_NODE}/${c.id}/openAt`]: p.openAt }); } };
   const wrap = ch => <div className="hfx" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f8fafc 50%)", padding: "14px 10px 40px" }}><style>{HFX_CSS}</style><div style={{ maxWidth: 760, margin: "0 auto" }} className="grid gap-3">
