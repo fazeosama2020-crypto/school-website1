@@ -34299,8 +34299,8 @@ const SIDX = "school-sidx";            // فهرس الطالب: {sid:{a:{dk:ck}
 const SIDX_META = "school-sidx-meta";
 const BK2 = "school-bk2", BK2_META = "school-bk2-meta";
 const IN_DEF = { abs: 3, late: 3, neg: 3, beh: 3 };
-const BK2_NODES = [MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan", "school-tt-abs", "school-asm", "school-asm-cfg", "school-mattend-lock", "school-duty", "school-duty-ack", "school-duty-rep", "school-duty-att", "school-phones", "school-duty-log", "school-duty-sig", "school-nq-ex", "school-nq-res"];
-const BK2_LBL = { [MA_ROSTER]: "كشوف الطلاب", [MA_ATT]: "الغياب", [MA_IDX]: "فهرس الغياب", [MA_META]: "إعدادات الفصول", [MA_LATE]: "التأخر الصباحي", [ML_DAY]: "اعتماد التأخر", [ML_CLS]: "اعتماد الفصول", [ML_CFG]: "أوقات التأخر", [ML_REP]: "تقارير التأخر", [SC_NODE]: "تصنيف الطلاب", [SC_META]: "فترة التصنيف", [SD_NODE]: "المتابعة اليومية", [SD_PC]: "ملاحظات أولياء الأمور على المتابعة", "formative-sheets": "سجلات التقويم التكويني", "formative-teachers": "قائمة المعلمين", [PT_STAFF]: "الإداريون", [TT_NODE]: "الجدول", [TT_CFG]: "أوقات الحصص", [TT_LOG]: "متابعة الحصص", [PT_EXC]: "أعذار أولياء الأمور", [PT_NOTES]: "ملاحظات أولياء الأمور", [PT_PREP]: "التقارير المرسلة", [WP_NODE]: "الخطة الأسبوعية", [IN_CFG]: "إعدادات المؤشرات", "school-bnotes": "الملاحظات السلوكية", "school-bnotes-cfg": "أنواع السلوك", "school-cv-plan": "جدول الزيارات الصفية", "school-cv-eval": "تقييم الزيارات الصفية", "school-cv-cfg": "إعدادات الزيارات" };
+const BK2_NODES = ["school-tr-prog", "school-tr-cfg", MA_ROSTER, MA_ATT, MA_IDX, MA_META, MA_LATE, ML_DAY, ML_CLS, ML_CFG, ML_REP, SC_NODE, SC_META, SD_NODE, SD_PC, "formative-sheets", "formative-teachers", PT_STAFF, TT_NODE, TT_CFG, TT_LOG, PT_EXC, PT_NOTES, PT_PREP, WP_NODE, IN_CFG, "school-bnotes", "school-bnotes-cfg", "school-cv-plan", "school-cv-eval", "school-cv-cfg", "school-cv-msg", "school-cv-img", "school-tplan", "school-tt-abs", "school-asm", "school-asm-cfg", "school-mattend-lock", "school-duty", "school-duty-ack", "school-duty-rep", "school-duty-att", "school-phones", "school-duty-log", "school-duty-sig", "school-nq-ex", "school-nq-res", "school-hfx", "school-hfx-del", "school-hfx-t", "school-hfx-cfg", "school-hd", "school-hd-t", "school-hd-cfg", "school-hd-up", "school-hd-ack", "school-hd-obj"];
+const BK2_LBL = { "school-hfx": "نماذج المساءلات", "school-hfx-del": "أرشيف المساءلات المحذوفة", "school-hfx-t": "بيانات المعلمين للنماذج", "school-hfx-cfg": "إعدادات النماذج", "school-hd": "سجل حضوري", "school-hd-t": "أسماء موظفي حضوري", "school-hd-cfg": "إعدادات حضوري", "school-hd-up": "سجل رفع ملفات حضوري", "school-hd-ack": "اطلاع المعلمين على حضوري", "school-hd-obj": "اعتراضات حضوري", "school-tr-prog": "رحلة الكنز — تقدم الطلاب", "school-tr-cfg": "رحلة الكنز — الإعدادات", [MA_ROSTER]: "كشوف الطلاب", [MA_ATT]: "الغياب", [MA_IDX]: "فهرس الغياب", [MA_META]: "إعدادات الفصول", [MA_LATE]: "التأخر الصباحي", [ML_DAY]: "اعتماد التأخر", [ML_CLS]: "اعتماد الفصول", [ML_CFG]: "أوقات التأخر", [ML_REP]: "تقارير التأخر", [SC_NODE]: "تصنيف الطلاب", [SC_META]: "فترة التصنيف", [SD_NODE]: "المتابعة اليومية", [SD_PC]: "ملاحظات أولياء الأمور على المتابعة", "formative-sheets": "سجلات التقويم التكويني", "formative-teachers": "قائمة المعلمين", [PT_STAFF]: "الإداريون", [TT_NODE]: "الجدول", [TT_CFG]: "أوقات الحصص", [TT_LOG]: "متابعة الحصص", [PT_EXC]: "أعذار أولياء الأمور", [PT_NOTES]: "ملاحظات أولياء الأمور", [PT_PREP]: "التقارير المرسلة", [WP_NODE]: "الخطة الأسبوعية", [IN_CFG]: "إعدادات المؤشرات", "school-bnotes": "الملاحظات السلوكية", "school-bnotes-cfg": "أنواع السلوك", "school-cv-plan": "جدول الزيارات الصفية", "school-cv-eval": "تقييم الزيارات الصفية", "school-cv-cfg": "إعدادات الزيارات" };
 
 // ── أدوات قاعدة البيانات
 async function fbPatch(obj) {
@@ -36466,7 +36466,7 @@ const HFX_IMG = {
 // • school-hfx/{id} الحالات • school-hfx-cfg الإعدادات • school-hfx-t/{k} بيانات المعلمين الوظيفية
 // • رقم الهوية الكامل لا يُرفع للخادم: يبقى على جهاز الإدارة (hfx_ids)، والمعلم يُدخله بنفسه لفتح نموذجه
 // ═══════════════════════════════════════════════════════════════
-const HFX_NODE = "school-hfx", HFX_CFG = "school-hfx-cfg", HFX_TP = "school-hfx-t";
+const HFX_NODE = "school-hfx", HFX_CFG = "school-hfx-cfg", HFX_TP = "school-hfx-t", HFX_DEL = "school-hfx-del"; // المحذوفة تُنقل للأرشيف ولا تُمسح
 const HFX_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة الأولى";
 const HFX_INK = "#0f2a6b";
 const HFX_FONT = "'Cairo','Noto Naskh Arabic',Tahoma,sans-serif";
@@ -36855,7 +36855,7 @@ function HfxPage({ by = "الإدارة" }) {
   const [ttT, setTtT] = useState(null); useEffect(() => { maGet(TT_NODE).then(a => setTtT(ttFresh(a))).catch(() => {}); }, []);
   const [ed, setEd] = useState(null); const [pick, setPick] = useState(null); const [q, setQ] = useState(""); const [flt, setFlt] = useState("all"); const [msg, setMsg] = useState(""); const [sig, setSig] = useState(false); const [imp, setImp] = useState(null); const [pe, setPe] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
-  const loadCases = async () => setCases(Object.values(ptObj(await maGet(HFX_NODE))).filter(c => c && c.id && !c.hid).map(hfxFix).sort((a, b) => (b.at || 0) - (a.at || 0)));
+  const loadCases = async () => setCases(Object.values(ptObj(await maGet(HFX_NODE))).filter(c => c && c.id).map(hfxFix).sort((a, b) => (b.at || 0) - (a.at || 0)));
   const loadT = async () => setT(await hfxLoadTeachers());
   useEffect(() => { (async () => { setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
   // قادم من زر «📋 مساءلة» في سجل حضور المعلمين: يفتح النموذج المناسب للمعلم مباشرة
@@ -36866,10 +36866,16 @@ function HfxPage({ by = "الإدارة" }) {
   const ids = hfxIds();
   const saveCfg = async p => { const n = { ...cfg, ...p }; setCfg(n); await maPut(HFX_CFG, n); toast("✅ حُفظت الإعدادات"); };
   const newCase = (fk, t) => { const prof = t || {}; setEd({ id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), tok: hfxTok(), f: fk, tk: prof.k, n: prof.n, h: prof.h || "", n4: prof.n4 || "", ph: prof.ph || "", st: "draft", at: Date.now(), by, v: { hd: maKey(new Date()), sp: prof.sp || (ttT ? hfxSpec(ttT, prof.n) : ""), lv: prof.lv || "", jn: prof.jn || "", wk: prof.wk || "معلم", ttl: prof.ttl || "معلم", kd: "t", msig: true }, tv: {} }); setPick(null); setTab("ed"); };
-  const L = cases.filter(c => (flt === "all" || (flt === "wait" ? ["sent", "opened"].includes(c.st) : flt === "rep" ? c.st === "replied" : c.st === flt)) && (!q || cvNorm(c.n || "").includes(cvNorm(q)) || (HFX_F[c.f] && HFX_F[c.f].n.includes(q))));
-  const cnt = s => cases.filter(c => s === "wait" ? ["sent", "opened"].includes(c.st) : s === "rep" ? c.st === "replied" : c.st === s).length;
+  const L = cases.filter(c => (flt === "all" || (flt === "nofaris" ? !c.faris : flt === "faris" ? !!c.faris : flt === "wait" ? ["sent", "opened"].includes(c.st) : flt === "rep" ? c.st === "replied" : c.st === flt)) && (!q || cvNorm(c.n || "").includes(cvNorm(q)) || (HFX_F[c.f] && HFX_F[c.f].n.includes(q))));
+  const cnt = s => cases.filter(c => s === "nofaris" ? !c.faris : s === "faris" ? !!c.faris : s === "wait" ? ["sent", "opened"].includes(c.st) : s === "rep" ? c.st === "replied" : c.st === s).length;
   const printC = c => hfxPrint([{ fk: c.f, c, x: { cfg, nid: hfxNid(c.h) } }], ((HFX_F[c.f] || {}).n || "نموذج") + " — " + (c.n || ""));
-  const hide = async c => { if (!window.confirm(`إخفاء نموذج «${(HFX_F[c.f] || {}).n || "غير معروف"}» للمعلم ${c.n}؟ (يبقى محفوظاً في الخادم)`)) return; await maPut(`${HFX_NODE}/${c.id}/hid`, Date.now()); loadCases(); };
+  // لا إخفاء للمساءلات: تبقى حتى تُدخل في «فارس»، ثم يُتاح الحذف بتأكيدين (وتُنقل للأرشيف احتياطاً)
+  const setFaris = async (c, on) => { const v = on ? { at: Date.now(), by } : null; const ok = await maPut(`${HFX_NODE}/${c.id}/faris`, v); if (!ok) { toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return; } setCases(L => L.map(x => x.id === c.id ? { ...x, faris: v || undefined } : x)); toast(on ? "✅ سُجّل: أُدخل في «فارس»" : "↩️ أُلغيت علامة «فارس»"); };
+  const delCase = async c => { if (!c.faris) { alert("لا يمكن الحذف قبل وضع علامة «أُدخل في فارس»"); return; } const nmF = (HFX_F[c.f] || {}).n || "نموذج";
+    if (!window.confirm(`حذف «${nmF}» للمعلم ${c.n}؟\nسيختفي من السجل ومن رابط المعلم.`)) return;
+    if ((window.prompt("للتأكيد النهائي اكتب كلمة: حذف") || "").trim() !== "حذف") { toast("لم يُحذف — كلمة التأكيد غير مطابقة"); return; }
+    const ok1 = await maPut(`${HFX_DEL}/${c.id}`, { ...c, delAt: Date.now(), delBy: by }); if (!ok1) { toast("⚠️ تعذّر الحذف — تحقق من الاتصال"); return; }
+    await maPut(`${HFX_NODE}/${c.id}`, null); setCases(L => L.filter(x => x.id !== c.id)); toast("🗑️ حُذف النموذج (نسخة منه في الأرشيف)"); };
   const tq = pick ? T.filter(t => !q || cvNorm(t.n).includes(cvNorm(q))) : [];
 
   const importX = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { const list = await hfxParseExcel(f); if (!list.length) { alert("لم أجد عمودَي «الاسم» و«السجل المدني» في الملف"); return; } setImp(list); } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
@@ -36891,13 +36897,13 @@ function HfxPage({ by = "الإدارة" }) {
       <div className="hfx-tabs">{[["list", `📂 السجل (${maAr(cases.length)})`], ["new", "➕ نموذج جديد"], ["tch", `👥 المعلمون (${maAr(T.length)})`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hfx-tab ${tab === k || (k === "new" && tab === "ed") ? "on" : ""}`} onClick={() => { setTab(k); setPick(null); }}>{l}</button>)}</div>
 
       {tab === "list" && <div className="grid gap-2">
-        <div className="flex gap-2 flex-wrap items-center">{[["all", "الكل", cases.length], ["draft", "مسودات", cnt("draft")], ["wait", "بانتظار المعلم", cnt("wait")], ["rep", "أعادها المعلم", cnt("rep")], ["ack", "اطّلع", cnt("ack")], ["closed", "مكتملة", cnt("closed")]].map(([k, l, n]) => <button key={k} className={`hfx-tab ${flt === k ? "on" : ""}`} style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => setFlt(k)}>{l} {maAr(n)}</button>)}
+        <div className="flex gap-2 flex-wrap items-center">{[["all", "الكل", cases.length], ["draft", "مسودات", cnt("draft")], ["wait", "بانتظار المعلم", cnt("wait")], ["rep", "أعادها المعلم", cnt("rep")], ["ack", "اطّلع", cnt("ack")], ["closed", "مكتملة", cnt("closed")], ["nofaris", "⏳ لم تُدخل في فارس", cnt("nofaris")], ["faris", "☑️ أُدخلت في فارس", cnt("faris")]].map(([k, l, n]) => <button key={k} className={`hfx-tab ${flt === k ? "on" : ""}`} style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => setFlt(k)}>{l} {maAr(n)}</button>)}
           <input className="hfx-in" style={{ flex: "1 1 200px", maxWidth: 320 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث باسم المعلم أو النموذج…" /></div>
         {!L.length ? <div className="hfx-pane" style={{ textAlign: "center", color: "#64748b", fontWeight: 800 }}>لا توجد نماذج بعد. ابدأ من «➕ نموذج جديد».</div> : L.map(c => { const F = HFX_F[c.f] || {}; const s = HFX_ST[c.st] || HFX_ST.draft; return <div key={c.id} className="hfx-row">
           <div style={{ width: 44, height: 44, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: F.c + "18" }}>{F.ic}</div>
           <div style={{ minWidth: 0 }}><b style={{ fontSize: 14.5 }}>{c.n || "—"}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{F.n} • {hfxHijTxt(c.v && c.v.hd)}</div>
-            <div className="flex gap-1 flex-wrap mt-1"><span className="hfx-pill" style={{ background: s.bg, color: s.c }}>{s.ic} {s.l}</span>{c.repAt && <span className="hfx-pill" style={{ background: "#f8fafc", color: "#475569" }}>أُعيد {new Date(c.repAt).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}{!hfxNid(c.h) && <span className="hfx-pill" style={{ background: "#fff7ed", color: "#9a3412" }} title="رقم الهوية غير محفوظ على هذا الجهاز">🪪 بلا هوية هنا</span>}</div></div>
-          <div className="flex gap-1 flex-wrap justify-end"><button className="hfx-b pri" onClick={() => { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); }}>فتح</button><button className="hfx-b" onClick={() => printC(c)}>🖨</button><button className="hfx-b red" onClick={() => hide(c)} title="إخفاء">✕</button></div>
+            <div className="flex gap-1 flex-wrap mt-1"><span className="hfx-pill" style={{ background: s.bg, color: s.c }}>{s.ic} {s.l}</span>{c.repAt && <span className="hfx-pill" style={{ background: "#f8fafc", color: "#475569" }}>أُعيد {new Date(c.repAt).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}{!hfxNid(c.h) && <span className="hfx-pill" style={{ background: "#fff7ed", color: "#9a3412" }} title="رقم الهوية غير محفوظ على هذا الجهاز">🪪 بلا هوية هنا</span>}{c.faris && c.faris.at && <span className="hfx-pill" style={{ background: "#dcfce7", color: "#166534" }}>☑️ فارس {new Date(c.faris.at).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}</div></div>
+          <div className="flex gap-1 flex-wrap justify-end"><button className="hfx-b pri" onClick={() => { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); }}>فتح</button><button className="hfx-b" onClick={() => printC(c)}>🖨</button><button className="hfx-b" style={c.faris ? { background: "#dcfce7", color: "#166534", borderColor: "#86efac" } : {}} onClick={() => setFaris(c, !c.faris)} title={c.faris ? "اضغط لإلغاء علامة فارس" : "ضع العلامة بعد إدخال المساءلة في نظام فارس"}>{c.faris ? "☑️ أُدخلت في فارس" : "☐ أُدخلت في فارس"}</button>{c.faris && <button className="hfx-b red" onClick={() => delCase(c)} title="حذف بعد الإدخال في فارس">🗑 حذف</button>}</div>
         </div>; })}
       </div>}
 
@@ -36957,8 +36963,8 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
   const RK = { draft: 0, sent: 1, opened: 2, ack: 3, replied: 3, closed: 4 };
   // دمج آمن: لا تُكتب نسخة الإدارة فوق ما أرسله المعلم في الأثناء
   const save = async (patch = {}) => { setBusy(true); const cur = ptObj(await maGet(`${HFX_NODE}/${c.id}`)); let n = { ...c, ...patch, ph, upAt: Date.now() };
-    if (cur.id) { if ((cur.repAt || 0) > (c.repAt || 0)) n = { ...n, tv: cur.tv, ts: cur.ts, repAt: cur.repAt }; ["openAt", "ackAt"].forEach(k => { if (cur[k] && !n[k]) n[k] = cur[k]; }); if (!patch.st && (RK[cur.st] || 0) > (RK[n.st] || 0)) n.st = cur.st; }
-    const ok = await maPut(`${HFX_NODE}/${n.id}`, n); setBusy(false); if (ok) { setC(n); onSaved(n); } else toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok ? n : null; };
+    if (cur.id) { if ((cur.repAt || 0) > (c.repAt || 0)) n = { ...n, tv: cur.tv, ts: cur.ts, repAt: cur.repAt }; ["openAt", "ackAt", "faris"].forEach(k => { if (cur[k] && !n[k]) n[k] = cur[k]; }); if (!patch.st && (RK[cur.st] || 0) > (RK[n.st] || 0)) n.st = cur.st; }
+    delete n.hid; const ok = await maPut(`${HFX_NODE}/${n.id}`, n); setBusy(false); if (ok) { setC(n); onSaved(n); } else toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok ? n : null; };
   const addNid = async () => { const n = licNormId(nidIn); if (n.length !== 10) return; const h = await licHash(n); const I = hfxIds(); I[h] = n; hfxIdsSet(I); setC(x => ({ ...x, h, n4: n.slice(-4) })); setNidIn(""); toast("✅ حُفظت الهوية على هذا الجهاز"); };
   const waTxt = n => `المكرم الأستاذ/ ${n.n} وفقه الله\nالسلام عليكم ورحمة الله وبركاته\n\nنرفق لكم نموذج «${F.n}» من ${HFX_SCHOOL}.\n${F.tch === "reply" ? "نأمل الاطلاع عليه وتعبئة الإفادة والتوقيع ثم الإرسال" : F.tch === "sign" ? "نأمل الاطلاع عليه والتوقيع ثم الإرسال" : "نأمل الاطلاع عليه"} عبر الرابط التالي (يُفتح برقم هويتكم):\n${hfxLink(n)}\n\nمع التحية — ${cfg.mgr || "إدارة المدرسة"}`;
   const send = async () => { if (!c.h) { toast("أضف رقم هوية المعلم أولاً — به يفتح المعلم النموذج"); return; }
@@ -37014,7 +37020,7 @@ function HfxTeacherPortal({ onBack }) {
   const [id, tok] = raw.split(".");
   const [c, setC] = useState(undefined); const [cfg, setCfg] = useState({}); const [nid, setNid] = useState(""); const [ok, setOk] = useState(false); const [err, setErr] = useState("");
   const [tv, setTv] = useState({}); const [ts, setTs] = useState(""); const [sig, setSig] = useState(false); const [busy, setBusy] = useState(false); const [done, setDone] = useState(false); const [zoom, setZoom] = useState(false);
-  useEffect(() => { (async () => { const [x, g] = await Promise.all([id ? maGet(`${HFX_NODE}/${id}`) : null, maGet(HFX_CFG)]); setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(g) }); setC(x && x.id && x.tok === tok && !x.hid ? hfxFix(x) : null); if (x) { setTv(ptObj(x.tv)); setTs(x.ts || ""); } })(); }, []);
+  useEffect(() => { (async () => { const [x, g] = await Promise.all([id ? maGet(`${HFX_NODE}/${id}`) : null, maGet(HFX_CFG)]); setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(g) }); setC(x && x.id && x.tok === tok ? hfxFix(x) : null); if (x) { setTv(ptObj(x.tv)); setTs(x.ts || ""); } })(); }, []);
   const verify = async () => { setErr(""); const n = licNormId(nid); if (n.length !== 10) { setErr("أدخل رقم الهوية كاملاً (١٠ أرقام)"); return; } const h = await licHash(n); if (h !== c.h) { setErr("رقم الهوية لا يطابق صاحب النموذج"); return; } setOk(true);
     if (["sent", "draft"].includes(c.st)) { const p = { st: "opened", openAt: Date.now() }; setC(x => ({ ...x, ...p })); fbPatch({ [`${HFX_NODE}/${c.id}/st`]: "opened", [`${HFX_NODE}/${c.id}/openAt`]: p.openAt }); } };
   const wrap = ch => <div className="hfx" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f8fafc 50%)", padding: "14px 10px 40px" }}><style>{HFX_CSS}</style><div style={{ maxWidth: 760, margin: "0 auto" }} className="grid gap-3">
@@ -37178,7 +37184,7 @@ function HdTeacherView({ me }) {
     const [ac, ad, tt, hf, tc, tl, tab] = await Promise.all([maGet(ASM_CFG), fbRange(ASM_NODE, F0, T0), maGet(TT_NODE), maGet(HFX_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${tdk}`), maGet(`${TT_ABS}/${tdk}`)]);
     const am = asmMine(ptObj(ac), me) || hdFindAsm(ptObj(ac), me.name); const T = ttFresh(tt); const ti = sttFindMe(T, me.name);
     const rows = ti >= 0 ? (await ttLoadRows(F0, T0)).filter(r => +r.ti === ti && (r.st !== "ok" || r.note || r.cn)) : [];
-    const cases = Object.values(ptObj(hf)).filter(c => c && c.h && c.h === me.hash && !c.hid);
+    const cases = Object.values(ptObj(hf)).filter(c => c && c.h && c.h === me.hash);
     // جدولي اليوم + حصص الاحتياط
     const times = ttFixTimes(Array.isArray(ptObj(tc).times) ? ptObj(tc).times : TT_PDF.times).slice(0, T.P); const di = ttDayIdx(T, new Date()); const today = [];
     if (ti >= 0 && di >= 0 && !maOff(tdk)) { const absL = Object.values(ptObj(tab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti); const plan = sttPlan(T, di, absL, ptObj(tl), ttAbsRng(tab));
@@ -37493,6 +37499,8 @@ function HdPeriodReport({ cfg, all, names, by, saveCfg }) {
   const schoolDays = [...new Set(rows.flatMap(x => x.days.filter(d => d.kind !== "leave").map(d => d.k)))].sort();
   const daily = schoolDays.map(k => { let late = 0, a7 = 0, abs = 0; rows.forEach(x => { const d = x.days.find(y => y.k === k); if (!d) return; if (d.late) late++; if (d.after7) a7++; if (d.kind === "abs") abs++; }); return { k, late, a7, abs }; });
   const best = rows.slice(0, 5);
+  // الحصر اليومي: أسماء الغائبين والمتأخرين والمنصرفين مبكراً دون إذن والمستأذنين في كل يوم
+  const dayList = schoolDays.map(k => { const ab = [], lt = [], er = [], pm = []; rows.forEach(x => { const d = x.days.find(y => y.k === k); if (!d) return; if (d.kind === "abs") ab.push(x.n); else { if (d.late) lt.push([x.n, d.late]); if (d.early) er.push([x.n, d.early]); if (d.kind === "perm") pm.push(x.n); } }); lt.sort((a, b) => b[1] - a[1]); return { k, ab, lt, er, pm }; });
   const SK = { n: x => x.n, rank: x => x.rank, days: x => x.s.days, abs: x => x.s.abs, lateDays: x => x.s.lateDays, late: x => x.s.late, after7: x => x.s.after7, maxLate: x => x.s.maxLate, earlyN: x => x.s.earlyN, earlyMin: x => x.s.earlyMin, perm: x => x.s.perm, earlyEx: x => x.s.earlyEx, miss: x => x.s.miss, pct: x => x.pct ?? -1 };
   const shown = rows.filter(x => !q || cvNorm(x.n + " " + x.iss.map(i => i[1]).join(" ")).includes(cvNorm(q))).sort((a, b) => { const A = SK[sk](a), B = SK[sk](b); return sd * (typeof A === "string" ? A.localeCompare(B, "ar") : A - B); });
   const sortBy = k => { if (sk === k) setSd(-sd); else { setSk(k); setSd(k === "n" || k === "rank" ? 1 : -1); } };
@@ -37517,7 +37525,8 @@ function HdPeriodReport({ cfg, all, names, by, saveCfg }) {
     const tb = `<h3>📋 سجل واقع المعلمين</h3><table><thead><tr><th>#</th><th>المعلم</th><th>الدوام</th><th>الغياب</th><th>أيام التأخر</th><th>مجموع التأخر</th><th>بعد الحصة ١</th><th>دون إذن</th><th>الاستئذان</th><th>لم يُثبت</th><th>الانضباط</th><th>أبرز الملاحظات</th></tr></thead><tbody>${rows.map(x => `<tr><td>${maAr(x.rank)}</td><td class="r"><b>${ptEsc(x.n)}</b></td><td>${maAr(x.s.days)}</td><td class="${x.s.abs ? "bd" : ""}">${maAr(x.s.abs)}</td><td>${maAr(x.s.lateDays)}</td><td class="${x.s.late >= 180 ? "bd" : ""}">${hdHM(x.s.late)}</td><td>${maAr(x.s.after7)}</td><td>${maAr(x.s.earlyN)}</td><td>${maAr(x.s.perm)}</td><td>${maAr(x.s.miss)}</td><td style="color:${hdrPC(x.pct)};font-weight:900">${hdrPct(x.pct)}</td><td class="r" style="font-size:9.5px">${x.iss.length ? x.iss.map(i => ptEsc(i[1])).join("، ") : "لا ملاحظات"}</td></tr>`).join("")}</tbody></table>`;
     const pb = `<h3>⚠️ أبرز المشكلات</h3><div class="pb">${PROB.map(p => `<div><b style="font-size:11px">${p.title}</b><table><tbody>${p.list.map(x => `<tr><td class="r">${ptEsc(x.n)}</td><td>${p.txt(x).join(" • ")}</td></tr>`).join("") || `<tr><td>لا يوجد</td></tr>`}</tbody></table></div>`).join("")}</div>`;
     const md = `<div class="md">طريقة الحساب: التأخر = وقت بصمة الحضور − وقت الطابور. الانصراف المبكر = قبل وقت الانصراف، ويُستثنى إن سُجّل استئذان. نسبة الانضباط = الأيام التي حضر فيها المعلم في الوقت ولم ينصرف مبكراً دون إذن ÷ أيام الدوام (دون الإجازات). ${xd.length ? `استُبعدت الأيام: ${xd.map(k => hdrDayTxt(k)).join("، ")}.` : ""}</div>`;
-    inOpen(`<section class="pg">${inHdr("تقرير واقع انضباط المعلمين في الحضور والانصراف", `من ${hfxHijTxt(f)}<br>إلى ${hfxHijTxt(t)}`)}<div class="rl">${hdrRules(eff)}</div>${kp}${bs}${pb}</section><section class="pg">${inHdr("سجل واقع المعلمين", `من ${hfxHijTxt(f)}<br>إلى ${hfxHijTxt(t)}`)}${tb}${md}${inSig(by, "وكيل الشؤون التعليمية")}</section>`, "تقرير انضباط المعلمين", HDR_PCSS);
+    const dsec = `<table><thead><tr><th>اليوم</th><th>الغائبون</th><th>المتأخرون (دقائق التأخر)</th><th>انصراف مبكر دون إذن (د)</th><th>المستأذنون</th></tr></thead><tbody>${dayList.map(d => `<tr><td class="r" style="white-space:nowrap">${hdrDayTxt(d.k)}</td><td class="r bd">${d.ab.map(ptEsc).join("، ") || "—"}</td><td class="r">${d.lt.map(([n, m]) => `${ptEsc(n)} (${maAr(m)})`).join("، ") || "—"}</td><td class="r">${d.er.map(([n, m]) => `${ptEsc(n)} (${maAr(m)})`).join("، ") || "—"}</td><td class="r">${d.pm.map(ptEsc).join("، ") || "—"}</td></tr>`).join("")}<tr style="font-weight:900;background:#f8fafc"><td>الإجمالي</td><td>${maAr(dayList.reduce((a, d) => a + d.ab.length, 0))} حالة غياب</td><td>${maAr(dayList.reduce((a, d) => a + d.lt.length, 0))} حالة تأخر</td><td>${maAr(dayList.reduce((a, d) => a + d.er.length, 0))} حالة</td><td>${maAr(dayList.reduce((a, d) => a + d.pm.length, 0))} حالة</td></tr></tbody></table>`;
+    inOpen(`<section class="pg">${inHdr("تقرير واقع انضباط المعلمين في الحضور والانصراف", `من ${hfxHijTxt(f)}<br>إلى ${hfxHijTxt(t)}`)}<div class="rl">${hdrRules(eff)}</div>${kp}${bs}${pb}</section><section class="pg">${inHdr("سجل واقع المعلمين", `من ${hfxHijTxt(f)}<br>إلى ${hfxHijTxt(t)}`)}${tb}${md}${inSig(by, "وكيل الشؤون التعليمية")}</section><section class="pg">${inHdr("الحصر اليومي للغياب والتأخر والانصراف المبكر", `من ${hfxHijTxt(f)}<br>إلى ${hfxHijTxt(t)}`)}<div class="rl">${hdrRules(eff)}</div>${dsec}${inSig(by, "وكيل الشؤون التعليمية")}</section>`, "تقرير انضباط المعلمين", HDR_PCSS);
   };
 
   const T = (k, l) => <label style={{ display: "grid", gap: 2, fontSize: 12, fontWeight: 900, color: "#475569" }}>{l}<input type="time" className="hd-in" value={rep[k]} onChange={e => setRep(r => ({ ...r, [k]: e.target.value }))} /></label>;
@@ -37554,6 +37563,10 @@ function HdPeriodReport({ cfg, all, names, by, saveCfg }) {
         <div style={{ "--c": hdrPC(avg) }}><b>{hdrPct(avg)}</b><small>متوسط نسبة الانضباط</small></div>
       </div>
 
+      <details className="hd-card" style={{ padding: "10px 14px" }}><summary style={{ cursor: "pointer", fontWeight: 900, fontSize: 15 }}>📅 الحصر اليومي — الغائبون والمتأخرون كل يوم ({maAr(dayList.length)} يوماً)</summary>
+        <div style={{ overflowX: "auto", marginTop: 8 }}><table className="hd-tbl" style={{ minWidth: 760 }}><thead><tr><th>اليوم</th><th>الغائبون</th><th>المتأخرون (د)</th><th>انصراف مبكر دون إذن (د)</th><th>المستأذنون</th></tr></thead>
+          <tbody>{dayList.map(d => <tr key={d.k}><td className="n" style={{ whiteSpace: "nowrap" }}>{hdrDayTxt(d.k)}</td><td style={{ color: "#b91c1c", fontWeight: 800, textAlign: "right" }}>{d.ab.join("، ") || "—"}</td><td style={{ textAlign: "right" }}>{d.lt.map(([n, m]) => `${n} (${maAr(m)})`).join("، ") || "—"}</td><td style={{ textAlign: "right" }}>{d.er.map(([n, m]) => `${n} (${maAr(m)})`).join("، ") || "—"}</td><td style={{ textAlign: "right" }}>{d.pm.join("، ") || "—"}</td></tr>)}</tbody></table></div>
+        <div className="hd-note">يُطبع هذا الحصر صفحةً مستقلة ضمن «🖨 طباعة التقرير».</div></details>
       <b style={{ fontSize: 16 }}>⭐ المعلمون المميزون</b>
       <div className="hdr-best">{best.map((x, i) => <div key={x.hk} className="hdr-bc" style={{ "--m": ["#b8912f", "#8e979f", "#a8683a"][i] || "#0f766e" }}><span className="md">{maAr(x.rank)}</span><b style={{ fontSize: 15 }}>{x.n}</b><b style={{ fontSize: 24, color: hdrPC(x.pct) }}>{hdrPct(x.pct)}</b><small style={{ fontWeight: 800, color: "#64748b" }}>تأخر {hdHM(x.s.late)} • غياب {maAr(x.s.abs)} • دون إذن {maAr(x.s.earlyN)}</small></div>)}</div>
       <div className="hd-note">الترتيب حسب نسبة الانضباط، ثم الأقل تأخراً، ثم الأقل غياباً.</div>
@@ -37641,8 +37654,38 @@ function HdRepTeacherPage({ me }) {
   </>);
 }
 
+// 🔔 تنبيه رفع «حضوري»: هل رُفع تقرير الصباح ونهاية الدوام لليوم؟ وأيام دوام سابقة لم يُرفع لها تقرير نهاية الدوام
+function hdUpState(ups, cfg) {
+  const U = (ups || []).filter(u => u && u.f && u.t);
+  const endUp = k => U.some(u => u.ph !== "m" && u.f <= k && k <= u.t);
+  const morUp = k => endUp(k) || U.some(u => u.ph === "m" && u.t === k);
+  const now = new Date(), today = maKey(now), E = hdEff(cfg), mins = now.getHours() * 60 + now.getMinutes();
+  const st = hdMin(E.start) ?? 420, en = hdMin(E.end) ?? 760, work = !maOff(today), out = [];
+  if (work && mins >= st + 20 && !morUp(today)) out.push({ k: "m", t: "🌅 لم يُرفع تقرير «حضوري» الصباحي لليوم", s: "ارفعه لمعرفة المتأخرين ومن لم يسجّل حضوره حتى الآن" });
+  if (work && mins >= en + 10 && !endUp(today)) out.push({ k: "e", t: "🏁 لم يُرفع تقرير نهاية الدوام لليوم", s: "ارفعه لحصر الغياب والتأخر والانصراف المبكر وإكمال واقع اليوم" });
+  const first = U.length ? U.map(u => u.f).sort()[0] : null; const miss = [];
+  if (first) { const d = maDate(today); for (let i = 0; i < 45 && miss.length < 10; i++) { d.setDate(d.getDate() - 1); const k = maKey(d); if (k < first) break; if (!maOff(k) && !endUp(k)) miss.push(k); } }
+  return { out, miss };
+}
+function HdUpReminder({ ups, cfg, onGo }) {
+  const [S, setS] = useState(null);
+  useEffect(() => { let a = true;
+    const run = () => { if (ups && cfg) { setS(hdUpState(ups, cfg)); return; } Promise.all([maGet(HD_UP), maGet(HD_CFG)]).then(([u, c]) => a && setS(hdUpState(ptVals(u), { ...HD_DEF, ...ptObj(c) }))).catch(() => {}); };
+    run(); const t = setInterval(run, 300000); return () => { a = false; clearInterval(t); }; }, [ups, cfg]);
+  if (!S || (!S.out.length && !S.miss.length)) return null;
+  const dl = k => `${maDay(maDate(k))} ${asmHij(maDate(k), false)}`;
+  return <div dir="rtl" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "linear-gradient(135deg,#fffbeb,#fff7ed)", border: "2px solid #f59e0b", borderRadius: 18, padding: "12px 16px", boxShadow: "0 10px 24px -18px rgba(180,83,9,.6)" }}>
+    <span style={{ fontSize: 30, animation: "hdBell 1.6s ease-in-out infinite" }}>🔔</span><style>{`@keyframes hdBell{0%,100%{transform:rotate(0)}10%,30%{transform:rotate(14deg)}20%,40%{transform:rotate(-14deg)}50%{transform:rotate(0)}}`}</style>
+    <div style={{ flex: "1 1 260px", display: "grid", gap: 4 }}>
+      {S.out.map(x => <div key={x.k}><b style={{ fontSize: 15, color: "#9a3412" }}>{x.t}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#78716c" }}>{x.s}</div></div>)}
+      {S.miss.length > 0 && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#7c2d12" }}>📅 أيام دوام لم يُرفع لها تقرير نهاية الدوام: {S.miss.map(dl).join(" • ")}</div>}
+    </div>
+    {onGo && <button type="button" onClick={onGo} style={{ border: "none", borderRadius: 14, padding: "10px 18px", fontWeight: 900, fontSize: 14, cursor: "pointer", fontFamily: "inherit", background: "linear-gradient(180deg,#f59e0b,#d97706)", color: "#fff", boxShadow: "0 4px 0 #b45309" }}>📥 ارفع ملف حضوري الآن</button>}
+  </div>;
+}
+
 function HdAdminPage({ by = "الإدارة" }) {
-  const [tab, setTab] = useState("day"); const [cfg, setCfg] = useState(null); const [all, setAll] = useState(null); const [names, setNames] = useState({}); const [imp, setImp] = useState(null); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
+  const [tab, setTab] = useState(() => { try { const t = localStorage.getItem("hd-tab"); if (t) { localStorage.removeItem("hd-tab"); return t; } } catch {} return "day"; }); const [cfg, setCfg] = useState(null); const [all, setAll] = useState(null); const [names, setNames] = useState({}); const [imp, setImp] = useState(null); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
   const [dk, setDk] = useState(null); const [ext, setExt] = useState(null); const [objs, setObjs] = useState({}); const [acks, setAcks] = useState({}); const [seen, setSeen] = useState({}); const [ups, setUps] = useState([]); const [rng, setRng] = useState("term"); const [q, setQ] = useState(""); const [sortK, setSortK] = useState("pct"); const [tOnly, setTOnly] = useState(true);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
   const load = async () => { const [c, a, n, o, k, s, u] = await Promise.all([maGet(HD_CFG), maGet(HD_NODE), maGet(HD_T), maGet(HD_OBJ), maGet(HD_ACK), maGet(HD_SEEN), maGet(HD_UP)]);
@@ -37696,6 +37739,7 @@ function HdAdminPage({ by = "الإدارة" }) {
   return <div className="hd px-2 md:px-6 py-3" dir="rtl"><style>{HD_CSS}</style>
     <div className="grid gap-3" style={{ maxWidth: 1250, margin: "0 auto" }}>
       <div className="hd-hero"><h2>📈 سجل الانضباط اليومي (حضوري)</h2><p>ارفع تقرير «الحضور والانصراف لجميع الموظفين» بعد الدوام ← يظهر لكل معلم انضباطه في حسابه بهويته، ويظهر لك أثر المتابعة بالأرقام</p></div>
+      <HdUpReminder ups={ups} cfg={cfg} onGo={() => setTab("up")} />
       {(() => { const E = hdEff(cfg); return <button type="button" onClick={() => setTab("cfg")} style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 8, border: "1.5px solid #fcd34d", background: "#fffbeb", color: "#78350f", borderRadius: 999, padding: "6px 14px", fontWeight: 900, fontSize: 13.5, cursor: "pointer", fontFamily: "inherit" }}>⏰ {cfg.season ? HD_SEASON[cfg.season] + " • " : ""}بداية الدوام {hdHM(hdMin(E.start))} (يُحسب التأخر بعدها) • حصر الطابور حتى {E.asm ? hdHM(hdMin(E.asm)) : "—"} • الانصراف {hdHM(hdMin(E.end))} — <u>تعديل</u></button>; })()}
       <div className="hd-tabs">{[["day", "📅 اليوم"], ["up", "📥 رفع ملف حضوري"], ["rep", "📑 تقرير الفترة"], ["kpi", "📊 المؤشرات والفعالية"], ["stars", "⭐ المميزون"], ["abs", "🚫 الغياب وفارس"], ["obj", `💬 الاعتراضات${objL.filter(x => x.st === "new").length ? ` (${maAr(objL.filter(x => x.st === "new").length)})` : ""}`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hd-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
@@ -42054,6 +42098,7 @@ function LeadDash({ navigate, clock, dayName, hijri, greg, greet, attendRate, to
   const news = [...(recentAnn || []).map(a => ({ k: "a" + a.id, t: a.title, s: a.date || "", ic: "📣", go: "announcements" })), ...(upcomingAct || []).map(a => ({ k: "v" + a.id, t: a.title, s: a.date || "", ic: "🎉", go: "activities" }))].slice(0, 5);
   return <div className="ld" dir="rtl"><style>{LD_CSS}</style>
     <div className="ld-top"><div style={{ flex: "1 1 260px" }}><h1>لوحة قيادة المدرسة</h1><p>متابعة اليوم الدراسي وإدارة أعمال المدرسة • {greet}</p></div><span className="ld-chip">📆 {dayName}</span><span className="ld-chip">🌙 {hijri}</span><span className="ld-chip" style={{ display: "inline-flex" }}><PamQuoteMini /></span></div>
+    <HdUpReminder onGo={() => { try { localStorage.setItem("hd-tab", "up"); } catch {} navigate("hdisc"); }} />
     <div className="ld-hd">
       <div className="ld-id"><div className="ld-lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div><div style={{ flex: "1 1 240px", minWidth: 0 }}><h2>مدرسة <span>الأمير عبدالمجيد</span> المتوسطة الأولى</h2><div className="sl">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div><div className="ld-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 بناء جيل متميز لوطن طموح</b></div><PamQuote /></div></div>
       <div className="ld-gl"><div className="ld-clk"><span className="ld-eg" style={ldEgg("#f59e0b", "#fde68a")}><i>🕰️</i></span><div><div className="t">{clock}</div><div className="d">{dayName} • {hijri}<br />الموافق {greg}</div></div></div></div>
