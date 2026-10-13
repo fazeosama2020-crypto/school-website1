@@ -1941,7 +1941,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
 // ===== لوحة الأقسام: بطاقات مصنّفة + لوحة أدوات جانبية =====
 const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
-    tools:[{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"alreport",label:"تقرير الغياب والتأخر المتكرر",icon:"🔁"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
+    tools:[{id:"liveops",label:"غرفة العمليات اللحظية",icon:"🛰️"},{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"alreport",label:"تقرير الغياب والتأخر المتكرر",icon:"🔁"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
     tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"treasureadm",label:"رحلة الكنز إلى نافس",icon:"🗺️"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"conduct",label:"متابعة السلوك اليومي",icon:"🚸"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
@@ -1951,7 +1951,7 @@ const HUB_GROUPS = [
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
-    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"audit",label:"سجل التدقيق",icon:"🕵️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -28787,7 +28787,7 @@ const NAV_TOOL_DESC = {
   broadcast:"برامج الإذاعة الصباحية", suggestions:"آراء ومقترحات المجتمع",
   activities:"خطة الأنشطة والبرامج", gallery:"صور ومعرض الأنشطة", meetings:"محاضر الاجتماعات", committeemeeting:"اجتماعات اللجان المدرسية",
   monthlyreport:"التقرير الشهري الشامل", report:"توثيق تقارير البرامج", qiyas:"قياس أثر البرامج",
-  conduct:"مخالفات الطلاب والفصول مع الصور والتقرير", alreport:"الفصول الأكثر غياباً وتأخراً والطلاب المتكررون", trash:"استرجاع أي شيء حُذف أو استُبدل",
+  conduct:"مخالفات الطلاب والفصول مع الصور والتقرير", alreport:"الفصول الأكثر غياباً وتأخراً والطلاب المتكررون", trash:"استرجاع أي شيء حُذف أو استُبدل", audit:"من عدّل ماذا ومتى في كل أقسام الموقع", liveops:"متابعة اليوم الدراسي لحظياً مع تنبيهات ذكية",
   surveys:"استبيانات ونماذج رأي", hfx:"مساءلات الدوام طبق الأصل + واتساب + توقيع المعلم", hdisc:"رفع تقرير حضوري ونسبة انضباط كل معلم ومؤشرات الفعالية", circulars:"تعاميم بالصور وPDF مع توقيع المعلمين والأرشفة", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
 };
 
@@ -36875,7 +36875,7 @@ function HfxPage({ by = "الإدارة" }) {
     if (!window.confirm(`حذف «${nmF}» للمعلم ${c.n}؟\nسيختفي من السجل ومن رابط المعلم.`)) return;
     if ((window.prompt("للتأكيد النهائي اكتب كلمة: حذف") || "").trim() !== "حذف") { toast("لم يُحذف — كلمة التأكيد غير مطابقة"); return; }
     const ok1 = await maPut(`${HFX_DEL}/${c.id}`, { ...c, delAt: Date.now(), delBy: by }); if (!ok1) { toast("⚠️ تعذّر الحذف — تحقق من الاتصال"); return; }
-    await maPut(`${HFX_NODE}/${c.id}`, null); setCases(L => L.filter(x => x.id !== c.id)); toast("🗑️ حُذف النموذج (نسخة منه في الأرشيف)"); };
+    const ok2 = await maPut(`${HFX_NODE}/${c.id}`, null); if (!ok2) { toast("لم يُحذف — يحتاج موافقة مدير المدرسة"); return; } setCases(L => L.filter(x => x.id !== c.id)); toast("🗑️ حُذف النموذج (نسخة منه في الأرشيف)"); };
   const tq = pick ? T.filter(t => !q || cvNorm(t.n).includes(cvNorm(q))) : [];
 
   const importX = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { const list = await hfxParseExcel(f); if (!list.length) { alert("لم أجد عمودَي «الاسم» و«السجل المدني» في الملف"); return; } setImp(list); } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
@@ -40994,7 +40994,7 @@ function ReadingWeakPage({ by = "", admin = false }) {
 const TR_NODE = "school-trash";
 const TR_BASE = FIREBASE_URL + "/school";
 // عقد مؤقتة أو فهارس أو نسخ احتياطية — لا داعي لأرشفتها
-const TR_SKIP = [TR_NODE, "school-mlate-live", "school-mlate-draft", "school-bk2", "school-ann-meta", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old"];
+const TR_SKIP = [TR_NODE, "school-audit", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-ann-meta", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old"];
 const trSkip = p => !p || TR_SKIP.some(s => p === s || p.startsWith(s + "/") || p.startsWith(s + "-"));
 function trPath(url) {
   const u = String(url || ""); if (!u.startsWith(TR_BASE)) return null;
@@ -41019,6 +41019,71 @@ function trRemoved(prev, next) {
   return Object.keys(prev).filter(k => prev[k] != null && next[k] == null).map(k => ({ k, v: prev[k] }));
 }
 let _trFetch = null;
+// ══════════ 🔒 لا حذف إلا بموافقة مدير المدرسة (برقم هويته) ══════════
+// كل حذف (DELETE أو حفظ قيمة فارغة) يتوقف حتى يُدخل مدير المدرسة رقم هويته. الموافقة صالحة ١٠ دقائق على هذا الجهاز.
+// مستثنى: العمليات الفنية التلقائية (المسودات، الفهارس، الحالات اليومية التي تُبدَّل بين تشغيل/إيقاف، صور الصفحات عند إعادة الرفع)
+const GATE_EXEMPT = ["school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
+let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
+function gateModal(items) {
+  return new Promise(resolve => {
+    const lbl = p => { const n = String(p).split("/")[0]; try { return auLabel(n); } catch { return n; } };
+    const sec = [...new Set(items.map(lbl))].join("، ");
+    const w = document.createElement("div"); w.dir = "rtl";
+    w.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.62);display:grid;place-items:center;padding:16px;font-family:inherit";
+    w.innerHTML = `<div style="background:#fff;border-radius:22px;max-width:420px;width:100%;padding:20px;box-shadow:0 30px 60px rgba(0,0,0,.35);text-align:center">
+      <div style="font-size:44px">🔒</div><h3 style="margin:4px 0 6px;font-size:19px;font-weight:900;color:#0f172a">الحذف يحتاج موافقة مدير المدرسة</h3>
+      <div style="font-size:13.5px;font-weight:700;color:#475569;line-height:1.9">القسم: <b style="color:#b91c1c">${String(sec).replace(/[<>&]/g, "")}</b>${items.length > 1 ? ` • ${items.length} عناصر` : ""}<br>يُدخل مدير المدرسة رقم هويته للموافقة. يُحفظ المحذوف في «سلة المحذوفات» ويمكن استرجاعه.</div>
+      <input id="pamGateId" type="password" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="رقم هوية مدير المدرسة" style="box-sizing:border-box;margin-top:12px;width:100%;font-size:20px;letter-spacing:3px;text-align:center;padding:10px;border:2px solid #cbd5e1;border-radius:14px;font-family:inherit;direction:ltr">
+      <div id="pamGateErr" style="color:#b91c1c;font-weight:800;font-size:13px;min-height:20px;margin-top:6px"></div>
+      <div style="display:flex;gap:8px;margin-top:6px"><button id="pamGateNo" style="flex:1;padding:11px;border-radius:14px;border:1.5px solid #e2e8f0;background:#f8fafc;font-weight:900;font-size:15px;cursor:pointer;font-family:inherit">إلغاء — لا تحذف</button>
+      <button id="pamGateYes" style="flex:1;padding:11px;border-radius:14px;border:none;background:#b91c1c;color:#fff;font-weight:900;font-size:15px;cursor:pointer;font-family:inherit">موافقة وحذف</button></div></div>`;
+    document.body.appendChild(w); const inp = w.querySelector("#pamGateId"), err = w.querySelector("#pamGateErr"), yes = w.querySelector("#pamGateYes");
+    setTimeout(() => inp.focus(), 50);
+    const done = v => { try { w.remove(); } catch {} resolve(v); };
+    w.querySelector("#pamGateNo").onclick = () => done(null);
+    const go = async () => { err.textContent = ""; yes.disabled = true; yes.textContent = "جارٍ التحقق…";
+      try { const r = await ptStaffLogin(inp.value); if (r && !r.err && r.role === "principal") return done(r.name || "مدير المدرسة"); err.textContent = r && r.err ? r.err : "هذا الرقم ليس لمدير المدرسة"; } catch { err.textContent = "تعذّر التحقق — تحقق من الاتصال"; }
+      yes.disabled = false; yes.textContent = "موافقة وحذف"; };
+    yes.onclick = go; inp.onkeydown = e => { if (e.key === "Enter") go(); if (e.key === "Escape") done(null); };
+  });
+}
+async function gateDeletes(paths) {
+  const P = paths.filter(p => !gateExempt(p)); if (!P.length) return true;
+  if (P.some(p => _gateDenied.has(p))) return false;
+  if (Date.now() < _gateOK) return true;
+  if (!_gateWait) _gateWait = gateModal(P).finally(() => { setTimeout(() => { _gateWait = null; }, 0); });
+  const by = await _gateWait;
+  if (by) { _gateOK = Date.now() + 10 * 60000; _gateBy = by; return true; }
+  P.forEach(p => { _gateDenied.add(p); try { dbQueue.remove(p); } catch {} }); setTimeout(() => P.forEach(p => _gateDenied.delete(p)), 5 * 60000);
+  try { if (!window.__gateMsgAt || Date.now() - window.__gateMsgAt > 4000) { window.__gateMsgAt = Date.now(); setTimeout(() => alert("لم يتم الحذف — الحذف يحتاج موافقة مدير المدرسة برقم هويته.\nحدّث الصفحة لإظهار البيانات كما هي محفوظة."), 30); } } catch {}
+  return false;
+}
+
+// ══════════ 🕵️ سجل التدقيق: من عدّل ماذا ومتى (كل حفظ/تعديل/حذف) ══════════
+//   school-audit/{YYYY-MM-DD}/{id} = {at, who, op, p, n, d}  — يُجمَّع ويُرسل كل بضع ثوانٍ في طلب واحد
+const AU_NODE = "school-audit";
+const AU_DEV = () => { try { return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "📱" : "💻"; } catch { return ""; } };
+let _auQ = [];
+const auDay = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+function auLog(method, path, body) {
+  try {
+    if (!path && method !== "PATCH") return; const at = Date.now(); const who = trWho(); const d = AU_DEV();
+    const push = (p, op, n) => { if (!p || trSkip(p)) return; const r = { at, who, op, p: String(p).slice(0, 160), n: n || 0, d }; if (op === "del" && _gateBy && Date.now() < _gateOK && !gateExempt(p)) r.ok = _gateBy; _auQ.push(r); };
+    if (method === "DELETE") push(path, "del");
+    else if (method === "PUT") push(path, body === "null" ? "del" : "set");
+    else if (method === "PATCH" && body) { const o = JSON.parse(body); const ks = Object.keys(o || {}); const full = k => path ? `${path}/${k}` : k;
+      const dels = ks.filter(k => o[k] === null); dels.slice(0, 8).forEach(k => push(full(k), "del"));
+      const sets = ks.filter(k => o[k] !== null); if (sets.length) { const g = {}; sets.forEach(k => { const top = full(k).split("/").slice(0, 2).join("/"); g[top] = (g[top] || 0) + 1; }); Object.entries(g).slice(0, 8).forEach(([p, n]) => push(p, "upd", n)); } }
+    if (_auQ.length > 400) _auQ = _auQ.slice(-400);
+  } catch {}
+}
+async function auFlush(keep) {
+  if (!_auQ.length || !_trFetch) return; const L = _auQ; _auQ = [];
+  const body = {}; L.forEach((x, i) => { body[`${AU_NODE}/${auDay(x.at)}/a${x.at.toString(36)}${i}${Math.random().toString(36).slice(2, 5)}`] = x; });
+  try { const r = await _trFetch(`${TR_BASE}.json`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), keepalive: !!keep }); if (!r.ok) throw 0; } catch { _auQ = [...L, ..._auQ].slice(-400); }
+}
+
 const trMonth = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
 async function trArchive(path, items, why) {
   if (!items || !items.length || !_trFetch) return;
@@ -41064,19 +41129,238 @@ function trInstall() {
       return res;
     }
     try {
+      const b0 = init && typeof init.body === "string" ? init.body : null; let dels = [];
+      if (method === "DELETE" || (method === "PUT" && b0 === "null")) dels = [path];
+      else if (method === "PATCH" && b0) { const o = JSON.parse(b0); if (o && typeof o === "object") dels = Object.keys(o).filter(k => o[k] === null).map(k => path ? `${path}/${k}` : k); }
+      if (dels.length && !(await gateDeletes(dels))) return new Response(JSON.stringify({ error: "يحتاج الحذف موافقة مدير المدرسة" }), { status: 403, headers: { "Content-Type": "application/json" } });
+    } catch {}
+    try {
       const b = init && typeof init.body === "string" ? init.body : null;
       if (method === "DELETE") { if (!trSkip(path)) await trBefore(path, "حذف"); }
       else if (method === "PUT") { if (!trSkip(path) && b != null) { if (b === "null") await trBefore(path, "حذف"); else trDiff(path, b); } }
       else if (method === "PATCH" && b) { const o = JSON.parse(b); if (o && typeof o === "object") for (const [k, v] of Object.entries(o)) { const sub = path ? `${path}/${k}` : k; if (v === null && !trSkip(sub)) await trBefore(sub, "حذف"); } }
     } catch {}
+    try { auLog(method, path, init && typeof init.body === "string" ? init.body : null); } catch {}
     return _trFetch(input, init);
   };
   const f = () => trFlush(); setTimeout(f, 4000); setInterval(f, 45000); window.addEventListener("online", f);
+  setInterval(() => auFlush(), 6000); window.addEventListener("pagehide", () => auFlush(true)); document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") auFlush(true); });
 }
 
 // ── صفحة سلة المحذوفات والاسترجاع
 const TR_LBL = (p) => { const n = String(p || "").split("/")[0]; const M = { ...(typeof BK2_LBL !== "undefined" ? BK2_LBL : {}), "school-ann-items": "الإعلانات", "school-act-items": "الأنشطة", "school-teachers": "المعلمون", "school-messages": "رسائل الأهالي", "school-surveys": "الاستبيانات", "school-attendance": "حضور المعلمين", "school-class-list": "قائمة الفصول", "school-dconduct": "متابعة السلوك اليومي", "school-dconduct-img": "صور متابعة السلوك", "school-wplan": "الخطة الأسبوعية", "school-tplan": "الخطة الفصلية", "school-pexcuses": "أعذار أولياء الأمور", "school-pnotes": "ملاحظات أولياء الأمور", "school-staff2": "الإداريون", "school-nq-ex": "اختبارات نافس", "school-nq-res": "نتائج نافس", "school-duty": "الإشراف والمناوبة", "school-license2": "الرخصة المهنية" }; return M[n] || (n.startsWith("school-cls-") ? "بيانات فصل" : n); };
 const trSum = v => { if (v == null) return ""; if (typeof v !== "object") return String(v).slice(0, 140); const x = v; const t = x.title || x.name || x.t || x.sname || x.text || x.note || x.content || x.description || ""; if (t) return String(t).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 140); const n = Object.keys(x).length; return `${maAr(n)} عنصر`; };
+// ══════════════════════════════════════════════════════════════════════
+// 🛰️ غرفة العمليات اللحظية — بث مباشر من قاعدة البيانات (تتحدّث خلال ثوانٍ دون تحديث الصفحة)
+//    + تنبيهات ذكية بإجراء مباشر • إعداداتها في school-ops-cfg
+// ══════════════════════════════════════════════════════════════════════
+const OPS_CFG = "school-ops-cfg";
+const OPS_DEF = { attBy: "08:30", hfxH: 48, absRun: 3 };
+// بث مباشر لعقدة من Firebase (Server-Sent Events) مع رجوع تلقائي للتحديث الدوري عند التعذّر
+function useFbLive(path, pollMs = 60000) {
+  const [v, setV] = useState(undefined); const [live, setLive] = useState(false);
+  useEffect(() => { if (!path) return; let alive = true, es = null, poll = null, got = false; let cur = null;
+    const setAt = (obj, p, val) => { const ks = String(p || "/").split("/").filter(Boolean); if (!ks.length) return val; const root = obj && typeof obj === "object" ? { ...obj } : {}; let o = root; ks.slice(0, -1).forEach(k => { o[k] = o[k] && typeof o[k] === "object" ? { ...o[k] } : {}; o = o[k]; }); if (val === null) delete o[ks[ks.length - 1]]; else o[ks[ks.length - 1]] = val; return root; };
+    const startPoll = () => { if (poll) return; const f = () => maGet(path).then(d => alive && setV(d || {})).catch(() => {}); f(); poll = setInterval(f, pollMs); };
+    try { es = new EventSource(`${FIREBASE_URL}/school/${path}.json`);
+      es.addEventListener("put", e => { try { const m = JSON.parse(e.data); cur = setAt(cur, m.path, m.data); got = true; if (poll) { clearInterval(poll); poll = null; } if (alive) { setV(cur || {}); setLive(true); } } catch {} });
+      es.addEventListener("patch", e => { try { const m = JSON.parse(e.data); Object.entries(m.data || {}).forEach(([k, val]) => { cur = setAt(cur, `${m.path}/${k}`, val); }); if (alive) setV(cur || {}); } catch {} });
+      es.onerror = () => { if (alive) setLive(false); if (es && es.readyState === 2) startPoll(); };
+    } catch { startPoll(); }
+    const fb = setTimeout(() => { if (!got) startPoll(); }, 8000); // لم يصل البث خلال ٨ ثوانٍ ← تحديث دوري
+    return () => { alive = false; clearTimeout(fb); try { es && es.close(); } catch {} if (poll) clearInterval(poll); }; }, [path]);
+  return [v, live];
+}
+// إشعار على الجهاز (يعمل والموقع مفتوح ولو في الخلفية) — عبر عامل الخدمة إن وُجد
+async function pamNotify(title, body, tag) {
+  try { if (!("Notification" in window) || Notification.permission !== "granted") return; const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    const o = { body, tag, icon: "/icon-192.png", badge: "/icon-192.png", dir: "rtl", lang: "ar", data: { url: location.href } }; if (reg) reg.showNotification(title, o); else new Notification(title, o); } catch {}
+}
+// 🗄️ بيانات أقدم من ١٢٠ يوماً (سلة المحذوفات وسجل التدقيق): إنذار للإدارة بالاحتفاظ أو الحذف — لا يُحذف شيء تلقائياً
+const RET_NODE = "school-retention", RET_DAYS = 120;
+function RetentionAlert() {
+  const [S, setS] = useState(null); const [busy, setBusy] = useState(false);
+  const load = async () => { try {
+    const [t, a, c] = await Promise.all([fetch(`${FIREBASE_URL}/school/${TR_NODE}.json?shallow=true`).then(r => r.json()), fetch(`${FIREBASE_URL}/school/${AU_NODE}.json?shallow=true`).then(r => r.json()), maGet(RET_NODE)]);
+    const today = maKey(new Date()); const cut = (() => { const d = new Date(); d.setDate(d.getDate() - RET_DAYS); return maKey(d); })(); const C = ptObj(c);
+    const oldT = Object.keys(ptObj(t)).filter(m => `${m}-31` < cut); const oldA = Object.keys(ptObj(a)).filter(k => k < cut);
+    setS({ oldT: (C.trash || "") > today ? [] : oldT, oldA: (C.audit || "") > today ? [] : oldA }); } catch { setS({ oldT: [], oldA: [] }); } };
+  useEffect(() => { load(); }, []);
+  if (!S || (!S.oldT.length && !S.oldA.length)) return null;
+  const keep = async () => { const d = new Date(); d.setDate(d.getDate() + RET_DAYS); const k = maKey(d); const v = {}; if (S.oldT.length) v.trash = k; if (S.oldA.length) v.audit = k; await fbPatch(Object.fromEntries(Object.entries(v).map(([x, y]) => [`${RET_NODE}/${x}`, y]))); setS({ oldT: [], oldA: [] }); };
+  const del = async () => { if (!window.confirm(`حذف البيانات الأقدم من ${maAr(RET_DAYS)} يوماً نهائياً؟\n${S.oldT.length ? `• سلة المحذوفات: ${maAr(S.oldT.length)} شهر\n` : ""}${S.oldA.length ? `• سجل التدقيق: ${maAr(S.oldA.length)} يوم` : ""}\n(سيُطلب رقم هوية مدير المدرسة)`)) return;
+    setBusy(true); const P = {}; S.oldT.forEach(m => { P[`${TR_NODE}/${m}`] = null; }); S.oldA.forEach(k => { P[`${AU_NODE}/${k}`] = null; }); await fbPatch(P); setBusy(false); load(); };
+  return <div dir="rtl" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "linear-gradient(135deg,#f5f3ff,#eef2ff)", border: "2px solid #a5b4fc", borderRadius: 18, padding: "12px 16px" }}>
+    <span style={{ fontSize: 30 }}>🗄️</span>
+    <div style={{ flex: "1 1 260px" }}><b style={{ fontSize: 15, color: "#3730a3" }}>توجد بيانات أقدم من {maAr(RET_DAYS)} يوماً — الاحتفاظ بها أم حذفها؟</b>
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>{S.oldT.length ? `🗃️ سلة المحذوفات: ${maAr(S.oldT.length)} شهر` : ""}{S.oldT.length && S.oldA.length ? " • " : ""}{S.oldA.length ? `🕵️ سجل التدقيق: ${maAr(S.oldA.length)} يوم` : ""}</div></div>
+    <button type="button" onClick={keep} style={{ border: "1.5px solid #a5b4fc", background: "#fff", borderRadius: 12, padding: "8px 14px", fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>💾 الاحتفاظ {maAr(RET_DAYS)} يوماً أخرى</button>
+    <button type="button" disabled={busy} onClick={del} style={{ border: "none", background: "#b91c1c", color: "#fff", borderRadius: 12, padding: "8px 14px", fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>{busy ? "⏳" : "🗑 حذف القديم (بموافقة المدير)"}</button>
+  </div>;
+}
+
+function OpsRoom({ navigate }) {
+  const dk = maKey(new Date()); const off = maOffName(dk);
+  const [att, liveA] = useFbLive(off ? null : `${MA_ATT}/${dk}`); const [late] = useFbLive(off ? null : `${MA_LATE}/${dk}`); const [tabs] = useFbLive(off ? null : `${TT_ABS}/${dk}`);
+  const [S, setS] = useState(null); const [cfg, setCfg] = useState(OPS_DEF); const [now, setNow] = useState(new Date()); const [perm, setPerm] = useState(() => { try { return Notification.permission; } catch { return "unsupported"; } });
+  const [inst, setInst] = useState(() => !!window.__pamInstall); const seen = useRef(null);
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 20000); const f = () => setInst(!!window.__pamInstall); window.addEventListener("pam-install", f); return () => { clearInterval(t); window.removeEventListener("pam-install", f); }; }, []);
+  const loadStatic = async () => {
+    const prev = []; { const d = maDate(dk); for (let i = 0; i < 12 && prev.length < 4; i++) { d.setDate(d.getDate() - 1); const k = maKey(d); if (!maOff(k)) prev.push(k); } }
+    const [ros, c, tt, hf, ...pa] = await Promise.all([maGet(MA_ROSTER), maGet(OPS_CFG), maGet(TT_NODE), maGet(HFX_NODE), ...prev.map(k => maGet(`${MA_ATT}/${k}`))]);
+    setCfg({ ...OPS_DEF, ...ptObj(c) }); setS({ ros: ptObj(ros), T: ttFresh(tt), hf: ptObj(hf), prev, pa: pa.map(ptObj), at: Date.now() });
+  };
+  useEffect(() => { loadStatic(); const t = setInterval(loadStatic, 180000); return () => clearInterval(t); }, []);
+  const saveCfg = async p => { const n = { ...cfg, ...p }; setCfg(n); await maPut(OPS_CFG, n); };
+
+  const classes = S ? Object.keys(S.ros).filter(ck => maArr(S.ros[ck] && S.ros[ck].students).length).sort((a, b) => a.localeCompare(b, "en", { numeric: true })) : [];
+  const A = ptObj(att), Lt = ptVals(late), TA = ptVals(tabs);
+  const stuTotal = classes.reduce((n, ck) => n + maArr(S.ros[ck].students).length, 0);
+  const done = classes.filter(ck => A[ck]); const pend = classes.filter(ck => !A[ck]);
+  const absN = done.reduce((n, ck) => n + maArr(A[ck].absent).length, 0); const doneTot = done.reduce((n, ck) => n + (+A[ck].total || maArr(S.ros[ck].students).length), 0);
+  const nowM = now.getHours() * 60 + now.getMinutes(); const byM = mlToMin(cfg.attBy || "08:30"); const overdue = !off && nowM >= byM && pend.length > 0;
+  const tName = ti => (S && S.T && S.T.T && S.T.T[ti]) || "معلم";
+  const tAbs = TA.filter(x => x && x.ti != null).sort((a, b) => (a.o || 0) - (b.o || 0));
+  // غياب متصل: طلاب غائبون اليوم وفي الأيام السابقة المتتالية
+  const runs = (() => { if (!S || !done.length) return []; const need = Math.max(2, +cfg.absRun || 3); const days = [A, ...S.pa].slice(0, need); if (days.length < need) return [];
+    const out = []; done.forEach(ck => maArr(A[ck].absent).forEach(st => { if (days.every(D => maArr(ptObj(D)[ck] && ptObj(D)[ck].absent).some(x => x && x.id === st.id))) out.push({ ...st, ck }); })); return out; })();
+  const hfxWait = S ? Object.values(S.hf).filter(c => c && c.id && ["sent"].includes(c.st) && c.at && Date.now() - c.at > (+cfg.hfxH || 48) * 3600000) : [];
+  const lateL = Lt.filter(x => x && x.name).sort((a, b) => (b.at || 0) - (a.at || 0));
+  // التغذية الحية
+  const feed = [...done.map(ck => ({ at: +A[ck].savedAt || 0, ic: "📋", c: "#0f766e", t: `رصد ${maClassName(ck)}: ${maAr(maArr(A[ck].absent).length)} غائب`, s: A[ck].teacher || A[ck].lastEditBy || "" })),
+    ...lateL.map(x => ({ at: +x.at || 0, ic: "⏰", c: "#c2410c", t: `تأخر: ${x.name} — ${maClassName(x.ck)}${x.mins ? ` (${maAr(x.mins)} د)` : ""}`, s: x.by || "" })),
+    ...tAbs.map(x => ({ at: +x.at || 0, ic: "🚫", c: "#b91c1c", t: `غياب معلم: ${tName(x.ti)}`, s: x.by || "" }))].filter(x => x.at).sort((a, b) => b.at - a.at).slice(0, 30);
+  const base = (() => { try { return location.origin + location.pathname; } catch { return ""; } })();
+  const waPend = `https://wa.me/?text=${encodeURIComponent(`🔔 زملائي المعلمين: لم يُرصد غياب الطلاب حتى الآن في:\n${pend.map(maClassName).join("، ")}\nنأمل الرصد عبر الرابط:\n${base}#attend`)}`;
+  const alerts = [];
+  if (off) alerts.push({ k: "off", lv: "info", ic: "🌙", t: `اليوم ${off}`, s: "لا يوجد دوام اليوم" });
+  if (overdue) alerts.push({ k: "att-" + pend.length, lv: "bad", ic: "📋", t: `${maAr(pend.length)} فصل لم يُرصد غيابه بعد الساعة ${maAr(cfg.attBy)}`, s: pend.map(maClassName).join(" • "), act: [["💬 تذكير المعلمين بالواتساب", () => window.open(waPend, "_blank")], ["📋 رصد الغياب", () => navigate && navigate("morningattend")]] });
+  if (tAbs.length) alerts.push({ k: "tabs-" + tAbs.length, lv: "bad", ic: "🚫", t: `${maAr(tAbs.length)} معلم غائب اليوم`, s: tAbs.map(x => tName(x.ti)).join(" • "), act: [["🗓️ خطة الاحتياط", () => navigate && navigate("ttnow")]] });
+  if (runs.length) alerts.push({ k: "runs-" + runs.length, lv: "warn", ic: "📅", t: `${maAr(runs.length)} طالب غائب ${maAr(Math.max(2, +cfg.absRun || 3))} أيام متتالية`, s: runs.slice(0, 12).map(x => `${x.name} (${maClassName(x.ck)})`).join(" • "), act: [["👤 سجل غياب الطلاب", () => navigate && navigate("student-absence")], ["🚨 الإنذار المبكر", () => navigate && navigate("insights")]] });
+  if (hfxWait.length) alerts.push({ k: "hfx-" + hfxWait.length, lv: "warn", ic: "📑", t: `${maAr(hfxWait.length)} مساءلة لم يفتحها المعلم منذ أكثر من ${maAr(cfg.hfxH)} ساعة`, s: hfxWait.map(c => c.n).join(" • "), act: [["📑 فتح المساءلات", () => navigate && navigate("hfx")]] });
+  // إشعار الجهاز عند ظهور تنبيه جديد
+  useEffect(() => { if (!S) return; const ks = alerts.filter(a => a.lv !== "info").map(a => a.k); if (seen.current == null) { seen.current = new Set(ks); return; } ks.forEach(k => { if (!seen.current.has(k)) { const a = alerts.find(x => x.k === k); pamNotify("🛰️ " + a.t, a.s || "", k); seen.current.add(k); } }); }, [alerts.map(a => a.k).join("|"), !!S]);
+  const askPerm = async () => { try { const r = await Notification.requestPermission(); setPerm(r); if (r === "granted") pamNotify("✅ تم تفعيل التنبيهات", "ستصلك تنبيهات غرفة العمليات على هذا الجهاز", "ok"); } catch {} };
+  const doInstall = async () => { const e = window.__pamInstall; if (!e) return; e.prompt(); try { await e.userChoice; } catch {} window.__pamInstall = null; setInst(false); };
+  const isIOS = (() => { try { return /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.navigator.standalone; } catch { return false; } })();
+  const pct = (a, b) => b ? Math.round(a / b * 1000) / 10 : 0;
+  const LV = { bad: ["#b91c1c", "#fef2f2", "#fecaca"], warn: ["#b45309", "#fffbeb", "#fde68a"], info: ["#334155", "#f8fafc", "#e2e8f0"] };
+  return <div dir="rtl" className="px-2 md:px-5 py-3"><style>{OPS_CSS}</style><div className="ops">
+    <div className="ops-hero">
+      <div style={{ flex: "1 1 260px" }}><h2>🛰️ غرفة العمليات</h2><p>{maDay(now)} • {maHijri(now)} — متابعة اليوم الدراسي لحظة بلحظة</p></div>
+      <div className="ops-clock">{now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" })}</div>
+      <span className={"ops-live" + (liveA ? " on" : "")}>{liveA ? "● بث مباشر" : "○ تحديث دوري"}</span>
+    </div>
+    <div className="ops-tools">
+      {perm !== "granted" && perm !== "unsupported" && <button className="ops-b gold" onClick={askPerm}>🔔 تفعيل تنبيهات هذا الجهاز</button>}
+      {perm === "granted" && <span className="ops-tag">🔔 التنبيهات مفعّلة على هذا الجهاز</span>}
+      {inst && <button className="ops-b" onClick={doInstall}>📲 تثبيت الموقع كتطبيق</button>}
+      {isIOS && <span className="ops-tag">📲 للآيفون: زر المشاركة ← «إضافة إلى الشاشة الرئيسية»</span>}
+      <label className="ops-tag">⏰ موعد اكتمال رصد الغياب <input type="time" value={cfg.attBy} onChange={e => saveCfg({ attBy: e.target.value })} /></label>
+    </div>
+    {!S ? <div className="ops-card" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>⏳ جارٍ تجهيز غرفة العمليات…</div> : <>
+      <HdUpReminder onGo={() => { try { localStorage.setItem("hd-tab", "up"); } catch {} navigate && navigate("hdisc"); }} />
+      <RetentionAlert />
+      {alerts.length > 0 ? <div className="ops-alerts">{alerts.map(a => { const [c, bg, bd] = LV[a.lv]; return <div key={a.k} className="ops-al" style={{ "--c": c, background: bg, borderColor: bd }}>
+        <span className="ops-al-ic">{a.ic}</span><div style={{ flex: "1 1 220px", minWidth: 0 }}><b>{a.t}</b>{a.s && <small>{a.s}</small>}</div>
+        {a.act && <div className="ops-al-act">{a.act.map(([l, f]) => <button key={l} className="ops-b" onClick={f}>{l}</button>)}</div>}</div>; })}</div>
+        : <div className="ops-card ops-ok">✅ لا توجد تنبيهات الآن — كل شيء يسير كما يجب</div>}
+      <div className="ops-kp">
+        <div style={{ "--c": "#0f766e" }}><b>{maAr(done.length)}<small> من {maAr(classes.length)}</small></b><span>فصول رُصد غيابها</span><i style={{ width: pct(done.length, classes.length) + "%" }} /></div>
+        <div style={{ "--c": "#b91c1c" }}><b>{maAr(absN)}</b><span>طالب غائب ({maAr(pct(absN, doneTot))}٪ من المرصودين)</span></div>
+        <div style={{ "--c": "#c2410c" }}><b>{maAr(lateL.length)}</b><span>طالب متأخر صباحاً</span></div>
+        <div style={{ "--c": "#7f1d1d" }}><b>{maAr(tAbs.length)}</b><span>معلم غائب</span></div>
+        <div style={{ "--c": "#1e3a8a" }}><b>{maAr(stuTotal)}</b><span>طلاب المدرسة</span></div>
+      </div>
+      <div className="ops-2">
+        <div className="ops-card"><b className="ops-h">🏫 رصد الغياب حسب الفصل</b>
+          <div className="ops-grid">{classes.map(ck => { const r = A[ck]; const n = r ? maArr(r.absent).length : 0; return <div key={ck} className={"ops-cls" + (r ? " ok" : overdue ? " late" : "")} title={r ? `${r.teacher || ""} ${r.time || ""}` : "لم يُرصد"}><b>{maClassName(ck).replace(" متوسط", "")}</b><small>{r ? (n ? `${maAr(n)} غائب` : "لا غياب ✓") : "لم يُرصد"}</small></div>; })}</div>
+          <div className="ops-leg"><span><i style={{ background: "#dcfce7" }} />رُصد</span><span><i style={{ background: "#f1f5f9" }} />لم يُرصد</span><span><i style={{ background: "#fee2e2" }} />متأخر عن الموعد</span></div>
+        </div>
+        <div className="ops-card"><b className="ops-h">⚡ ما يحدث الآن</b>
+          {!feed.length ? <div style={{ color: "#94a3b8", fontWeight: 800, padding: 12 }}>لا أحداث بعد اليوم</div> : <div className="ops-feed">{feed.map((x, i) => <div key={i} style={{ "--c": x.c }}><span>{x.ic}</span><div><b>{x.t}</b><small>{new Date(x.at).toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" })}{x.s ? ` • ${x.s}` : ""}</small></div></div>)}</div>}
+        </div>
+      </div>
+      {lateL.length > 0 && <div className="ops-card"><b className="ops-h">⏰ المتأخرون صباحاً ({maAr(lateL.length)})</b><div className="ops-chips">{lateL.map(x => <span key={x.id}>{x.name} <small>{maClassName(x.ck)}{x.time ? ` • ${x.time}` : ""}</small></span>)}</div></div>}
+      <TtNowBoard navigate={navigate} />
+    </>}
+  </div></div>;
+}
+const OPS_CSS = `
+.ops{max-width:1250px;margin:0 auto;display:grid;gap:12px;font-family:inherit}
+.ops-hero{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:radial-gradient(circle at 12% 20%,#134e4a,#0f172a 70%);color:#fff;border-radius:22px;padding:16px 20px;box-shadow:0 14px 30px -18px rgba(15,23,42,.8)}
+.ops-hero h2{margin:0;font-size:26px;font-weight:900}.ops-hero p{margin:2px 0 0;opacity:.85;font-weight:700;font-size:13.5px}
+.ops-clock{font-size:34px;font-weight:900;letter-spacing:1px;color:#5eead4}
+.ops-live{border-radius:99px;padding:6px 14px;font-weight:900;font-size:13px;background:rgba(255,255,255,.12);color:#cbd5e1}
+.ops-live.on{color:#4ade80;animation:opsPulse 2s ease-in-out infinite}
+@keyframes opsPulse{50%{opacity:.55}}
+.ops-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ops-b{border:1.5px solid #e2e8f0;background:#fff;border-radius:12px;padding:7px 12px;font-weight:900;font-size:13px;cursor:pointer;font-family:inherit;color:#0f172a}
+.ops-b:hover{background:#f8fafc}.ops-b.gold{background:linear-gradient(180deg,#fbbf24,#f59e0b);border-color:#d97706;color:#451a03}
+.ops-tag{display:inline-flex;gap:6px;align-items:center;background:#f1f5f9;border-radius:99px;padding:6px 12px;font-weight:800;font-size:12.5px;color:#334155}
+.ops-tag input{border:1px solid #cbd5e1;border-radius:8px;padding:2px 6px;font-family:inherit}
+.ops-alerts{display:grid;gap:8px}
+.ops-al{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:2px solid;border-radius:16px;padding:10px 14px;border-inline-start:6px solid var(--c)}
+.ops-al b{display:block;color:var(--c);font-size:15px}.ops-al small{display:block;color:#475569;font-weight:700;font-size:12.5px;line-height:1.8;margin-top:2px}
+.ops-al-ic{font-size:28px}.ops-al-act{display:flex;gap:6px;flex-wrap:wrap}
+.ops-card{background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 16px rgba(0,0,0,.05);border:1px solid #f1f5f9}
+.ops-ok{text-align:center;font-weight:900;color:#15803d;background:#f0fdf4;border-color:#bbf7d0}
+.ops-h{display:block;font-size:15.5px;margin-bottom:10px;color:#0f172a}
+.ops-kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.ops-kp>div{position:relative;overflow:hidden;background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 4px 14px rgba(0,0,0,.05);display:grid;gap:2px}
+.ops-kp b{font-size:30px;font-weight:900;color:var(--c)}.ops-kp b small{font-size:15px;color:#94a3b8}.ops-kp span{font-size:12.5px;font-weight:800;color:#64748b}
+.ops-kp i{position:absolute;bottom:0;right:0;height:5px;background:var(--c);transition:width .6s}
+.ops-2{display:grid;grid-template-columns:1.3fr 1fr;gap:12px}
+@media(max-width:900px){.ops-2{grid-template-columns:1fr}}
+.ops-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.ops-cls{border-radius:12px;padding:8px 6px;text-align:center;background:#f1f5f9;border:1.5px solid #e2e8f0;transition:.3s}
+.ops-cls b{display:block;font-size:13px}.ops-cls small{font-size:11.5px;font-weight:800;color:#64748b}
+.ops-cls.ok{background:#dcfce7;border-color:#86efac}.ops-cls.ok small{color:#166534}
+.ops-cls.late{background:#fee2e2;border-color:#fca5a5;animation:opsPulse 2.4s ease-in-out infinite}.ops-cls.late small{color:#b91c1c}
+.ops-leg{display:flex;gap:12px;margin-top:8px;font-size:11.5px;font-weight:800;color:#64748b}.ops-leg i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-inline-end:4px;vertical-align:middle;border:1px solid #cbd5e1}
+.ops-feed{display:grid;gap:6px;max-height:380px;overflow-y:auto}
+.ops-feed>div{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-radius:12px;background:#f8fafc;border-inline-start:4px solid var(--c);animation:opsIn .4s}
+.ops-feed span{font-size:18px}.ops-feed b{display:block;font-size:13px}.ops-feed small{font-size:11.5px;color:#64748b;font-weight:700}
+@keyframes opsIn{from{opacity:0;transform:translateY(-6px)}}
+.ops-chips{display:flex;flex-wrap:wrap;gap:6px}.ops-chips span{background:#fff7ed;border:1px solid #fed7aa;border-radius:99px;padding:4px 10px;font-weight:800;font-size:12.5px}.ops-chips small{color:#9a3412}
+`;
+
+// 🕵️ صفحة سجل التدقيق — من عدّل ماذا ومتى
+const AU_LBL_X = { "school-mlate": "التأخر الصباحي", "school-mattend": "غياب الطلاب", "school-hfx": "نماذج المساءلات", "school-hfx-del": "أرشيف المساءلات", "school-trash": "سلة المحذوفات", "school-roles": "الصلاحيات", "school-staff2": "الإداريون", "school-license2": "المعلمون", "school-ann": "الإعلانات", "school-tr-prog": "رحلة الكنز", "school-tr-cfg": "إعدادات رحلة الكنز", "school-ops-cfg": "إعدادات غرفة العمليات", "school-nq-res": "نتائج نافس التدريبية", "school-nq-ex": "اختبارات نافس التدريبية", "school-sidx": "فهرس الطلاب" };
+const auLabel = node => { try { return (typeof BK2_LBL !== "undefined" && BK2_LBL[node]) || AU_LBL_X[node] || node; } catch { return AU_LBL_X[node] || node; } };
+const AU_OP = { set: ["حفظ", "#0369a1", "#e0f2fe"], upd: ["تعديل", "#b45309", "#fef3c7"], del: ["حذف", "#b91c1c", "#fee2e2"] };
+function AuditPage({ navigate }) {
+  const [dk, setDk] = useState(maKey(new Date())); const [L, setL] = useState(null); const [who, setWho] = useState(""); const [sec, setSec] = useState(""); const [op, setOp] = useState(""); const [q, setQ] = useState("");
+  const load = async () => { setL(null); const d = ptObj(await maGet(`${AU_NODE}/${dk}`)); setL(Object.values(d).filter(x => x && x.at).sort((a, b) => b.at - a.at)); };
+  useEffect(() => { load(); }, [dk]);
+  const rows = (L || []).map(x => ({ ...x, node: String(x.p || "").split("/")[0], rest: String(x.p || "").split("/").slice(1).join(" / ") }));
+  const whos = [...new Set(rows.map(x => x.who || "دون دخول"))].sort((a, b) => a.localeCompare(b, "ar"));
+  const secs = [...new Set(rows.map(x => x.node))];
+  const V = rows.filter(x => (!who || (x.who || "دون دخول") === who) && (!sec || x.node === sec) && (!op || x.op === op) && (!q || (auLabel(x.node) + " " + x.p + " " + (x.who || "")).includes(q)));
+  const cnt = k => rows.filter(x => x.op === k).length;
+  const shift = n => { const d = maDate(dk); d.setDate(d.getDate() + n); setDk(maKey(d)); };
+  const tm = t => new Date(t).toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const printIt = () => inOpen(`<section class="pg">${inHdr("سجل التدقيق — العمليات على بيانات الموقع", `${maDay(maDate(dk))}<br>${maHijri(maDate(dk))}`)}<table><thead><tr><th>الوقت</th><th class="r">المستخدم</th><th>العملية</th><th class="r">القسم</th><th class="r">التفاصيل</th></tr></thead><tbody>${V.map(x => `<tr><td>${tm(x.at)}</td><td class="r">${ptEsc(x.who || "دون دخول")} ${x.d || ""}</td><td>${(AU_OP[x.op] || [x.op])[0]}${x.n > 1 ? ` (${maAr(x.n)})` : ""}${x.ok ? `<br><small>بموافقة: ${ptEsc(x.ok)}</small>` : ""}</td><td class="r">${ptEsc(auLabel(x.node))}</td><td class="r" style="font-size:9px;direction:ltr">${ptEsc(x.rest)}</td></tr>`).join("")}</tbody></table></section>`, "سجل التدقيق");
+  return <div className="px-2 md:px-6 py-3 grid gap-3" dir="rtl" style={{ maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ background: "linear-gradient(135deg,#0f172a,#334155)", color: "#fff", borderRadius: 20, padding: "16px 20px" }}><h2 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>🕵️ سجل التدقيق</h2><p style={{ margin: "4px 0 0", opacity: .85, fontWeight: 700, fontSize: 13.5 }}>كل حفظ أو تعديل أو حذف في الموقع: من قام به، ومتى، وفي أي قسم. المحذوفات تُسترجع من «سلة المحذوفات».</p></div>
+    <div className="ma-card p-3 flex gap-2 flex-wrap items-center">
+      <button className="ma-btn" onClick={() => shift(-1)}>→</button><input type="date" className="ma-inp" style={{ width: 160 }} value={dk} onChange={e => e.target.value && setDk(e.target.value)} /><button className="ma-btn" onClick={() => shift(1)} disabled={dk >= maKey(new Date())}>←</button>
+      <b style={{ fontSize: 13.5 }}>{maDay(maDate(dk))} {maHijri(maDate(dk))}</b>
+      <select className="ma-inp" style={{ width: 170 }} value={who} onChange={e => setWho(e.target.value)}><option value="">كل المستخدمين</option>{whos.map(w => <option key={w}>{w}</option>)}</select>
+      <select className="ma-inp" style={{ width: 190 }} value={sec} onChange={e => setSec(e.target.value)}><option value="">كل الأقسام</option>{secs.map(x => <option key={x} value={x}>{auLabel(x)}</option>)}</select>
+      <input className="ma-inp" style={{ flex: "1 1 160px" }} placeholder="🔎 بحث" value={q} onChange={e => setQ(e.target.value)} />
+      <button className="ma-btn" onClick={load}>🔄</button><button className="ma-btn" onClick={printIt}>🖨️ طباعة</button>{navigate && <button className="ma-btn pri" onClick={() => navigate("trash")}>🗃️ سلة المحذوفات</button>}
+    </div>
+    <div className="flex gap-2 flex-wrap">{[["", "الكل", rows.length], ["set", "حفظ", cnt("set")], ["upd", "تعديل", cnt("upd")], ["del", "حذف", cnt("del")]].map(([k, l, n]) => <button key={k} className="ma-btn" style={op === k ? { background: "#0f172a", color: "#fff" } : {}} onClick={() => setOp(k)}>{l} {maAr(n)}</button>)}</div>
+    <div className="ma-card" style={{ padding: 0, overflow: "auto" }}>
+      {L == null ? <div className="p-8 text-center text-gray-400 font-bold">⏳</div> : !V.length ? <div className="p-8 text-center font-bold" style={{ color: "#64748b" }}>لا توجد عمليات مسجّلة في هذا اليوم{dk < "2026-10-14" ? " (بدأ التسجيل من ١٤ أكتوبر ٢٠٢٦)" : ""}</div> :
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 720 }}><thead><tr style={{ background: "#0f172a", color: "#fff" }}><th style={{ padding: 8 }}>الوقت</th><th style={{ textAlign: "right" }}>المستخدم</th><th>العملية</th><th style={{ textAlign: "right" }}>القسم</th><th style={{ textAlign: "right" }}>التفاصيل</th></tr></thead>
+          <tbody>{V.slice(0, 600).map((x, i) => { const O = AU_OP[x.op] || [x.op, "#334155", "#f1f5f9"]; return <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: x.op === "del" ? "#fffafa" : "#fff" }}><td style={{ padding: "6px 8px", whiteSpace: "nowrap", fontWeight: 800 }}>{tm(x.at)}</td><td style={{ fontWeight: 800 }}>{x.who || <span style={{ color: "#94a3b8" }}>دون دخول</span>} <span title="الجهاز">{x.d}</span></td><td style={{ textAlign: "center" }}><span style={{ background: O[2], color: O[1], borderRadius: 99, padding: "2px 10px", fontWeight: 900, fontSize: 12 }}>{O[0]}{x.n > 1 ? ` ×${maAr(x.n)}` : ""}</span>{x.ok && <div style={{ fontSize: 11, color: "#166534", fontWeight: 800, marginTop: 2 }}>✔ بموافقة: {x.ok}</div>}</td><td style={{ fontWeight: 800 }}>{auLabel(x.node)}</td><td style={{ fontSize: 11.5, color: "#64748b", direction: "ltr", textAlign: "right", wordBreak: "break-all" }}>{x.rest}</td></tr>; })}</tbody></table>}
+    </div>
+    {V.length > 600 && <div className="text-center" style={{ fontSize: 12.5, color: "#64748b", fontWeight: 700 }}>يُعرض أحدث ٦٠٠ عملية — استخدم الفلاتر للتضييق</div>}
+  </div>;
+}
+
 function TrashPage() {
   const [months, setMonths] = useState(null); const [mon, setMon] = useState(""); const [L, setL] = useState(null); const [q, setQ] = useState(""); const [view, setView] = useState(null); const [busy, setBusy] = useState(""); const [msg, setMsg] = useState("");
   const toast = t => { setMsg(t); clearTimeout(toast.t); toast.t = setTimeout(() => setMsg(""), 4000); };
@@ -41240,6 +41524,11 @@ function drInstall() {
   window.addEventListener("hashchange", () => setTimeout(drScan, 400));
 }
 if (typeof window !== "undefined") { try { trInstall(); } catch {} try { drInstall(); } catch {} }
+// 📲 تثبيت الموقع كتطبيق + عامل الخدمة (للإشعارات فقط — لا يخزّن الصفحات حتى تصل التحديثات فوراً)
+if (typeof window !== "undefined") { try {
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); window.__pamInstall = e; window.dispatchEvent(new Event("pam-install")); });
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => { navigator.serviceWorker.register("/sw.js").catch(() => {}); });
+} catch {} }
 
 // شريط الاتصال + تنبيه الاسترجاع + «مسوداتي»
 function PamGuard() {
@@ -42099,6 +42388,7 @@ function LeadDash({ navigate, clock, dayName, hijri, greg, greet, attendRate, to
   return <div className="ld" dir="rtl"><style>{LD_CSS}</style>
     <div className="ld-top"><div style={{ flex: "1 1 260px" }}><h1>لوحة قيادة المدرسة</h1><p>متابعة اليوم الدراسي وإدارة أعمال المدرسة • {greet}</p></div><span className="ld-chip">📆 {dayName}</span><span className="ld-chip">🌙 {hijri}</span><span className="ld-chip" style={{ display: "inline-flex" }}><PamQuoteMini /></span></div>
     <HdUpReminder onGo={() => { try { localStorage.setItem("hd-tab", "up"); } catch {} navigate("hdisc"); }} />
+    <RetentionAlert />
     <div className="ld-hd">
       <div className="ld-id"><div className="ld-lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div><div style={{ flex: "1 1 240px", minWidth: 0 }}><h2>مدرسة <span>الأمير عبدالمجيد</span> المتوسطة الأولى</h2><div className="sl">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div><div className="ld-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 بناء جيل متميز لوطن طموح</b></div><PamQuote /></div></div>
       <div className="ld-gl"><div className="ld-clk"><span className="ld-eg" style={ldEgg("#f59e0b", "#fde68a")}><i>🕰️</i></span><div><div className="t">{clock}</div><div className="d">{dayName} • {hijri}<br />الموافق {greg}</div></div></div></div>
@@ -42217,7 +42507,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","treasureadm","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","treasureadm","liveops","audit","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -42604,16 +42894,18 @@ function SchoolWebsiteInner() {
     { id: "alreport", label: "تقرير الغياب والتأخر المتكرر", icon: "🔁" },
     { id: "ttnow", label: "الحصص الآن — شاشة العرض", icon: "📺" },
     { id: "trash", label: "سلة المحذوفات والاسترجاع", icon: "🗃️" },
+    { id: "audit", label: "سجل التدقيق", icon: "🕵️" },
+    { id: "liveops", label: "غرفة العمليات اللحظية", icon: "🛰️" },
   ];
   const extraPages = [...classToolPages, ...reportPages];
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
-    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","alreport","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
+    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","alreport","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","treasureadm","insights","behavior","conduct","students","formative","studentclassify","stulevels","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","hfx","hdisc","timetable","ttnow","trash","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","hfx","hdisc","timetable","ttnow","trash","audit","settings"] },
   ];
 
   return (
@@ -42905,7 +43197,7 @@ function SchoolWebsiteInner() {
                 {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
                 {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
                 {page === "portals" && <PortalsAdminPage />}
@@ -43084,7 +43376,7 @@ function SchoolWebsiteInner() {
         {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
         {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
         {page === "portals" && <PortalsAdminPage />}
