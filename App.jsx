@@ -11,7 +11,7 @@ import schoolLogoImg from "./img/school-logo.svg";
 // 🗺️ رحلة الكنز: طريقي إلى نافس — تُحمَّل عند فتحها فقط (لا تؤثر على سرعة الموقع)
 const TreasurePublic = React.lazy(() => import("./treasure/TreasurePublic.jsx"));
 const TreasureAdmin = React.lazy(() => import("./treasure/TreasureAdmin.jsx"));
-const trApi = () => ({ maGet, maPut, stuHash, MA_ROSTER, maClassName });
+const trApi = () => ({ maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src) });
 const TR_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#78350f" }}>🧭 جارٍ تحميل رحلة الكنز…</div>;
 // الصور ملفات مستقلة في مجلد img (تُحمَّل عند الحاجة ويحفظها المتصفح) — الرابط مطلق ليعمل في نوافذ الطباعة أيضاً
 const hfxAbs = u => { try { return new URL(u, window.location.href).href; } catch { return u; } };
@@ -847,6 +847,27 @@ const LOGO_URL = hfxAbs(schoolLogoImg);
 const SCHOOL_LOGO_URL = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImJnIiBjeD0iNTAlIiBjeT0iNDAlIiByPSI3MiUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMWY4YTYzIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTUlIiBzdG9wLWNvbG9yPSIjMGY2YjRhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzA4M2YyYyIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ29sZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZjNkNjdhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZDRhZjM3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2I4OTAxZiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIyMDAiIGZpbGw9InVybCgjYmcpIi8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxOTEiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkKSIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxNTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNSIvPgoKICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMDAgMTA0KSI+CiAgICA8cGF0aCBkPSJNMCAzMCBDLTMwIDEyIC02NiAxMiAtODYgMjAgTC04NiAtMjYgQy02NiAtMzQgLTMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAzMCBDMzAgMTIgNjYgMTIgODYgMjAgTDg2IC0yNiBDNjYgLTM0IDMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZWVmNGYxIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAtMTYgTDAgMzAiIHN0cm9rZT0iIzBmNmI0YSIgc3Ryb2tlLXdpZHRoPSIyLjYiLz4KICAgIDxwYXRoIGQ9Ik0tNzAgLTE0IEMtNDYgLTIwIC0yNCAtMjAgLTggLTEwIE0tNzAgMCBDLTQ2IC02IC0yNCAtNiAtOCAzIE0tNzAgMTQgQy00NiA4IC0yNCA4IC04IDE3IiBzdHJva2U9IiNhN2M2YjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8cGF0aCBkPSJNNzAgLTE0IEM0NiAtMjAgMjQgLTIwIDggLTEwIE03MCAwIEM0NiAtNiAyNCAtNiA4IDMgTTcwIDE0IEM0NiA4IDI0IDggOCAxNyIgc3Ryb2tlPSIjYTdjNmI5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9Ii0yNyIgcj0iNC41IiBmaWxsPSJ1cmwoI2dvbGQpIi8+CiAgPC9nPgoKICA8dGV4dCB4PSIyMDAiIHk9IjE3NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNiIgZmlsbD0iI2VhZmZmNSI+2YXYr9ix2LPYqTwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMSIgZmlsbD0iI2ZmZmZmZiI+2KfZhNij2YXZitixINi52KjYr9in2YTZhdis2YrYrzwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNyIgZmlsbD0iI2YzZDY3YSI+2KfZhNmF2KrZiNiz2LfYqSDYp9mE2KPZiNmE2Yk8L3RleHQ+CgogIDxsaW5lIHgxPSIxMjgiIHkxPSIyNzAiIHgyPSIyNzIiIHkyPSIyNzAiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNyIvPgoKICA8dGV4dCB4PSIyMDAiIHk9IjI5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjYwMCIgZm9udC1zaXplPSIxOCIgZmlsbD0iI2RmZjdlYyI+2KrYudmE2YrZhSDinKYg2KrZhdmK2ZHYsiDinKYg2KfZhtiq2YXYp9ihPC90ZXh0PgogIDx0ZXh0IHg9IjIwMCIgeT0iMzI2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkaXJlY3Rpb249InJ0bCIgZm9udC1mYW1pbHk9IidOb3RvIE5hc2toIEFyYWJpYycsJ1NlZ29lIFVJJywnVGFob21hJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iNjAwIiBmb250LXNpemU9IjE1LjUiIGZpbGw9IiNiZmUzZDIiPtio2YbZitmGIOKAlCDYpdiv2KfYsdipINiq2LnZhNmK2YUg2KzYr9ipPC90ZXh0Pgo8L3N2Zz4=";
 
 
+// ── 👁️ عداد زيارات الإعلان: يُحتسب الزائر مرة واحدة في اليوم لكل إعلان، مع تاريخ آخر زيارة
+function AnnViews({ id, readOnly = false }) {
+  const [S, setS] = React.useState(null);
+  React.useEffect(() => { if (!id) return; let alive = true; const key = `school-visitor-ann-single-${id}`, lk = `school-visitor-last/ann-${id}`;
+    (async () => { try {
+      const [n0, l0] = await Promise.all([fetch(`${FIREBASE_URL}/school/${key}.json`).then(r => r.json()), fetch(`${FIREBASE_URL}/school/${lk}.json`).then(r => r.json())]);
+      let n = +n0 || 0; const day = new Date().toDateString(); let seen = false; try { seen = localStorage.getItem("pam-av-" + id) === day; } catch {}
+      if (!readOnly && !seen) { try { localStorage.setItem("pam-av-" + id, day); } catch {}
+        const h = { "Content-Type": "application/json" }; n = n + 1;
+        fetch(`${FIREBASE_URL}/school/${key}.json`, { method: "PUT", headers: h, body: JSON.stringify({ ".sv": { increment: 1 } }) }).catch(() => {});
+        fetch(`${FIREBASE_URL}/school/${lk}.json`, { method: "PUT", headers: h, body: JSON.stringify({ ".sv": "timestamp" }) }).catch(() => {}); }
+      if (alive) setS({ n, last: +l0 || 0 }); } catch { if (alive) setS({ n: 0, last: 0 }); } })();
+    return () => { alive = false; }; }, [id]);
+  if (!S) return null;
+  const lastTxt = S.last ? (() => { const d = new Date(S.last); return `${maDay(d)} ${d.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long" })} • ${d.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "numeric", minute: "2-digit" })}`; })() : "";
+  return <div dir="rtl" style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "center", background: "linear-gradient(135deg,#f0fdfa,#ecfeff)", border: "1.5px solid #99f6e4", borderRadius: 18, padding: "8px 18px", boxShadow: "0 6px 16px -10px rgba(13,148,136,.6)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 22 }}>👁️</span><b style={{ fontSize: 24, fontWeight: 900, color: "#0f766e", lineHeight: 1 }}>{maAr(S.n.toLocaleString("en-US"))}</b><span style={{ fontSize: 13, fontWeight: 800, color: "#115e59" }}>زيارة</span></span>
+    {lastTxt && <span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", borderInlineStart: "1.5px solid #99f6e4", paddingInlineStart: 12 }}>🕒 آخر زيارة: {lastTxt}</span>}
+  </div>;
+}
+
 // ── عداد زوار بارز لأعلى الصفحات العامة ──
 function BoldVisitorBadge({ pageKey }) {
   const [count, setCount] = React.useState(null);
@@ -1360,7 +1381,7 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
             {/* عداد الزوار + التعليقات */}
             <div className="px-8 pb-8">
               <div className="flex justify-center mb-4">
-                <BoldVisitorBadge pageKey={`ann-single-${ann.id}`} />
+                <AnnViews id={ann.id} />
               </div>
               <PublicComments itemKey={`ann-${ann.id}`} itemTitle={ann.title} />
             </div>
@@ -1681,6 +1702,7 @@ function CreativeAnnouncementsView({ announcements }) {
 
             {/* التعليقات */}
             <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid #1e293b"}}>
+              <div style={{ display: "flex", justifyContent: "center", margin: "6px 0 12px" }}><AnnViews id={selected.id} /></div>
               <PublicComments itemKey={`ann-${selected.id}`} itemTitle={selected.title} />
             </div>
           </div>
@@ -1953,7 +1975,7 @@ const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
     tools:[{id:"liveops",label:"غرفة العمليات اللحظية",icon:"🛰️"},{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"alreport",label:"تقرير الغياب والتأخر المتكرر",icon:"🔁"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
-    tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"treasureadm",label:"رحلة الكنز إلى نافس",icon:"🗺️"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"conduct",label:"متابعة السلوك اليومي",icon:"🚸"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
+    tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"treasureadm",label:"رحلة الكنز إلى نافس",icon:"🗺️"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"conduct",label:"متابعة السلوك اليومي",icon:"🚸"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"stlogins",label:"سجل دخول الطلاب",icon:"🪪"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
     tools:[{id:"classvisits",label:"الزيارات الصفية ١٤٤٨",icon:"🎯"},{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
@@ -12769,6 +12791,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                 </div>
                 <AnnDateLine ann={ann} />
                 <div className="text-gray-700 text-sm leading-relaxed mb-3 annhtml" dangerouslySetInnerHTML={{ __html: annFit(ann.content) }}></div>
+                <div className="mb-3"><AnnViews id={ann.id} readOnly /></div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span />
                   <div className="flex gap-2"><Badge color="gray">{ann.category}</Badge><Badge color={pColors[ann.priority]}>{ann.priority}</Badge></div>
@@ -31000,7 +31023,7 @@ function GuardianPortal({ onBack }) {
     let s = await findStudent(await stuHash(n));
     if (!s) { const ros = await maGet(MA_ROSTER); s = await ptLinkLegacy(n, ros); }
     if (!s) return "لم يُعثر على الطالب — تأكد من رقم هوية الطالب أو راجع المدرسة";
-    setMe(s); try { localStorage.setItem("pam-parent", JSON.stringify(s)); } catch {} return "";
+    setMe(s); try { localStorage.setItem("pam-parent", JSON.stringify(s)); } catch {} stuLoginLog({ ...s, n4: n.slice(-4) }, "parent"); return "";
   };
   const load = async () => {
     if (!me) return;
@@ -34319,6 +34342,14 @@ async function fbPatch(obj) {
   let ok = true; // احتياط: كتابة كل مسار منفرداً
   for (const k of keys) { if (obj[k] === null) { try { await fetch(`${FIREBASE_URL}/school/${k}.json`, { method: "DELETE" }); } catch { ok = false; } } else if (!(await maPut(k, obj[k]))) ok = false; }
   return ok;
+}
+// 🪪 سجل دخول الطلاب بهوياتهم (إثبات الدخول): school-stlog/{YYYY-MM-DD}/{sid} = {name, ck, n4, n, first, last, src:{parent|treasure}}
+const STLOG = "school-stlog";
+async function stuLoginLog(st, src) {
+  try { if (!st) return; const sid = st.sid || st.id; if (!sid) return; const dk = maKey(new Date()); const p = `${STLOG}/${dk}/${sid}`; const ts = { ".sv": "timestamp" };
+    const cur = await maGet(`${p}/first`);
+    await fbPatch({ [`${p}/name`]: st.name || "", [`${p}/ck`]: st.ck || "", [`${p}/n4`]: st.n4 || "", [`${p}/n`]: { ".sv": { increment: 1 } }, [`${p}/last`]: ts, [`${p}/src/${src}`]: ts, ...(cur ? {} : { [`${p}/first`]: ts }) });
+  } catch {}
 }
 async function fbRange(node, f, t) {
   const inR = k => k >= f && k <= t + "~"; let d = null;
@@ -41022,7 +41053,7 @@ function ReadingWeakPage({ by = "", admin = false }) {
 const TR_NODE = "school-trash";
 const TR_BASE = FIREBASE_URL + "/school";
 // عقد مؤقتة أو فهارس أو نسخ احتياطية — لا داعي لأرشفتها
-const TR_SKIP = [TR_NODE, "school-audit", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-ann-meta", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old"];
+const TR_SKIP = [TR_NODE, "school-audit", "school-stlog", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-ann-meta", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old"];
 const trSkip = p => !p || TR_SKIP.some(s => p === s || p.startsWith(s + "/") || p.startsWith(s + "-"));
 function trPath(url) {
   const u = String(url || ""); if (!u.startsWith(TR_BASE)) return null;
@@ -41909,6 +41940,62 @@ function alSvgTrend(days, dA, dL, mode) {
 const AL_CSS = `.al-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px;min-width:640px}.al-tbl th{background:#0f172a;color:#fff;padding:9px 8px;font-weight:900;white-space:nowrap;position:sticky;top:0}.al-tbl th:first-child{border-radius:0 12px 0 0}.al-tbl th:last-child{border-radius:12px 0 0 0}.al-tbl th.srt{cursor:pointer}.al-tbl th.srt:hover{background:#1e293b}.al-tbl td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:center;vertical-align:middle}.al-tbl td.nm{text-align:right;font-weight:900;color:#0f172a}.al-tbl td.n{color:#94a3b8;font-weight:900}.al-tbl tbody tr{cursor:pointer;transition:.15s}.al-tbl tbody tr:hover td{background:#f8fafc}.al-n{font-weight:900;font-size:16px}.al-mini{height:4px;background:#f1f5f9;border-radius:4px;margin:3px auto 0;max-width:70px;overflow:hidden}.al-mini i{display:block;height:100%;border-radius:4px}`;
 const alLevel = n => n >= 10 ? ["🔴", "مرتفع جداً", "#b42318", "#fef3f2"] : n >= 5 ? ["🟠", "مرتفع", "#b45309", "#fffbeb"] : ["🔵", "متابعة", "#1d4ed8", "#eff6ff"];
 
+// 🪪 صفحة سجل دخول الطلاب بهوياتهم — إثبات الدخول للموقع (بوابة ولي الأمر ورحلة الكنز)
+const STLOG_SRC = { parent: ["👪", "بوابة ولي الأمر"], treasure: ["🗺️", "رحلة الكنز"] };
+function StudentLoginsPage({ by = "الإدارة" }) {
+  const [per, setPer] = useState({ kind: "week", from: maKey(new Date()), to: maKey(new Date()) }); const [f, t] = inPeriod(per.kind, per.from, per.to);
+  const [D, setD] = useState(null); const [tab, setTab] = useState("in"); const [ck, setCk] = useState(""); const [q, setQ] = useState("");
+  useEffect(() => { setD(null); (async () => { const [ros, lg] = await Promise.all([maGet(MA_ROSTER), fbRange(STLOG, f, t)]); setD({ ros: ptObj(ros), lg: ptObj(lg) }); })(); }, [f, t]);
+  if (!D) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري تحميل سجل الدخول…</div>;
+  const roster = []; Object.entries(D.ros).forEach(([c, r]) => maArr(r && r.students).forEach(st => { if (st && st.id && st.name) roster.push({ sid: st.id, name: st.name, ck: c, n4: st.n4 || "" }); }));
+  const classes = [...new Set(roster.map(x => x.ck))].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  const U = {}; const perDay = {};
+  Object.entries(D.lg).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([sid, r]) => { if (!r) return; perDay[dk] = (perDay[dk] || 0) + 1; const u = U[sid] = U[sid] || { sid, name: r.name, ck: r.ck, n4: r.n4, n: 0, days: 0, first: 0, last: 0, src: {} }; u.n += +r.n || 1; u.days++; const fi = +r.first || +r.last || 0; if (fi && (!u.first || fi < u.first)) u.first = fi; if (+r.last > u.last) u.last = +r.last; Object.keys(ptObj(r.src)).forEach(k => { u.src[k] = 1; }); }));
+  roster.forEach(x => { if (U[x.sid]) U[x.sid] = { ...U[x.sid], name: x.name, ck: x.ck, n4: U[x.sid].n4 || x.n4 }; });
+  const inL = Object.values(U).filter(x => (!ck || x.ck === ck) && (!q || String(x.name).includes(q) || String(x.n4).includes(q))).sort((a, b) => b.last - a.last);
+  const outL = roster.filter(x => !U[x.sid] && (!ck || x.ck === ck) && (!q || x.name.includes(q)));
+  const totN = Object.values(U).reduce((a, x) => a + x.n, 0); const uN = Object.keys(U).length; const pct = roster.length ? Math.round(uN / roster.length * 1000) / 10 : 0;
+  const bySrc = k => Object.values(U).filter(x => x.src[k]).length; const lastAll = Math.max(0, ...Object.values(U).map(x => x.last));
+  const cls = classes.map(c => { const n = roster.filter(x => x.ck === c).length, u = roster.filter(x => x.ck === c && U[x.sid]).length; return { c, n, u, p: n ? Math.round(u / n * 100) : 0 }; }).sort((a, b) => b.p - a.p || b.u - a.u);
+  const svgCls = hdSvgBars(cls.map(x => ({ l: maClassName(x.ck || x.c), v: x.p, t: `${maAr(x.p)}٪ (${maAr(x.u)} من ${maAr(x.n)})`, c: x.p >= 60 ? "#0f766e" : x.p >= 30 ? "#2563eb" : "#94a3b8", tip: `${maClassName(x.c)}: ${x.u} من ${x.n} طالب` })), 100);
+  const days = Object.keys(perDay).sort(); const svgDay = hdSvgBars(days.map(k => ({ l: `${maDay(maDate(k))} ${asmHij(maDate(k), false).split("/").reverse().join("/")}`, v: perDay[k], t: `${maAr(perDay[k])} طالب`, c: "#2563eb" })));
+  const tm = ms => ms ? `${maDay(new Date(ms))} ${new Date(ms).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })} • ${new Date(ms).toLocaleTimeString("ar-SA-u-nu-arab", { hour: "numeric", minute: "2-digit" })}` : "—";
+  const srcTxt = x => Object.keys(x.src).map(k => (STLOG_SRC[k] || ["", k]).join(" ")).join(" • ") || "—";
+  const sub = `من ${maHijri(maDate(f))}<br>إلى ${maHijri(maDate(t))}`;
+  const print = () => inOpen(`<section class="pg">${inHdr("سجل دخول الطلاب للموقع بهوياتهم", sub)}<div class="kp"><div><b>${maAr(uN)} / ${maAr(roster.length)}</b>طالب دخلوا (${maAr(pct)}٪)</div><div><b>${maAr(totN)}</b>مرة دخول</div><div><b>${maAr(bySrc("parent"))}</b>عبر بوابة ولي الأمر</div><div><b>${maAr(bySrc("treasure"))}</b>عبر رحلة الكنز</div></div>
+    <div style="border:1px solid #e2e8f0;border-radius:10px;padding:6px;margin:6px 0"><h4 style="margin:0 0 4px;font-size:11.5px">🏫 نسبة الطلاب الذين دخلوا في كل فصل</h4>${svgCls}</div>
+    <h3>🪪 الطلاب الذين دخلوا (${maAr(inL.length)})</h3><table><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>الهوية</th><th>مرات الدخول</th><th>أيام الدخول</th><th>أول دخول</th><th>آخر دخول</th><th>البوابة</th></tr></thead><tbody>${[...inL].sort((a, b) => a.ck.localeCompare(b.ck, "en", { numeric: true }) || a.name.localeCompare(b.name, "ar")).map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(x.name)}</b></td><td>${maClassName(x.ck)}</td><td>${x.n4 ? "***" + maAr(x.n4) : "—"}</td><td>${maAr(x.n)}</td><td>${maAr(x.days)}</td><td style="font-size:9px">${tm(x.first)}</td><td style="font-size:9px">${tm(x.last)}</td><td style="font-size:9px">${srcTxt(x)}</td></tr>`).join("") || `<tr><td colspan="9">لا يوجد</td></tr>`}</tbody></table>
+    ${outL.length ? `<h3>⏳ لم يدخلوا (${maAr(outL.length)})</h3><div style="font-size:10.5px;line-height:2">${classes.filter(c => !ck || c === ck).map(c => { const L = outL.filter(x => x.ck === c); return L.length ? `<b>${maClassName(c)} (${maAr(L.length)}):</b> ${L.map(x => ptEsc(x.name)).join("، ")}<br>` : ""; }).join("")}</div>` : ""}${inSig(by, "وكيل شؤون الطلاب")}</section>`, "سجل دخول الطلاب");
+  return <div className="ma pt px-2 md:px-4 py-4" dir="rtl"><style>{MA_CSS + PT_CSS + IN_CSS + AL_CSS}</style>
+    <div className="grid gap-4" style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div className="in-hero" style={{ background: "linear-gradient(135deg,#1e3a8a,#2563eb 55%,#0ea5e9)" }}><div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
+        <div style={{ width: 58, height: 58, borderRadius: 18, background: "rgba(255,255,255,.16)", display: "grid", placeItems: "center", fontSize: 30 }}>🪪</div>
+        <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 20, fontWeight: 900 }}>سجل دخول الطلاب للموقع</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>إثبات دخول الطلاب بهوياتهم عبر بوابة ولي الأمر ورحلة الكنز • من {maHijri(maDate(f))} إلى {maHijri(maDate(t))}</div></div>
+        <button className="ma-btn" onClick={print}>🖨️ طباعة</button></div></div>
+      <div className="ma-card p-3"><InPer per={per} setPer={setPer} /></div>
+      <div className="pt-kpis">
+        <div className="pt-kpi" style={{ "--c": "#1d4ed8" }}><b>{maAr(uN)} <small style={{ fontSize: 14, color: "#94a3b8" }}>من {maAr(roster.length)}</small></b><small>طالب دخلوا ({maAr(pct)}٪)</small></div>
+        <div className="pt-kpi" style={{ "--c": "#0f766e" }}><b>{maAr(totN)}</b><small>مرة دخول في الفترة</small></div>
+        <div className="pt-kpi" style={{ "--c": "#7c3aed" }}><b>{maAr(bySrc("parent"))}</b><small>👪 عبر بوابة ولي الأمر</small></div>
+        <div className="pt-kpi" style={{ "--c": "#b45309" }}><b>{maAr(bySrc("treasure"))}</b><small>🗺️ عبر رحلة الكنز</small></div>
+        <div className="pt-kpi" style={{ "--c": "#334155" }}><b style={{ fontSize: 15 }}>{tm(lastAll)}</b><small>آخر دخول</small></div>
+      </div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))" }}>
+        <div className="ma-card p-4"><b>🏫 نسبة الطلاب الذين دخلوا في كل فصل</b><div style={{ marginTop: 10 }} dangerouslySetInnerHTML={{ __html: svgCls }} /></div>
+        <div className="ma-card p-4"><b>📅 عدد الطلاب الداخلين في كل يوم</b>{svgDay ? <div style={{ marginTop: 10 }} dangerouslySetInnerHTML={{ __html: svgDay }} /> : <div style={{ color: "#64748b", fontWeight: 800, marginTop: 10 }}>لا يوجد دخول في هذه الفترة</div>}</div>
+      </div>
+      <div className="ma-card p-4">
+        <div className="flex items-center gap-2 flex-wrap">{[["in", `🪪 دخلوا (${maAr(inL.length)})`], ["out", `⏳ لم يدخلوا (${maAr(outL.length)})`]].map(([k, l]) => <button key={k} className={`in-chip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}
+          <select className="ma-inp" style={{ width: 160, height: 36 }} value={ck} onChange={e => setCk(e.target.value)}><option value="">كل الفصول</option>{classes.map(c => <option key={c} value={c}>{maClassName(c)}</option>)}</select>
+          <input className="ma-inp" style={{ width: 190, height: 36, marginRight: "auto" }} placeholder="🔍 بحث بالاسم أو آخر الهوية" value={q} onChange={e => setQ(e.target.value)} /></div>
+        {tab === "in" ? (!inL.length ? <div style={{ color: "#64748b", fontWeight: 800, marginTop: 12 }}>لا يوجد</div> : <div style={{ overflowX: "auto", marginTop: 10 }}><table className="al-tbl"><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>الهوية</th><th>مرات الدخول</th><th>أول دخول</th><th>آخر دخول</th><th>البوابة</th></tr></thead>
+          <tbody>{inL.map((x, i) => <tr key={x.sid}><td className="n">{maAr(i + 1)}</td><td className="nm">{x.name}</td><td>{maClassName(x.ck)}</td><td dir="ltr">{x.n4 ? "***" + maAr(x.n4) : "—"}</td><td><b style={{ fontSize: 16, color: "#1d4ed8" }}>{maAr(x.n)}</b></td><td style={{ fontSize: 12 }}>{tm(x.first)}</td><td style={{ fontSize: 12 }}>{tm(x.last)}</td><td style={{ fontSize: 12 }}>{srcTxt(x)}</td></tr>)}</tbody></table></div>)
+          : (!outL.length ? <div style={{ color: "#15803d", fontWeight: 900, marginTop: 12 }}>جميع الطلاب دخلوا 🌟</div> : <div className="grid gap-2 mt-3">{classes.filter(c => outL.some(x => x.ck === c)).map(c => <div key={c}><b style={{ color: "#1e3a8a" }}>{maClassName(c)} <small>({maAr(outL.filter(x => x.ck === c).length)})</small></b><div className="flex gap-1 flex-wrap mt-1">{outL.filter(x => x.ck === c).map(x => <span key={x.sid} className="in-fl" style={{ background: "#f1f5f9", color: "#334155" }}>{x.name}</span>)}</div></div>)}</div>)}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>يُسجَّل الدخول تلقائياً عندما يدخل الطالب أو وليّ أمره برقم هوية الطالب. لا تُحفظ الهوية كاملة، بل آخر ٤ أرقام فقط. بدأ التسجيل من تاريخ رفع هذا التحديث.</div>
+    </div></div>;
+}
+
 function AbsLateReportPage({ by = "الإدارة" }) {
   const [per, setPer] = useState({ kind: "month", from: maKey(new Date()), to: maKey(new Date()) });
   const [f, t] = inPeriod(per.kind, per.from, per.to);
@@ -42598,7 +42685,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","treasureadm","liveops","audit","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","treasureadm","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -42933,6 +43020,7 @@ function SchoolWebsiteInner() {
     { id: "morningboard", label: "شاشة الصباح", icon: "📺" },
     { id: "formative",      label: "التقويم التكويني",    icon: "📘" },
     { id: "stulevels",      label: "سجل مستويات الطلاب",    icon: "📊" },
+    { id: "stlogins", label: "سجل دخول الطلاب", icon: "🪪" },
     { id: "readweak",      label: "حصر الضعف القرائي",    icon: "📖" },
     { id: "studentclassify", label: "تصنيف الطلاب", icon: "🏷️" },
     { id: "weeklyplan", label: "الخطة الأسبوعية", icon: "🗓️" },
@@ -42992,7 +43080,7 @@ function SchoolWebsiteInner() {
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","alreport","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","treasureadm","insights","behavior","conduct","students","formative","studentclassify","stulevels","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","treasureadm","insights","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
@@ -43288,7 +43376,7 @@ function SchoolWebsiteInner() {
                 {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
                 {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
                 {page === "portals" && <PortalsAdminPage />}
@@ -43467,7 +43555,7 @@ function SchoolWebsiteInner() {
         {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
         {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
         {page === "portals" && <PortalsAdminPage />}

@@ -37,6 +37,7 @@ export default function TreasurePublic({ onBack, api }) {
     const rec = { ...base, ...p, name: st.name, ck: st.ck, n4: st.n4 || p.n4 || "" };
     setMe({ id: sid, name: st.name, ck: st.ck, n4: st.n4 || "" }); setProg(rec);
     lsSet("tr-me", { sid, ck: st.ck, at: Date.now() }); setView("map");
+    try { api.logLogin && api.logLogin({ sid, name: st.name, ck: st.ck, n4: st.n4 || "" }, "treasure"); } catch {}
   }
   const logout = () => { lsSet("tr-me", null); setMe(null); setProg(null); setView("login"); };
 
