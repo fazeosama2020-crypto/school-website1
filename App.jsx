@@ -6,9 +6,9 @@ import hfxImg_hdr from "./img/forms/hdr.png";
 import hfxImg_hsm from "./img/forms/hsm.png";
 import hfxImg_hsmT from "./img/forms/hsmT.png";
 import hfxImg_inq from "./img/forms/inq.png";
-import hfxImg_tnb from "./img/forms/tnb.png";
-import hfxImg_msh1 from "./img/forms/msh1.png";
-import hfxImg_msh2 from "./img/forms/msh2.png";
+import hfxImg_tnb from "./tnb.png";
+import hfxImg_msh1 from "./msh1.png";
+import hfxImg_msh2 from "./msh2.png";
 import moeLogoImg from "./img/moe-logo.png";
 import schoolLogoImg from "./img/school-logo.svg";
 // 🗺️ رحلة الكنز: طريقي إلى نافس — تُحمَّل عند فتحها فقط (لا تؤثر على سرعة الموقع)
