@@ -6,6 +6,9 @@ import hfxImg_hdr from "./img/forms/hdr.png";
 import hfxImg_hsm from "./img/forms/hsm.png";
 import hfxImg_hsmT from "./img/forms/hsmT.png";
 import hfxImg_inq from "./img/forms/inq.png";
+import hfxImg_tnb from "./img/forms/tnb.png";
+import hfxImg_msh1 from "./img/forms/msh1.png";
+import hfxImg_msh2 from "./img/forms/msh2.png";
 import moeLogoImg from "./img/moe-logo.png";
 import schoolLogoImg from "./img/school-logo.svg";
 // 🗺️ رحلة الكنز: طريقي إلى نافس — تُحمَّل عند فتحها فقط (لا تؤثر على سرعة الموقع)
@@ -34801,7 +34804,7 @@ function InMorning({ go }) {
     const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4]; const cls = maClasses(counts); const day = maNormDay(att);
     const done = cls.filter(c => day[c.ck]); const absent = done.reduce((a, c) => a + day[c.ck].absent.length, 0), total = done.reduce((a, c) => a + (day[c.ck].total || 0), 0);
     const allStu = cls.reduce((a, c) => a + maArr(ptObj(ros)[c.ck]?.students).length, 0);
-    setD({ t, cls, day, done, absent, total, allStu, late: ptVals(late).sort((a, b) => String(a.time).localeCompare(String(b.time))), ap, T: T && T.C ? T : null, times: cfg && Array.isArray(cfg.times) ? cfg.times : TT_DEF_TIMES, log: ptObj(log), exc: ptVals(ex).filter(x => !x.status || x.status === "new").length, notes: ptVals(nt).filter(x => !x.reply).length, cv: ptVals(cvp).filter(r => r.date === t).sort((a, b) => a.n - b.n), at: new Date() });
+    setD({ t, cls, day, done, absent, total, allStu, late: ptVals(late).sort((a, b) => String(a.time).localeCompare(String(b.time))), ap, T: T && T.C ? T : null, times: cfg && Array.isArray(cfg.times) ? ttFixTimes(cfg.times) : TT_DEF_TIMES, log: ptObj(log), exc: ptVals(ex).filter(x => !x.status || x.status === "new").length, notes: ptVals(nt).filter(x => !x.reply).length, cv: ptVals(cvp).map(cvFixRow).filter(r => r.date === t).sort((a, b) => a.n - b.n), at: new Date() });
   };
   useEffect(() => { load(); const a = setInterval(load, 60000), b = setInterval(() => setNow(new Date()), 15000); return () => { clearInterval(a); clearInterval(b); }; }, []);
   useEffect(() => { (async () => { const [f, t] = inPeriod("30"); const D = await inLoad(f, t); const R = inCompute(D); setWarn(Object.values(R.S).filter(s => s.lvl !== "g").sort((a, b) => b.pts - a.pts).slice(0, 8)); })(); }, []);
@@ -35234,9 +35237,14 @@ function cvSeedPlan() {
   CV_SEED.forEach(([n, v, wk, date, hij, t, s, p, tm, c]) => { if (!tks[t]) tks[t] = "t" + String(++k).padStart(2, "0"); const id = "v" + String(n).padStart(3, "0"); o[id] = { id, n, v, wk, date, hij, t, s, p, tm, c, tk: tks[t] }; });
   return o;
 }
+// أوقات الزيارات المحفوظة بالأوقات القديمة (قبل نقل الفسحة بعد الحصة الثالثة) تُعرض بالوقت الصحيح
+const CV_TMFIX = { "الرابعة": ["9:15-10:00", "9:35-10:20"], "السابعة": ["14:00-14:45", "11:55-12:40"] };
+const cvFixRow = r => r && CV_TMFIX[r.p] && r.tm === CV_TMFIX[r.p][0] ? { ...r, tm: CV_TMFIX[r.p][1] } : r;
+// زيارات يوم واحد مربوطة بالجدول: المفتاح «رقم المعلم_رقم الحصة»
+function cvDayMap(plan, T, dk) { const o = {}; if (!T || !T.T) return o; Object.values(ptObj(plan)).forEach(r0 => { const r = cvFixRow(r0); if (!r || r.date !== dk) return; const ti = sttFindMe(T, r.t); const p = TT_ORD.indexOf(r.p); const m = String(r.c || "").match(/^(\d)\/(\d)$/); o[ti >= 0 && p >= 0 ? `${ti}_${p}` : "x" + r.id] = { ...r, pn: r.p, ti, p, ck: m ? `${m[2]}-${m[1]}` : "" }; }); return o; }
 async function cvLoad() {
   let [plan, ev, cfg, lic, msgs] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL), maGet(CV_CFG), maGet(LIC_NODE), maGet(CV_MSG)]);
-  plan = ptObj(plan); cfg = ptObj(cfg);
+  plan = Object.fromEntries(Object.entries(ptObj(plan)).map(([k, r]) => [k, cvFixRow(r)])); cfg = ptObj(cfg);
   return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: [], gen: ptObj(cfg.gen), resched: cfg.resched || "", links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
 }
 const cvTeachers = plan => { const m = {}; Object.values(plan).forEach(r => { if (!r || !r.tk) return; const o = m[r.tk] = m[r.tk] || { tk: r.tk, name: r.t, s: r.s, vis: [] }; o.vis.push(r); }); Object.values(m).forEach(o => o.vis.sort((a, b) => a.v - b.v || a.date.localeCompare(b.date))); return Object.values(m).sort((a, b) => a.vis[0].n - b.vis[0].n); };
@@ -36312,7 +36320,7 @@ function TermPlanPage() {
 }
 
 
-const TT_PDF = {"ver":"xlsx-1448-1006","at":1791314946596,"src":"جدول المعلمين الجديد (Excel) — ٠٦/١٠","D":["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],"P":7,"T":["احمد عزي","احمد الشهري","اسامه السفري","جابر الشهري","حسن العيسى","رمضان الزهراني","سعد العتيبي","صاطي الحارثي","طارق الزهراني","عبدالرحيم رضوان","عبدالعزيز جار الله (رياضيات)","عبدالعزيز الذبياني","عبدالعزيز خضران (بدنية)","علي الغامدي","هادي المقاطي","فارس البشري","فهد رده","فيصل العتيبي","ماجد الهذلي","مجاهد الزهراني","محمد الجوفي","محمد القارحي","محمد الشهري","محمد الحربي","عمر العمشاني","وليد الزايدي","حاتم الشمراني (صعوبات)"],"A":["عزي","الشهري","السفري","ج.الشهري","العيسى","الزهراني","العتيبي","الحارثي","ط.الزهراني","رضوان","جار الله","الذبياني","خضران","الغامدي","المقاطي","البشري","رده","ف.العتيبي","الهذلي","م.الزهراني","الجوفي","القارحي","م.الشهري","الحربي","العمشاني","الزايدي","الشمراني"],"S":["اجتماعيات","احتياط 1","احتياط 2","احتياط 3","اسلامية","انجليزي","بدنية","تفكير ناقد","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"SA":["اجتماع","احتياط1","احتياط2","احتياط3","اسلامية","انجليزي","بدنية","تفكير","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"C":{"1-1":[[[6,12],[13,14],[0,2],[10,10],[11,5],[4,13],[5,3]],[[5,3],[10,10],[12,8],[10,10],[4,13],[11,5],[13,14]],[[4,13],[9,0],[6,12],[0,2],[11,5],[13,14],[10,10]],[[10,10],[13,14],[12,8],[14,0],[5,3],[4,13],[11,5]],[[0,2],[13,14],[9,0],[10,10],[4,13],[8,6],[5,3]]],"1-2":[[[10,10],[12,8],[13,14],[6,12],[4,13],[5,3],[0,2]],[[13,14],[0,2],[8,11],[5,3],[10,10],[11,23],[4,13]],[[12,8],[5,3],[10,10],[10,10],[11,23],[4,13],[13,14]],[[11,23],[10,10],[4,13],[14,2],[13,14],[6,12],[9,0]],[[10,10],[0,2],[5,3],[9,0],[11,23],[4,13],[13,14]]],"1-3":[[[13,14],[4,13],[0,21],[5,3],[10,10],[12,8],[10,10]],[[10,10],[8,14],[5,3],[13,14],[11,23],[4,13],[12,8]],[[9,0],[10,10],[5,3],[4,13],[13,14],[11,23],[0,21]],[[13,14],[4,13],[10,10],[14,21],[11,23],[5,3],[6,12]],[[4,13],[10,10],[13,14],[0,21],[6,12],[9,0],[11,23]]],"1-4":[[[0,21],[10,10],[9,0],[12,8],[5,3],[13,6],[4,13]],[[0,21],[11,23],[4,13],[8,11],[13,6],[5,3],[10,10]],[[10,10],[13,6],[11,23],[6,12],[9,0],[0,21],[4,13]],[[4,13],[12,8],[13,6],[14,3],[10,10],[11,23],[5,3]],[[13,6],[11,23],[10,10],[4,13],[10,10],[5,3],[6,12]]],"1-5":[[[8,2],[10,4],[5,3],[9,0],[13,6],[0,11],[4,9]],[[6,12],[10,4],[13,6],[12,8],[4,9],[9,0],[11,7]],[[0,11],[10,4],[4,9],[5,3],[13,6],[11,7],[10,4]],[[5,3],[13,6],[10,4],[14,4],[4,9],[11,7],[0,11]],[[6,12],[13,6],[11,7],[5,3],[10,4],[12,8],[4,9]]],"1-6":[[[13,6],[0,11],[5,1],[11,7],[4,9],[9,15],[6,12]],[[13,6],[0,11],[11,7],[10,17],[10,17],[4,9],[5,1]],[[10,17],[4,9],[12,8],[5,1],[8,2],[13,6],[11,7]],[[10,17],[6,12],[4,9],[14,7],[10,17],[12,8],[13,6]],[[5,1],[9,15],[0,11],[10,17],[11,7],[4,9],[13,6]]],"2-1":[[[11,5],[13,24],[10,19],[5,1],[4,16],[0,2],[10,19]],[[10,19],[5,1],[4,16],[11,5],[0,2],[12,8],[13,24]],[[10,19],[6,12],[4,16],[9,15],[8,11],[11,5],[13,24]],[[13,24],[5,1],[11,5],[14,24],[10,19],[4,16],[9,15]],[[10,19],[12,8],[0,2],[5,1],[13,24],[6,12],[4,16]]],"2-2":[[[9,15],[0,21],[4,16],[13,24],[5,1],[10,19],[11,5]],[[4,16],[13,24],[6,12],[5,1],[10,19],[10,19],[11,5]],[[13,24],[4,16],[0,21],[12,8],[6,12],[5,1],[10,19]],[[5,1],[10,19],[13,24],[14,16],[4,16],[11,5],[0,21]],[[12,8],[13,24],[11,5],[9,15],[4,16],[10,19],[8,21]]],"2-3":[[[10,19],[11,5],[13,18],[4,16],[12,8],[6,12],[0,11]],[[5,1],[10,19],[8,21],[9,15],[11,5],[13,18],[4,16]],[[4,16],[10,19],[0,11],[11,5],[10,19],[13,18],[5,1]],[[10,19],[0,11],[13,18],[14,5],[5,1],[9,15],[4,16]],[[4,16],[11,5],[5,1],[6,12],[12,8],[13,18],[10,19]]],"2-4":[[[4,16],[13,18],[0,11],[11,5],[10,19],[5,1],[9,15]],[[0,11],[12,8],[11,5],[13,18],[5,1],[4,16],[10,19]],[[6,12],[9,15],[11,5],[4,16],[5,1],[10,19],[13,18]],[[4,16],[13,18],[10,19],[14,11],[6,12],[8,21],[12,8]],[[11,5],[5,1],[10,19],[0,11],[10,19],[4,16],[13,18]]],"3-1":[[[5,20],[11,7],[13,24],[10,4],[6,12],[10,4],[4,25]],[[0,2],[4,25],[13,24],[10,4],[11,7],[5,20],[7,18]],[[4,25],[8,24],[11,7],[7,18],[5,20],[10,4],[9,22]],[[12,8],[10,4],[6,12],[14,22],[13,24],[4,25],[11,7]],[[5,20],[4,25],[9,22],[13,24],[0,2],[10,4],[12,8]]],"3-2":[[[13,18],[7,25],[12,8],[4,25],[5,20],[9,22],[10,4]],[[10,4],[6,12],[13,18],[9,22],[4,25],[11,7],[5,20]],[[13,18],[12,8],[10,4],[7,25],[11,7],[5,20],[4,25]],[[5,20],[4,25],[8,2],[14,17],[11,7],[10,4],[0,2]],[[4,25],[10,4],[6,12],[11,7],[13,18],[0,2],[10,4]]],"3-3":[[[11,23],[9,22],[6,15],[12,22],[4,25],[0,21],[5,20]],[[11,23],[10,17],[13,14],[4,25],[5,20],[10,17],[12,22]],[[9,22],[13,14],[5,20],[11,23],[4,25],[8,11],[10,17]],[[7,18],[0,21],[13,14],[14,15],[5,20],[10,17],[4,25]],[[10,17],[7,18],[4,25],[13,14],[10,17],[11,23],[6,15]]],"3-4":[[[8,24],[10,17],[5,20],[11,23],[12,22],[4,9],[13,6]],[[10,17],[5,20],[11,23],[6,0],[9,22],[7,24],[4,9]],[[4,9],[11,23],[10,17],[13,6],[0,21],[10,17],[6,0]],[[4,9],[5,20],[10,17],[14,9],[9,22],[13,6],[11,23]],[[0,21],[12,22],[5,20],[13,6],[4,9],[7,24],[10,17]]]},"RS":{"الأحد":[[7,17,13],[23,15,0],[9,6,25],[21,2,14],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,26,21],[20,4,0],[2,6,24],[11,3,15],[25,14,22],[0,17,23]],"الثلاثاء":[[6,3,15],[2,25,7],[13,1,18],[14,21,9],[17,26,4],[22,24,0],[23,11,20]],"الأربعاء":[[11,4,5],[24,23,22],[16,7,21],[1,13,18],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[3,20,11],[18,4,16],[25,5,18],[6,1,15],[21,7,17],[0,24,2]]},"R":{"الأحد":[[7,17,13],[23,15,0],[9,6,25],[21,2,14],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,26,21],[20,4,0],[2,6,24],[11,3,15],[25,14,22],[0,17,23]],"الثلاثاء":[[6,3,15],[2,25,7],[13,1,18],[14,21,9],[17,26,4],[22,24,0],[23,11,20]],"الأربعاء":[[11,4,5],[24,23,22],[16,7,21],[1,13,18],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[3,20,11],[18,4,16],[25,5,18],[6,1,15],[21,7,17],[0,24,2]]},"times":[["07:00","07:45"],["07:45","08:30"],["08:30","09:15"],["09:15","10:00"],["10:20","11:05"],["11:05","11:50"],["11:55","12:40"]]};
+const TT_PDF = {"ver":"xlsx-1448-1006","at":1791314946596,"src":"جدول المعلمين الجديد (Excel) — ٠٦/١٠","D":["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"],"P":7,"T":["احمد عزي","احمد الشهري","اسامه السفري","جابر الشهري","حسن العيسى","رمضان الزهراني","سعد العتيبي","صاطي الحارثي","طارق الزهراني","عبدالرحيم رضوان","عبدالعزيز جار الله (رياضيات)","عبدالعزيز الذبياني","عبدالعزيز خضران (بدنية)","علي الغامدي","هادي المقاطي","فارس البشري","فهد رده","فيصل العتيبي","ماجد الهذلي","مجاهد الزهراني","محمد الجوفي","محمد القارحي","محمد الشهري","محمد الحربي","عمر العمشاني","وليد الزايدي","حاتم الشمراني (صعوبات)"],"A":["عزي","الشهري","السفري","ج.الشهري","العيسى","الزهراني","العتيبي","الحارثي","ط.الزهراني","رضوان","جار الله","الذبياني","خضران","الغامدي","المقاطي","البشري","رده","ف.العتيبي","الهذلي","م.الزهراني","الجوفي","القارحي","م.الشهري","الحربي","العمشاني","الزايدي","الشمراني"],"S":["اجتماعيات","احتياط 1","احتياط 2","احتياط 3","اسلامية","انجليزي","بدنية","تفكير ناقد","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"SA":["اجتماع","احتياط1","احتياط2","احتياط3","اسلامية","انجليزي","بدنية","تفكير","حياتية","رقمية","رياضيات","علوم","فنية","لغتي","نشاط"],"C":{"1-1":[[[6,12],[13,14],[0,2],[10,10],[11,5],[4,13],[5,3]],[[5,3],[10,10],[12,8],[10,10],[4,13],[11,5],[13,14]],[[4,13],[9,0],[6,12],[0,2],[11,5],[13,14],[10,10]],[[10,10],[13,14],[12,8],[14,0],[5,3],[4,13],[11,5]],[[0,2],[13,14],[9,0],[10,10],[4,13],[8,6],[5,3]]],"1-2":[[[10,10],[12,8],[13,14],[6,12],[4,13],[5,3],[0,2]],[[13,14],[0,2],[8,11],[5,3],[10,10],[11,23],[4,13]],[[12,8],[5,3],[10,10],[10,10],[11,23],[4,13],[13,14]],[[11,23],[10,10],[4,13],[14,2],[13,14],[6,12],[9,0]],[[10,10],[0,2],[5,3],[9,0],[11,23],[4,13],[13,14]]],"1-3":[[[13,14],[4,13],[0,21],[5,3],[10,10],[12,8],[10,10]],[[10,10],[8,14],[5,3],[13,14],[11,23],[4,13],[12,8]],[[9,0],[10,10],[5,3],[4,13],[13,14],[11,23],[0,21]],[[13,14],[4,13],[10,10],[14,21],[11,23],[5,3],[6,12]],[[4,13],[10,10],[13,14],[0,21],[6,12],[9,0],[11,23]]],"1-4":[[[0,21],[10,10],[9,0],[12,8],[5,3],[13,6],[4,13]],[[0,21],[11,23],[4,13],[8,11],[13,6],[5,3],[10,10]],[[10,10],[13,6],[11,23],[6,12],[9,0],[0,21],[4,13]],[[4,13],[12,8],[13,6],[14,3],[10,10],[11,23],[5,3]],[[13,6],[11,23],[10,10],[4,13],[10,10],[5,3],[6,12]]],"1-5":[[[8,2],[10,4],[5,3],[9,0],[13,6],[0,11],[4,9]],[[6,12],[10,4],[13,6],[12,8],[4,9],[9,0],[11,7]],[[0,11],[10,4],[4,9],[5,3],[13,6],[11,7],[10,4]],[[5,3],[13,6],[10,4],[14,4],[4,9],[11,7],[0,11]],[[6,12],[13,6],[11,7],[5,3],[10,4],[12,8],[4,9]]],"1-6":[[[13,6],[0,11],[5,1],[11,7],[4,9],[9,15],[6,12]],[[13,6],[0,11],[11,7],[10,17],[10,17],[4,9],[5,1]],[[10,17],[4,9],[12,8],[5,1],[8,2],[13,6],[11,7]],[[10,17],[6,12],[4,9],[14,7],[10,17],[12,8],[13,6]],[[5,1],[9,15],[0,11],[10,17],[11,7],[4,9],[13,6]]],"2-1":[[[11,5],[13,24],[10,19],[5,1],[4,16],[0,2],[10,19]],[[10,19],[5,1],[4,16],[11,5],[0,2],[12,8],[13,24]],[[10,19],[6,12],[4,16],[9,15],[8,11],[11,5],[13,24]],[[13,24],[5,1],[11,5],[14,24],[10,19],[4,16],[9,15]],[[10,19],[12,8],[0,2],[5,1],[13,24],[6,12],[4,16]]],"2-2":[[[9,15],[0,21],[4,16],[13,24],[5,1],[10,19],[11,5]],[[4,16],[13,24],[6,12],[5,1],[10,19],[10,19],[11,5]],[[13,24],[4,16],[0,21],[12,8],[6,12],[5,1],[10,19]],[[5,1],[10,19],[13,24],[14,16],[4,16],[11,5],[0,21]],[[12,8],[13,24],[11,5],[9,15],[4,16],[10,19],[8,21]]],"2-3":[[[10,19],[11,5],[13,18],[4,16],[12,8],[6,12],[0,11]],[[5,1],[10,19],[8,21],[9,15],[11,5],[13,18],[4,16]],[[4,16],[10,19],[0,11],[11,5],[10,19],[13,18],[5,1]],[[10,19],[0,11],[13,18],[14,5],[5,1],[9,15],[4,16]],[[4,16],[11,5],[5,1],[6,12],[12,8],[13,18],[10,19]]],"2-4":[[[4,16],[13,18],[0,11],[11,5],[10,19],[5,1],[9,15]],[[0,11],[12,8],[11,5],[13,18],[5,1],[4,16],[10,19]],[[6,12],[9,15],[11,5],[4,16],[5,1],[10,19],[13,18]],[[4,16],[13,18],[10,19],[14,11],[6,12],[8,21],[12,8]],[[11,5],[5,1],[10,19],[0,11],[10,19],[4,16],[13,18]]],"3-1":[[[5,20],[11,7],[13,24],[10,4],[6,12],[10,4],[4,25]],[[0,2],[4,25],[13,24],[10,4],[11,7],[5,20],[7,18]],[[4,25],[8,24],[11,7],[7,18],[5,20],[10,4],[9,22]],[[12,8],[10,4],[6,12],[14,22],[13,24],[4,25],[11,7]],[[5,20],[4,25],[9,22],[13,24],[0,2],[10,4],[12,8]]],"3-2":[[[13,18],[7,25],[12,8],[4,25],[5,20],[9,22],[10,4]],[[10,4],[6,12],[13,18],[9,22],[4,25],[11,7],[5,20]],[[13,18],[12,8],[10,4],[7,25],[11,7],[5,20],[4,25]],[[5,20],[4,25],[8,2],[14,17],[11,7],[10,4],[0,2]],[[4,25],[10,4],[6,12],[11,7],[13,18],[0,2],[10,4]]],"3-3":[[[11,23],[9,22],[6,15],[12,22],[4,25],[0,21],[5,20]],[[11,23],[10,17],[13,14],[4,25],[5,20],[10,17],[12,22]],[[9,22],[13,14],[5,20],[11,23],[4,25],[8,11],[10,17]],[[7,18],[0,21],[13,14],[14,15],[5,20],[10,17],[4,25]],[[10,17],[7,18],[4,25],[13,14],[10,17],[11,23],[6,15]]],"3-4":[[[8,24],[10,17],[5,20],[11,23],[12,22],[4,9],[13,6]],[[10,17],[5,20],[11,23],[6,0],[9,22],[7,24],[4,9]],[[4,9],[11,23],[10,17],[13,6],[0,21],[10,17],[6,0]],[[4,9],[5,20],[10,17],[14,9],[9,22],[13,6],[11,23]],[[0,21],[12,22],[5,20],[13,6],[4,9],[7,24],[10,17]]]},"RS":{"الأحد":[[7,17,13],[23,15,0],[9,6,25],[21,2,14],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,26,21],[20,4,0],[2,6,24],[11,3,15],[25,14,22],[0,17,23]],"الثلاثاء":[[6,3,15],[2,25,7],[13,1,18],[14,21,9],[17,26,4],[22,24,0],[23,11,20]],"الأربعاء":[[11,4,5],[24,23,22],[16,7,21],[1,13,18],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[3,20,11],[18,4,16],[25,5,18],[6,1,15],[21,7,17],[0,24,2]]},"R":{"الأحد":[[7,17,13],[23,15,0],[9,6,25],[21,2,14],[24,4,11],[20,5,16],[22,1,26]],"الاثنين":[[9,7,13],[18,26,21],[20,4,0],[2,6,24],[11,3,15],[25,14,22],[0,17,23]],"الثلاثاء":[[6,3,15],[2,25,7],[13,1,18],[14,21,9],[17,26,4],[22,24,0],[23,11,20]],"الأربعاء":[[11,4,5],[24,23,22],[16,7,21],[1,13,18],[15,0,25],[2,9,14],[26,20,17]],"الخميس":[[22,9,26],[3,20,11],[18,4,16],[25,5,18],[6,1,15],[21,7,17],[0,24,2]]},"times":[["07:00","07:45"],["07:45","08:30"],["08:30","09:15"],["09:35","10:20"],["10:20","11:05"],["11:05","11:50"],["11:55","12:40"]]};
 
 // ══════════════════════════════════════════════════════════
 // 🗓️ الجدول المدرسي الذكي — الفصول والمعلمون والاحتياط (١/٢/٣)
@@ -36497,8 +36505,11 @@ const HFX_IMG = {
   hdr: hfxAbs(hfxImg_hdr),
   hsm: hfxAbs(hfxImg_hsm),
   hsmT: hfxAbs(hfxImg_hsmT),
-  inq: hfxAbs(hfxImg_inq)
+  inq: hfxAbs(hfxImg_inq),
+  tnb: hfxAbs(hfxImg_tnb),
+  msh: [hfxAbs(hfxImg_msh1), hfxAbs(hfxImg_msh2)] // نموذج من صفحتين
 };
+const hfxPgs = fk => [].concat(HFX_IMG[fk] || []);
 
 // ═══════════════════════════════════════════════════════════════
 // 📑 نماذج متابعة دوام الموظفين (حضوري) — طبق الأصل
@@ -36661,7 +36672,48 @@ const HFX_F = {
     ],
   },
 };
-const HFX_ORDER = ["gh", "ta", "out", "hdr", "hsm", "hsmT", "inq"];
+// نموذجا المدرسة الخاصان (من ملفات Word المعتمدة في المدرسة)
+HFX_F.msh = {
+  n: "مساءلة حصص", ic: "📚", c: "#0f766e", tch: "reply", dur: "يوضّح المعلم أسباب المخالفة ويوقّع، ثم يُبدي مدير المدرسة رأيه والإجراء المتخذ",
+  in: [{ k: "hd", l: "تاريخ النموذج", t: "date" }, { k: "cn", l: "رقم الحاسب الآلي (اختياري)", t: "text" }, { k: "sp", l: "التخصص", t: "text" }, { k: "lv", l: "المستوى", t: "text" }, { k: "dg", l: "الدرجة", t: "text" }, { k: "jn", l: "رقم الوظيفة", t: "text" },
+    { k: "d1", l: "اليوم", t: "date" },
+    { k: "c1", l: "تأخركم عن الطابور الصباحي", t: "check" }, { k: "t1", l: "وقت الحضور", t: "time", show: v => v.c1 },
+    { k: "c2", l: "تأخركم عن دخول الحصة", t: "check" }, { k: "p2", l: "الحصة", t: "text", show: v => v.c2 }, { k: "cl2", l: "في فصل", t: "text", show: v => v.c2 }, { k: "m2", l: "لمدة (دقائق)", t: "text", show: v => v.c2 },
+    { k: "c3", l: "عدم دخولكم الحصة", t: "check" }, { k: "p3", l: "الحصة", t: "text", show: v => v.c3 }, { k: "g3", l: "الصف (رقم)", t: "text", show: v => v.c3 }, { k: "s3", l: "الفصل (رقم)", t: "text", show: v => v.c3 },
+    { k: "c4", l: "عدم التحضير في منصة مدرستي", t: "check" }, { k: "c5", l: "عدم تواجدكم للإشراف في الفسحة", t: "check" }, { k: "c6", l: "عدم تواجدكم لمناوبة نهاية الدوام", t: "check" },
+    { k: "rsn", l: "إفادة المعلم: الأسباب", t: "area", who: "t" }, { k: "td", l: "تاريخ الإفادة", t: "date", who: "t" },
+    { k: "dec", l: "رأي مدير المدرسة", t: "radio", who: "d", opts: [["1", "عذر مقبول"], ["2", "عذر غير مقبول"]] }, { k: "act", l: "الإجراء المتخذ", t: "text", who: "d" }, { k: "dd", l: "تاريخ الرأي", t: "date", who: "d" }],
+  f: [
+    { t: "bx", k: "cn", xs: [56.5, 75.4, 93.8, 111.8, 130.1, 148.1, 166.5, 184.5, 202.9, 220.9, 239.2], y: 191.9, fs: 11 },
+    { t: "tx", k: "$name", x: [397, 535], y: 248.7, fs: 11, nm: 9 }, { t: "tx", k: "sp", x: [334, 394], y: 248.6, fs: 10.5 }, { t: "tx", k: "lv", x: [291, 331], y: 248.6, fs: 10.5 }, { t: "tx", k: "dg", x: [250, 288], y: 248.6, fs: 10.5 }, { t: "tx", k: "jn", x: [172, 247], y: 248.6, fs: 10.5 },
+    { t: "day", k: "d1", x: [432, 472], y: 274.5, fs: 11 }, { t: "dt", k: "d1", y: 274.5, yr: 0, yc: 0, d: [375.5, 389.5], m: [355.5, 370.5], fs: 11 },
+    { t: "ck", k: "c1", cx: 495.3, cy: 338.5 }, { t: "tm", k: "t1", y: 338.6, h: [251, 263.5], m: [265.5, 278.5], fs: 10.5, sep: true },
+    { t: "ck", k: "c2", cx: 495.3, cy: 368.5 }, { t: "tx", k: "p2", x: [341, 366], y: 368.5, fs: 11 }, { t: "tx", k: "cl2", x: [230, 282], y: 368.5, fs: 11 }, { t: "tx", k: "m2", x: [158, 191], y: 368.5, fs: 11 },
+    { t: "ck", k: "c3", cx: 495.3, cy: 397.3 }, { t: "tx", k: "p3", x: [376, 391], y: 397.3, fs: 11 }, { t: "tx", k: "g3", x: [311, 321], y: 397.3, fs: 11 }, { t: "tx", k: "s3", x: [299.5, 307], y: 397.3, fs: 11 },
+    { t: "ck", k: "c4", cx: 495.3, cy: 421 }, { t: "ck", k: "c5", cx: 495.3, cy: 444.7 }, { t: "ck", k: "c6", cx: 495.3, cy: 469.5 },
+    { t: "sg", k: "ms", x: [205, 272], y: [492, 524] }, { t: "dt", k: "hd", y: 510.4, yr: 0, yc: 0, d: [147, 157], m: [120, 143], fs: 10.5 },
+    { t: "ml", k: "rsn", x: [176, 500], ys: [623, 648.5, 674, 699.5, 725], fs: 12 },
+    { t: "tx", k: "$name", x: [328, 470], y: 767.8, fs: 11, nm: 9.5, al: "s", show: c => c.tv && (c.tv.rsn || c.ts) }, { t: "sg", k: "ts", x: [266, 321], y: [750, 782] }, { t: "dt", k: "td", y: 767.8, yr: 0, yc: 0, d: [218.5, 228.5], m: [201.5, 214.5], fs: 10 },
+    { pg: 1, t: "ck", k: "dec", v: "1", cx: 459.7, cy: 179.7 }, { pg: 1, t: "ck", k: "dec", v: "2", cx: 459.7, cy: 199.1 },
+    { pg: 1, t: "tx", k: "act", x: [218, 376], y: 225.5, fs: 11 },
+    { pg: 1, t: "sg", k: "ms", x: [173, 227], y: [250, 280], show: c => c.v.dec }, { pg: 1, t: "dt", k: "dd", y: 265.8, yr: 0, yc: 0, d: [113.5, 123.5], m: [96.5, 109.5], fs: 10.5 },
+  ],
+};
+HFX_F.tnb = {
+  n: "تنبيه مجموع دقائق تأخر وخروج مبكر", ic: "🔔", c: "#a16207", tch: "sign", dur: "يُرسل للمعلم للاطلاع والتوقيع بالعلم — يُحسم يوم عند بلوغ ٤٢٠ دقيقة (٧ ساعات)",
+  in: [{ k: "hd", l: "تاريخ التنبيه", t: "date" }, { k: "f1", l: "الفترة من تاريخ", t: "date" }, { k: "f2", l: "إلى تاريخ", t: "date" }, { k: "mins", l: "مجموع الدقائق (تأخر + خروج مبكر)", t: "num" }, { k: "hrs", l: "مجموع الساعات", t: "text" }],
+  f: [
+    { t: "dt", k: "hd", y: 186.4, yr: 0, yc: 0, d: [141.5, 152.5], m: [125.5, 137], fs: 10 },
+    { t: "tx", k: "$name", x: [225, 503], y: 309, fs: 13, nm: 11, al: "s" },
+    { t: "id", xs: [42.7, 70.9, 99.4, 127.8, 156.1, 184.3, 212.8, 241.2, 269.5, 297.7, 326.2], y: 361.4, fs: 12 },
+    { t: "dt", k: "f1", y: 443.2, yr: 0, yc: 0, d: [496, 511], m: [475, 490.5], fs: 10.5 }, { t: "dt", k: "f2", y: 443.2, yr: 0, yc: 0, d: [372.3, 387.6], m: [351.5, 366.8], fs: 10.5 },
+    { t: "tx", k: "hrs", x: [257, 270], y: 443.2, fs: 10.5 }, { t: "tx", k: "mins", x: [158.5, 179], y: 443.2, fs: 10.5 },
+    { t: "sg", k: "ts", x: [395, 482], y: [640, 676] },
+    { t: "tx", k: "$mgr", x: [55, 165], y: 686, fs: 11 }, { t: "sg", k: "ms", x: [70, 150], y: [692, 724] },
+  ],
+};
+const HFX_ORDER = ["msh", "tnb", "gh", "ta", "out", "hdr", "hsm", "hsmT", "inq"];
+const HFX_GORD = ["gh", "ta", "out", "hdr", "hsm", "hsmT", "inq", "msh", "tnb"]; // ترتيب الاستنتاج للسجلات القديمة
 // سجلات قديمة محفوظة بمفتاح نوع غير معروف (مثل "hs"): يُستنتج النوع الصحيح تلقائياً من الحقول المعبّأة فعلاً
 // (في الذاكرة فقط — لا يُعدَّل أي شيء مخزّن في قاعدة البيانات)
 const HFX_ALIAS = { hs: "hsm" };
@@ -36669,9 +36721,9 @@ const hfxGuess = c => {
   const PRE = ["hd", "sp", "lv", "jn", "wk", "ttl", "kd", "msig"]; // حقول تُعبّأ تلقائياً لكل نموذج جديد فلا تدل على نوعه
   const filled = o => Object.entries(ptObj(o)).filter(([k, x]) => !PRE.includes(k) && x !== "" && x != null && x !== false).map(([k]) => k);
   const keys = new Set([...filled(c.v), ...filled(c.tv)]);
-  const owners = {}; HFX_ORDER.forEach(k => (HFX_F[k].in || []).forEach(f => { (owners[f.k] = owners[f.k] || new Set()).add(k); }));
+  const owners = {}; HFX_GORD.forEach(k => (HFX_F[k].in || []).forEach(f => { (owners[f.k] = owners[f.k] || new Set()).add(k); }));
   let best = null, bs = 0;
-  HFX_ORDER.forEach(k => { const s = (HFX_F[k].in || []).reduce((a, f) => a + (keys.has(f.k) ? 1 / owners[f.k].size : 0), 0); if (s > bs + 1e-9) { bs = s; best = k; } });
+  HFX_GORD.forEach(k => { const s = (HFX_F[k].in || []).reduce((a, f) => a + (keys.has(f.k) ? 1 / owners[f.k].size : 0), 0); if (s > bs + 1e-9) { bs = s; best = k; } });
   return best;
 };
 const hfxFix = c => { if (!c || HFX_F[c.f]) return c; const g = hfxGuess(c) || HFX_ALIAS[c.f]; return g ? { ...c, f: g } : c; };
@@ -36697,9 +36749,10 @@ const hfx12 = t => { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); if (
 function hfxItems(fk, c, x = {}) {
   const F = HFX_F[fk]; if (!F) return []; const cfg = ptObj(x.cfg); const out = [];
   const V = k => k === "$school" ? HFX_SCHOOL : k === "$name" ? (c.n || "") : k === "$mgr" ? (cfg.mgr || "فازع القرني") : k === "$mgrT" ? (cfg.mgrT || "مدير المدرسة") : k === "$phone" ? maAr(cfg.phone || "") : k === "$nidtxt" ? maAr(x.nid || "") : hfxV(c, k);
-  const DY = ptObj(typeof HFX_DY !== "undefined" ? HFX_DY[fk] : null); let fi = -1, cdy = 0;
+  const DY = ptObj(typeof HFX_DY !== "undefined" ? HFX_DY[fk] : null); let fi = -1, cdy = 0, cpg = 0;
+  const push0 = out.push.bind(out); out.push = o => push0({ ...o, pg: cpg });
   const T = (s, x0, x1, y, fs, al = "c", dir = "rtl") => { s = maAr(String(s ?? "").trim()); if (!s) return; out.push({ kd: "t", s, x0, x1, y: y + (+DY[fi] || 0) + cdy, fs: hfxFit(s, fs, x1 - x0), al, dir, fi }); };
-  F.f.forEach(f => { fi++; cdy = +f.dy || 0;
+  F.f.forEach(f => { fi++; cdy = +f.dy || 0; cpg = +f.pg || 0;
     if (f.show && !f.show(c)) return;
     if (f.t === "tx") T(f.nm ? hfxNameFit(V(f.k), f.fs || 10.5, f.x[1] - f.x[0], f.nm) : V(f.k), f.x[0], f.x[1], f.y, f.fs || 10.5, f.al || "c", f.dir || "rtl");
     else if (f.t === "day") { const k = V(f.k); if (/^\d{4}-\d{2}-\d{2}$/.test(k)) T(maDay(maDate(k)), f.x[0], f.x[1], f.y, f.fs || 10.5); }
@@ -36708,6 +36761,7 @@ function hfxItems(fk, c, x = {}) {
       if (f.yc) T(maAr(String(h.y).slice(-f.yc)), f.yr + 0.3, f.yr + 0.3 + f.yc * 7, f.y, fs, "s", "ltr"); }
     else if (f.t === "htxt") T(hfxHijTxt(V(f.k)), f.x[0], f.x[1], f.y, f.fs || 11);
     else if (f.t === "tm") { const t = hfx12(V(f.k)); if (!t) return; const fs = f.fs || 11; T(t.h, f.h[0], f.h[1], f.y, fs, "c", "ltr"); T(t.m, f.m[0], f.m[1], f.y, fs, "c", "ltr"); if (f.sep) T(":", f.h[1], f.m[0], f.y, fs, "c", "ltr"); }
+    else if (f.t === "bx") { const n = String(V(f.k) || "").replace(/[^\d٠-٩]/g, ""); for (let i = 0; i < Math.min(n.length, f.xs.length - 1); i++) T(maAr(n[i]), f.xs[i], f.xs[i + 1], f.y, f.fs || 11, "c", "ltr"); }
     else if (f.t === "id") { const n = String(x.nid || "").replace(/\D/g, ""); if (n.length !== 10) return; for (let i = 0; i < 10; i++) T(maAr(n[i]), f.xs[i], f.xs[i + 1], f.y, f.fs || 12, "c", "ltr"); }
     else if (f.t === "ck") { const v = V(f.k); const on = f.v !== undefined ? String(v) === f.v : !!v && v !== "0"; if (on) out.push({ kd: "k", cx: f.cx, cy: f.cy }); }
     else if (f.t === "sg") { const src = f.k === "ts" ? c.ts : (c.v && c.v.msig === false ? null : cfg.sig); if (src) out.push({ kd: "i", src, x0: f.x[0], x1: f.x[1], y0: f.y[0], y1: f.y[1] }); }
@@ -36727,19 +36781,20 @@ function hfxStyle(it) {
 }
 const HFX_PG = { position: "relative", width: "100%", aspectRatio: "595.32 / 841.92", containerType: "inline-size", "--u": "calc(100cqw / 595.32)", background: "#fff", overflow: "hidden" };
 function HfxSheet({ fk, c, x, style }) {
-  const items = hfxItems(fk, c, x);
-  return <div style={{ ...HFX_PG, ...style }} dir="ltr">
-    <img src={HFX_IMG[fk]} alt={HFX_F[fk].n} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", userSelect: "none", pointerEvents: "none" }} draggable={false} />
-    {items.map((it, i) => it.kd === "i" ? <img key={i} src={it.src} alt="توقيع" style={hfxStyle(it)} /> : <div key={i} style={hfxStyle(it)}>{it.kd === "k" ? "✓" : it.s}</div>)}
+  const items = hfxItems(fk, c, x); const P = hfxPgs(fk);
+  const one = (src, pi) => <div key={pi} style={{ ...HFX_PG, ...style, ...(pi ? { marginTop: 10 } : {}) }} dir="ltr">
+    <img src={src} alt={HFX_F[fk].n} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", userSelect: "none", pointerEvents: "none" }} draggable={false} />
+    {items.map((it, i) => (it.pg || 0) !== pi ? null : it.kd === "i" ? <img key={i} src={it.src} alt="توقيع" style={hfxStyle(it)} /> : <div key={i} style={hfxStyle(it)}>{it.kd === "k" ? "✓" : it.s}</div>)}
   </div>;
+  return P.length > 1 ? <div>{P.map(one)}</div> : one(P[0], 0);
 }
 // طباعة / حفظ PDF — صفحة A4 واحدة لكل نموذج، دون أي هوامش أو إضافات
 const hfxCss = st => Object.entries(st).map(([k, v]) => `${k.startsWith("--") ? k : k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}:${v}`).join(";");
 function hfxPrint(list, title) {
   const pages = list.map(({ fk, c, x }) => {
     const items = hfxItems(fk, c, x);
-    const body = items.map(it => it.kd === "i" ? `<img src="${it.src}" style="${hfxCss(hfxStyle(it))}">` : `<div style="${hfxCss(hfxStyle(it))}">${it.kd === "k" ? "✓" : ptEsc(it.s)}</div>`).join("");
-    return `<div class="pg" dir="ltr"><img class="bg" src="${HFX_IMG[fk]}">${body}</div>`;
+    return hfxPgs(fk).map((src, pi) => { const body = items.filter(it => (it.pg || 0) === pi).map(it => it.kd === "i" ? `<img src="${it.src}" style="${hfxCss(hfxStyle(it))}">` : `<div style="${hfxCss(hfxStyle(it))}">${it.kd === "k" ? "✓" : ptEsc(it.s)}</div>`).join("");
+      return `<div class="pg" dir="ltr"><img class="bg" src="${src}">${body}</div>`; }).join("");
   }).join("");
   printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${ptEsc(title || "نموذج")}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet"><style>
 @page{size:A4;margin:0}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;padding:0;background:#e5e7eb}
@@ -36949,7 +37004,7 @@ function HfxPage({ by = "الإدارة" }) {
       </div>}
 
       {tab === "new" && !pick && <div className="grid gap-2"><div className="hfx-note">اختر النموذج، ثم المعلم. النموذج يُعبّأ فوق الأصل الرسمي نفسه دون أي تعديل في نصه أو شكله.</div>
-        <div className="hfx-grid">{HFX_ORDER.map(k => { const F = HFX_F[k]; return <button key={k} className="hfx-card" onClick={() => { setPick(k); setQ(""); }}><div className="th"><img src={HFX_IMG[k]} alt="" /></div><b>{F.ic} {F.n}</b><span className="hfx-pill" style={{ background: F.tch === "view" ? "#f1f5f9" : "#ecfdf5", color: F.tch === "view" ? "#475569" : "#065f46", justifySelf: "start" }}>{F.tch === "reply" ? "✍️ يعبّئه المعلم ويوقّعه" : F.tch === "sign" ? "✍️ يوقّعه المعلم" : "👁️ للاطلاع"}</span></button>; })}</div></div>}
+        <div className="hfx-grid">{HFX_ORDER.map(k => { const F = HFX_F[k]; return <button key={k} className="hfx-card" onClick={() => { setPick(k); setQ(""); }}><div className="th"><img src={hfxPgs(k)[0]} alt="" /></div><b>{F.ic} {F.n}</b><span className="hfx-pill" style={{ background: F.tch === "view" ? "#f1f5f9" : "#ecfdf5", color: F.tch === "view" ? "#475569" : "#065f46", justifySelf: "start" }}>{F.tch === "reply" ? "✍️ يعبّئه المعلم ويوقّعه" : F.tch === "sign" ? "✍️ يوقّعه المعلم" : "👁️ للاطلاع"}</span></button>; })}</div></div>}
       {tab === "new" && pick && <div className="hfx-pane"><div className="flex items-center gap-2 flex-wrap"><b>{HFX_F[pick].ic} {HFX_F[pick].n} — اختر المعلم</b><button className="hfx-b" style={{ marginInlineStart: "auto" }} onClick={() => setPick(null)}>→ رجوع</button></div>
         <input className="hfx-in" autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 ابحث بالاسم…" />
         <div className="grid gap-1" style={{ maxHeight: "55vh", overflow: "auto" }}>{tq.map(t => <button key={t.k} className="hfx-opt" style={{ justifyContent: "space-between", alignItems: "center" }} onClick={() => newCase(pick, t)}><span>{t.n}</span><span className="flex gap-1">{ids[t.h] ? <span className="hfx-pill" style={{ background: "#dcfce7", color: "#166534" }}>🪪 الهوية</span> : <span className="hfx-pill" style={{ background: "#fff7ed", color: "#9a3412" }}>🪪 ناقصة</span>}{t.ph ? <span className="hfx-pill" style={{ background: "#dcfce7", color: "#166534" }}>📱</span> : <span className="hfx-pill" style={{ background: "#f1f5f9", color: "#94a3b8" }}>📱 —</span>}</span></button>)}
@@ -36989,17 +37044,32 @@ function HfxPage({ by = "الإدارة" }) {
   </div>;
 }
 
+// حساب مجموع دقائق التأخر والخروج المبكر من «حضوري» لفترة التنبيه
+function HfxTnbCalc({ hd, v, setC }) {
+  const f1 = v.f1 || "", f2 = v.f2 || "";
+  const L = (hd || []).filter(o => o.d.kind === "work" && (o.d.late || o.d.early) && (!f1 || o.k >= f1) && (!f2 || o.k <= f2));
+  const sum = L.reduce((a, o) => a + (+o.d.late || 0) + (+o.d.early || 0), 0);
+  const apply = () => setC(x => { const first = L.length ? L[L.length - 1].k : ""; const last = L.length ? L[0].k : ""; return { ...x, v: { ...x.v, f1: x.v.f1 || first, f2: x.v.f2 || last, mins: String(sum), hrs: sum ? String(Math.round(sum / 6) / 10) : "" } }; });
+  return <div className="hfx-pane"><div className="hfx-sec">⏱️ من «حضوري» — مجموع التأخر والخروج المبكر{f1 || f2 ? " للفترة المحددة" : ""}</div>
+    {hd === null ? <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{"جارٍ التحميل… (يلزم حفظ هوية المعلم)"}</div>
+      : !L.length ? <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>لا يوجد تأخر أو خروج مبكر مسجل{f1 || f2 ? " في هذه الفترة" : ""}.</div>
+      : <><div style={{ fontSize: 13.5, fontWeight: 900 }}>{maAr(L.length)} يوم • المجموع {maAr(sum)} دقيقة ({maAr(Math.round(sum / 6) / 10)} ساعة){sum >= 420 ? " — ⚠️ بلغ ٤٢٠ دقيقة" : ` — المتبقي لبلوغ ٤٢٠: ${maAr(420 - sum)} د`}</div>
+        <div className="grid gap-1" style={{ maxHeight: 180, overflow: "auto" }}>{L.slice(0, 40).map(o => <div key={o.k} className="hfx-opt" style={{ justifyContent: "space-between", fontSize: 12.5 }}><span>{maDay(maDate(o.k))} {hfxHijTxt(o.k)}</span><span>{o.d.late ? `⏰ ${maAr(o.d.late)} د` : ""} {o.d.early ? `🚪 ${maAr(o.d.early)} د` : ""}</span></div>)}</div>
+        <button className="hfx-b pri" style={{ justifySelf: "start" }} onClick={apply}>✍️ تعبئة المجموع في النموذج</button></>}
+  </div>;
+}
+
 // ── محرر النموذج (الإدارة)
 function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeacher }) {
   const [hd, setHd] = useState(null); // أيام الغياب/التأخر للمعلم من «حضوري»
-  useEffect(() => { if (!init.h || !["gh", "ta"].includes(init.f)) return; let alive = true; (async () => { const [r, c] = await Promise.all([maGet(`${HD_NODE}/${hdK(init.h)}`), maGet(HD_CFG)]); const cfgH = { ...HD_DEF, ...ptObj(c) };
+  useEffect(() => { if (!init.h || !["gh", "ta", "msh", "tnb"].includes(init.f)) return; let alive = true; (async () => { const [r, c] = await Promise.all([maGet(`${HD_NODE}/${hdK(init.h)}`), maGet(HD_CFG)]); const cfgH = { ...HD_DEF, ...ptObj(c) };
     const L = Object.entries(ptObj(r)).filter(([k]) => !maOff(k)).map(([k, x]) => ({ k, x, d: hdDay(x, cfgH) })).filter(o => o.d).sort((a, b) => b.k.localeCompare(a.k)); if (!alive) return; setHd(L);
     if (init.f === "gh" && !ptObj(init.v).d1) { const R = hfxLastAbsRun(L); if (R) setC(x => x.v.d1 ? x : ({ ...x, v: { ...x.v, d1: R.d1, d2: R.d2, days: String(R.n) } })); }
     if (init.f === "ta" && !ptObj(init.v).d1) { const o = L.find(z => z.d.kind === "work" && (z.d.late || z.d.early)); if (o) setC(x => x.v.d1 ? x : ({ ...x, v: { ...x.v, d1: o.k, c1: o.d.late ? 1 : "", t1: o.d.late ? o.x.a : "", c3: o.d.early ? 1 : "", t3: o.d.early ? o.x.d : "" } })); } })(); return () => { alive = false; }; }, []);
   const [c, setC] = useState(init); const [busy, setBusy] = useState(false); const [nidIn, setNidIn] = useState("");
   const F = HFX_F[c.f]; const nid = hfxNid(c.h); const t = T.find(x => x.k === c.tk) || {};
   const ph = c.ph || t.ph || "";
-  const set = (k, v) => setC(x => { const nv = { ...x.v, [k]: v, ...(k === "dec" && v && !x.v.dd ? { dd: maKey(new Date()) } : {}) }; if (x.f === "gh" && (k === "d1" || k === "d2") && nv.d1) { if (!nv.d2 || nv.d2 < nv.d1) nv.d2 = nv.d1; nv.days = String(hfxWorkDays(nv.d1, nv.d2)); } return { ...x, v: nv }; });
+  const set = (k, v) => setC(x => { const nv = { ...x.v, [k]: v, ...(k === "dec" && v && !x.v.dd ? { dd: maKey(new Date()) } : {}) }; if (x.f === "tnb" && k === "mins") { const m = +v || 0; nv.hrs = m ? String(Math.round(m / 6) / 10) : ""; } if (x.f === "gh" && (k === "d1" || k === "d2") && nv.d1) { if (!nv.d2 || nv.d2 < nv.d1) nv.d2 = nv.d1; nv.days = String(hfxWorkDays(nv.d1, nv.d2)); } return { ...x, v: nv }; });
   const setT = (k, v) => setC(x => ({ ...x, tv: { ...ptObj(x.tv), [k]: v } }));
   const RK = { draft: 0, sent: 1, opened: 2, ack: 3, replied: 3, closed: 4 };
   // دمج آمن: لا تُكتب نسخة الإدارة فوق ما أرسله المعلم في الأثناء
@@ -37010,6 +37080,8 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
   const waTxt = n => `المكرم الأستاذ/ ${n.n} وفقه الله\nالسلام عليكم ورحمة الله وبركاته\n\nنرفق لكم نموذج «${F.n}» من ${HFX_SCHOOL}.\n${F.tch === "reply" ? "نأمل الاطلاع عليه وتعبئة الإفادة والتوقيع ثم الإرسال" : F.tch === "sign" ? "نأمل الاطلاع عليه والتوقيع ثم الإرسال" : "نأمل الاطلاع عليه"} عبر الرابط التالي (يُفتح برقم هويتكم):\n${hfxLink(n)}\n\nمع التحية — ${cfg.mgr || "إدارة المدرسة"}`;
   const send = async () => { if (!c.h) { toast("أضف رقم هوية المعلم أولاً — به يفتح المعلم النموذج"); return; }
     if (c.f === "gh" && !c.v.d1) { toast("⚠️ حدّد يوم الغياب وتاريخه أولاً (خانة «📅 أيام الغياب»)"); return; }
+    if (c.f === "msh" && (!c.v.d1 || !["c1", "c2", "c3", "c4", "c5", "c6"].some(k => c.v[k]))) { toast("⚠️ حدّد اليوم ونوع المخالفة"); return; }
+    if (c.f === "tnb" && (!c.v.f1 || !c.v.f2 || !c.v.mins)) { toast("⚠️ حدّد الفترة (من – إلى) ومجموع الدقائق"); return; }
     if (c.f === "ta" && (!c.v.d1 || !(c.v.c1 || c.v.c2 || c.v.c3 || c.v.c4))) { toast("⚠️ حدّد اليوم ونوع المخالفة (تأخر / عدم تواجد / انصراف مبكر)"); return; }
     if (!cfg.sig && !window.confirm("لم تُضف توقيعك بعد (📷 رفع صورة التوقيع) — هل ترسل بدون توقيع؟")) return;
     const w = window.open("", "_blank"); const n = await save(c.st === "draft" ? { st: "sent", sentAt: Date.now(), v: { ...c.v, hd: maKey(new Date()) } } : { sentAt: Date.now() }); if (n) { const u = waUrl(ph, waTxt(n)); if (w) w.location.href = u; else window.location.href = u; } else if (w) w.close(); };
@@ -37030,6 +37102,9 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
           <div className="flex gap-1 flex-wrap">{hd.filter(o => o.d.kind === "abs").slice(0, 20).map(o => { const sel = c.v.d1 && c.v.d2 && o.k >= c.v.d1 && o.k <= c.v.d2; return <button key={o.k} className="hfx-b" style={{ padding: "4px 10px", fontSize: 12.5, background: sel ? "#b91c1c" : "#fff", color: sel ? "#fff" : "#b91c1c", borderColor: "#fecaca" }} onClick={() => { const cur = (c.v.d1 && c.v.d2) ? hd.filter(z => z.d.kind === "abs" && z.k >= c.v.d1 && z.k <= c.v.d2).map(z => z.k) : []; const S = cur.includes(o.k) ? cur.filter(z => z !== o.k) : [...cur, o.k]; S.sort(); setC(x => ({ ...x, v: { ...x.v, d1: S[0] || "", d2: S[S.length - 1] || "", days: S.length ? String(S.length) : "" } })); }}>{maDay(maDate(o.k))} {hfxHijTxt(o.k)}</button>; })}</div></> : <div style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>{hd ? "لا يوجد غياب لهذا المعلم في «حضوري» — اختر التاريخ يدوياً" : c.h ? "⏳" : "اختر التاريخ يدوياً"}</div>}
         <div className="hfx-2"><div className="hfx-f"><label>تغيّب من يوم {c.v.d1 ? <span style={{ color: "#0f766e" }}>({maDay(maDate(c.v.d1))})</span> : null}</label><input className="hfx-in" type="date" value={c.v.d1 || ""} onChange={e => set("d1", e.target.value)} /></div><div className="hfx-f"><label>إلى يوم {c.v.d2 ? <span style={{ color: "#0f766e" }}>({maDay(maDate(c.v.d2))})</span> : null}</label><input className="hfx-in" type="date" value={c.v.d2 || ""} onChange={e => set("d2", e.target.value)} /></div></div>
         <div className="hfx-f"><label>عدد أيام الغياب</label><input className="hfx-in" type="number" value={c.v.days || ""} onChange={e => set("days", e.target.value)} /></div></div>}
+      {c.f === "msh" && hd && hd.some(o => o.d.kind === "work" && o.d.late) && <div className="hfx-pane"><div className="hfx-sec">🎺 تأخر عن الطابور من «حضوري» — اضغط اليوم لتعبئته</div>
+        <div className="grid gap-1">{hd.filter(o => o.d.kind === "work" && o.d.late).slice(0, 10).map(o => <button key={o.k} className={`hfx-opt ${c.v.d1 === o.k ? "on" : ""}`} style={{ justifyContent: "space-between" }} onClick={() => setC(x => ({ ...x, v: { ...x.v, d1: o.k, c1: 1, t1: o.x.a || "" } }))}><span>{maDay(maDate(o.k))} {hfxHijTxt(o.k)}</span><span style={{ fontSize: 12 }}>⏰ حضر {maAr(o.x.a)} (تأخر {maAr(o.d.late)} د)</span></button>)}</div></div>}
+      {c.f === "tnb" && <HfxTnbCalc hd={hd} v={c.v} setC={setC} />}
       {c.f === "ta" && hd && hd.some(o => o.d.kind === "work" && (o.d.late || o.d.early)) && <div className="hfx-pane"><div className="hfx-sec">⏰ من «حضوري» — اضغط اليوم لتعبئته</div>
         <div className="grid gap-1">{hd.filter(o => o.d.kind === "work" && (o.d.late || o.d.early)).slice(0, 12).map(o => <button key={o.k} className={`hfx-opt ${c.v.d1 === o.k ? "on" : ""}`} style={{ justifyContent: "space-between" }} onClick={() => setC(x => ({ ...x, v: { ...x.v, d1: o.k, c1: o.d.late ? 1 : "", t1: o.d.late ? o.x.a : "", c3: o.d.early ? 1 : "", t3: o.d.early ? o.x.d : "", c2: "", c4: "" } }))}><span>{maDay(maDate(o.k))} {hfxHijTxt(o.k)}</span><span style={{ fontSize: 12 }}>{o.d.late ? `⏰ حضر ${maAr(o.x.a)} (تأخر ${maAr(o.d.late)} د)` : ""} {o.d.early ? `🚪 انصرف ${maAr(o.x.d)} (مبكر ${maAr(o.d.early)} د)` : ""}</span></button>)}</div></div>}
       <div className="hfx-pane"><div className="hfx-sec">١) بيانات الإدارة</div><HfxInputs fk={c.f} v={c.v} set={set} who="a" skip={c.f === "gh" ? ["d1", "d2", "days"] : []} />
@@ -37222,7 +37297,7 @@ function HdTeacherView({ me }) {
   const [F0, T0] = hdRange(rng);
   useEffect(() => { let alive = true; setExt(null); (async () => {
     const tdk = maKey(new Date());
-    const [ac, ad, tt, hf, tc, tl, tab] = await Promise.all([maGet(ASM_CFG), fbRange(ASM_NODE, F0, T0), maGet(TT_NODE), maGet(HFX_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${tdk}`), maGet(`${TT_ABS}/${tdk}`)]);
+    const [ac, ad, tt, hf, tc, tl, tab, cvp] = await Promise.all([maGet(ASM_CFG), fbRange(ASM_NODE, F0, T0), maGet(TT_NODE), maGet(HFX_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${tdk}`), maGet(`${TT_ABS}/${tdk}`), maGet(CV_PLAN)]);
     const am = asmMine(ptObj(ac), me) || hdFindAsm(ptObj(ac), me.name); const T = ttFresh(tt); const ti = sttFindMe(T, me.name);
     const rows = ti >= 0 ? (await ttLoadRows(F0, T0)).filter(r => +r.ti === ti && (r.st !== "ok" || r.note || r.cn)) : [];
     const cases = Object.values(ptObj(hf)).filter(c => c && c.h && c.h === me.hash);
@@ -37233,7 +37308,8 @@ function HdTeacherView({ me }) {
         if (c[1] === ti) today.push({ p, ck, si: c[0], t, mine: 1, away: absL.includes(ti), v });
         else if ((v && v.st === "sub" && +v.sub === ti) || (!v && pk && pk.sub === ti)) today.push({ p, ck, si: c[0], t, sub: 1, firm: !!(v && v.st === "sub"), for: ttClean(T.T[c[1]]) }); })); }
     const mineCls = ti >= 0 ? [...new Set(Object.keys(T.C).filter(ck => T.C[ck].some(d => d.some(c => c && c[1] === ti))))].sort((a, b) => a.localeCompare(b, "en", { numeric: true })) : [];
-    if (alive) setExt({ asm: am ? Object.fromEntries(Object.entries(ptObj(ad)).map(([k, d]) => [k, ptObj(d)[am.k]]).filter(([, v]) => v && v.st)) : {}, rows, T, cases, today: today.sort((a, b) => a.p - b.p), mineCls, ti });
+    const vis = ti >= 0 ? Object.values(cvDayMap(cvp, T, tdk)).filter(v => v.ti === ti) : [];
+    if (alive) setExt({ asm: am ? Object.fromEntries(Object.entries(ptObj(ad)).map(([k, d]) => [k, ptObj(d)[am.k]]).filter(([, v]) => v && v.st)) : {}, rows, T, cases, today: today.sort((a, b) => a.p - b.p), mineCls, ti, vis, times });
   })(); return () => { alive = false; }; }, [rng]);
   if (!cfg || !recs) return <div className="hd-card" style={{ textAlign: "center" }}>⏳</div>;
   if (!cfg.on) return <div className="hd-card" style={{ textAlign: "center", fontWeight: 900, color: "#64748b" }}>لم تُفعّل الإدارة عرض سجل الانضباط بعد.</div>;
@@ -37252,11 +37328,13 @@ function HdTeacherView({ me }) {
       return <div style={{ borderRadius: 22, padding: "14px 16px", background: "linear-gradient(135deg,#78350f,#b45309 45%,#f59e0b)", color: "#fff", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 18px 32px -20px #b45309" }}><span style={{ fontSize: 38, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.35))" }}>⭐</span><span><b style={{ fontSize: 17, display: "block" }}>{cur ? "أنت من المعلمين المميزين في الانضباط هذا الأسبوع" : "سبق أن كنت من المعلمين المميزين في الانضباط"}</b><small style={{ fontWeight: 800, opacity: .92 }}>حققت الانضباط الكامل في {maAr(won.length)} {won.length > 2 && won.length < 11 ? "أسابيع" : "أسبوع"} • آخرها {hdWeekLbl(won[0])}</small></span></div>; })()}
     {ext && ext.ti >= 0 && <div className="hd-card"><b style={{ fontSize: 15 }}>🏫 فصولي وجدولي اليوم</b>
       <div className="flex gap-1 flex-wrap">{ext.mineCls.map(ck => <span key={ck} className="hd-pill" style={{ background: (MA_LV[+ck[0] - 1] || {}).soft || "#f1f5f9", color: (MA_LV[+ck[0] - 1] || {}).c || "#334155" }}>🚪 {maClassName(ck)}</span>)}</div>
+      {ext.vis && ext.vis.length > 0 && <div style={{ borderRadius: 14, padding: "8px 12px", background: "linear-gradient(135deg,#5b21b6,#7c3aed)", color: "#fff", fontWeight: 900, fontSize: 13.5 }}>🎯 لديك زيارة صفية اليوم: {ext.vis.map(v => `${v.p >= 0 ? "الحصة " + TT_ORD[v.p] : v.pn || ""}${v.p >= 0 && ext.times[v.p] ? ` (${mlFmtT(ext.times[v.p][0])})` : ""}${v.ck ? " — " + maClassName(v.ck) : ""}`).join(" • ")}</div>}
       {maOff(maKey(new Date())) ? <div style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>🌙 اليوم إجازة</div> : !ext.today.length ? <div style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>لا حصص لك اليوم حسب الجدول</div> :
         <div className="grid gap-1">{ext.today.map((x, i) => <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", padding: "6px 10px", borderRadius: 12, background: x.sub ? "#e0f2fe" : "#f8fafc", border: `1px solid ${x.sub ? "#7dd3fc" : "#eef2f6"}` }}>
           <span className="hd-pill" style={{ background: "#0f1e3d", color: "#fff" }}>{TT_ORD[x.p]}</span><small style={{ fontWeight: 800, color: "#64748b" }}>{hdHM(hdMin(x.t[0]))}–{hdHM(hdMin(x.t[1]))}</small>
           <b style={{ fontSize: 13.5 }}>{maClassName(x.ck)}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>{(ext.T.SA && ext.T.SA[x.si]) || ext.T.S[x.si]}</span>
           {x.sub && <span className="hd-pill" style={{ background: "#0369a1", color: "#fff" }}>🛡️ احتياط بدل أ. {x.for}{x.firm ? "" : " (مقترح)"}</span>}
+          {x.mine && ext.vis && ext.vis.some(v => v.p === x.p) && <span className="hd-pill" style={{ background: "#7c3aed", color: "#fff" }}>🎯 زيارة صفية</span>}
           {x.mine && x.v && ST2[x.v.st] && x.v.st !== "ok" && <span className="hd-pill" style={{ background: ST2[x.v.st].bg, color: ST2[x.v.st].c }}>{ST2[x.v.st].ic} {ST2[x.v.st].l}</span>}</div>)}</div>}
     </div>}
     {!last ? <div className="hd-card" style={{ textAlign: "center", fontWeight: 900, color: "#64748b" }}>لا توجد بيانات حضور مرفوعة لك في هذه الفترة.</div> : <>
@@ -38224,9 +38302,14 @@ function CircTeacherView({ me }) {
 // ── تصحيح أوقات الحصص: الحصة السابعة كانت محفوظة خطأً ١٤:٠٠–١٤:٤٥ (من الاستيراد) → تنتهي ١٢:٤٠
 const TT_BAD7 = ["14:00", "14:45"], TT_FIX7 = ["11:55", "12:40"];
 const ttIsBad7 = tm => Array.isArray(tm) && tm[6] && tm[6][0] === TT_BAD7[0] && tm[6][1] === TT_BAD7[1];
-const ttFixTimes = tm => Array.isArray(tm) ? tm.map((x, i) => i === 6 && ttIsBad7(tm) ? [...TT_FIX7] : x) : tm;
+// ── الفسحة بعد الحصة الثالثة (٩:١٥–٩:٣٥) وليست بعد الرابعة: الرابعة ٩:٣٥–١٠:٢٠ بدل ٩:١٥–١٠:٠٠
+const TT_BAD4 = ["09:15", "10:00"], TT_FIX4 = ["09:35", "10:20"];
+const ttIsBad4 = tm => Array.isArray(tm) && tm[3] && tm[3][0] === TT_BAD4[0] && tm[3][1] === TT_BAD4[1] && (!tm[4] || tm[4][0] === "10:20");
+const ttFixTimes = tm => Array.isArray(tm) ? tm.map((x, i) => i === 6 && ttIsBad7(tm) ? [...TT_FIX7] : i === 3 && ttIsBad4(tm) ? [...TT_FIX4] : x) : tm;
 let ttFixDone = false;
-function ttFixCfg(c) { if (ttFixDone || !c || !ttIsBad7(c.times)) return; ttFixDone = true; maPut(TT_CFG, { ...c, times: ttFixTimes(c.times), fix7: Date.now() }); }
+function ttFixCfg(c) { if (ttFixDone || !c || !(ttIsBad7(c.times) || ttIsBad4(c.times))) return; ttFixDone = true; maPut(TT_CFG, { ...c, times: ttFixTimes(c.times), ...(ttIsBad7(c.times) ? { fix7: Date.now() } : {}), ...(ttIsBad4(c.times) ? { fix4: Date.now() } : {}) }); }
+// الفسحة = أطول فجوة (١٥ دقيقة فأكثر) بين حصتين متتاليتين
+const ttBreak = tm => { let b = null; (tm || []).forEach((x, i) => { if (!i) return; const g = mlToMin(x[0]) - mlToMin(tm[i - 1][1]); if (g >= 15 && (!b || g > b.g)) b = { after: i - 1, f: tm[i - 1][1], t: x[0], g }; }); return b; };
 
 // ── نافذة تعديل أوقات الحصص (تقديم/تأخير الكل بضغطة)
 function SttTimesEditor({ times, P, by, onClose, onSaved }) {
@@ -38331,7 +38414,7 @@ async function ttDayReport({ T, times, dk, di, log, absList, plan, by, subName }
 
 function TtNowBoard({ navigate, big = false }) {
   const [S, setS] = useState(null); const [now, setNow] = useState(new Date()); const [sel, setSel] = useState(null);
-  const load = async () => { const t = maKey(new Date()); const [a, c, l, ab] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(`${TT_ABS}/${t}`)]); const T = ttFresh(a); const tm = ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : (T.times || TT_PDF.times)); ttFixCfg(c); setS({ T, times: tm.slice(0, T.P), log: ptObj(l), absR: ttAbsRng(ptObj(ab)), abs: Object.values(ptObj(ab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti) }); };
+  const load = async () => { const t = maKey(new Date()); const [a, c, l, ab, cvp] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(`${TT_ABS}/${t}`), maGet(CV_PLAN)]); const T = ttFresh(a); const tm = ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : (T.times || TT_PDF.times)); ttFixCfg(c); setS({ T, times: tm.slice(0, T.P), log: ptObj(l), cv: cvDayMap(cvp, T, t), absR: ttAbsRng(ptObj(ab)), abs: Object.values(ptObj(ab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti) }); };
   useEffect(() => { load(); const a = setInterval(() => setNow(new Date()), 15000); const b = setInterval(load, 60000); return () => { clearInterval(a); clearInterval(b); }; }, []);
   // الرجوع تلقائياً للحصة الحالية بعد ٣ دقائق من التصفح
   useEffect(() => { if (sel == null) return; const t = setTimeout(() => setSel(null), 180000); return () => clearTimeout(t); }, [sel]);
@@ -38355,7 +38438,7 @@ function TtNowBoard({ navigate, big = false }) {
   const title = p === curP ? `🔴 الآن: الحصة ${TT_ORD[p]}`
     : !manual && before ? `⏭ قبل بداية الدوام — الحصة ${TT_ORD[p]}`
     : !manual && ended ? `🏁 انتهت حصص اليوم — آخر حصة: ${TT_ORD[p]}`
-    : !manual && p === nextP ? `☕ استراحة — التالية: الحصة ${TT_ORD[p]}`
+    : !manual && p === nextP ? (ttBreak(times) && ttBreak(times).after === p - 1 ? `🥪 الفسحة (${maAr(ttBreak(times).f)}–${maAr(ttBreak(times).t)}) — التالية: الحصة ${TT_ORD[p]}` : `☕ استراحة — التالية: الحصة ${TT_ORD[p]}`)
     : e0 <= nowM ? `⏮ الحصة ${TT_ORD[p]} (انتهت)` : `⏭ الحصة ${TT_ORD[p]} (قادمة)`;
   const pill2 = p === curP ? `تنتهي بعد ${mlDur(e0 - nowM)}` : s0 > nowM ? `تبدأ بعد ${mlDur(s0 - nowM)}` : `انتهت منذ ${mlDur(nowM - e0)}`;
   const card = ck => { const c = T.C[ck] && T.C[ck][di] && T.C[ck][di][p]; const lv = MA_LV[+ck[0] - 1] || { c: "#475569", soft: "#f1f5f9" };
@@ -38365,7 +38448,7 @@ function TtNowBoard({ navigate, big = false }) {
     else if (v && ST2[v.st]) { const x = ST2[v.st]; bd = { t: `${x.ic} ${v.st === "late" ? `تأخر ${maAr(v.mins)} د` : v.st === "early" ? "خرج قبل النهاية" : x.l}`, c: x.c, bg: x.bg }; }
     else if (abs.includes(ti) && ttAbsAt(S.absR, ti, p) && pk && pk.sub != null) { bd = { t: `🚫 غائب • البديل المقترح`, c: "#b45309", bg: "#fef3c7" }; who = ttClean(T.T[pk.sub]); }
     else if (abs.includes(ti) && ttAbsAt(S.absR, ti, p)) bd = { t: "🚫 المعلم غائب", c: "#b91c1c", bg: "#fee2e2" };
-    return { ck, lv, si, ti, who, orig: ttClean(T.T[ti]), bd, nt: v && v.st !== "note" && (v.cn || (v.note && !ttAutoNote(v.note))) };
+    return { ck, lv, si, ti, who, orig: ttClean(T.T[ti]), bd, nt: v && v.st !== "note" && (v.cn || (v.note && !ttAutoNote(v.note))), vis: !!(S.cv && S.cv[`${ti}_${p}`]) };
   };
   const L = cks.map(card); const F = big ? 1.35 : 1;
   const nb = (dis, on) => ({ fontFamily: "inherit", cursor: dis ? "default" : "pointer", border: "1px solid rgba(255,255,255,.35)", borderRadius: 12, padding: `${4 * F}px ${12 * F}px`, fontWeight: 900, fontSize: 13 * F, background: on ? "#fbbf24" : "rgba(255,255,255,.12)", color: on ? "#1e1b4b" : "#fff", opacity: dis ? .35 : 1 });
@@ -38396,6 +38479,7 @@ function TtNowBoard({ navigate, big = false }) {
             {x.who !== x.orig && <div style={{ fontSize: 11.5 * F, fontWeight: 800, color: "#64748b", textDecoration: "line-through" }}>{x.orig}</div>}
             {x.bd && <span style={{ justifySelf: "start", borderRadius: 999, padding: "2px 9px", fontSize: 11.5 * F, fontWeight: 900, background: x.bd.bg, color: x.bd.c }}>{x.bd.t}</span>}
             {x.nt && <span style={{ fontSize: 11 * F, fontWeight: 800, color: "#0369a1" }}>📝 عليها ملاحظة</span>}
+            {x.vis && <span style={{ justifySelf: "start", borderRadius: 999, padding: "2px 9px", fontSize: 11.5 * F, fontWeight: 900, background: "#7c3aed", color: "#fff" }}>🎯 زيارة صفية</span>}
           </button>)}
       </div>
     </div>
@@ -38405,7 +38489,7 @@ function TtNowBoard({ navigate, big = false }) {
 // جدول الطالب في بوابة ولي الأمر/الطالب
 function GuardianTT({ me }) {
   const [S, setS] = useState(null);
-  useEffect(() => { (async () => { const t = maKey(new Date()); const [a, c, l] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`)]); setS({ T: ttFresh(a), times: c && Array.isArray(c.times) ? c.times : TT_PDF.times, log: ptObj(l) }); })(); }, []);
+  useEffect(() => { (async () => { const t = maKey(new Date()); const [a, c, l] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`)]); setS({ T: ttFresh(a), times: ttFixTimes(c && Array.isArray(c.times) ? c.times : TT_PDF.times), log: ptObj(l) }); })(); }, []);
   if (!S) return <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8" }}>⏳</div>;
   const { T, log } = S; const times = S.times.slice(0, T.P); const G = T.C[me.ck];
   if (!G) return <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد جدول لفصل {maClassName(me.ck)}</div>;
@@ -38650,7 +38734,12 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   })(); }, []);
   const loadDay = async () => { const [l, ab] = await Promise.all([maGet(`${TT_LOG}/${dateK}`), maGet(`${TT_ABS}/${dateK}`)]); setLog(l && typeof l === "object" ? l : {}); setAbsO(ab && typeof ab === "object" ? ab : {}); };
   useEffect(() => { loadDay(); const t = setInterval(() => { if (!cell && !addA) loadDay(); }, 45000); return () => clearInterval(t); }, [dateK, cell, addA]);
+  // الزيارات الصفية لهذا اليوم (تظهر في الجدول اليومي)
+  const [cvv, setCvv] = useState({});
+  useEffect(() => { if (!tt) return; let alive = true; maGet(CV_PLAN).then(pl => { if (alive) setCvv(cvDayMap(pl, tt, dateK)); }).catch(() => {}); return () => { alive = false; }; }, [tt, dateK]);
   if (!tt) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري تحميل الجدول…</div>;
+  const vAt = (ti, p) => cvv[`${ti}_${p}`];
+  const visL = Object.values(cvv).sort((a, b) => (a.p < 0 ? 99 : a.p) - (b.p < 0 ? 99 : b.p));
 
   const T = tt; const D = maDate(dateK); const isToday = dateK === maKey(new Date());
   const cks = Object.keys(T.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
@@ -38719,6 +38808,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
       <b style={{ color: x.absent ? "#b91c1c" : undefined }}>{tview ? (cp ? sttCk(ck) : maClassName(ck)) : ttShort(T, x.ti)}</b>
       {x.bd && <span className="bd" style={{ color: x.bd.c, background: "#fff" }}>{x.bd.t}</span>}
       {x.v && x.v.cn && x.v.st !== "note" && <span title={`ملاحظة على الفصل: ${x.v.cn.c || ""} ${x.v.cn.t || ""}`} style={{ position: "absolute", top: 2, left: 4, fontSize: 12 }}>📝</span>}
+      {d === di && vAt(x.ti, p) && <span title="زيارة صفية" style={{ position: "absolute", top: 1, right: 3, fontSize: 12 }}>🎯</span>}
     </button>;
   };
   // خانة معلم: حصة، أو احتياط ملوّن، أو تغطية
@@ -38771,19 +38861,20 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const myCov = meIdx >= 0 && di >= 0 ? [...Object.entries(log).filter(([k, v]) => v && v.st === "sub" && v.sub === meIdx && +k.split("_")[0] === di).map(([k, v]) => ({ p: +k.split("_")[1], ck: k.split("_")[2], lvl: v.lvl, ok: true })), ...Object.values(plan).filter(x => !x.done && x.sub === meIdx).map(x => ({ p: x.p, ck: x.ck, lvl: x.lvl }))].sort((a, b) => a.p - b.p) : [];
 
   // ── بطاقات اليوم لعنصر واحد (مريحة للجوال)
-  const DayCards = () => di < 0 ? null : <div className="grid gap-2">{times.map((t, p) => {
+  const brk = ttBreak(times); const brkRow = p => brk && brk.after === p ? <div key={"brk" + p} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 14, background: "repeating-linear-gradient(135deg,#ecfeff,#ecfeff 8px,#fff 8px,#fff 14px)", border: "1.5px dashed #06b6d4", color: "#0e7490", fontWeight: 900, fontSize: 14 }}>🥪 الفسحة<small style={{ fontWeight: 800 }}>{mlFmtT(brk.f)} – {mlFmtT(brk.t)}</small>{isToday && nowM >= mlToMin(brk.f) && nowM < mlToMin(brk.t) && <span className="stt-lv" style={{ background: "#cffafe", color: "#0e7490" }}>● الآن</span>}</div> : null;
+  const DayCards = () => di < 0 ? null : <div className="grid gap-2">{times.flatMap((t, p) => [(() => {
     if (view === "cls") { const x = infoCls(di, p, sel); if (!x) return null; return <button key={p} type="button" className={`stt-card ${p === curP ? "now" : ""}`} onClick={() => setCell({ d: di, p, ck: sel })}>
       <div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div>
-      <div className="bx" style={{ "--sc": sc(x.si) }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 17, color: sc(x.si) }}>{T.S[x.si]}</b>{p === curP && <span className="stt-lv" style={{ background: "#cffafe", color: "#0e7490" }}>● الآن</span>}{x.bd && <span className="stt-lv" style={{ background: x.bd.bg, color: x.bd.c, border: x.bd.sug ? `1.5px dashed ${x.bd.c}` : "none" }}>{x.bd.sug ? "مقترح " : ""}{x.bd.t}</span>}</div>
+      <div className="bx" style={{ "--sc": sc(x.si) }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 17, color: sc(x.si) }}>{T.S[x.si]}</b>{p === curP && <span className="stt-lv" style={{ background: "#cffafe", color: "#0e7490" }}>● الآن</span>}{vAt(x.ti, p) && <span className="stt-lv" style={{ background: "#7c3aed", color: "#fff" }}>🎯 زيارة صفية</span>}{x.bd && <span className="stt-lv" style={{ background: x.bd.bg, color: x.bd.c, border: x.bd.sug ? `1.5px dashed ${x.bd.c}` : "none" }}>{x.bd.sug ? "مقترح " : ""}{x.bd.t}</span>}</div>
         <div style={{ fontSize: 14, fontWeight: 800, color: x.absent ? "#b91c1c" : "#334155", marginTop: 2 }}>👤 {ttClean(T.T[x.ti])}</div>
         <div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8" }}>{mlFmtT(t[0])} إلى {mlFmtT(t[1])}</div></div></button>; }
     const ti = +sel; const ck = sttClassOf(T, di, p, ti); const lv = sttRes(T, di, p).indexOf(ti) + 1;
     const cv = myCovAll(ti).find(z => z.p === p);
-    if (ck) { const x = infoCls(di, p, ck); return <button key={p} type="button" className={`stt-card ${p === curP ? "now" : ""}`} onClick={() => setCell({ d: di, p, ck })}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": sc(x.si) }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 17 }}>{maClassName(ck)}</b>{p === curP && <span className="stt-lv" style={{ background: "#cffafe", color: "#0e7490" }}>● الآن</span>}{x.bd && <span className="stt-lv" style={{ background: x.bd.bg, color: x.bd.c }}>{x.bd.t}</span>}</div><div style={{ fontSize: 14, fontWeight: 900, color: sc(x.si) }}>{T.S[x.si]}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8" }}>{mlFmtT(t[0])} إلى {mlFmtT(t[1])}</div></div></button>; }
+    if (ck) { const x = infoCls(di, p, ck); return <button key={p} type="button" className={`stt-card ${p === curP ? "now" : ""}`} onClick={() => setCell({ d: di, p, ck })}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": sc(x.si) }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 17 }}>{maClassName(ck)}</b>{p === curP && <span className="stt-lv" style={{ background: "#cffafe", color: "#0e7490" }}>● الآن</span>}{x.bd && <span className="stt-lv" style={{ background: x.bd.bg, color: x.bd.c }}>{x.bd.t}</span>}{vAt(ti, p) && <span className="stt-lv" style={{ background: "#7c3aed", color: "#fff" }}>🎯 زيارة صفية</span>}</div><div style={{ fontSize: 14, fontWeight: 900, color: sc(x.si) }}>{T.S[x.si]}</div><div style={{ fontSize: 11.5, fontWeight: 700, color: "#94a3b8" }}>{mlFmtT(t[0])} إلى {mlFmtT(t[1])}</div></div></button>; }
     if (cv) { const L = TT_LVC[cv.lvl || lv || 4]; return <button key={p} type="button" className="stt-card" style={{ borderColor: L.c }} onClick={() => setCell({ d: di, p, ck: cv.ck })}><div className="pn" style={{ background: L.bg, color: L.c }}><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": L.c, background: L.bg }}><b style={{ fontSize: 16, color: L.c }}>🔄 تغطية {maClassName(cv.ck)}</b><div style={{ fontSize: 13, fontWeight: 800, color: "#334155" }}>{L.l}{cv.ok ? " • معتمد" : " • مقترح"}</div></div></button>; }
     if (lv) { const L = TT_LVC[lv]; return <div key={p} className="stt-card" style={{ cursor: "default", borderColor: L.c + "66" }}><div className="pn" style={{ background: L.bg, color: L.c }}><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": L.c }}><b style={{ fontSize: 16, color: L.c }}>🛡️ {L.l}</b><div style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>مناوب احتياط — جاهز عند غياب زميل</div></div></div>; }
     return <div key={p} className="stt-card" style={{ cursor: "default", opacity: .7 }}><div className="pn"><b>{maAr(p + 1)}</b><small>{mlFmtT(t[0])}</small></div><div className="bx" style={{ "--sc": "#e2e8f0" }}><b style={{ fontSize: 14, color: "#94a3b8" }}>☕ فراغ</b></div></div>;
-  })}</div>;
+  })(), brkRow(p)])}</div>;
   function myCovAll(ti) { return [...Object.entries(log).filter(([k, v]) => v && v.st === "sub" && v.sub === ti && +k.split("_")[0] === di).map(([k, v]) => ({ p: +k.split("_")[1], ck: k.split("_")[2], lvl: v.lvl, ok: true })), ...Object.values(plan).filter(x => !x.done && x.sub === ti).map(x => ({ p: x.p, ck: x.ck, lvl: x.lvl }))]; }
 
   const WeekGrid = () => <div className="stt-wrap stt-wk"><table className="stt-g" style={{ tableLayout: "fixed" }}><thead><tr><th className="rh" style={{ width: 54 }}>اليوم</th>{times.map((t, p) => <th key={p}>{maAr(p + 1)}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
@@ -38816,6 +38907,13 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
         </div>
 
         {ro && meIdx >= 0 && myCov.length > 0 && <div className="ma-card p-3" style={{ border: "2px solid #0284c7", background: "#f0f9ff" }}><b style={{ fontSize: 15, color: "#075985" }}>🛡️ لديك حصص احتياط {isToday ? "اليوم" : "في هذا اليوم"}</b><div className="grid gap-1 mt-2">{myCov.map((x, i) => { const L = TT_LVC[x.lvl || 4]; return <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 800, fontSize: 14 }}><span className="stt-lv" style={{ background: L.bg, color: L.c }}>{L.l}</span>الحصة {TT_ORD[x.p]} ({mlFmtT(times[x.p][0])}) — {maClassName(x.ck)}{x.ok ? " ✓" : " (مقترح)"}</div>; })}</div></div>}
+        {(() => { const mine = ro ? visL.filter(v => v.ti === meIdx && meIdx >= 0) : visL; if (!mine.length || di < 0) return null;
+          return <div className="ma-card p-3" style={{ border: "2px solid #7c3aed", background: "linear-gradient(135deg,#f5f3ff,#fff)" }}>
+            <b style={{ fontSize: 15, color: "#5b21b6" }}>🎯 {ro ? `لديك زيارة صفية ${isToday ? "اليوم" : "في هذا اليوم"}` : `الزيارات الصفية ${isToday ? "اليوم" : "في هذا اليوم"} (${maAr(mine.length)})`}</b>
+            <div className="grid gap-1 mt-2">{mine.map(v => <div key={v.id} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontWeight: 800, fontSize: 13.5 }}>
+              {!ro && <span className="stt-lv" style={{ background: "#ede9fe", color: "#5b21b6" }}>👤 {v.t}</span>}<span>{v.p >= 0 ? `الحصة ${TT_ORD[v.p]}` : v.pn || ""}{v.p >= 0 && times[v.p] ? ` (${mlFmtT(times[v.p][0])} – ${mlFmtT(times[v.p][1])})` : v.tm ? ` (${maAr(v.tm)})` : ""}</span>
+              {v.ck ? <span>• {maClassName(v.ck)}</span> : v.c ? <span>• {v.c}</span> : null}{v.s ? <small style={{ color: "#64748b" }}>• {v.s}</small> : null}<small style={{ color: "#7c3aed" }}>• الزيارة {CV_VN[(+v.v || 1) - 1] || ""}</small></div>)}</div>
+          </div>; })()}
         {ro && meIdx < 0 && <div className="ma-card p-3" style={{ fontWeight: 800, color: "#b45309", background: "#fffbeb" }}>🔎 لم أجد اسمك في الجدول تلقائياً — اختر اسمك من قائمة المعلمين بالأسفل</div>}
 
         {!ro && di >= 0 && <div className="ma-card p-3 grid gap-2" style={{ border: absList.length ? "2px solid #fecaca" : undefined }}>
@@ -39267,14 +39365,14 @@ const DU_NODE = "school-duty", DU_PG = "school-duty-pg", DU_ACK = "school-duty-a
 const DU_DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
 const DU_TY = {
   morn: { l: "الإشراف الصباحي", ic: "🌅", c: "#ea580c", bg: "#fff7ed", f: "06:40", t: "07:00" },
-  brk: { l: "إشراف الفسحة", ic: "🥪", c: "#0891b2", bg: "#ecfeff", f: "10:00", t: "10:20" },
+  brk: { l: "إشراف الفسحة", ic: "🥪", c: "#0891b2", bg: "#ecfeff", f: "09:15", t: "09:35" },
   pray: { l: "إشراف الصلاة", ic: "🕌", c: "#059669", bg: "#ecfdf5", f: "11:50", t: "12:05" },
   end: { l: "مناوبة نهاية الدوام", ic: "🚌", c: "#7c3aed", bg: "#f5f3ff", f: "12:35", t: "13:00" },
   oth: { l: "مهمة أخرى", ic: "📌", c: "#475569", bg: "#f8fafc", f: "", t: "" },
   mon: { l: "المناوبة اليومية", ic: "⏱️", c: "#1e40af", bg: "#eff6ff", f: "06:30", t: "13:00" },
 };
 const DU_OFF_VER = "1448-off1";
-const DU_OFF_S = {"o00":{"id":"o00","ty":"brk","d":[0],"f":"10:00","t":"10:20","pl":"المقصف","tn":["حسن العيسي"],"note":"","lbl":"","off":1,"o":0},"o01":{"id":"o01","ty":"brk","d":[0],"f":"10:00","t":"10:20","pl":"وسط الساحة","tn":["محمد القارحي"],"note":"","lbl":"","off":1,"o":1},"o02":{"id":"o02","ty":"brk","d":[0],"f":"10:00","t":"10:20","pl":"يمين الساحة","tn":["وليد الزايدي"],"note":"","lbl":"","off":1,"o":2},"o03":{"id":"o03","ty":"brk","d":[0],"f":"10:00","t":"10:20","pl":"يسار الساحة","tn":["أحمد عزي"],"note":"","lbl":"","off":1,"o":3},"o10":{"id":"o10","ty":"brk","d":[1],"f":"10:00","t":"10:20","pl":"المقصف","tn":["أسامه السفري"],"note":"","lbl":"","off":1,"o":0},"o11":{"id":"o11","ty":"brk","d":[1],"f":"10:00","t":"10:20","pl":"وسط الساحة","tn":["صاطي الحارثي"],"note":"","lbl":"","off":1,"o":1},"o12":{"id":"o12","ty":"brk","d":[1],"f":"10:00","t":"10:20","pl":"يمين الساحة","tn":["فيصل العتيبي"],"note":"","lbl":"","off":1,"o":2},"o13":{"id":"o13","ty":"brk","d":[1],"f":"10:00","t":"10:20","pl":"يسار الساحة","tn":["محمد الجوفي"],"note":"","lbl":"","off":1,"o":3},"o20":{"id":"o20","ty":"brk","d":[2],"f":"10:00","t":"10:20","pl":"المقصف","tn":["فارس البشري","ماجد الهذلي"],"note":"","lbl":"","off":1,"o":0},"o21":{"id":"o21","ty":"brk","d":[2],"f":"10:00","t":"10:20","pl":"وسط الساحة","tn":["محمد الشهري"],"note":"","lbl":"","off":1,"o":1},"o22":{"id":"o22","ty":"brk","d":[2],"f":"10:00","t":"10:20","pl":"يمين الساحة","tn":["هادي المقاطي"],"note":"","lbl":"","off":1,"o":2},"o23":{"id":"o23","ty":"brk","d":[2],"f":"10:00","t":"10:20","pl":"يسار الساحة","tn":["حاتم الشمراني"],"note":"","lbl":"","off":1,"o":3},"o30":{"id":"o30","ty":"brk","d":[3],"f":"10:00","t":"10:20","pl":"المقصف","tn":["عمر العمشاني","أحمد الشهري"],"note":"","lbl":"","off":1,"o":0},"o31":{"id":"o31","ty":"brk","d":[3],"f":"10:00","t":"10:20","pl":"وسط الساحة","tn":["رمضان الزهراني"],"note":"","lbl":"","off":1,"o":1},"o32":{"id":"o32","ty":"brk","d":[3],"f":"10:00","t":"10:20","pl":"يمين الساحة","tn":["عبدالرحيم رضوان"],"note":"","lbl":"","off":1,"o":2},"o33":{"id":"o33","ty":"brk","d":[3],"f":"10:00","t":"10:20","pl":"يسار الساحة","tn":["علي الغامدي"],"note":"","lbl":"","off":1,"o":3},"o40":{"id":"o40","ty":"brk","d":[4],"f":"10:00","t":"10:20","pl":"المقصف","tn":["فهد آل رده","عبدالعزيز الذبياني"],"note":"","lbl":"","off":1,"o":0},"o41":{"id":"o41","ty":"brk","d":[4],"f":"10:00","t":"10:20","pl":"وسط الساحة","tn":["سعد العتيبي"],"note":"","lbl":"","off":1,"o":1},"o42":{"id":"o42","ty":"brk","d":[4],"f":"10:00","t":"10:20","pl":"يمين الساحة","tn":["محمد الحربي"],"note":"","lbl":"","off":1,"o":2},"o43":{"id":"o43","ty":"brk","d":[4],"f":"10:00","t":"10:20","pl":"يسار الساحة","tn":["جابر الشهري"],"note":"","lbl":"","off":1,"o":3}};
+const DU_OFF_S = {"o00":{"id":"o00","ty":"brk","d":[0],"f":"09:15","t":"09:35","pl":"المقصف","tn":["حسن العيسي"],"note":"","lbl":"","off":1,"o":0},"o01":{"id":"o01","ty":"brk","d":[0],"f":"09:15","t":"09:35","pl":"وسط الساحة","tn":["محمد القارحي"],"note":"","lbl":"","off":1,"o":1},"o02":{"id":"o02","ty":"brk","d":[0],"f":"09:15","t":"09:35","pl":"يمين الساحة","tn":["وليد الزايدي"],"note":"","lbl":"","off":1,"o":2},"o03":{"id":"o03","ty":"brk","d":[0],"f":"09:15","t":"09:35","pl":"يسار الساحة","tn":["أحمد عزي"],"note":"","lbl":"","off":1,"o":3},"o10":{"id":"o10","ty":"brk","d":[1],"f":"09:15","t":"09:35","pl":"المقصف","tn":["أسامه السفري"],"note":"","lbl":"","off":1,"o":0},"o11":{"id":"o11","ty":"brk","d":[1],"f":"09:15","t":"09:35","pl":"وسط الساحة","tn":["صاطي الحارثي"],"note":"","lbl":"","off":1,"o":1},"o12":{"id":"o12","ty":"brk","d":[1],"f":"09:15","t":"09:35","pl":"يمين الساحة","tn":["فيصل العتيبي"],"note":"","lbl":"","off":1,"o":2},"o13":{"id":"o13","ty":"brk","d":[1],"f":"09:15","t":"09:35","pl":"يسار الساحة","tn":["محمد الجوفي"],"note":"","lbl":"","off":1,"o":3},"o20":{"id":"o20","ty":"brk","d":[2],"f":"09:15","t":"09:35","pl":"المقصف","tn":["فارس البشري","ماجد الهذلي"],"note":"","lbl":"","off":1,"o":0},"o21":{"id":"o21","ty":"brk","d":[2],"f":"09:15","t":"09:35","pl":"وسط الساحة","tn":["محمد الشهري"],"note":"","lbl":"","off":1,"o":1},"o22":{"id":"o22","ty":"brk","d":[2],"f":"09:15","t":"09:35","pl":"يمين الساحة","tn":["هادي المقاطي"],"note":"","lbl":"","off":1,"o":2},"o23":{"id":"o23","ty":"brk","d":[2],"f":"09:15","t":"09:35","pl":"يسار الساحة","tn":["حاتم الشمراني"],"note":"","lbl":"","off":1,"o":3},"o30":{"id":"o30","ty":"brk","d":[3],"f":"09:15","t":"09:35","pl":"المقصف","tn":["عمر العمشاني","أحمد الشهري"],"note":"","lbl":"","off":1,"o":0},"o31":{"id":"o31","ty":"brk","d":[3],"f":"09:15","t":"09:35","pl":"وسط الساحة","tn":["رمضان الزهراني"],"note":"","lbl":"","off":1,"o":1},"o32":{"id":"o32","ty":"brk","d":[3],"f":"09:15","t":"09:35","pl":"يمين الساحة","tn":["عبدالرحيم رضوان"],"note":"","lbl":"","off":1,"o":2},"o33":{"id":"o33","ty":"brk","d":[3],"f":"09:15","t":"09:35","pl":"يسار الساحة","tn":["علي الغامدي"],"note":"","lbl":"","off":1,"o":3},"o40":{"id":"o40","ty":"brk","d":[4],"f":"09:15","t":"09:35","pl":"المقصف","tn":["فهد آل رده","عبدالعزيز الذبياني"],"note":"","lbl":"","off":1,"o":0},"o41":{"id":"o41","ty":"brk","d":[4],"f":"09:15","t":"09:35","pl":"وسط الساحة","tn":["سعد العتيبي"],"note":"","lbl":"","off":1,"o":1},"o42":{"id":"o42","ty":"brk","d":[4],"f":"09:15","t":"09:35","pl":"يمين الساحة","tn":["محمد الحربي"],"note":"","lbl":"","off":1,"o":2},"o43":{"id":"o43","ty":"brk","d":[4],"f":"09:15","t":"09:35","pl":"يسار الساحة","tn":["جابر الشهري"],"note":"","lbl":"","off":1,"o":3}};
 // سجل المناوبة اليومية ١٤٤٨هـ — الإصدار ٢ (من ملف «سجل المناوبة اليومية» المعتمد)
 const DU_OFF_MVER = "1448-mon2";
 const DU_OFF_M = {"2026-09-27":"حسن العيسي","2026-09-28":"عمر العمشاني","2026-09-29":"فيصل العتيبي","2026-09-30":"جابر الشهري","2026-10-01":"محمد الحربي","2026-10-04":"فارس البشري","2026-10-05":"حاتم الشمراني","2026-10-06":"علي الغامدي","2026-10-07":"محمد القارحي","2026-10-08":"هادي المقاطي","2026-10-11":"محمد الجوفي","2026-10-12":"فهد آل رده","2026-10-13":"أحمد عزي","2026-10-14":"أسامه السفري","2026-10-15":"سعد العتيبي","2026-10-18":"عبدالعزيز الذبياني","2026-10-19":"عبدالرحيم رضوان","2026-10-20":"أحمد الشهري","2026-10-21":"رمضان الزهراني","2026-10-22":"ماجد الهذلي","2026-10-25":"وليد الزايدي","2026-10-26":"صاطي الحارثي","2026-10-27":"محمد الشهري","2026-10-28":"جابر الشهري","2026-10-29":"محمد الحربي","2026-11-01":"فارس البشري","2026-11-02":"فهد آل رده","2026-11-03":"فيصل العتيبي","2026-11-04":"محمد القارحي","2026-11-05":"هادي المقاطي","2026-11-08":"علي الغامدي","2026-11-09":"محمد الجوفي","2026-11-10":"حسن العيسي","2026-11-11":"أسامه السفري","2026-11-12":"سعد العتيبي","2026-11-15":"عبدالعزيز الذبياني","2026-11-16":"عمر العمشاني","2026-11-17":"أحمد عزي","2026-11-18":"رمضان الزهراني","2026-11-19":"ماجد الهذلي","2026-11-29":"وليد الزايدي","2026-11-30":"أحمد الشهري","2026-12-01":"محمد الشهري","2026-12-02":"صاطي الحارثي","2026-12-03":"عبدالرحيم رضوان","2026-12-06":"فارس البشري","2026-12-07":"فهد آل رده","2026-12-08":"فيصل العتيبي","2026-12-09":"جابر الشهري","2026-12-10":"هادي المقاطي","2026-12-13":"علي الغامدي","2026-12-14":"رمضان الزهراني","2026-12-15":"أحمد عزي","2026-12-16":"أسامه السفري","2026-12-17":"سعد العتيبي","2026-12-20":"حسن العيسي","2026-12-21":"عمر العمشاني","2026-12-22":"محمد الشهري","2026-12-23":"محمد القارحي","2026-12-24":"محمد الحربي","2026-12-27":"عبدالعزيز الذبياني","2026-12-28":"أحمد الشهري","2026-12-29":"وليد الزايدي","2026-12-30":"صاطي الحارثي","2026-12-31":"ماجد الهذلي","2027-01-03":"محمد الجوفي","2027-01-04":"عبدالرحيم رضوان","2027-01-05":"أحمد عزي","2027-01-06":"جابر الشهري","2027-01-07":"هادي المقاطي","2027-01-17":"فارس البشري","2027-01-18":"فهد آل رده","2027-01-19":"علي الغامدي","2027-01-20":"رمضان الزهراني","2027-01-21":"سعد العتيبي","2027-01-24":"وليد الزايدي","2027-01-25":"عمر العمشاني","2027-01-26":"حسن العيسي","2027-01-27":"محمد القارحي","2027-01-28":"محمد الحربي","2027-01-31":"محمد الجوفي","2027-02-01":"أحمد الشهري","2027-02-02":"محمد الشهري","2027-02-03":"صاطي الحارثي","2027-02-04":"ماجد الهذلي","2027-02-07":"عبدالعزيز الذبياني","2027-02-08":"عبدالرحيم رضوان","2027-02-09":"فيصل العتيبي","2027-02-10":"أسامه السفري","2027-02-11":"هادي المقاطي","2027-02-14":"حسن العيسي","2027-02-15":"فهد آل رده","2027-02-16":"أحمد عزي","2027-02-17":"رمضان الزهراني","2027-02-18":"سعد العتيبي","2027-02-23":"محمد القارحي","2027-02-24":"صاطي الحارثي","2027-02-25":"ماجد الهذلي","2027-03-14":"علي الغامدي","2027-03-15":"أحمد الشهري","2027-03-16":"فيصل العتيبي","2027-03-17":"جابر الشهري","2027-03-18":"فارس البشري","2027-03-21":"محمد الجوفي","2027-03-22":"عمر العمشاني","2027-03-23":"وليد الزايدي","2027-03-24":"أسامه السفري","2027-03-25":"محمد الحربي","2027-03-28":"عبدالعزيز الذبياني","2027-03-29":"عبدالرحيم رضوان","2027-03-30":"محمد الشهري","2027-03-31":"محمد القارحي","2027-04-01":"هادي المقاطي","2027-04-04":"علي الغامدي","2027-04-05":"فهد آل رده","2027-04-06":"أحمد الشهري","2027-04-07":"رمضان الزهراني","2027-04-08":"فارس البشري","2027-04-11":"حسن العيسي","2027-04-12":"عمر العمشاني","2027-04-13":"فيصل العتيبي","2027-04-14":"جابر الشهري","2027-04-15":"سعد العتيبي","2027-04-18":"وليد الزايدي","2027-04-19":"محمد الجوفي","2027-04-20":"محمد الشهري","2027-04-21":"أسامه السفري","2027-04-22":"محمد الحربي","2027-04-25":"عبدالعزيز الذبياني","2027-04-26":"عبدالرحيم رضوان","2027-04-27":"أحمد عزي","2027-04-28":"صاطي الحارثي","2027-04-29":"ماجد الهذلي","2027-05-23":"حسن العيسي","2027-05-24":"أحمد الشهري","2027-05-25":"محمد القارحي","2027-05-26":"رمضان الزهراني","2027-05-27":"سعد العتيبي","2027-05-30":"فارس البشري","2027-05-31":"عمر العمشاني","2027-06-01":"محمد الشهري","2027-06-02":"أسامه السفري","2027-06-03":"محمد الحربي","2027-06-06":"وليد الزايدي","2027-06-07":"عبدالرحيم رضوان","2027-06-08":"فيصل العتيبي","2027-06-09":"جابر الشهري","2027-06-10":"هادي المقاطي","2027-06-13":"علي الغامدي","2027-06-14":"فهد آل رده","2027-06-15":"أحمد عزي","2027-06-16":"صاطي الحارثي","2027-06-17":"ماجد الهذلي","2027-06-20":"عبدالعزيز الذبياني","2027-06-21":"محمد الجوفي","2027-06-22":"محمد الشهري","2027-06-23":"محمد القارحي","2027-06-24":"سعد العتيبي","2027-06-27":"حسن العيسي","2027-06-28":"عمر العمشاني","2027-06-29":"فيصل العتيبي","2027-06-30":"رمضان الزهراني"};
@@ -39324,6 +39422,8 @@ const DU_CSS = `
 async function duLoad() { const [d, a] = await Promise.all([maGet(DU_NODE), maGet(DU_ACK)]); const o = d && typeof d === "object" ? d : {}; const cfg = { ...ptObj(o.cfg) }; let S = ptObj(o.S), M = ptObj(o.M), H = ptObj(o.H);
   if (cfg.off !== DU_OFF_VER) { const keep = {}; Object.values(S).forEach(x => { if (x && x.id && !x.auto && !x.off) keep[x.id] = x; }); S = { ...keep, ...DU_OFF_S }; M = DU_OFF_M; H = DU_OFF_H; cfg._needOff = 1; }
   else if (cfg.offM !== DU_OFF_MVER) { M = DU_OFF_M; H = { ...H, ...DU_OFF_H }; cfg._needOffM = 1; }
+  // الفسحة ٩:١٥–٩:٣٥ (كانت محفوظة ١٠:٠٠–١٠:٢٠)
+  S = Object.fromEntries(Object.entries(S).map(([k, x]) => [k, x && x.ty === "brk" && x.f === "10:00" && x.t === "10:20" ? { ...x, f: "09:15", t: "09:35" } : x]));
   return { cfg, S, M, H, ack: ptObj(a) }; }
 
 // ── عرض المعلم (بعد الدخول بالهوية)
