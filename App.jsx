@@ -26271,7 +26271,7 @@ async function swLoadGood(rng) {
   const [f, t] = swGRange(rng); const [ros, att, late] = await Promise.all([maGet(MA_ROSTER), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t)]); const A = {}, L = {};
   Object.entries(ptObj(att)).forEach(([dk, day]) => { if (maOff(dk)) return; Object.values(ptObj(day)).forEach(r => maArr(r && r.absent).forEach(x => { if (x && x.id) A[x.id] = (A[x.id] || 0) + 1; })); });
   Object.entries(ptObj(late)).forEach(([dk, day]) => { if (maOff(dk)) return; ptVals(day).forEach(x => { if (x && x.id) L[x.id] = (L[x.id] || 0) + 1; }); });
-  const out = []; Object.entries(ptObj(ros)).forEach(([ck, r]) => maArr(r && r.students).forEach(s => { if (s && s.id && s.name) out.push({ key: "g|" + s.id, id: String(s.id), name: s.name, ck, src: "good", a: A[s.id] || 0, l: L[s.id] || 0 }); }));
+  const out = []; Object.entries(ptObj(ros)).forEach(([ck, r]) => maArr(r && r.students).forEach(s => { if (s && s.id && s.name && !rosNewIn(s, f)) out.push({ key: "g|" + s.id, id: String(s.id), name: s.name, ck, src: "good", a: A[s.id] || 0, l: L[s.id] || 0 }); }));
   return out;
 }
 function StudentDrawWheel() {
@@ -30166,6 +30166,23 @@ const MA_CSS = `
 .ma-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:6px;background:#f1f5f9;border-radius:16px}
 .ma-tab{flex:1;min-width:130px;padding:10px 14px;border-radius:12px;border:none;background:transparent;font-family:inherit;font-weight:900;font-size:13.5px;color:#475569;cursor:pointer;transition:all .2s}
 .ma-tab.on{background:#fff;color:#0f766e;box-shadow:0 6px 16px -10px rgba(15,23,42,.5)}
+.ma-ct{position:relative;display:grid;justify-items:center;align-content:start;gap:3px;width:122px;padding:13px 8px 10px;border-radius:24px;border:2px solid color-mix(in srgb,var(--c) 20%,#fff);background:linear-gradient(165deg,var(--soft) 0%,#fff 72%);cursor:pointer;font-family:inherit;transition:transform .18s,box-shadow .18s,border-color .18s}
+.ma-ct:hover{transform:translateY(-3px);box-shadow:0 18px 28px -20px var(--c)}
+.ma-ct:focus-visible{outline:3px solid var(--c);outline-offset:2px}
+.ma-ct.on{border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent),0 18px 28px -20px var(--c)}
+.ma-ct .rg{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--rc,var(--c)) calc(var(--p,0)*1%),color-mix(in srgb,var(--c) 14%,#fff) 0)}
+.ma-ct .rg::before{content:"";position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle at 32% 28%,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 72%,#000));box-shadow:inset 0 -4px 8px rgba(0,0,0,.18)}
+.ma-ct .rg b{position:relative;color:#fff;font-size:30px;font-weight:900;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,.25)}
+.ma-ct .lb{font-size:13px;font-weight:900;color:var(--c);margin-top:3px}
+.ma-ct .sb{font-size:11px;font-weight:800;color:#64748b}
+.ma-ct .ch{position:absolute;top:-9px;left:-7px;border-radius:999px;font-size:11px;font-weight:900;padding:2px 9px;color:#fff;box-shadow:0 6px 12px -6px rgba(0,0,0,.45)}
+.ma-ct .tg{display:block;font-size:10.5px;font-weight:900}
+.ma-ct.hot{border-color:#dc2626;background:linear-gradient(165deg,#fee2e2 0%,#fff 70%);animation:maHot 1.8s ease-in-out infinite}
+.ma-ct .hf{position:absolute;top:-11px;right:-8px;background:linear-gradient(135deg,#ef4444,#991b1b);color:#fff;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:900;box-shadow:0 6px 14px -6px #b91c1c}
+.ma-ct .rb{margin-top:2px;background:#dc2626;color:#fff;border-radius:999px;padding:1px 8px;font-size:10.5px;font-weight:900}
+@keyframes maHot{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35)}50%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
+@media (prefers-reduced-motion:reduce){.ma-ct.hot{animation:none}}
+@media (max-width:520px){.ma-ct{width:calc(33.33% - 6px);min-width:96px}.ma-ct .rg{width:56px;height:56px}.ma-ct .rg b{font-size:25px}}
 .ma-cls{position:relative;border:2px solid #eef2f6;background:#fff;border-radius:16px;padding:10px 12px;cursor:pointer;text-align:right;font-family:inherit;transition:all .18s;min-width:112px}
 .ma-cls:hover{transform:translateY(-2px);box-shadow:0 10px 18px -14px rgba(15,23,42,.6)}
 .ma-cls b{display:block;font-size:14px;font-weight:900}
@@ -30390,11 +30407,9 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   const doImport = async () => {
     if (imp.some(x => x.names.length && !x.ck)) { alert("حدّد الفصل لكل ملف"); return; }
     setBusy(true);
-    for (const x of imp.filter(x => x.names.length)) {
-      const students = ptMergeRoster(studentsOf(x.ck), x.list && x.list.length ? x.list : x.names.map(n => ({ name: n }))); // الإبقاء على معرّفات الطلاب + ربط الهوية
-      const r = { ck: x.ck, students, updated: Date.now() }; await maPut(`${MA_ROSTER}/${x.ck}`, r); setRosters(p => ({ ...p, [x.ck]: r }));
-    }
-    setBusy(false); setImp(null); toast("📌 تم تثبيت الفصول");
+    // سجل موحّد: يُحفظ معرّف الطالب (وغيابه وتأخره) حتى لو انتقل لفصل آخر
+    const plan = await rosPlan(rosters, rosItems(imp)); const { done } = await rosApply(rosters, plan, trWho() || "الإدارة"); setRosters(p => ({ ...p, ...done }));
+    setBusy(false); setImp(null); toast("📌 تم تثبيت الفصول — " + rosSum(plan.rep));
   };
 
   // ── الخلاصة
@@ -30734,6 +30749,66 @@ async function ptStudentsFromParsed(p, names) {
   return out;
 }
 function ptMergeRoster(old, list) { const o = maArr(old); const nn = v => String(v || "").replace(/[\u064B-\u0652\u0640]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim(); return (list || []).map(x => { const e = o.find(y => y && ((x.nh && y.nh === x.nh) || y.name === x.name || nn(y.name) === nn(x.name))); return { ...(e || { id: maId() }), name: x.name, ...(x.nh ? { nh: x.nh, n4: x.n4 } : {}) }; }); }
+
+// ══════════ 🗂️ سجل الطلاب الموحّد ══════════
+// الطالب يحتفظ بمعرّفه (وبه كل غيابه وتأخره وملاحظاته) مهما انتقل بين الفصول أو أُعيد رفع كشوف نور.
+//   الطالب: {id, name, nh, n4, add?:"YYYY-MM-DD" (تاريخ إضافته — يبدأ احتسابه منه), mv?:[{f,t,d}], on?:[الأسماء السابقة]}
+//   school-mroster-left/{id} = الطلاب الذين خرجوا من الكشوف (يُستعاد معرّفهم إن عادوا) • school-mroster-log/{at} سجل التحديثات
+const ROS_LEFT = "school-mroster-left", ROS_LOG = "school-mroster-log";
+const rosNN = v => String(v || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
+const rosAllOf = ros => { const all = []; Object.entries(ptObj(ros)).forEach(([ck, r]) => maArr(r && r.students).forEach(s => { if (s && s.id && s.name) all.push({ ck, s }); })); return all; };
+// items: [{ck, list:[{name, nh?, n4?}]}] ← يعيد الكشوف الجديدة لكل فصل متأثر + تقرير بالتغييرات (لا يُكتب شيء هنا)
+function rosImport(ros, items, dk, left) {
+  const R = ptObj(ros); const all = rosAllOf(R); const base = all.length > 0; // أول رفع للمدرسة: لا يُعدّ أحد «مضافاً جديداً»
+  const L = Object.values(ptObj(left)).filter(x => x && x.id && x.name && !x.back).map(s => ({ ck: "_left", s }));
+  const byNh = {}, byNm = {}; [...all, ...L].forEach(x => { if (x.s.nh && !byNh[x.s.nh]) byNh[x.s.nh] = x; const k = rosNN(x.s.name); (byNm[k] = byNm[k] || []).push(x); });
+  const used = new Set(); const rep = { neu: [], moved: [], ren: [], back: [], gone: [], same: 0 }; const next = {};
+  const imported = new Set(items.map(x => x.ck));
+  items.forEach(({ ck, list }) => {
+    next[ck] = (list || []).map(x => {
+      const k = rosNN(x.name); let e = null;
+      if (x.nh && byNh[x.nh] && !used.has(byNh[x.nh].s.id)) e = byNh[x.nh];
+      if (!e) e = (byNm[k] || []).find(y => y.ck === ck && !used.has(y.s.id) && (!x.nh || !y.s.nh || y.s.nh === x.nh)) || null;
+      if (!e) { const c = (byNm[k] || []).filter(y => !used.has(y.s.id) && (!x.nh || !y.s.nh || y.s.nh === x.nh)); if (c.length === 1) e = c[0]; }
+      if (!e) { const st = { id: maId(), name: x.name, ...(x.nh ? { nh: x.nh, n4: x.n4 } : {}), ...(base ? { add: dk } : {}) }; if (base) rep.neu.push({ ck, s: st }); return st; }
+      used.add(e.s.id);
+      const { ck: _c, left: _l, by: _b, back: _k, why: _w, ...old } = e.s;
+      const st = { ...old, name: x.name, ...(x.nh ? { nh: x.nh, n4: x.n4 } : {}) };
+      if (old.name !== x.name && rosNN(old.name) !== k) st.on = [...maArr(old.on), old.name];
+      if (e.ck === "_left") { st.mv = [...maArr(old.mv), { f: e.s.ck || "", t: ck, d: dk, r: 1 }]; rep.back.push({ ck, s: st, from: e.s.ck || "" }); }
+      else if (e.ck !== ck) { st.mv = [...maArr(old.mv), { f: e.ck, t: ck, d: dk }]; rep.moved.push({ from: e.ck, ck, s: st }); }
+      else if (old.name !== x.name) rep.ren.push({ ck, s: st, old: old.name });
+      else rep.same++;
+      return st;
+    });
+  });
+  const movedIds = new Set(rep.moved.map(m => m.s.id));
+  Object.entries(R).forEach(([ck, r]) => {
+    const Ls = maArr(r && r.students).filter(s => s && s.id);
+    if (imported.has(ck)) { Ls.forEach(s => { if (!used.has(s.id)) rep.gone.push({ ck, s }); }); return; }
+    if (Ls.some(s => movedIds.has(s.id))) next[ck] = Ls.filter(s => !movedIds.has(s.id)); // من نُقل يُزال من فصله القديم وإن لم يُرفع كشفه
+  });
+  return { next, rep, dk };
+}
+const rosItems = imp => { const byC = {}; (imp || []).filter(x => x && x.ck && x.names && x.names.length).forEach(x => { const L = x.list && x.list.length ? x.list : x.names.map(n => ({ name: n })); const g = byC[x.ck] = byC[x.ck] || []; L.forEach(st => { if (!g.some(y => (st.nh && y.nh === st.nh) || rosNN(y.name) === rosNN(st.name))) g.push(st); }); }); return Object.entries(byC).map(([ck, list]) => ({ ck, list })); };
+const rosSum = rep => [rep.neu.length && `🆕 ${maAr(rep.neu.length)} جديد`, rep.moved.length && `🔀 ${maAr(rep.moved.length)} منقول`, rep.back.length && `↩️ ${maAr(rep.back.length)} عائد`, rep.gone.length && `📤 ${maAr(rep.gone.length)} خرج من الكشف`, rep.ren.length && `✏️ ${maAr(rep.ren.length)} تعديل اسم`].filter(Boolean).join(" • ") || "لا تغييرات في الأسماء";
+async function rosPlan(ros, items, dk = maKey(new Date())) { return rosImport(ros, items, dk, await maGet(ROS_LEFT)); }
+// كتابة نتيجة الاستيراد: الفصول المتأثرة + أرشيف من خرج من الكشوف + سجل التحديث
+async function rosApply(ros, plan, by = "الإدارة") {
+  const R = ptObj(ros), now = Date.now(), done = {}; let ok = true;
+  for (const [ck, students] of Object.entries(plan.next)) { const r = { ...(R[ck] || {}), ck, students, updated: now }; if (await maPut(`${MA_ROSTER}/${ck}`, r)) done[ck] = r; else ok = false; }
+  const o = {}; const { rep } = plan;
+  rep.gone.forEach(g => { o[`${ROS_LEFT}/${g.s.id}`] = { ...g.s, ck: g.ck, left: plan.dk, by, why: "لم يرد في كشف نور" }; });
+  rep.back.forEach(b => { o[`${ROS_LEFT}/${b.s.id}/back`] = plan.dk; });
+  o[`${ROS_LOG}/${now}`] = { at: now, dk: plan.dk, by, src: "نور", neu: rep.neu.map(x => `${x.s.name} ← ${maClassName(x.ck)}`).slice(0, 80), moved: rep.moved.map(x => `${x.s.name}: ${maClassName(x.from)} ← ${maClassName(x.ck)}`).slice(0, 80), gone: rep.gone.map(x => `${x.s.name} (${maClassName(x.ck)})`).slice(0, 80), back: rep.back.map(x => x.s.name).slice(0, 80), ren: rep.ren.length, cls: Object.keys(plan.next).length };
+  await fbPatch(o);
+  return { ok, done };
+}
+// تعديل يدوي واحد يُسجَّل في السجل
+async function rosLog(by, txt, kind = "edit") { const now = Date.now(); try { await maPut(`${ROS_LOG}/${now}`, { at: now, dk: maKey(new Date()), by, src: "يدوي", kind, txt }); } catch {} }
+// هل الطالب مضاف بعد بداية الفترة؟ (لا يُمنح أوسمة «حضور كامل/بلا تأخر» على فترة لم يكن فيها)
+const rosNewIn = (s, f) => !!(s && s.add && f && s.add > f);
+const rosAddTxt = s => s && s.add ? `مضاف ${maHijri(maDate(s.add))} — يُحتسب من تاريخ إضافته` : "";
 
 // ── قراءة كشوف نور: كل الأوراق وكل الملفات، ودمج أوراق الفصل الواحد (مثل Sheet1 + Sheet2) مع حذف المكرر
 async function ptReadRosters(files) {
@@ -32447,11 +32522,11 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
   const [imp, setImp] = useState(null); const impRef = useRef(null); const [impCk, setImpCk] = useState("");
   const [rEd, setREd] = useState(null); const [rQ, setRQ] = useState(""); const [rAdd, setRAdd] = useState({ name: "", nid: "" });
   const saveRoster = async (k, students) => { const r = { ...(rosters[k] || {}), ck: k, students, updated: Date.now() }; setBusy(true); const ok = await maPut(`${MA_ROSTER}/${k}`, r); setBusy(false); if (!ok) { alert("⚠️ تعذّر الحفظ"); return false; } setRosters(p => ({ ...p, [k]: r })); return true; };
-  const rRename = async (st) => { const v = window.prompt("تعديل اسم الطالب:", st.name); if (!v || !v.trim() || v.trim() === st.name) return; if (await saveRoster(rEd, studentsOf(rEd).map(x => x.id === st.id ? { ...x, name: v.trim() } : x))) toast("✅ تم تعديل الاسم"); };
+  const rRename = async (st) => { const v = window.prompt("تعديل اسم الطالب:", st.name); if (!v || !v.trim() || v.trim() === st.name) return; if (await saveRoster(rEd, studentsOf(rEd).map(x => x.id === st.id ? { ...x, name: v.trim(), on: [...maArr(x.on), x.name] } : x))) toast("✅ تم تعديل الاسم"); };
   const rSetId = async (st) => { const v = window.prompt(`رقم السجل المدني للطالب «${st.name}» (١٠ أرقام):`, ""); if (v == null) return; const n = licNormId(v); if (n.length !== 10) { alert("الرقم يجب أن يكون ١٠ أرقام"); return; } const h = await stuHash(n); if (await saveRoster(rEd, studentsOf(rEd).map(x => x.id === st.id ? { ...x, nh: h, n4: n.slice(-4) } : x))) toast("🪪 تم ربط الهوية"); };
-  const rDel = async (st) => { if (!window.confirm(`حذف «${st.name}» من ${maClassName(rEd)}؟`)) return; if (await saveRoster(rEd, studentsOf(rEd).filter(x => x.id !== st.id))) toast("🗑 تم حذف الطالب"); };
+  const rDel = async (st) => { if (!window.confirm(`إخراج «${st.name}» من ${maClassName(rEd)}؟\nيبقى غيابه وتأخره محفوظاً، ويُستعاد سجله إن عاد.`)) return; await maPut(`${ROS_LEFT}/${st.id}`, { ...st, ck: rEd, left: maKey(new Date()), by, why: "إخراج يدوي" }); if (await saveRoster(rEd, studentsOf(rEd).filter(x => x.id !== st.id))) { rosLog(by, `إخراج ${st.name} من ${maClassName(rEd)}`, "out"); toast("📤 أُخرج الطالب — سجله محفوظ"); } };
   const rDelAll = async () => { if (!window.confirm(`حذف جميع طلاب ${maClassName(rEd)} (${maAr(studentsOf(rEd).length)} طالب)؟\nلن يُحذف التأخر أو الغياب المسجّل سابقاً.`)) return; if (await saveRoster(rEd, [])) toast("🗑 تم إفراغ الفصل"); };
-  const rAddOne = async () => { const nm = rAdd.name.trim(); if (!nm) return; const n = licNormId(rAdd.nid); const st = { id: maId(), name: nm }; if (n.length === 10) { st.nh = await stuHash(n); st.n4 = n.slice(-4); } if (await saveRoster(rEd, [...studentsOf(rEd), st])) { setRAdd({ name: "", nid: "" }); toast("✅ تمت إضافة الطالب"); } };
+  const rAddOne = async () => { const nm = rAdd.name.trim(); if (!nm) return; const n = licNormId(rAdd.nid); const st = { id: maId(), name: nm, add: maKey(new Date()) }; if (n.length === 10) { st.nh = await stuHash(n); st.n4 = n.slice(-4); } if (await saveRoster(rEd, [...studentsOf(rEd), st])) { setRAdd({ name: "", nid: "" }); toast("✅ تمت إضافة الطالب"); } };
   const onImpFiles = async (e) => {
     const files = [...(e.target.files || [])]; e.target.value = ""; if (!files.length) return;
     setBusy(true); const out = (await ptReadRosters(files)).map(x => impCk ? { ...x, ck: impCk } : x);
@@ -32460,11 +32535,10 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
   const doImp = async () => {
     const ok = imp.filter(x => x.names.length);
     if (ok.some(x => !x.ck)) { alert("حدّد الفصل لكل كشف"); return; }
-    const byC = {}; ok.forEach(x => { const g = byC[x.ck]; if (!g) byC[x.ck] = { ...x, list: [...x.list] }; else x.list.forEach(st => { if (!g.list.some(y => (st.nh && y.nh === st.nh) || y.name === st.name)) g.list.push(st); }); });
-    const merged = Object.values(byC); setImpCk("");
+    const items = rosItems(ok); setImpCk("");
     setBusy(true);
-    for (const x of merged) { const students = ptMergeRoster(studentsOf(x.ck), x.list.length ? x.list : x.names.map(n => ({ name: n }))); const r = { ...(rosters[x.ck] || {}), ck: x.ck, students, updated: Date.now() }; const good = await maPut(`${MA_ROSTER}/${x.ck}`, r); if (good) setRosters(p => ({ ...p, [x.ck]: r })); }
-    setBusy(false); setImp(null); toast(`📌 تم تثبيت ${maAr(merged.length)} فصل`);
+    const plan = await rosPlan(rosters, items); const { done } = await rosApply(rosters, plan, by || "الإدارة"); setRosters(p => ({ ...p, ...done }));
+    setBusy(false); setImp(null); toast(`📌 تم تثبيت ${maAr(items.length)} فصل — ${rosSum(plan.rep)}`);
   };
   const cur = ck ? studentsOf(ck).filter(s => !q || s.name.includes(q)) : [];
   const nLate = k => Object.keys(dw[k] || {}).length;
@@ -33426,7 +33500,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   }, [ck, dateK, day[ck]?.savedAt]);
 
   const studentsOf = k => { const r = rosters[k]; return maArr(r && r.students).filter(x => x && x.id && x.name); };
-  const cur = ck ? studentsOf(ck) : [];
+  const cur = ck ? studentsOf(ck).filter(x => !x.add || x.add <= dateK) : []; // الطالب المضاف لا يظهر في تحضير أيام قبل إضافته
   const absCount = Object.keys(absent).filter(id => absent[id] && cur.some(s => s.id === id)).length;
 
   // ── الحفظ والاعتماد
@@ -33525,16 +33599,33 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   const doImport = async () => {
     const bad = imp.filter(x => x.names.length && !x.ck);
     if (bad.length) { alert("حدّد الفصل لكل ملف قبل التثبيت"); return; }
-    setBusy(true);
-    for (const x of imp.filter(x => x.names.length)) await saveRoster(x.ck, ptMergeRoster(rosters[x.ck] && rosters[x.ck].students, x.list && x.list.length ? x.list : x.names.map(n => ({ name: n }))));
-    setBusy(false); setImp(null);
-    toast(`✅ تم تثبيت ${maAr(imp.filter(x => x.names.length).length)} فصل`);
+    setBusy(true); const plan = await rosPlan(rosters, rosItems(imp), impDk || maKey(new Date())); setBusy(false); setImpPlan(plan); // معاينة التغييرات أولاً
   };
+  const [impPlan, setImpPlan] = useState(null); const [impDk, setImpDk] = useState("");
+  const applyImport = async () => {
+    setBusy(true); const { done, ok } = await rosApply(rosters, impPlan, trWho() || teacher || "الإدارة"); setRosters(p => ({ ...p, ...done })); setBusy(false);
+    toast(ok ? `✅ تم تحديث السجل — ${rosSum(impPlan.rep)}` : "⚠️ تعذّر حفظ بعض الفصول"); setImpPlan(null); setImp(null); loadRosLeft();
+  };
+  // ── السجل الموحّد: الخارجون من الكشوف + سجل التحديثات
+  const [rosLeft, setRosLeft] = useState({}); const [rosHist, setRosHist] = useState(null); const [gq, setGq] = useState(""); const [addF, setAddF] = useState(null);
+  const loadRosLeft = async () => setRosLeft(ptObj(await maGet(ROS_LEFT)));
+  useEffect(() => { if (tab === "manage") loadRosLeft(); }, [tab]);
+  const who = () => trWho() || teacher || "الإدارة";
+  const renameStu = async (s, k) => { const v = window.prompt("تعديل اسم الطالب:", s.name); if (!v || !v.trim() || v.trim() === s.name) return; if (await saveRoster(k, studentsOf(k).map(x => x.id === s.id ? { ...x, name: v.trim(), on: [...maArr(x.on), x.name] } : x))) { rosLog(who(), `تعديل اسم: ${s.name} ← ${v.trim()}`, "ren"); toast("✅ تم تعديل الاسم — سجله كما هو"); } };
+  const setStuId = async (s, k) => { const v = window.prompt(`رقم السجل المدني للطالب «${s.name}» (١٠ أرقام):`, ""); if (v == null) return; const n = licNormId(v); if (n.length !== 10) { alert("الرقم يجب أن يكون ١٠ أرقام"); return; } const h = await stuHash(n); const dup = rosAllOf(rosters).find(x => x.s.nh === h && x.s.id !== s.id); if (dup) { alert(`هذا الرقم مسجّل للطالب «${dup.s.name}» في ${maClassName(dup.ck)}`); return; } if (await saveRoster(k, studentsOf(k).map(x => x.id === s.id ? { ...x, nh: h, n4: n.slice(-4) } : x))) toast("🪪 رُبط الطالب برقم هويته"); };
+  const outStu = async (s, k) => { if (!window.confirm(`إخراج «${s.name}» من ${maClassName(k)}؟\n• يبقى غيابه وتأخره محفوظاً في التقارير\n• يُستعاد سجله تلقائياً إن عاد في كشف نور أو أعدته يدوياً`)) return; await maPut(`${ROS_LEFT}/${s.id}`, { ...s, ck: k, left: maKey(new Date()), by: who(), why: "إخراج يدوي" }); if (await saveRoster(k, studentsOf(k).filter(x => x.id !== s.id))) { rosLog(who(), `إخراج ${s.name} من ${maClassName(k)}`, "out"); loadRosLeft(); toast("📤 أُخرج الطالب — سجله محفوظ"); } };
+  const backStu = async (s, to) => { if (!to) return; const { ck: _c, left: _l, by: _b, why: _w, back: _k, ...st } = s; const dk = maKey(new Date()); const n = { ...st, mv: [...maArr(st.mv), { f: s.ck || "", t: to, d: dk, r: 1 }] }; if (await saveRoster(to, [...studentsOf(to), n].sort((a, b) => a.name.localeCompare(b.name, "ar")))) { await maPut(`${ROS_LEFT}/${s.id}/back`, dk); rosLog(who(), `إعادة ${s.name} إلى ${maClassName(to)}`, "back"); loadRosLeft(); toast(`↩️ أُعيد ${s.name} بسجله السابق`); } };
+  const addStu = async () => { const nm = String(addF.name || "").trim(); if (!nm || !addF.ck) return; const all = rosAllOf(rosters); const same = all.find(x => rosNN(x.s.name) === rosNN(nm)); if (same && !window.confirm(`يوجد طالب بنفس الاسم في ${maClassName(same.ck)} — هل تريد إضافته طالباً جديداً؟\n(لنقله استخدم «نقل»)`)) return;
+    const st = { id: maId(), name: nm, add: addF.dk || maKey(new Date()) }; const n = licNormId(addF.nid || ""); if (n.length === 10) { const h = await stuHash(n); const dup = all.find(x => x.s.nh === h); if (dup) { alert(`رقم الهوية مسجّل للطالب «${dup.s.name}» في ${maClassName(dup.ck)} — استخدم «نقل» بدل الإضافة`); return; } st.nh = h; st.n4 = n.slice(-4); }
+    if (await saveRoster(addF.ck, [...studentsOf(addF.ck), st].sort((a, b) => a.name.localeCompare(b.name, "ar")))) { rosLog(who(), `إضافة ${nm} إلى ${maClassName(addF.ck)} (يُحتسب من ${st.add})`, "add"); toast("✅ أُضيف الطالب — يبدأ احتسابه من تاريخ إضافته"); setAddF({ ...addF, name: "", nid: "" }); } };
   const moveStudent = async (s, from, to) => {
     if (!to || to === from) return;
+    if (!window.confirm(`نقل «${s.name}» من ${maClassName(from)} إلى ${maClassName(to)}؟\nينتقل معه سجل غيابه وتأخره كاملاً.`)) return;
+    const n = { ...s, mv: [...maArr(s.mv), { f: from, t: to, d: maKey(new Date()) }] };
+    if (!(await saveRoster(to, [...studentsOf(to).filter(x => x.id !== s.id), n].sort((a, b) => a.name.localeCompare(b.name, "ar"))))) return; // الإضافة أولاً ثم الإزالة: لا يضيع الطالب لو انقطع الاتصال
     await saveRoster(from, studentsOf(from).filter(x => x.id !== s.id));
-    await saveRoster(to, [...studentsOf(to), s].sort((a, b) => a.name.localeCompare(b.name, "ar")));
-    toast(`↔ نُقل ${s.name} إلى ${maClassName(to)}`);
+    rosLog(trWho() || teacher || "الإدارة", `نقل ${s.name}: ${maClassName(from)} ← ${maClassName(to)}`, "move");
+    toast(`🔀 نُقل ${s.name} إلى ${maClassName(to)} بسجله كاملاً`);
   };
   const saveCounts = (c) => { setCounts(c); maPut(MA_META, { counts: c, deadline, lateStart }); };
   const saveDeadline = (d) => { setDeadline(d); maPut(MA_META, { counts, deadline: d, lateStart }); };
@@ -33683,23 +33774,31 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
   const saveLk = async (v) => { const n = { ...lk, ...v, by: teacher || "الإدارة", at2: Date.now() }; setLk(n); const ok = await maPut(MA_LOCK, n); toast(ok ? "✅ تم الحفظ" : "⚠️ تعذّر الحفظ"); };
 
   const allowCls = isT && myTT && myTT.ti >= 0 && !showAllCls ? new Set([...myTT.mine, ...myTT.subs]) : null;
+  // الفصل كثير الغياب اليوم: نسبة ١٥٪ فأكثر (و٣ غائبين فأكثر) أو الأعلى غياباً بين الفصول
+  const hotOf = (() => { const R = classes.map(c => { const r = day[c.ck]; const t = r ? (+r.total || studentsOf(c.ck).length) : 0; const a = r ? r.absent.length : 0; return { ck: c.ck, a, t, rt: t ? a / t : 0 }; }); const mx = Math.max(0, ...R.filter(x => x.a >= 3).map(x => x.rt)); const o = {}; R.forEach(x => { if (x.a >= 3 && (x.rt >= .15 || x.rt === mx)) o[x.ck] = x; }); return o; })();
   const ClassPicker = ({ onPick, selected, showDay }) => (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       {MA_LV.map((L, li) => counts[li] > 0 && classes.some(c => c.lv === li && (!allowCls || allowCls.has(c.ck))) && (
         <div key={li}>
-          <div style={{ fontSize: 12.5, fontWeight: 900, color: L.c, marginBottom: 6 }}>● الصف {L.n}</div>
-          <div className="flex gap-2 flex-wrap">
-            {classes.filter(c => c.lv === li && (!allowCls || allowCls.has(c.ck))).map(c => { const r = day[c.ck]; const n = studentsOf(c.ck).length; const on = selected === c.ck; const isP2 = isT && myTT && myTT.p2 && myTT.p2.includes(c.ck); const isSub = isT && myTT && myTT.subs && myTT.subs.includes(c.ck); return (
-              <button key={c.ck} className={`ma-cls ${showDay && !isT && pastDeadline && !r && n ? "ma-late" : ""}`} onClick={() => onPick(c.ck)} style={{ borderColor: on ? L.c : r && showDay ? "#86efac" : "#eef2f6", background: on ? L.soft : "#fff" }}>
-                <b style={{ color: L.c }}>{L.s} / {maAr(c.sec)}</b>
-                <small style={{ color: "#64748b" }}>{maAr(n)} طالب</small>
-                {(isP2 || isSub) && <span style={{ display: "block", fontSize: 10.5, fontWeight: 900, color: isSub ? "#0369a1" : "#0f766e" }}>{isSub ? "🛡️ احتياطك" : "⭐ حصتك الثانية"}</span>}
-                {showDay && r && <span style={{ position: "absolute", top: -8, left: -6, background: r.absent.length ? "#dc2626" : "#16a34a", color: "#fff", borderRadius: 999, fontSize: 10.5, fontWeight: 900, padding: "2px 8px" }}>{r.absent.length ? `غ ${maAr(r.absent.length)}` : "✓"}</span>}
-                {showDay && !isT && pastDeadline && !r && n > 0 && <span style={{ display: "block", fontSize: 10.5, fontWeight: 900, color: "#dc2626" }}>⚠ لم يُعتمد</span>}
+          <div className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 900, color: L.c, marginBottom: 10 }}><span style={{ width: 12, height: 12, borderRadius: 4, background: L.c, display: "inline-block" }} />الصف {L.n}{showDay && (() => { const cl = classes.filter(c => c.lv === li); const a = cl.reduce((s2, c) => s2 + (day[c.ck] ? day[c.ck].absent.length : 0), 0); return a ? <span style={{ background: L.soft, borderRadius: 999, padding: "1px 10px", fontSize: 11.5 }}>غياب المرحلة {maAr(a)}</span> : null; })()}</div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {classes.filter(c => c.lv === li && (!allowCls || allowCls.has(c.ck))).map(c => { const r = day[c.ck]; const n = studentsOf(c.ck).length; const on = selected === c.ck; const isP2 = isT && myTT && myTT.p2 && myTT.p2.includes(c.ck); const isSub = isT && myTT && myTT.subs && myTT.subs.includes(c.ck);
+              const hot = showDay && hotOf[c.ck]; const late = showDay && !isT && pastDeadline && !r && n > 0; const tot = r ? (+r.total || n) : n; const pct = r && tot ? Math.round((1 - r.absent.length / tot) * 100) : 0;
+              return (
+              <button key={c.ck} type="button" className={`ma-ct ${on ? "on" : ""} ${hot ? "hot" : ""} ${late ? "ma-late" : ""}`} onClick={() => onPick(c.ck)} style={{ "--c": L.c, "--soft": L.soft, "--p": showDay && r ? pct : 0, ...(hot ? { "--rc": "#dc2626" } : {}) }} title={showDay && r ? `${maClassName(c.ck)} • حضور ${maAr(pct)}٪ • غائب ${maAr(r.absent.length)}` : maClassName(c.ck)}>
+                <span className="rg"><b>{maAr(c.sec)}</b></span>
+                <span className="lb">{L.s} / {maAr(c.sec)}</span>
+                <span className="sb">👥 {maAr(n)} طالب{showDay && r ? ` • ${maAr(pct)}٪` : ""}</span>
+                {(isP2 || isSub) && <span className="tg" style={{ color: isSub ? "#0369a1" : "#0f766e" }}>{isSub ? "🛡️ احتياطك" : "⭐ حصتك الثانية"}</span>}
+                {showDay && r && <span className="ch" style={{ background: r.absent.length ? "#dc2626" : "#16a34a" }}>{r.absent.length ? `غ ${maAr(r.absent.length)}` : "✓ مكتمل"}</span>}
+                {hot && <span className="hf">🚨</span>}
+                {hot && <span className="rb">غياب مرتفع {maAr(Math.round(hot.rt * 100))}٪</span>}
+                {late && <span className="tg" style={{ color: "#dc2626" }}>⚠ لم يُعتمد</span>}
               </button>); })}
           </div>
         </div>
       ))}
+      {showDay && Object.keys(hotOf).length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#991b1b", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: "6px 10px" }}>🚨 فصل كثير الغياب اليوم: نسبة الغياب ١٥٪ فأكثر (٣ غائبين فأكثر) أو الأعلى غياباً بين الفصول — الحلقة حول الرقم = نسبة الحضور</div>}
     </div>
   );
 
@@ -34168,34 +34267,70 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
               <span style={{ color: "#64748b" }}>إجمالي الطلاب المثبّتين: {maAr(totalStudents)}</span>
             </div>
           </div>
+          {(() => { const all = rosAllOf(rosters); const nNew = all.filter(x => x.s.add).length, nMv = all.filter(x => maArr(x.s.mv).length).length, nLeft = Object.values(rosLeft).filter(x => x && !x.back).length; const t = gq.trim(); const res = t.length >= 2 ? all.filter(x => x.s.name.includes(t) || rosNN(x.s.name).includes(rosNN(t))).slice(0, 12) : [];
+            return <div className="ma-card p-4 grid gap-3" style={{ borderTop: "5px solid #0f766e" }}>
+              <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 16 }}>🗂️ سجل الطلاب الموحّد</b>
+                <span className="ma-pill" style={{ minWidth: 0, background: "#f1f5f9", color: "#334155", cursor: "default" }}>👥 {maAr(all.length)} طالب</span>
+                {nNew > 0 && <span className="ma-pill" style={{ minWidth: 0, background: "#ecfeff", color: "#0e7490", cursor: "default" }}>🆕 {maAr(nNew)} مضاف</span>}
+                {nMv > 0 && <span className="ma-pill" style={{ minWidth: 0, background: "#f5f3ff", color: "#6d28d9", cursor: "default" }}>🔀 {maAr(nMv)} منقول</span>}
+                {nLeft > 0 && <span className="ma-pill" style={{ minWidth: 0, background: "#fff7ed", color: "#9a3412", cursor: "default" }}>📤 {maAr(nLeft)} خارج الكشوف</span>}
+                <button className="ma-btn pri" style={{ marginInlineStart: "auto" }} onClick={() => setAddF({ ck: mgCk || "", name: "", nid: "", dk: maKey(new Date()) })}>＋ إضافة طالب يدوياً</button>
+                <button className="ma-btn" onClick={async () => setRosHist(rosHist ? null : Object.values(ptObj(await maGet(ROS_LOG))).filter(Boolean).sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 40))}>🕘 سجل التحديثات</button></div>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", lineHeight: 1.9, background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 12, padding: "8px 12px" }}>✅ لكل طالب معرّف ثابت: عند رفع كشوف نور الجديدة أو النقل بين الفصول يبقى <b>غيابه وتأخره كاملاً</b> معه. • 🆕 الطالب الجديد يُسجَّل <b>تاريخ إضافته</b> ويبدأ احتسابه منه ولا يُمنح أوسمة «حضور كامل/بلا تأخر» عن فترة لم يكن فيها. • 📤 من يخرج من الكشف يُحفظ سجله ويُستعاد إن عاد.</div>
+              <input className="ma-inp" value={gq} onChange={e => setGq(e.target.value)} placeholder="🔍 ابحث عن طالب في كل الفصول…" />
+              {res.length > 0 && <div className="grid gap-1">{res.map(({ ck: k, s: x }) => <div key={x.id} className="flex items-center gap-2 flex-wrap" style={{ padding: "6px 10px", border: "1px solid #eef2f6", borderRadius: 12 }}><b style={{ flex: "1 1 180px" }}>{x.name}</b><span style={{ fontSize: 12, fontWeight: 900, color: MA_LV[+k[0] - 1]?.c }}>{maClassName(k)}</span><button className="ma-btn" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => { setMgCk(k); setGq(""); setTimeout(() => { try { document.getElementById("ros-" + x.id)?.scrollIntoView({ block: "center", behavior: "smooth" }); } catch {} }, 150); }}>فتح ←</button></div>)}</div>}
+              {t.length >= 2 && !res.length && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>لا نتائج</div>}
+              {rosHist && <div className="grid gap-1" style={{ maxHeight: 260, overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 12, padding: 8 }}>{!rosHist.length ? <div style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>لا يوجد سجل بعد</div> : rosHist.map(h => <div key={h.at} style={{ fontSize: 12.5, fontWeight: 800, borderBottom: "1px dashed #eef2f6", padding: "4px 2px" }}><span style={{ color: "#64748b" }}>{new Date(h.at).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })} • {h.by} • {h.src}</span><div>{h.txt || [maArr(h.neu).length && `🆕 ${maAr(maArr(h.neu).length)} جديد`, maArr(h.moved).length && `🔀 ${maAr(maArr(h.moved).length)} منقول`, maArr(h.back).length && `↩️ ${maAr(maArr(h.back).length)} عائد`, maArr(h.gone).length && `📤 ${maAr(maArr(h.gone).length)} خرج`, h.ren && `✏️ ${maAr(h.ren)} اسم`].filter(Boolean).join(" • ") || "بدون تغييرات"}</div>{!h.txt && [...maArr(h.moved), ...maArr(h.neu)].length > 0 && <details><summary style={{ cursor: "pointer", color: "#0f766e" }}>التفاصيل</summary><div style={{ fontWeight: 700, color: "#475569" }}>{[...maArr(h.moved).map(x => "🔀 " + x), ...maArr(h.neu).map(x => "🆕 " + x), ...maArr(h.gone).map(x => "📤 " + x), ...maArr(h.back).map(x => "↩️ " + x)].map((x, i) => <div key={i}>{x}</div>)}</div></details>}</div>)}</div>}
+            </div>; })()}
           <div className="ma-card p-4">
             <ClassPicker onPick={setMgCk} selected={mgCk} />
           </div>
           {mgCk && (() => { const st = studentsOf(mgCk); return (
-            <div className="ma-card" style={{ overflow: "hidden" }}>
-              <div className="flex items-center justify-between flex-wrap gap-2 p-4" style={{ borderBottom: "1px solid #eef2f6" }}>
-                <div style={{ fontWeight: 900, fontSize: 17 }}>الصف {maClassName(mgCk)} <small style={{ color: "#64748b" }}>({maAr(st.length)} طالب)</small></div>
+            <div className="ma-card" style={{ overflow: "hidden", borderTop: `5px solid ${MA_LV[+mgCk[0] - 1]?.c}` }}>
+              <div className="flex items-center justify-between flex-wrap gap-2 p-4" style={{ borderBottom: "1px solid #eef2f6", background: `linear-gradient(90deg,${MA_LV[+mgCk[0] - 1]?.soft},#fff)` }}>
+                <div style={{ fontWeight: 900, fontSize: 17 }}>الصف {maClassName(mgCk)} <small style={{ color: "#64748b" }}>({maAr(st.length)} طالب{st.some(x => x.add) ? ` • 🆕 ${maAr(st.filter(x => x.add).length)} مضاف` : ""})</small></div>
                 <div className="flex gap-2 flex-wrap">
-                  <button className="ma-btn pri" onClick={async () => { const n = window.prompt("اسم الطالب الجديد:"); if (n && n.trim()) { await saveRoster(mgCk, [...st, { id: maId(), name: n.trim() }].sort((a, b) => a.name.localeCompare(b.name, "ar"))); toast("✅ تمت إضافة الطالب"); } }}>＋ إضافة طالب</button>
-                  <button className="ma-btn red" disabled={!st.length} onClick={async () => { if (window.confirm(`حذف جميع طلاب ${maClassName(mgCk)} (${st.length})؟`)) { await saveRoster(mgCk, []); toast("🗑 تم إفراغ الفصل"); } }}>🗑 إفراغ الفصل</button>
+                  <button className="ma-btn pri" onClick={() => setAddF({ ck: mgCk, name: "", nid: "", dk: maKey(new Date()) })}>＋ إضافة طالب</button>
                 </div>
               </div>
               <datalist id="ma-homes2">{[...new Set(classes.flatMap(c => studentsOf(c.ck).map(x => x.home)).filter(Boolean))].map(h => <option key={h} value={h} />)}</datalist>
-              <div style={{ maxHeight: "56vh", overflowY: "auto" }}>
-                {st.map((s, i) => (
-                  <div key={s.id} className="flex items-center gap-3 flex-wrap" style={{ padding: "8px 14px", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
+                {st.map((s, i) => { const mv = maArr(s.mv); const lm = mv[mv.length - 1]; return (
+                  <div key={s.id} id={"ros-" + s.id} className="flex items-center gap-2 flex-wrap" style={{ padding: "9px 14px", borderBottom: "1px solid #f1f5f9", background: s.add ? "linear-gradient(90deg,#ecfeff,#fff 60%)" : lm ? "linear-gradient(90deg,#f5f3ff,#fff 60%)" : "#fff" }}>
                     <span style={{ width: 28, textAlign: "center", fontWeight: 900, color: "#94a3b8" }}>{maAr(i + 1)}</span>
-                    <span style={{ flex: "1 1 200px", fontWeight: 800 }}>{s.name}</span>
-                    <input className="ma-inp" list="ma-homes2" style={{ width: 150, height: 34, fontSize: 12.5 }} placeholder="🏠 مكان السكن" defaultValue={s.home || ""} onBlur={e => { if ((e.target.value || "") !== (s.home || "")) setHome(mgCk, s.id, e.target.value.trim()); }} />
-                    <select className="ma-inp" style={{ width: 170, height: 34, fontSize: 12.5 }} value="" onChange={e => moveStudent(s, mgCk, e.target.value)}>
-                      <option value="">↔ نقل إلى فصل…</option>
+                    <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                      <div style={{ fontWeight: 800 }}>{s.name} {s.nh ? <span title={`مربوط برقم الهوية …${s.n4 || ""}`} style={{ fontSize: 12 }}>🪪</span> : null}</div>
+                      <div className="flex gap-1 flex-wrap" style={{ marginTop: 2 }}>
+                        {s.add && <span style={{ fontSize: 11, fontWeight: 900, color: "#0e7490", background: "#cffafe", borderRadius: 999, padding: "1px 8px" }}>🆕 مضاف {maHijri(maDate(s.add))} — يُحتسب من تاريخ إضافته</span>}
+                        {lm && <span title={mv.map(m => `${m.f ? maClassName(m.f) : "—"} ← ${maClassName(m.t)} (${m.d})`).join("\n")} style={{ fontSize: 11, fontWeight: 900, color: "#6d28d9", background: "#ede9fe", borderRadius: 999, padding: "1px 8px" }}>{lm.r ? "↩️ عاد" : "🔀 منقول"}{lm.f ? ` من ${maClassName(lm.f)}` : ""} {maHijri(maDate(lm.d))} • سجله معه</span>}
+                        {maArr(s.on).length > 0 && <span title={maArr(s.on).join("\n")} style={{ fontSize: 11, fontWeight: 900, color: "#92400e", background: "#fef3c7", borderRadius: 999, padding: "1px 8px" }}>✏️ عُدّل اسمه</span>}
+                      </div>
+                    </div>
+                    <input className="ma-inp" list="ma-homes2" style={{ width: 140, height: 34, fontSize: 12.5 }} placeholder="🏠 مكان السكن" defaultValue={s.home || ""} onBlur={e => { if ((e.target.value || "") !== (s.home || "")) setHome(mgCk, s.id, e.target.value.trim()); }} />
+                    <button className="ma-btn" style={{ padding: "5px 9px" }} title="تعديل الاسم" onClick={() => renameStu(s, mgCk)}>✏️</button>
+                    <button className="ma-btn" style={{ padding: "5px 9px" }} title={s.nh ? "تغيير رقم الهوية" : "ربط برقم الهوية"} onClick={() => setStuId(s, mgCk)}>🪪</button>
+                    <select className="ma-inp" style={{ width: 160, height: 34, fontSize: 12.5 }} value="" onChange={e => moveStudent(s, mgCk, e.target.value)}>
+                      <option value="">🔀 نقل بسجله إلى…</option>
                       {classes.filter(c => c.ck !== mgCk).map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}
                     </select>
-                    <button className="ma-btn red" style={{ padding: "5px 10px" }} onClick={async () => { if (window.confirm(`حذف ${s.name}؟`)) await saveRoster(mgCk, st.filter(x => x.id !== s.id)); }}>🗑</button>
-                  </div>))}
+                    <button className="ma-btn red" style={{ padding: "5px 9px" }} title="إخراج من الكشف (يبقى سجله)" onClick={() => outStu(s, mgCk)}>📤</button>
+                  </div>); })}
                 {!st.length && <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>الفصل فارغ — استورد كشفه من نور أو أضف الطلاب</div>}
               </div>
             </div>); })()}
+          {Object.values(rosLeft).some(x => x && !x.back) && <details className="ma-card p-4"><summary style={{ cursor: "pointer", fontWeight: 900 }}>📤 طلاب خارج الكشوف ({maAr(Object.values(rosLeft).filter(x => x && !x.back).length)}) — سجلهم محفوظ ويمكن إعادتهم</summary>
+            <div className="grid gap-1 mt-2">{Object.values(rosLeft).filter(x => x && !x.back).sort((a, b) => String(b.left).localeCompare(String(a.left))).map(x => <div key={x.id} className="flex items-center gap-2 flex-wrap" style={{ padding: "6px 10px", border: "1px solid #fed7aa", borderRadius: 12, background: "#fffbf5" }}>
+              <b style={{ flex: "1 1 180px" }}>{x.name}</b><small style={{ fontWeight: 800, color: "#9a3412" }}>{x.ck ? maClassName(x.ck) : ""} • {x.why || "خرج"} {x.left ? maHijri(maDate(x.left)) : ""}</small>
+              <select className="ma-inp" style={{ width: 170, height: 34, fontSize: 12.5 }} value="" onChange={e => backStu(x, e.target.value)}><option value="">↩️ إعادته إلى…</option>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select></div>)}</div></details>}
+          {addF && <div style={{ position: "fixed", inset: 0, zIndex: 420, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setAddF(null)}>
+            <div className="ma-card grid gap-3" style={{ width: "min(460px,100%)", padding: 20, display: "grid", gap: 12 }} onClick={e => e.stopPropagation()}>
+              <b style={{ fontSize: 18 }}>＋ إضافة طالب يدوياً</b>
+              <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", display: "grid", gap: 4 }}>اسم الطالب<input className="ma-inp" value={addF.name} onChange={e => setAddF({ ...addF, name: e.target.value })} placeholder="الاسم الرباعي" autoFocus /></label>
+              <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", display: "grid", gap: 4 }}>الفصل<select className="ma-inp" value={addF.ck} onChange={e => setAddF({ ...addF, ck: e.target.value })}><option value="">— اختر —</option>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select></label>
+              <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", display: "grid", gap: 4 }}>رقم الهوية (اختياري — لدخول ولي الأمر)<input className="ma-inp" inputMode="numeric" value={addF.nid} onChange={e => setAddF({ ...addF, nid: licNormId(e.target.value).slice(0, 10) })} /></label>
+              <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", display: "grid", gap: 4 }}>تاريخ الإضافة (يبدأ احتساب غيابه وتأخره منه){addF.dk ? <span style={{ color: "#0f766e" }}> — {maDay(maDate(addF.dk))} {maHijri(maDate(addF.dk))}</span> : null}<input className="ma-inp" type="date" value={addF.dk} max={maKey(new Date())} onChange={e => setAddF({ ...addF, dk: e.target.value })} /></label>
+              <div className="flex gap-2 justify-end"><button className="ma-btn" onClick={() => setAddF(null)}>إغلاق</button><button className="ma-btn pri" disabled={busy || !addF.name.trim() || !addF.ck} onClick={addStu}>💾 إضافة</button></div>
+            </div></div>}
           <div className="ma-card p-4" style={{ background: "#fffbeb", borderColor: "#fcd34d" }}>
             <div className="flex items-center justify-between flex-wrap gap-2 mb-3" style={{ paddingBottom: 10, borderBottom: "1px dashed #fcd34d" }}>
               <div style={{ fontSize: 12.5, fontWeight: 800, color: "#78350f" }}>👤 دخول المعلمين بالسجل المدني — استورد تقرير الحضور والانصراف (نفس ملف سجل الرخصة المهنية)</div>
@@ -34219,7 +34354,8 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
         <div style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setImp(null)}>
           <div className="ma-card" style={{ width: "min(640px,100%)", maxHeight: "86vh", overflow: "auto", padding: 22 }} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontWeight: 900, fontSize: 18, marginBottom: 4 }}>📥 تثبيت الفصول ({maAr(imp.length)} ملف)</h3>
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, marginBottom: 12 }}>تأكد من الفصل لكل ملف — التثبيت يستبدل طلاب الفصل الحاليين</div>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, marginBottom: 12 }}>تأكد من الفصل لكل ملف — يتعرّف النظام على كل طالب سابق (ولو انتقل لفصل آخر) فيبقى غيابه وتأخره معه، ويُظهر لك التغييرات قبل الحفظ</div>
+            <label className="flex items-center gap-2 flex-wrap" style={{ fontSize: 12.5, fontWeight: 800, color: "#0e7490", marginBottom: 10 }}>🆕 تاريخ إضافة الطلاب الجدد (يبدأ احتسابهم منه): <input type="date" className="ma-inp" style={{ width: 160, height: 34 }} value={impDk || maKey(new Date())} max={maKey(new Date())} onChange={e => setImpDk(e.target.value)} /></label>
             {imp.map((x, i) => (
               <div key={i} className="flex items-center gap-3 flex-wrap" style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: "10px 12px", marginBottom: 8, background: x.names.length ? "#fff" : "#fef2f2" }}>
                 <div style={{ flex: "1 1 220px", minWidth: 0 }}>
@@ -34233,11 +34369,25 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
               </div>))}
             <div className="flex gap-2 justify-end mt-3">
               <button className="ma-btn" onClick={() => setImp(null)} disabled={busy}>إلغاء</button>
-              <button className="ma-btn pri" onClick={doImport} disabled={busy || !imp.some(x => x.names.length)}>{busy ? "⏳ جاري التثبيت…" : "📌 تثبيت الفصول"}</button>
+              <button className="ma-btn pri" onClick={doImport} disabled={busy || !imp.some(x => x.names.length)}>{busy ? "⏳ جاري المقارنة…" : "🔎 مقارنة بالسجل الحالي ←"}</button>
             </div>
           </div>
         </div>
       )}
+
+      {impPlan && (() => { const R = impPlan.rep; const Sec = ({ ic, t, c, bg, L, f }) => L.length ? <details open={L.length <= 12} style={{ border: `1px solid ${c}33`, background: bg, borderRadius: 14, padding: "8px 12px" }}><summary style={{ cursor: "pointer", fontWeight: 900, color: c }}>{ic} {t} ({maAr(L.length)})</summary><div className="grid gap-1 mt-2" style={{ maxHeight: 200, overflow: "auto" }}>{L.map((x, i) => <div key={i} style={{ fontSize: 13, fontWeight: 800 }}>{f(x)}</div>)}</div></details> : null;
+        return <div style={{ position: "fixed", inset: 0, zIndex: 410, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setImpPlan(null)}>
+          <div className="ma-card grid gap-2" style={{ width: "min(680px,100%)", maxHeight: "88vh", overflow: "auto", padding: 20 }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontWeight: 900, fontSize: 18 }}>🔎 التغييرات قبل التحديث</h3>
+            <div className="flex gap-2 flex-wrap">{[["✓", "بلا تغيير", R.same, "#15803d", "#dcfce7"], ["🆕", "جديد", R.neu.length, "#0e7490", "#cffafe"], ["🔀", "منقول", R.moved.length, "#6d28d9", "#ede9fe"], ["↩️", "عائد", R.back.length, "#0369a1", "#e0f2fe"], ["✏️", "تعديل اسم", R.ren.length, "#92400e", "#fef3c7"], ["📤", "خرج من الكشف", R.gone.length, "#b91c1c", "#fee2e2"]].map(([ic, l, n, c, bg]) => <span key={l} style={{ background: bg, color: c, borderRadius: 14, padding: "6px 12px", fontWeight: 900, fontSize: 13 }}>{ic} {l}: {maAr(n)}</span>)}</div>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>كل طالب سابق يحتفظ بمعرّفه وسجل غيابه وتأخره كاملاً — حتى المنقول بين الفصول.</div>
+            <Sec ic="🆕" t={`طلاب جدد — يُحتسبون من ${maHijri(maDate(impPlan.dk))}`} c="#0e7490" bg="#ecfeff" L={R.neu} f={x => `${x.s.name} ← ${maClassName(x.ck)}`} />
+            <Sec ic="🔀" t="منقولون بين الفصول (بسجلهم)" c="#6d28d9" bg="#f5f3ff" L={R.moved} f={x => `${x.s.name}: ${maClassName(x.from)} ← ${maClassName(x.ck)}`} />
+            <Sec ic="↩️" t="عائدون (استُعيد سجلهم)" c="#0369a1" bg="#f0f9ff" L={R.back} f={x => `${x.s.name} ← ${maClassName(x.ck)}`} />
+            <Sec ic="✏️" t="تعديل أسماء" c="#92400e" bg="#fffbeb" L={R.ren} f={x => `${x.old} ← ${x.s.name}`} />
+            <Sec ic="📤" t="لم يرد في الكشف الجديد — يُنقل إلى «خارج الكشوف» ويبقى سجله" c="#b91c1c" bg="#fef2f2" L={R.gone} f={x => `${x.s.name} (${maClassName(x.ck)})`} />
+            <div className="flex gap-2 justify-end mt-2"><button className="ma-btn" disabled={busy} onClick={() => setImpPlan(null)}>→ رجوع</button><button className="ma-btn pri" disabled={busy} onClick={applyImport}>{busy ? "⏳ جاري الحفظ…" : "✅ اعتماد التحديث"}</button></div>
+          </div></div>; })()}
 
       {lateAdd && (
         <div style={{ position: "fixed", inset: 0, zIndex: 450, background: "rgba(15,23,42,.5)", display: "grid", placeItems: "center", padding: 16 }} onClick={() => !busy && setLateAdd(null)}>
@@ -34423,7 +34573,7 @@ function inCompute(D) {
   const S = {}, C = {};
   D.classes.forEach(c => {
     C[c.ck] = { ck: c.ck, lv: c.lv, n: 0, attDays: 0, absN: 0, seats: 0, lateN: 0, lateMins: 0, sdPos: 0, sdNeg: 0, r: 0, y: 0 };
-    maArr(D.ros[c.ck] && D.ros[c.ck].students).filter(x => x && x.id && x.name).forEach(s => { C[c.ck].n++; S[s.id] = { sid: s.id, name: s.name, ck: c.ck, nh: s.nh || "", n4: s.n4 || "", abs: [], late: [], lateMins: 0, sd: { n: 0, pos: 0, neg: 0, k: { p: [], h: [], t: [], b: [] }, notes: [] }, bn: [], bnNeg: 0, sc: null, flags: [], pts: 0, lvl: "g" }; });
+    maArr(D.ros[c.ck] && D.ros[c.ck].students).filter(x => x && x.id && x.name).forEach(s => { C[c.ck].n++; S[s.id] = { sid: s.id, name: s.name, ck: c.ck, nh: s.nh || "", n4: s.n4 || "", add: s.add || "", newIn: rosNewIn(s, D.f), abs: [], late: [], lateMins: 0, sd: { n: 0, pos: 0, neg: 0, k: { p: [], h: [], t: [], b: [] }, notes: [] }, bn: [], bnNeg: 0, sc: null, flags: [], pts: 0, lvl: "g" }; });
   });
   const days = new Set();
   Object.entries(ptObj(D.att)).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([ck, r]) => { if (!C[ck] || !r) return; days.add(dk); C[ck].attDays++; C[ck].seats += +r.total || 0; maArr(r.absent).forEach(a => { if (a && S[a.id]) { S[a.id].abs.push(dk); C[ck].absN++; } }); }));
@@ -34464,8 +34614,8 @@ function inCompute(D) {
 // أوسمة الطالب (تُحسب من بيانات الفترة)
 function inBadges(s, nDays) {
   const B = []; const all0 = k => s.sd.k[k].length >= 2 && s.sd.k[k].every(v => v === 0);
-  if (nDays >= 3 && !s.abs.length) B.push(["🗓️", "حضور كامل", "لم يغب أي يوم", "#0d9488"]);
-  if (nDays >= 3 && !s.late.length) B.push(["🌅", "بلا تأخر", "حضر في الموعد طوال الفترة", "#ea580c"]);
+  if (nDays >= 3 && !s.abs.length && !s.newIn) B.push(["🗓️", "حضور كامل", "لم يغب أي يوم", "#0d9488"]); // المضاف خلال الفترة لا يُمنح وسام فترة لم يكن فيها
+  if (nDays >= 3 && !s.late.length && !s.newIn) B.push(["🌅", "بلا تأخر", "حضر في الموعد طوال الفترة", "#ea580c"]);
   if (all0("h")) B.push(["✅", "واجبات مكتملة", "أنجز جميع واجباته", "#d97706"]);
   if (all0("b") && !s.bnNeg) B.push(["🌟", "سلوك متميز", "قدوة في سلوكه وأخلاقه", "#db2777"]);
   if (all0("p")) B.push(["🙋", "مشارك متميز", "مشاركة فاعلة في الحصص", "#4f46e5"]);
@@ -42104,8 +42254,8 @@ function AbsLateReportPage({ by = "الإدارة" }) {
   if (!D) return <div className="ma pt px-2 md:px-4 py-4" dir="rtl"><style>{MA_CSS + PT_CSS + IN_CSS}</style><div className="ma-card p-10 text-center font-bold text-gray-400" style={{ maxWidth: 1100, margin: "0 auto" }}>⏳ جاري جمع بيانات الغياب والتأخر…</div></div>;
   // ── التجميع
   const S = {}, C = {}; const nm = {};
-  D.classes.forEach(c => { C[c.ck] = { ck: c.ck, lv: c.lv, n: 0, abs: 0, absStu: new Set(), late: 0, lateStu: new Set(), mins: 0, days: 0 }; maArr(D.ros[c.ck] && D.ros[c.ck].students).forEach(s => { if (s && s.id) { nm[s.id] = { name: s.name, ck: c.ck, nh: s.nh || "" }; C[c.ck].n++; } }); });
-  const gS = (id, name, ck0) => { const b = nm[id] || {}; return S[id] = S[id] || { sid: id, name: b.name || name || "—", ck: b.ck || ck0, nh: b.nh || "", abs: [], late: [], mins: 0 }; };
+  D.classes.forEach(c => { C[c.ck] = { ck: c.ck, lv: c.lv, n: 0, abs: 0, absStu: new Set(), late: 0, lateStu: new Set(), mins: 0, days: 0 }; maArr(D.ros[c.ck] && D.ros[c.ck].students).forEach(s => { if (s && s.id) { nm[s.id] = { name: s.name, ck: c.ck, nh: s.nh || "", add: s.add || "", mv: maArr(s.mv).length }; C[c.ck].n++; } }); });
+  const gS = (id, name, ck0) => { const b = nm[id] || {}; return S[id] = S[id] || { sid: id, name: b.name || name || "—", ck: b.ck || ck0, nh: b.nh || "", add: b.add || "", mv: b.mv || 0, abs: [], late: [], mins: 0 }; };
   const gC = k => C[k] = C[k] || { ck: k, lv: +String(k)[0] - 1, n: 0, abs: 0, absStu: new Set(), late: 0, lateStu: new Set(), mins: 0, days: 0 };
   const wd = {}, dA = {}, dL = {};
   Object.entries(D.att).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([k, r]) => { if (!r) return; const c = gC(k); c.days++; maArr(r.absent).forEach(a => { dA[dk] = (dA[dk] || 0) + 1; if (!a || !a.id) return; const s = gS(a.id, a.name, k); s.abs.push(dk); c.abs++; c.absStu.add(a.id); const w = maDate(dk).getDay(); wd[w] = wd[w] || { a: 0, l: 0 }; wd[w].a++; }); }));
@@ -42172,7 +42322,7 @@ function AbsLateReportPage({ by = "الإدارة" }) {
             <div style={{ overflowX: "auto", marginTop: 10 }}><table className="al-tbl"><thead><tr>
               <th>م</th>{[["name", "الطالب"], ["ck", "الفصل"], ...(mode !== "late" ? [["abs", "أيام الغياب"]] : []), ...(mode !== "abs" ? [["late", "مرات التأخر"], ["mins", "دقائق التأخر"]] : []), ["tot", mode === "both" ? "المجموع" : mode === "abs" ? "الإجمالي" : "الإجمالي"]].map(([k, l]) => <th key={k} className="srt" onClick={() => setSk(k)}>{l}{sk === k ? " ▾" : ""}</th>)}<th>المستوى</th></tr></thead>
               <tbody>{rep.map((x, i) => { const L = alLevel(val(x)); return <tr key={x.sid} onClick={() => setStu(x)}>
-                <td className="n">{maAr(i + 1)}</td><td className="nm">{x.name}</td><td style={{ color: MA_LV[+x.ck[0] - 1] ? MA_LV[+x.ck[0] - 1].c : "#0f172a", fontWeight: 800 }}>{maClassName(x.ck)}</td>
+                <td className="n">{maAr(i + 1)}</td><td className="nm">{x.name}{x.add ? <span title={rosAddTxt(x)} style={{ marginInlineStart: 6, fontSize: 10.5, fontWeight: 900, color: "#0e7490", background: "#cffafe", borderRadius: 999, padding: "1px 7px" }}>🆕 {maHijri(maDate(x.add))}</span> : null}{x.mv ? <span title="منقول — سجله معه" style={{ marginInlineStart: 4, fontSize: 10.5 }}>🔀</span> : null}</td><td style={{ color: MA_LV[+x.ck[0] - 1] ? MA_LV[+x.ck[0] - 1].c : "#0f172a", fontWeight: 800 }}>{maClassName(x.ck)}</td>
                 {mode !== "late" && <td><span className="al-n" style={{ color: AL_A }}>{maAr(x.abs.length)}</span><div className="al-mini"><i style={{ width: Math.min(100, x.abs.length * 10) + "%", background: AL_A }} /></div></td>}
                 {mode !== "abs" && <td><span className="al-n" style={{ color: AL_L }}>{maAr(x.late.length)}</span><div className="al-mini"><i style={{ width: Math.min(100, x.late.length * 10) + "%", background: AL_L }} /></div></td>}
                 {mode !== "abs" && <td style={{ color: "#475569", fontWeight: 800 }}>{x.mins ? `${maAr(x.mins)} د` : "—"}</td>}
@@ -42181,7 +42331,7 @@ function AbsLateReportPage({ by = "الإدارة" }) {
         </div>
       </div>
       {stu && <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => setStu(null)}><div className="ma-card" style={{ width: "min(600px,100%)", maxHeight: "88vh", overflow: "auto", padding: 0 }} onClick={e => e.stopPropagation()}>
-        <div style={{ padding: "14px 18px", background: "linear-gradient(135deg,#b91c1c,#7f1d1d)", color: "#fff" }}><div style={{ fontSize: 18, fontWeight: 900 }}>{stu.name}</div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{maClassName(stu.ck)} • غياب {maAr(stu.abs.length)} • تأخر {maAr(stu.late.length)}</div></div>
+        <div style={{ padding: "14px 18px", background: "linear-gradient(135deg,#b91c1c,#7f1d1d)", color: "#fff" }}><div style={{ fontSize: 18, fontWeight: 900 }}>{stu.name}</div>{stu.add ? <div style={{ fontSize: 12, fontWeight: 900, background: "rgba(255,255,255,.18)", borderRadius: 999, padding: "1px 10px", display: "inline-block", margin: "2px 0" }}>🆕 {rosAddTxt(stu)}</div> : null}<div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{maClassName(stu.ck)} • غياب {maAr(stu.abs.length)} • تأخر {maAr(stu.late.length)}</div></div>
         <div className="p-4 grid gap-3">
           {stu.abs.length > 0 && <div><b>🚫 أيام الغياب</b><div className="flex gap-1 flex-wrap mt-2">{[...stu.abs].sort().map(d => <span key={d} className="in-fl" style={{ background: "#fee2e2", color: "#b91c1c" }}>{maDay(maDate(d))} {maHijri(maDate(d))}</span>)}</div></div>}
           {stu.late.length > 0 && <div><b>⏰ التأخر الصباحي</b><div className="grid gap-1 mt-2">{[...stu.late].sort((a, b) => a.dk.localeCompare(b.dk)).map((x, i) => <div key={i} className="in-row" style={{ padding: "6px 10px" }}><b style={{ fontSize: 12.5 }}>{maDay(maDate(x.dk))} {maHijri(maDate(x.dk))}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>حضر {mlFmtT(x.time)} • {maAr(x.mins)} دقيقة{x.reason ? ` • ${x.reason}` : ""}</span></div>)}</div></div>}
