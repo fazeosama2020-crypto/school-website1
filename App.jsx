@@ -1976,7 +1976,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
 // ===== لوحة الأقسام: بطاقات مصنّفة + لوحة أدوات جانبية =====
 const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
-    tools:[{id:"liveops",label:"غرفة العمليات اللحظية",icon:"🛰️"},{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"alreport",label:"تقرير الغياب والتأخر المتكرر",icon:"🔁"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"admin-attendance",label:"دوام الإداريين",icon:"🏛️"},{id:"dailyattend",label:"كشف الحضور اليومي",icon:"🧾"},{id:"attendancereport",label:"تحليل الحضور",icon:"🗂️"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"},{id:"absencestats",label:"إحصائيات الغياب",icon:"📉"}] },
+    tools:[{id:"liveops",label:"غرفة العمليات اللحظية",icon:"🛰️"},{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"attendstats",label:"إحصائيات الغياب والتأخر",icon:"📊"},{id:"alreport",label:"تقرير الغياب والتأخر المتكرر",icon:"🔁"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"staffdisc",label:"متابعة أداء انضباط المعلمين والإداريين",icon:"🏅"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
     tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"treasureadm",label:"رحلة الكنز إلى نافس",icon:"🗺️"},{id:"insights",label:"مركز المؤشرات والإنذار المبكر",icon:"🧠"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"conduct",label:"متابعة السلوك اليومي",icon:"🚸"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"stlogins",label:"سجل دخول الطلاب",icon:"🪪"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
@@ -2553,7 +2553,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         <div className="bg-white rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">⚡ روابط سريعة</b></div>
           <div className="grid grid-cols-2 gap-2">
-            {[["الجدول المدرسي","🗓️","timetable"],["كشف الحضور","🧾","dailyattend"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
+            {[["الجدول المدرسي","🗓️","timetable"],["انضباط المعلمين","🏅","staffdisc"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
               <button key={id} onClick={()=>navigate(id)} className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 flex items-center gap-2 text-xs font-bold text-gray-700 hover:bg-teal-50 hover:border-teal-200 transition">{ic} {l}</button>
             ))}
           </div>
@@ -27036,6 +27036,705 @@ function AbsenceStatsPage({ teachers, attendance, week, weekArchive }) {
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// 🏅 متابعة أداء انضباط المعلمين والإداريين — صفحة موحّدة
+// رفع ملفات البصمة (يومي أو فردي) ← تُدمج تراكمياً في Firebase ← تحليل الفترة
+// school-sdisc/days/{YYYY-MM-DD}/rows/{k} = {n, id, a, d, st}
+// school-sdisc/perm/{YYYY-MM-DD}/{k} = {t: "early"|"late"|"both"|"full", note}
+// school-sdisc/staff/{k} = {n, r: "t"|"a", x: bool}
+// school-sdisc/cfg = {s, e, g, md}
+// ══════════════════════════════════════════════════════════════════════
+const SDX_NODE = "school-sdisc";
+const SDX_DEF_CFG = { s: "06:45", e: "12:35", g: 0, md: 15 };
+const SDX_DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const SDX_CATS = [
+  { k: "star", min: 98, l: "متميز", c: "#0f7b5f", bg: "#e3f3ec", ic: "🏆" },
+  { k: "exc", min: 95, l: "ممتاز", c: "#16a34a", bg: "#e8f7ec", ic: "🌟" },
+  { k: "good", min: 85, l: "جيد", c: "#2563eb", bg: "#e4eefc", ic: "👍" },
+  { k: "mid", min: 75, l: "متوسط", c: "#d97706", bg: "#fdf0dc", ic: "⚠️" },
+  { k: "weak", min: -1, l: "ضعيف", c: "#dc2626", bg: "#fde5e5", ic: "🚨" },
+];
+const SDX_PERM = { early: "استئذان خروج", late: "استئذان تأخر", both: "استئذان دخول وخروج", full: "غياب بعذر / إجازة / انتداب" };
+const SDX_THANKS = [
+  "نشكر لكم انضباطكم المثالي وحرصكم على الحضور في الوقت، فأنتم قدوة لزملائكم وطلابكم.",
+  "التزامكم بالوقت عنوانٌ لإخلاصكم في رسالتكم، دمتم نموذجاً مشرّفاً للانضباط.",
+  "حضوركم المبكر وبقاؤكم حتى نهاية الدوام يعكس مسؤولية عالية نقدّرها ونعتز بها.",
+  "انضباطكم المتميز يصنع بيئة تعليمية مستقرة؛ شكراً من القلب على هذا العطاء.",
+  "نثمّن حرصكم الدائم والتزامكم التام، وتستحقون أن تكونوا في مقدمة لوحة التميز.",
+];
+const SDX_IMPROVE = [
+  "لاحظنا تحسناً واضحاً في انضباطكم، شكراً لهذا الحرص ونتطلع إلى المزيد من التقدم.",
+  "تقدّمكم في الالتزام بالدوام محل تقدير الإدارة، استمروا على هذا النهج الجميل.",
+  "خطوة رائعة نحو التميز؛ تحسّن انضباطكم ملحوظ ومقدّر، بارك الله في جهودكم.",
+];
+const SDX_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة الأولى";
+
+// ── أدوات الوقت والتاريخ ──
+const sdxPad = n => String(n).padStart(2, "0");
+const sdxNum = s => String(s ?? "").replace(/[٠-٩]/g, x => "٠١٢٣٤٥٦٧٨٩".indexOf(x));
+function sdxTm(v) {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number") { if (v > 0 && v < 1.0001) return Math.round(v * 1440); return null; }
+  let s = sdxNum(v).trim(); if (!s || s === "-" || s === "--") return null;
+  const m = s.match(/(\d{1,2})\s*[:.]\s*(\d{2})(?:\s*[:.]\s*\d{2})?/); if (!m) return null;
+  let h = +m[1]; const mi = +m[2];
+  const pm = /PM|م|مساء/i.test(s), am = /AM|ص|صباح/i.test(s);
+  if (pm && h < 12) h += 12; if (am && h === 12) h = 0;
+  if (h > 23 || mi > 59) return null;
+  return h * 60 + mi;
+}
+const sdxHM = m => m === null || m === undefined ? "—" : `${sdxPad(Math.floor(m / 60))}:${sdxPad(m % 60)}`;
+const sdx12 = m => { if (m === null || m === undefined) return "—"; const h = Math.floor(m / 60), mi = m % 60; return `${sdxPad(h % 12 || 12)}:${sdxPad(mi)} ${h < 12 ? "ص" : "م"}`; };
+const sdxDur = m => { m = Math.round(m || 0); if (!m) return "0 د"; const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h} س ${r} د` : `${h} س`) : `${r} د`; };
+const sdxKey = d => `${d.getFullYear()}-${sdxPad(d.getMonth() + 1)}-${sdxPad(d.getDate())}`;
+const sdxDate = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+const sdxDayName = k => SDX_DAYS_AR[sdxDate(k).getDay()];
+const sdxHij = k => { try { return sdxDate(k).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn", { day: "numeric", month: "long", year: "numeric" }); } catch { return ""; } };
+const sdxGreg = k => { try { return sdxDate(k).toLocaleDateString("ar-u-nu-latn", { day: "numeric", month: "long", year: "numeric" }); } catch { return k; } };
+const sdxShort = k => { const d = sdxDate(k); return `${d.getDate()}/${d.getMonth() + 1}`; };
+function sdxHijriToG(y, m, d) {
+  try {
+    const f = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" });
+    const approx = new Date(Date.UTC(622, 6, 16) + ((y - 1) * 354.36707 + (m - 1) * 29.5306 + (d - 1)) * 864e5);
+    for (let off = -45; off <= 45; off++) {
+      const t = new Date(approx.getTime() + off * 864e5); const p = {}; f.formatToParts(t).forEach(x => { p[x.type] = x.value; });
+      if (+p.year === y && +p.month === m && +p.day === d) return new Date(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate());
+    }
+  } catch {}
+  return null;
+}
+function sdxParseDate(v) {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number" && v > 30000 && v < 80000) { const d = new Date(Math.round((v - 25569) * 864e5)); return sdxKey(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); }
+  if (v instanceof Date && !isNaN(v)) return sdxKey(v);
+  const s = sdxNum(v);
+  let m = s.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (m) { const y = +m[1], mo = +m[2], d = +m[3]; if (y > 1900) return `${y}-${sdxPad(mo)}-${sdxPad(d)}`; const g = sdxHijriToG(y, mo, d); return g ? sdxKey(g) : null; }
+  m = s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+  if (m) { const d = +m[1], mo = +m[2], y = +m[3]; if (y > 1900) return `${y}-${sdxPad(mo)}-${sdxPad(d)}`; const g = sdxHijriToG(y, mo, d); return g ? sdxKey(g) : null; }
+  return null;
+}
+const sdxClean = n => String(n || "").replace(/\s+/g, " ").trim();
+const sdxK = (id, n) => { const d = sdxNum(id).replace(/\D/g, ""); return d.length >= 6 ? "i" + d : asmK(n); };
+const sdxCat = (pct, abs) => { const c = SDX_CATS.find(x => pct >= x.min) || SDX_CATS[4]; return c.k === "star" && abs > 0 ? SDX_CATS[1] : c; };
+const sdxPick = (arr, seed) => arr[Math.abs([...String(seed)].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7)) % arr.length];
+
+// ── قراءة ملف الإكسل: كشف يومي لكل الموظفين، أو تقرير فردي متعدد الأيام ──
+async function sdxReadFile(file) {
+  await loadXLSX();
+  const XLSX = window.XLSX;
+  const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array", cellDates: false });
+  const out = []; let fileDate = sdxParseDate(file.name); const warn = [];
+  wb.SheetNames.forEach(sn => {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "", raw: true });
+    let hr = -1;
+    for (let i = 0; i < Math.min(rows.length, 30); i++) { const t = rows[i].map(c => sdxClean(c)).join("|"); if (/الحضور/.test(t) && (/الانصراف|الإنصراف/.test(t) || /الاسم|الإسم/.test(t))) { hr = i; break; } }
+    if (hr < 0) return;
+    const H = rows[hr].map(c => sdxClean(c));
+    const col = re => H.findIndex(h => re.test(h));
+    const C = { n: col(/^(ال)?[إا]سم|اسم الموظف|الموظف|المعلم/), id: col(/السجل|الهوية|رقم الموظف|الرقم الوظيفي/), dt: col(/التاريخ/), st: col(/حالة|الحالة/), a: col(/توقيت الحضور|وقت الحضور|^الحضور/), d: col(/توقيت ال[إا]نصراف|وقت ال[إا]نصراف|^ال[إا]نصراف/) };
+    if (C.a < 0) return;
+    // اسم الموظف في رأس التقرير الفردي
+    let empName = "", empId = "";
+    if (C.n < 0) {
+      for (let i = 0; i < hr; i++) { const cell = rows[i].find(c => typeof c === "string" && /من\s*:/.test(c)); if (cell) { const lines = cell.split("\n"); const info = lines.find(l => l.includes("-") && !/من\s*:/.test(l)) || lines[lines.length - 1]; const p = info.split("-").map(s => s.trim()); empName = sdxClean(p[0]); empId = sdxNum(p[1] || "").replace(/\D/g, ""); break; } }
+      if (!empName) for (let i = 0; i < hr; i++) { const cell = rows[i].find(c => typeof c === "string" && /[؀-ۿ]{2,}\s+[؀-ۿ]{2,}/.test(c) && !/تقرير|الحضور|من\s*:/.test(c)); if (cell) { empName = sdxClean(cell.split("-")[0]); break; } }
+      if (!empName) { warn.push(`«${sn}»: لم أجد اسم الموظف`); return; }
+    }
+    if (!fileDate && C.dt < 0) for (let i = 0; i < hr; i++) for (const c of rows[i]) { const k = sdxParseDate(c); if (k) { fileDate = k; break; } }
+    for (let i = hr + 1; i < rows.length; i++) {
+      const r = rows[i]; const name = C.n >= 0 ? sdxClean(r[C.n]) : empName;
+      if (!name || /المجموع|الإجمالي|الاجمالي/.test(name)) continue;
+      const dt = C.dt >= 0 ? sdxParseDate(r[C.dt]) : null;
+      if (C.dt >= 0 && !dt) continue;
+      const dtxt = C.dt >= 0 ? sdxClean(r[C.dt]) : "";
+      if (/الجمعة|السبت/.test(dtxt)) continue;
+      const st = C.st >= 0 ? sdxClean(r[C.st]) : "";
+      const a = sdxTm(r[C.a]); const d = C.d >= 0 ? sdxTm(r[C.d]) : null;
+      const id = C.id >= 0 ? sdxNum(r[C.id]).replace(/\D/g, "") : empId;
+      out.push({ n: name, id, dt, a, d, st });
+    }
+  });
+  return { rows: out, fileDate, warn };
+}
+
+// ── محرك التحليل ──
+function sdxCompute({ days, perm, staff, cfg, from, to, role }) {
+  const S = sdxTm(cfg.s) ?? 405, E = sdxTm(cfg.e) ?? 755, W = Math.max(60, E - S), G = +cfg.g || 0, MD = +cfg.md || 0;
+  const allKeys = Object.keys(days).filter(k => days[k] && days[k].rows).sort();
+  const first = {}, names = {};
+  allKeys.forEach(dk => Object.entries(days[dk].rows || {}).forEach(([k, r]) => { if (!r) return; if (!first[k]) first[k] = dk; names[k] = r.n || names[k]; }));
+  Object.entries(staff || {}).forEach(([k, s]) => { if (s && s.n && !names[k]) names[k] = s.n; });
+  const inRole = k => { const s = (staff || {})[k] || {}; if (s.x) return false; const r = s.r || "t"; return role === "all" || r === role; };
+  const people = Object.keys(names).filter(inRole);
+  const dup = {}; people.forEach(k => { const n = sdxClean(names[k]); dup[n] = (dup[n] || 0) + 1; });
+  const label = k => { const n = sdxClean(names[k]); return dup[n] > 1 && k.startsWith("i") ? `${n} (${k.slice(-4)})` : n; };
+
+  const dayRec = (k, dk) => {
+    const r = (days[dk].rows || {})[k]; const p = ((perm || {})[dk] || {})[k];
+    const o = { dk, r, p, a: r ? (r.a ?? null) : null, d: r ? (r.d ?? null) : null, late: 0, early: 0, exL: 0, exE: 0, miss: false, abs: false, exc: false };
+    if (p && p.t === "full") { o.exc = true; return o; }
+    if (!r || o.a === null || /غياب|غائب/.test(r.st || "")) { o.abs = true; return o; }
+    const late = Math.max(0, o.a - S - G);
+    if (p && (p.t === "late" || p.t === "both")) o.exL = late; else o.late = late;
+    if (o.d === null || o.d === o.a || /تلقائي/.test(r.st || "")) { o.miss = !(p && (p.t === "early" || p.t === "both")); o.d = o.d === o.a ? null : o.d; if (/تلقائي/.test(r.st || "")) o.d = null; }
+    else { const early = Math.max(0, E - o.d); if (p && (p.t === "early" || p.t === "both")) o.exE = early; else o.early = early; }
+    return o;
+  };
+  const stat = (k, keys) => {
+    const recs = keys.filter(dk => first[k] && dk >= first[k]).map(dk => dayRec(k, dk));
+    const work = recs.filter(x => !x.exc);
+    const pres = work.filter(x => !x.abs);
+    const s = { k, n: label(k), role: ((staff || {})[k] || {}).r || "t", recs, days: work.length, exc: recs.length - work.length, pres: pres.length, abs: work.length - pres.length,
+      lateDays: pres.filter(x => x.late > 0).length, lateMins: pres.reduce((a, x) => a + x.late, 0),
+      earlyDays: pres.filter(x => x.early > 0).length, earlyMins: pres.reduce((a, x) => a + x.early, 0),
+      miss: pres.filter(x => x.miss).length, exMins: pres.reduce((a, x) => a + x.exL + x.exE, 0) };
+    const arr = pres.map(x => x.a).filter(v => v !== null), dep = pres.map(x => x.d).filter(v => v !== null);
+    s.avgA = arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+    s.avgD = dep.length ? Math.round(dep.reduce((a, b) => a + b, 0) / dep.length) : null;
+    s.lost = s.abs * W + s.lateMins + s.earlyMins + s.miss * MD;
+    s.pct = s.days ? Math.max(0, Math.round(1000 * (1 - s.lost / (s.days * W))) / 10) : null;
+    s.attRate = s.days ? Math.round(100 * s.pres / s.days) : null;
+    s.onTime = s.pres ? Math.round(100 * pres.filter(x => x.late === 0).length / s.pres) : null;
+    return s;
+  };
+  const keys = allKeys.filter(dk => dk >= from && dk <= to);
+  const prevKeys = allKeys.filter(dk => dk < from).slice(-Math.max(1, keys.length));
+  const list = people.map(k => {
+    const s = stat(k, keys); if (!s.days && !s.exc) return null;
+    const p = prevKeys.length ? stat(k, prevKeys) : null;
+    s.prev = p && p.days ? p.pct : null; s.delta = s.prev === null || s.pct === null ? null : Math.round((s.pct - s.prev) * 10) / 10;
+    s.cat = s.pct === null ? { k: "na", l: "بعذر", c: "#6b5b95", bg: "#ece8f4", ic: "📋" } : sdxCat(s.pct, s.abs);
+    s.improved = s.delta !== null && s.delta >= 2; s.declined = s.delta !== null && s.delta <= -2;
+    // منحنى أسبوعي
+    const wk = {}; keys.forEach(dk => { const d = sdxDate(dk); const sun = new Date(d); sun.setDate(d.getDate() - d.getDay()); const w = sdxKey(sun); (wk[w] = wk[w] || []).push(dk); });
+    s.trend = Object.keys(wk).sort().map(w => { const x = stat(k, wk[w]); return { w, pct: x.pct }; }).filter(x => x.pct !== null);
+    return s;
+  }).filter(Boolean).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || a.abs - b.abs || (a.lateMins + a.earlyMins) - (b.lateMins + b.earlyMins) || (a.avgA ?? 999) - (b.avgA ?? 999));
+  list.forEach((s, i) => { s.rank = i + 1; });
+  const sum = f => list.reduce((a, s) => a + (f(s) || 0), 0);
+  const T = { people: list.length, days: keys.length, keys, prevKeys, W, S, E,
+    workDays: sum(s => s.days), pres: sum(s => s.pres), abs: sum(s => s.abs), lateMins: sum(s => s.lateMins), earlyMins: sum(s => s.earlyMins),
+    lateDays: sum(s => s.lateDays), earlyDays: sum(s => s.earlyDays), miss: sum(s => s.miss), exc: sum(s => s.exc), exMins: sum(s => s.exMins) };
+  T.attRate = T.workDays ? Math.round(1000 * T.pres / T.workDays) / 10 : 0;
+  const scored = list.filter(s => s.pct !== null);
+  T.avgPct = scored.length ? Math.round(10 * scored.reduce((a, s) => a + s.pct, 0) / scored.length) / 10 : 0;
+  T.byCat = SDX_CATS.map(c => ({ ...c, n: list.filter(s => s.cat.k === c.k).length }));
+  T.improved = list.filter(s => s.improved).sort((a, b) => b.delta - a.delta);
+  T.declined = list.filter(s => s.declined).sort((a, b) => a.delta - b.delta);
+  T.stars = list.filter(s => s.cat.k === "star");
+  T.watch = list.filter(s => s.pct !== null && (s.pct < 85 || s.abs >= 2 || s.lateDays >= 3 || s.earlyDays >= 3));
+  // سلسلة يومية للمدرسة
+  T.daily = keys.map(dk => { let p = 0, a = 0, l = 0, e = 0; list.forEach(s => { const r = s.recs.find(x => x.dk === dk); if (!r || r.exc) return; if (r.abs) a++; else { p++; l += r.late; e += r.early; } }); return { dk, p, a, l, e, rate: p + a ? Math.round(100 * p / (p + a)) : 0 }; });
+  return { list, T };
+}
+
+// ── رسائل الواتساب ──
+function sdxWaText(s, kind, range) {
+  const head = `السلام عليكم ورحمة الله وبركاته\nالأستاذ الفاضل / ${s.n}\n`;
+  const st = `\n📊 نسبة الانضباط: ${s.pct ?? "—"}٪\n📅 أيام الدوام: ${s.days} | الغياب: ${s.abs}\n⏰ دقائق التأخر: ${s.lateMins} | الخروج المبكر: ${s.earlyMins} د\n🗓️ الفترة: ${range}\n`;
+  const sign = `\nمع خالص التحية — إدارة ${SDX_SCHOOL}`;
+  if (kind === "thanks") return head + "\n🌟 " + sdxPick(SDX_THANKS, s.k) + st + sign;
+  if (kind === "improve") return head + `\n📈 ${sdxPick(SDX_IMPROVE, s.k)}\nارتفعت نسبة انضباطكم بمقدار ${s.delta}٪ عن الفترة السابقة.` + st + sign;
+  const issues = []; if (s.abs) issues.push(`الغياب (${s.abs} يوم)`); if (s.lateMins) issues.push(`التأخر الصباحي (${s.lateMins} دقيقة في ${s.lateDays} يوم)`); if (s.earlyMins) issues.push(`الانصراف قبل نهاية الدوام (${s.earlyMins} دقيقة)`); if (s.miss) issues.push(`عدم تسجيل بصمة الانصراف (${s.miss} مرة)`);
+  return head + `\nنود لفت انتباهكم الكريم إلى ما رصده نظام البصمة من ملاحظات على الدوام: ${issues.join("، ") || "—"}.\nنأمل منكم مراعاة الالتزام بأوقات الدوام الرسمي، وفي حال وجود عذر يُرجى تقديمه للإدارة لتوثيقه.` + st + sign;
+}
+
+// ── عدّاد متحرك ──
+function SdxCount({ v, dec = 0, suf = "" }) {
+  const [x, setX] = useState(0); const ref = useRef(0);
+  useEffect(() => { const from = ref.current, to = +v || 0, t0 = performance.now(); let raf; const step = t => { const p = Math.min(1, (t - t0) / 900); const e = 1 - Math.pow(1 - p, 3); const val = from + (to - from) * e; setX(val); ref.current = val; if (p < 1) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf); }, [v]);
+  return <>{dec ? x.toFixed(dec) : Math.round(x).toLocaleString("en")}{suf}</>;
+}
+function SdxRing({ pct, c, size = 64, sw = 7 }) {
+  const R = (size - sw) / 2, C = 2 * Math.PI * R, f = C * Math.max(0, Math.min(100, pct || 0)) / 100;
+  return <svg width={size} height={size} style={{ flex: "none" }}><circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke="#e8eef0" strokeWidth={sw} /><circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke={c} strokeWidth={sw} strokeLinecap="round" strokeDasharray={`${f} ${C}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} style={{ transition: "stroke-dasharray .9s" }} /><text x="50%" y="54%" textAnchor="middle" dominantBaseline="middle" fontSize={size * .24} fontWeight="900" fill={c} fontFamily="Cairo">{pct === null || pct === undefined ? "—" : Math.round(pct)}</text></svg>;
+}
+function SdxSpark({ data, c = "#0f766e", w = 110, h = 30 }) {
+  if (!data || data.length < 2) return <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700 }}>—</span>;
+  const mn = Math.min(...data.map(d => d.pct), 70), mx = 100; const X = i => 3 + i * (w - 6) / (data.length - 1), Y = v => h - 3 - (v - mn) / (mx - mn || 1) * (h - 6);
+  const pts = data.map((d, i) => `${X(i)},${Y(d.pct)}`).join(" ");
+  return <svg width={w} height={h}><polyline points={pts} fill="none" stroke={c} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />{data.map((d, i) => <circle key={i} cx={X(i)} cy={Y(d.pct)} r="2.6" fill={c}><title>{`أسبوع ${sdxShort(d.w)}: ${d.pct}٪`}</title></circle>)}</svg>;
+}
+const SdxDelta = ({ d }) => d === null || d === undefined ? <span className="sdx-chip" style={{ background: "#f1f5f9", color: "#64748b" }}>— لا مقارنة</span>
+  : d >= 2 ? <span className="sdx-chip" style={{ background: "#dcfce7", color: "#15803d" }}>▲ تحسّن {d}٪</span>
+  : d <= -2 ? <span className="sdx-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>▼ تدنٍّ {Math.abs(d)}٪</span>
+  : <span className="sdx-chip" style={{ background: "#f1f5f9", color: "#475569" }}>● ثابت {d > 0 ? "+" : ""}{d}٪</span>;
+
+const SDX_CSS = `
+.sdx{font-family:'Cairo',sans-serif;color:#0f172a;max-width:100%}
+.sdx *{box-sizing:border-box}
+.sdx-hero{position:relative;overflow:hidden;border-radius:26px;padding:22px 24px 20px;color:#fff;background:radial-gradient(120% 140% at 85% 0%,#14917f 0%,#0b5d55 45%,#062f2b 100%);box-shadow:0 24px 50px -30px rgba(6,47,43,.8)}
+.sdx-hero:before{content:"";position:absolute;inset:0;background-image:linear-gradient(45deg,rgba(200,162,74,.13) 1px,transparent 1px),linear-gradient(-45deg,rgba(200,162,74,.13) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(90deg,#000,transparent 75%)}
+.sdx-hero>*{position:relative}
+.sdx-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.sdx-kpi{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:12px 14px;backdrop-filter:blur(4px)}
+.sdx-kpi b{display:block;font-size:26px;font-weight:900;line-height:1.25;color:#f3d891}
+.sdx-kpi small{font-size:12px;font-weight:700;opacity:.85}
+.sdx-kpi em{display:block;font-style:normal;font-size:11px;opacity:.7;font-weight:700}
+.sdx-card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 14px 34px -26px rgba(15,23,42,.4);padding:16px}
+.sdx-h{display:flex;align-items:center;gap:8px;font-weight:900;font-size:16px;color:#0b5d55;margin-bottom:10px}
+.sdx-h:before{content:"";width:5px;height:20px;border-radius:3px;background:#c8a24a}
+.sdx-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-family:inherit;font-weight:800;font-size:13px;color:#334155;cursor:pointer;transition:all .18s;white-space:nowrap;text-decoration:none}
+.sdx-btn:hover{transform:translateY(-1px);box-shadow:0 8px 16px -10px rgba(15,23,42,.45)}
+.sdx-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.sdx-btn.pri{background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;border-color:transparent}
+.sdx-btn.gold{background:linear-gradient(135deg,#d4a017,#a16207);color:#fff;border-color:transparent}
+.sdx-btn.ghost{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25)}
+.sdx-btn.red{color:#dc2626;border-color:#fecaca;background:#fff5f5}
+.sdx-btn.wa{background:#25d366;color:#fff;border:none}
+.sdx-btn.sm{padding:4px 10px;font-size:12px;border-radius:10px}
+.sdx-inp{height:40px;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;padding:0 10px;font-family:inherit;font-size:13.5px;font-weight:700;outline:none;color:#0f172a}
+.sdx-inp:focus{border-color:#14b8a6;background:#fff;box-shadow:0 0 0 3px rgba(20,184,166,.18)}
+.sdx-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:6px;background:#eef2f1;border-radius:18px}
+.sdx-tab{flex:1;min-width:120px;padding:10px 12px;border-radius:13px;border:none;background:transparent;font-family:inherit;font-weight:900;font-size:13.5px;color:#475569;cursor:pointer;transition:all .2s}
+.sdx-tab.on{background:#fff;color:#0b5d55;box-shadow:0 6px 16px -10px rgba(15,23,42,.5)}
+.sdx-chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:900;white-space:nowrap}
+.sdx-row{display:grid;grid-template-columns:34px minmax(150px,1.3fr) minmax(160px,2fr) 70px repeat(3,minmax(64px,.6fr)) 120px auto;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;border:1px solid #edf2f1;background:#fff;transition:all .15s;cursor:pointer}
+.sdx-row:hover{border-color:#99d5cb;box-shadow:0 10px 20px -16px rgba(15,118,110,.6)}
+.sdx-rank{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;color:#fff}
+.sdx-bar{position:relative;height:12px;background:#edf2f1;border-radius:99px;overflow:hidden}
+.sdx-bar>div{position:absolute;top:0;bottom:0;right:0;border-radius:99px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.sdx-cnt{text-align:center;line-height:1.15}
+.sdx-cnt b{display:block;font-size:15px;font-weight:900}
+.sdx-cnt small{font-size:10.5px;color:#64748b;font-weight:700}
+.sdx-pod{display:flex;justify-content:center;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.sdx-podc{width:200px;text-align:center;border-radius:20px;padding:14px 10px;background:linear-gradient(180deg,#fff,#f8fafc);border:1px solid #e2e8f0}
+.sdx-podc.p1{border-color:#e7c873;background:linear-gradient(180deg,#fff8e6,#fff);transform:translateY(-10px);box-shadow:0 20px 34px -24px #c8a24a}
+.sdx-medal{width:46px;height:46px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 0 0 3px #fff,0 0 0 5px currentColor}
+.sdx-drop{border:2px dashed #99d5cb;border-radius:20px;padding:22px;text-align:center;background:linear-gradient(180deg,#f0fdfa,#fff);transition:all .2s}
+.sdx-drop.on{border-color:#0f766e;background:#ccfbf1}
+.sdx-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.sdx-tbl th{background:#0b5d55;color:#fff;padding:8px 6px;font-weight:800;position:sticky;top:0;z-index:1}
+.sdx-tbl th:first-child{border-radius:0 12px 0 0}.sdx-tbl th:last-child{border-radius:12px 0 0 0}
+.sdx-tbl td{padding:7px 6px;border-bottom:1px solid #eef2f1;text-align:center;font-weight:700}
+.sdx-tbl tr:nth-child(even) td{background:#f8fbfa}
+.sdx-modal{position:fixed;inset:0;z-index:800;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:14px}
+.sdx-modal>div{background:#fff;border-radius:24px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:18px}
+.sdx-thx{border-radius:16px;padding:12px 14px;background:linear-gradient(135deg,#fffbeb,#fff);border:1px solid #fde68a;font-size:13.5px;font-weight:700;color:#713f12;line-height:1.8}
+@media (max-width:900px){.sdx-row{grid-template-columns:30px 1fr 64px;row-gap:6px}.sdx-row .sdx-hide{display:none}.sdx-row .sdx-bar-c{grid-column:1/-1}}
+@media print{.sdx-noprint{display:none!important}}
+`;
+
+// ══════════ الصفحة الرئيسية ══════════
+function StaffDisciplinePage({ teachers, attendance, week, weekArchive }) {
+  const [days, setDays] = useState({}); const [perm, setPerm] = useState({}); const [staff, setStaff] = useState({}); const [cfg, setCfg] = useState(SDX_DEF_CFG);
+  const [phones, setPhones] = useState({}); const [loading, setLoading] = useState(true); const [toast, setToast] = useState("");
+  const [tab, setTab] = useState("board"); const [role, setRole] = useState("all"); const [from, setFrom] = useState(""); const [to, setTo] = useState("");
+  const [sel, setSel] = useState(null); const [pending, setPending] = useState(null); const [drag, setDrag] = useState(false); const [busy, setBusy] = useState(false);
+  const [dayK, setDayK] = useState(""); const [q, setQ] = useState(""); const [showPB, setShowPB] = useState(false); const [legacy, setLegacy] = useState("");
+  const fileRef = useRef(null);
+  const say = t => { setToast(t); setTimeout(() => setToast(""), 3500); };
+
+  const load = async () => {
+    setLoading(true);
+    const [D, P, ST, CF, PH] = await Promise.all([maGet(`${SDX_NODE}/days`), maGet(`${SDX_NODE}/perm`), maGet(`${SDX_NODE}/staff`), maGet(`${SDX_NODE}/cfg`), maGet(PH_NODE)]);
+    const dd = ptObj(D); setDays(dd); setPerm(ptObj(P)); setStaff(ptObj(ST)); setCfg({ ...SDX_DEF_CFG, ...ptObj(CF) }); setPhones(ptObj(PH));
+    const ks = Object.keys(dd).sort();
+    if (ks.length) { setTo(t => t || ks[ks.length - 1]); setFrom(f => f || ks[0]); setDayK(k => k || ks[ks.length - 1]); }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const dayKeys = React.useMemo(() => Object.keys(days).filter(k => days[k] && days[k].rows).sort(), [days]);
+  const R = React.useMemo(() => from && to ? sdxCompute({ days, perm, staff, cfg, from, to, role }) : null, [days, perm, staff, cfg, from, to, role]);
+  const rangeTxt = from && to ? (from === to ? `${sdxDayName(from)} ${sdxGreg(from)}` : `من ${sdxGreg(from)} إلى ${sdxGreg(to)}`) : "";
+
+  // ── الرفع والدمج ──
+  const onFiles = async files => {
+    const L = [...files].filter(f => /\.(xlsx|xls|csv)$/i.test(f.name)); if (!L.length) { say("⚠️ اختر ملف Excel"); return; }
+    setBusy(true);
+    try {
+      const parts = []; for (const f of L) { const r = await sdxReadFile(f); parts.push({ f: f.name, ...r }); }
+      const rows = parts.flatMap(p => p.rows.map(r => ({ ...r, dt: r.dt || p.fileDate || "", f: p.f })));
+      if (!rows.length) { say("⚠️ لم أتعرف على بيانات حضور في الملف — تأكد أن فيه أعمدة «الاسم» و«توقيت الحضور»"); setBusy(false); return; }
+      const noDate = rows.some(r => !r.dt);
+      setPending({ files: parts.map(p => p.f), rows, date: noDate ? (parts.find(p => p.fileDate)?.fileDate || sdxKey(new Date())) : "", noDate, warn: parts.flatMap(p => p.warn) });
+    } catch (e) { console.error(e); say("⚠️ تعذّرت قراءة الملف"); }
+    setBusy(false);
+  };
+  const commit = async () => {
+    if (!pending) return; setBusy(true);
+    const o = {}; const touched = new Set(); const st = {}; const srcOf = {};
+    pending.rows.forEach(r => {
+      const dk = r.dt || pending.date; if (!dk) return; const k = sdxK(r.id, r.n); touched.add(dk); (srcOf[dk] = srcOf[dk] || new Set()).add(r.f);
+      o[`${SDX_NODE}/days/${dk}/rows/${k}`] = { n: r.n, id: r.id || "", a: r.a, d: r.d, st: r.st || "" };
+      if (!staff[k]) st[`${SDX_NODE}/staff/${k}`] = { n: r.n, r: "t" };
+    });
+    touched.forEach(dk => { o[`${SDX_NODE}/days/${dk}/up`] = Date.now(); o[`${SDX_NODE}/days/${dk}/src`] = [...(srcOf[dk] || [])].join("، "); });
+    const ok = await fbPatch({ ...o, ...st });
+    // تحديث محلي فوري
+    setDays(prev => { const n = { ...prev }; Object.entries(o).forEach(([p, v]) => { const [, , dk, f, k] = p.split("/"); n[dk] = { ...(n[dk] || {}), rows: { ...((n[dk] || {}).rows || {}) } }; if (f === "rows") n[dk].rows[k] = v; else n[dk][f] = v; }); return n; });
+    setStaff(prev => { const n = { ...prev }; Object.entries(st).forEach(([p, v]) => { n[p.split("/")[2]] = v; }); return n; });
+    const ks = [...touched].sort(); setFrom(f => !f || ks[0] < f ? ks[0] : f); setTo(t => !t || ks[ks.length - 1] > t ? ks[ks.length - 1] : t); setDayK(ks[ks.length - 1]);
+    setPending(null); setBusy(false); say(ok ? `✅ أُضيفت بيانات ${ks.length} يوم (${pending.rows.length} سجل) إلى السجل التراكمي` : "⚠️ حُفظ محلياً وستتم المزامنة عند عودة الاتصال");
+  };
+  const delDay = async dk => { if (!window.confirm(`حذف بيانات يوم ${sdxDayName(dk)} ${dk} نهائياً؟`)) return; await fbPatch({ [`${SDX_NODE}/days/${dk}`]: null, [`${SDX_NODE}/perm/${dk}`]: null }); setDays(p => { const n = { ...p }; delete n[dk]; return n; }); say("🗑️ حُذف اليوم"); };
+  const setP = async (dk, k, t, note = "") => { const v = t ? { t, note } : null; await maPut(`${SDX_NODE}/perm/${dk}/${k}`, v); setPerm(p => { const n = { ...p, [dk]: { ...(p[dk] || {}) } }; if (v) n[dk][k] = v; else delete n[dk][k]; return n; }); };
+  const setStaffF = async (k, patch) => { const v = { ...(staff[k] || {}), ...patch }; await maPut(`${SDX_NODE}/staff/${k}`, v); setStaff(p => ({ ...p, [k]: v })); };
+  const saveCfg = async v => { setCfg(v); await maPut(`${SDX_NODE}/cfg`, v); };
+
+  const preset = p => { if (!dayKeys.length) return; const last = dayKeys[dayKeys.length - 1]; const L = sdxDate(last);
+    if (p === "all") { setFrom(dayKeys[0]); setTo(last); }
+    if (p === "day") { setFrom(last); setTo(last); }
+    if (p === "week") { const s = new Date(L); s.setDate(L.getDate() - L.getDay()); setFrom(sdxKey(s)); setTo(last); }
+    if (p === "month") { setFrom(sdxKey(new Date(L.getFullYear(), L.getMonth(), 1))); setTo(last); }
+    if (p === "30") { const s = new Date(L); s.setDate(L.getDate() - 29); setFrom(sdxKey(s)); setTo(last); }
+  };
+  const ph = s => phOf(phones, s.n.replace(/\s*\(\d{4}\)$/, ""));
+  const waLink = (s, kind) => waUrl(ph(s), sdxWaText(s, kind, rangeTxt));
+  const kindOf = s => s.cat.k === "star" || s.cat.k === "exc" ? "thanks" : s.improved ? "improve" : "alert";
+  const listQ = R ? R.list.filter(s => !q || cvNorm(s.n).includes(cvNorm(q))) : [];
+  const selS = R && sel ? R.list.find(s => s.k === sel) : null;
+
+  // ══════════ تقرير PDF ══════════
+  const printReport = () => { if (!R) return; printWindow(sdxReportHTML(R, { rangeTxt, from, to, role, cfg })); };
+
+  // ══════════ أجزاء الواجهة ══════════
+  const Hero = () => <div className="sdx-hero">
+    <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#f3d891", letterSpacing: .3 }}>نظام البصمة • تحليل تراكمي</div>
+        <h2 style={{ fontSize: 26, fontWeight: 900, margin: "2px 0 0" }}>🏅 متابعة أداء انضباط المعلمين والإداريين</h2>
+        <div style={{ fontSize: 13, fontWeight: 700, opacity: .85 }}>{R ? `${rangeTxt} — ${R.T.days} يوم دوام مسجّل • ${R.T.people} موظفاً` : "ارفع ملف البصمة للبدء"}</div>
+      </div>
+      <div className="flex gap-2 flex-wrap sdx-noprint">
+        <button className="sdx-btn gold" disabled={busy} onClick={() => fileRef.current?.click()}>📤 رفع ملف بصمة</button>
+        <button className="sdx-btn ghost" disabled={!R || !R.list.length} onClick={printReport}>🖨️ تقرير PDF</button>
+        <button className="sdx-btn ghost" onClick={() => setShowPB(true)}>📱 الجوالات</button>
+      </div>
+    </div>
+    {R && <div className="sdx-kpis">
+      <div className="sdx-kpi"><small>✅ متوسط الانضباط</small><b><SdxCount v={R.T.avgPct} dec={1} suf="٪" /></b><em>نسبة الحضور {R.T.attRate}٪</em></div>
+      <div className="sdx-kpi"><small>❌ أيام الغياب</small><b><SdxCount v={R.T.abs} /></b><em>{R.T.exc} يوم بعذر لا يُحتسب</em></div>
+      <div className="sdx-kpi"><small>⏰ دقائق التأخر</small><b><SdxCount v={R.T.lateMins} /></b><em>في {R.T.lateDays} حالة • {sdxDur(R.T.lateMins)}</em></div>
+      <div className="sdx-kpi"><small>🚪 دقائق الخروج المبكر</small><b><SdxCount v={R.T.earlyMins} /></b><em>في {R.T.earlyDays} حالة • {sdxDur(R.T.earlyMins)}</em></div>
+      <div className="sdx-kpi"><small>🏆 المتميزون</small><b><SdxCount v={R.T.stars.length} /></b><em>📈 متحسنون {R.T.improved.length} • 📉 متدنون {R.T.declined.length}</em></div>
+      <div className="sdx-kpi"><small>🚨 يحتاجون متابعة</small><b><SdxCount v={R.T.watch.length} /></b><em>بصمة انصراف ناقصة {R.T.miss}</em></div>
+    </div>}
+  </div>;
+
+  const Filters = () => <div className="sdx-card sdx-noprint flex items-end gap-2 flex-wrap" style={{ padding: 12 }}>
+    <label style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>من تاريخ<br /><input type="date" className="sdx-inp" value={from} min={dayKeys[0]} max={to || undefined} onChange={e => setFrom(e.target.value)} /></label>
+    <label style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>إلى تاريخ<br /><input type="date" className="sdx-inp" value={to} min={from || undefined} onChange={e => setTo(e.target.value)} /></label>
+    <div className="flex gap-1 flex-wrap">{[["day", "آخر يوم"], ["week", "هذا الأسبوع"], ["month", "هذا الشهر"], ["30", "آخر 30 يوماً"], ["all", "كل البيانات"]].map(([k, l]) => <button key={k} className="sdx-btn sm" onClick={() => preset(k)}>{l}</button>)}</div>
+    <div className="flex gap-1" style={{ marginRight: "auto", background: "#f1f5f9", padding: 4, borderRadius: 12 }}>{[["all", "الكل"], ["t", "👨‍🏫 المعلمون"], ["a", "🏛️ الإداريون"]].map(([k, l]) => <button key={k} className="sdx-btn sm" style={role === k ? { background: "#0b5d55", color: "#fff", borderColor: "#0b5d55" } : {}} onClick={() => setRole(k)}>{l}</button>)}</div>
+    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#0f766e", background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 10, padding: "6px 10px" }}>⏱️ الدوام {sdx12(sdxTm(cfg.s))} ← {sdx12(sdxTm(cfg.e))}{+cfg.g ? ` • سماح ${cfg.g} د` : ""}</div>
+  </div>;
+
+  const Row = ({ s }) => <div className="sdx-row" onClick={() => { setSel(s.k); setTab("person"); }}>
+    <div className="sdx-rank" style={{ background: s.rank <= 3 ? ["#c8a24a", "#94a3b8", "#b7774a"][s.rank - 1] : s.cat.c }}>{s.rank}</div>
+    <div style={{ minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.n}</div><div className="flex gap-1 items-center flex-wrap"><span className="sdx-chip" style={{ background: s.cat.bg, color: s.cat.c }}>{s.cat.ic} {s.cat.l}</span>{s.role === "a" && <span className="sdx-chip" style={{ background: "#ede9fe", color: "#6d28d9" }}>إداري</span>}</div></div>
+    <div className="sdx-bar-c"><div className="sdx-bar"><div style={{ width: `${s.pct ?? 0}%`, background: `linear-gradient(90deg,${s.cat.c}cc,${s.cat.c})` }} /></div></div>
+    <div style={{ fontWeight: 900, fontSize: 18, color: s.cat.c, textAlign: "center" }}>{s.pct ?? "—"}<small style={{ fontSize: 11 }}>٪</small></div>
+    <div className="sdx-cnt sdx-hide"><b style={{ color: s.abs ? "#dc2626" : "#94a3b8" }}>{s.abs}</b><small>غياب</small></div>
+    <div className="sdx-cnt sdx-hide"><b style={{ color: s.lateMins ? "#d97706" : "#94a3b8" }}>{s.lateMins}</b><small>د تأخر</small></div>
+    <div className="sdx-cnt sdx-hide"><b style={{ color: s.earlyMins ? "#b45309" : "#94a3b8" }}>{s.earlyMins}</b><small>د خروج مبكر</small></div>
+    <div className="sdx-hide"><SdxDelta d={s.delta} /></div>
+    <a className="sdx-btn wa sm sdx-hide" target="_blank" rel="noreferrer" href={waLink(s, kindOf(s))} onClick={e => e.stopPropagation()} title={ph(s) ? "إرسال إلى " + ph(s) : "لا يوجد رقم محفوظ — اختر جهة الاتصال"}>💬 {kindOf(s) === "alert" ? "تنبيه" : "شكر"}</a>
+  </div>;
+
+  const Board = () => {
+    if (!R) return null; const T = R.T; const top = R.list.filter(s => s.pct !== null && s.abs === 0).slice(0, 3);
+    return <div className="grid gap-3">
+      {T.watch.length > 0 && <div className="sdx-card" style={{ background: "linear-gradient(180deg,#fff5f5,#fff)", borderColor: "#fecaca" }}>
+        <div className="sdx-h" style={{ color: "#b91c1c" }}>🔴 تنبيه — يحتاجون متابعة ({T.watch.length})</div>
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}>{T.watch.map(s => <div key={s.k} onClick={() => { setSel(s.k); setTab("person"); }} className="flex items-center gap-2" style={{ cursor: "pointer", background: "#fff", border: "1px solid #fee2e2", borderRadius: 14, padding: "8px 10px" }}>
+          <b style={{ flex: 1, fontSize: 13.5 }}>{s.n}</b>
+          {s.abs > 0 && <span className="sdx-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>{s.abs} غياب</span>}
+          {s.lateMins > 0 && <span className="sdx-chip" style={{ background: "#fef3c7", color: "#92400e" }}>{s.lateMins} د تأخر</span>}
+          {s.earlyMins > 0 && <span className="sdx-chip" style={{ background: "#ffedd5", color: "#9a3412" }}>{s.earlyMins} د خروج</span>}
+          <a className="sdx-btn wa sm" target="_blank" rel="noreferrer" href={waLink(s, "alert")} onClick={e => e.stopPropagation()}>💬</a>
+        </div>)}</div>
+      </div>}
+      <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
+        <div className="sdx-card" style={{ background: "linear-gradient(180deg,#f0fdf4,#fff)" }}>
+          <div className="sdx-h">🏆 الأكثر التزاماً</div>
+          {top.length ? <div className="sdx-pod">{[1, 0, 2].filter(i => top[i]).map(i => { const s = top[i]; const mc = ["#c8a24a", "#94a3b8", "#b7774a"][i]; return <div key={s.k} className={"sdx-podc p" + (i + 1)}>
+            <div className="sdx-medal" style={{ background: mc, color: mc }}><span style={{ color: "#fff" }}>{i + 1}</span></div>
+            <div style={{ fontWeight: 900, fontSize: 14 }}>{s.n}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#0f7b5f" }}>{s.pct}٪</div>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>متوسط الحضور {sdx12(s.avgA)}</div>
+            <a className="sdx-btn wa sm" style={{ marginTop: 6 }} target="_blank" rel="noreferrer" href={waLink(s, "thanks")}>💬 شكر وتقدير</a>
+          </div>; })}</div> : <div style={{ color: "#94a3b8", fontWeight: 800, textAlign: "center", padding: 20 }}>لا يوجد بعد</div>}
+        </div>
+        <div className="sdx-card">
+          <div className="sdx-h">📊 توزيع مستويات الانضباط</div>
+          <div className="flex" style={{ height: 34, borderRadius: 12, overflow: "hidden", gap: 2 }}>{T.byCat.filter(c => c.n).map(c => <div key={c.k} title={c.l} style={{ flex: c.n, background: c.c, color: "#fff", display: "grid", placeItems: "center", fontWeight: 900 }}>{c.n}</div>)}</div>
+          <div className="grid gap-1 mt-3">{T.byCat.map(c => <div key={c.k} className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 800 }}><span style={{ width: 12, height: 12, borderRadius: 4, background: c.c }} /><span style={{ width: 70 }}>{c.ic} {c.l}</span><div className="sdx-bar" style={{ flex: 1 }}><div style={{ width: `${T.people ? 100 * c.n / T.people : 0}%`, background: c.c }} /></div><b style={{ width: 70, textAlign: "left" }}>{c.n} ({T.people ? Math.round(100 * c.n / T.people) : 0}٪)</b></div>)}</div>
+          <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700, marginTop: 8 }}>متميز ≥98٪ بلا غياب • ممتاز ≥95٪ • جيد ≥85٪ • متوسط ≥75٪ • ضعيف &lt;75٪</div>
+        </div>
+      </div>
+      {T.days > 1 && <div className="sdx-card">
+        <div className="sdx-h">📅 نبض الانضباط اليومي</div>
+        <div className="flex items-end gap-2" style={{ overflowX: "auto", paddingBottom: 4 }}>{T.daily.map(d => { const mx = Math.max(1, ...T.daily.map(x => x.l + x.e)); return <div key={d.dk} style={{ minWidth: 56, textAlign: "center" }} title={`${sdxDayName(d.dk)} ${d.dk}\nحضور ${d.p} • غياب ${d.a}\nتأخر ${d.l} د • خروج مبكر ${d.e} د`}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: d.rate >= 95 ? "#0f7b5f" : d.rate >= 85 ? "#d97706" : "#dc2626" }}>{d.rate}٪</div>
+          <div style={{ height: 90, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 2, alignItems: "center" }}>
+            <div style={{ width: 22, height: 4 + 70 * d.e / mx, background: "#f59e0b", borderRadius: 6 }} />
+            <div style={{ width: 22, height: 4 + 70 * d.l / mx, background: "#ef4444", borderRadius: 6 }} />
+          </div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#475569" }}>{sdxDayName(d.dk).slice(0, 3)}<br />{sdxShort(d.dk)}</div>
+        </div>; })}</div>
+        <div className="flex gap-3" style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}><span>🟥 دقائق التأخر</span><span>🟧 دقائق الخروج المبكر</span><span>٪ نسبة الحضور</span></div>
+      </div>}
+      {(T.improved.length > 0 || T.declined.length > 0) && <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
+        <div className="sdx-card" style={{ background: "linear-gradient(180deg,#ecfdf5,#fff)" }}><div className="sdx-h">📈 المتحسنون مقارنة بالفترة السابقة</div>
+          {T.improved.length ? T.improved.map(s => <div key={s.k} className="flex items-center gap-2" style={{ padding: "6px 0", borderBottom: "1px dashed #d1fae5" }}><b style={{ flex: 1, fontSize: 13.5 }}>{s.n}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{s.prev}٪ ← {s.pct}٪</span><SdxDelta d={s.delta} /><a className="sdx-btn wa sm" target="_blank" rel="noreferrer" href={waLink(s, "improve")}>💬 تهنئة</a></div>) : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا يوجد</div>}</div>
+        <div className="sdx-card" style={{ background: "linear-gradient(180deg,#fef2f2,#fff)" }}><div className="sdx-h" style={{ color: "#b91c1c" }}>📉 المتدنون مقارنة بالفترة السابقة</div>
+          {T.declined.length ? T.declined.map(s => <div key={s.k} className="flex items-center gap-2" style={{ padding: "6px 0", borderBottom: "1px dashed #fee2e2" }}><b style={{ flex: 1, fontSize: 13.5 }}>{s.n}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{s.prev}٪ ← {s.pct}٪</span><SdxDelta d={s.delta} /><a className="sdx-btn wa sm" target="_blank" rel="noreferrer" href={waLink(s, "alert")}>💬 تنبيه</a></div>) : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا يوجد</div>}</div>
+      </div>}
+      <div className="sdx-card">
+        <div className="flex items-center gap-2 flex-wrap mb-2"><div className="sdx-h" style={{ margin: 0 }}>🏅 الترتيب العام — من الأكثر انضباطاً نزولاً</div><input className="sdx-inp" style={{ marginRight: "auto", width: 220 }} placeholder="🔎 بحث باسم الموظف…" value={q} onChange={e => setQ(e.target.value)} /></div>
+        <div className="grid gap-2">{listQ.map(s => <Row key={s.k} s={s} />)}</div>
+      </div>
+    </div>;
+  };
+
+  const Person = () => {
+    if (!R) return null;
+    const s = selS || R.list[0]; if (!s) return null;
+    const kind = kindOf(s);
+    return <div className="grid gap-3">
+      <div className="sdx-card sdx-noprint flex gap-2 items-center flex-wrap" style={{ padding: 10 }}>
+        <select className="sdx-inp" style={{ minWidth: 260 }} value={s.k} onChange={e => setSel(e.target.value)}>{R.list.map(x => <option key={x.k} value={x.k}>{x.rank}. {x.n} — {x.pct ?? "—"}٪</option>)}</select>
+        <button className="sdx-btn sm" onClick={() => { const i = R.list.findIndex(x => x.k === s.k); if (i > 0) setSel(R.list[i - 1].k); }}>→ السابق</button>
+        <button className="sdx-btn sm" onClick={() => { const i = R.list.findIndex(x => x.k === s.k); if (i < R.list.length - 1) setSel(R.list[i + 1].k); }}>التالي ←</button>
+      </div>
+      <div className="sdx-card" style={{ borderTop: `5px solid ${s.cat.c}` }}>
+        <div className="flex gap-3 items-center flex-wrap">
+          <SdxRing pct={s.pct} c={s.cat.c} size={96} sw={10} />
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>{s.n}</div>
+            <div className="flex gap-1 flex-wrap mt-1"><span className="sdx-chip" style={{ background: s.cat.bg, color: s.cat.c, fontSize: 13 }}>{s.cat.ic} {s.cat.l}</span><span className="sdx-chip" style={{ background: "#f1f5f9", color: "#334155" }}>الترتيب {s.rank} من {R.list.length}</span><SdxDelta d={s.delta} />{s.role === "a" && <span className="sdx-chip" style={{ background: "#ede9fe", color: "#6d28d9" }}>إداري</span>}</div>
+            <div style={{ fontSize: 12.5, color: "#64748b", fontWeight: 700, marginTop: 4 }}>{rangeTxt}{s.prev !== null ? ` • الفترة السابقة ${s.prev}٪` : ""}</div>
+          </div>
+          <div style={{ textAlign: "center" }}><div style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>المنحنى الأسبوعي</div><SdxSpark data={s.trend} c={s.cat.c} w={150} h={40} /></div>
+        </div>
+        <div className="grid gap-2 mt-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(118px,1fr))" }}>
+          {[["📅", "أيام الدوام", s.days, "#0b5d55"], ["✅", "حضور", s.pres, "#0f7b5f"], ["❌", "غياب", s.abs, s.abs ? "#dc2626" : "#94a3b8"], ["📋", "بعذر", s.exc, "#6b5b95"], ["⏰", "دقائق التأخر", s.lateMins, s.lateMins ? "#d97706" : "#94a3b8"], ["🚪", "دقائق الخروج المبكر", s.earlyMins, s.earlyMins ? "#b45309" : "#94a3b8"], ["🖐️", "انصراف بلا بصمة", s.miss, s.miss ? "#7c3aed" : "#94a3b8"], ["🕖", "متوسط الحضور", sdx12(s.avgA), "#0b5d55"], ["🕐", "متوسط الانصراف", sdx12(s.avgD), "#0b5d55"]].map(([ic, l, v, c]) => <div key={l} style={{ background: "#f8fafc", border: "1px solid #eef2f1", borderRadius: 16, padding: "10px 8px", textAlign: "center" }}><div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>{ic} {l}</div><div style={{ fontSize: 22, fontWeight: 900, color: c }}>{typeof v === "number" ? <SdxCount v={v} /> : v}</div></div>)}
+        </div>
+        {(kind === "thanks" || kind === "improve") && <div className="sdx-thx mt-3">{kind === "thanks" ? "🌟 " + sdxPick(SDX_THANKS, s.k) : `📈 ${sdxPick(SDX_IMPROVE, s.k)} (تحسّن بمقدار ${s.delta}٪)`}</div>}
+        {kind === "alert" && <div className="mt-3" style={{ borderRadius: 16, padding: "12px 14px", background: "#fff7ed", border: "1px solid #fed7aa", fontSize: 13.5, fontWeight: 700, color: "#7c2d12", lineHeight: 1.8 }}>⚠️ مواطن الخلل: {[s.abs && `غياب ${s.abs} يوم`, s.lateMins && `تأخر ${s.lateMins} دقيقة في ${s.lateDays} يوم`, s.earlyMins && `خروج مبكر ${s.earlyMins} دقيقة في ${s.earlyDays} يوم`, s.miss && `عدم بصمة الانصراف ${s.miss} مرة`].filter(Boolean).join(" • ") || "لا يوجد"}</div>}
+        <div className="flex gap-2 flex-wrap mt-3 sdx-noprint">
+          <a className="sdx-btn wa" target="_blank" rel="noreferrer" href={waLink(s, "thanks")}>💬 رسالة شكر وتقدير</a>
+          {s.improved && <a className="sdx-btn wa" target="_blank" rel="noreferrer" href={waLink(s, "improve")}>💬 تهنئة بالتحسّن</a>}
+          <a className="sdx-btn wa" style={{ background: "#f97316" }} target="_blank" rel="noreferrer" href={waLink(s, "alert")}>💬 رسالة تنبيه</a>
+          <span style={{ fontSize: 12, fontWeight: 800, color: ph(s) ? "#15803d" : "#b45309", alignSelf: "center" }}>{ph(s) ? `📱 ${ph(s)}` : "📱 لا يوجد رقم — أضفه من «الجوالات»"}</span>
+        </div>
+      </div>
+      <div className="sdx-card" style={{ overflowX: "auto" }}>
+        <div className="sdx-h">🗓️ السجل اليومي والاستئذانات</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>سجّل الاستئذان أو العذر لليوم، فلا تُحتسب دقائقه نقصاً في الدوام.</div>
+        <table className="sdx-tbl"><thead><tr><th>اليوم</th><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>التأخر</th><th>الخروج المبكر</th><th>الحالة</th><th className="sdx-noprint">استئذان / عذر</th></tr></thead>
+          <tbody>{[...s.recs].reverse().map(r => <tr key={r.dk}>
+            <td>{sdxDayName(r.dk)}</td><td>{sdxShort(r.dk)}</td>
+            <td style={{ color: r.late ? "#d97706" : r.exL ? "#6b5b95" : "#0f7b5f" }}>{r.abs || r.exc ? "—" : sdx12(r.a)}</td>
+            <td style={{ color: r.early ? "#b45309" : r.miss ? "#7c3aed" : r.exE ? "#6b5b95" : "#0f7b5f" }}>{r.abs || r.exc ? "—" : r.d === null ? "بلا بصمة" : sdx12(r.d)}</td>
+            <td>{r.late ? <b style={{ color: "#d97706" }}>{r.late} د</b> : r.exL ? <span style={{ color: "#6b5b95" }}>{r.exL} د (مستأذن)</span> : "—"}</td>
+            <td>{r.early ? <b style={{ color: "#b45309" }}>{r.early} د</b> : r.exE ? <span style={{ color: "#6b5b95" }}>{r.exE} د (مستأذن)</span> : "—"}</td>
+            <td>{r.exc ? <span className="sdx-chip" style={{ background: "#ece8f4", color: "#6b5b95" }}>بعذر</span> : r.abs ? <span className="sdx-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>غائب</span> : r.late || r.early || r.miss ? <span className="sdx-chip" style={{ background: "#fef3c7", color: "#92400e" }}>ملاحظة</span> : <span className="sdx-chip" style={{ background: "#dcfce7", color: "#15803d" }}>منضبط</span>}</td>
+            <td className="sdx-noprint"><select className="sdx-inp" style={{ height: 32, fontSize: 12 }} value={r.p?.t || ""} onChange={e => setP(r.dk, s.k, e.target.value)}><option value="">— لا يوجد —</option>{Object.entries(SDX_PERM).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></td>
+          </tr>)}</tbody></table>
+      </div>
+    </div>;
+  };
+
+  const Daily = () => {
+    if (!dayKeys.length) return null; const dk = dayK && days[dayK] ? dayK : dayKeys[dayKeys.length - 1];
+    const D = sdxCompute({ days, perm, staff, cfg, from: dk, to: dk, role });
+    const rows = D.list.slice().sort((a, b) => (a.recs[0]?.a ?? 9999) - (b.recs[0]?.a ?? 9999));
+    return <div className="grid gap-3">
+      <div className="sdx-card flex gap-2 items-center flex-wrap" style={{ padding: 10 }}>
+        <select className="sdx-inp" style={{ minWidth: 240 }} value={dk} onChange={e => setDayK(e.target.value)}>{[...dayKeys].reverse().map(k => <option key={k} value={k}>{sdxDayName(k)} {sdxGreg(k)} — {Object.keys(days[k].rows || {}).length} سجل</option>)}</select>
+        <span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>{sdxHij(dk)} • المصدر: {days[dk]?.src || "—"}</span>
+        <button className="sdx-btn red sm" style={{ marginRight: "auto" }} onClick={() => delDay(dk)}>🗑️ حذف هذا اليوم</button>
+      </div>
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))" }}>{[["حاضرون", D.T.pres, "#0f7b5f"], ["غائبون", D.T.abs, "#dc2626"], ["بعذر", D.T.exc, "#6b5b95"], ["دقائق التأخر", D.T.lateMins, "#d97706"], ["دقائق الخروج المبكر", D.T.earlyMins, "#b45309"], ["بلا بصمة انصراف", D.T.miss, "#7c3aed"]].map(([l, v, c]) => <div key={l} className="sdx-card" style={{ padding: 12, textAlign: "center" }}><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{l}</div><div style={{ fontSize: 26, fontWeight: 900, color: c }}><SdxCount v={v} /></div></div>)}</div>
+      <div className="sdx-card" style={{ overflowX: "auto" }}>
+        <table className="sdx-tbl"><thead><tr><th>#</th><th style={{ textAlign: "right" }}>الموظف</th><th>الحضور</th><th>الانصراف</th><th>التأخر</th><th>الخروج المبكر</th><th>النسبة</th><th className="sdx-noprint">استئذان / عذر</th></tr></thead>
+          <tbody>{rows.map((s, i) => { const r = s.recs[0] || {}; return <tr key={s.k}>
+            <td>{i + 1}</td><td style={{ textAlign: "right", fontWeight: 900, cursor: "pointer" }} onClick={() => { setSel(s.k); setTab("person"); }}>{s.n}</td>
+            <td style={{ color: r.late ? "#d97706" : "#0f7b5f" }}>{r.abs ? <span className="sdx-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>غائب</span> : r.exc ? <span className="sdx-chip" style={{ background: "#ece8f4", color: "#6b5b95" }}>بعذر</span> : sdx12(r.a)}</td>
+            <td style={{ color: r.early ? "#b45309" : r.miss ? "#7c3aed" : "#0f7b5f" }}>{r.abs || r.exc ? "—" : r.d === null ? "بلا بصمة" : sdx12(r.d)}</td>
+            <td>{r.late ? <b style={{ color: "#d97706" }}>{r.late} د</b> : r.exL ? <span style={{ color: "#6b5b95" }}>مستأذن</span> : "—"}</td>
+            <td>{r.early ? <b style={{ color: "#b45309" }}>{r.early} د</b> : r.exE ? <span style={{ color: "#6b5b95" }}>مستأذن</span> : "—"}</td>
+            <td><b style={{ color: s.cat.c }}>{s.pct ?? "—"}٪</b></td>
+            <td className="sdx-noprint"><select className="sdx-inp" style={{ height: 32, fontSize: 12 }} value={r.p?.t || ""} onChange={e => setP(dk, s.k, e.target.value)}><option value="">—</option>{Object.entries(SDX_PERM).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></td>
+          </tr>; })}</tbody></table>
+      </div>
+    </div>;
+  };
+
+  const Settings = () => {
+    const [c, setC] = useState(cfg); const ppl = Object.entries(staff).filter(([, v]) => v && v.n).sort((a, b) => a[1].n.localeCompare(b[1].n, "ar"));
+    return <div className="grid gap-3">
+      <div className="sdx-card">
+        <div className="sdx-h">⏱️ أوقات الدوام وقواعد الاحتساب</div>
+        <div className="flex gap-3 flex-wrap items-end">
+          <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>بداية الدوام<br /><input type="time" className="sdx-inp" value={c.s} onChange={e => setC({ ...c, s: e.target.value })} /></label>
+          <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>نهاية الدوام<br /><input type="time" className="sdx-inp" value={c.e} onChange={e => setC({ ...c, e: e.target.value })} /></label>
+          <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>دقائق السماح للتأخر<br /><input type="number" min="0" max="60" className="sdx-inp" style={{ width: 110 }} value={c.g} onChange={e => setC({ ...c, g: e.target.value })} /></label>
+          <label style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>احتساب «بلا بصمة انصراف» بـ (دقيقة)<br /><input type="number" min="0" max="240" className="sdx-inp" style={{ width: 110 }} value={c.md} onChange={e => setC({ ...c, md: e.target.value })} /></label>
+          <button className="sdx-btn pri" onClick={async () => { await saveCfg({ s: c.s, e: c.e, g: +c.g || 0, md: +c.md || 0 }); say("✅ حُفظت الإعدادات وأُعيد الحساب"); }}>💾 حفظ وإعادة الحساب</button>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginTop: 8, lineHeight: 1.9 }}>• نسبة الانضباط = 100٪ − (أيام الغياب × مدة الدوام + دقائق التأخر + دقائق الخروج المبكر) ÷ (أيام الدوام × مدة الدوام).<br />• المستأذن لا تُحسب دقائقه، والغياب بعذر لا يدخل في أيام الدوام.<br />• يُقارن كل موظف بعدد مماثل من أيام الدوام السابقة للفترة المختارة لحساب التحسن أو التدني.</div>
+      </div>
+      <div className="sdx-card">
+        <div className="sdx-h">📂 الأيام المرفوعة ({dayKeys.length})</div>
+        {dayKeys.length ? <div className="flex gap-2 flex-wrap">{[...dayKeys].reverse().map(k => <span key={k} className="sdx-chip" style={{ background: "#f0fdfa", color: "#0f766e", border: "1px solid #ccfbf1", padding: "5px 10px", fontSize: 12.5 }}>{sdxDayName(k)} {k} <button onClick={() => delDay(k)} style={{ border: "none", background: "none", cursor: "pointer", color: "#dc2626", fontWeight: 900 }}>✕</button></span>)}</div> : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد أيام بعد</div>}
+      </div>
+      <div className="sdx-card">
+        <div className="sdx-h">👥 تصنيف الموظفين ({ppl.length})</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>حدّد الإداريين ليظهروا في فلتر «الإداريون»، واستبعد من لا يلزم متابعته (مثل المنقولين).</div>
+        <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))" }}>{ppl.map(([k, v]) => <div key={k} className="flex items-center gap-2" style={{ background: v.x ? "#f8fafc" : "#fff", border: "1px solid #eef2f1", borderRadius: 12, padding: "6px 10px", opacity: v.x ? .55 : 1 }}>
+          <b style={{ flex: 1, fontSize: 13 }}>{v.n}</b>
+          <button className="sdx-btn sm" style={v.r !== "a" ? { background: "#0b5d55", color: "#fff" } : {}} onClick={() => setStaffF(k, { r: "t" })}>معلم</button>
+          <button className="sdx-btn sm" style={v.r === "a" ? { background: "#6d28d9", color: "#fff" } : {}} onClick={() => setStaffF(k, { r: "a" })}>إداري</button>
+          <button className="sdx-btn sm" title={v.x ? "إرجاع" : "استبعاد"} onClick={() => setStaffF(k, { x: !v.x })}>{v.x ? "↩️" : "🚫"}</button>
+        </div>)}</div>
+      </div>
+    </div>;
+  };
+
+  const Legacy = () => <div className="grid gap-3">
+    <div className="sdx-tabs">{[["stats", "📉 إحصائيات الحضور اليدوي"], ["daily", "🧾 كشف غياب المعلمين اليومي"], ["admin", "🏛️ دوام الإداريين (يدوي)"], ["emp", "🗂️ تحليل تقرير موظف"]].map(([k, l]) => <button key={k} className={"sdx-tab" + ((legacy || "stats") === k ? " on" : "")} onClick={() => setLegacy(k)}>{l}</button>)}</div>
+    {(legacy || "stats") === "stats" && <AbsenceStatsPage teachers={teachers || []} attendance={attendance || {}} week={week} weekArchive={weekArchive} />}
+    {legacy === "daily" && <DailyAttendanceTrackerPage teachers={teachers || []} />}
+    {legacy === "admin" && <AdminAttendancePage />}
+    {legacy === "emp" && <AttendanceAnalysisPage />}
+  </div>;
+
+  const hasData = dayKeys.length > 0;
+  return <div className="sdx grid gap-3" dir="rtl" onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); setDrag(false); onFiles(e.dataTransfer.files); }}>
+    <style>{SDX_CSS}</style>
+    <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" multiple hidden onChange={e => { onFiles(e.target.files); e.target.value = ""; }} />
+    {Hero()}
+    {hasData && Filters()}
+    <div className="sdx-tabs sdx-noprint">{[["board", "📊 لوحة الأداء والترتيب"], ["person", "👤 تحليل كل موظف"], ["daily", "📅 السجل اليومي"], ["settings", "⚙️ الإعدادات"], ["legacy", "🧰 الأدوات اليدوية"]].map(([k, l]) => <button key={k} className={"sdx-tab" + (tab === k ? " on" : "")} onClick={() => setTab(k)}>{l}</button>)}</div>
+    {loading ? <div className="sdx-card" style={{ textAlign: "center", padding: 40, fontWeight: 900, color: "#0f766e" }}>⏳ جارٍ تحميل السجل التراكمي…</div> : <>
+      {!hasData && tab !== "legacy" && tab !== "settings" && <div className={"sdx-drop" + (drag ? " on" : "")}>
+        <div style={{ fontSize: 46 }}>📥</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: "#0b5d55" }}>ارفع ملف البصمة (Excel) لتبدأ</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#64748b", margin: "4px 0 12px" }}>يقبل الكشف اليومي لكل الموظفين أو تقرير الموظف الفردي، ويمكن رفع عدة ملفات معاً — كل ملف يُضاف للسجل السابق</div>
+        <button className="sdx-btn pri" onClick={() => fileRef.current?.click()}>📂 اختر الملفات</button>
+      </div>}
+      {hasData && tab === "board" && Board()}
+      {hasData && tab === "person" && Person()}
+      {hasData && tab === "daily" && Daily()}
+      {tab === "settings" && <Settings />}
+      {tab === "legacy" && Legacy()}
+      {hasData && R && !R.list.length && tab !== "legacy" && tab !== "settings" && <div className="sdx-card" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 900, padding: 30 }}>لا توجد بيانات في الفترة المختارة</div>}
+    </>}
+    {drag && hasData && <div className="sdx-modal" style={{ pointerEvents: "none" }}><div style={{ textAlign: "center", fontSize: 20, fontWeight: 900, color: "#0b5d55" }}>📥 أفلت الملف هنا لإضافته</div></div>}
+    {pending && <div className="sdx-modal" onClick={() => setPending(null)}><div onClick={e => e.stopPropagation()}>
+      <div className="sdx-h">📥 تأكيد إضافة البيانات</div>
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: "#334155", lineHeight: 1.9 }}>
+        الملفات: <b>{pending.files.join("، ")}</b><br />
+        السجلات: <b>{pending.rows.length}</b> • الموظفون: <b>{new Set(pending.rows.map(r => sdxK(r.id, r.n))).size}</b>
+        {!pending.noDate && <><br />الأيام: <b>{[...new Set(pending.rows.map(r => r.dt))].sort().map(k => `${sdxDayName(k)} ${k}`).join("، ")}</b></>}
+      </div>
+      {pending.noDate && <label style={{ display: "block", marginTop: 10, fontSize: 13, fontWeight: 800, color: "#0b5d55" }}>📅 تاريخ هذا الكشف {pending.date && <span style={{ color: "#64748b" }}>({sdxDayName(pending.date)} — {sdxHij(pending.date)})</span>}<br /><input type="date" className="sdx-inp" style={{ width: "100%" }} value={pending.date} onChange={e => setPending({ ...pending, date: e.target.value })} /></label>}
+      {(() => { const ks = pending.noDate ? [pending.date] : [...new Set(pending.rows.map(r => r.dt))]; const ex = ks.filter(k => days[k]); return ex.length ? <div style={{ marginTop: 10, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "8px 10px", fontSize: 12.5, fontWeight: 800, color: "#92400e" }}>⚠️ يوجد بيانات سابقة لـ {ex.join("، ")} — ستُحدَّث سجلات نفس الموظفين ويبقى الباقي.</div> : null; })()}
+      {pending.warn.length > 0 && <div style={{ marginTop: 8, fontSize: 12, color: "#b45309", fontWeight: 700 }}>{pending.warn.join(" • ")}</div>}
+      <div className="flex gap-2 mt-4"><button className="sdx-btn pri" disabled={busy || (pending.noDate && !pending.date)} onClick={commit}>✅ إضافة إلى السجل التراكمي</button><button className="sdx-btn" onClick={() => setPending(null)}>إلغاء</button></div>
+    </div></div>}
+    {showPB && <><style>{STT_CSS}</style><PhoneBook names={[...new Set(Object.values(staff).filter(v => v && v.n).map(v => v.n))].sort((a, b) => a.localeCompare(b, "ar"))} P={phones} setP={setPhones} onClose={() => setShowPB(false)} /></>}
+    {toast && <div style={{ position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)", zIndex: 900, background: "#0f172a", color: "#fff", padding: "10px 18px", borderRadius: 14, fontWeight: 800, fontSize: 14, boxShadow: "0 14px 30px -12px rgba(0,0,0,.5)" }}>{toast}</div>}
+  </div>;
+}
+
+// ══════════ تقرير الطباعة (PDF) ══════════
+function sdxReportHTML(R, { rangeTxt, from, to, role, cfg }) {
+  const T = R.T, L = R.list.filter(s => s.pct !== null); const E = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const roleTxt = role === "t" ? "المعلمون" : role === "a" ? "الإداريون" : "المعلمون والإداريون";
+  let logo = "", moe = ""; try { logo = LOGO_URL; } catch {} try { moe = MOE_LOGO; } catch {}
+  const pill = c => `<span class="pill" style="color:${c.c};background:${c.bg};border-color:${c.c}44">${c.ic} ${c.l}</span>`;
+  const dl = d => d === null ? `<span class="muted">—</span>` : d >= 2 ? `<b style="color:#15803d">▲ ${d}٪</b>` : d <= -2 ? `<b style="color:#b91c1c">▼ ${Math.abs(d)}٪</b>` : `<span class="muted">● ${d}٪</span>`;
+  const head = t => `<div class="ph"><div class="pt">${t}</div><div class="pm">${roleTxt} • ${E(rangeTxt)}</div></div>`;
+  const pages = [];
+  // الغلاف
+  pages.push(`<section class="page cover"><div class="pat"></div>
+    <div class="ctop"><div>المملكة العربية السعودية<br>وزارة التعليم<br><span>${SDX_SCHOOL}</span></div>${logo ? `<img src="${logo}" class="clogo">` : ""}</div>
+    <div class="cmid"><div class="kick">تقرير تحليلي تراكمي</div><h1>متابعة أداء انضباط<br><span>${roleTxt}</span></h1><div class="cline"></div>
+    <p>تحليل سجل البصمة: الترتيب من الأكثر انضباطاً نزولاً، والمتميزون والمتحسنون، ودقائق التأخر والخروج المبكر والغياب لكل موظف</p>
+    <div class="cdate"><div><small>الفترة</small><b>${E(rangeTxt)}</b></div><div><small>أيام الدوام</small><b>${T.days} يوم</b></div><div><small>الدوام الرسمي</small><b>${sdx12(T.S)} – ${sdx12(T.E)}</b></div></div></div>
+    <div class="cst"><div><b>${T.people}</b><small>موظفاً</small></div><div><b>${T.avgPct}٪</b><small>متوسط الانضباط</small></div><div><b>${T.stars.length}</b><small>متميزاً</small></div><div><b>${T.improved.length}</b><small>متحسناً</small></div><div><b>${T.abs}</b><small>يوم غياب</small></div></div>
+    <div class="cfoot">صدر من منصة ${SDX_SCHOOL} • ${new Date().toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn")}</div></section>`);
+  // الملخص
+  const catBar = T.byCat.filter(c => c.n).map(c => `<div style="flex:${c.n};background:${c.c}">${c.n}</div>`).join("");
+  const top3 = L.filter(s => s.abs === 0).slice(0, 3);
+  pages.push(`<section class="page">${head("الملخص التنفيذي")}<div class="pb">
+    <h2>الملخص التنفيذي</h2>
+    <div class="kpis">
+      <div class="kpi"><small>متوسط نسبة الانضباط</small><b>${T.avgPct}٪</b><em>نسبة الحضور ${T.attRate}٪</em></div>
+      <div class="kpi red"><small>أيام الغياب</small><b>${T.abs}</b><em>${T.exc} يوم بعذر لم يُحتسب</em></div>
+      <div class="kpi amber"><small>دقائق التأخر الصباحي</small><b>${T.lateMins.toLocaleString("en")}</b><em>${T.lateDays} حالة • ${sdxDur(T.lateMins)}</em></div>
+      <div class="kpi amber"><small>دقائق الخروج المبكر</small><b>${T.earlyMins.toLocaleString("en")}</b><em>${T.earlyDays} حالة • ${sdxDur(T.earlyMins)}</em></div>
+      <div class="kpi"><small>المتميزون / المتحسنون</small><b>${T.stars.length} / ${T.improved.length}</b><em>متدنون ${T.declined.length}</em></div>
+      <div class="kpi red"><small>يحتاجون متابعة</small><b>${T.watch.length}</b><em>بلا بصمة انصراف ${T.miss}</em></div>
+    </div>
+    <h3>توزيع مستويات الانضباط</h3><div class="dist">${catBar}</div>
+    <div class="leg">${T.byCat.map(c => `<span><i style="background:${c.c}"></i>${c.l} <b>${c.n}</b></span>`).join("")}</div>
+    ${top3.length ? `<h3>منصة التميز</h3><div class="pod">${[1, 0, 2].filter(i => top3[i]).map(i => { const s = top3[i]; return `<div class="podc p${i + 1}"><div class="medal m${i + 1}">${i + 1}</div><b>${E(s.n)}</b><div class="pp">${s.pct}٪</div><small>متوسط الحضور ${sdx12(s.avgA)}</small></div>`; }).join("")}</div>` : ""}
+    <div class="grid2">
+      <div class="box good"><h4>🏆 قراءة إيجابية</h4><p>${T.stars.length} موظفاً بلغوا مستوى «متميز» (98٪ فأكثر دون غياب)، و${T.byCat[1].n} في مستوى «ممتاز». ${T.improved.length ? `وتحسّن ${T.improved.length} موظفاً مقارنة بالفترة السابقة، أبرزهم ${E(T.improved[0].n)} (+${T.improved[0].delta}٪).` : ""}</p></div>
+      <div class="box bad"><h4>⚠️ مواطن الخلل</h4><p>${T.watch.length ? `يحتاج ${T.watch.length} موظفاً إلى متابعة، ومجموع الدقائق المهدرة ${(T.lateMins + T.earlyMins).toLocaleString("en")} دقيقة (${sdxDur(T.lateMins + T.earlyMins)}) بين تأخر وخروج مبكر، إضافة إلى ${T.abs} يوم غياب.` : "لا توجد حالات تستدعي المتابعة في هذه الفترة."}</p></div>
+    </div>
+    <div class="note">طريقة الاحتساب: نسبة الانضباط = 100٪ − (أيام الغياب × مدة الدوام + دقائق التأخر + دقائق الخروج المبكر${+cfg.md ? ` + ${cfg.md} دقيقة لكل انصراف بلا بصمة` : ""}) ÷ (أيام الدوام × مدة الدوام). لا تُحتسب دقائق المستأذن ولا أيام الغياب بعذر. الدوام الرسمي ${sdx12(T.S)} – ${sdx12(T.E)}${+cfg.g ? ` مع سماح ${cfg.g} دقائق` : ""}.</div>
+  </div></section>`);
+  // الترتيب العام
+  const rowsHTML = L.map(s => `<tr><td><span class="rk" style="background:${s.rank <= 3 ? ["#c8a24a", "#94a3b8", "#b7774a"][s.rank - 1] : s.cat.c}">${s.rank}</span></td><td class="nm">${E(s.n)}</td><td><div class="sbar"><div style="width:${s.pct}%;background:${s.cat.c}"></div></div></td><td><b style="color:${s.cat.c}">${s.pct}٪</b></td><td>${s.days}</td><td class="${s.abs ? "r" : "z"}">${s.abs}</td><td class="${s.lateMins ? "a" : "z"}">${s.lateMins}</td><td class="${s.earlyMins ? "a" : "z"}">${s.earlyMins}</td><td>${sdx12(s.avgA)}</td><td>${dl(s.delta)}</td><td>${pill(s.cat)}</td></tr>`);
+  for (let i = 0; i < rowsHTML.length; i += 26) pages.push(`<section class="page">${head("الترتيب العام")}<div class="pb">${i === 0 ? "<h2>الترتيب العام — من الأكثر انضباطاً نزولاً</h2>" : ""}<table class="tbl"><tr><th>#</th><th>الموظف</th><th style="width:22%">النسبة</th><th>٪</th><th>أيام</th><th>غياب</th><th>تأخر (د)</th><th>خروج مبكر (د)</th><th>متوسط الحضور</th><th>التغير</th><th>المستوى</th></tr>${rowsHTML.slice(i, i + 26).join("")}</table></div></section>`);
+  // المتميزون والمتحسنون — شكر وتقدير
+  const thx = [...T.stars.map(s => ({ s, t: sdxPick(SDX_THANKS, s.k), k: "🏆 متميز" })), ...T.improved.filter(s => s.cat.k !== "star").map(s => ({ s, t: `${sdxPick(SDX_IMPROVE, s.k)} (تحسّن +${s.delta}٪)`, k: "📈 متحسّن" }))];
+  for (let i = 0; i < thx.length; i += 8) pages.push(`<section class="page">${head("شكر وتقدير")}<div class="pb">${i === 0 ? "<h2>لوحة الشكر والتقدير</h2><p class='lead'>تقديراً لالتزامهم وحرصهم، تتقدم إدارة المدرسة بالشكر للمتميزين والمتحسنين في الانضباط خلال الفترة.</p>" : ""}<div class="thx">${thx.slice(i, i + 8).map(x => `<div class="tc"><div class="th"><b>${E(x.s.n)}</b><span>${x.k}</span><em>${x.s.pct}٪</em></div><p>${x.t}</p></div>`).join("")}</div></div></section>`);
+  // يحتاجون متابعة
+  if (T.watch.length) { const W = T.watch.slice().sort((a, b) => a.pct - b.pct); for (let i = 0; i < W.length; i += 22) pages.push(`<section class="page">${head("يحتاجون متابعة")}<div class="pb">${i === 0 ? "<h2>سجل المتابعة — مواطن الخلل</h2>" : ""}<table class="tbl"><tr><th>الموظف</th><th>النسبة</th><th>غياب</th><th>تأخر</th><th>خروج مبكر</th><th>بلا بصمة</th><th>طبيعة الخلل</th><th>الإجراء المقترح</th></tr>${W.slice(i, i + 22).map(s => { const iss = [s.abs && `غياب ${s.abs} يوم`, s.lateDays && `تأخر في ${s.lateDays} يوم`, s.earlyDays && `خروج مبكر في ${s.earlyDays} يوم`].filter(Boolean).join("، "); const act = s.pct < 75 || s.abs >= 3 ? "مساءلة مكتوبة ومتابعة أسبوعية" : s.pct < 85 ? "لفت نظر وتوثيق الأعذار" : "تنبيه ودي"; return `<tr><td class="nm">${E(s.n)}</td><td><b style="color:${s.cat.c}">${s.pct}٪</b></td><td class="${s.abs ? "r" : "z"}">${s.abs}</td><td class="${s.lateMins ? "a" : "z"}">${s.lateMins} د</td><td class="${s.earlyMins ? "a" : "z"}">${s.earlyMins} د</td><td>${s.miss}</td><td class="tx">${iss}</td><td class="tx">${act}</td></tr>`; }).join("")}</table></div></section>`); }
+  // بطاقات الموظفين
+  const card = s => `<div class="card" style="border-top-color:${s.cat.c}"><div class="ch"><span class="rk" style="background:${s.cat.c}">${s.rank}</span><b>${E(s.n)}</b>${pill(s.cat)}<span class="ring" style="--c:${s.cat.c};--p:${s.pct}">${Math.round(s.pct)}</span></div>
+    <div class="cm"><div><small>أيام</small><b>${s.days}</b></div><div class="${s.abs ? "r" : ""}"><small>غياب</small><b>${s.abs}</b></div><div class="${s.lateMins ? "a" : ""}"><small>تأخر</small><b>${s.lateMins} د</b></div><div class="${s.earlyMins ? "a" : ""}"><small>خروج مبكر</small><b>${s.earlyMins} د</b></div><div><small>متوسط الحضور</small><b>${sdx12(s.avgA)}</b></div><div><small>التغير</small><b>${dl(s.delta)}</b></div></div>
+    <div class="cdays">${s.recs.map(r => `<i title="${r.dk}" style="background:${r.exc ? "#a78bfa" : r.abs ? "#dc2626" : r.late || r.early ? "#f59e0b" : r.miss ? "#c4b5fd" : "#10b981"}"></i>`).join("")}</div></div>`;
+  for (let i = 0; i < L.length; i += 10) pages.push(`<section class="page">${head("البطاقات الفردية")}<div class="pb">${i === 0 ? "<h2>البطاقات الفردية</h2><p class='lead'>شريط الأيام: <i class='lg' style='background:#10b981'></i> منضبط <i class='lg' style='background:#f59e0b'></i> تأخر/خروج مبكر <i class='lg' style='background:#dc2626'></i> غياب <i class='lg' style='background:#a78bfa'></i> بعذر</p>" : ""}<div class="cards">${L.slice(i, i + 10).map(card).join("")}</div></div></section>`);
+  // التوقيع
+  pages.push(`<section class="page">${head("الاعتماد")}<div class="pb"><h2>التوصيات والاعتماد</h2>
+    <div class="rec g"><h4>تعزيز</h4><ul><li>تكريم المتميزين (${T.stars.length}) والمتحسنين (${T.improved.length}) بشهادات شكر ورسائل تقدير.</li><li>إبراز الثلاثة الأوائل في لوحة الشرف واجتماع المعلمين.</li></ul></div>
+    <div class="rec a"><h4>متابعة</h4><ul><li>التواصل مع من يحتاجون متابعة (${T.watch.length}) وتوثيق الأعذار والاستئذانات في النظام.</li><li>متابعة حالات عدم تسجيل بصمة الانصراف (${T.miss}) للتأكد من سلامة البيانات.</li></ul></div>
+    <div class="rec r"><h4>معالجة</h4><ul><li>تطبيق لائحة الدوام على حالات الغياب أو التأخر المتكرر بلا عذر بعد التحقق.</li><li>مقارنة الفترة القادمة بهذا التقرير لقياس الأثر.</li></ul></div>
+    <div class="sign"><div><small>وكيل شؤون المعلمين</small><span></span></div><div><small>مدير المدرسة</small><span></span></div></div></div></section>`);
+  const css = `@page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Tajawal',sans-serif;color:#16302d;font-size:10.5pt;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#e5e7eb}
+  .page{width:210mm;height:297mm;position:relative;overflow:hidden;background:#fff;margin:0 auto 8mm;page-break-after:always}
+  @media print{body{background:#fff}.page{margin:0}.bar{display:none}}
+  .bar{position:sticky;top:0;z-index:5;background:#0b5d55;color:#fff;text-align:center;padding:10px;font-family:'Cairo'}.bar button{font-family:inherit;font-weight:800;font-size:14px;padding:8px 22px;border-radius:10px;border:0;background:#c8a24a;color:#0b3d38;cursor:pointer}
+  .ph{display:flex;justify-content:space-between;align-items:center;height:15mm;padding:0 13mm;background:linear-gradient(90deg,#0b5d55,#0e7468);color:#fff;border-bottom:1.2mm solid #c8a24a}.pt{font-family:'Noto Kufi Arabic';font-weight:700;font-size:11pt}.pm{font-size:8.5pt;opacity:.85}
+  .pb{padding:6mm 12mm}h2{font-family:'Noto Kufi Arabic';font-weight:800;font-size:15pt;color:#0b5d55;margin:1mm 0 3mm;display:flex;gap:8px;align-items:center}h2:before{content:"";width:5px;height:20px;background:#c8a24a;border-radius:3px}
+  h3{font-family:'Noto Kufi Arabic';font-size:10.5pt;color:#0b5d55;margin:4mm 0 2mm}h4{font-family:'Noto Kufi Arabic';font-size:10pt;margin-bottom:1mm}.lead{color:#5f7471;font-size:9.5pt;margin-bottom:3mm}.muted{color:#94a3b8}
+  .cover{background:radial-gradient(120% 80% at 80% 10%,#13897a 0%,#0b5d55 45%,#073d38 100%);color:#fff}.pat{position:absolute;inset:0;background-image:linear-gradient(45deg,rgba(200,162,74,.14) 1px,transparent 1px),linear-gradient(-45deg,rgba(200,162,74,.14) 1px,transparent 1px);background-size:60px 60px}
+  .ctop{position:relative;display:flex;justify-content:space-between;align-items:flex-start;padding:16mm 16mm 0;font-family:'Noto Kufi Arabic';font-weight:700;font-size:11pt;line-height:1.8}.ctop span{font-family:'Tajawal';font-weight:500;font-size:10pt;color:#f3d891}.clogo{width:30mm;height:30mm;object-fit:contain;background:#fff;border-radius:50%;padding:2mm}
+  .cmid{position:relative;padding:40mm 16mm 0}.kick{display:inline-block;background:#c8a24a;color:#0b3d38;font-weight:800;padding:2px 16px;border-radius:4px;margin-bottom:6mm}.cmid h1{font-family:'Noto Kufi Arabic';font-weight:800;font-size:32pt;line-height:1.45}.cmid h1 span{font-weight:600;font-size:21pt;color:#f3d891}.cline{width:60mm;height:3px;background:linear-gradient(90deg,transparent,#c8a24a);margin:7mm 0 5mm}.cmid p{font-size:12.5pt;opacity:.9;max-width:160mm}
+  .cdate{display:flex;margin-top:10mm;border:1px solid rgba(255,255,255,.25);border-radius:10px;width:max-content;max-width:100%;overflow:hidden}.cdate div{padding:3mm 6mm;border-left:1px solid rgba(255,255,255,.2)}.cdate div:last-child{border-left:0}.cdate small{display:block;font-size:8.5pt;opacity:.7}.cdate b{font-size:11.5pt}
+  .cst{position:absolute;bottom:28mm;right:16mm;left:16mm;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:14px}.cst div{text-align:center;padding:5mm 2mm;border-left:1px solid rgba(255,255,255,.14)}.cst div:last-child{border-left:0}.cst b{display:block;font-family:'Noto Kufi Arabic';font-size:21pt;color:#f3d891;line-height:1.3}.cst small{font-size:9pt;opacity:.85}.cfoot{position:absolute;bottom:11mm;left:0;right:0;text-align:center;font-size:9pt;opacity:.7}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm}.kpi{background:#f6f8f7;border:1px solid #dfe7e5;border-right:4px solid #0e7468;border-radius:10px;padding:3mm 4mm}.kpi.red{border-right-color:#dc2626}.kpi.amber{border-right-color:#d97706}.kpi small{display:block;color:#5f7471;font-size:8.5pt}.kpi b{display:block;font-family:'Noto Kufi Arabic';font-size:17pt;color:#0b5d55;line-height:1.4}.kpi.red b{color:#dc2626}.kpi.amber b{color:#b45309}.kpi em{font-style:normal;font-size:8pt;color:#5f7471}
+  .dist{display:flex;height:9mm;border-radius:6px;overflow:hidden;gap:2px}.dist div{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}.leg{display:flex;gap:4mm;flex-wrap:wrap;font-size:8.5pt;color:#5f7471;margin-top:2mm}.leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-left:4px}
+  .pod{display:flex;justify-content:center;align-items:flex-end;gap:5mm}.podc{width:50mm;text-align:center;background:#f6f8f7;border:1px solid #dfe7e5;border-radius:12px;padding:3mm}.podc.p1{border-color:#c8a24a;background:#fbf6e8;transform:translateY(-3mm)}.podc b{display:block;font-family:'Noto Kufi Arabic';font-size:10pt}.pp{font-family:'Noto Kufi Arabic';font-weight:800;font-size:15pt;color:#0f7b5f}.podc small{font-size:8pt;color:#5f7471}.medal{width:11mm;height:11mm;border-radius:50%;margin:0 auto 1mm;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13pt}.m1{background:#c8a24a}.m2{background:#94a3b8}.m3{background:#b7774a}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-top:4mm}.box{border-radius:10px;padding:3mm 4mm;font-size:9.3pt}.box.good{background:#e3f3ec}.box.good h4{color:#0f7b5f}.box.bad{background:#f9e3e1}.box.bad h4{color:#b8322a}
+  .note{margin-top:4mm;border:1px dashed #b9c9c6;border-radius:10px;padding:3mm 4mm;font-size:8.6pt;color:#5f7471}
+  .tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:8.6pt;border:1px solid #dfe7e5;border-radius:10px;overflow:hidden}.tbl th{background:#0b5d55;color:#fff;padding:1.6mm 1.5mm;font-size:8.3pt}.tbl td{padding:1.05mm 1.5mm;text-align:center;border-bottom:1px solid #edf1f0;white-space:nowrap}.tbl tr:nth-child(even) td{background:#f8faf9}.tbl td.nm{text-align:right;font-weight:700}.tbl td.tx{white-space:normal;text-align:right;font-size:8.2pt}.r{color:#dc2626;font-weight:800}.a{color:#b45309;font-weight:800}.z{color:#b6c2c0}
+  .rk{display:inline-flex;width:6mm;height:6mm;border-radius:50%;color:#fff;font-weight:800;font-size:8pt;align-items:center;justify-content:center}.sbar{height:3.4mm;background:#edf1f0;border-radius:3px;overflow:hidden;position:relative}.sbar div{position:absolute;right:0;top:0;bottom:0;border-radius:3px}
+  .pill{display:inline-block;border:1px solid;border-radius:20px;padding:0 7px;font-size:7.6pt;font-weight:700;white-space:nowrap}
+  .thx{display:grid;grid-template-columns:1fr 1fr;gap:4mm}.tc{border:1px solid #e9d9a8;background:linear-gradient(180deg,#fffbeb,#fff);border-radius:12px;padding:4mm;min-height:52mm}.th{display:flex;align-items:center;gap:2mm;margin-bottom:2mm}.th b{flex:1;font-family:'Noto Kufi Arabic';font-size:10.5pt;color:#0b5d55}.th span{font-size:8pt;background:#0b5d55;color:#fff;border-radius:10px;padding:0 7px}.th em{font-style:normal;font-family:'Noto Kufi Arabic';font-weight:800;color:#a16207}.tc p{font-size:10pt;line-height:1.9;color:#713f12}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:3mm}.card{border:1px solid #dfe7e5;border-top:4px solid;border-radius:10px;padding:2.5mm 3mm}.ch{display:flex;align-items:center;gap:2mm}.ch b{flex:1;font-family:'Noto Kufi Arabic';font-size:9.3pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ring{width:10mm;height:10mm;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),#e8ecec 0);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:8pt;color:var(--c);position:relative}.ring:before{content:"";position:absolute;inset:1.3mm;background:#fff;border-radius:50%}.ring{isolation:isolate}.ring:before{z-index:-1}
+  .cm{display:grid;grid-template-columns:repeat(6,1fr);gap:1mm;margin:2mm 0}.cm div{background:#f6f8f7;border-radius:6px;text-align:center;padding:.6mm;line-height:1.3}.cm small{display:block;font-size:6.8pt;color:#5f7471}.cm b{font-size:8.2pt;white-space:nowrap}.cm .r{background:#f9e3e1}.cm .a{background:#fbf0dc}
+  .cdays{display:flex;flex-wrap:wrap;gap:1px}.cdays i{width:3.2mm;height:2.4mm;border-radius:1px}.lg{display:inline-block;width:10px;height:8px;border-radius:2px;margin:0 6px 0 2px}
+  .rec{border-right:5px solid;background:#f6f8f7;border-radius:10px;padding:3mm 5mm;margin-bottom:3.5mm}.rec ul{padding-right:5mm;font-size:10pt}.rec.g{border-color:#0f7b5f}.rec.g h4{color:#0f7b5f}.rec.a{border-color:#d97706}.rec.a h4{color:#b45309}.rec.r{border-color:#dc2626}.rec.r h4{color:#b91c1c}
+  .sign{display:flex;justify-content:space-around;margin-top:14mm}.sign div{text-align:center;width:60mm}.sign small{font-family:'Noto Kufi Arabic';font-weight:700;color:#0b5d55;font-size:10.5pt}.sign span{display:block;border-bottom:1px dotted #8aa;height:14mm}
+  .pg{position:absolute;bottom:5mm;left:0;right:0;text-align:center;font-size:8pt;color:#5f7471}`;
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير انضباط ${roleTxt} — ${E(rangeTxt)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Noto+Kufi+Arabic:wght@600;700;800&family=Cairo:wght@700;800&display=swap" rel="stylesheet"><style>${css}</style></head>
+  <body><div class="bar"><button onclick="window.print()">🖨️ طباعة / حفظ PDF</button></div>${pages.map((p, i) => i ? p.replace("</section>", `<div class="pg">${i + 1}</div></section>`) : p).join("")}</body></html>`;
+}
+
+
 // ===== صفحة تحليل الحضور والانصراف =====
 function AttendanceAnalysisPage() {
   // ── وضع العرض: تحليل فردي / استخراج جماعي ──
@@ -28814,7 +29513,7 @@ body {
 // شريط التنقل العصري — قوائم منبثقة بملصقات (Mega Menu)
 // ══════════════════════════════════════════════════════════
 const NAV_TOOL_DESC = {
-  attendance:"رصد حضور المعلمين يومياً", nafes:"اختبارات إلكترونية لطلاب المدرسة بأسلوب نافس مع التحليل والذكاء الاصطناعي", treasureadm:"رحلة تحفيزية من ٢٠ مرحلة لطلاب الثالث المتوسط ومتابعة تقدمهم", duty:"جدول الإشراف والمناوبة واطلاع المعلمين بالهوية", asmfollow:"رصد حضور المعلمين للطابور وإحصائيات يومية وأسبوعية", periodfollow:"الجدول المدرسي وحضور المعلمين والاحتياط والملاحظات", morninglate:"رصد المتأخرين بالفصول وتقارير أسبوعية وشهرية", weeklyplan:"خطة كل أسبوع في صفحة واحدة برابط ثابت", parentinbox:"أعذار وملاحظات أولياء الأمور وتعليقاتهم", portals:"روابط الدخول بالهوية وصلاحيات الإداريين", studentclassify:"تصنيف الطلاب دراسياً وسلوكياً وحضوراً", morningattend:"تحضير المعلمين للحصة الثانية ورابطهم", attendstats:"للإدارة: الإحصائية والتأخر الصباحي", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم",
+  attendance:"رصد حضور المعلمين يومياً", nafes:"اختبارات إلكترونية لطلاب المدرسة بأسلوب نافس مع التحليل والذكاء الاصطناعي", treasureadm:"رحلة تحفيزية من ٢٠ مرحلة لطلاب الثالث المتوسط ومتابعة تقدمهم", duty:"جدول الإشراف والمناوبة واطلاع المعلمين بالهوية", asmfollow:"رصد حضور المعلمين للطابور وإحصائيات يومية وأسبوعية", periodfollow:"الجدول المدرسي وحضور المعلمين والاحتياط والملاحظات", morninglate:"رصد المتأخرين بالفصول وتقارير أسبوعية وشهرية", weeklyplan:"خطة كل أسبوع في صفحة واحدة برابط ثابت", parentinbox:"أعذار وملاحظات أولياء الأمور وتعليقاتهم", portals:"روابط الدخول بالهوية وصلاحيات الإداريين", studentclassify:"تصنيف الطلاب دراسياً وسلوكياً وحضوراً", morningattend:"تحضير المعلمين للحصة الثانية ورابطهم", attendstats:"للإدارة: الإحصائية والتأخر الصباحي", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم", staffdisc:"رفع ملفات البصمة وتحليل الانضباط التراكمي: الترتيب والتحسن والشكر والتنبيه بالواتساب",
   attendancereport:"تحليل بيانات الحضور", "student-absence":"تسجيل غياب الطلاب", studentexcuses:"استقبال أعذار الغياب",
   absencestats:"مؤشرات وإحصاءات الغياب",
   students:"رصد تقييم الطلاب", formative:"جدول عرضي ملوّن وفق اللائحة", gradeanalysis:"تحليل النتائج والدرجات", assessment:"بطاقة تشخيص المستوى",
@@ -43110,7 +43809,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval"].concat(["nafes","treasureadm","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc"].concat(["nafes","treasureadm","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -43485,6 +44184,7 @@ function SchoolWebsiteInner() {
     { id: "monthlyreport",  label: "التقرير الشهري",        icon: "📑" },
     { id: "absencestats",   label: "إحصائيات الغياب",      icon: "📉" },
     { id: "attendancereport",label: "تحليل الحضور",        icon: "🗂️" },
+    { id: "staffdisc", label: "متابعة أداء انضباط المعلمين والإداريين", icon: "🏅" },
     { id: "hfx",            label: "نماذج متابعة الدوام (حضوري)", icon: "📑" },
     { id: "hdisc",          label: "سجل الانضباط اليومي (حضوري)", icon: "📈" },
     { id: "circulars",      label: "التعاميم", icon: "📜" },
@@ -43504,7 +44204,7 @@ function SchoolWebsiteInner() {
   const extraPages = [...classToolPages, ...reportPages];
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
-    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","alreport","attendance","admin-attendance","dailyattend","attendancereport","student-absence","studentexcuses","absencestats"] },
+    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","morningboard","morningattend","morninglate","asmfollow","duty","periodfollow","attendstats","alreport","attendance","staffdisc","student-absence","studentexcuses"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["nafes","treasureadm","insights","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
@@ -43831,6 +44531,7 @@ function SchoolWebsiteInner() {
                 {page === "monthlyreport"  && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
                 {page === "gradeanalysis"  && <GradeAnalysisPage />}
                 {page === "attendancereport"&& <AttendanceAnalysisPage />}
+                {page === "staffdisc" && <StaffDisciplinePage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
                 {page === "dailyquiz"      && <DailyQuizPage classList={classList} />}
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
@@ -44010,6 +44711,7 @@ function SchoolWebsiteInner() {
         {page === "monthlyreport" && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
         {page === "gradeanalysis" && <GradeAnalysisPage />}
         {page === "attendancereport" && <AttendanceAnalysisPage />}
+        {page === "staffdisc" && <StaffDisciplinePage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
         {page === "dailyquiz"      && <DailyQuizPage classList={classList} />}
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
