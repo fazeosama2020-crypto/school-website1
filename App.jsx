@@ -27110,6 +27110,8 @@ function sdxParseDate(v) {
   const s = sdxNum(v);
   let m = s.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
   if (m) { const y = +m[1], mo = +m[2], d = +m[3]; if (y > 1900) return `${y}-${sdxPad(mo)}-${sdxPad(d)}`; const g = sdxHijriToG(y, mo, d); return g ? sdxKey(g) : null; }
+  m = s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2})(?!\d)/);
+  if (m && !/\d{1,2}[-/.]\d{1,2}[-/.]\d{4}/.test(s)) { const d = +m[1], mo = +m[2], yy = +m[3]; if (yy >= 40 && yy <= 60) { const g = sdxHijriToG(1400 + yy, mo, d); return g ? sdxKey(g) : null; } return `${2000 + yy}-${sdxPad(mo)}-${sdxPad(d)}`; }
   m = s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
   if (m) { const d = +m[1], mo = +m[2], y = +m[3]; if (y > 1900) return `${y}-${sdxPad(mo)}-${sdxPad(d)}`; const g = sdxHijriToG(y, mo, d); return g ? sdxKey(g) : null; }
   return null;
@@ -27128,11 +27130,11 @@ async function sdxReadFile(file) {
   wb.SheetNames.forEach(sn => {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "", raw: true });
     let hr = -1;
-    for (let i = 0; i < Math.min(rows.length, 30); i++) { const t = rows[i].map(c => sdxClean(c)).join("|"); if (/الحضور/.test(t) && (/الانصراف|الإنصراف/.test(t) || /الاسم|الإسم/.test(t))) { hr = i; break; } }
+    for (let i = 0; i < Math.min(rows.length, 30); i++) { const cells = rows[i].map(c => sdxClean(c)).filter(Boolean); if (cells.length >= 3 && cells.some(c => /^(توقيت|وقت)?\s*الحضور$/.test(c)) && cells.some(c => /^(توقيت|وقت)?\s*ال[إا]نصراف$|^ال[إا]سم$|^اسم الموظف$/.test(c))) { hr = i; break; } }
     if (hr < 0) return;
     const H = rows[hr].map(c => sdxClean(c));
     const col = re => H.findIndex(h => re.test(h));
-    const C = { n: col(/^(ال)?[إا]سم|اسم الموظف|الموظف|المعلم/), id: col(/السجل|الهوية|رقم الموظف|الرقم الوظيفي/), dt: col(/التاريخ/), st: col(/حالة|الحالة/), a: col(/توقيت الحضور|وقت الحضور|^الحضور/), d: col(/توقيت ال[إا]نصراف|وقت ال[إا]نصراف|^ال[إا]نصراف/) };
+    const C = { n: col(/^(ال)?[إا]سم|اسم الموظف|الموظف|المعلم/), id: col(/السجل|الهوية|رقم الموظف|الرقم الوظيفي/), dt: col(/التاريخ/), st: col(/حالة|الحالة/), pm: col(/^الاستئذانات?$|مدة الاستئذان/), job: col(/المسمى|الوظيفة/), a: col(/توقيت الحضور|وقت الحضور|^الحضور/), d: col(/توقيت ال[إا]نصراف|وقت ال[إا]نصراف|^ال[إا]نصراف/) };
     if (C.a < 0) return;
     // اسم الموظف في رأس التقرير الفردي
     let empName = "", empId = "";
@@ -27148,20 +27150,31 @@ async function sdxReadFile(file) {
       const dt = C.dt >= 0 ? sdxParseDate(r[C.dt]) : null;
       if (C.dt >= 0 && !dt) continue;
       const dtxt = C.dt >= 0 ? sdxClean(r[C.dt]) : "";
-      if (/الجمعة|السبت/.test(dtxt)) continue;
       const st = C.st >= 0 ? sdxClean(r[C.st]) : "";
+      if (/الجمعة|السبت/.test(dtxt) || /عطلة/.test(st)) continue;
       const a = sdxTm(r[C.a]); const d = C.d >= 0 ? sdxTm(r[C.d]) : null;
       const id = C.id >= 0 ? sdxNum(r[C.id]).replace(/\D/g, "") : empId;
-      out.push({ n: name, id, dt, a, d, st });
+      const pm = C.pm >= 0 ? (sdxTm(r[C.pm]) || 0) : 0; const job = C.job >= 0 ? sdxClean(r[C.job]) : "";
+      out.push({ n: name, id, dt, a, d, st, pm, job });
     }
   });
   return { rows: out, fileDate, warn };
 }
 
+// ── أيام الإجازات الرسمية: يدوياً من الإعدادات، أو تلقائياً إذا غاب 80٪ فأكثر من الموظفين (مثل اليوم الوطني)
+function sdxHolidays(days, cfg) {
+  const man = (cfg && cfg.hol) || {}; const o = {};
+  Object.keys(days || {}).forEach(dk => { const rs = Object.values((days[dk] && days[dk].rows) || {}).filter(Boolean);
+    const auto = rs.length >= 5 && rs.filter(r => r.a === null || r.a === undefined || /غياب|غائب/.test(r.st || "")).length / rs.length >= 0.8;
+    const v = man[dk] === true || man[dk] === false ? man[dk] : auto; if (v) o[dk] = man[dk] === true ? "يدوي" : "تلقائي"; });
+  return o;
+}
+
 // ── محرك التحليل ──
 function sdxCompute({ days, perm, staff, cfg, from, to, role }) {
   const S = sdxTm(cfg.s) ?? 405, E = sdxTm(cfg.e) ?? 755, W = Math.max(60, E - S), G = +cfg.g || 0, MD = +cfg.md || 0;
-  const allKeys = Object.keys(days).filter(k => days[k] && days[k].rows).sort();
+  const HOL = sdxHolidays(days, cfg);
+  const allKeys = Object.keys(days).filter(k => days[k] && days[k].rows && !HOL[k]).sort();
   const first = {}, names = {};
   allKeys.forEach(dk => Object.entries(days[dk].rows || {}).forEach(([k, r]) => { if (!r) return; if (!first[k]) first[k] = dk; names[k] = r.n || names[k]; }));
   Object.entries(staff || {}).forEach(([k, s]) => { if (s && s.n && !names[k]) names[k] = s.n; });
@@ -27173,12 +27186,15 @@ function sdxCompute({ days, perm, staff, cfg, from, to, role }) {
   const dayRec = (k, dk) => {
     const r = (days[dk].rows || {})[k]; const p = ((perm || {})[dk] || {})[k];
     const o = { dk, r, p, a: r ? (r.a ?? null) : null, d: r ? (r.d ?? null) : null, late: 0, early: 0, exL: 0, exE: 0, miss: false, abs: false, exc: false };
-    if (p && p.t === "full") { o.exc = true; return o; }
+    if ((p && p.t === "full") || (r && /إجازة|اجازة|انتداب|مهمة رسمية|تكليف|عذر/.test(r.st || ""))) { o.exc = true; return o; }
     if (!r || o.a === null || /غياب|غائب/.test(r.st || "")) { o.abs = true; return o; }
     const late = Math.max(0, o.a - S - G);
     if (p && (p.t === "late" || p.t === "both")) o.exL = late; else o.late = late;
+    if (o.d !== null && o.d < o.a + 30) o.d = o.a;
     if (o.d === null || o.d === o.a || /تلقائي/.test(r.st || "")) { o.miss = !(p && (p.t === "early" || p.t === "both")); o.d = o.d === o.a ? null : o.d; if (/تلقائي/.test(r.st || "")) o.d = null; }
     else { const early = Math.max(0, E - o.d); if (p && (p.t === "early" || p.t === "both")) o.exE = early; else o.early = early; }
+    // استئذان مسجّل في نظام حضوري: دقائقه لا تُحتسب (تُخصم من الخروج المبكر ثم التأخر)
+    let pm = +r.pm || 0; if (pm > 0) { const e1 = Math.min(pm, o.early); o.early -= e1; o.exE += e1; pm -= e1; const l1 = Math.min(pm, o.late); o.late -= l1; o.exL += l1; }
     return o;
   };
   const stat = (k, keys) => {
@@ -27213,7 +27229,7 @@ function sdxCompute({ days, perm, staff, cfg, from, to, role }) {
   }).filter(Boolean).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || a.abs - b.abs || (a.lateMins + a.earlyMins) - (b.lateMins + b.earlyMins) || (a.avgA ?? 999) - (b.avgA ?? 999));
   list.forEach((s, i) => { s.rank = i + 1; });
   const sum = f => list.reduce((a, s) => a + (f(s) || 0), 0);
-  const T = { people: list.length, days: keys.length, keys, prevKeys, W, S, E,
+  const T = { people: list.length, days: keys.length, keys, prevKeys, W, S, E, hol: Object.keys(HOL).filter(k => k >= from && k <= to).sort(),
     workDays: sum(s => s.days), pres: sum(s => s.pres), abs: sum(s => s.abs), lateMins: sum(s => s.lateMins), earlyMins: sum(s => s.earlyMins),
     lateDays: sum(s => s.lateDays), earlyDays: sum(s => s.earlyDays), miss: sum(s => s.miss), exc: sum(s => s.exc), exMins: sum(s => s.exMins) };
   T.attRate = T.workDays ? Math.round(1000 * T.pres / T.workDays) / 10 : 0;
@@ -27337,6 +27353,7 @@ function StaffDisciplinePage({ teachers, attendance, week, weekArchive }) {
   useEffect(() => { load(); }, []);
 
   const dayKeys = React.useMemo(() => Object.keys(days).filter(k => days[k] && days[k].rows).sort(), [days]);
+  const HOLS = React.useMemo(() => sdxHolidays(days, cfg), [days, cfg]);
   const R = React.useMemo(() => from && to ? sdxCompute({ days, perm, staff, cfg, from, to, role }) : null, [days, perm, staff, cfg, from, to, role]);
   const rangeTxt = from && to ? (from === to ? `${sdxDayName(from)} ${sdxGreg(from)}` : `من ${sdxGreg(from)} إلى ${sdxGreg(to)}`) : "";
 
@@ -27358,8 +27375,8 @@ function StaffDisciplinePage({ teachers, attendance, week, weekArchive }) {
     const o = {}; const touched = new Set(); const st = {}; const srcOf = {};
     pending.rows.forEach(r => {
       const dk = r.dt || pending.date; if (!dk) return; const k = sdxK(r.id, r.n); touched.add(dk); (srcOf[dk] = srcOf[dk] || new Set()).add(r.f);
-      o[`${SDX_NODE}/days/${dk}/rows/${k}`] = { n: r.n, id: r.id || "", a: r.a, d: r.d, st: r.st || "" };
-      if (!staff[k]) st[`${SDX_NODE}/staff/${k}`] = { n: r.n, r: "t" };
+      o[`${SDX_NODE}/days/${dk}/rows/${k}`] = { n: r.n, id: r.id || "", a: r.a, d: r.d, st: r.st || "", pm: r.pm || 0 };
+      if (!staff[k] && !st[`${SDX_NODE}/staff/${k}`]) st[`${SDX_NODE}/staff/${k}`] = { n: r.n, r: r.job && !/معلم|معلمة|مدرس/.test(r.job) ? "a" : "t", job: r.job || "" };
     });
     touched.forEach(dk => { o[`${SDX_NODE}/days/${dk}/up`] = Date.now(); o[`${SDX_NODE}/days/${dk}/src`] = [...(srcOf[dk] || [])].join("، "); });
     const ok = await fbPatch({ ...o, ...st });
@@ -27396,7 +27413,7 @@ function StaffDisciplinePage({ teachers, attendance, week, weekArchive }) {
       <div>
         <div style={{ fontSize: 12, fontWeight: 800, color: "#f3d891", letterSpacing: .3 }}>نظام البصمة • تحليل تراكمي</div>
         <h2 style={{ fontSize: 26, fontWeight: 900, margin: "2px 0 0" }}>🏅 متابعة أداء انضباط المعلمين والإداريين</h2>
-        <div style={{ fontSize: 13, fontWeight: 700, opacity: .85 }}>{R ? `${rangeTxt} — ${R.T.days} يوم دوام مسجّل • ${R.T.people} موظفاً` : "ارفع ملف البصمة للبدء"}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, opacity: .85 }}>{R ? `${rangeTxt} — ${R.T.days} يوم دوام مسجّل • ${R.T.people} موظفاً${R.T.hol.length ? ` • استُبعدت ${R.T.hol.length} أيام إجازة رسمية` : ""}` : "ارفع ملف البصمة للبدء"}</div>
       </div>
       <div className="flex gap-2 flex-wrap sdx-noprint">
         <button className="sdx-btn gold" disabled={busy} onClick={() => fileRef.current?.click()}>📤 رفع ملف بصمة</button>
@@ -27549,6 +27566,7 @@ function StaffDisciplinePage({ teachers, attendance, week, weekArchive }) {
         <span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>{sdxHij(dk)} • المصدر: {days[dk]?.src || "—"}</span>
         <button className="sdx-btn red sm" style={{ marginRight: "auto" }} onClick={() => delDay(dk)}>🗑️ حذف هذا اليوم</button>
       </div>
+      {HOLS[dk] && <div className="sdx-card" style={{ background: "#fffbeb", borderColor: "#fde68a", color: "#92400e", fontWeight: 800, textAlign: "center" }}>🏖️ هذا اليوم معدود إجازة رسمية ({HOLS[dk]}) ولا يدخل في الاحتساب — يمكن تغييره من الإعدادات.</div>}
       <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))" }}>{[["حاضرون", D.T.pres, "#0f7b5f"], ["غائبون", D.T.abs, "#dc2626"], ["بعذر", D.T.exc, "#6b5b95"], ["دقائق التأخر", D.T.lateMins, "#d97706"], ["دقائق الخروج المبكر", D.T.earlyMins, "#b45309"], ["بلا بصمة انصراف", D.T.miss, "#7c3aed"]].map(([l, v, c]) => <div key={l} className="sdx-card" style={{ padding: 12, textAlign: "center" }}><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{l}</div><div style={{ fontSize: 26, fontWeight: 900, color: c }}><SdxCount v={v} /></div></div>)}</div>
       <div className="sdx-card" style={{ overflowX: "auto" }}>
         <table className="sdx-tbl"><thead><tr><th>#</th><th style={{ textAlign: "right" }}>الموظف</th><th>الحضور</th><th>الانصراف</th><th>التأخر</th><th>الخروج المبكر</th><th>النسبة</th><th className="sdx-noprint">استئذان / عذر</th></tr></thead>
@@ -27581,7 +27599,8 @@ function StaffDisciplinePage({ teachers, attendance, week, weekArchive }) {
       </div>
       <div className="sdx-card">
         <div className="sdx-h">📂 الأيام المرفوعة ({dayKeys.length})</div>
-        {dayKeys.length ? <div className="flex gap-2 flex-wrap">{[...dayKeys].reverse().map(k => <span key={k} className="sdx-chip" style={{ background: "#f0fdfa", color: "#0f766e", border: "1px solid #ccfbf1", padding: "5px 10px", fontSize: 12.5 }}>{sdxDayName(k)} {k} <button onClick={() => delDay(k)} style={{ border: "none", background: "none", cursor: "pointer", color: "#dc2626", fontWeight: 900 }}>✕</button></span>)}</div> : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد أيام بعد</div>}
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>🏖️ اليوم الذي يغيب فيه 80٪ فأكثر من الموظفين (مثل اليوم الوطني) يُعدّ إجازة رسمية تلقائياً ولا يُحتسب. اضغط 🏖️ لجعل أي يوم إجازة، أو ↩️ لإرجاعه يوم دوام.</div>
+        {dayKeys.length ? <div className="flex gap-2 flex-wrap">{[...dayKeys].reverse().map(k => { const h = HOLS[k]; return <span key={k} className="sdx-chip" style={{ background: h ? "#fef3c7" : "#f0fdfa", color: h ? "#92400e" : "#0f766e", border: `1px solid ${h ? "#fde68a" : "#ccfbf1"}`, padding: "5px 10px", fontSize: 12.5 }}>{h ? "🏖️ " : ""}{sdxDayName(k)} {k}{h ? ` (إجازة ${h})` : ""} <button title={h ? "اعتباره يوم دوام" : "اعتباره إجازة رسمية"} onClick={() => saveCfg({ ...cfg, hol: { ...(cfg.hol || {}), [k]: !h } })} style={{ border: "none", background: "none", cursor: "pointer", fontWeight: 900 }}>{h ? "↩️" : "🏖️"}</button><button onClick={() => delDay(k)} style={{ border: "none", background: "none", cursor: "pointer", color: "#dc2626", fontWeight: 900 }}>✕</button></span>; })}</div> : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد أيام بعد</div>}
       </div>
       <div className="sdx-card">
         <div className="sdx-h">👥 تصنيف الموظفين ({ppl.length})</div>
@@ -27631,7 +27650,7 @@ function StaffDisciplinePage({ teachers, attendance, week, weekArchive }) {
       <div style={{ fontSize: 13.5, fontWeight: 700, color: "#334155", lineHeight: 1.9 }}>
         الملفات: <b>{pending.files.join("، ")}</b><br />
         السجلات: <b>{pending.rows.length}</b> • الموظفون: <b>{new Set(pending.rows.map(r => sdxK(r.id, r.n))).size}</b>
-        {!pending.noDate && <><br />الأيام: <b>{[...new Set(pending.rows.map(r => r.dt))].sort().map(k => `${sdxDayName(k)} ${k}`).join("، ")}</b></>}
+        {!pending.noDate && (() => { const ks = [...new Set(pending.rows.map(r => r.dt))].sort(); return <><br />الأيام: <b>{ks.length > 6 ? `${ks.length} يوم دوام — من ${sdxDayName(ks[0])} ${sdxGreg(ks[0])} إلى ${sdxDayName(ks[ks.length - 1])} ${sdxGreg(ks[ks.length - 1])}` : ks.map(k => `${sdxDayName(k)} ${k}`).join("، ")}</b></>; })()}
       </div>
       {pending.noDate && <label style={{ display: "block", marginTop: 10, fontSize: 13, fontWeight: 800, color: "#0b5d55" }}>📅 تاريخ هذا الكشف {pending.date && <span style={{ color: "#64748b" }}>({sdxDayName(pending.date)} — {sdxHij(pending.date)})</span>}<br /><input type="date" className="sdx-inp" style={{ width: "100%" }} value={pending.date} onChange={e => setPending({ ...pending, date: e.target.value })} /></label>}
       {(() => { const ks = pending.noDate ? [pending.date] : [...new Set(pending.rows.map(r => r.dt))]; const ex = ks.filter(k => days[k]); return ex.length ? <div style={{ marginTop: 10, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "8px 10px", fontSize: 12.5, fontWeight: 800, color: "#92400e" }}>⚠️ يوجد بيانات سابقة لـ {ex.join("، ")} — ستُحدَّث سجلات نفس الموظفين ويبقى الباقي.</div> : null; })()}
