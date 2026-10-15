@@ -11599,6 +11599,9 @@ const LIKERT_COLORS  = ["#16a34a","#4ade80","#f59e0b","#f97316","#dc2626"];
 const LIKERT_ICONS   = ["✅✅","✅","➖","❌","❌❌"];
 const SURVEY_TARGETS = ["معلمون","طلاب","أولياء أمور"];
 
+// Firebase يحذف المصفوفات الفارغة: استبيان بلا فئات مستهدفة أو بلا أسئلة يصل بدونها — نوحّد الشكل قبل العرض
+const svArr = v => Array.isArray(v) ? v.filter(x => x != null) : (v && typeof v === "object" ? Object.values(v).filter(x => x != null) : []);
+const svNorm = L => svArr(L).filter(x => x && typeof x === "object").map(x => ({ title: "", dateH: "", createdAt: "", color: "#1e3a5f", ...x, targets: svArr(x.targets), questions: svArr(x.questions).filter(q => q && typeof q === "object") }));
 function mkSurvey() {
   const today = new Date();
   try {
@@ -11891,7 +11894,8 @@ function SurveyRespond({ survey, onClose }) {
 // ================================================================
 // ===== صفحة الاستبيانات الرئيسية =====
 // ================================================================
-function SurveysPage({ surveys, setSurveys, saveSurveys }) {
+function SurveysPage({ surveys: surveys0, setSurveys, saveSurveys }) {
+  const surveys = svNorm(surveys0);
   const [mode, setMode]         = useState("list");
   const [editing, setEditing]   = useState(null);
   const [previewing, setPreviewing] = useState(null);
@@ -37120,7 +37124,10 @@ function HfxPage({ by = "الإدارة" }) {
   const [ttT, setTtT] = useState(null); useEffect(() => { maGet(TT_NODE).then(a => setTtT(ttFresh(a))).catch(() => {}); }, []);
   const [ed, setEd] = useState(null); const [pick, setPick] = useState(null); const [q, setQ] = useState(""); const [flt, setFlt] = useState("all"); const [msg, setMsg] = useState(""); const [sig, setSig] = useState(false); const [imp, setImp] = useState(null); const [pe, setPe] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
-  const loadCases = async () => setCases(Object.values(ptObj(await maGet(HFX_NODE))).filter(c => c && c.id).map(hfxFix).sort((a, b) => (b.at || 0) - (a.at || 0)));
+  const [cmA, setCmA] = useState({});
+  const loadCases = async () => { const [x, cm] = await Promise.all([maGet(HFX_NODE), maGet(HFX_CM)]); setCmA(ptObj(cm)); const L = Object.values(ptObj(x)).filter(c => c && c.id).map(hfxFix).sort((a, b) => (b.at || 0) - (a.at || 0)); setCases(L);
+    try { const o = localStorage.getItem("hfx-open"); if (o) { localStorage.removeItem("hfx-open"); const c = L.find(z => z.id === o); if (c) { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); } } } catch {} };
+  const cmNew = id => hfxCmList(cmA[id]).filter(m => !m.seen);
   const loadT = async () => setT(await hfxLoadTeachers());
   useEffect(() => { (async () => { setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
   // قادم من زر «📋 مساءلة» في سجل حضور المعلمين: يفتح النموذج المناسب للمعلم مباشرة
@@ -37162,12 +37169,14 @@ function HfxPage({ by = "الإدارة" }) {
       <div className="hfx-tabs">{[["list", `📂 السجل (${maAr(cases.length)})`], ["new", "➕ نموذج جديد"], ["tch", `👥 المعلمون (${maAr(T.length)})`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hfx-tab ${tab === k || (k === "new" && tab === "ed") ? "on" : ""}`} onClick={() => { setTab(k); setPick(null); }}>{l}</button>)}</div>
 
       {tab === "list" && <div className="grid gap-2">
+        {(() => { const U = (cases || []).filter(c => cmNew(c.id).length); if (!U.length) return null; return <div className="hfx-pane" style={{ borderColor: "#fca5a5", background: "linear-gradient(90deg,#fef2f2,#fff)" }}><b style={{ color: "#991b1b" }}>🔔 تعليقات واعتراضات جديدة من المعلمين ({maAr(U.reduce((a, c) => a + cmNew(c.id).length, 0))})</b>
+          <div className="grid gap-1">{U.map(c => { const N = cmNew(c.id); const o = N.some(m => m.k === "obj"); return <button key={c.id} className="hfx-opt" style={{ justifyContent: "space-between" }} onClick={() => { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); }}><span>{o ? "⚖️" : "💬"} أ. {c.n} — {(HFX_F[c.f] || {}).n}</span><span style={{ fontSize: 12, color: o ? "#b91c1c" : "#0369a1" }}>{maAr(N.length)} جديد • فتح ←</span></button>; })}</div></div>; })()}
         <div className="flex gap-2 flex-wrap items-center">{[["all", "الكل", cases.length], ["draft", "مسودات", cnt("draft")], ["wait", "بانتظار المعلم", cnt("wait")], ["rep", "أعادها المعلم", cnt("rep")], ["ack", "اطّلع", cnt("ack")], ["closed", "مكتملة", cnt("closed")], ["nofaris", "⏳ لم تُدخل في فارس", cnt("nofaris")], ["faris", "☑️ أُدخلت في فارس", cnt("faris")]].map(([k, l, n]) => <button key={k} className={`hfx-tab ${flt === k ? "on" : ""}`} style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => setFlt(k)}>{l} {maAr(n)}</button>)}
           <input className="hfx-in" style={{ flex: "1 1 200px", maxWidth: 320 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث باسم المعلم أو النموذج…" /></div>
         {!L.length ? <div className="hfx-pane" style={{ textAlign: "center", color: "#64748b", fontWeight: 800 }}>لا توجد نماذج بعد. ابدأ من «➕ نموذج جديد».</div> : L.map(c => { const F = HFX_F[c.f] || {}; const s = HFX_ST[c.st] || HFX_ST.draft; return <div key={c.id} className="hfx-row">
           <div style={{ width: 44, height: 44, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: F.c + "18" }}>{F.ic}</div>
           <div style={{ minWidth: 0 }}><b style={{ fontSize: 14.5 }}>{c.n || "—"}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{F.n} • {hfxHijTxt(c.v && c.v.hd)}</div>
-            <div className="flex gap-1 flex-wrap mt-1"><span className="hfx-pill" style={{ background: s.bg, color: s.c }}>{s.ic} {s.l}</span>{c.repAt && <span className="hfx-pill" style={{ background: "#f8fafc", color: "#475569" }}>أُعيد {new Date(c.repAt).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}{!hfxNid(c.h) && <span className="hfx-pill" style={{ background: "#fff7ed", color: "#9a3412" }} title="رقم الهوية غير محفوظ على هذا الجهاز">🪪 بلا هوية هنا</span>}{c.faris && c.faris.at && <span className="hfx-pill" style={{ background: "#dcfce7", color: "#166534" }}>☑️ فارس {new Date(c.faris.at).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}</div></div>
+            <div className="flex gap-1 flex-wrap mt-1"><span className="hfx-pill" style={{ background: s.bg, color: s.c }}>{s.ic} {s.l}</span>{c.repAt && <span className="hfx-pill" style={{ background: "#f8fafc", color: "#475569" }}>أُعيد {new Date(c.repAt).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}{!hfxNid(c.h) && <span className="hfx-pill" style={{ background: "#fff7ed", color: "#9a3412" }} title="رقم الهوية غير محفوظ على هذا الجهاز">🪪 بلا هوية هنا</span>}{hfxCmList(cmA[c.id]).length > 0 && (() => { const N = cmNew(c.id), A = hfxCmList(cmA[c.id]); const o = A.some(m => m.k === "obj"); return <span className="hfx-pill" style={{ background: N.length ? "#b91c1c" : (o ? "#fee2e2" : "#e0f2fe"), color: N.length ? "#fff" : (o ? "#b91c1c" : "#0369a1") }}>{o ? "⚖️ اعتراض" : "💬 تعليق"}{N.length ? ` جديد (${maAr(N.length)})` : ` (${maAr(A.length)})`}</span>; })()}{c.faris && c.faris.at && <span className="hfx-pill" style={{ background: "#dcfce7", color: "#166534" }}>☑️ فارس {new Date(c.faris.at).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}</div></div>
           <div className="flex gap-1 flex-wrap justify-end"><button className="hfx-b pri" onClick={() => { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); }}>فتح</button><button className="hfx-b" onClick={() => printC(c)}>🖨</button><button className="hfx-b" style={c.faris ? { background: "#dcfce7", color: "#166534", borderColor: "#86efac" } : {}} onClick={() => setFaris(c, !c.faris)} title={c.faris ? "اضغط لإلغاء علامة فارس" : "ضع العلامة بعد إدخال المساءلة في نظام فارس"}>{c.faris ? "☑️ أُدخلت في فارس" : "☐ أُدخلت في فارس"}</button>{c.faris && <button className="hfx-b red" onClick={() => delCase(c)} title="حذف بعد الإدخال في فارس">🗑 حذف</button>}</div>
         </div>; })}
       </div>}
@@ -37257,6 +37266,9 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
   const close = async () => { if (F.in.some(f => f.who === "d") && !c.v.dec) { toast("⚠️ اختر رأي الرئيس المباشر أولاً"); return; } const n = await save({ st: "closed", closedAt: Date.now(), v: { ...c.v, dd: c.v.dd || (c.v.dec ? maKey(new Date()) : "") } }); if (n) toast("🗂️ اكتمل النموذج"); };
   const s = HFX_ST[c.st] || HFX_ST.draft;
   const tvc = { ...c, v: { ...c.v } };
+  const [cmL, setCmL] = useState([]);
+  useEffect(() => { (async () => { const L = hfxCmList(await maGet(`${HFX_CM}/${init.id}`)); setCmL(L); const o = {}; L.forEach(m => { if (!m.seen) o[`${HFX_CM}/${init.id}/${m.at}/seen`] = Date.now(); }); if (Object.keys(o).length) fbPatch(o); })(); }, []);
+  const cmReply = async (m, r) => { const ra = Date.now(); const ok = await fbPatch({ [`${HFX_CM}/${c.id}/${m.at}/r`]: r, [`${HFX_CM}/${c.id}/${m.at}/ra`]: ra, [`${HFX_CM}/${c.id}/${m.at}/rb`]: by }); if (ok) { setCmL(L => L.map(x => x.at === m.at ? { ...x, r, ra, rb: by, seen: x.seen || ra } : x)); toast("✅ أُرسل الرد — يظهر للمعلم في رابط النموذج"); } else toast("⚠️ تعذّر الإرسال"); return ok; };
   return <div className="hfx-ed">
     <div className="grid gap-2">
       <div className="hfx-pane">
@@ -37266,6 +37278,7 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
         {!nid && <div className="flex gap-2"><input className="hfx-in" inputMode="numeric" placeholder="رقم الهوية (١٠ أرقام)" value={nidIn} onChange={e => setNidIn(licNormId(e.target.value).slice(0, 10))} /><button className="hfx-b" disabled={nidIn.length !== 10} onClick={addNid}>حفظ</button></div>}
         <div className="hfx-note" style={{ fontSize: 12 }}>{F.dur}</div>
       </div>
+      {cmL.length > 0 && <div className="hfx-pane" style={{ borderColor: cmL.some(m => m.k === "obj") ? "#fca5a5" : "#bae6fd" }}><div className="hfx-sec" style={{ background: "#fef2f2", borderColor: "#fecaca", color: "#991b1b" }}>💬 تعليقات المعلم واعتراضاته ({maAr(cmL.length)})</div><HfxCmThread L={cmL} admin onReply={cmReply} /></div>}
       {c.f === "gh" && <div className="hfx-pane"><div className="hfx-sec">📅 أيام الغياب (تظهر بعد «نفيدكم علماً إنه في يوم»)</div>
         {hd && hd.some(o => o.d.kind === "abs") ? <><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>من «حضوري» — اضغط الأيام المطلوبة:</div>
           <div className="flex gap-1 flex-wrap">{hd.filter(o => o.d.kind === "abs").slice(0, 20).map(o => { const sel = c.v.d1 && c.v.d2 && o.k >= c.v.d1 && o.k <= c.v.d2; return <button key={o.k} className="hfx-b" style={{ padding: "4px 10px", fontSize: 12.5, background: sel ? "#b91c1c" : "#fff", color: sel ? "#fff" : "#b91c1c", borderColor: "#fecaca" }} onClick={() => { const cur = (c.v.d1 && c.v.d2) ? hd.filter(z => z.d.kind === "abs" && z.k >= c.v.d1 && z.k <= c.v.d2).map(z => z.k) : []; const S = cur.includes(o.k) ? cur.filter(z => z !== o.k) : [...cur, o.k]; S.sort(); setC(x => ({ ...x, v: { ...x.v, d1: S[0] || "", d2: S[S.length - 1] || "", days: S.length ? String(S.length) : "" } })); }}>{maDay(maDate(o.k))} {hfxHijTxt(o.k)}</button>; })}</div></> : <div style={{ fontSize: 12.5, fontWeight: 800, color: "#94a3b8" }}>{hd ? "لا يوجد غياب لهذا المعلم في «حضوري» — اختر التاريخ يدوياً" : c.h ? "⏳" : "اختر التاريخ يدوياً"}</div>}
@@ -37299,12 +37312,42 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
   </div>;
 }
 
+// ── 💬 تعليقات المعلمين واعتراضاتهم على النماذج: school-hfx-cm/{caseId}/{at} = {k:"note"|"obj", t, at, n, seen?, r?, ra?, rb?}
+const HFX_CM = "school-hfx-cm";
+const HFX_CMK = { note: { l: "تعليق", ic: "💬", c: "#0369a1", bg: "#e0f2fe" }, obj: { l: "اعتراض", ic: "⚖️", c: "#b91c1c", bg: "#fee2e2" } };
+const hfxCmList = o => Object.values(ptObj(o)).filter(x => x && x.at && x.t).sort((a, b) => a.at - b.at);
+function HfxCmThread({ L, admin, onReply }) {
+  const [rp, setRp] = useState({});
+  if (!L.length) return null;
+  return <div className="grid gap-2">{L.map(m => { const K = HFX_CMK[m.k] || HFX_CMK.note; return <div key={m.at} style={{ border: `1.5px solid ${K.c}33`, background: K.bg + "66", borderRadius: 14, padding: "8px 12px", display: "grid", gap: 4 }}>
+    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", fontSize: 12, fontWeight: 900, color: K.c }}>{K.ic} {K.l} {admin ? `أ. ${m.n || ""}` : "منك"}<span style={{ color: "#64748b", fontWeight: 800 }}>• {new Date(m.at).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}</span>{admin && !m.seen && <span className="hfx-pill" style={{ background: "#b91c1c", color: "#fff" }}>جديد</span>}</div>
+    <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "pre-wrap", lineHeight: 1.8 }}>{m.t}</div>
+    {m.r ? <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 10, padding: "6px 10px" }}><div style={{ fontSize: 11.5, fontWeight: 900, color: "#15803d" }}>↩️ رد الإدارة{m.rb ? ` — ${m.rb}` : ""}{m.ra ? ` • ${new Date(m.ra).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}` : ""}</div><div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "pre-wrap" }}>{m.r}</div></div>
+      : admin ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}><input data-nodraft="1" className="hfx-in" style={{ flex: "1 1 220px" }} placeholder="✍️ اكتب رداً يظهر للمعلم (اختياري)…" value={rp[m.at] || ""} onChange={e => setRp({ ...rp, [m.at]: e.target.value })} /><button className="hfx-b pri" disabled={!String(rp[m.at] || "").trim()} onClick={async () => { if (await onReply(m, rp[m.at].trim())) setRp({ ...rp, [m.at]: "" }); }}>إرسال الرد</button></div>
+      : <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>⏳ بانتظار رد الإدارة</div>}
+  </div>; })}</div>;
+}
+// تنبيه عائم للإدارة في كل الصفحات: تعليق أو اعتراض جديد من معلم
+function HfxCmWatcher({ navigate }) {
+  const [N, setN] = useState(null); const [hide, setHide] = useState(false);
+  const load = async () => { try { const o = ptObj(await maGet(HFX_CM)); const L = []; Object.entries(o).forEach(([id, x]) => hfxCmList(x).forEach(m => { if (!m.seen) L.push({ ...m, id }); })); L.sort((a, b) => b.at - a.at); setN(L); } catch {} };
+  useEffect(() => { load(); const t = setInterval(load, 90000); return () => clearInterval(t); }, []);
+  if (!N || !N.length || hide) return null; const top = N[0]; const nObj = N.filter(m => m.k === "obj").length;
+  return <div dir="rtl" style={{ position: "fixed", zIndex: 9780, right: 16, bottom: 16, display: "flex", gap: 6, alignItems: "center", maxWidth: "calc(100vw - 32px)" }}>
+    <button onClick={() => { try { localStorage.setItem("hfx-open", top.id); } catch {} navigate && navigate("hfx"); setHide(true); }} style={{ border: "none", cursor: "pointer", fontFamily: "'Cairo',Tahoma,sans-serif", color: "#fff", borderRadius: 999, padding: "9px 16px", fontWeight: 900, fontSize: 13.5, background: nObj ? "linear-gradient(135deg,#b91c1c,#7f1d1d)" : "linear-gradient(135deg,#0369a1,#1e3a8a)", boxShadow: "0 14px 28px -14px rgba(127,29,29,.8)", animation: "maHot 1.8s ease-in-out infinite", textAlign: "right" }}>{nObj ? "⚖️" : "💬"} {N.length > 1 ? `${maAr(N.length)} ${nObj ? "اعتراضات وتعليقات" : "تعليقات"} جديدة على المساءلات` : `${(HFX_CMK[top.k] || HFX_CMK.note).l} جديد من أ. ${String(top.n || "").split(" ").slice(0, 2).join(" ")}`} — اضغط للاطلاع</button>
+    <button onClick={() => setHide(true)} aria-label="إخفاء" style={{ border: "none", borderRadius: "50%", width: 30, height: 30, background: "#0f172a", color: "#fff", cursor: "pointer" }}>✕</button></div>;
+}
+
 // ── بوابة المعلم: يفتح الرابط من الواتساب ← يُدخل هويته ← يطّلع ويعبّئ ويوقّع ← يرسل
 function HfxTeacherPortal({ onBack }) {
   const raw = (() => { try { return decodeURIComponent(window.location.hash.replace(/^#hfx=/, "")); } catch { return ""; } })();
   const [id, tok] = raw.split(".");
   const [c, setC] = useState(undefined); const [cfg, setCfg] = useState({}); const [nid, setNid] = useState(""); const [ok, setOk] = useState(false); const [err, setErr] = useState("");
   const [tv, setTv] = useState({}); const [ts, setTs] = useState(""); const [sig, setSig] = useState(false); const [busy, setBusy] = useState(false); const [done, setDone] = useState(false); const [zoom, setZoom] = useState(false);
+  const [cmL, setCmL] = useState([]); const [cmK, setCmK] = useState("note"); const [cmT, setCmT] = useState(""); const [cmBusy, setCmBusy] = useState(false); const [cmOk, setCmOk] = useState("");
+  const loadCm = async () => { if (id) setCmL(hfxCmList(await maGet(`${HFX_CM}/${id}`))); };
+  const sendCm = async () => { const t = cmT.trim(); if (!t) return; setCmBusy(true); const at = Date.now(); const ok2 = await maPut(`${HFX_CM}/${c.id}/${at}`, { k: cmK, t: t.slice(0, 2000), at, n: c.n || "", f: c.f }); setCmBusy(false); if (ok2) { setCmL(L => [...L, { k: cmK, t, at, n: c.n }]); setCmT(""); setCmOk(cmK === "obj" ? "✅ أُرسل اعتراضك لمدير المدرسة" : "✅ أُرسل تعليقك لمدير المدرسة"); setTimeout(() => setCmOk(""), 5000); } else alert("تعذّر الإرسال — تحقق من الاتصال"); };
+  useEffect(() => { loadCm(); }, []);
   useEffect(() => { (async () => { const [x, g] = await Promise.all([id ? maGet(`${HFX_NODE}/${id}`) : null, maGet(HFX_CFG)]); setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(g) }); setC(x && x.id && x.tok === tok ? hfxFix(x) : null); if (x) { setTv(ptObj(x.tv)); setTs(x.ts || ""); } })(); }, []);
   const verify = async () => { setErr(""); const n = licNormId(nid); if (n.length !== 10) { setErr("أدخل رقم الهوية كاملاً (١٠ أرقام)"); return; } const h = await licHash(n); if (h !== c.h) { setErr("رقم الهوية لا يطابق صاحب النموذج"); return; } setOk(true);
     if (["sent", "draft"].includes(c.st)) { const p = { st: "opened", openAt: Date.now() }; setC(x => ({ ...x, ...p })); fbPatch({ [`${HFX_NODE}/${c.id}/st`]: "opened", [`${HFX_NODE}/${c.id}/openAt`]: p.openAt }); } };
@@ -37338,6 +37381,14 @@ function HfxTeacherPortal({ onBack }) {
       <div className="flex items-center gap-2 flex-wrap">{ts ? <img src={ts} alt="توقيعك" style={{ height: 56, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 4 }} /> : null}<button className="hfx-b gold" onClick={() => setSig(true)}>✍️ {ts ? "إعادة التوقيع" : "التوقيع بإصبعك"}</button></div>
       <button className="hfx-b pri" style={{ justifyContent: "center", padding: 13, fontSize: 16 }} disabled={busy} onClick={submit}>{busy ? "⏳ جاري الإرسال…" : "📤 إرسال للإدارة"}</button>
     </div>)}
+    <div className="hfx-pane" style={{ borderColor: "#c7d2fe" }}>
+      <div className="hfx-sec" style={{ background: "#eef2ff", borderColor: "#c7d2fe", color: "#3730a3" }}>💬 تعليق أو اعتراض على هذا النموذج (يصل لمدير المدرسة مباشرة)</div>
+      <HfxCmThread L={cmL} />
+      <div style={{ display: "flex", gap: 6 }}>{Object.entries(HFX_CMK).map(([k, K]) => <button key={k} type="button" className="hfx-b" style={{ flex: 1, justifyContent: "center", background: cmK === k ? K.c : "#fff", color: cmK === k ? "#fff" : K.c, borderColor: K.c + "66" }} onClick={() => setCmK(k)}>{K.ic} {K.l}</button>)}</div>
+      <textarea data-nodraft="1" className="hfx-in" rows={3} value={cmT} maxLength={2000} onChange={e => setCmT(e.target.value)} placeholder={cmK === "obj" ? "اكتب سبب اعتراضك على النموذج بوضوح…" : "اكتب تعليقك أو ملاحظتك…"} />
+      {cmOk && <div style={{ fontWeight: 900, color: "#166534", background: "#dcfce7", borderRadius: 12, padding: "8px 12px" }}>{cmOk}</div>}
+      <button className="hfx-b pri" style={{ justifyContent: "center" }} disabled={cmBusy || !cmT.trim()} onClick={sendCm}>{cmBusy ? "⏳ جاري الإرسال…" : `📨 إرسال ${HFX_CMK[cmK].l}`}</button>
+    </div>
     <button className="hfx-b" style={{ justifyContent: "center" }} onClick={() => hfxPrint([{ fk: c.f, c: live, x: { cfg, nid: licNormId(nid) } }], F.n)}>🖨 حفظ نسخة PDF</button>
     {sig && <HfxSigPad title="توقيعك" onCancel={() => setSig(false)} onDone={s => { setTs(s); setSig(false); }} />}
     {zoom && <div className="hfx-ov" style={{ alignItems: "flex-start", overflow: "auto", padding: 0 }} onClick={() => setZoom(false)}><div style={{ width: "max(760px,100%)", background: "#fff" }}><HfxSheet fk={c.f} c={live} x={{ cfg, nid: licNormId(nid) }} /></div></div>}
@@ -38881,6 +38932,110 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
     </div></div>);
 }
 
+
+// ══════════ ✏️ محرر الجدول الدائم: نقل الحصص وتبديلها + تعديل الاحتياط ══════════
+// كل التعديلات على مسودة، ثم «حفظ» يكتب الجدول كاملاً (مع نسخة احتياطية من السابق في school-tt-old)
+const TT_EDLOG = "school-tt-edits";
+const ttCp = T => JSON.parse(JSON.stringify(T));
+const ttBusyAt = (T, d, p, ti, exceptCk) => ti == null || ti < 0 ? null : Object.keys(T.C).find(ck => ck !== exceptCk && T.C[ck][d] && T.C[ck][d][p] && T.C[ck][d][p][1] === ti) || null;
+const ttResArr = (T, d, p) => { const day = T.D[d]; const r = T.RS && T.RS[day] ? T.RS[day][p] : null; const a = Array.isArray(r) ? r : (r && typeof r === "object" ? Object.values(r) : []); return [0, 1, 2].map(i => a[i] != null && a[i] !== "" ? +a[i] : null); };
+// تعارضات الجدول كله: معلم في فصلين بنفس الوقت، أو احتياط وهو يدرّس
+function ttConflicts(T) {
+  const out = [];
+  T.D.forEach((dn, d) => { for (let p = 0; p < T.P; p++) { const by = {}; Object.keys(T.C).forEach(ck => { const c = T.C[ck][d] && T.C[ck][d][p]; if (c && c[1] >= 0) (by[c[1]] = by[c[1]] || []).push(ck); });
+    Object.entries(by).forEach(([ti, L]) => { if (L.length > 1) out.push({ d, p, ti: +ti, t: "dbl", L }); });
+    ttResArr(T, d, p).forEach((ti, i) => { if (ti != null && by[ti]) out.push({ d, p, ti, t: "res", lv: i + 1, L: by[ti] }); }); } });
+  return out;
+}
+function TtEditor({ T0, times, by, onClose, onSaved }) {
+  const [D, setD] = useState(() => { const x = ttCp(T0); if (!x.RS) x.RS = {}; x.D.forEach(dn => { if (!x.RS[dn]) x.RS[dn] = Array.from({ length: x.P }, () => []); }); return x; });
+  const [hist, setHist] = useState([]); const [tab, setTab] = useState("cls"); const [ck, setCk] = useState(() => Object.keys(T0.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }))[0]);
+  const [pick, setPick] = useState(null); const [cell, setCell] = useState(null); const [resEd, setResEd] = useState(null); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(""); const [nCh, setNCh] = useState(0); const [tq, setTq] = useState("");
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  const cks = Object.keys(D.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  const subN = si => si >= 0 ? (D.SA && D.SA[si]) || D.S[si] : "";
+  const scC = si => TT_SUBC[si % TT_SUBC.length] || "#64748b";
+  const tList = D.T.map((n, i) => ({ i, n: ttClean(n) })).sort((a, b) => a.n.localeCompare(b.n, "ar"));
+  const apply = (fn, note) => { setHist(h => [...h.slice(-40), ttCp(D)]); const x = ttCp(D); fn(x); setD(x); setNCh(n => n + 1); if (note) toast(note); };
+  const undo = () => { if (!hist.length) return; setD(hist[hist.length - 1]); setHist(h => h.slice(0, -1)); setNCh(n => Math.max(0, n - 1)); toast("↩️ تم التراجع"); };
+  const lbl = (d, p) => `${D.D[d]} — الحصة ${TT_ORD[p]}`;
+  // تبديل حصتين في نفس الفصل (أو نقل حصة إلى خانة فارغة)
+  const swap = (a, b) => {
+    const A = D.C[ck][a.d][a.p] || [-1, -1], B = D.C[ck][b.d][b.p] || [-1, -1];
+    const w = []; const c1 = ttBusyAt(D, b.d, b.p, A[1], ck); if (c1) w.push(`أ. ${ttClean(D.T[A[1]])} لديه حصة في ${maClassName(c1)} يوم ${lbl(b.d, b.p)}`);
+    const c2 = ttBusyAt(D, a.d, a.p, B[1], ck); if (c2) w.push(`أ. ${ttClean(D.T[B[1]])} لديه حصة في ${maClassName(c2)} يوم ${lbl(a.d, a.p)}`);
+    const r1 = A[1] >= 0 && ttResArr(D, b.d, b.p).indexOf(A[1]); if (r1 >= 0 && r1 !== false) w.push(`أ. ${ttClean(D.T[A[1]])} احتياط ${maAr(r1 + 1)} في ${lbl(b.d, b.p)} — سيُزال من الاحتياط`);
+    const r2 = B[1] >= 0 && ttResArr(D, a.d, a.p).indexOf(B[1]); if (r2 >= 0 && r2 !== false) w.push(`أ. ${ttClean(D.T[B[1]])} احتياط ${maAr(r2 + 1)} في ${lbl(a.d, a.p)} — سيُزال من الاحتياط`);
+    if (w.length && !window.confirm("⚠️ تنبيه تعارض:\n• " + w.join("\n• ") + "\n\nهل تريد المتابعة؟")) return;
+    apply(x => { x.C[ck][a.d][a.p] = [...B]; x.C[ck][b.d][b.p] = [...A];
+      const unres = (d, p, ti) => { if (ti < 0) return; const dn = x.D[d]; const r = ttResArr(x, d, p).map(v => v === ti ? null : v); x.RS[dn][p] = r.filter(v => v != null); };
+      unres(b.d, b.p, A[1]); unres(a.d, a.p, B[1]);
+    }, `🔀 ${A[0] >= 0 ? subN(A[0]) : "فراغ"} ⇄ ${B[0] >= 0 ? subN(B[0]) : "فراغ"}`);
+    setPick(null);
+  };
+  const onCell = (d, p) => { if (!pick) { setPick({ d, p }); return; } if (pick.d === d && pick.p === p) { setPick(null); setCell({ d, p }); return; } swap(pick, { d, p }); };
+  const conf = ttConflicts(D);
+  const save = async () => {
+    if (conf.some(c => c.t === "dbl") && !window.confirm(`يوجد ${maAr(conf.filter(c => c.t === "dbl").length)} تعارض (معلم في فصلين بنفس الوقت) — حفظ رغم ذلك؟`)) return;
+    setBusy(true); const now = Date.now();
+    await maPut(TT_OLD, { tt: T0, at: now, why: "قبل تعديل الجدول يدوياً", by });
+    const n = { ...D, at: now, by, edited: now };
+    const ok = await maPut(TT_NODE, n);
+    if (ok) { try { await maPut(`${TT_EDLOG}/${now}`, { at: now, by, n: nCh }); } catch {} }
+    setBusy(false); if (ok) { onSaved(n); } else toast("⚠️ تعذّر الحفظ — تحقق من الاتصال");
+  };
+  const Cell = ({ d, p }) => { const c = D.C[ck][d][p] || [-1, -1]; const on = pick && pick.d === d && pick.p === p; const empty = c[0] < 0;
+    const cf = !empty && ttBusyAt(D, d, p, c[1], ck);
+    return <button type="button" onClick={() => onCell(d, p)} style={{ width: "100%", minHeight: 58, borderRadius: 12, border: on ? "3px solid #f59e0b" : cf ? "2px solid #dc2626" : "1.5px solid #e2e8f0", background: on ? "#fffbeb" : empty ? "repeating-linear-gradient(135deg,#f8fafc,#f8fafc 6px,#fff 6px,#fff 11px)" : `linear-gradient(180deg,${scC(c[0])}1a,#fff)`, borderTop: empty ? undefined : `4px solid ${scC(c[0])}`, cursor: "pointer", fontFamily: "inherit", padding: "4px 3px", display: "grid", gap: 1, alignContent: "center", boxShadow: on ? "0 0 0 4px #fde68a" : "none" }}>
+      {empty ? <span style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8" }}>فراغ</span> : <><b style={{ fontSize: 12, color: scC(c[0]) }}>{subN(c[0])}</b><span style={{ fontSize: 11, fontWeight: 800, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ttShort(D, c[1])}</span></>}
+      {cf && <span style={{ fontSize: 9.5, fontWeight: 900, color: "#dc2626" }}>⚠ تعارض</span>}
+    </button>; };
+  const cellNow = cell ? (D.C[ck][cell.d][cell.p] || [-1, -1]) : null;
+  return <div className="stt-sheet" style={{ zIndex: 950, alignItems: "stretch" }} dir="rtl"><style>{MA_CSS + STT_CSS}</style>
+    <div style={{ background: "#f8fafc", width: "min(1200px,100%)", margin: "0 auto", minHeight: "100%", overflow: "auto", padding: 12, display: "grid", gap: 10, alignContent: "start" }}>
+      <div style={{ borderRadius: 20, padding: "14px 16px", color: "#fff", background: "linear-gradient(135deg,#1e1b4b,#3730a3 55%,#0e7490)", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 260px" }}><b style={{ fontSize: 19 }}>✏️ تعديل الجدول والاحتياط</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>التعديل دائم لكل الأسابيع • {nCh ? `${maAr(nCh)} تعديل غير محفوظ` : "لا تعديلات بعد"}</div></div>
+        <button className="ma-btn" disabled={!hist.length} onClick={undo}>↩️ تراجع</button>
+        <button className="ma-btn gold" disabled={busy || !nCh} onClick={save}>{busy ? "⏳ جاري الحفظ…" : "💾 حفظ التعديلات"}</button>
+        <button className="ma-btn" onClick={() => { if (!nCh || window.confirm("إغلاق بدون حفظ؟ ستضيع التعديلات.")) onClose(); }}>✕ إغلاق</button>
+      </div>
+      <div className="ma-tabs">{[["cls", "📚 نقل وتبديل الحصص"], ["res", "🛡️ الاحتياط"], ["chk", `⚠️ التعارضات (${maAr(conf.length)})`]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => { setTab(k); setPick(null); }}>{l}</button>)}</div>
+      {tab === "cls" && <>
+        <div className="ma-card p-3" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{cks.map(k => { const L = MA_LV[+k[0] - 1] || {}; return <button key={k} className="ma-btn" style={{ padding: "5px 12px", background: ck === k ? L.c : "#fff", color: ck === k ? "#fff" : L.c, borderColor: L.c + "55" }} onClick={() => { setCk(k); setPick(null); }}>{maClassName(k)}</button>; })}</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: pick ? "#92400e" : "#475569", background: pick ? "#fffbeb" : "#fff", border: `1.5px solid ${pick ? "#fcd34d" : "#e2e8f0"}`, borderRadius: 14, padding: "8px 12px" }}>{pick ? `① اخترت: ${lbl(pick.d, pick.p)} — اضغط الخانة التي تريد نقلها إليها (تتبادلان) • أو اضغطها مرة أخرى لتعديل المادة والمعلم` : "اضغط حصة ثم اضغط خانة أخرى في نفس الفصل لتبديلهما (أو نقلها إلى فراغ) • الضغط مرتين على نفس الخانة = تعديل المادة/المعلم"}</div>
+        <div className="ma-card" style={{ overflowX: "auto", padding: 8 }}><table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 4, minWidth: 640, tableLayout: "fixed" }}>
+          <thead><tr><th style={{ width: 70, fontSize: 12 }}>اليوم</th>{times.map((t, p) => <th key={p} style={{ fontSize: 12, background: "#1e1b4b", color: "#fff", borderRadius: 10, padding: 4 }}>{TT_ORD[p]}<div style={{ fontSize: 10, opacity: .8 }}>{mlFmtT(t[0])}</div></th>)}</tr></thead>
+          <tbody>{D.D.map((dn, d) => <tr key={d}><td style={{ fontSize: 12.5, fontWeight: 900, textAlign: "center", background: "#eef2ff", borderRadius: 10 }}>{dn}</td>{times.map((_, p) => <td key={p}><Cell d={d} p={p} /></td>)}</tr>)}</tbody></table></div>
+      </>}
+      {tab === "res" && <>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#475569", background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "8px 12px" }}>اضغط أي خانة لتعديل احتياط ١ و٢ و٣ لتلك الحصة — يظهر المعلمون المتفرغون في ذلك الوقت أولاً</div>
+        <input className="ma-inp" placeholder="🔍 إبراز معلم في جدول الاحتياط…" value={tq} onChange={e => setTq(e.target.value)} />
+        <div className="ma-card" style={{ overflowX: "auto", padding: 8 }}><table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 4, minWidth: 700, tableLayout: "fixed" }}>
+          <thead><tr><th style={{ width: 70, fontSize: 12 }}>اليوم</th>{times.map((t, p) => <th key={p} style={{ fontSize: 12, background: "#0c4a6e", color: "#fff", borderRadius: 10, padding: 4 }}>{TT_ORD[p]}</th>)}</tr></thead>
+          <tbody>{D.D.map((dn, d) => <tr key={d}><td style={{ fontSize: 12.5, fontWeight: 900, textAlign: "center", background: "#e0f2fe", borderRadius: 10 }}>{dn}</td>{times.map((_, p) => { const R = ttResArr(D, d, p); return <td key={p}><button type="button" onClick={() => setResEd({ d, p, R })} style={{ width: "100%", minHeight: 66, borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fff", cursor: "pointer", fontFamily: "inherit", padding: 3, display: "grid", gap: 2 }}>
+            {R.map((ti, i) => { const L = TT_LVC[i + 1]; const hit = tq.trim() && ti != null && ttClean(D.T[ti]).includes(tq.trim()); const bad = ti != null && ttBusyAt(D, d, p, ti); return <span key={i} style={{ fontSize: 10.5, fontWeight: 900, borderRadius: 8, padding: "1px 4px", background: hit ? "#fde047" : bad ? "#fee2e2" : L.bg, color: bad ? "#b91c1c" : L.c, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{maAr(i + 1)}: {ti != null ? ttShort(D, ti) : "—"}</span>; })}
+          </button></td>; })}</tr>)}</tbody></table></div>
+      </>}
+      {tab === "chk" && <div className="ma-card p-3 grid gap-1">{!conf.length ? <b style={{ color: "#15803d" }}>✅ لا توجد تعارضات في الجدول</b> : conf.map((c, i) => <div key={i} style={{ fontSize: 13, fontWeight: 800, padding: "6px 10px", borderRadius: 10, background: c.t === "dbl" ? "#fef2f2" : "#fffbeb", color: c.t === "dbl" ? "#991b1b" : "#92400e" }}>{c.t === "dbl" ? "⛔" : "⚠️"} {lbl(c.d, c.p)}: أ. {ttClean(D.T[c.ti])} {c.t === "dbl" ? `في فصلين: ${c.L.map(maClassName).join(" و ")}` : `احتياط ${maAr(c.lv)} وهو يدرّس ${maClassName(c.L[0])}`}
+        {c.t === "dbl" && <button className="ma-btn" style={{ padding: "2px 10px", fontSize: 12, marginInlineStart: 8 }} onClick={() => { setTab("cls"); setCk(c.L[0]); }}>فتح</button>}</div>)}</div>}
+      {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 990, background: "#0f172a", color: "#fff", padding: "10px 18px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+    </div>
+    {cell && <div style={{ position: "fixed", inset: 0, zIndex: 980, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12, width: "100%", maxHeight: "none", borderRadius: 0, animation: "none", boxShadow: "none" }} onClick={() => setCell(null)}><div className="ma-card grid gap-2" style={{ width: "min(460px,100%)", padding: 18, margin: "auto", display: "grid", gap: 10 }} onClick={e => e.stopPropagation()}>
+      <b style={{ fontSize: 16 }}>✏️ {maClassName(ck)} • {lbl(cell.d, cell.p)}</b>
+      <label style={{ fontSize: 12.5, fontWeight: 800, display: "grid", gap: 4 }}>المادة<select className="ma-inp" value={cellNow[0]} onChange={e => apply(x => { const c = x.C[ck][cell.d][cell.p] || [-1, -1]; x.C[ck][cell.d][cell.p] = [+e.target.value, +e.target.value < 0 ? -1 : c[1]]; })}><option value={-1}>— فراغ —</option>{D.S.map((n, i) => /احتياط/.test(n) ? null : <option key={i} value={i}>{subN(i)}</option>)}</select></label>
+      <label style={{ fontSize: 12.5, fontWeight: 800, display: "grid", gap: 4 }}>المعلم<select className="ma-inp" value={cellNow[1]} disabled={cellNow[0] < 0} onChange={e => apply(x => { x.C[ck][cell.d][cell.p] = [x.C[ck][cell.d][cell.p][0], +e.target.value]; const dn = x.D[cell.d]; x.RS[dn][cell.p] = ttResArr(x, cell.d, cell.p).filter(v => v != null && v !== +e.target.value); })}><option value={-1}>—</option>{tList.map(t => { const b = ttBusyAt(D, cell.d, cell.p, t.i, ck); return <option key={t.i} value={t.i}>{t.n}{b ? ` (مشغول: ${maClassName(b)})` : ""}</option>; })}</select></label>
+      <div className="flex gap-2 justify-end" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}><button className="ma-btn red" onClick={() => { apply(x => { x.C[ck][cell.d][cell.p] = [-1, -1]; }, "🗑 أصبحت فراغاً"); setCell(null); }}>جعلها فراغ</button><button className="ma-btn pri" onClick={() => setCell(null)}>✓ تم</button></div>
+    </div></div>}
+    {resEd && (() => { const R = ttResArr(D, resEd.d, resEd.p); const setR = (i, v) => apply(x => { const r = ttResArr(x, resEd.d, resEd.p); r[i] = v === "" ? null : +v; const dn = x.D[resEd.d]; const o = []; r.forEach((t, j) => { o[j] = t == null ? "" : t; }); while (o.length && o[o.length - 1] === "") o.pop(); x.RS[dn][resEd.p] = o; });
+      const free = tList.filter(t => !ttBusyAt(D, resEd.d, resEd.p, t.i)), busyL = tList.filter(t => ttBusyAt(D, resEd.d, resEd.p, t.i));
+      return <div style={{ position: "fixed", inset: 0, zIndex: 980, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12, width: "100%", maxHeight: "none", borderRadius: 0, animation: "none", boxShadow: "none" }} onClick={() => setResEd(null)}><div className="ma-card" style={{ width: "min(460px,100%)", padding: 18, margin: "auto", display: "grid", gap: 10 }} onClick={e => e.stopPropagation()}>
+        <b style={{ fontSize: 16 }}>🛡️ احتياط {lbl(resEd.d, resEd.p)}</b>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>المتفرغون في هذا الوقت: {maAr(free.length)} معلم</div>
+        {[0, 1, 2].map(i => { const L = TT_LVC[i + 1]; return <label key={i} style={{ fontSize: 12.5, fontWeight: 900, color: L.c, display: "grid", gap: 4 }}>{L.l}<select className="ma-inp" value={R[i] == null ? "" : R[i]} onChange={e => setR(i, e.target.value)}><option value="">— لا أحد —</option><optgroup label="✅ متفرغون">{free.map(t => <option key={t.i} value={t.i} disabled={R.includes(t.i) && R[i] !== t.i}>{t.n}</option>)}</optgroup><optgroup label="⛔ لديهم حصة">{busyL.map(t => <option key={t.i} value={t.i} disabled>{t.n}</option>)}</optgroup></select></label>; })}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}><button className="ma-btn pri" onClick={() => setResEd(null)}>✓ تم</button></div>
+      </div></div>; })()}
+  </div>;
+}
 function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false, me = null }) {
   const [tt, setTt] = useState(null); const [times0, setTimes0] = useState(null);
   const [dateK, setDateK] = useState(maKey(new Date()));
@@ -38890,7 +39045,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false); const [now, setNow] = useState(new Date()); const [showPlan, setShowPlan] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
-  const [tEd, setTEd] = useState(false);
+  const [tEd, setTEd] = useState(false); const [jEd, setJEd] = useState(false);
   useEffect(() => { (async () => {
     let [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]);
     const stale = ttFresh(a) === TT_PDF && a !== TT_PDF;
@@ -39068,7 +39223,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
                 <div style={{ fontSize: 13.5, fontWeight: 800, opacity: .95 }}>{maDay(D)} • {maHijri(D)}</div></div>
               <div className="flex gap-2 items-center"><input type="date" className="ma-inp" style={{ width: 150, height: 38, color: "#0f172a", background: "#fff", fontWeight: 800 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} />{!isToday && <button className="ma-btn" onClick={() => setDateK(maKey(new Date()))}>اليوم</button>}</div>
             </div>
-            {!ro && <div className="flex gap-2 flex-wrap">{canEdit && <button className="ma-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => setTEd(true)}>⏱ أوقات الحصص</button>}<button className="ma-btn gold" disabled={di < 0} onClick={() => ttDayReport({ T, times, dk: dateK, di, log, absList, plan, by, subName })}>🖨 التقرير اليومي للمدير</button></div>}
+            {!ro && <div className="flex gap-2 flex-wrap">{canEdit && <button className="ma-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => setTEd(true)}>⏱ أوقات الحصص</button>}{canEdit && <button className="ma-btn" style={{ background: "#fbbf24", color: "#1e1b4b", borderColor: "#fbbf24" }} onClick={() => setJEd(true)}>✏️ تعديل الجدول والاحتياط</button>}<button className="ma-btn gold" disabled={di < 0} onClick={() => ttDayReport({ T, times, dk: dateK, di, log, absList, plan, by, subName })}>🖨 التقرير اليومي للمدير</button></div>}
             <div className="flex gap-2 flex-wrap">{curP >= 0 ? <span className="stt-now"><i />الآن: الحصة {TT_ORD[curP]} • تنتهي بعد {maAr(mlToMin(times[curP][1]) - nowM)} د</span> : isToday && di >= 0 ? <span className="stt-now" style={{ opacity: .85 }}>⏸ خارج وقت الحصص</span> : null}
               <span className="stt-now" style={{ background: "rgba(255,255,255,.1)" }}>🏫 {maAr(cks.length)} فصلاً • 👥 {maAr(T.T.length)} معلماً</span></div>
             <div className="stt-sc" style={{ paddingBottom: 0 }}>{T.D.map((dn, d) => <button key={d} className={`stt-chip ${d === di ? "on" : ""}`} style={{ "--cc": "#fbbf24", color: d === di ? "#1e1b4b" : "#fff", background: d === di ? "#fbbf24" : "rgba(255,255,255,.12)", borderColor: "rgba(255,255,255,.3)" }} onClick={() => setDateK(weekDate(d))}>{dn}</button>)}</div>
@@ -39132,6 +39287,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
 
       {cell && <SttSheet key={ttK(cell.d, cell.p, cell.ck)} T={T} d={cell.d} p={cell.p} ck={cell.ck} cur={cur} times={times} plan={cell.d === di ? plan : {}} abs={cell.d === di ? absList : []} log={cell.d === di ? log : {}} isToday={isToday && cell.d === di} ro={ro || !canRec || cell.d !== di} subName={si => T.S[si]} onClose={() => setCell(null)}
         onSave={async v => { const ok = await putLog(cell.d, cell.p, cell.ck, v); if (ok) { setCell(null); toast("✅ تم الحفظ"); } }} onClear={async () => { await putLog(cell.d, cell.p, cell.ck, null); setCell(null); }} />}
+      {jEd && <TtEditor T0={T} times={times} by={by} onClose={() => setJEd(false)} onSaved={n => { setTt(n); setJEd(false); toast("✅ حُفظ الجدول المعدّل — والسابق محفوظ نسخةً احتياطية"); }} />}
       {tEd && <SttTimesEditor times={times} P={T.P} by={by} onClose={() => setTEd(false)} onSaved={tm => { setTimes0(tm); setTEd(false); toast("✅ حُفظت أوقات الحصص"); }} />}
       {addA && <div className="stt-sheet" onClick={() => setAddA(false)}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ padding: 16 }}>
         <div style={{ width: 44, height: 5, borderRadius: 9, background: "#cbd5e1", margin: "0 auto 12px" }} />
@@ -42875,7 +43031,7 @@ function SchoolWebsiteInner() {
       const sid = e.detail;
       DB.get("school-surveys", []).then(arr => {
         const found = Array.isArray(arr) ? arr.find(s => s.id === sid) : null;
-        if (found) setUrlSurvey(found);
+        if (found) setUrlSurvey(svNorm([found])[0]);
       });
     };
     window.addEventListener("open-survey-url", handler);
@@ -43064,7 +43220,7 @@ function SchoolWebsiteInner() {
         setTeachers(asArr(t)); setWeek(validWeek); setAttendance(finalAtt || {}); setAnnouncements(asArr(ann).filter(a => !annIsSample(a)));
         actLoadedRef.current = act && act.ok; actSavedRef.current = act && act.ok ? Object.fromEntries(act.list.map(a => [String(a.id), JSON.stringify(a)])) : null; setActivities(act ? act.list : []); setSiteFont(font);
         setMessages(Array.isArray(msgs) ? msgs : []);
-        setSurveys(Array.isArray(survs) ? survs : []);
+        setSurveys(svNorm(survs));
         setWeekArchive(Array.isArray(wArch) ? wArch : []);
         // تحميل بيانات كل فصل
         const metaArr = asArr(clsListMeta).filter(m => m && m.id);
@@ -43587,6 +43743,7 @@ function SchoolWebsiteInner() {
 
       {user && <AgendaWatcher uk={user.username || user.name} page={page} navigate={navigate} />}
       {user && <CvAdminWatcher navigate={navigate} />}
+      {user && <HfxCmWatcher navigate={navigate} />}
       {/* ══════════════════════════════════════════
           وضع الجوال — إطار هاتف
       ══════════════════════════════════════════ */}
