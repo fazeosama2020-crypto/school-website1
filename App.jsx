@@ -32934,6 +32934,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "cv") return wrap("🎯 زياراتي الصفية", <TeacherVisitsView me={me} />);
   if (view === "ttnotes") return wrap("📒 ملاحظات متابعة حصصي", <TeacherPeriodNotesView me={me} />);
   if (view === "pnotes" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("📡 حصر ملاحظات الحصص", <PeriodNotesPage by={me.name} />);
+  if (view === "nafes") return wrap("🎯 نتائج نافس لطلابي", <NqTeacherView me={me} />);
   if (view === "hd") return wrap("📈 انضباطي اليومي", <HdTeacherView me={me} />);
   if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
   if (view === "circ") return wrap("📜 التعاميم", <CircTeacherView me={me} />);
@@ -33029,6 +33030,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("stlv", "📊", "سجل مستويات الطلاب", "مميز • جيد • متوسط • متدنٍ — مع الملاحظات وطباعة السجل باسمك", "#6d28d9", "#db2777", () => setView("stlv"))}
             {ptTile("readwk", "📖", "حصر الضعف القرائي", "ضعف شديد / متوسط • المهارات • العلاج • المتابعة", "#c2410c", "#f59e0b", () => setView("readwk"))}
             {ptTile("formative", "📘", "التقويم التكويني", "إعداد سجلك الخاص للدرجات وطباعته", "#2563eb", "#3b82f6", () => setView("formative"))}
+            {ptTile("nafes", "🎯", "نتائج نافس لطلابي", "طلاب فصولك في مادتك حسب الجدول: الدرجات وتحليل الإجابات والمهارات ومن بقي", "#1e3a8a", "#0f766e", () => setView("nafes"))}
           </div></div>
           <div className="pt-sec"><h3>📝 السلوك</h3><div className="pt-tiles">
             {ptTile("beh", "📝", "الملاحظات السلوكية", "سجّل ملاحظة سلوكية لطالب بلمستين — تُحفظ فوراً", "#7c3aed", "#db2777", () => setView("beh"))}
@@ -33116,7 +33118,7 @@ function GuardianPortal({ onBack }) {
     setD(p => ({ ...p, notes: [v, ...p.notes] })); setNote(""); toast("✅ وصلت ملاحظتك للمدرسة");
   };
   const excSt = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
-  const tabs = [["tt", "🗓️ جدولي"], ["perf", "📈 تقريري"], ["pnotes", "📒 ملاحظات الحصص"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["alerts", `📨 التنبيهات والدعوات${d && d.reps && d.reps.filter(GD_PENDING).length ? ` (${maAr(d.reps.filter(GD_PENDING).length)} جديد)` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
+  const tabs = [["tt", "🗓️ جدولي"], ["perf", "📈 تقريري"], ["nafes", "🎯 نافس"], ["pnotes", "📒 ملاحظات الحصص"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["alerts", `📨 التنبيهات والدعوات${d && d.reps && d.reps.filter(GD_PENDING).length ? ` (${maAr(d.reps.filter(GD_PENDING).length)} جديد)` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
   return (
     <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eff6ff,#f8fafc)" }}>
       <style>{MA_CSS + PT_CSS + (typeof scCSS !== "undefined" ? scCSS : "")}</style>
@@ -33141,7 +33143,7 @@ function GuardianPortal({ onBack }) {
         <div className="ma-tabs">{tabs.map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
         {!d ? <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div> : (
           <div className="grid gap-3">
-            {tab === "perf" && <GuardianPerf me={me} />}{tab === "pnotes" && <GuardianPeriodNotes me={me} />}
+            {tab === "perf" && <GuardianPerf me={me} />}{tab === "nafes" && <NqStudentResults me={me} />}{tab === "pnotes" && <GuardianPeriodNotes me={me} />}
             {tab === "level" && (d.cls.length ? d.cls.map((r, i) => (
               <div key={i} className="pt-item">
                 <div className="flex items-center justify-between flex-wrap gap-2"><b style={{ fontSize: 15 }}>📚 {r.subject || "تقييم عام"} <small style={{ fontSize: 12, color: "#7c3aed" }}>{pLabel(r.pm, r.pk)}</small></b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>👤 {r.teacher}{r.at ? " • " + ptWhen(r.at) : ""}</span></div>
@@ -43002,6 +43004,10 @@ function NqResult({ rec, exam, onBack }) {
       <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}><div style={{ background: g.bg, borderRadius: 12, padding: "10px 20px", color: g.color }}><small style={{ fontWeight: 800 }}>مستواك</small><div style={{ fontSize: 22, fontWeight: 900 }}>{g.label}</div></div><div style={{ background: "rgba(255,255,255,.15)", borderRadius: 12, padding: "10px 20px" }}><small style={{ color: "#93c5fd", fontWeight: 800 }}>النسبة</small><div style={{ fontSize: 22, fontWeight: 900, color: "#fbbf24" }}>{maAr(pct)}٪</div></div></div>
     </div>
     {exam && (() => { const sk = {}; nqSubs(exam).forEach(s => s.questions.forEach(q => { if (!q.skill) return; const t = sk[q.skill] = sk[q.skill] || { n: 0, ok: 0 }; t.n++; if (ans[q.id] !== undefined && +ans[q.id] === +q.correct) t.ok++; })); const E = Object.entries(sk); if (!E.length) return null; return <div className="nq-card" style={{ padding: "13px 17px" }}><b style={{ fontSize: 16 }}>🎯 نتيجتك حسب مهارات نافس</b>{E.map(([s, v]) => { const p = Math.round(v.ok / v.n * 100); const lv = p >= 80 ? ["متقن", "#166534", "#dcfce7"] : p >= 60 ? ["متقدّم", "#92400e", "#fef3c7"] : ["بحاجة إلى دعم", "#991b1b", "#fee2e2"]; return <div key={s} style={{ marginTop: 10 }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}><NqSkill s={s} /><span><b style={{ color: nqSkC(s) }}>{maAr(v.ok)} / {maAr(v.n)}</b> <span className="nq-badge" style={{ background: lv[2], color: lv[1] }}>{lv[0]}</span></span></div><div className="nq-pbar"><div className="nq-pfill" style={{ width: `${p}%`, background: nqSkC(s) }} /></div></div>; })}</div>; })()}
+    {exam && (() => { const Q = nqSubs(exam).flatMap(s => s.questions.map((q, i) => ({ s: s.name, i, q }))); if (!Q.length) return null; const st = Q.map(x => ans[x.q.id] === undefined ? 0 : +ans[x.q.id] === +x.q.correct ? 1 : -1); const n1 = st.filter(v => v === 1).length, n2 = st.filter(v => v === -1).length, n0 = st.filter(v => v === 0).length; const multi = new Set(Q.map(x => x.s)).size > 1; return <div className="nq-card" style={{ padding: "13px 17px" }}><b style={{ fontSize: 16 }}>🧾 تفصيل إجاباتك</b>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginTop: 8 }}>{[["✅ صحيحة", n1, "#166534", "#dcfce7"], ["❌ خاطئة", n2, "#dc2626", "#fee2e2"], ["⬜ متروكة", n0, "#64748b", "#f1f5f9"]].map(([t, v, c, b]) => <div key={t} style={{ background: b, borderRadius: 12, padding: "8px 6px", textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: c }}>{maAr(v)}</div><div style={{ fontSize: 12.5, fontWeight: 900, color: c }}>{t}</div></div>)}</div>
+      {exam.showAns !== 0 && <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 10 }}>{Q.map((x, k) => <span key={x.q.id} title={x.q.text || ""} style={{ minWidth: 34, padding: "4px 6px", borderRadius: 8, textAlign: "center", fontSize: 12, fontWeight: 900, background: st[k] === 1 ? "#dcfce7" : st[k] === -1 ? "#fee2e2" : "#f1f5f9", color: st[k] === 1 ? "#166534" : st[k] === -1 ? "#dc2626" : "#64748b" }}>{multi ? x.s.slice(0, 4) + " " : "س"}{maAr(x.i + 1)} {st[k] === 1 ? "✓" : st[k] === -1 ? "✗" : "—"}</span>)}</div>}
+    </div>; })()}
     <b style={{ fontSize: 16 }}>النتائج حسب المادة</b>
     {Object.entries(subjectScores).map(([n, { score, maxScore }]) => { if (!maxScore) return null; const sp = Math.round(score / maxScore * 100); const sg = nqGrade(sp); return <div key={n} className="nq-card" style={{ padding: "13px 17px" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}><b style={{ fontSize: 15 }}>{n}</b><span><b style={{ color: sg.color, fontSize: 17 }}>{maAr(score)} / {maAr(maxScore)}</b> <span className="nq-badge" style={{ background: sg.bg, color: sg.color }}>{sg.label}</span></span></div><div className="nq-pbar"><div className="nq-pfill" style={{ width: `${sp}%`, background: sg.color }} /></div></div>; })}
     {exam && exam.showAns === 0 && <div className="nq-card" style={{ textAlign: "center", color: "#64748b", fontWeight: 800 }}>🔒 ستُعلَن الإجابات الصحيحة لاحقاً من المعلم</div>}
@@ -43014,6 +43020,12 @@ function NqResult({ rec, exam, onBack }) {
 const NQ_STU = "school-nq-stu"; let NQ_G = [];
 const nqSetG = v => { NQ_G = maArr(v && v.list ? v.list : v).filter(a => a && a.nh); return NQ_G; };
 const nqAllow = x => { const a = maArr(x && x.allow); return a.length ? a : (x && x.allowAll ? NQ_G : []); };
+const nqCanon = n => nqSubjOf(n) || cvNorm(n).replace(/^ال/, "");
+const nqSubjOk = (n, L) => !L || L.map(nqCanon).includes(nqCanon(n));
+const nqLimEx = (x, lim) => !x || !lim ? x : { ...x, subjects: nqSubs(x).filter(s => nqSubjOk(s.name, lim.subj)) };
+const nqLimRec = (r, lim) => { if (!lim || !r || !r.res) return r; const ss = Object.fromEntries(Object.entries(r.res.subjectScores || {}).filter(([n]) => nqSubjOk(n, lim.subj))); const t = Object.values(ss).reduce((a, v) => a + (+v.score || 0), 0), m = Object.values(ss).reduce((a, v) => a + (+v.maxScore || 0), 0); return { ...r, res: { ...r.res, subjectScores: ss, total: t, maxTotal: m } }; };
+// فصول المعلم ومواده من الجدول المدرسي
+const nqMyTT = (T, name) => { const ti = T && T.T ? sttFindMe(T, name) : -1; const P = {}; if (ti >= 0) Object.entries(T.C || {}).forEach(([ck, days]) => maArr(days).forEach(day => maArr(day).forEach(c => { if (Array.isArray(c) && +c[1] === ti && +c[0] >= 0) { const sn = T.S[+c[0]]; if (sn) (P[ck] = P[ck] || new Set()).add(sn); } }))); return { ti, P: Object.fromEntries(Object.entries(P).map(([k, v]) => [k, [...v]])) }; };
 const nqCls = ck => { const [l, c] = String(ck || "").split("-"); return l && c ? `${maAr(+c)}/${maAr(+l)}` : String(ck || "—"); };
 // «١/٣» = الفصل ١ من الصف الثالث (الصيغة المعتمدة في المدارس) — مع قبول «٣/١» إذا كان الصف معروفاً
 const nqPair = (a, b, lv0) => b === lv0 && a !== lv0 ? `${b}-${a}` : a === lv0 ? `${a}-${b}` : a > 3 && b <= 3 ? `${b}-${a}` : b > 3 && a <= 3 ? `${a}-${b}` : `${b}-${a}`;
@@ -43103,15 +43115,15 @@ function NqStuList({ list, onSave, ros, cls }) {
 // ══════════ بوابة الطالب (#nafes) ══════════
 function NafesPublic({ onBack }) {
   const [ex, setEx] = useState(null); const [ros, setRos] = useState({}); const [scr, setScr] = useState("home"); const [ck, setCk] = useState(""); const [q, setQ] = useState(""); const [stu, setStu] = useState(null); const [done, setDone] = useState({});
-  const [exId, setExId] = useState(null); const [ans, setAns] = useState({}); const [rec, setRec] = useState(null); const [busy, setBusy] = useState(false); const [idv, setIdv] = useState(""); const [idErr, setIdErr] = useState(""); const [pickMode, setPickMode] = useState(false);
-  useEffect(() => { (async () => { const [e, r, g] = await Promise.all([maGet(NQ_EX), maGet(MA_ROSTER), maGet(NQ_STU)]); nqSetG(g); setEx(ptVals(e).filter(x => x.open !== 0 && !nqIssues(x).none).sort((a, b) => (b.at || 0) - (a.at || 0))); setRos(ptObj(r)); })(); }, []);
-  const exam = ex && ex.find(x => x.id === exId);
+  const [exId, setExId] = useState(null); const [ans, setAns] = useState({}); const [rec, setRec] = useState(null); const [busy, setBusy] = useState(false); const [idv, setIdv] = useState(""); const [idErr, setIdErr] = useState(""); const [pickMode, setPickMode] = useState(false); const [exA, setExA] = useState([]);
+  useEffect(() => { (async () => { const [e, r, g] = await Promise.all([maGet(NQ_EX), maGet(MA_ROSTER), maGet(NQ_STU)]); nqSetG(g); const all = ptVals(e).filter(x => !nqIssues(x).none).sort((a, b) => (b.at || 0) - (a.at || 0)); setExA(all); setEx(all.filter(x => x.open !== 0)); setRos(ptObj(r)); })(); }, []);
+  const exam = (exA.length ? exA : ex || []).find(x => x.id === exId);
   const idMode = !!(ex && ex.some(x => nqAllow(x).length)); const clsEx = ex ? ex.filter(x => !nqAllow(x).length) : [];
   const cls = [...new Set(clsEx.flatMap(x => maArr(x.cls)))].filter(k => maArr(ros[k] && ros[k].students).length).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
-  const exFor = st => (ex || []).filter(x => nqAllow(x).length ? !!(st.v && st.nh && nqAllow(x).some(a => a.nh === st.nh)) : maArr(x.cls).includes(st.ck));
+  const exFor = (st, L) => (L || ex || []).filter(x => nqAllow(x).length ? !!(st.v && st.nh && nqAllow(x).some(a => a.nh === st.nh)) : maArr(x.cls).includes(st.ck));
   const stuL = ck ? maArr(ros[ck] && ros[ck].students).filter(s => s && s.name).sort((a, b) => a.name.localeCompare(b.name, "ar")) : [];
   const myEx = ex && stu ? exFor(stu) : [];
-  const enter = async st => { setStu(st); setBusy(true); const o = {}; await Promise.all(exFor(st).map(async x => { const r = await maGet(`${NQ_RES}/${x.id}/${asmK(st.ck + "_" + (st.id || st.name))}`); if (r) o[x.id] = r; })); setDone(o); setBusy(false); setScr("exams"); };
+  const enter = async st => { setStu(st); setBusy(true); const o = {}; await Promise.all(exFor(st, exA.length ? exA : ex).map(async x => { const r = await maGet(`${NQ_RES}/${x.id}/${asmK(st.ck + "_" + (st.id || st.name))}`); if (r) o[x.id] = r; })); setDone(o); setBusy(false); setScr("exams"); };
   const pickStu = s => enter({ id: s.id, name: s.name, ck });
   const loginId = async () => { setIdErr(""); const n = licNormId(idv); if (n.length !== 10) { setIdErr("رقم الهوية يتكوّن من ١٠ أرقام"); return; } setBusy(true); const h = await stuHash(n); let st = null;
     for (const x of ex || []) { const a = nqAllow(x).find(y => y.nh === h); if (a) { st = { id: a.sid, name: a.name, ck: a.ck, nh: h, n4: a.n4, v: 1 }; break; } }
@@ -43159,6 +43171,7 @@ function NafesPublic({ onBack }) {
         {myEx.map((x, i) => { const S = nqSubs(x); const tq = S.reduce((a, s) => a + s.questions.length, 0); const tg = S.reduce((a, s) => a + s.questions.reduce((b, q) => b + (+q.grade || 0), 0), 0); const r = done[x.id]; const locked = r && (x.once !== 0 || nqAllow(x).length > 0); return <div key={x.id} className="nq-card" style={{ cursor: locked ? "default" : "pointer", background: ["#eff6ff", "#f0fdf4", "#fdf4ff", "#fff7ed"][i % 4], border: "2px solid transparent" }} onClick={() => { if (locked) { setRec(r); setExId(x.id); setScr("res"); return; } if (!tq) return; setExId(x.id); setAns({}); setScr("quiz"); window.scrollTo(0, 0); }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}><div style={{ width: 50, height: 50, borderRadius: 13, background: "#fff", display: "grid", placeItems: "center", fontSize: 24 }}>{["📝", "✏️", "📖", "🔬", "🧮"][i % 5]}</div><div style={{ flex: 1 }}><b style={{ fontSize: 16 }}>{x.title}</b><div style={{ fontSize: 12, color: "#64748b" }}>{maAr(tq)} سؤال • {maAr(tg)} درجة</div></div>{r ? <span className="nq-badge" style={{ background: nqGrade(nqPct(r)).bg, color: nqGrade(nqPct(r)).color }}>✓ {maAr(nqPct(r))}٪ {locked ? "— عرض النتيجة" : "— إعادة"}</span> : <span style={{ fontSize: 22, color: "#2563eb" }}>←</span>}</div></div>; })}
         {!myEx.length && <div className="nq-card" style={{ textAlign: "center", color: "#94a3b8", padding: 40 }}>📭 لا توجد اختبارات لفصلك حالياً</div>}
+        {(() => { const P = exFor(stu, exA).filter(x => done[x.id] && !myEx.some(y => y.id === x.id)); return P.length > 0 && <><b style={{ fontSize: 17, marginTop: 6 }}>📊 نتائجي في الاختبارات السابقة</b>{P.map(x => { const r = done[x.id]; const g = nqGrade(nqPct(r)); return <div key={x.id} className="nq-card" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} onClick={() => { setRec(r); setExId(x.id); setScr("res"); window.scrollTo(0, 0); }}><span style={{ fontSize: 24 }}>📁</span><div style={{ flex: 1 }}><b>{x.title}</b><div style={{ fontSize: 12, color: "#64748b" }}>{r.ts ? new Date(r.ts).toLocaleDateString("ar-SA") : ""} • {maAr(r.res.total)} من {maAr(r.res.maxTotal)}</div></div><span className="nq-badge" style={{ background: g.bg, color: g.color }}>{maAr(nqPct(r))}٪ — عرض</span></div>; })}</>; })()}
       </div>}
       {scr === "quiz" && exam && <NqQuiz exam={exam} answers={ans} setAnswers={setAns} onSubmit={submit} onBack={() => setScr("exams")} />}
       {scr === "res" && rec && <NqResult rec={rec} exam={exam} onBack={() => setScr("exams")} />}
@@ -43238,13 +43251,13 @@ function NqEditor({ exam, onSave, onBack, classes, ros }) {
   </div>;
 }
 
-function NqResults({ exams, ros, onBack, by, first }) {
+function NqResults({ exams, ros, onBack, by, first, lim }) {
   const [eid, setEid] = useState(first || (exams[0] ? exams[0].id : "")); const [R, setR] = useState(null); const [tab, setTab] = useState("charts"); const [ck, setCk] = useState("");
   const [srt, setSrt] = useState("p"); const [q2, setQ2] = useState(""); const [rep, setRep] = useState(null); const [repBusy, setRepBusy] = useState(false); const [repErr, setRepErr] = useState("");
-  useEffect(() => { if (!eid) return; setR(null); setRep(null); setRepErr(""); (async () => { const [r, p] = await Promise.all([maGet(`${NQ_RES}/${eid}`), maGet(`${NQ_REP}/${eid}`)]); setR(ptVals(r)); setRep(p && p.text ? p : null); })(); }, [eid]);
-  const ex = exams.find(x => x.id === eid);
+  useEffect(() => { if (!eid) return; setR(null); setRep(null); setRepErr(""); (async () => { const [r, p] = await Promise.all([maGet(`${NQ_RES}/${eid}`), maGet(`${NQ_REP}/${eid}`)]); setR(ptVals(r).map(x => nqLimRec(x, lim))); setRep(p && p.text ? p : null); })(); }, [eid]);
+  const ex = nqLimEx(exams.find(x => x.id === eid), lim);
   if (!ex) return <div className="nq-card">لا توجد اختبارات <button className="nq-b nq-ghost" onClick={onBack}>→ رجوع</button></div>;
-  const tcls = nqTcls(ex); const F = (R || []).filter(r => !ck || r.ck === ck);
+  const tcls = nqTcls(ex).filter(k => !lim || lim.cks.includes(k)); const F = (R || []).filter(r => (!ck || r.ck === ck) && (!lim || lim.cks.includes(r.ck)));
   const target = (ck ? [ck] : tcls).reduce((a, k) => a + nqPool(ex, ros, k).length, 0);
   const pcs = F.map(nqPct); const avg = F.length ? pcs.reduce((a, b) => a + b, 0) / F.length : 0;
   const med = (() => { if (!pcs.length) return 0; const s = [...pcs].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; })();
@@ -43368,12 +43381,51 @@ ${JSON.stringify(data)}
   </div>;
 }
 
+// ══════════ 🎯 نتائج نافس في حساب الطالب/ولي الأمر ══════════
+function NqStudentResults({ me }) {
+  const [L, setL] = useState(null); const [sel, setSel] = useState(null);
+  useEffect(() => { (async () => { const [e, g] = await Promise.all([maGet(NQ_EX), maGet(NQ_STU)]); nqSetG(g); const X = ptVals(e).filter(x => !nqIssues(x).none).sort((a, b) => (b.at || 0) - (a.at || 0)); const out = [];
+    for (const x of X) { const a = me.nh ? nqAllow(x).find(y => y.nh === me.nh) : null; const tgt = nqAllow(x).length ? !!a : maArr(x.cls).includes(me.ck); const keys = [...new Set([a ? asmK(a.ck + "_" + a.sid) : "", asmK(me.ck + "_" + (me.sid || me.name))].filter(Boolean))]; let r = null; for (const k of keys) { r = await maGet(`${NQ_RES}/${x.id}/${k}`); if (r && r.res) break; r = null; } if (r || (tgt && x.open !== 0)) out.push({ x, r }); }
+    setL(out); })(); }, [me.nh, me.ck, me.sid]);
+  if (sel) return <div className="nq"><style>{NQ_CSS}</style><NqResult rec={sel.r} exam={sel.x} onBack={() => setSel(null)} /></div>;
+  return <div className="nq grid gap-2"><style>{NQ_CSS}</style>
+    {L === null ? <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8" }}>⏳</div> : !L.length ? <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>📭 لا توجد اختبارات نافس تدريبية بعد</div> : <>
+      <div className="pt-item" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}><b style={{ flex: 1 }}>🎯 اختبارات نافس التدريبية</b><span className="nq-badge" style={{ background: "#dcfce7", color: "#166534" }}>أنجز {maAr(L.filter(z => z.r).length)} من {maAr(L.length)}</span>{L.some(z => z.r) && <span className="nq-badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>المتوسط {maAr(Math.round(L.filter(z => z.r).reduce((a, z) => a + nqPct(z.r), 0) / L.filter(z => z.r).length))}٪</span>}</div>
+      {L.map(({ x, r }) => { const g = r ? nqGrade(nqPct(r)) : null; return <div key={x.id} className="pt-item" style={{ display: "flex", gap: 12, alignItems: "center", cursor: r ? "pointer" : "default", borderRight: `4px solid ${r ? g.color : "#f59e0b"}` }} onClick={() => r && setSel({ x, r })}><span style={{ fontSize: 24 }}>{r ? "📊" : "⏳"}</span><div style={{ flex: 1 }}><b>{x.title}</b><div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>{r ? `${maAr(r.res.total)} من ${maAr(r.res.maxTotal)} درجة • ${r.ts ? new Date(r.ts).toLocaleDateString("ar-SA") : ""}` : "لم يُختبر بعد — الدخول من رابط الاختبارات برقم الهوية"}</div></div>{r ? <span className="nq-badge" style={{ background: g.bg, color: g.color }}>{maAr(nqPct(r))}٪ {g.label} — التفاصيل</span> : <span className="nq-badge" style={{ background: "#fef3c7", color: "#92400e" }}>متاح</span>}</div>; })}
+    </>}
+  </div>;
+}
+// ══════════ 👨‍🏫 نتائج نافس للمعلم: طلاب فصوله في مادته حسب الجدول المدرسي ══════════
+function NqTeacherView({ me }) {
+  const [D, setD] = useState(null); const [scr, setScr] = useState("home"); const [man, setMan] = useState(null);
+  useEffect(() => { (async () => { const [e, r, g, tt] = await Promise.all([maGet(NQ_EX), maGet(MA_ROSTER), maGet(NQ_STU), maGet(TT_NODE)]); nqSetG(g); const T = ttFresh(tt); const my = nqMyTT(T, me.name); setD({ ex: ptVals(e).filter(x => !nqIssues(x).none).sort((a, b) => (b.at || 0) - (a.at || 0)), ros: ptObj(r), my }); })(); }, [me.name]);
+  if (!D) return <div className="ma-card p-6 text-center" style={{ color: "#94a3b8" }}>⏳</div>;
+  const P = man || D.my.P; const cks = Object.keys(P).sort((a, b) => a.localeCompare(b, "en", { numeric: true })); const subj = [...new Set(Object.values(P).flat())];
+  const lim = { cks, subj };
+  const EX = D.ex.filter(x => nqSubs(x).some(s => s.questions.length && nqSubjOk(s.name, subj)) && nqTcls(x).some(k => cks.includes(k)));
+  const allCk = [...new Set(D.ex.flatMap(x => nqTcls(x)))].sort((a, b) => a.localeCompare(b, "en", { numeric: true })); const allS = [...new Set(D.ex.flatMap(x => nqSubs(x).filter(s => s.questions.length).map(s => s.name)))];
+  const wrap = n => <div className="nq" dir="rtl"><style>{NQ_CSS}</style><div style={{ maxWidth: 980, margin: "0 auto" }} className="grid gap-3">{n}</div></div>;
+  if (scr === "res" && EX.length) return wrap(<NqResults exams={EX} ros={D.ros} by={me.name} lim={lim} onBack={() => setScr("home")} />);
+  if (scr === "track" && EX.length) return wrap(<NqTrack exams={EX} ros={D.ros} by={me.name} lim={lim} onBack={() => setScr("home")} />);
+  return wrap(<>
+    <div style={{ background: "linear-gradient(135deg,#1e3a8a,#0f766e)", borderRadius: 16, padding: "16px 18px", color: "#fff" }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>{NQ_SCHOOL}</div><div style={{ fontSize: 19, fontWeight: 900 }}>🎯 نتائج نافس لطلابي</div><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>تظهر لك فصولك ومادتك من الجدول المدرسي فقط: الأسماء، الدرجات، تحليل الإجابات والمهارات، ومن بقي</div></div>
+    <div className="nq-card">{cks.length ? <><b style={{ fontSize: 14 }}>📚 فصولي ومادتي {man ? "(اختيار يدوي)" : "حسب الجدول"}:</b><div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>{cks.map(k => <span key={k} className="nq-badge" style={{ background: "#eff6ff", color: "#1d4ed8", fontSize: 13 }}>{nqCls(k)} — {P[k].join("، ")}</span>)}</div></> : <div style={{ color: "#b45309", fontWeight: 800, fontSize: 13.5, lineHeight: 1.8 }}>⚠️ {D.my.ti < 0 ? "لم يُعثر على اسمك في الجدول المدرسي" : "لا توجد لك حصص في الجدول"} — اختر فصولك ومادتك يدوياً أدناه، أو راجع الإدارة لتحديث الجدول.</div>}
+      {(!cks.length || man) && <div style={{ marginTop: 10, display: "grid", gap: 8 }}><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{allCk.map(k => <button key={k} className={`nq-tab ${man && man[k] ? "on" : ""}`} onClick={() => setMan(M => { const o = { ...(M || {}) }; if (o[k]) delete o[k]; else o[k] = allS.slice(0, 1); return Object.keys(o).length ? o : null; })}>{nqCls(k)}</button>)}</div>{man && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{allS.map(n => { const on = Object.values(man)[0] && Object.values(man)[0].includes(n); return <button key={n} className={`nq-tab ${on ? "on" : ""}`} onClick={() => setMan(M => Object.fromEntries(Object.keys(M).map(k => [k, on ? M[k].filter(x => x !== n) : [...new Set([...M[k], n])]])))}>{n}</button>; })}</div>}</div>}
+      {D.my.ti >= 0 && cks.length > 0 && !man && <button className="nq-b nq-ghost" style={{ marginTop: 8, padding: "4px 10px", fontSize: 12 }} onClick={() => setMan({ ...P })}>✏️ تعديل يدوي</button>}
+    </div>
+    {cks.length > 0 && (EX.length ? <>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}><button className="nq-b nq-blue" onClick={() => setScr("res")}>📊 النتائج وتحليل الإجابات</button><button className="nq-b" style={{ background: "#0f766e", color: "#fff" }} onClick={() => setScr("track")}>📋 من اختبر ومن بقي</button></div>
+      <div className="nq-card"><b>📝 الاختبارات ({maAr(EX.length)})</b>{EX.map(x => <div key={x.id} style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13.5, fontWeight: 800 }}><span style={{ flex: 1 }}>{x.title}</span>{x.open === 0 ? <span className="nq-badge" style={{ background: "#f1f5f9", color: "#64748b" }}>مغلق</span> : <span className="nq-badge" style={{ background: "#dcfce7", color: "#166534" }}>متاح</span>}</div>)}</div>
+    </> : <div className="nq-card" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800, padding: 24 }}>📭 لا توجد اختبارات في مادتك تستهدف فصولك بعد</div>)}
+  </>);
+}
+
 // ══════════ 📋 متابعة الإنجاز: من اختبر ومن بقي في كل الاختبارات ══════════
-function NqTrack({ exams, ros, by, onBack }) {
+function NqTrack({ exams, ros, by, onBack, lim }) {
   const [R, setR] = useState(null); const [ck, setCk] = useState(""); const [only, setOnly] = useState("all"); const [q, setQ] = useState(""); const [openOnly, setOpenOnly] = useState(true);
   const EX = [...exams].filter(x => !openOnly || x.open !== 0).sort((a, b) => (a.at || 0) - (b.at || 0));
   useEffect(() => { (async () => { const o = {}; await Promise.all(exams.map(async x => { o[x.id] = ptVals(await maGet(`${NQ_RES}/${x.id}`)); })); setR(o); })(); }, []);
-  const stuMap = new Map(); EX.forEach(x => nqTcls(x).forEach(k => nqPool(x, ros, k).forEach(s => { if (!s || !s.name) return; const id = k + "_" + (s.id || s.name); if (!stuMap.has(id)) stuMap.set(id, { id: s.id, name: s.name, ck: k }); })));
+  const stuMap = new Map(); EX.forEach(x => nqTcls(x).filter(k => !lim || lim.cks.includes(k)).forEach(k => nqPool(x, ros, k).forEach(s => { if (!s || !s.name) return; const id = k + "_" + (s.id || s.name); if (!stuMap.has(id)) stuMap.set(id, { id: s.id, name: s.name, ck: k }); })));
   const ALL = [...stuMap.values()]; const CK = [...new Set(ALL.map(s => s.ck))].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
   const inEx = (x, st) => nqPool(x, ros, st.ck).some(s => (s.id || s.name) === (st.id || st.name));
   const resOf = (x, st) => (R && R[x.id] || []).find(r => r.ck === st.ck && (r.sid ? r.sid === st.id : r.name === st.name));
