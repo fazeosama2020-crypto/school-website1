@@ -43015,9 +43015,23 @@ const nqAllow = x => maArr(x && x.allow);
 const nqTcls = x => nqAllow(x).length ? [...new Set(nqAllow(x).map(a => a.ck).filter(Boolean))].sort((a, b) => a.localeCompare(b, "en", { numeric: true })) : maArr(x && x.cls);
 const nqPool = (x, ros, k) => nqAllow(x).length ? nqAllow(x).filter(a => a.ck === k).map(a => ({ id: a.sid, name: a.name, ck: k })) : maArr(ros && ros[k] && ros[k].students);
 const nqClassKey = (v, fb) => { const t = cvNorm(String(v || "")).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)); if (!t) return fb; const lv = /اول/.test(t) ? 1 : /ثاني/.test(t) ? 2 : /ثالث/.test(t) ? 3 : 0; const nums = (t.match(/\d+/g) || []).map(Number); if (lv) return nums.length ? `${lv}-${nums[nums.length - 1]}` : fb; if (nums.length >= 2 && nums[0] >= 1 && nums[0] <= 3) return `${nums[0]}-${nums[1]}`; if (nums.length === 1 && fb) return `${fb.split("-")[0]}-${nums[0]}`; return fb; };
-async function nqReadAllow(file, ros, cls) {
-  const X = await loadXLSX(); const wb = X.read(await file.arrayBuffer(), { type: "array" });
-  const rows = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" }).map(r => r.map(c => String(c == null ? "" : c).trim()));
+const nqDig = t => String(t || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+// تخمين فصل الملف من ترويسته أو اسم الورقة أو اسم الملف (مثل: «الصف الثالث المتوسط — الفصل: 2»، «ثالث متوسط 2»، «3-2.xlsx»، «فصل 2»)
+const nqGuessCk = (texts, lv0) => {
+  for (const raw of texts) {
+    const t = cvNorm(nqDig(raw)).replace(/\.(xlsx|xls|csv)$/i, " "); if (!t) continue;
+    const lv = /اول/.test(t) ? 1 : /ثاني/.test(t) ? 2 : /ثالث/.test(t) ? 3 : 0;
+    let m = t.match(/(?:الفصل|فصل|الشعبه|شعبه)\s*[:：\-]?\s*(\d{1,2})(?!\d)/); if (m) return `${lv || lv0}-${+m[1]}`;
+    m = t.match(/(?:اول|ثاني|ثالث)\s*(?:المتوسط|متوسط|م)?\s*[\/\-_ ]+\s*(\d{1,2})(?!\d)/); if (m) return `${lv}-${+m[1]}`;
+    m = t.match(/(?:^|\D)([123])\s*[\/\-_]\s*(\d{1,2})(?!\d)/); if (m) return `${+m[1]}-${+m[2]}`;
+    m = t.match(/^\s*(\d{1,2})\s*$/); if (m) return `${lv0}-${+m[1]}`;
+  }
+  return "";
+};
+// قراءة ملف واحد: الأعمدة + فصل الملف (بدون تشفير بعد)
+async function nqParseAllowFile(file, lv0) {
+  const X = await loadXLSX(); const wb = X.read(await file.arrayBuffer(), { type: "array" }); const sn = wb.SheetNames[0];
+  const rows = X.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: false, defval: "" }).map(r => r.map(c => String(c == null ? "" : c).trim()));
   const ID_RE = /هوي|سجل|اقام|إقام|ID/i; let cN = -1, cI = -1, cC = -1;
   let hi = rows.findIndex(r => r.some(c => /اسم/.test(c)) && r.some(c => ID_RE.test(c)));
   if (hi >= 0) rows[hi].forEach((c, i) => { if (cI < 0 && ID_RE.test(c)) cI = i; else if (cN < 0 && /اسم/.test(c)) cN = i; else if (cC < 0 && /فصل|الصف|شعب/.test(c)) cC = i; });
@@ -43026,37 +43040,57 @@ async function nqReadAllow(file, ros, cls) {
     for (let i = 0; i < W && cI < 0; i++) { const col = S.map(r => r[i] || "").filter(Boolean); if (col.length && col.filter(v => licNormId(v).length === 10).length >= col.length * .6) cI = i; }
     for (let i = 0; i < W && cN < 0; i++) { if (i === cI) continue; const col = S.map(r => r[i] || "").filter(Boolean); if (col.length && col.filter(v => /[ء-ي]{2,}\s+[ء-ي]{2,}/.test(v)).length >= col.length * .5) cN = i; }
   }
-  if (cN < 0 || cI < 0) throw new Error("لم أتعرّف على عمودي الاسم ورقم الهوية — اجعل الصف الأول عناوين: الاسم، رقم الهوية، الفصل (أو نزّل القالب)");
+  if (cN < 0 || cI < 0) throw new Error("لم أتعرّف على عمودي الاسم ورقم الهوية");
+  const head = rows.slice(0, Math.max(0, hi)).map(r => r.filter(Boolean).join(" ")).filter(Boolean);
+  const data = []; let bad = 0;
+  for (const r of rows.slice(hi + 1)) { const name = String(r[cN] || "").replace(/\s+/g, " ").trim(), id = licNormId(r[cI]); if (!name && !id) continue; if (!name || id.length !== 10 || /اسم|هوي/.test(name)) { bad++; continue; } data.push({ name, id, cls: cC >= 0 ? r[cC] : "" }); }
+  const rowCls = cC >= 0 && data.some(x => x.cls);
+  return { name: file.name, data, bad, rowCls, ck: nqGuessCk([head.join(" "), sn, file.name], lv0) };
+}
+// التشفير والربط بكشوف الموقع
+async function nqBuildAllow(files, ros, cls) {
   const byNh = {}, byNm = {}; Object.entries(ptObj(ros)).forEach(([k, r]) => maArr(r && r.students).forEach(st => { if (!st || !st.name) return; if (st.nh) byNh[st.nh] = { ck: k, st }; const n = rosNN(st.name); (byNm[n] = byNm[n] || []).push({ ck: k, st }); }));
-  const fb = maArr(cls)[0] || "3-1"; const list = [], seen = new Set(); let bad = 0, dup = 0, matched = 0;
-  for (const r of rows.slice(hi + 1)) {
-    const name = String(r[cN] || "").replace(/\s+/g, " ").trim(), id = licNormId(r[cI]);
-    if (!name && !id) continue; if (!name || id.length !== 10) { bad++; continue; }
-    const nh = await stuHash(id); if (seen.has(nh)) { dup++; continue; } seen.add(nh);
-    const C = byNm[rosNN(name)] || []; const m = byNh[nh] || (C.length === 1 ? C[0] : C.find(y => maArr(cls).includes(y.ck))) || null; if (m) matched++;
-    const ck = cC >= 0 && r[cC] ? nqClassKey(r[cC], m ? m.ck : fb) : (m ? m.ck : fb);
-    list.push({ name, nh, n4: id.slice(-4), ck, sid: m ? m.st.id : "h" + nh.slice(0, 16) });
+  const fb = maArr(cls)[0] || "3-1"; const list = [], seen = new Set(); let dup = 0, matched = 0;
+  for (const f of files) for (const x of f.data) {
+    const nh = await stuHash(x.id); if (seen.has(nh)) { dup++; continue; } seen.add(nh);
+    const want = (f.rowCls && x.cls ? nqClassKey(x.cls, f.ck || fb) : "") || f.ck || "";
+    const C = byNm[rosNN(x.name)] || []; const m = byNh[nh] || (want ? C.find(y => y.ck === want) : null) || (C.length === 1 ? C[0] : null); if (m) matched++;
+    list.push({ name: x.name, nh, n4: x.id.slice(-4), ck: want || (m ? m.ck : fb), sid: m ? m.st.id : "h" + nh.slice(0, 16) });
   }
-  return { list, bad, dup, matched };
+  return { list, dup, matched };
 }
 function NqAllowBox({ E, upd, ros }) {
-  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false); const [show, setShow] = useState(false); const fr = useRef(null); const AL = nqAllow(E);
-  const load = async f => { if (!f) return; setBusy(true); setMsg(""); try { const r = await nqReadAllow(f, ros, maArr(E.cls)); if (!r.list.length) throw new Error("لم أجد صفوفاً صالحة (اسم + رقم هوية من ١٠ أرقام)"); upd(p => { p.allow = r.list; return p; }); setMsg(`✅ أُضيف ${maAr(r.list.length)} طالب${r.matched ? ` — رُبط ${maAr(r.matched)} منهم بكشوف الموقع` : ""}${r.bad ? ` • ⚠️ تُجوهل ${maAr(r.bad)} صف (اسم ناقص أو هوية ليست ١٠ أرقام)` : ""}${r.dup ? ` • ${maAr(r.dup)} مكرر` : ""}`); } catch (e) { setMsg("⚠️ " + (e.message || e)); } setBusy(false); };
+  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(""); const [show, setShow] = useState(false); const [pend, setPend] = useState(null); const [mode, setMode] = useState("merge"); const fr = useRef(null); const AL = nqAllow(E);
+  const lv0 = +(String(maArr(E.cls)[0] || "3-1").split("-")[0]) || 3;
+  const ckOpts = [...new Set([...Object.keys(ptObj(ros)), ...maArr(E.cls), ...AL.map(a => a.ck), ...Array.from({ length: 10 }, (_, i) => `${lv0}-${i + 1}`), ...((pend || []).map(f => f.ck).filter(Boolean))])].filter(k => /^\d-\d+$/.test(k)).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  const pick = async fl => { const F = Array.from(fl || []).slice(0, 10); if (!F.length) return; setMsg(""); const out = []; for (let i = 0; i < F.length; i++) { setBusy(`⏳ قراءة الملف ${maAr(i + 1)} من ${maAr(F.length)}…`); try { out.push(await nqParseAllowFile(F[i], lv0)); } catch (e) { out.push({ name: F[i].name, err: e.message || String(e), data: [], bad: 0 }); } } setBusy(""); setPend(out); if ((fl || []).length > 10) setMsg("⚠️ يُقبل ١٠ ملفات كحد أقصى في المرة الواحدة — قُرئت أول ١٠ ملفات"); };
+  const commit = async () => { const ok = pend.filter(f => !f.err && f.data.length); if (!ok.length) return; if (ok.some(f => !f.ck && !f.rowCls)) { setMsg("⚠️ حدّد الفصل لكل ملف قبل الاعتماد"); return; } setBusy("🔐 تشفير أرقام الهوية وتقسيم الطلاب على الفصول…"); try { const r = await nqBuildAllow(ok, ros, maArr(E.cls)); let added = 0, updated = 0; upd(p => { const cur = mode === "replace" ? [] : nqAllow(p); const map = new Map(cur.map(a => [a.nh, a])); r.list.forEach(a => { if (map.has(a.nh)) updated++; else added++; map.set(a.nh, a); }); p.allow = [...map.values()]; return p; }); const byC = {}; r.list.forEach(a => { byC[a.ck] = (byC[a.ck] || 0) + 1; }); setMsg(`✅ ${mode === "replace" ? "استُبدلت القائمة بـ" : "أُضيف/حُدّث "}${maAr(r.list.length)} طالب من ${maAr(ok.length)} ملف: ${Object.entries(byC).sort((a, b) => a[0].localeCompare(b[0], "en", { numeric: true })).map(([k, n]) => `${maClassName(k)} (${maAr(n)})`).join("، ")}${r.matched ? ` • رُبط ${maAr(r.matched)} بكشوف الموقع` : ""}${r.dup ? ` • ${maAr(r.dup)} مكرر` : ""}`); setPend(null); } catch (e) { setMsg("⚠️ " + (e.message || e)); } setBusy(""); };
   const tpl = async () => { const X = await loadXLSX(); const wb = X.utils.book_new(); const ws = X.utils.aoa_to_sheet([["الاسم", "رقم الهوية", "الفصل"], ["محمد أحمد علي", "1012345678", "ثالث متوسط / 1"]]); ws["!cols"] = [{ wch: 32 }, { wch: 16 }, { wch: 18 }]; X.utils.book_append_sheet(wb, ws, "الطلاب"); X.writeFile(wb, "قالب_طلاب_الاختبار.xlsx"); };
   const byC = {}; AL.forEach(a => { byC[a.ck] = (byC[a.ck] || 0) + 1; });
+  const B = (on, c) => ({ padding: "4px 10px", borderRadius: 8, border: `2px solid ${on ? c : "#e2e8f0"}`, background: on ? c : "#fff", color: on ? "#fff" : "#475569", fontWeight: 800, fontSize: 12, cursor: "pointer" });
   return <div className="nq-card" style={{ border: `2px solid ${AL.length ? "#16a34a" : "#e2e8f0"}` }}>
     <b style={{ fontSize: 14.5 }}>🪪 طلاب الاختبار — الدخول برقم الهوية</b> <small style={{ color: "#64748b", fontWeight: 700 }}>(اختياري: يقصر الاختبار على طلابك فقط)</small>
-    <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 700, lineHeight: 1.8, marginTop: 6 }}>ارفع ملف Excel فيه أعمدة: <b>الاسم</b> و<b>رقم الهوية</b> و<b>الفصل</b> (اختياري). عندها تختفي قائمة الأسماء من صفحة الطلاب، ويكتب كل طالب رقم هويته ليدخل الاختبار. تُحفظ أرقام الهوية مشفّرة، ولا يظهر منها إلا آخر ٤ أرقام.</div>
+    <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 700, lineHeight: 1.8, marginTop: 6 }}>اختر حتى <b>١٠ ملفات Excel</b> دفعة واحدة (ملف لكل فصل أو ملف واحد لكل الفصول). في كل ملف: <b>الاسم</b> و<b>رقم الهوية</b>، ويُعرف الفصل من عمود «الفصل» أو من ترويسة الملف أو من اسمه (مثل «ثالث 2.xlsx» أو «3-2.xlsx»)، ويمكنك تعديله قبل الاعتماد. تُحفظ أرقام الهوية مشفّرة، ولا يظهر منها إلا آخر ٤ أرقام.</div>
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-      <button className="nq-b nq-blue" disabled={busy} onClick={() => fr.current && fr.current.click()}>{busy ? "⏳ جاري قراءة الملف…" : AL.length ? "🔄 استبدال القائمة من Excel" : "📥 رفع ملف Excel"}</button>
+      <button className="nq-b nq-blue" disabled={!!busy} onClick={() => fr.current && fr.current.click()}>{busy || "📥 اختيار ملفات Excel (حتى ١٠)"}</button>
       <button className="nq-b nq-ghost" onClick={tpl}>⬇ تنزيل قالب Excel</button>
       {AL.length > 0 && <button className="nq-b nq-ghost" onClick={() => setShow(!show)}>{show ? "إخفاء الأسماء" : `👁 عرض الأسماء (${maAr(AL.length)})`}</button>}
-      {AL.length > 0 && <button className="nq-b" style={{ background: "#fef2f2", color: "#dc2626" }} onClick={() => { if (window.confirm("حذف قائمة الطلاب والعودة إلى الدخول باختيار الفصل والاسم؟")) { upd(p => { delete p.allow; return p; }); setMsg(""); setShow(false); } }}>🗑 حذف القائمة</button>}
-      <input ref={fr} type="file" hidden accept=".xlsx,.xls,.csv" onChange={e => { load(e.target.files[0]); e.target.value = ""; }} />
+      {AL.length > 0 && <button className="nq-b" style={{ background: "#fef2f2", color: "#dc2626" }} onClick={() => { if (window.confirm("حذف قائمة الطلاب كلها والعودة إلى الدخول باختيار الفصل والاسم؟")) { upd(p => { delete p.allow; return p; }); setMsg(""); setShow(false); } }}>🗑 حذف القائمة</button>}
+      <input ref={fr} type="file" hidden multiple accept=".xlsx,.xls,.csv" onChange={e => { pick(e.target.files); e.target.value = ""; }} />
     </div>
-    {msg && <div style={{ fontSize: 12.5, fontWeight: 800, marginTop: 8, color: msg.startsWith("✅") ? "#166534" : "#b45309" }}>{msg}</div>}
-    {AL.length > 0 && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#166534", marginTop: 8, lineHeight: 1.8 }}>🔒 الاختبار مقصور على {maAr(AL.length)} طالب يدخلون برقم الهوية: {Object.entries(byC).sort((a, b) => a[0].localeCompare(b[0], "en", { numeric: true })).map(([k, n]) => `${maClassName(k)} (${maAr(n)})`).join("، ")}</div>}
-    {show && <div style={{ maxHeight: 280, overflow: "auto", marginTop: 8, border: "1px solid #e2e8f0", borderRadius: 10 }}><table style={{ width: "100%", fontSize: 12.5, borderCollapse: "collapse" }}><tbody>{[...AL].sort((a, b) => a.ck.localeCompare(b.ck, "en", { numeric: true }) || a.name.localeCompare(b.name, "ar")).map((a, i) => <tr key={a.nh} style={{ borderBottom: "1px solid #f1f5f9" }}><td style={{ padding: "5px 8px", color: "#94a3b8" }}>{maAr(i + 1)}</td><td style={{ padding: "5px 8px", fontWeight: 800 }}>{a.name}</td><td style={{ padding: "5px 8px" }}>{maClassName(a.ck)}</td><td style={{ padding: "5px 8px", color: "#64748b", direction: "ltr", textAlign: "right" }}>***{a.n4}</td><td><button title="حذف" style={{ border: 0, background: "none", color: "#dc2626", cursor: "pointer", fontWeight: 900 }} onClick={() => upd(p => { p.allow = nqAllow(p).filter(x => x.nh !== a.nh); if (!p.allow.length) delete p.allow; return p; })}>✕</button></td></tr>)}</tbody></table></div>}
+    {pend && <div style={{ marginTop: 10, border: "2px solid #bfdbfe", borderRadius: 12, padding: 10, background: "#f8fbff" }}>
+      <b style={{ color: "#1e3a8a", fontSize: 13.5 }}>📋 راجع الملفات وفصل كل منها ({maAr(pend.length)} ملف • {maAr(pend.reduce((a, f) => a + f.data.length, 0))} طالب)</b>
+      <div style={{ overflowX: "auto", marginTop: 8 }}><table style={{ width: "100%", fontSize: 12.5, borderCollapse: "collapse" }}><thead><tr style={{ background: "#eff6ff", color: "#1e3a8a" }}><th style={{ padding: 6, textAlign: "right" }}>الملف</th><th style={{ padding: 6 }}>الطلاب</th><th style={{ padding: 6 }}>الفصل</th><th style={{ padding: 6, textAlign: "right" }}>ملاحظات</th></tr></thead><tbody>
+        {pend.map((f, i) => <tr key={i} style={{ borderBottom: "1px solid #e2e8f0" }}><td style={{ padding: 6, fontWeight: 800, maxWidth: 220, overflowWrap: "anywhere" }}>📄 {f.name}</td><td style={{ padding: 6, textAlign: "center", fontWeight: 900, color: f.data.length ? "#166534" : "#dc2626" }}>{maAr(f.data.length)}</td>
+          <td style={{ padding: 6, textAlign: "center" }}>{f.err ? "—" : f.rowCls && !f.ck ? <span style={{ color: "#0f766e", fontWeight: 800 }}>من عمود الفصل</span> : <select className="nq-inp" style={{ width: "auto", padding: "3px 6px", fontSize: 12.5, borderColor: f.ck ? "#86efac" : "#fbbf24", background: f.ck ? "#fff" : "#fffbeb" }} value={f.ck || ""} onChange={e => setPend(P => P.map((x, j) => j === i ? { ...x, ck: e.target.value } : x))}><option value="">⚠️ اختر الفصل</option>{ckOpts.map(k => <option key={k} value={k}>{maClassName(k)}</option>)}</select>}</td>
+          <td style={{ padding: 6, color: f.err ? "#dc2626" : "#64748b", fontWeight: 700 }}>{f.err ? "⚠️ " + f.err : [f.ck ? "✓ تعرّف على الفصل" : f.rowCls ? "✓ الفصل لكل طالب من الملف" : "حدّد الفصل يدوياً", f.bad ? `تُجوهل ${maAr(f.bad)} صف ناقص` : ""].filter(Boolean).join(" • ")}</td></tr>)}
+      </tbody></table></div>
+      {AL.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center", flexWrap: "wrap", fontSize: 12.5, fontWeight: 800 }}>القائمة الحالية ({maAr(AL.length)} طالب): <button style={B(mode === "merge", "#2563eb")} onClick={() => setMode("merge")}>➕ إضافة إليها وتحديثها</button><button style={B(mode === "replace", "#dc2626")} onClick={() => setMode("replace")}>🔄 استبدالها بالكامل</button></div>}
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}><button className="nq-b nq-green" style={{ flex: 1 }} disabled={!!busy || !pend.some(f => f.data.length)} onClick={commit}>{busy || `✓ اعتماد وتقسيم ${maAr(pend.reduce((a, f) => a + f.data.length, 0))} طالب على الفصول`}</button><button className="nq-b nq-ghost" disabled={!!busy} onClick={() => setPend(null)}>إلغاء</button></div>
+    </div>}
+    {msg && <div style={{ fontSize: 12.5, fontWeight: 800, marginTop: 8, lineHeight: 1.8, color: msg.startsWith("✅") ? "#166534" : "#b45309" }}>{msg}</div>}
+    {AL.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}><b style={{ fontSize: 12.5, color: "#166534" }}>🔒 مقصور على {maAr(AL.length)} طالب:</b>{Object.entries(byC).sort((a, b) => a[0].localeCompare(b[0], "en", { numeric: true })).map(([k, n]) => <span key={k} className="nq-badge" style={{ background: "#dcfce7", color: "#166534" }}>{maClassName(k)}: {maAr(n)}</span>)}</div>}
+    {show && <div style={{ maxHeight: 300, overflow: "auto", marginTop: 8, border: "1px solid #e2e8f0", borderRadius: 10 }}><table style={{ width: "100%", fontSize: 12.5, borderCollapse: "collapse" }}><tbody>{[...AL].sort((a, b) => a.ck.localeCompare(b.ck, "en", { numeric: true }) || a.name.localeCompare(b.name, "ar")).map((a, i) => <tr key={a.nh} style={{ borderBottom: "1px solid #f1f5f9" }}><td style={{ padding: "5px 8px", color: "#94a3b8" }}>{maAr(i + 1)}</td><td style={{ padding: "5px 8px", fontWeight: 800 }}>{a.name}</td><td style={{ padding: "5px 8px" }}><select className="nq-inp" style={{ width: "auto", padding: "2px 4px", fontSize: 12 }} value={a.ck} onChange={e => upd(p => { p.allow = nqAllow(p).map(x => x.nh === a.nh ? { ...x, ck: e.target.value } : x); return p; })}>{[...new Set([a.ck, ...ckOpts])].map(k => <option key={k} value={k}>{maClassName(k)}</option>)}</select></td><td style={{ padding: "5px 8px", color: "#64748b", direction: "ltr", textAlign: "right" }}>***{a.n4}</td><td><button title="حذف" style={{ border: 0, background: "none", color: "#dc2626", cursor: "pointer", fontWeight: 900 }} onClick={() => upd(p => { p.allow = nqAllow(p).filter(x => x.nh !== a.nh); if (!p.allow.length) delete p.allow; return p; })}>✕</button></td></tr>)}</tbody></table></div>}
   </div>;
 }
 
