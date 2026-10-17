@@ -2,7 +2,7 @@
 // 🗺️ رحلة الكنز — لوحة الإدارة: الرابط والإعدادات ومتابعة تقدم الطلاب
 // ══════════════════════════════════════════════════════════
 import React, { useEffect, useMemo, useState } from "react";
-import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, SKILLS, SUBJ, ar, arr, obj, when, trLink, useFonts, BASE_CSS } from "./core.jsx";
+import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, SKILLS, SUBJ, LEVELS, HOTS, hotsOf, loadAllStages, ar, arr, obj, when, trLink, useFonts, BASE_CSS } from "./core.jsx";
 
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -58,7 +58,7 @@ export default function TreasureAdmin({ by, api }) {
     const n = scoped.length; const sum = k => scoped.reduce((a, r) => a + (+r[k] || 0), 0);
     const playedRows = scoped.filter(r => r.played);
     const avgOf = k => playedRows.length ? Math.round(playedRows.reduce((a, r) => a + r[k], 0) / playedRows.length) : 0;
-    return { n, passed: sum("passed"), stars: sum("stars"), avgStage: n ? (sum("passed") / n).toFixed(1) : "0", w1: scoped.filter(r => r.passed >= 5).length, w2: scoped.filter(r => r.passed >= 10).length, r: avgOf("r"), m: avgOf("m"), s: avgOf("s"), avg: avgOf("avg") };
+    return { n, passed: sum("passed"), stars: sum("stars"), avgStage: n ? (sum("passed") / n).toFixed(1) : "0", w1: scoped.filter(r => r.passed >= 5).length, w2: scoped.filter(r => r.passed >= 10).length, w3: scoped.filter(r => r.passed >= 15).length, w4: scoped.filter(r => r.passed >= 20).length, r: avgOf("r"), m: avgOf("m"), s: avgOf("s"), avg: avgOf("avg") };
   }, [scoped]);
 
   const skills = useMemo(() => {
@@ -119,7 +119,7 @@ export default function TreasureAdmin({ by, api }) {
       {g3 > 0 && withId < g3 && <div className="tra-warn">⚠️ {ar(g3 - withId)} من طلاب الصف الثالث ليست أرقام هوياتهم مرتبطة بكشوف الفصول، ولن يتمكنوا من الدخول. استورد كشوف نور التي فيها «رقم السجل المدني» من صفحة الفصول.</div>}
     </div>
 
-    <div className="tra-tabs">{[["track", "📊 المتابعة"], ["skills", "🧠 المهارات"], ["none", `⏳ لم يبدؤوا (${ar(notStarted.length)})`], ["top", "🏆 الأوائل"], ["set", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div className="tra-tabs">{[["track", "📊 المتابعة"], ["skills", "🧠 المهارات"], ["map", "🗺️ خريطة النواتج"], ["none", `⏳ لم يبدؤوا (${ar(notStarted.length)})`], ["top", "🏆 الأوائل"], ["set", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
 
     <div className="tra-filter">
       <select value={cls} onChange={e => setCls(e.target.value)}><option value="all">جميع الفصول</option>{classes.map(c => <option key={c} value={c}>{api.maClassName(c)}</option>)}</select>
@@ -136,6 +136,8 @@ export default function TreasureAdmin({ by, api }) {
         <div><b>{ar(kpi.avgStage)}</b><span>متوسط المراحل المنجزة</span></div>
         <div><b>{ar(kpi.w1)}</b><span>أنهوا العالم الأول 🥉</span></div>
         <div><b>{ar(kpi.w2)}</b><span>أنهوا العالم الثاني 🥈</span></div>
+        <div><b>{ar(kpi.w3)}</b><span>أنهوا العالم الثالث 🥇</span></div>
+        <div><b>{ar(kpi.w4)}</b><span>وصلوا إلى الكنز 👑</span></div>
         <div><b>{ar(kpi.stars)}</b><span>مجموع النجوم ⭐</span></div>
         {["r", "m", "s"].map(k => <div key={k} style={{ "--c": SUBJ[k].c }}><b style={{ color: SUBJ[k].c }}>{ar(kpi[k])}٪</b><span>{SUBJ[k].icon} {SUBJ[k].name}</span><i style={{ width: kpi[k] + "%", background: SUBJ[k].c }} /></div>)}
       </div>
@@ -163,6 +165,8 @@ export default function TreasureAdmin({ by, api }) {
         <em style={{ color: s.p < 50 ? "#dc2626" : s.p < 70 ? "#b45309" : "#166534" }}>{ar(s.p)}٪</em>
       </div>; })}
     </div>}
+
+    {tab === "map" && <OutcomeMap />}
 
     {tab === "none" && <div className="tra-card">
       <b>⏳ طلاب لم يبدؤوا الرحلة ({ar(notStarted.length)})</b>
@@ -195,6 +199,28 @@ export default function TreasureAdmin({ by, api }) {
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}><button className="tra-b" style={{ background: "#fee2e2", color: "#991b1b" }} onClick={() => reset(detail)}>🗑️ إعادة تعيين رحلة الطالب</button></div>
     </div></div>}
     {msg && <div className="tra-toast">{msg}</div>}
+  </div>;
+}
+
+// 🗺️ خريطة نواتج التعلم: توزيع أسئلة الرحلة على المهارات والمراحل والمستويات ومهارات التفكير العليا
+function OutcomeMap() {
+  const [S, setS] = useState(null);
+  useEffect(() => { let on = true; loadAllStages().then(x => on && setS(x)).catch(() => on && setS([])); return () => { on = false; }; }, []);
+  if (!S) return <div className="tra-card"><p className="tra-note">⏳ جارٍ تحميل محتوى المراحل…</p></div>;
+  const qsOf = s => [...((s.read && s.read.qs) || []), ...(s.math || []), ...(s.sci || [])];
+  const keys = Object.keys(SKILLS), grid = {}, lv = {}, ht = {}; let total = 0;
+  S.forEach(s => qsOf(s).forEach(q => { total++; (grid[q.k] = grid[q.k] || {})[s.n] = (grid[q.k][s.n] || 0) + 1; lv[q.lv] = (lv[q.lv] || 0) + 1; const h = hotsOf(q); if (h) ht[h] = (ht[h] || 0) + 1; }));
+  const rowSum = k => Object.values(grid[k] || {}).reduce((a, b) => a + b, 0);
+  const subOf = k => SUBJ[k[0] === "R" ? "r" : k[0] === "M" ? "m" : "s"];
+  return <div className="tra-card">
+    <b>🗺️ خريطة نواتج التعلم في الرحلة</b>
+    <p className="tra-note">{ar(S.length)} مرحلة • {ar(total)} سؤال أساسي، ولكل سؤال توأم تعويضي بالمهارة نفسها. كل خانة = عدد أسئلة المهارة في المرحلة.</p>
+    <div className="tra-tbl-wrap"><table className="tra-tbl tra-map"><thead><tr><th className="r">المهارة (ناتج التعلم)</th>{S.map(s => <th key={s.n} style={{ background: worldOf(s.n).c1, color: "#fff" }}>{ar(s.n)}</th>)}<th>المجموع</th></tr></thead>
+      <tbody>{keys.map(k => { const sub = subOf(k); return <tr key={k}><td className="r"><span style={{ color: sub.c }}>{sub.icon}</span> {SKILLS[k]}</td>{S.map(s => { const v = (grid[k] || {})[s.n] || 0; return <td key={s.n} style={{ background: v ? sub.soft : "transparent", color: v ? sub.c : "#cbd5e1" }}>{v ? ar(v) : "·"}</td>; })}<td><b>{ar(rowSum(k))}</b></td></tr>; })}</tbody></table></div>
+    <div className="tra-map-foot">
+      <div><b>المستويات المعرفية</b>{Object.keys(LEVELS).map(l => <span key={l}>{LEVELS[l]}: {ar(lv[l] || 0)}</span>)}</div>
+      <div><b>🧠 مهارات التفكير العليا</b>{Object.keys(HOTS).map(h => <span key={h}>{HOTS[h].ic} {HOTS[h].n}: {ar(ht[h] || 0)}</span>)}</div>
+    </div>
   </div>;
 }
 
@@ -255,6 +281,11 @@ const ADM_CSS = `
 .tra-sk-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px}
 .tra-bar{height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden;margin-top:4px}
 .tra-bar i{display:block;height:100%;border-radius:99px}
+.tra-map{min-width:900px;font-size:12px}.tra-map td{padding:5px 3px;font-weight:900}.tra-map th{padding:7px 3px}.tra-map td.r{white-space:nowrap;font-weight:800}
+.tra-map-foot{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.tra-map-foot>div{background:#f8fafc;border-radius:12px;padding:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tra-map-foot b{width:100%;font-size:13px}
+.tra-map-foot span{background:#fff;border:1px solid #e2e8f0;border-radius:99px;padding:3px 9px;font-size:12px;font-weight:800}
 .tra-none h4{margin:12px 0 6px;color:#1e3a8a}
 .tra-none>div{display:flex;flex-wrap:wrap;gap:6px}
 .tra-none span{background:#f8fafc;border:1px solid #e2e8f0;border-radius:99px;padding:4px 10px;font-size:12.5px;font-weight:700}

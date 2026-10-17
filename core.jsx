@@ -22,8 +22,10 @@ export const WORLDS = [
 export const worldOf = n => WORLDS.find(w => n >= w.from && n <= w.to) || WORLDS[0];
 
 // تحميل محتوى العالم عند الحاجة فقط (كل عالم ملف مستقل)
-const LOADERS = { 1: () => import("./data/w1.js"), 2: () => import("./w2.js") };
-export const READY = 10; // آخر مرحلة جاهز محتواها — يزيد مع إضافة العوالم
+const LOADERS = { 1: () => import("./data/w1.js"), 2: () => import("./w2.js"), 3: () => import("./w3.js"), 4: () => import("./w4.js") };
+export const READY = 20; // جميع المراحل جاهزة
+// تحميل كل المراحل (لخريطة نواتج التعلم في لوحة المتابعة)
+export async function loadAllStages() { const ms = await Promise.all(Object.values(LOADERS).map(L => L())); return ms.flatMap(m => m.default || []).sort((x, y) => x.n - y.n); }
 export async function loadStage(n) {
   const w = worldOf(n); const L = LOADERS[w.n]; if (!L) return null;
   const m = await L(); return (m.default || []).find(s => s.n === n) || null;
