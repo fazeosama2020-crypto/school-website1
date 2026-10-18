@@ -28327,7 +28327,8 @@ function pnxCompute(D) {
     if (r.st === "ok") t0.ok++;
     if (r.st === "late") { const m = +r.mins || 0; t0.lateMin += m; if (r.rsn) t0.rsn[r.rsn] = (t0.rsn[r.rsn] || 0) + 1; push({ k: "late", m, txt: `تأخر ${m} د${r.tm ? ` — دخل ${r.tm}` : ""}${r.rsn ? ` • ${r.rsn}` : ""}` }, r.ti); }
     if (r.st === "early") { const m = +r.out || 0; t0.earlyMin += m; push({ k: "early", m, txt: `خرج قبل النهاية بـ ${m} د${r.tm ? ` — الساعة ${r.tm}` : ""}${r.rsn ? ` • ${r.rsn}` : ""}` }, r.ti); }
-    if (r.st === "absent" || r.st === "sub") push({ k: "absent", m: 0, txt: r.st === "sub" ? `غاب عن الحصة — البديل: ${ttClean(T.T[r.sub] || "")}` : "لم يدخل الحصة — بدون بديل" }, r.ti);
+    if (r.st === "perm" || (r.st === "sub" && r.pm)) push({ k: "note", m: 0, txt: r.st === "sub" ? `🙋 استأذن من الحصة — أمّنها: ${ttClean(T.T[r.sub] || "")}` : "🙋 استأذن من الحصة — بدون تأمين" }, r.ti);
+    else if (r.st === "absent" || r.st === "sub") push({ k: "absent", m: 0, txt: r.st === "sub" ? `غاب عن الحصة — البديل: ${ttClean(T.T[r.sub] || "")}` : "لم يدخل الحصة — بدون بديل" }, r.ti);
     if (r.st === "sub" && r.sub != null && r.sub !== "") { const s = tc(r.sub); s.cov++; if (r.so && r.so !== "ok") { const so = (typeof TT_SO !== "undefined" && TT_SO[r.so]) || { l: r.so }; push({ k: "so", m: 0, txt: `${so.l} (بدلاً عن ${ttClean(T.T[r.ti] || "")})${r.act ? ` • الإجراء: ${r.act}` : ""}` }, r.sub); } }
     maArr(r.notes).forEach(n => { if (PNX_NEG(n)) push({ k: "neg", m: 0, txt: n }, r.ti); else { t0.pos++; push({ k: "pos", m: 0, txt: n }, r.ti); } });
     if (r.note && !ttAutoNote(r.note)) { if (r.st === "late" || r.st === "early") { const e = tc(r.ti).ev[tc(r.ti).ev.length - 1]; if (e) e.txt += ` • ${r.note}`; } else if (r.st !== "note") push({ k: "note", m: 0, txt: r.note }, r.ti); }
@@ -38455,8 +38456,11 @@ const ST2 = {
   late: { l: "تأخر عن الحصة", ic: "⏰", c: "#c2410c", bg: "#ffedd5" },
   early: { l: "خرج من الفصل", ic: "🚪", c: "#7c3aed", bg: "#ede9fe" },
   absent: { l: "غائب", ic: "❌", c: "#b91c1c", bg: "#fee2e2" },
+  perm: { l: "استأذن وتأمين", ic: "🙋", c: "#0e7490", bg: "#cffafe" },
   note: { l: "ملاحظة على الفصل", ic: "📝", c: "#0369a1", bg: "#e0f2fe" },
 };
+// نوع الرصد: «sub» مع pm = استئذان أُمّنت حصته (لا يُحسب غيابًا)
+const ttKindR = r => r && r.st === "sub" ? (r.pm ? "perm" : "absent") : r && r.st;
 // ══════════ سجل متابعة سير الحصص الدراسية (رصد بالتاريخ والوقت + طباعة) ══════════
 const TT_LRS = ["انشغال بعمل إداري", "تأخر انتهاء الحصة السابقة", "ظرف طارئ", "استئذان مسبق", "بدون عذر"];
 const TT_CNS = ["فوضى وضعف انضباط", "عدم إحضار الكتب والأدوات", "نظافة الفصل", "تأخر طلاب عن الحصة", "تميّز وانضباط الفصل", "عطل في الفصل (تكييف/إضاءة/سبورة)", "أخرى"];
@@ -38470,12 +38474,12 @@ function SttLogPanel({ T, times, by, subName }) {
   const bounds = () => { const d0 = new Date(); if (rng === "day") return [today, today]; if (rng === "week") { const s = new Date(d0); s.setDate(d0.getDate() - d0.getDay()); return [maKey(s), today]; } if (rng === "month") { const s = new Date(d0); s.setDate(d0.getDate() - 29); return [maKey(s), today]; } if (rng === "term") { const y = d0.getMonth() >= 7 ? d0.getFullYear() : d0.getFullYear() - 1; return [`${y}-08-01`, today]; } return [f <= t ? f : t, f <= t ? t : f]; };
   const [F0, T0] = bounds();
   useEffect(() => { let on = true; setRows(null); (async () => { const L = await fbRange(TT_LOG, F0, T0); if (!on) return; const out = []; Object.entries(ptObj(L)).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([k, v]) => { if (!v || typeof v !== "object") return; const [d, p, c] = k.split("_"); out.push({ dk, d: +d, p: +p, ck: c, ...v }); })); out.sort((a, b) => b.dk.localeCompare(a.dk) || a.p - b.p || String(a.ck).localeCompare(String(b.ck))); setRows(out); })(); return () => { on = false; }; }, [F0, T0]);
-  const kindOf = r => r.st === "sub" ? "absent" : r.st;
+  const kindOf = r => ttKindR(r);
   const R = (rows || []).filter(r => (fl === "all" || kindOf(r) === fl || (fl === "cn" && r.cn)) && (!ck || r.ck === ck) && (!tq || ttClean(T.T[r.ti] || "").includes(tq) || (r.sub != null && ttClean(T.T[r.sub] || "").includes(tq))));
   const cnt = k => (rows || []).filter(r => k === "cn" ? r.cn : kindOf(r) === k).length;
   const lateMin = (rows || []).filter(r => r.st === "late").reduce((a, r) => a + (+r.mins || 0), 0);
   const tops = (() => { const m = {}; (rows || []).forEach(r => { if (r.st === "late" || r.st === "early") { const k = r.ti; m[k] = m[k] || { n: 0, mins: 0 }; m[k].n++; m[k].mins += +r.mins || +r.out || 0; } }); return Object.entries(m).sort((a, b) => b[1].n - a[1].n).slice(0, 5); })();
-  const detail = r => { const x = []; if (r.st === "late") x.push(`تأخر ${maAr(r.mins)} د${r.tm ? ` — دخل ${mlFmtT(r.tm)}` : ""}`); if (r.st === "early") x.push(`خرج قبل النهاية بـ ${maAr(r.out)} د${r.tm ? ` — الساعة ${mlFmtT(r.tm)}` : ""}`); if (r.st === "sub") x.push(`البديل: ${ttClean(T.T[r.sub] || "")}${TT_LVC[r.lvl] ? ` (${TT_LVC[r.lvl].l})` : ""}`); if (r.st === "absent") x.push("بدون بديل"); if (r.rsn) x.push(`السبب: ${r.rsn}`); if (r.note) x.push(r.note); return x.join(" • "); };
+  const detail = r => { const x = []; if (r.st === "late") x.push(`تأخر ${maAr(r.mins)} د${r.tm ? ` — دخل ${mlFmtT(r.tm)}` : ""}`); if (r.st === "early") x.push(`خرج قبل النهاية بـ ${maAr(r.out)} د${r.tm ? ` — الساعة ${mlFmtT(r.tm)}` : ""}`); if (r.st === "sub") x.push(`${r.pm ? "استأذن — أمّن الحصة" : "البديل"}: ${ttClean(T.T[r.sub] || "")}${TT_LVC[r.lvl] ? ` (${TT_LVC[r.lvl].l})` : ""}`); if (r.st === "absent") x.push("بدون بديل"); if (r.st === "perm") x.push("استأذن — بدون تأمين"); if (r.rsn) x.push(`السبب: ${r.rsn}`); if (r.note) x.push(r.note); return x.join(" • "); };
   const cnTxt = r => r.cn ? `${r.cn.c || ""}${r.cn.c && r.cn.t ? " — " : ""}${r.cn.t || ""}` : "";
   const stOf = r => ST2[kindOf(r)] || { l: r.st, ic: "•", c: "#475569", bg: "#f1f5f9" };
   const print = () => {
@@ -38515,11 +38519,12 @@ const TTR_K = [
   { k: "late", ic: "⏰", l: "تأخر عن الحصة", c: "#c2410c", bg: "#ffedd5" },
   { k: "early", ic: "🚪", l: "خروج قبل نهاية الحصة", c: "#7c3aed", bg: "#ede9fe" },
   { k: "absent", ic: "❌", l: "غياب عن الحصة", c: "#b91c1c", bg: "#fee2e2" },
+  { k: "perm", ic: "🙋", l: "استئذان من الحصة", c: "#0e7490", bg: "#cffafe" },
   { k: "note", ic: "📝", l: "ملاحظة على الحصة", c: "#0369a1", bg: "#e0f2fe" },
   { k: "ok", ic: "✅", l: "حضور منتظم", c: "#15803d", bg: "#dcfce7" },
   { k: "cov", ic: "🔄", l: "حصص انتظار غطّاها", c: "#0f766e", bg: "#ccfbf1" },
 ];
-const ttKindOf = r => r.st === "sub" ? "absent" : r.st;
+const ttKindOf = r => ttKindR(r);
 const ttRk = r => `${r.dk}_${r.d}_${r.p}_${r.ck}`;
 // هل يحتاج السجل اطّلاع المعلم؟ (أي حالة غير «حضر»، أو أي ملاحظة مكتوبة — ولمعلم الانتظار ملاحظات حصته)
 const ttAutoNote = n => /^غياب المعلم/.test(String(n || ""));
@@ -38534,7 +38539,7 @@ function ttStats(rows, ti) {
   const wd = [0, 0, 0, 0, 0]; own.filter(r => ["late", "early", "absent", "sub"].includes(r.st)).forEach(r => { const w = maDate(r.dk).getDay(); if (w <= 4) wd[w]++; });
   return { own, cov, c: { late: n("late"), early: n("early"), absent: n("absent"), note: own.filter(r => r.st === "note" || r.note || r.cn).length, ok: n("ok"), cov: cov.length }, lateMin: late.reduce((a, r) => a + (+r.mins || 0), 0), earlyMin: early.reduce((a, r) => a + (+r.out || 0), 0), rsn, wd, issues: n("late") + n("early") + n("absent") };
 }
-const ttDetail = (T, r) => { const x = []; if (r.st === "late") x.push(`تأخر ${maAr(r.mins)} د${r.tm ? ` — دخل ${mlFmtT(r.tm)}` : ""}`); if (r.st === "early") x.push(`خرج قبل النهاية بـ ${maAr(r.out)} د${r.tm ? ` — الساعة ${mlFmtT(r.tm)}` : ""}`); if (r.st === "sub") x.push(`البديل: ${ttClean(T.T[r.sub] || "")}${TT_LVC[r.lvl] ? ` (${TT_LVC[r.lvl].l})` : ""}`); if (r.st === "absent") x.push("بدون بديل"); if (r.rsn) x.push(`السبب: ${r.rsn}`); return x.join(" • "); };
+const ttDetail = (T, r) => { const x = []; if (r.st === "late") x.push(`تأخر ${maAr(r.mins)} د${r.tm ? ` — دخل ${mlFmtT(r.tm)}` : ""}`); if (r.st === "early") x.push(`خرج قبل النهاية بـ ${maAr(r.out)} د${r.tm ? ` — الساعة ${mlFmtT(r.tm)}` : ""}`); if (r.st === "sub") x.push(`${r.pm ? "استأذن — أمّن الحصة" : "البديل"}: ${ttClean(T.T[r.sub] || "")}${TT_LVC[r.lvl] ? ` (${TT_LVC[r.lvl].l})` : ""}`); if (r.st === "absent") x.push("بدون بديل"); if (r.st === "perm") x.push("استأذن — بدون تأمين"); if (r.rsn) x.push(`السبب: ${r.rsn}`); return x.join(" • "); };
 const TTR_CSS = `*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:7mm}.pg{border-color:#4f46e5}.pg::before{background:linear-gradient(90deg,#1e1b4b,#4f46e5,#c2410c,#fbbf24)}th{background:#312e81}
 .tb{border-radius:16px;color:#fff;padding:10px 16px;margin:6px 0 10px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1e1b4b,#4f46e5 60%,#7c3aed)}.tb b{font-size:19px}.tb small{font-size:11px;font-weight:800;opacity:.9}
 .kk{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:6px 0}.kk div{border-radius:14px;padding:8px 4px;text-align:center;font-weight:800;font-size:10px;border:1.5px solid}.kk b{display:block;font-size:22px;line-height:1.2}
@@ -39506,7 +39511,7 @@ function HdTeacherView({ me }) {
   const doAck = async k => { const v = Date.now(); setAck(a => ({ ...a, [k]: v })); await maPut(`${HD_ACK}/${hk}/${k}`, v); };
   const sendObj = async () => { const t = String(ob.t || "").trim(); if (!t) return; const v = { t, at: Date.now(), st: "new", n: me.name }; setObj(o => ({ ...o, [ob.k]: v })); setOb(null); await maPut(`${HD_OBJ}/${hk}/${ob.k}`, v); };
   const ASM = { p: ["✅ حضر الطابور", "#15803d"], l: ["⏰ تأخر عن الطابور", "#c2410c"], lx: ["🕐 تأخر لظرف", "#0e7490"], a: ["🚶 تواجد ولم يحضر الطابور", "#b91c1c"], x: ["📝 مستأذن", "#b45309"], o: ["🏃 خرج دون إذن", "#9d174d"], g: ["🚫 غائب", "#7f1d1d"] };
-  const clsTxt = r => r.st === "late" ? `تأخر ${maAr(r.mins || 0)} د عن الحصة ${maAr(r.p + 1)}` : r.st === "early" ? `خروج قبل نهاية الحصة ${maAr(r.p + 1)} بـ ${maAr(r.out || 0)} د` : r.st === "absent" || r.st === "sub" ? `غياب عن الحصة ${maAr(r.p + 1)}` : `ملاحظة على الحصة ${maAr(r.p + 1)}`;
+  const clsTxt = r => r.st === "late" ? `تأخر ${maAr(r.mins || 0)} د عن الحصة ${maAr(r.p + 1)}` : r.st === "early" ? `خروج قبل نهاية الحصة ${maAr(r.p + 1)} بـ ${maAr(r.out || 0)} د` : r.st === "perm" || (r.st === "sub" && r.pm) ? `استئذان من الحصة ${maAr(r.p + 1)}` : r.st === "absent" || r.st === "sub" ? `غياب عن الحصة ${maAr(r.p + 1)}` : `ملاحظة على الحصة ${maAr(r.p + 1)}`;
   const k0 = last && last.k; const D0 = k0 && maDate(k0);
   return <div className="hd grid gap-3" dir="rtl"><style>{HD_CSS}</style>
     <div className="hd-hero"><h2>📈 انضباطي اليومي</h2><p>أ. {me.name} • من تقرير «حضوري» وسجل الطابور ومتابعة الحصص</p></div>
@@ -40639,7 +40644,7 @@ async function ttDayReport({ T, times, dk, di, log, absList, plan, by, subName }
   const rows = Object.entries(ptObj(log)).filter(([k, v]) => v && typeof v === "object" && +k.split("_")[0] === di).map(([k, v]) => { const [d, p, ck] = k.split("_"); return { dk, d: +d, p: +p, ck, ...v }; });
   const auto = n => /^غياب المعلم/.test(String(n || ""));
   const hasNote = r => !!(r.cn || (r.note && !auto(r.note)));
-  const kind = r => r.st === "sub" ? "absent" : r.st;
+  const kind = r => ttKindR(r);
   const P = times.map((t, p) => { const sch = cks.filter(ck => { const c = cell(ck, p); return c && c[0] >= 0; }).length; const R = rows.filter(r => r.p === p); const n = k => R.filter(r => kind(r) === k).length; return { p, t, sch, rec: R.length, ok: n("ok"), late: n("late"), early: n("early"), abs: n("absent"), sub: R.filter(r => r.st === "sub").length, note: R.filter(hasNote).length }; });
   const tot = k => P.reduce((a, x) => a + x[k], 0);
   const sch = tot("sch"), iss = tot("late") + tot("early") + tot("abs"), pct = sch ? Math.round((sch - iss) / sch * 100) : 100;
@@ -40706,7 +40711,7 @@ function TtNowBoard({ navigate, big = false }) {
   const card = ck => { const c = T.C[ck] && T.C[ck][di] && T.C[ck][di][p]; const lv = MA_LV[+ck[0] - 1] || { c: "#475569", soft: "#f1f5f9" };
     if (!c || c[0] < 0) return { ck, lv, empty: true };
     const [si, ti] = c; const v = log[ttK(di, p, ck)]; const pk = plan[ttK(di, p, ck)]; let bd = null, who = ttClean(T.T[ti]);
-    if (v && v.st === "sub" && v.sub != null) { bd = { t: "🔄 حصة انتظار", c: "#0369a1", bg: "#e0f2fe" }; who = ttClean(T.T[v.sub]); }
+    if (v && v.st === "sub" && v.sub != null) { bd = v.pm ? { t: "🙋 استأذن • تأمين", c: "#0e7490", bg: "#cffafe" } : { t: "🔄 حصة انتظار", c: "#0369a1", bg: "#e0f2fe" }; who = ttClean(T.T[v.sub]); }
     else if (v && ST2[v.st]) { const x = ST2[v.st]; bd = { t: `${x.ic} ${v.st === "late" ? `تأخر ${maAr(v.mins)} د` : v.st === "early" ? "خرج قبل النهاية" : x.l}`, c: x.c, bg: x.bg }; }
     else if (abs.includes(ti) && ttAbsAt(S.absR, ti, p) && pk && pk.sub != null) { bd = { t: `🚫 غائب • البديل المقترح`, c: "#b45309", bg: "#fef3c7" }; who = ttClean(T.T[pk.sub]); }
     else if (abs.includes(ti) && ttAbsAt(S.absR, ti, p)) bd = { t: "🚫 المعلم غائب", c: "#b91c1c", bg: "#fee2e2" };
@@ -40845,7 +40850,11 @@ const STT_CSS = `
 .stt-wrap{overflow-x:auto;border-radius:20px;border:1px solid #e2e8f0;background:#fff;-webkit-overflow-scrolling:touch}
 .stt-g{border-collapse:separate;border-spacing:0;width:100%}
 .stt-g th{position:sticky;top:0;z-index:2;background:#1e1b4b;color:#fff;font-size:12px;font-weight:900;padding:7px 4px;min-width:86px}
-.stt-g th.now{background:linear-gradient(180deg,#0891b2,#0e7490)}
+.stt-g th.now{background:linear-gradient(180deg,#f59e0b,#d97706);color:#1f1300;box-shadow:inset 0 -4px 0 #b45309}
+.stt-g th.now::after{content:"● الآن";display:block;margin:3px auto 0;width:fit-content;background:#b91c1c;color:#fff;border-radius:999px;padding:0 8px;font-size:10px;animation:sttNow 1.4s infinite}
+@keyframes sttNow{50%{opacity:.45}}
+.stt-g td.nowc{background:linear-gradient(180deg,#fffbeb,#fef3c7);border-left:2px solid #fbbf24;border-right:2px solid #fbbf24}
+.stt-g td.pastc .stt-c{opacity:.62;filter:saturate(.7)}
 .stt-g th small{display:block;font-size:10px;opacity:.75;font-weight:700}
 .stt-g td{border-bottom:1px solid #f1f5f9;border-left:1px solid #f1f5f9;padding:3px;vertical-align:top}
 .stt-g .rh{position:sticky;right:0;z-index:1;background:#fff;font-weight:900;font-size:12.5px;white-space:nowrap;padding:6px 8px;border-left:2px solid #e2e8f0;min-width:0}
@@ -40855,7 +40864,7 @@ const STT_CSS = `
 .stt-c small{display:block;font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stt-c b{display:block;font-size:12.5px;font-weight:900;color:#0f172a;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stt-c .bd{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:900;border-radius:999px;padding:1px 7px;background:#fff}
-.stt-c.now{box-shadow:0 0 0 2px #0891b2}
+.stt-c.now{box-shadow:0 0 0 3px #f59e0b,0 10px 20px -10px rgba(217,119,6,.75);transform:scale(1.03);z-index:1}
 .stt-c.sug{border-style:dashed}
 .stt-card{display:flex;align-items:stretch;gap:0;border-radius:18px;background:#fff;border:1.5px solid #e2e8f0;overflow:hidden;cursor:pointer;text-align:right;font-family:inherit;width:100%;padding:0}
 .stt-card .pn{flex:none;width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;border-left:1.5px solid #e2e8f0;font-weight:900;color:#3730a3}
@@ -40866,7 +40875,7 @@ const STT_CSS = `
 .stt-sheet>div{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:26px 26px 0 0;box-shadow:0 -20px 50px -20px rgba(0,0,0,.5);animation:sttUp .22s ease-out}
 @media (min-width:760px){.stt-sheet{align-items:center}.stt-sheet>div{border-radius:26px}}
 @keyframes sttUp{from{transform:translateY(40px);opacity:.4}}
-.stt-sts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stt-sts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stt-sts button{border:2px solid #e2e8f0;background:#fff;border-radius:16px;padding:10px 2px;font-family:inherit;font-weight:900;font-size:12.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:#334155}
 .stt-sts button span{font-size:24px}
 .stt-cand{display:flex;align-items:center;gap:10px;width:100%;border:2px solid #e2e8f0;background:#fff;border-radius:16px;padding:10px 12px;font-family:inherit;cursor:pointer;text-align:right}
@@ -40885,14 +40894,14 @@ const STT_CSS = `
 
 function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave, onClear, onClose, subName }) {
   const [si, ti] = T.C[ck][d][p];
-  const st0 = cur.st === "sub" ? "absent" : (cur.st || (abs.includes(ti) ? "absent" : ""));
+  const st0 = cur.st === "sub" ? (cur.pm ? "perm" : "absent") : (cur.st || (abs.includes(ti) ? "absent" : ""));
   const nowM = new Date().getHours() * 60 + new Date().getMinutes();
   const s0 = mlToMin(times[p]?.[0]), e0 = mlToMin(times[p]?.[1]);
   const inP = isToday && s0 != null && e0 != null && nowM >= s0 && nowM < e0;
   const autoLate = inP ? Math.max(1, nowM - s0) : 5;
   const autoOut = inP ? Math.max(1, e0 - nowM) : 10;
   const pk = plan[ttK(d, p, ck)];
-  const [f, setF] = useState({ st: st0, mins: cur.mins || autoLate, out: cur.out || autoOut, sub: cur.sub != null ? cur.sub : (pk && pk.sub != null ? pk.sub : ""), lvl: cur.lvl || (pk ? pk.lvl : 0), note: cur.note || "", rsn: cur.rsn || "", cnc: (cur.cn && cur.cn.c) || "", cnt: (cur.cn && cur.cn.t) || "", so: cur.so || "", som: cur.som || 5, act: cur.act || "" });
+  const [f, setF] = useState({ st: st0, mins: cur.mins || autoLate, out: cur.out || autoOut, sub: cur.sub != null ? cur.sub : (pk && pk.sub != null ? pk.sub : ""), lvl: cur.lvl || (pk ? pk.lvl : 0), note: cur.note || "", rsn: cur.rsn || "", cnc: (cur.cn && cur.cn.c) || "", cnt: (cur.cn && cur.cn.t) || "", so: cur.so || "", som: cur.som || 5, act: cur.act || "", prs: cur.pm || cur.st === "perm" ? cur.rsn || "" : "" });
   const res = sttRes(T, d, p); const busy = sttBusy(T, d, p);
   const usedBy = {}; Object.entries(log).forEach(([k, v]) => { if (!v || v.st !== "sub" || v.sub == null) return; const [dd, pp, c2] = k.split("_"); if (+dd === d && +pp === p && c2 !== ck) usedBy[v.sub] = c2; });
   Object.values(plan).forEach(x => { if (x.p === p && x.ck !== ck && x.sub != null && usedBy[x.sub] == null) usedBy[x.sub] = x.ck; });
@@ -40908,7 +40917,8 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
     if (f.st === "late" && f.rsn) v.rsn = f.rsn;
     if (f.st === "late") { v.mins = +f.mins || 0; v.tm = sttHM(s0 + v.mins); }
     if (f.st === "early") { v.out = +f.out || 0; v.tm = sttHM(e0 - v.out); }
-    if (f.st === "absent" && f.sub !== "" && f.sub != null) { v.st = "sub"; v.sub = +f.sub; v.lvl = f.lvl || 0; if (f.so) { v.so = f.so; if (f.so === "late") v.som = +f.som || 0; if (f.act.trim()) v.act = f.act.trim(); v.soAt = Date.now(); } }
+    if (f.st === "perm" && f.prs) v.rsn = f.prs;
+    if ((f.st === "absent" || f.st === "perm") && f.sub !== "" && f.sub != null) { if (f.st === "perm") v.pm = 1; v.st = "sub"; v.sub = +f.sub; v.lvl = f.lvl || 0; if (f.so) { v.so = f.so; if (f.so === "late") v.som = +f.som || 0; if (f.act.trim()) v.act = f.act.trim(); v.soAt = Date.now(); } }
     if (f.note.trim()) v.note = f.note.trim();
     onSave(v);
   };
@@ -40927,7 +40937,7 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
         <div style={{ fontSize: 14, fontWeight: 800, marginTop: 2 }}>👤 {ttClean(T.T[ti])}{abs.includes(ti) ? " • 🚫 غائب اليوم" : ""}</div>
       </div>
       {ro ? <div className="p-4 grid gap-3">
-        {cur.st ? (() => { const x = ST2[cur.st === "sub" ? "absent" : cur.st]; return <div style={{ padding: "12px 14px", borderRadius: 16, background: x.bg, color: x.c, fontWeight: 900, fontSize: 15 }}>{x.ic} {x.l}{cur.st === "late" ? ` — ${maAr(cur.mins)} دقيقة` : cur.st === "early" ? ` — قبل النهاية بـ ${maAr(cur.out)} دقيقة` : ""}{cur.st === "sub" ? <div style={{ fontSize: 13.5, marginTop: 4 }}>🔄 البديل: {ttClean(T.T[cur.sub])}{cur.so && TT_SO[cur.so] ? <div style={{ marginTop: 4 }}>{TT_SO[cur.so].ic} {ttSoTxt(cur)}</div> : null}</div> : null}</div>; })() : <div style={{ padding: 12, borderRadius: 14, background: "#f1f5f9", fontWeight: 800, color: "#64748b", textAlign: "center" }}>لا توجد متابعة مسجلة لهذه الحصة</div>}
+        {cur.st ? (() => { const x = ST2[ttKindR(cur)] || ST2.note; return <div style={{ padding: "12px 14px", borderRadius: 16, background: x.bg, color: x.c, fontWeight: 900, fontSize: 15 }}>{x.ic} {x.l}{cur.st === "late" ? ` — ${maAr(cur.mins)} دقيقة` : cur.st === "early" ? ` — قبل النهاية بـ ${maAr(cur.out)} دقيقة` : ""}{cur.st === "sub" ? <div style={{ fontSize: 13.5, marginTop: 4 }}>{cur.pm ? "🛡️ أمّن الحصة" : "🔄 البديل"}: {ttClean(T.T[cur.sub])}{cur.so && TT_SO[cur.so] ? <div style={{ marginTop: 4 }}>{TT_SO[cur.so].ic} {ttSoTxt(cur)}</div> : null}</div> : null}</div>; })() : <div style={{ padding: 12, borderRadius: 14, background: "#f1f5f9", fontWeight: 800, color: "#64748b", textAlign: "center" }}>لا توجد متابعة مسجلة لهذه الحصة</div>}
         <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 900, color: "#64748b", marginBottom: 6 }}>🛡️ الاحتياط في هذه الحصة</div><div className="flex gap-1 flex-wrap">{res.map((t, i) => <span key={i} className="stt-lv" style={{ background: TT_LVC[i + 1].bg, color: TT_LVC[i + 1].c }}>{TT_LVC[i + 1].l}: {ttClean(T.T[t])}</span>)}</div></div>
         <button className="ma-btn" onClick={onClose}>إغلاق</button>
       </div> : <div className="p-4 grid gap-3">
@@ -40945,11 +40955,16 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
           <div className="stt-step" style={{ justifyContent: "center" }}><button onClick={() => setF({ ...f, out: Math.max(1, (+f.out || 0) - 1) })}>−</button><b style={{ color: "#7c3aed" }}>{maAr(f.out)}<small style={{ fontSize: 13 }}> د</small></b><button onClick={() => setF({ ...f, out: (+f.out || 0) + 1 })}>+</button></div>
           <div style={{ textAlign: "center", fontSize: 13, fontWeight: 800, color: "#4c1d95" }}>خرج الساعة <b>{mlFmtT(sttHM(e0 - (+f.out || 0)))}</b> — قبل نهاية الحصة بـ {maAr(f.out)} دقيقة</div>
         </div>}
-        {f.st === "absent" && <div className="grid gap-2">
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>🔄 اختر البديل من الاحتياط</div>
+        {f.st === "perm" && <div style={{ background: "#ecfeff", border: "1.5px solid #a5f3fc", borderRadius: 18, padding: 12 }} className="grid gap-2">
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#155e75" }}>🙋 استئذان المعلم من الحصة — لا يُحسب غيابًا، ويُسجَّل المعلم الذي أمّن الحصة</div>
+          <div className="flex gap-1 flex-wrap">{["ظرف طارئ", "مراجعة صحية", "مهمة رسمية", "اجتماع أو تكليف إداري", "استئذان مسبق"].map(r => <button key={r} className={`stt-chip ${f.prs === r ? "on" : ""}`} style={{ "--cc": "#0e7490", padding: "5px 10px", fontSize: 12 }} onClick={() => setF({ ...f, prs: f.prs === r ? "" : r })}>{r}</button>)}</div>
+        </div>}
+        {(f.st === "absent" || f.st === "perm") && <div className="grid gap-2">
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>{f.st === "perm" ? "🛡️ تأمين الحصة: اختر المعلم الذي أمّن الحصة" : "🔄 اختر البديل من الاحتياط"}</div>
           {res.map((t, i) => { const why = abs.includes(t) ? "🚫 غائب اليوم" : usedBy[t] != null ? `يغطي ${maClassName(usedBy[t])}` : busy.has(t) ? "لديه حصة" : ""; return <Cand key={i} i={t} lvl={i + 1} dis={!!why} why={why} />; })}
-          {free.length > 0 && <details><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#0f766e", padding: "6px 2px" }}>🟢 معلمون متفرّغون في هذه الحصة ({maAr(free.length)})</summary><div className="grid gap-2 mt-2">{free.map(i => <Cand key={i} i={i} lvl={4} dis={usedBy[i] != null} why={usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : ""} />)}</div></details>}
-          <button type="button" className={`stt-chip ${f.sub === "" ? "on" : ""}`} style={{ "--cc": "#b91c1c", justifySelf: "start" }} onClick={() => setF({ ...f, sub: "", lvl: 0 })}>بدون بديل</button>
+          {free.length > 0 && <details open={f.st === "perm" || undefined}><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#0f766e", padding: "6px 2px" }}>🟢 معلمون متفرّغون في هذه الحصة ({maAr(free.length)})</summary><div className="grid gap-2 mt-2">{free.map(i => <Cand key={i} i={i} lvl={4} dis={usedBy[i] != null} why={usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : ""} />)}</div></details>}
+          {f.st === "perm" && (() => { const others = T.T.map((_, i) => i).filter(i => i !== ti && !res.includes(i) && !free.includes(i)); return others.length ? <details><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#475569", padding: "6px 2px" }}>👥 بقية المعلمين ({maAr(others.length)}) — لديهم حصة أو غائبون</summary><div className="grid gap-2 mt-2">{others.map(i => <Cand key={i} i={i} lvl={4} dis={abs.includes(i) || usedBy[i] != null} why={abs.includes(i) ? "🚫 غائب اليوم" : usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : busy.has(i) ? "لديه حصة الآن (دمج/تأمين)" : ""} />)}</div></details> : null; })()}
+          <button type="button" className={`stt-chip ${f.sub === "" ? "on" : ""}`} style={{ "--cc": "#b91c1c", justifySelf: "start" }} onClick={() => setF({ ...f, sub: "", lvl: 0 })}>{f.st === "perm" ? "بدون تأمين" : "بدون بديل"}</button>
           {f.sub !== "" && f.sub != null && <div className="grid gap-2" style={{ background: "#f8fafc", border: "1.5px solid #c7d2fe", borderRadius: 18, padding: 12 }}>
             <div style={{ fontSize: 13.5, fontWeight: 900, color: "#312e81" }}>🛡️ متابعة حصة الانتظار — أ. {ttClean(T.T[+f.sub])}</div>
             <div className="flex gap-1 flex-wrap">{Object.entries(TT_SO).map(([k, x]) => <button key={k} type="button" className="stt-chip" style={f.so === k ? { background: x.c, color: "#fff", borderColor: x.c, padding: "6px 11px" } : { "--cc": x.c, padding: "6px 11px" }} onClick={() => setF({ ...f, so: f.so === k ? "" : k })}>{x.ic} {x.l}</button>)}</div>
@@ -41160,7 +41175,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
     const isD = d === di; const v = isD ? log[ttK(d, p, ck)] : null; const pk = isD ? plan[ttK(d, p, ck)] : null;
     const absent = isD && absList.includes(ti) && ttAbsAt(absRng, ti, p);
     let bd = null;
-    if (v && v.st === "sub") { const L = TT_LVC[v.lvl || 4]; bd = { t: `🔄 ${ttShort(T, v.sub)}${v.so && v.so !== "ok" && TT_SO[v.so] ? " " + TT_SO[v.so].ic : v.so === "ok" ? " ✓" : ""}`, c: L.c, bg: L.bg }; }
+    if (v && v.st === "sub") { const L = TT_LVC[v.lvl || 4]; bd = { t: `${v.pm ? "🙋🛡️" : "🔄"} ${ttShort(T, v.sub)}${v.so && v.so !== "ok" && TT_SO[v.so] ? " " + TT_SO[v.so].ic : v.so === "ok" ? " ✓" : ""}`, c: L.c, bg: L.bg }; }
     else if (v && ST2[v.st]) { const x = ST2[v.st]; bd = { t: `${x.ic} ${v.st === "late" ? maAr(v.mins) + "د" : v.st === "early" ? "-" + maAr(v.out) + "د" : x.l}`, c: x.c, bg: x.bg }; }
     else if (pk && pk.sub != null) { const L = TT_LVC[pk.lvl]; bd = { t: `↩ ${ttShort(T, pk.sub)}`, c: L.c, bg: L.bg, sug: true }; }
     else if (absent) bd = { t: "🚫 غائب", c: "#b91c1c", bg: "#fee2e2" };
@@ -41243,12 +41258,13 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   })(), brkRow(p)])}</div>;
   function myCovAll(ti) { return [...Object.entries(log).filter(([k, v]) => v && v.st === "sub" && v.sub === ti && +k.split("_")[0] === di).map(([k, v]) => ({ p: +k.split("_")[1], ck: k.split("_")[2], lvl: v.lvl, ok: true })), ...Object.values(plan).filter(x => !x.done && x.sub === ti).map(x => ({ p: x.p, ck: x.ck, lvl: x.lvl }))]; }
 
-  const WeekGrid = () => <div className="stt-wrap stt-wk"><table className="stt-g" style={{ tableLayout: "fixed" }}><thead><tr><th className="rh" style={{ width: 54 }}>اليوم</th>{times.map((t, p) => <th key={p}>{maAr(p + 1)}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
-    <tbody>{T.D.map((dn, d) => <tr key={d}><td className="rh" style={{ fontSize: 12, background: d === di ? "#eef2ff" : "#fff", color: d === di ? "#3730a3" : undefined }}>{dn}</td>{times.map((_, p) => <td key={p}>{view === "cls" ? <ClsCell d={d} p={p} ck={sel} cp /> : <TchCell d={d} p={p} ti={+sel} cp />}</td>)}</tr>)}</tbody></table></div>;
+  const colC = (dd, p) => dd === di && p === curP ? "nowc" : dd === di && isToday && times[p] && mlToMin(times[p][1]) <= nowM ? "pastc" : "";
+  const WeekGrid = () => <div className="stt-wrap stt-wk"><table className="stt-g" style={{ tableLayout: "fixed" }}><thead><tr><th className="rh" style={{ width: 54 }}>اليوم</th>{times.map((t, p) => <th key={p} className={p === curP ? "now" : ""}>{maAr(p + 1)}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
+    <tbody>{T.D.map((dn, d) => <tr key={d}><td className="rh" style={{ fontSize: 12, background: d === di ? "#eef2ff" : "#fff", color: d === di ? "#3730a3" : undefined }}>{dn}</td>{times.map((_, p) => <td key={p} className={colC(d, p)}>{view === "cls" ? <ClsCell d={d} p={p} ck={sel} cp /> : <TchCell d={d} p={p} ti={+sel} cp />}</td>)}</tr>)}</tbody></table></div>;
 
-  const allTable = dd => <div className="stt-wrap"><table className="stt-g"><thead><tr><th className="rh">{view === "cls" ? "الفصل" : "المعلم"}</th>{times.map((t, p) => <th key={p} className={dd === di && p === curP ? "now" : ""}>{TT_ORD[p]}<small>{mlFmtT(t[0])}</small></th>)}</tr></thead>
-            <tbody>{view === "cls" ? cks.map(ck => <tr key={ck}><td className="rh" style={{ color: MA_LV[+ck[0] - 1]?.c, cursor: "pointer" }} onClick={() => setSel(ck)}>{sttCk(ck)}</td>{times.map((_, p) => <td key={p}><ClsCell d={dd} p={p} ck={ck} /></td>)}</tr>)
-              : tList.map(({ i, n }) => <tr key={i}><td className="rh" style={{ cursor: "pointer", color: absList.includes(i) ? "#b91c1c" : undefined, background: absList.includes(i) ? "#fef2f2" : "#fff", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }} onClick={() => setSel(String(i))}>{absList.includes(i) ? "🚫 " : ""}{n.split(" ").slice(0, 2).join(" ")}</td>{times.map((_, p) => <td key={p}><TchCell d={dd} p={p} ti={i} /></td>)}</tr>)}</tbody></table></div>;
+  const allTable = dd => <div className="stt-wrap"><table className="stt-g"><thead><tr><th className="rh">{view === "cls" ? "الفصل" : "المعلم"}</th>{times.map((t, p) => <th key={p} className={dd === di && p === curP ? "now" : ""}>{TT_ORD[p]}<small>{mlFmtT(t[0])} – {mlFmtT(t[1])}</small></th>)}</tr></thead>
+            <tbody>{view === "cls" ? cks.map(ck => <tr key={ck}><td className="rh" style={{ color: MA_LV[+ck[0] - 1]?.c, cursor: "pointer" }} onClick={() => setSel(ck)}>{sttCk(ck)}</td>{times.map((_, p) => <td key={p} className={colC(dd, p)}><ClsCell d={dd} p={p} ck={ck} /></td>)}</tr>)
+              : tList.map(({ i, n }) => <tr key={i}><td className="rh" style={{ cursor: "pointer", color: absList.includes(i) ? "#b91c1c" : undefined, background: absList.includes(i) ? "#fef2f2" : "#fff", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }} onClick={() => setSel(String(i))}>{absList.includes(i) ? "🚫 " : ""}{n.split(" ").slice(0, 2).join(" ")}</td>{times.map((_, p) => <td key={p} className={colC(dd, p)}><TchCell d={dd} p={p} ti={i} /></td>)}</tr>)}</tbody></table></div>;
   const planRows = Object.values(plan).sort((a, b) => absList.indexOf(a.a) - absList.indexOf(b.a) || a.p - b.p);
   const pending = planRows.filter(x => !x.done).length;
   const openPlan = showPlan === null ? pending > 0 : showPlan;
