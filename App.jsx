@@ -1980,7 +1980,7 @@ const HUB_GROUPS = [
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
     tools:[{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"treasureadm",label:"رحلة الكنز إلى نافس",icon:"🗺️"},{id:"studentperf",label:"متابعة أداء الطلاب",icon:"🎓"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"conduct",label:"متابعة السلوك اليومي",icon:"🚸"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"stlogins",label:"سجل دخول الطلاب",icon:"🪪"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
-    tools:[{id:"classvisits",label:"الزيارات الصفية ١٤٤٨",icon:"🎯"},{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
+    tools:[{id:"classvisits",label:"الزيارات الصفية ١٤٤٨",icon:"🎯"},{id:"prepadm",label:"تحليل تحضير المعلمين",icon:"📘"},{id:"teacherperfeval",label:"استمارة أداء المعلم",icon:"📋"},{id:"perfresults",label:"تقويم الأداء",icon:"📈"},{id:"teachereval",label:"قياس أداء المعلم",icon:"🎖️"},{id:"poll",label:"تميّز المعلم",icon:"🏆"},{id:"teacherreports",label:"ملفات المعلمين",icon:"🗄️"},{id:"prolicense",label:"الرخصة المهنية",icon:"🎫"},{id:"aiteacher",label:"مساعد المعلم الذكي",icon:"🤖"},{id:"lessonprep",label:"تحضير الدرس الذكي",icon:"✏️"},{id:"strategies",label:"الاستراتيجيات",icon:"🧠"}] },
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
     tools:[{id:"parentinbox",label:"طلبات أولياء الأمور",icon:"📨"},{id:"portals",label:"بوابات الدخول والصلاحيات",icon:"🔐"},{id:"announcements",label:"الإعلانات",icon:"📣"},{id:"messages",label:"رسائل الأهالي",icon:"💌"},{id:"sms",label:"رسائل SMS",icon:"📲"},{id:"broadcast",label:"الإذاعة المدرسية",icon:"🎙️"},{id:"suggestions",label:"آراء ومقترحات",icon:"💬"}] },
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
@@ -28608,7 +28608,7 @@ function pnxStudentHTML(s, X) {
 //   school-svx-meta/{id}   = بيانات مختصرة للقائمة
 //   school-svx-resp/{id}/{rid} = {at, who:{name, grp, cls}, a:{qid: قيمة}}
 // ══════════════════════════════════════════════════════════════════════
-const SVX_NODE = "school-svx", SVX_META = "school-svx-meta", SVX_RESP = "school-svx-resp";
+const SVX_NODE = "school-svx", SVX_META = "school-svx-meta", SVX_RESP = "school-svx-resp", SVX_DONE = "school-svx-done";
 const SVX_URL_ID = (() => { try { return new URLSearchParams(window.location.search).get("svx") || ""; } catch { return ""; } })();
 const SVX_FONTS = [["Cairo", "القاهرة — Cairo"], ["Tajawal", "تجوال — Tajawal"], ["Almarai", "المراعي — Almarai"], ["IBM Plex Sans Arabic", "آي بي إم بلكس"], ["Readex Pro", "ريدكس برو"], ["Noto Kufi Arabic", "نوتو كوفي"], ["El Messiri", "المسيري"], ["Amiri", "أميري (نسخ)"], ["Lalezar", "لاله‌زار (عناوين)"]];
 const SVX_THEMES = [["#1e3a8a", "#3b82f6"], ["#0f766e", "#14b8a6"], ["#7c3aed", "#c084fc"], ["#be123c", "#fb7185"], ["#b45309", "#fbbf24"], ["#065f46", "#34d399"], ["#0e7490", "#22d3ee"], ["#1f2937", "#9ca3af"], ["#9d174d", "#f472b6"], ["#4338ca", "#a5b4fc"]];
@@ -28649,13 +28649,93 @@ function svxNew() {
   return { id: "v" + svxNid(), title: "استبانة جديدة", sub: "", intro: "<div>عزيزي المشارك، نشكر لك وقتك… هذه الاستبانة تهدف إلى قياس آرائكم بهدف التطوير والتحسين. نرجو الإجابة بدقة وموضوعية، علماً بأن الإجابات سرية ولن تُستخدم إلا لأغراض البحث والتطوير.</div>", dateH: dh,
     theme: { c: SVX_THEMES[0][0], c2: SVX_THEMES[0][1], font: "Cairo", bg: "soft", r: 20, size: 100, logo: true, hfont: "" },
     cover: "", imgs: [], stickers: [{ id: svxNid(), e: "📊", x: 8, y: 18, s: 54, r: -10 }, { id: svxNid(), e: "✨", x: 86, y: 70, s: 40, r: 12 }],
-    targets: [], ask: { name: "opt", grp: true, cls: false }, thanks: "شكراً جزيلاً لمشاركتك 🌟 تم حفظ إجاباتك بنجاح.", status: "draft", multi: false, endAt: "",
+    targets: [], ask: { name: "opt", grp: true, cls: false, vt: false, vp: false }, thanks: "شكراً جزيلاً لمشاركتك 🌟 تم حفظ إجاباتك بنجاح.", status: "draft", multi: false, endAt: "",
     qs: [{ id: svxNid(), t: "section", text: "المحور الأول", desc: "" }, { id: svxNid(), t: "likert", text: "", req: true }], at: Date.now() };
 }
 const svxNorm = d => { const x = { ...svxNew(), ...(d || {}) }; x.theme = { ...svxNew().theme, ...(d && d.theme || {}) }; x.ask = { ...svxNew().ask, ...(d && d.ask || {}) }; x.qs = maArr(x.qs).map(q => ({ ...q, opts: maArr(q.opts) })); x.imgs = maArr(x.imgs); x.stickers = maArr(x.stickers); x.targets = maArr(x.targets); return x; };
-async function svxSaveDoc(d) { const meta = { id: d.id, title: d.title, c: d.theme.c, c2: d.theme.c2, status: d.status, nq: d.qs.filter(q => q.t !== "section").length, targets: d.targets, at: Date.now(), cover: d.cover ? 1 : 0, endAt: d.endAt || "" }; const a = await maPut(`${SVX_NODE}/${d.id}`, { ...d, at: Date.now() }); const b = await maPut(`${SVX_META}/${d.id}`, meta); return a && b; }
+async function svxSaveDoc(d) { const meta = { id: d.id, title: d.title, c: d.theme.c, c2: d.theme.c2, status: d.status, nq: d.qs.filter(q => q.t !== "section").length, targets: d.targets, at: Date.now(), cover: d.cover ? 1 : 0, endAt: d.endAt || "", v: { t: !!(d.ask && d.ask.vt), p: !!(d.ask && d.ask.vp) } }; const a = await maPut(`${SVX_NODE}/${d.id}`, { ...d, at: Date.now() }); const b = await maPut(`${SVX_META}/${d.id}`, meta); return a && b; }
 const svxRespList = async id => maArr(await maGet(`${SVX_RESP}/${id}`)).filter(r => r && r.a);
-const svxLink = id => { try { return `${window.location.origin}${window.location.pathname}?svx=${id}`; } catch { return `?svx=${id}`; } };
+const svxLink = (id, g) => { const q = `?svx=${id}${g ? "&g=" + g : ""}`; try { return `${window.location.origin}${window.location.pathname}${q}`; } catch { return q; } };
+const SVX_GL = { "": ["🔗", "الرابط العام"], t: ["👨‍🏫", "رابط المعلمين"], p: ["👪", "رابط أولياء الأمور"] };
+function svxParseDocx(XLSX, buf, DP) {
+  const zip = XLSX.CFB.read(new Uint8Array(buf), { type: "array" });
+  const get = p => { const f = XLSX.CFB.find(zip, p) || XLSX.CFB.find(zip, "/" + p); if (!f || !f.content) return ""; return new TextDecoder("utf-8").decode(f.content instanceof Uint8Array ? f.content : new Uint8Array(f.content)); };
+  const xml = get("word/document.xml"); if (!xml) throw new Error("nodoc");
+  const P = DP || DOMParser; const X = s => new P().parseFromString(s, "text/xml");
+  const kids = n => Array.from(n.childNodes || []).filter(c => c.nodeType === 1);
+  const at = (n, a) => n && (n.getAttribute("w:" + a) || n.getAttribute(a)) || "";
+  // أسماء الأنماط (معرّف النمط قد يكون معرّباً مثل «1» أو «a3»)
+  const sty = {}; try { const sd = X(get("word/styles.xml")); Array.from(sd.getElementsByTagName("w:style")).forEach(s => { const nm = s.getElementsByTagName("w:name")[0]; sty[at(s, "styleId")] = String(at(nm, "val") || "").toLowerCase(); }); } catch {}
+  let meta = {}; try { const cx = get("docProps/custom.xml"); if (cx) Array.from(X(cx).getElementsByTagName("property")).forEach(p => { if (p.getAttribute("name") === "svx") { const j = JSON.parse(p.textContent); if (j && typeof j === "object") meta = j; } }); } catch {}
+  const txt = n => { let s = ""; const w = e => kids(e).forEach(c => { const m = c.nodeName; if (m === "w:t") s += c.textContent; else if (m === "w:tab") s += " "; else if (m === "w:br" || m === "w:cr") s += "\n"; else if (m === "w:sym") s += "☐"; else if (m === "w:delText" || m === "w:instrText" || m === "w:rPr" || m === "w:pPr") {} else w(c); }); w(n); return s.replace(/[ \t ‏‎]+/g, " ").replace(/ *\n */g, "\n").trim(); };
+  const pst = p => { const pp = kids(p).find(c => c.nodeName === "w:pPr"); const ps = pp && kids(pp).find(c => c.nodeName === "w:pStyle"); const id = ps ? at(ps, "val") : ""; const nm = sty[id] || id.toLowerCase(); const ol = pp && kids(pp).find(c => c.nodeName === "w:outlineLvl"); return { nm, ol: ol ? +at(ol, "val") : -1, num: !!(pp && kids(pp).some(c => c.nodeName === "w:numPr")) }; };
+  // تسطيح الجسم: فقرات وجداول (مع فك عناصر التحكم في المحتوى)
+  const blocks = []; const flat = n => kids(n).forEach(c => { if (c.nodeName === "w:p") blocks.push({ k: "p", n: c }); else if (c.nodeName === "w:tbl") blocks.push({ k: "t", n: c }); else if (c.nodeName === "w:sdt" || c.nodeName === "w:sdtContent" || c.nodeName === "w:customXml") flat(c); });
+  flat(X(xml).getElementsByTagName("w:body")[0]);
+  const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const out = { title: "", sub: "", intro: [], qs: [], thanks: "", skipped: 0, meta };
+  const ST = /العبار|السؤال|الأسئلة|الاسئلة|البند|البنود|الفقر|المؤشر|المعيار|الممارس|المحتوى|الموضوع|النص/;
+  const SEC = /^(المحور|محور|المجال|مجال|القسم|قسم|الجزء|البعد|بعد|الوحدة)\b|^(المحور|المجال|القسم|الجزء|البعد)\s/;
+  const MK = /(\(\s*\)|\[\s*\]|[☐□▢○◯◻⬜❑❏◦⚪⬭☑✅])/;
+  const DOTS = /^[\.…_ـ\-–\s·]{5,}$/;
+  const clean = s => s.replace(/^\s*[\(\[]?[\d٠-٩]+\s*[\)\]\.\-–:]\s*/, "").trim();
+  let cur = null, seen = false;
+  const yn = o => o.length === 2 && /^نعم$/.test(o[0].trim()) && /^لا$/.test(o[1].trim());
+  const fin = () => { if (!cur) return; const q = cur; cur = null; const multi = q.box || /أكثر من (إجابة|خيار|اختيار)|اختر ما ينطبق|يمكنك اختيار|حدد كل/.test(q.text);
+    let t = q.stars ? "stars" : q.nps ? "nps" : q.opts.length >= 2 ? (yn(q.opts) ? "yesno" : multi ? "multi" : "single") : q.lines ? (q.lines >= 2 ? "long" : "text") : /[:：]$/.test(q.text) ? "text" : "long";
+    out.qs.push({ id: id(), t, text: q.text.replace(/\s*[:：]$/, ""), req: !(t === "text" || t === "long"), opts: t === "single" || t === "multi" ? q.opts : [], ...(q.desc ? { desc: q.desc } : {}) }); };
+  const splitOpts = s => s.split(MK).map(x => x.trim()).filter(x => x && !MK.test(x) && x !== ")" && x !== "(");
+  const lastSec = () => { const q = out.qs[out.qs.length - 1]; return q && q.t === "section" ? q : null; };
+  for (const b of blocks) {
+    if (b.k === "t") { if (cur && !cur.opts.length && !cur.lines && !cur.stars && !cur.nps) { const ls = lastSec(); if (ls) { ls.desc = ls.desc ? ls.desc + " " + cur.text : cur.text; cur = null; } } fin();
+      const rows = Array.from(b.n.getElementsByTagName("w:tr")).filter(r => r.parentNode === b.n).map(r => kids(r).filter(c => c.nodeName === "w:tc").map(tc => { const pr = kids(tc).find(c => c.nodeName === "w:tcPr"); const gs = pr && kids(pr).find(c => c.nodeName === "w:gridSpan"); return { t: kids(tc).filter(c => c.nodeName === "w:p" || c.nodeName === "w:tbl").map(txt).join(" ").replace(/\s+/g, " ").trim(), sp: gs ? +at(gs, "val") || 1 : 1 }; }));
+      if (rows.length < 2) { out.skipped++; continue; }
+      let hi = rows.findIndex(r => r.some(c => ST.test(c.t) && c.t.length < 40)); if (hi < 0 || hi > 2) { out.skipped++; continue; }
+      const grid = r => { const g = []; r.forEach(c => { g.push(c.t); for (let i = 1; i < c.sp; i++) g.push(null); }); return g; };
+      const H = grid(rows[hi]); const si = H.findIndex(x => x && ST.test(x) && x.length < 40);
+      let opts = H.slice(si + 1).filter(x => x && !/^(ملاحظات|الملاحظات|ملاحظة|الشواهد|التعليق)$/.test(x.trim()));
+      if (opts.length === 1 && /الإجابة|الاجابة|الرأي|الرد|التوضيح/.test(opts[0])) opts = [];
+      const nCol = H.length;
+      seen = true;
+      for (const r of rows.slice(hi + 1)) {
+        const g = grid(r); const full = r.length === 1 || (r[0] && r[0].sp >= nCol - 1);
+        if (full) { const t = r.map(c => c.t).join(" ").trim(); if (t) out.qs.push({ id: id(), t: "section", text: t.replace(/^📂\s*/, ""), desc: "" }); continue; }
+        let t = String(g[si] || "").trim(); if (!t || ST.test(t) && t.length < 12) continue;
+        const rev = /\(\s*[-–]\s*\)\s*$|\(?\s*عكسية\s*\)?\s*$/.test(t); t = t.replace(/\s*\(\s*[-–]\s*\)\s*$|\s*\(?\s*عكسية\s*\)?\s*$/, "").trim();
+        const q = { id: id(), text: t, req: true };
+        if (!opts.length) out.qs.push({ ...q, t: "long", req: false, opts: [] });
+        else if (yn(opts)) out.qs.push({ ...q, t: "yesno", opts: [] });
+        else out.qs.push({ ...q, t: "likert", opts: opts.slice(), ...(rev ? { rev: true } : {}) });
+      }
+      continue; }
+    const s = pst(b.n), t = txt(b.n); if (!t) continue;
+    if (/^title$|^العنوان$/.test(s.nm) && !out.title) { out.title = t; continue; }
+    if (/subtitle|عنوان فرعي/.test(s.nm) && !out.sub) { out.sub = t; continue; }
+    if (/^heading [1-3]$|^عنوان [1-3]$/.test(s.nm) || (s.ol >= 0 && s.ol <= 2) || (SEC.test(t) && t.length < 120 && !/[؟?]$/.test(t))) { if (!out.title && !seen && !SEC.test(t)) { out.title = t; continue; } fin(); seen = true; out.qs.push({ id: id(), t: "section", text: t.replace(/^📂\s*/, ""), desc: "" }); continue; }
+    if (MK.test(t.slice(0, 3)) || (cur && MK.test(t) && splitOpts(t).length >= 2)) { if (cur) { cur.opts.push(...splitOpts(t)); if (/[☐□▢◻⬜❑❏\[]/.test(t)) cur.box = true; } continue; }
+    if (DOTS.test(t)) { if (cur) cur.lines++; continue; }
+    if (/^[⭐★☆✩\s]{5,}/.test(t)) { if (cur) cur.stars = true; continue; }
+    if (/^0\s+1\s+2\s+3/.test(t.replace(/[٠-٩]/g, x => "٠١٢٣٤٥٦٧٨٩".indexOf(x)))) { if (cur) cur.nps = true; continue; }
+    const isQ = /[؟?]\s*(\(.*\))?$/.test(t) || /^[\(\[]?[\d٠-٩]+\s*[\)\]\.\-–]/.test(t) || s.num || (seen && /[:：]$/.test(t) && t.length < 160);
+    if (!out.title && !seen) { out.title = t; continue; }
+    if (isQ && (seen || /[؟?]/.test(t))) { fin(); seen = true; cur = { text: clean(t), opts: [], lines: 0 }; continue; }
+    if (/^(شكر|نشكر|نشكركم|شاكرين|مع خالص|وتقبلوا)/.test(t) && seen) { fin(); out.thanks = out.thanks || t.replace(/^🌟\s*/, ""); continue; }
+    if (!seen) { out.intro.push(t); continue; }
+    if (cur && !cur.opts.length && !cur.lines) { cur.desc = (cur.desc ? cur.desc + " " : "") + t; continue; }
+    const ls = lastSec(); if (ls && !cur) { ls.desc = ls.desc ? ls.desc + " " + t : t; continue; }
+  }
+  fin();
+  return out;
+}
+
+async function svxImportDocx(file) {
+  if (!file || !/\.docx$/i.test(file.name)) throw new Error("type");
+  const XLSX = await loadXLSX(); const r = svxParseDocx(XLSX, await file.arrayBuffer());
+  const m = r.meta || {}; const base = svxNew(); const qs = r.qs.filter(q => q.t !== "section" || q.text);
+  const intro = r.intro.length ? r.intro.map((t, i) => `<div>${i === 0 && r.intro.length > 1 && t.length < 90 ? `<b>${svxE(t)}</b>` : svxE(t)}</div>`).join("") : base.intro;
+  const d = svxNorm({ ...base, title: m.title || r.title || file.name.replace(/\.docx$/i, ""), sub: m.sub || r.sub || "", intro, qs, targets: maArr(m.targets).filter(t => SVX_TARGETS.includes(t)), theme: { ...base.theme, ...(m.theme && typeof m.theme === "object" ? m.theme : {}) }, ask: { ...base.ask, ...(m.ask && typeof m.ask === "object" ? m.ask : {}) }, thanks: m.thanks || r.thanks || base.thanks, src: "docx" });
+  return { d, r, n: qs.filter(q => q.t !== "section").length, ns: qs.filter(q => q.t === "section").length };
+}
 const svxBg = th => { const c = th.c, c2 = th.c2; return th.bg === "grad" ? `linear-gradient(160deg,${c}22,${c2}22 50%,#fff)` : th.bg === "dots" ? `radial-gradient(${c}22 1.5px,transparent 1.6px) 0 0/18px 18px,#f8fafc` : th.bg === "waves" ? `repeating-linear-gradient(135deg,${c}0d 0 14px,transparent 14px 28px),#fbfbfe` : th.bg === "plain" ? "#fff" : `linear-gradient(180deg,${c2}18,#f8fafc 40%)`; };
 
 // ── محرر النص المنسق
@@ -28682,16 +28762,17 @@ function SvxRich({ value, onChange, c = "#1e3a8a", minH = 120 }) {
 }
 
 // ── عرض الاستبانة للمشارك (معاينة أو نشر)
-function SvxView({ d, onSubmit, preview, editStickers, onStickers }) {
+function SvxView({ d, onSubmit, preview, editStickers, onStickers, lock, fixGrp }) {
   const th = d.theme; useSvxFont(th.font); useSvxFont(th.hfont);
   const [a, setA] = useState({}); const [who, setWho] = useState({ name: "", grp: "", cls: "" }); const [err, setErr] = useState(""); const [done, setDone] = useState(false); const [busy, setBusy] = useState(false); const [miss, setMiss] = useState({});
   const hdr = useRef(null); const drag = useRef(null);
   const Q = d.qs; const ans = Q.filter(q => q.t !== "section"); const nAns = ans.filter(q => { const v = a[q.id]; return v !== undefined && v !== "" && !(Array.isArray(v) && !v.length); }).length;
   const fs = (th.size || 100) / 100; const R = th.r ?? 20; let logo = ""; try { logo = LOGO_URL; } catch {}
   const set = (id, v) => { setA(x => ({ ...x, [id]: v })); setMiss(m => ({ ...m, [id]: false })); };
-  const submit = async () => { const m = {}; ans.forEach(q => { const v = a[q.id]; if (q.req && (v === undefined || v === "" || (Array.isArray(v) && !v.length))) m[q.id] = true; }); if (d.ask.name === "req" && !who.name.trim()) m._name = true; if (d.ask.grp && d.targets.length > 1 && !who.grp) m._grp = true;
+  const submit = async () => { const m = {}; ans.forEach(q => { const v = a[q.id]; if (q.req && (v === undefined || v === "" || (Array.isArray(v) && !v.length))) m[q.id] = true; }); if (!lock && d.ask.name === "req" && !who.name.trim()) m._name = true; if (!lock && !fixGrp && d.ask.grp && d.targets.length > 1 && !who.grp) m._grp = true;
     setMiss(m); if (Object.keys(m).length) { setErr(`⚠️ يرجى إكمال ${Object.keys(m).length} من البنود المطلوبة`); const k = Object.keys(m)[0]; const el = document.getElementById("svq-" + k); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
-    if (!onSubmit) { setErr("👁️ هذه معاينة — لن تُحفظ الإجابات"); return; } setBusy(true); const ok = await onSubmit({ a, who: { name: who.name.trim(), grp: who.grp || (d.targets.length === 1 ? d.targets[0] : ""), cls: who.cls.trim() } }); setBusy(false); if (ok) setDone(true); else setErr("⚠️ تعذّر الإرسال — تحقق من الاتصال وحاول مرة أخرى"); };
+    if (!onSubmit) { setErr("👁️ هذه معاينة — لن تُحفظ الإجابات"); return; } setBusy(true); const anon = d.ask.name === "none"; const W = lock ? { name: anon ? "" : lock.v === "parent" ? (who.name.trim() || "ولي أمر " + lock.stu) : lock.name, ...(lock.stu && !anon ? { stu: lock.stu } : {}), grp: lock.grp, cls: lock.cls || who.cls.trim(), v: lock.v, k: lock.k } : { name: who.name.trim(), grp: fixGrp || who.grp || (d.targets.length === 1 ? d.targets[0] : ""), cls: who.cls.trim() };
+    const ok = await onSubmit({ a, who: W }); setBusy(false); if (ok) setDone(true); else setErr("⚠️ تعذّر الإرسال — تحقق من الاتصال وحاول مرة أخرى"); };
   const onDown = (e, st) => { if (!editStickers) return; e.preventDefault(); drag.current = st.id; e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); };
   const onMove = e => { if (!drag.current || !hdr.current) return; const r = hdr.current.getBoundingClientRect(); const x = Math.max(0, Math.min(100, 100 * (r.right - e.clientX) / r.width)), y = Math.max(0, Math.min(100, 100 * (e.clientY - r.top) / r.height)); onStickers(d.stickers.map(s => s.id === drag.current ? { ...s, x: Math.round(x), y: Math.round(y) } : s)); };
   const card = { background: "#fff", borderRadius: R, boxShadow: `0 18px 40px -30px ${th.c}`, border: `1px solid ${th.c}1f` };
@@ -28717,9 +28798,12 @@ function SvxView({ d, onSubmit, preview, editStickers, onStickers }) {
         {d.imgs.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(d.imgs.length, 3)},minmax(0,1fr))`, gap: 10, marginTop: d.intro ? 14 : 0 }}>{d.imgs.map((m, i) => <img key={i} src={m} alt="" style={{ width: "100%", borderRadius: R - 6, objectFit: "cover", maxHeight: 260 }} />)}</div>}
       </div>}
       {!preview || true ? <div style={{ position: "sticky", top: 0, zIndex: 5, ...card, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10 }}><b style={{ fontSize: 13, color: C }}>التقدم</b><div style={{ flex: 1, height: 10, borderRadius: 99, background: "#eef2f7", overflow: "hidden" }}><div style={{ width: `${ans.length ? 100 * nAns / ans.length : 0}%`, height: "100%", background: `linear-gradient(90deg,${C2},${C})`, transition: "width .4s" }} /></div><b style={{ fontSize: 13, color: C }}>{nAns}/{ans.length}</b></div> : null}
-      {(d.ask.name !== "none" || (d.ask.grp && d.targets.length > 1) || d.ask.cls) && <div style={{ ...card, padding: 16, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
+      {lock && <div style={{ ...card, padding: 14, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: `linear-gradient(90deg,${C}10,#fff)`, border: `1.5px solid ${C}40` }}><span style={{ width: 46, height: 46, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 24, background: `linear-gradient(135deg,${C2},${C})`, color: "#fff", flex: "none" }}>{lock.v === "parent" ? "👪" : "👨‍🏫"}</span>
+        <div style={{ flex: 1, minWidth: 180 }}><div style={{ fontSize: 12 * fs, fontWeight: 800, color: "#15803d" }}>✅ تم التحقق من الهوية</div><div style={{ fontSize: 17 * fs, fontWeight: 900, color: "#0f172a" }}>{lock.v === "parent" ? `ولي أمر الطالب: ${lock.stu}` : lock.name}</div><div style={{ fontSize: 12.5 * fs, fontWeight: 700, color: "#64748b" }}>{[lock.v === "parent" ? lock.cls : lock.role, lock.grp].filter(Boolean).join(" • ")}{d.ask.name === "none" ? " • 🔒 مشاركتك سرية — يُستخدم التحقق لمنع التكرار فقط" : ""}</div></div>
+        {lock.v === "parent" && d.ask.name !== "none" && <label style={{ fontWeight: 800, fontSize: 13 * fs, color: "#334155", minWidth: 200, flex: 1 }}>👤 اسم ولي الأمر (اختياري)<input value={who.name} onChange={e => setWho({ ...who, name: e.target.value })} style={{ display: "block", width: "100%", marginTop: 4, height: 40, borderRadius: 12, border: "1.5px solid #e2e8f0", padding: "0 12px", fontFamily: "inherit", fontSize: 15 }} /></label>}</div>}
+      {!lock && (d.ask.name !== "none" || (!fixGrp && d.ask.grp && d.targets.length > 1) || d.ask.cls) && <div style={{ ...card, padding: 16, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
         {d.ask.name !== "none" && <label id="svq-_name" style={{ fontWeight: 800, fontSize: 13.5 * fs, color: miss._name ? "#dc2626" : "#334155" }}>👤 الاسم {d.ask.name === "req" ? "*" : "(اختياري)"}<input value={who.name} onChange={e => setWho({ ...who, name: e.target.value })} style={{ display: "block", width: "100%", marginTop: 4, height: 42, borderRadius: 12, border: `1.5px solid ${miss._name ? "#dc2626" : "#e2e8f0"}`, padding: "0 12px", fontFamily: "inherit", fontSize: 15 }} /></label>}
-        {d.ask.grp && d.targets.length > 1 && <div id="svq-_grp" style={{ fontWeight: 800, fontSize: 13.5 * fs, color: miss._grp ? "#dc2626" : "#334155" }}>👥 الفئة *<div className="flex gap-1 flex-wrap" style={{ marginTop: 4 }}>{d.targets.map(t => <button key={t} type="button" onClick={() => { setWho({ ...who, grp: t }); setMiss(m => ({ ...m, _grp: false })); }} style={{ padding: "8px 14px", borderRadius: 12, border: `2px solid ${who.grp === t ? C : "#e2e8f0"}`, background: who.grp === t ? C : "#fff", color: who.grp === t ? "#fff" : "#334155", fontFamily: "inherit", fontWeight: 800, cursor: "pointer" }}>{t}</button>)}</div></div>}
+        {!fixGrp && d.ask.grp && d.targets.length > 1 && <div id="svq-_grp" style={{ fontWeight: 800, fontSize: 13.5 * fs, color: miss._grp ? "#dc2626" : "#334155" }}>👥 الفئة *<div className="flex gap-1 flex-wrap" style={{ marginTop: 4 }}>{d.targets.map(t => <button key={t} type="button" onClick={() => { setWho({ ...who, grp: t }); setMiss(m => ({ ...m, _grp: false })); }} style={{ padding: "8px 14px", borderRadius: 12, border: `2px solid ${who.grp === t ? C : "#e2e8f0"}`, background: who.grp === t ? C : "#fff", color: who.grp === t ? "#fff" : "#334155", fontFamily: "inherit", fontWeight: 800, cursor: "pointer" }}>{t}</button>)}</div></div>}
         {d.ask.cls && <label style={{ fontWeight: 800, fontSize: 13.5 * fs, color: "#334155" }}>🏫 الصف / الفصل (اختياري)<input value={who.cls} onChange={e => setWho({ ...who, cls: e.target.value })} style={{ display: "block", width: "100%", marginTop: 4, height: 42, borderRadius: 12, border: "1.5px solid #e2e8f0", padding: "0 12px", fontFamily: "inherit", fontSize: 15 }} /></label>}
       </div>}
       {Q.map(q => { if (q.t === "section") return <div key={q.id} style={{ borderRadius: R, padding: "14px 18px", background: `linear-gradient(90deg,${C},${C2})`, color: "#fff", boxShadow: `0 14px 30px -24px ${C}` }}><div style={{ fontSize: 19 * fs, fontWeight: 900, fontFamily: `'${th.hfont || th.font}'` }}>📂 {q.text || "قسم"}</div>{q.desc && <div style={{ fontSize: 13.5 * fs, opacity: .95, fontWeight: 600 }}>{q.desc}</div>}{q.img && <img src={q.img} alt="" style={{ marginTop: 10, width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: R - 8 }} />}</div>;
@@ -28743,15 +28827,46 @@ function SvxView({ d, onSubmit, preview, editStickers, onStickers }) {
 }
 
 // ── صفحة المشاركة العامة (?svx=ID)
+const SVX_G = (() => { try { return new URLSearchParams(window.location.search).get("g") || ""; } catch { return ""; } })();
 function SvxPublic({ id }) {
-  const [d, setD] = useState(undefined); const [prev, setPrev] = useState(false);
+  const [d, setD] = useState(undefined); const [prev, setPrev] = useState(false); const [kindSel, setKindSel] = useState(""); const [lock, setLock] = useState(null); const [nid, setNid] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [dupAt, setDupAt] = useState(0);
   useEffect(() => { maGet(`${SVX_NODE}/${id}`).then(x => setD(x ? svxNorm(x) : null)).catch(() => setD(null)); try { setPrev(!!localStorage.getItem("svx-done-" + id)); } catch {} }, [id]);
   if (d === undefined) return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "Cairo", fontWeight: 900, color: "#475569" }}>⏳ جارٍ تحميل الاستبانة…</div>;
   const closed = !d || d.status !== "open" || (d.endAt && d.endAt < maKey(new Date()));
   if (closed) return <div dir="rtl" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "Cairo", padding: 20 }}><div style={{ textAlign: "center", background: "#fff", borderRadius: 24, padding: 30, boxShadow: "0 20px 40px -30px #0f172a" }}><div style={{ fontSize: 54 }}>🔒</div><b style={{ fontSize: 20 }}>{d ? d.title : "الاستبانة غير موجودة"}</b><div style={{ color: "#64748b", fontWeight: 700, marginTop: 6 }}>{d ? "الاستبانة مغلقة حالياً — شكراً لاهتمامك" : "تأكد من الرابط"}</div></div></div>;
-  if (prev && !d.multi) return <div dir="rtl" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "Cairo", padding: 20, background: svxBg(d.theme) }}><div style={{ textAlign: "center", background: "#fff", borderRadius: 24, padding: 30 }}><div style={{ fontSize: 54 }}>✅</div><b style={{ fontSize: 20, color: d.theme.c }}>{d.title}</b><div style={{ color: "#64748b", fontWeight: 700, marginTop: 6 }}>سبق أن شاركت في هذه الاستبانة من هذا الجهاز — شكراً لك</div></div></div>;
-  const submit = async r => { const rid = "r" + svxNid(); const ok = await maPut(`${SVX_RESP}/${id}/${rid}`, { ...r, at: Date.now() }); if (ok) try { localStorage.setItem("svx-done-" + id, "1"); } catch {} return ok; };
-  return <SvxView d={d} onSubmit={submit} />;
+  const th = d.theme, C = th.c, C2 = th.c2;
+  // نوع التحقق المطلوب حسب الرابط: g=t معلمون • g=p أولياء أمور
+  const auto = SVX_G === "t" ? (d.ask.vt ? "staff" : "") : SVX_G === "p" ? (d.ask.vp ? "parent" : "") : d.ask.vt && d.ask.vp ? "choose" : d.ask.vt ? "staff" : d.ask.vp ? "parent" : "";
+  const kind = auto === "choose" ? kindSel || "choose" : auto;
+  const fixGrp = SVX_G === "t" ? (d.targets.includes("معلمون") || !d.targets.length ? "معلمون" : d.targets[0]) : SVX_G === "p" ? "أولياء أمور" : "";
+  const shell = children => <div dir="rtl" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: `'${th.font}',Cairo,sans-serif`, padding: 16, background: svxBg(th) }}><div style={{ width: "100%", maxWidth: 480, background: "#fff", borderRadius: 26, overflow: "hidden", boxShadow: `0 30px 60px -36px ${C}` }}>
+    <div style={{ padding: "22px 22px 18px", color: "#fff", background: `radial-gradient(120% 140% at 85% 0%,${C2} 0%,${C} 60%)`, position: "relative" }}><div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.14) 1.5px,transparent 1.6px)", backgroundSize: "18px 18px" }} /><div style={{ position: "relative" }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{SDX_SCHOOL}</div><div style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.4 }}>{d.title}</div>{d.sub && <div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>{d.sub}</div>}</div></div>
+    <div style={{ padding: 22, display: "grid", gap: 12 }}>{children}</div></div></div>;
+  if (dupAt) return shell(<><div style={{ textAlign: "center" }}><div style={{ fontSize: 54 }}>✅</div><b style={{ fontSize: 18, color: C }}>سبق تسجيل مشاركتك في هذه الاستبانة</b><div style={{ color: "#64748b", fontWeight: 700, marginTop: 6 }}>{lock && lock.v === "parent" ? `عن الطالب: ${lock.stu}` : lock ? lock.name : ""}<br />بتاريخ {(() => { try { return new Date(dupAt).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long", year: "numeric" }); } catch { return ""; } })()} — شكراً لك</div>{lock && lock.v === "parent" && <button type="button" onClick={() => { setLock(null); setDupAt(0); setNid(""); }} style={{ marginTop: 12, padding: "10px 16px", borderRadius: 14, border: `2px solid ${C}`, background: "#fff", color: C, fontFamily: "inherit", fontWeight: 900, cursor: "pointer" }}>👦 المشاركة عن ابن آخر</button>}</div></>);
+  if (kind && !lock) {
+    if (kind === "choose") return shell(<><b style={{ fontSize: 16, color: "#0f172a", textAlign: "center" }}>مرحباً بك 🌷 اختر صفتك للمتابعة</b>{[["staff", "👨‍🏫", "معلم / إداري", "التحقق برقم السجل المدني"], ["parent", "👪", "ولي أمر", "التحقق برقم هوية الابن (الطالب)"]].map(([k, ic, l, s2]) => <button key={k} type="button" onClick={() => { setKindSel(k); setErr(""); }} style={{ display: "flex", gap: 12, alignItems: "center", padding: 14, borderRadius: 18, border: `2px solid ${C}30`, background: `${C}08`, fontFamily: "inherit", cursor: "pointer", textAlign: "right" }}><span style={{ fontSize: 30 }}>{ic}</span><span><b style={{ display: "block", fontSize: 16, color: C }}>{l}</b><small style={{ fontWeight: 700, color: "#64748b" }}>{s2}</small></span></button>)}</>);
+    const isP = kind === "parent";
+    const verify = async () => { setErr(""); const n = licNormId(nid); if (n.length !== 10) { setErr("أدخل الرقم كاملاً (١٠ أرقام)"); return; } setBusy(true);
+      try { let L = null;
+        if (!isP) { const r = await ptStaffLogin(n); if (r.err) { setErr(r.err); setBusy(false); return; } const role = PT_ROLE_LBL[r.role] || "معلم"; L = { v: "staff", name: r.name, role, grp: fixGrp || (r.role && r.role !== "teacher" && d.targets.includes("إداريون") ? "إداريون" : d.targets.includes("معلمون") || !d.targets.length ? "معلمون" : d.targets[0]), k: r.hash.slice(0, 28) }; }
+        else { const h = await stuHash(n); const ros = await maGet(MA_ROSTER); let st = null; for (const [ck, r] of Object.entries(ptObj(ros))) { const x = maArr(r && r.students).find(y => y && y.nh === h); if (x) { st = { ck, name: x.name, nh: h }; break; } } if (!st) st = await ptLinkLegacy(n, ros); if (!st) { setErr("لم يُعثر على الطالب — تأكد من رقم هوية الابن أو راجع المدرسة"); setBusy(false); return; }
+          let cls = ""; try { cls = maClassName(st.ck); } catch { cls = st.ck; } L = { v: "parent", stu: st.name, name: "ولي أمر " + st.name, cls, grp: "أولياء أمور", k: (st.nh || h).slice(0, 28) }; }
+        if (!d.multi) { const ex = await maGet(`${SVX_DONE}/${id}/${L.k}`); if (ex) { setLock(L); setDupAt(ex.at || 1); setBusy(false); return; } }
+        setLock(L); setNid("");
+      } catch { setErr("⚠️ تعذّر التحقق — تحقق من الاتصال وحاول مرة أخرى"); }
+      setBusy(false); };
+    return shell(<>
+      <div style={{ display: "flex", gap: 12, alignItems: "center" }}><span style={{ width: 54, height: 54, borderRadius: 16, display: "grid", placeItems: "center", fontSize: 28, background: `linear-gradient(135deg,${C2},${C})`, flex: "none" }}>{isP ? "👪" : "👨‍🏫"}</span><div><b style={{ fontSize: 17, color: "#0f172a" }}>{isP ? "استبانة أولياء الأمور" : "استبانة المعلمين والإداريين"}</b><div style={{ fontSize: 13, fontWeight: 700, color: "#64748b" }}>{isP ? "أدخل رقم هوية ابنك (الطالب) للتحقق" : "أدخل رقم سجلك المدني للتحقق"}</div></div></div>
+      <input value={nid} onChange={e => setNid(e.target.value.replace(/[^\d٠-٩]/g, "").slice(0, 10))} onKeyDown={e => { if (e.key === "Enter") verify(); }} inputMode="numeric" autoComplete="off" placeholder={isP ? "رقم هوية الطالب — ١٠ أرقام" : "رقم السجل المدني — ١٠ أرقام"} style={{ height: 54, borderRadius: 16, border: `2px solid ${err ? "#dc2626" : "#e2e8f0"}`, padding: "0 16px", fontFamily: "inherit", fontSize: 20, fontWeight: 900, letterSpacing: 3, textAlign: "center", direction: "ltr" }} />
+      {err && <div style={{ color: "#dc2626", fontWeight: 800, fontSize: 13.5, textAlign: "center" }}>{err}</div>}
+      <button type="button" disabled={busy} onClick={verify} style={{ padding: 15, borderRadius: 16, border: "none", background: `linear-gradient(135deg,${C2},${C})`, color: "#fff", fontFamily: "inherit", fontWeight: 900, fontSize: 17, cursor: "pointer" }}>{busy ? "⏳ جارٍ التحقق…" : "✓ تحقق وابدأ الاستبانة"}</button>
+      <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#64748b", lineHeight: 1.8 }}>🔒 لا يُحفظ رقم الهوية — يُستخدم للتحقق {isP ? "وإظهار اسم الطالب" : "وإظهار اسمك"} فقط، ويُحفظ رمز مشفّر يمنع تكرار المشاركة{isP ? " عن الطالب نفسه" : ""}.</div>
+      {auto === "choose" && <button type="button" onClick={() => { setKindSel(""); setErr(""); }} style={{ background: "none", border: "none", color: C, fontFamily: "inherit", fontWeight: 800, cursor: "pointer" }}>→ تغيير الصفة</button>}
+    </>);
+  }
+  if (!kind && prev && !d.multi) return <div dir="rtl" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "Cairo", padding: 20, background: svxBg(d.theme) }}><div style={{ textAlign: "center", background: "#fff", borderRadius: 24, padding: 30 }}><div style={{ fontSize: 54 }}>✅</div><b style={{ fontSize: 20, color: d.theme.c }}>{d.title}</b><div style={{ color: "#64748b", fontWeight: 700, marginTop: 6 }}>سبق أن شاركت في هذه الاستبانة من هذا الجهاز — شكراً لك</div></div></div>;
+  const submit = async r => { const rid = "r" + svxNid(); const at = Date.now(); const ok = await maPut(`${SVX_RESP}/${id}/${rid}`, { ...r, at, ...(SVX_G ? { g: SVX_G } : {}) }); if (ok) { if (lock) await maPut(`${SVX_DONE}/${id}/${lock.k}`, { at, rid }); else try { localStorage.setItem("svx-done-" + id, "1"); } catch {} } return ok; };
+  return <SvxView d={d} onSubmit={submit} lock={lock} fixGrp={fixGrp} />;
 }
 
 // ── التحليل الإحصائي
@@ -28810,9 +28925,15 @@ function SurveyStudio({ legacy }) {
   const upT = (patch) => { setD(x => ({ ...x, theme: { ...x.theme, ...patch } })); setDirty(true); };
   const upQ = (id, patch) => { setD(x => ({ ...x, qs: x.qs.map(q => q.id === id ? { ...q, ...patch } : q) })); setDirty(true); };
   const save = async (extra) => { const nd = { ...d, ...(extra || {}) }; setD(nd); setBusy(true); const ok = await svxSaveDoc(nd); setBusy(false); setDirty(false); toast(ok ? "✅ حُفظت الاستبانة" : "⚠️ حُفظت محلياً وستُرفع عند عودة الاتصال"); loadList(); };
-  const del = async x => { if (!window.confirm(`حذف «${x.title}» وجميع إجاباتها نهائياً؟`)) return; await fbPatch({ [`${SVX_NODE}/${x.id}`]: null, [`${SVX_META}/${x.id}`]: null, [`${SVX_RESP}/${x.id}`]: null }); loadList(); toast("🗑️ حُذفت"); };
+  const del = async x => { if (!window.confirm(`حذف «${x.title}» وجميع إجاباتها نهائياً؟`)) return; await fbPatch({ [`${SVX_NODE}/${x.id}`]: null, [`${SVX_META}/${x.id}`]: null, [`${SVX_RESP}/${x.id}`]: null, [`${SVX_DONE}/${x.id}`]: null }); loadList(); toast("🗑️ حُذفت"); };
   const dup = async x => { const s = await maGet(`${SVX_NODE}/${x.id}`); if (!s) return; const n = { ...svxNorm(s), id: "v" + svxNid(), title: s.title + " (نسخة)", status: "draft" }; await svxSaveDoc(n); loadList(); toast("📄 تم إنشاء نسخة"); };
-  const copy = id => { const l = svxLink(id); try { navigator.clipboard.writeText(l); toast("🔗 نُسخ رابط المشاركة"); } catch { window.prompt("انسخ الرابط:", l); } };
+  const copy = (id, g) => { const l = svxLink(id, g); try { navigator.clipboard.writeText(l); toast(`${SVX_GL[g || ""][0]} نُسخ ${SVX_GL[g || ""][1]}`); } catch { window.prompt("انسخ الرابط:", l); } };
+  const imp = async (f, append) => { if (!f) return; if (!/\.docx$/i.test(f.name)) { toast("⚠️ اختر ملف Word بصيغة ‎.docx (احفظ الملف من Word بصيغة مستند Word)"); return; } setBusy(true);
+    try { const R = await svxImportDocx(f); if (!R.n) { toast("⚠️ لم يُعثر على أسئلة في الملف — راجع طريقة التجهيز"); setBusy(false); return; }
+      if (append) { setD(x => ({ ...x, qs: [...x.qs, ...R.d.qs] })); setDirty(true); toast(`✅ أُضيف ${R.n} سؤالاً من الملف`); }
+      else { setD(R.d); setTab("qs"); setMode("build"); setDirty(true); toast(`✅ استُوردت «${R.d.title}»: ${R.n} سؤالاً في ${R.ns} محاور — راجع ثم احفظ وانشر`); } }
+    catch (e) { toast("⚠️ تعذّرت قراءة الملف — تأكد أنه ملف Word ‎.docx سليم"); }
+    setBusy(false); };
   const pick = async (f, cb, max) => { try { const u = await svxImg(f, max); if (u.length > 900000) { toast("⚠️ الصورة كبيرة — اختر صورة أصغر"); return; } cb(u); } catch { toast("⚠️ ملف غير صالح"); } };
 
   if (mode === "legacy") return <div className="svx grid gap-3" dir="rtl"><style>{SVX_CSS}</style><button className="svx-btn" onClick={() => setMode("list")}>→ العودة إلى الاستوديو</button>{legacy}</div>;
@@ -28822,12 +28943,20 @@ function SurveyStudio({ legacy }) {
     <div style={{ borderRadius: 26, padding: "22px 24px", color: "#fff", background: "radial-gradient(120% 140% at 85% 0%,#8b5cf6 0%,#4338ca 45%,#1e1b4b 100%)", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,.12) 1.5px,transparent 1.6px)", backgroundSize: "22px 22px" }} />
       <div className="flex items-center justify-between gap-3 flex-wrap" style={{ position: "relative" }}><div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#c7d2fe" }}>تصميم • نشر • تحليل إحصائي • تقرير</div><h2 style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>🎨 استوديو الاستبانات</h2><div style={{ fontSize: 13.5, fontWeight: 700, opacity: .85 }}>صمّم استبانتك بالألوان والخطوط والصور والملصقات، وشاركها برابط، واحصل على تحليل دقيق للنتائج</div></div>
-        <div className="flex gap-2 flex-wrap"><button className="svx-btn" style={{ background: "#fbbf24", color: "#1e1b4b", border: "none", fontSize: 15, padding: "11px 18px" }} onClick={() => { setD(svxNew()); setTab("design"); setMode("build"); setDirty(true); }}>➕ استبانة جديدة</button>{legacy && <button className="svx-btn" style={{ background: "rgba(255,255,255,.12)", color: "#fff", borderColor: "rgba(255,255,255,.3)" }} onClick={() => setMode("legacy")}>🗂️ الاستبيانات الورقية السابقة</button>}</div></div></div>
-    {!list ? <div className="svx-card" style={{ textAlign: "center", padding: 30, fontWeight: 900 }}>⏳</div> : !list.length ? <div className="svx-card" style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 50 }}>🎨</div><b style={{ fontSize: 17 }}>لا توجد استبانات بعد</b><div style={{ color: "#64748b", fontWeight: 700 }}>اضغط «استبانة جديدة» وابدأ التصميم</div></div> :
+        <div className="flex gap-2 flex-wrap"><button className="svx-btn" style={{ background: "#fbbf24", color: "#1e1b4b", border: "none", fontSize: 15, padding: "11px 18px" }} onClick={() => { setD(svxNew()); setTab("design"); setMode("build"); setDirty(true); }}>✍️ استبانة يدوية</button><label className="svx-btn" style={{ background: "#fff", color: "#4338ca", border: "none", fontSize: 15, padding: "11px 18px", cursor: "pointer" }}>{busy ? "⏳" : "📥"} استيراد من Word<input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={e => { imp(e.target.files[0]); e.target.value = ""; }} /></label>{legacy && <button className="svx-btn" style={{ background: "rgba(255,255,255,.12)", color: "#fff", borderColor: "rgba(255,255,255,.3)" }} onClick={() => setMode("legacy")}>🗂️ الاستبيانات الورقية السابقة</button>}</div></div></div>
+    <details className="svx-card"><summary style={{ cursor: "pointer", fontWeight: 900, color: "#4338ca" }}>📘 كيف أجهّز ملف Word ليُستورد استبانةً جاهزة؟</summary><div style={{ fontSize: 13, fontWeight: 700, color: "#334155", lineHeight: 2, marginTop: 6 }}>
+      <div>١) <b>العنوان:</b> أول سطر في الملف (أو بنمط «العنوان»)، وما بعده حتى أول محور يصبح <b>المقدمة</b>.</div>
+      <div>٢) <b>المحاور:</b> سطر يبدأ بـ «المحور / القسم / المجال» أو بنمط «عنوان 1»، والسطر الذي يليه وصفٌ له.</div>
+      <div>٣) <b>العبارات:</b> جدول رأسه فيه «م | العبارة | …الخيارات» — أعمدة الرأس بعد «العبارة» تصبح خيارات المقياس كما كتبتها (موافق بشدة… أو دائماً… أو نعم/لا).</div>
+      <div>٤) <b>سؤال اختيار:</b> سطر ينتهي بـ «؟» تليه الخيارات مسبوقة بـ ○ (اختيار واحد) أو ☐ / «يمكن اختيار أكثر من إجابة» (متعدد).</div>
+      <div>٥) <b>سؤال مفتوح:</b> سطر ينتهي بـ «؟» أو «:» تليه أسطر نقاط ........ • <b>تقييم بالنجوم:</b> سطر ☆☆☆☆☆ بعد السؤال.</div>
+      <div>٦) عبارة سلبية تُعكس درجتها: اكتب في آخرها «(-)». الجداول الأخرى (الترويسة والتعليمات) تُتجاهل تلقائياً.</div>
+      <div style={{ color: "#4338ca" }}>💡 النماذج الجاهزة «استبانة المعلمين» و«استبانة أولياء الأمور» تحمل ألوانها وإعدادات التحقق، ويمكنك تعديل عباراتها في Word قبل الاستيراد.</div></div></details>
+    {!list ? <div className="svx-card" style={{ textAlign: "center", padding: 30, fontWeight: 900 }}>⏳</div> : !list.length ? <div className="svx-card" style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 50 }}>🎨</div><b style={{ fontSize: 17 }}>لا توجد استبانات بعد</b><div style={{ color: "#64748b", fontWeight: 700 }}>ابدأ بـ«استبانة يدوية» أو «استيراد من Word»</div></div> :
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12 }}>{list.map(x => <div key={x.id} className="svx-card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ height: 92, background: `radial-gradient(120% 140% at 85% 0%,${x.c2} 0%,${x.c} 70%)`, color: "#fff", padding: "14px 16px", position: "relative" }}><span className="svx-chip" style={{ background: x.status === "open" ? "#22c55e" : x.status === "closed" ? "#ef4444" : "rgba(255,255,255,.25)", color: "#fff", position: "absolute", left: 12, top: 12 }}>{x.status === "open" ? "● منشورة" : x.status === "closed" ? "مغلقة" : "مسودة"}</span><div style={{ fontSize: 17, fontWeight: 900, lineHeight: 1.4, maxWidth: "80%" }}>{x.title}</div><div style={{ fontSize: 12, fontWeight: 700, opacity: .9 }}>❓ {x.nq} سؤال{x.targets && x.targets.length ? ` • 👥 ${maArr(x.targets).join("، ")}` : ""}</div></div>
         <div style={{ padding: 12 }}><div className="flex items-center gap-2 mb-2"><b style={{ fontSize: 26, color: x.c }}>{cnt[x.id] ?? "…"}</b><span style={{ fontWeight: 800, color: "#64748b" }}>استجابة</span></div>
-          <div className="flex gap-1 flex-wrap"><button className="svx-btn sm pri" style={{ background: x.c }} onClick={() => open(x.id, "res")}>📊 النتائج</button><button className="svx-btn sm" onClick={() => open(x.id)}>✏️ تصميم</button>{x.status === "open" && <><button className="svx-btn sm" onClick={() => copy(x.id)}>🔗 الرابط</button><a className="svx-btn sm wa" target="_blank" rel="noreferrer" href={waUrl("", `📋 ${x.title}\nنأمل منكم المشاركة في الاستبانة عبر الرابط:\n${svxLink(x.id)}\n\nمع الشكر — ${SDX_SCHOOL}`)}>💬</a></>}<button className="svx-btn sm" onClick={() => dup(x)}>📄</button><button className="svx-btn sm red" onClick={() => del(x)}>🗑️</button></div></div>
+          <div className="flex gap-1 flex-wrap"><button className="svx-btn sm pri" style={{ background: x.c }} onClick={() => open(x.id, "res")}>📊 النتائج</button><button className="svx-btn sm" onClick={() => open(x.id)}>✏️ تصميم</button>{x.status === "open" && <><button className="svx-btn sm" onClick={() => copy(x.id)}>🔗 الرابط</button>{x.v && x.v.t && <button className="svx-btn sm" title="رابط المعلمين (تحقق بالسجل المدني)" onClick={() => copy(x.id, "t")}>👨‍🏫</button>}{x.v && x.v.p && <button className="svx-btn sm" title="رابط أولياء الأمور (تحقق بهوية الابن)" onClick={() => copy(x.id, "p")}>👪</button>}<a className="svx-btn sm wa" target="_blank" rel="noreferrer" href={waUrl("", `📋 ${x.title}\nنأمل منكم المشاركة في الاستبانة عبر الرابط:\n${svxLink(x.id)}\n\nمع الشكر — ${SDX_SCHOOL}`)}>💬</a></>}<button className="svx-btn sm" onClick={() => dup(x)}>📄</button><button className="svx-btn sm red" onClick={() => del(x)}>🗑️</button></div></div>
       </div>)}</div>}
     {msg && <div style={{ position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)", zIndex: 900, background: "#0f172a", color: "#fff", padding: "10px 18px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
   </div>;
@@ -28913,10 +29042,15 @@ function SurveyStudio({ legacy }) {
       <div className="flex gap-1 flex-wrap" style={{ borderTop: "1px dashed #e2e8f0", paddingTop: 6 }}><small style={{ fontWeight: 800, color: "#94a3b8", alignSelf: "center" }}>إضافة بعده:</small>{["likert", "stars", "yesno", "single", "multi", "text", "section"].map(t => <button key={t} className="svx-btn sm" onClick={() => addQ(t, q.id)}>{SVX_QT[t].ic}</button>)}</div>
     </div>)}
     <div className="svx-card"><b style={{ color: C }}>➕ إضافة</b><div className="flex gap-1 flex-wrap mt-2">{Object.entries(SVX_QT).map(([k, x]) => <button key={k} className="svx-btn sm" onClick={() => addQ(k)}>{x.ic} {x.l}</button>)}</div>
+      <label className="svx-btn sm mt-2" style={{ cursor: "pointer", display: "inline-flex" }}>📥 إضافة أسئلة من ملف Word<input type="file" accept=".docx" hidden onChange={e => { imp(e.target.files[0], true); e.target.value = ""; }} /></label>
       <details className="mt-2"><summary style={{ cursor: "pointer", fontWeight: 900, color: C, fontSize: 13 }}>📋 لصق عبارات دفعة واحدة (عبارة في كل سطر — تُضاف بمقياس ليكرت)</summary><textarea id="svx-bulk" className="svx-inp" style={{ height: 120, padding: 10, marginTop: 6 }} /><button className="svx-btn sm mt-1" onClick={() => { const el = document.getElementById("svx-bulk"); const L = String(el.value || "").split(/\n+/).map(s => s.replace(/^[\d٠-٩\-\.\)\s]+/, "").trim()).filter(Boolean); if (!L.length) return; setD(x => ({ ...x, qs: [...x.qs, ...L.map(t => ({ id: svxNid(), t: "likert", text: t, req: true, opts: [] }))] })); setDirty(true); el.value = ""; toast(`✅ أُضيفت ${L.length} عبارة`); }}>إضافة العبارات</button></details></div>
   </div>;
   const Settings = () => <div className="grid gap-3"><div className="svx-card grid gap-2"><b style={{ color: C }}>👥 الفئات المستهدفة</b><div className="flex gap-1 flex-wrap">{SVX_TARGETS.map(t => { const on = d.targets.includes(t); return <button key={t} className="svx-btn sm" style={on ? { background: C, color: "#fff" } : {}} onClick={() => up({ targets: on ? d.targets.filter(x => x !== t) : [...d.targets, t] })}>{on ? "✓ " : ""}{t}</button>; })}</div><small style={{ color: "#64748b", fontWeight: 700 }}>عند اختيار أكثر من فئة يختار المشارك فئته، وتظهر المقارنة بين الفئات في التحليل.</small></div>
-    <div className="svx-card grid gap-2"><b style={{ color: C }}>🪪 بيانات المشارك</b><div className="flex gap-1 flex-wrap">{[["none", "بدون اسم (سرية)"], ["opt", "الاسم اختياري"], ["req", "الاسم مطلوب"]].map(([k, l]) => <button key={k} className="svx-btn sm" style={d.ask.name === k ? { background: C, color: "#fff" } : {}} onClick={() => up({ ask: { ...d.ask, name: k } })}>{l}</button>)}</div><label style={{ fontSize: 13, fontWeight: 800 }}><input type="checkbox" checked={d.ask.cls} onChange={e => up({ ask: { ...d.ask, cls: e.target.checked } })} /> سؤال الصف / الفصل</label><label style={{ fontSize: 13, fontWeight: 800 }}><input type="checkbox" checked={d.multi} onChange={e => up({ multi: e.target.checked })} /> السماح بأكثر من مشاركة من الجهاز نفسه</label></div>
+    <div className="svx-card grid gap-2"><b style={{ color: C }}>🪪 بيانات المشارك</b><div className="flex gap-1 flex-wrap">{[["none", "بدون اسم (سرية)"], ["opt", "الاسم اختياري"], ["req", "الاسم مطلوب"]].map(([k, l]) => <button key={k} className="svx-btn sm" style={d.ask.name === k ? { background: C, color: "#fff" } : {}} onClick={() => up({ ask: { ...d.ask, name: k } })}>{l}</button>)}</div><label style={{ fontSize: 13, fontWeight: 800 }}><input type="checkbox" checked={d.ask.cls} onChange={e => up({ ask: { ...d.ask, cls: e.target.checked } })} /> سؤال الصف / الفصل</label><label style={{ fontSize: 13, fontWeight: 800 }}><input type="checkbox" checked={d.multi} onChange={e => up({ multi: e.target.checked })} /> السماح بأكثر من مشاركة (للجهاز أو للهوية نفسها)</label></div>
+    <div className="svx-card grid gap-2" style={{ border: `1.5px solid ${C}40` }}><b style={{ color: C }}>🔐 فرض الدخول بالهوية + روابط الفئات</b>
+      {[["vt", "👨‍🏫", "فرض التحقق للمعلمين والإداريين", "يدخل المعلم رقم سجله المدني ← يظهر اسمه تلقائياً من سجل المعلمين"], ["vp", "👪", "فرض التحقق لأولياء الأمور", "يدخل ولي الأمر رقم هوية ابنه ← يظهر اسم الطالب وفصله تلقائياً"]].map(([k, ic, l, s2]) => <label key={k} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: 10, borderRadius: 14, background: d.ask[k] ? C + "10" : "#f8fafc", border: `1.5px solid ${d.ask[k] ? C : "#e2e8f0"}`, cursor: "pointer" }}><input type="checkbox" checked={!!d.ask[k]} onChange={e => up({ ask: { ...d.ask, [k]: e.target.checked }, ...(e.target.checked && !d.targets.includes(k === "vt" ? "معلمون" : "أولياء أمور") ? { targets: [...d.targets, k === "vt" ? "معلمون" : "أولياء أمور"] } : {}) })} style={{ marginTop: 4 }} /><span><b style={{ fontSize: 14 }}>{ic} {l}</b><small style={{ display: "block", fontWeight: 700, color: "#64748b" }}>{s2}</small></span></label>)}
+      <small style={{ color: "#64748b", fontWeight: 700, lineHeight: 1.8 }}>🔒 رقم الهوية لا يُحفظ أبداً؛ يُحفظ رمز مشفّر يمنع تكرار مشاركة الشخص نفسه (مشاركة لكل معلم، ولكل طالب لولي الأمر). عند اختيار «بدون اسم» تبقى الإجابات سرية ويُستخدم التحقق لمنع التكرار فقط.</small>
+      <div className="grid gap-1">{["", "t", "p"].map(g => <div key={g} className="flex items-center gap-1 flex-wrap" style={{ background: "#f8fafc", borderRadius: 12, padding: "6px 10px" }}><b style={{ fontSize: 13, minWidth: 140 }}>{SVX_GL[g][0]} {SVX_GL[g][1]}</b><small style={{ flex: 1, minWidth: 120, color: "#64748b", fontWeight: 700 }}>{g === "t" ? (d.ask.vt ? "بالتحقق من السجل المدني" : "فئة المعلمين (دون تحقق)") : g === "p" ? (d.ask.vp ? "بالتحقق من هوية الابن" : "فئة أولياء الأمور (دون تحقق)") : d.ask.vt && d.ask.vp ? "يختار المشارك صفته ثم يتحقق" : "لكل المشاركين"}</small><button className="svx-btn sm" disabled={d.status !== "open"} onClick={() => copy(d.id, g)}>نسخ</button><a className="svx-btn sm wa" style={d.status !== "open" ? { pointerEvents: "none", opacity: .5 } : {}} target="_blank" rel="noreferrer" href={waUrl("", `📋 ${d.title}\n${g === "p" ? "ولي الأمر الكريم، " : g === "t" ? "الزميل الكريم، " : ""}نأمل منكم المشاركة في الاستبانة عبر الرابط:\n${svxLink(d.id, g)}\n\nمع الشكر — ${SDX_SCHOOL}`)}>💬</a></div>)}{d.status !== "open" && <small style={{ color: "#b45309", fontWeight: 800 }}>⚠️ انشر الاستبانة أولاً لتفعيل الروابط</small>}</div></div>
     <div className="svx-card grid gap-2"><b style={{ color: C }}>💌 رسالة الشكر بعد الإرسال</b><textarea className="svx-inp" style={{ height: 80, padding: 10 }} value={d.thanks} onChange={e => up({ thanks: e.target.value })} /><label><span className="svx-lbl">تاريخ إغلاق تلقائي (اختياري)</span><input type="date" className="svx-inp" value={d.endAt} onChange={e => up({ endAt: e.target.value })} /></label></div></div>;
   return <div className="svx grid gap-3" dir="rtl"><style>{SVX_CSS}</style>
     <div className="svx-card flex items-center gap-2 flex-wrap" style={{ position: "sticky", top: 0, zIndex: 20 }}><button className="svx-btn" onClick={() => { if (dirty && !window.confirm("توجد تعديلات غير محفوظة — الخروج دون حفظ؟")) return; setMode("list"); }}>→ القائمة</button><b style={{ fontSize: 15, color: C, flex: 1, minWidth: 140 }}>✏️ {d.title}</b>
@@ -28936,7 +29070,7 @@ function SurveyStudio({ legacy }) {
 function svxCSV(d, R) {
   const Q = d.qs.filter(q => q.t !== "section"); const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const fmt = (q, v) => v === undefined || v === null ? "" : q.t === "likert" ? svxScale(q)[v] : q.t === "yesno" ? (v === "yes" ? "نعم" : "لا") : q.t === "single" ? (svxL(q, v) ? svxL(q, v) + ") " : "") + q.opts[v] : q.t === "multi" ? maArr(v).map(i => (svxL(q, i) ? svxL(q, i) + ") " : "") + q.opts[i]).join(" | ") : v;
-  const rows = [["التاريخ", "الاسم", "الفئة", "الفصل", ...Q.map((q, i) => `${i + 1}. ${q.text}`)], ...R.map(r => [new Date(r.at || 0).toLocaleString("ar-SA-u-nu-latn"), r.who && r.who.name, r.who && r.who.grp, r.who && r.who.cls, ...Q.map(q => fmt(q, r.a[q.id]))])];
+  const rows = [["التاريخ", "الاسم", "الطالب", "الفئة", "الفصل", "التحقق", ...Q.map((q, i) => `${i + 1}. ${q.text}`)], ...R.map(r => [new Date(r.at || 0).toLocaleString("ar-SA-u-nu-latn"), r.who && r.who.name, r.who && r.who.stu, r.who && r.who.grp, r.who && r.who.cls, r.who && r.who.v ? "✓ بالهوية" : "", ...Q.map(q => fmt(q, r.a[q.id]))])];
   const blob = new Blob(["﻿" + rows.map(r => r.map(esc).join(",")).join("\n")], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${d.title}.csv`; a.click();
 }
 
@@ -30772,7 +30906,7 @@ body {
 // شريط التنقل العصري — قوائم منبثقة بملصقات (Mega Menu)
 // ══════════════════════════════════════════════════════════
 const NAV_TOOL_DESC = {
-  attendance:"رصد حضور المعلمين يومياً", admtasks:"إسناد المهام اليومية للوكلاء والموجهين ومتابعة تنفيذها مع التنبيهات", nafes:"اختبارات إلكترونية لطلاب المدرسة بأسلوب نافس مع التحليل والذكاء الاصطناعي", treasureadm:"رحلة تحفيزية من ٢٠ مرحلة لطلاب الثالث المتوسط ومتابعة تقدمهم", duty:"جدول الإشراف والمناوبة واطلاع المعلمين بالهوية", asmfollow:"رصد حضور المعلمين للطابور وإحصائيات يومية وأسبوعية", periodfollow:"الجدول المدرسي وحضور المعلمين والاحتياط والملاحظات", morninglate:"رصد المتأخرين بالفصول وتقارير أسبوعية وشهرية", weeklyplan:"خطة كل أسبوع في صفحة واحدة برابط ثابت", parentinbox:"أعذار وملاحظات أولياء الأمور وتعليقاتهم", portals:"روابط الدخول بالهوية وصلاحيات الإداريين", studentclassify:"تصنيف الطلاب دراسياً وسلوكياً وحضوراً", morningattend:"تحضير المعلمين للحصة الثانية ورابطهم", attendstats:"للإدارة: الإحصائية والتأخر الصباحي", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم", studentperf:"الغياب والتأخر والسلوك والتصنيف وأفضل الطلاب والفصول مع تقارير PDF", staffdisc:"رفع ملفات البصمة وتحليل الانضباط التراكمي: الترتيب والتحسن والشكر والتنبيه بالواتساب",
+  attendance:"رصد حضور المعلمين يومياً", prepadm:"رفع ملف Excel لإحصائيات التحضير وتحليله: النسب والترتيب والمتابعة والطباعة", admtasks:"إسناد المهام اليومية للوكلاء والموجهين ومتابعة تنفيذها مع التنبيهات", nafes:"اختبارات إلكترونية لطلاب المدرسة بأسلوب نافس مع التحليل والذكاء الاصطناعي", treasureadm:"رحلة تحفيزية من ٢٠ مرحلة لطلاب الثالث المتوسط ومتابعة تقدمهم", duty:"جدول الإشراف والمناوبة واطلاع المعلمين بالهوية", asmfollow:"رصد حضور المعلمين للطابور وإحصائيات يومية وأسبوعية", periodfollow:"الجدول المدرسي وحضور المعلمين والاحتياط والملاحظات", morninglate:"رصد المتأخرين بالفصول وتقارير أسبوعية وشهرية", weeklyplan:"خطة كل أسبوع في صفحة واحدة برابط ثابت", parentinbox:"أعذار وملاحظات أولياء الأمور وتعليقاتهم", portals:"روابط الدخول بالهوية وصلاحيات الإداريين", studentclassify:"تصنيف الطلاب دراسياً وسلوكياً وحضوراً", morningattend:"تحضير المعلمين للحصة الثانية ورابطهم", attendstats:"للإدارة: الإحصائية والتأخر الصباحي", "admin-attendance":"متابعة دوام الإداريين", dailyattend:"كشف الحضور لليوم", studentperf:"الغياب والتأخر والسلوك والتصنيف وأفضل الطلاب والفصول مع تقارير PDF", staffdisc:"رفع ملفات البصمة وتحليل الانضباط التراكمي: الترتيب والتحسن والشكر والتنبيه بالواتساب",
   attendancereport:"تحليل بيانات الحضور", "student-absence":"تسجيل غياب الطلاب", studentexcuses:"استقبال أعذار الغياب",
   absencestats:"مؤشرات وإحصاءات الغياب",
   students:"رصد تقييم الطلاب", formative:"جدول عرضي ملوّن وفق اللائحة", gradeanalysis:"تحليل النتائج والدرجات", assessment:"بطاقة تشخيص المستوى",
@@ -32933,6 +33067,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "weekly" && allowed) return wrap("📈 الحصر الأسبوعي", <MorningAttendancePage key="st-week" section="stats" initTab="weekly" />);
   if (view === "clsum" && allowed) return wrap("🏷️ خلاصة تصنيف الطلاب", <StudentClassifyPage mode="admin" viewOnly />);
   if (view === "cv") return wrap("🎯 زياراتي الصفية", <TeacherVisitsView me={me} />);
+  if (view === "prep") return wrap("📘 تحضيري", <PrepTeacherView me={me} />);
+  if (view === "prepadm" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("📘 تحليل تحضير المعلمين", <PrepAdminPage by={me.name} />);
   if (view === "ttnotes") return wrap("📒 ملاحظات متابعة حصصي", <TeacherPeriodNotesView me={me} />);
   if (view === "pnotes" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("📡 حصر ملاحظات الحصص", <PeriodNotesPage by={me.name} />);
   if (view === "nafes") return wrap("🎯 نتائج نافس لطلابي", <NqTeacherView me={me} />);
@@ -32999,6 +33135,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {ptCan(me, "stats") && ptTile("stats", "📊", "الإحصائية اليومية", "غياب الحصة الثانية كما رصده المعلمون: الأسماء والفصول والمجموع", "#dc2626", "#f43f5e", () => setView("stats"))}
               {ptCan(me, "weekly") && ptTile("weekly", "📈", "الحصر الأسبوعي", "مقارنة الفصول وأكثر الطلاب غياباً خلال الأسبوع", "#0d9488", "#14b8a6", () => setView("weekly"))}
               {ptCan(me, "clsum") && ptTile("clsum", "🏷️", "خلاصة تصنيف الطلاب", "المستوى الدراسي والسلوك والحضور — والطلاب المحتاجون للمتابعة", "#7c3aed", "#a855f7", () => setView("clsum"))}
+              {["principal", "deputy"].includes(me.role) && ptTile("prepadm", "📘", "تحليل تحضير المعلمين", "رفع ملف Excel من النظام وتحليله: النسب والترتيب والخريطة الحرارية والمتابعة والطباعة", "#0b1f3a", "#0f766e", () => setView("prepadm"))}
               {["principal", "deputy"].includes(me.role) && ptTile("cvadm", "🎯", "الزيارات الصفية", "جدول زيارات المعلمين وتقييمها ومؤشراتها", "#0f766e", "#0891b2", () => setView("cvadm"))}
               {ptCan(me, "beh") && ptTile("beh", "📝", "الملاحظات السلوكية اليومية", "قصة الشعر والزي والفوضى والانشغال… تُحفظ بلمسة واحدة مع الإحصائية", "#7c3aed", "#db2777", () => setView("beh"))}
               {ptCan(me, "conduct") && ptTile("conduct", "🚸", "متابعة السلوك اليومي", "مخالفات الطلاب والفصول مع الصور • التقرير والطلاب المتكررون", "#1e3a8a", "#0f766e", () => setView("conduct"))}
@@ -33023,6 +33160,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("hd", "📈", "انضباطي اليومي", "نسبة انضباطك ودقائق التأخر والانصراف المبكر والاستئذان من «حضوري» مع الطابور وملاحظات الحصص", "#0f1e3d", "#0f766e", () => setView("hd"))}
             {ptTile("hdrep", "📑", "تقريري للفترة", "تقرير حضورك للفترة التي اعتمدتها الإدارة: التأخر والغياب والانصراف المبكر مع الطباعة", "#78350f", "#d4a017", () => setView("hdrep"))}
             {ptTile("asm", "🎺", "حضوري للطابور", "حضورك للطابور الصباحي خلال الأسبوع وعدد مرات عدم الحضور", "#6d28d9", "#be185d", () => setView("asm"))}
+            {ptTile("prep", "📘", "تحضيري", "نسبة إنجازي في التحضير الأسبوعي، وأيامي غير المحضّرة، وملاحظات الإدارة", "#123b6b", "#0f766e", () => setView("prep"))}
             {ptTile("ttnotes", "📒", "ملاحظات متابعة حصصي", "التأخر عن الحصص والخروج والغياب والملاحظات المرصودة عليك — مع تقرير ملون للطباعة", "#4f46e5", "#c2410c", () => setView("ttnotes"))}
             {ptTile("sched", "🗓️", "جدولي المدرسي", "حصصك اليوم والأسبوع، وحصص الاحتياط المسندة إليك", "#3730a3", "#0e7490", () => setView("sched"))}
             {ptTile("duty", "🛡️", "الإشراف والمناوبة", "مهامك في الإشراف والمناوبة بطريقة بطاقات مع التذكير والملف الرسمي", "#0c4a6e", "#0f766e", () => setView("duty"))}
@@ -41460,6 +41598,383 @@ const ASM_PCSS = `.pg{border-color:#6d28d9}.pg::before{background:linear-gradien
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.cols div{border-radius:12px;border:1.5px solid #e2e8f0;padding:8px}.cols h4{margin:0 0 6px;font-size:12.5px}.cols ol{margin:0;padding-right:18px;font-size:11.5px;line-height:1.9}
 .lt{font-size:13.5px;line-height:2.2;text-align:justify;margin:12px 6px}.lt b{color:#6d28d9}`;
 
+// ══════════ 📘 تحليل تحضير المعلمين (من ملف Excel «إحصائيات التحضير الأسبوعي») ══════════
+// school-prep/w/{YYYY-MM-DD أحد الأسبوع} = { lb:"الثاني", from, to, up, R:{tk:{n, p, d:[v×5]}} }  — v: رقم ٪ | "L" إجازة | "-" لا حصص
+// school-prep/sys = { from, to, up, R:{tk:{n,p}} } (النسبة الإجمالية في النظام) • school-prep/notes/{tk}/{id} = {t, at, by} • school-prep/cfg = {on}
+const PR_NODE = "school-prep";
+const PR_DN = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+const PR_ORD = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع", "الثامن", "التاسع", "العاشر", "الحادي عشر", "الثاني عشر", "الثالث عشر", "الرابع عشر", "الخامس عشر", "السادس عشر", "السابع عشر", "الثامن عشر"];
+const PR_LV = {
+  full: { l: "مكتمل", c: "#15803d", bg: "#dcfce7", d: "١٠٠٪ في جميع الأسابيع المنتهية" },
+  ex: { l: "متميز", c: "#1d4ed8", bg: "#dbeafe", d: "متوسط ٩٥٪ فأكثر، ولا يقل أي أسبوع عن ٧٥٪" },
+  good: { l: "جيد", c: "#c2410c", bg: "#ffedd5", d: "متوسط ٩٠٪ فأكثر، ولا يقل أي أسبوع عن ٦٠٪" },
+  need: { l: "يحتاج متابعة", c: "#b91c1c", bg: "#fee2e2", d: "متوسط أقل من ٩٠٪ أو أسبوع أقل من ٦٠٪" },
+  chk: { l: "يحتاج تحقق", c: "#475569", bg: "#e2e8f0", d: "لا توجد حصص مسجلة له في النظام طوال الفترة" },
+};
+const prK = n => asmK(n);
+const prAdd = (k, n) => { const [y, m, d] = k.split("-").map(Number); const x = new Date(Date.UTC(y, m - 1, d + n)); return x.toISOString().slice(0, 10); };
+const prDate = s => { const m = String(s || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : ""; };
+const prFmt = k => k ? `${k.slice(8, 10)}/${k.slice(5, 7)}` : "";
+const prR = v => Math.round(v * 10) / 10;
+const prPct = v => v == null ? "—" : `${maAr(prR(v))}٪`;
+const prCell = v => v === "L" ? { bg: "#ede9fe", c: "#6d28d9", t: "إجازة" } : v === "-" || v == null ? { bg: "#f1f5f9", c: "#94a3b8", t: "—" } : v >= 100 ? { bg: "#86efac", c: "#14532d", t: maAr(prR(v)) } : v >= 90 ? { bg: "#d9f99d", c: "#365314", t: maAr(prR(v)) } : v >= 75 ? { bg: "#fde68a", c: "#713f12", t: maAr(prR(v)) } : v > 0 ? { bg: "#fecaca", c: "#7f1d1d", t: maAr(prR(v)) } : { bg: "#ef4444", c: "#fff", t: "٠" };
+const prPC = v => v == null ? "#64748b" : v >= 100 ? "#15803d" : v >= 95 ? "#1d4ed8" : v >= 90 ? "#c2410c" : "#b91c1c";
+
+// ── قراءة ملف Excel: كل ورقة أسبوع + ورقة الملخص
+async function prParse(file) {
+  const XLSX = await loadXLSX(); const wb = XLSX.read(await file.arrayBuffer()); const weeks = []; let sys = null;
+  wb.SheetNames.forEach(sn => {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "" }); if (!rows.length) return;
+    const head = rows.slice(0, 3).flat().map(x => String(x ?? "")).join(" ");
+    const dm = head.match(/(\d{1,2}\/\d{1,2}\/\d{4})\D+(\d{1,2}\/\d{1,2}\/\d{4})/); const from = dm ? prDate(dm[1]) : "", to = dm ? prDate(dm[2]) : "";
+    let hi = rows.findIndex(r => r.some(x => /اسم المعلم/.test(String(x)))); if (hi < 0) return; const H = rows[hi].map(x => String(x ?? "").trim());
+    const ni = H.findIndex(x => /اسم المعلم/.test(x)); const pi = H.findIndex(x => /النسبة/.test(x));
+    const dayI = PR_DN.map(dn => H.findIndex(x => x.replace("الاثنين", "الإثنين") === dn));
+    const num = v => { if (v === "" || v == null) return "-"; const s = String(v).trim(); if (/إجاز|اجاز/.test(s)) return "L"; if (/^[—–\-]+$/.test(s)) return "-"; const n = parseFloat(s.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace("%", "")); return isNaN(n) ? "-" : n; };
+    const isSummary = /ملخص|الأسابيع/.test(sn) || /النسبة الإجمالية/.test(H.join(" "));
+    const R = {};
+    rows.slice(hi + 1).forEach(r => { const n = String(r[ni] ?? "").replace(/\s+/g, " ").trim(); if (!n || n.length < 4) return; const p = num(r[pi]); if (isSummary) R[prK(n)] = { n, p: typeof p === "number" ? p : 0 }; else R[prK(n)] = { n, p: typeof p === "number" ? p : 0, d: dayI.map(i => i >= 0 ? num(r[i]) : "-") }; });
+    if (!Object.keys(R).length) return;
+    if (isSummary) sys = { from, to, R };
+    else { const wm = (sn + " " + head).match(/الأسبوع\s+(ال[^\s\-–]+(?:\s+عشر)?)/); weeks.push({ lb: wm ? wm[1] : sn, from, to, R }); }
+  });
+  // تاريخ إصدار الملف من النظام: الأيام بعده لا تُحسب تقصيرًا (تُعامل كأيام قادمة)
+  let asOf = ""; try { const P = wb.Props || {}; const dd = P.CreatedDate || P.ModifiedDate; if (dd) { const x = new Date(dd); if (!isNaN(x)) asOf = new Date(x.getTime() + 3 * 3600e3).toISOString().slice(0, 10); } } catch {}
+  return { weeks: weeks.filter(w => w.from).sort((a, b) => a.from.localeCompare(b.from)), sys, asOf };
+}
+
+// ── محرّك التحليل
+function prCompute(W0, o) {
+  const today = o.today || maKey(new Date()); const f = o.f || "0000", t = o.t || "9999"; const DS = o.days || [0, 1, 2, 3, 4]; const allDays = DS.length === 5;
+  const W = W0.filter(w => w.to >= f && w.from <= t).map(w => { const dates = [0, 1, 2, 3, 4].map(i => prAdd(w.from, i)); const td = w.asOf && w.asOf < today ? w.asOf : today; const st = w.from > td ? "upc" : w.to <= td ? "fin" : "cur"; return { ...w, td, dates, st, full: allDays && w.from >= f && w.to <= t && st === "fin" }; });
+  const T = {}; W.forEach(w => Object.entries(ptObj(w.R)).forEach(([tk, r]) => { if (!T[tk]) T[tk] = { tk, n: r.n }; T[tk].n = r.n; }));
+  if (o.sys) Object.entries(ptObj(o.sys.R)).forEach(([tk, r]) => { if (!T[tk]) T[tk] = { tk, n: r.n }; });
+  const done = W.filter(w => w.st !== "upc"), upc = W.filter(w => w.st === "upc");
+  const rows = Object.values(T).map(tc => {
+    const wk = W.map(w => { const r = ptObj(w.R)[tc.tk]; if (!r) return { w, v: null, d: [], miss: true };
+      const d = maArr(r.d).length ? r.d : []; const cnt = []; const fut = [];
+      [0, 1, 2, 3, 4].forEach(i => { const v = d[i]; if (!DS.includes(i) || w.dates[i] < f || w.dates[i] > t) return; if (typeof v !== "number") return; (w.dates[i] > w.td ? fut : cnt).push({ i, v, k: w.dates[i] }); });
+      const pre = fut.length > 0 && fut.every(x => x.v >= 100) && w.st === "upc";
+      let v = null; if (w.st !== "upc") { if (w.full && cnt.length) v = +r.p; else if (cnt.length) v = cnt.reduce((a, x) => a + x.v, 0) / cnt.length; }
+      return { w, v, d, cnt, pre, sysP: +r.p };
+    });
+    const vs = wk.filter(x => x.w.st !== "upc" && x.v != null); const N = vs.length;
+    const mean = N ? vs.reduce((a, x) => a + x.v, 0) / N : null;
+    const minX = N ? vs.reduce((a, x) => x.v < a.v ? x : a, vs[0]) : null;
+    const days = wk.flatMap(x => x.cnt || []); const zero = days.filter(x => x.v === 0), part = days.filter(x => x.v > 0 && x.v < 100);
+    const last3 = vs.slice(-3); const l3 = last3.length ? last3.reduce((a, x) => a + x.v, 0) / last3.length : null;
+    const comp = vs.filter(x => x.v >= 100).length; const pre = wk.some(x => x.w.st === "upc" && x.pre);
+    const sysP = o.sys && ptObj(o.sys.R)[tc.tk] ? +ptObj(o.sys.R)[tc.tk].p : null;
+    const lv = !N || (days.length === 0) ? "chk" : comp === N ? "full" : mean >= 95 && minX.v >= 75 ? "ex" : mean >= 90 && minX.v >= 60 ? "good" : "need";
+    const trend = vs.length >= 4 ? (vs.slice(-2).reduce((a, x) => a + x.v, 0) / 2) - (vs.slice(0, 2).reduce((a, x) => a + x.v, 0) / 2) : 0;
+    return { ...tc, wk, N, mean, minX, zero, part, days, l3, comp, pre, sysP, lv, trend };
+  });
+  const ord = { full: 0, ex: 1, good: 2, need: 3, chk: 4 };
+  rows.sort((a, b) => (a.lv === "chk") - (b.lv === "chk") || (b.mean ?? -1) - (a.mean ?? -1) || ((b.minX ? b.minX.v : 0) - (a.minX ? a.minX.v : 0)) || (b.pre - a.pre) || a.n.localeCompare(b.n, "ar"));
+  let rk = 0, last = null; rows.forEach((r, i) => { const key = `${r.lv === "chk"}|${r.mean}|${r.minX ? r.minX.v : ""}`; if (key !== last) { rk = i + 1; last = key; } r.rank = rk; });
+  const act = rows.filter(r => r.lv !== "chk");
+  const wAvg = W.map(w => { const L = act.map(r => r.wk.find(x => x.w.from === w.from)).filter(x => x && x.v != null); const sysL = act.map(r => ptObj(w.R)[r.tk]).filter(Boolean); return { w, v: L.length ? L.reduce((a, x) => a + x.v, 0) / L.length : null, sys: sysL.length ? sysL.reduce((a, x) => a + (+x.p || 0), 0) / sysL.length : null, preN: act.filter(r => r.wk.find(x => x.w.from === w.from && x.pre)).length }; });
+  const fin = wAvg.filter(x => x.w.st !== "upc" && x.v != null); const sMean = fin.length ? fin.reduce((a, x) => a + x.v, 0) / fin.length : null;
+  const sysAll = o.sys ? (() => { const L = Object.entries(ptObj(o.sys.R)).filter(([tk, x]) => x && x.p != null && !(T[tk] && rows.find(r => r.tk === tk && r.lv === "chk"))).map(([, x]) => x); return L.length ? L.reduce((a, x) => a + (+x.p || 0), 0) / L.length : null; })() : null;
+  const cnt = k => rows.filter(r => r.lv === k).length;
+  const wd = [0, 1, 2, 3, 4].map(i => { const L = act.flatMap(r => r.days.filter(x => x.i === i)); return { i, miss: L.filter(x => x.v < 100).length, avg: L.length ? L.reduce((a, x) => a + x.v, 0) / L.length : null }; });
+  const drops = act.flatMap(r => r.wk.filter(x => x.v != null && x.w.st !== "upc" && x.v < 70).map(x => ({ r, x }))).sort((a, b) => a.x.v - b.x.v);
+  const zeroN = act.reduce((a, r) => a + r.zero.length, 0), partN = act.reduce((a, r) => a + r.part.length, 0);
+  const best = rows.filter(r => r.lv === "full" && r.pre);
+  return { W, rows, wAvg, sMean, sysAll, cnt, wd, drops, zeroN, partN, best, done, upc, act, f, t, today, DS };
+}
+const prAction = r => r.zero.length >= 3 || (r.l3 != null && r.l3 < 85) ? "أولوية عالية: لقاء فردي ومتابعة أسبوعية حتى الثبات" : r.l3 != null && r.l3 >= 97 ? "تحسّن واضح: توثيق التحسّن ومتابعة معتادة" : "متابعة دورية وتذكير منتصف الأسبوع";
+
+// ── رسومات SVG (تعمل في الصفحة والطباعة)
+function prSvgWeeks(C, h = 230) {
+  const L = C.wAvg; if (!L.length) return ""; const W = Math.max(520, L.length * 78 + 90), H = h, b = 34, top = 28, ch = H - b - top, bw = Math.min(54, (W - 90) / L.length - 18);
+  const y = v => top + ch - ch * Math.max(0, Math.min(100, v)) / 100; const fin = L.filter(x => x.w.st !== "upc" && x.v != null); const mx = fin.length ? Math.max(...fin.map(x => x.v)) : null, mn = fin.length ? Math.min(...fin.map(x => x.v)) : null;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;font-family:Cairo,Tahoma,sans-serif" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="prh" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#eef2f7"/><line x1="0" y1="0" x2="0" y2="8" stroke="#cbd5e1" stroke-width="3"/></pattern><linearGradient id="prb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient><linearGradient id="prg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient><linearGradient id="pro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbbf24"/><stop offset="1" stop-color="#d97706"/></linearGradient></defs>`;
+  [0, 25, 50, 75, 100].forEach(g => { s += `<line x1="56" x2="${W - 10}" y1="${y(g)}" y2="${y(g)}" stroke="#e2e8f0"/><text x="50" y="${y(g) + 4}" font-size="10" fill="#94a3b8" text-anchor="end">${maAr(g)}٪</text>`; });
+  L.forEach((x, i) => { const cx = W - 40 - (i + 0.5) * ((W - 90) / L.length); const v = x.w.st === "upc" ? (x.sys || 0) : (x.v || 0); const fill = x.w.st === "upc" ? "url(#prh)" : x.v === mx ? "url(#prg)" : x.v === mn ? "url(#pro)" : "url(#prb)";
+    s += `<rect x="${cx - bw / 2}" y="${y(v)}" width="${bw}" height="${top + ch - y(v)}" rx="7" fill="${fill}" ${x.w.st === "upc" ? 'stroke="#94a3b8" stroke-dasharray="4 3"' : ""}/>`;
+    s += `<text x="${cx}" y="${y(v) - 7}" font-size="11.5" font-weight="900" fill="#0f172a" text-anchor="middle">${x.w.st === "upc" ? (x.preN ? "★" + maAr(x.preN) : "—") : maAr(prR(x.v || 0)) + "٪"}</text>`;
+    s += `<text x="${cx}" y="${H - 18}" font-size="12" font-weight="800" fill="#0f172a" text-anchor="middle">${ptEsc(x.w.lb)}</text><text x="${cx}" y="${H - 4}" font-size="9.5" fill="${x.w.st === "upc" ? "#b45309" : "#64748b"}" text-anchor="middle">${x.w.st === "upc" ? "لم يبدأ" : x.w.st === "cur" ? "جارٍ" : prFmt(x.w.from)}</text>`; });
+  if (C.sMean != null) s += `<line x1="56" x2="${W - 10}" y1="${y(C.sMean)}" y2="${y(C.sMean)}" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 5"/><text x="${W - 12}" y="${y(C.sMean) - 6}" font-size="11" font-weight="900" fill="#7c3aed" text-anchor="end">المتوسط ${maAr(prR(C.sMean))}٪</text>`;
+  return s + "</svg>";
+}
+function prSvgDonut(C, sz = 210) {
+  const K = ["full", "ex", "good", "need", "chk"]; const tot = C.rows.length || 1; const r = sz / 2 - 18, cx = sz / 2, cy = sz / 2, sw = 34; let a0 = -Math.PI / 2; let s = `<svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" style="font-family:Cairo,Tahoma,sans-serif" xmlns="http://www.w3.org/2000/svg">`;
+  K.forEach(k => { const n = C.cnt(k); if (!n) return; const a1 = a0 + 2 * Math.PI * n / tot; const big = a1 - a0 > Math.PI ? 1 : 0; const p = (a) => `${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
+    s += n === tot ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PR_LV[k].c}" stroke-width="${sw}"/>` : `<path d="M ${p(a0)} A ${r} ${r} 0 ${big} 1 ${p(a1 - 0.012)}" fill="none" stroke="${PR_LV[k].c}" stroke-width="${sw}"/>`;
+    const am = (a0 + a1) / 2; s += `<text x="${cx + r * Math.cos(am)}" y="${cy + r * Math.sin(am) + 5}" font-size="13" font-weight="900" fill="#fff" text-anchor="middle">${maAr(n)}</text>`; a0 = a1; });
+  return s + `<text x="${cx}" y="${cy + 6}" font-size="34" font-weight="900" fill="#0f172a" text-anchor="middle">${maAr(C.rows.length)}</text><text x="${cx}" y="${cy + 28}" font-size="12" fill="#64748b" text-anchor="middle">معلمًا</text></svg>`;
+}
+function prSvgWd(C) {
+  const L = C.wd.filter(x => C.DS.includes(x.i)); const W = 420, H = 210, top = 26, b = 44, ch = H - top - b; const mx = Math.max(1, ...L.map(x => x.miss)); const bw = 46; let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;font-family:Cairo,Tahoma,sans-serif" xmlns="http://www.w3.org/2000/svg">`;
+  const top2 = [...L].sort((a, b) => b.miss - a.miss).slice(0, 2).map(x => x.i);
+  L.forEach((x, k) => { const cx = W - 40 - k * ((W - 60) / L.length); const hh = ch * x.miss / mx; const c = top2.includes(x.i) && x.miss ? "#f59e0b" : "#3b82f6";
+    s += `<rect x="${cx - bw / 2}" y="${top + ch - hh}" width="${bw}" height="${hh}" rx="7" fill="${c}"/><text x="${cx}" y="${top + ch - hh - 6}" font-size="13" font-weight="900" fill="#0f172a" text-anchor="middle">${maAr(x.miss)}</text><text x="${cx}" y="${H - 24}" font-size="12" font-weight="800" fill="#0f172a" text-anchor="middle">${PR_DN[x.i]}</text><text x="${cx}" y="${H - 8}" font-size="10" fill="#64748b" text-anchor="middle">${x.avg == null ? "—" : maAr(prR(x.avg)) + "٪"}</text>`; });
+  return s + `<line x1="10" x2="${W - 10}" y1="${top + ch}" y2="${top + ch}" stroke="#cbd5e1"/></svg>`;
+}
+function prSvgTeacher(r, C) {
+  const L = r.wk; if (!L.length) return ""; const W = Math.max(480, L.length * 64 + 70), H = 200, top = 24, b = 32, ch = H - top - b; const y = v => top + ch - ch * Math.max(0, Math.min(100, v)) / 100; const bw = Math.min(40, (W - 70) / L.length - 16);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;font-family:Cairo,Tahoma,sans-serif" xmlns="http://www.w3.org/2000/svg">`;
+  [0, 50, 100].forEach(g => { s += `<line x1="44" x2="${W - 8}" y1="${y(g)}" y2="${y(g)}" stroke="#eef2f7"/><text x="38" y="${y(g) + 4}" font-size="10" fill="#94a3b8" text-anchor="end">${maAr(g)}٪</text>`; });
+  const pts = [];
+  L.forEach((x, i) => { const cx = W - 30 - (i + 0.5) * ((W - 70) / L.length); const sa = C.wAvg.find(a => a.w.from === x.w.from);
+    if (x.w.st === "upc") s += `<rect x="${cx - bw / 2}" y="${top}" width="${bw}" height="${ch}" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-dasharray="4 3"/><text x="${cx}" y="${top + ch / 2}" font-size="${x.pre ? 18 : 11}" fill="${x.pre ? "#15803d" : "#94a3b8"}" text-anchor="middle">${x.pre ? "★" : "قادم"}</text>`;
+    else if (x.v != null) { const c = prPC(x.v); s += `<rect x="${cx - bw / 2}" y="${y(x.v)}" width="${bw}" height="${top + ch - y(x.v)}" rx="6" fill="${c}" opacity=".88"/><text x="${cx}" y="${y(x.v) - 5}" font-size="11" font-weight="900" fill="${c}" text-anchor="middle">${maAr(prR(x.v))}</text>`; }
+    if (sa && sa.v != null && x.w.st !== "upc") pts.push(`${cx},${y(sa.v)}`);
+    s += `<text x="${cx}" y="${H - 10}" font-size="11" font-weight="800" fill="#334155" text-anchor="middle">${ptEsc(x.w.lb)}</text>`; });
+  if (pts.length > 1) s += `<polyline points="${pts.join(" ")}" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-dasharray="5 4"/>`;
+  return s + "</svg>";
+}
+function prRing(v, sz = 120, c) { const r = sz / 2 - 10, L = 2 * Math.PI * r, p = Math.max(0, Math.min(100, v || 0)); c = c || prPC(v);
+  return `<svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}" style="font-family:Cairo,Tahoma,sans-serif" xmlns="http://www.w3.org/2000/svg"><circle cx="${sz / 2}" cy="${sz / 2}" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="12"/><circle cx="${sz / 2}" cy="${sz / 2}" r="${r}" fill="none" stroke="${c}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${L * p / 100} ${L}" transform="rotate(-90 ${sz / 2} ${sz / 2})"/><text x="${sz / 2}" y="${sz / 2 + 8}" font-size="${sz / 5}" font-weight="900" fill="${c}" text-anchor="middle">${v == null ? "—" : maAr(Math.round(v)) + "٪"}</text></svg>`; }
+const PrSvg = ({ h, style }) => <div style={style} dangerouslySetInnerHTML={{ __html: h }} />;
+
+const PR_CSS = `
+.pr{font-family:Cairo,Tahoma,sans-serif;color:#0f172a}.pr *{box-sizing:border-box}
+.pr-hero{border-radius:26px;color:#fff;padding:20px 22px;position:relative;overflow:hidden;background:radial-gradient(520px 240px at 92% -20%,rgba(250,204,21,.35),transparent 60%),radial-gradient(420px 220px at 0% 120%,rgba(45,212,191,.35),transparent 60%),linear-gradient(135deg,#0b1f3a,#123b6b 52%,#0f766e)}
+.pr-hero h2{margin:6px 0 2px;font-size:26px;font-weight:900}.pr-hero p{margin:0;font-size:13px;font-weight:700;opacity:.88}
+.pr-tag{display:inline-block;background:#fde047;color:#422006;border-radius:999px;padding:2px 12px;font-weight:900;font-size:12px}
+.pr-lead{margin-top:12px;border-radius:16px;padding:10px 14px;background:rgba(255,255,255,.1);border-inline-start:4px solid #fde047;font-size:14px;font-weight:700;line-height:1.9}
+.pr-kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pr-k{background:#fff;border-radius:18px;padding:12px 14px;border:1px solid #e8edf5;border-top:5px solid var(--c);box-shadow:0 14px 28px -24px rgba(15,23,42,.6)}
+.pr-k small{font-size:12.5px;font-weight:800;color:#475569}.pr-k b{display:block;font-size:30px;font-weight:900;color:var(--c);line-height:1.25}.pr-k i{font-style:normal;font-size:11.5px;font-weight:700;color:#64748b}
+.pr-card{background:#fff;border:1px solid #e8edf5;border-radius:22px;padding:16px;box-shadow:0 16px 32px -28px rgba(15,23,42,.55)}
+.pr-h{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:900;margin:0 0 4px}.pr-h::before{content:"";width:6px;height:22px;border-radius:9px;background:var(--hc,#2563eb)}
+.pr-sub{font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:10px}
+.pr-tabs{display:flex;gap:6px;flex-wrap:wrap}.pr-tab{font-family:inherit;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;border-radius:999px;padding:7px 14px;font-weight:900;font-size:13px;color:#475569}.pr-tab.on{background:#0b1f3a;color:#fff;border-color:#0b1f3a}
+.pr-b{font-family:inherit;cursor:pointer;border:1.5px solid #dbe4ee;background:#fff;border-radius:12px;padding:7px 13px;font-weight:900;font-size:13px;color:#0f172a;display:inline-flex;gap:6px;align-items:center}.pr-b.pri{background:#0b1f3a;color:#fff;border-color:#0b1f3a}.pr-b.gold{background:#facc15;border-color:#facc15;color:#422006}.pr-b:disabled{opacity:.45}
+.pr-chip{font-family:inherit;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;border-radius:999px;padding:4px 11px;font-weight:800;font-size:12.5px;color:#334155}.pr-chip.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.pr-in{font-family:inherit;font-size:13.5px;font-weight:700;border:1.5px solid #dbe4ee;border-radius:12px;padding:6px 10px;background:#fbfdff}
+.pr-lv{display:inline-block;border-radius:999px;padding:2px 11px;font-weight:900;font-size:12px;border:1.5px solid}
+.pr-hm{border-collapse:separate;border-spacing:3px;width:100%;font-size:12px}.pr-hm th{background:#0b1f3a;color:#fff;font-weight:900;padding:7px 4px;border-radius:8px;white-space:nowrap}.pr-hm th small{display:block;font-size:10px;color:#fde047;font-weight:800}
+.pr-hm td{text-align:center;font-weight:900;border-radius:7px;padding:5px 3px;min-width:46px}.pr-hm td.n{text-align:right;background:#fff;white-space:nowrap;padding-inline:8px;font-weight:800}
+.pr-hm td.up{background:repeating-linear-gradient(135deg,#f1f5f9,#f1f5f9 5px,#fff 5px,#fff 9px);color:#94a3b8}.pr-hm td.st{background:#dcfce7;color:#15803d;outline:2px solid #15803d}
+.pr-tb{width:100%;border-collapse:collapse;font-size:12.5px}.pr-tb th{background:#0b1f3a;color:#fff;padding:8px 5px;font-weight:900;font-size:11.5px}.pr-tb td{border-bottom:1px solid #eef2f7;padding:7px 5px;text-align:center;font-weight:700}.pr-tb td.n{text-align:right;font-weight:900}
+.pr-fc{border:2px solid #fecaca;border-radius:18px;padding:12px;background:#fff}.pr-fc .g{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;font-weight:700;color:#64748b}.pr-fc .g b{display:block;color:#0f172a;font-size:15px}
+.pr-star{border-radius:20px;padding:14px;text-align:center;background:linear-gradient(180deg,#fef9c3,#fde68a);border:1.5px solid #facc15}
+.pr-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-weight:800;font-size:12.5px;border:1.5px solid}
+.pr-wrap{overflow-x:auto}
+@media (max-width:720px){.pr-kp{grid-template-columns:repeat(2,minmax(0,1fr))}.pr-hero h2{font-size:21px}}
+`;
+
+// ── التقرير الكامل للطباعة (نفس أقسام التحليل)
+function prPrintHTML(C, o = {}) {
+  const lv = (k) => `<span class="lv" style="color:${PR_LV[k].c};border-color:${PR_LV[k].c};background:${PR_LV[k].bg}">${PR_LV[k].l}</span>`;
+  const rng = `${C.W.length ? asmHij(maDate(C.W[0].from)) : ""} — ${C.W.length ? asmHij(maDate(C.W[C.W.length - 1].to)) : ""}`;
+  const finN = C.done.length; const heat = `<table class="hm"><thead><tr><th>#</th><th>المعلم</th>${C.W.map(w => `<th>${ptEsc(w.lb)}${w.st === "upc" ? "<small>قادم</small>" : w.st === "cur" ? "<small>جارٍ</small>" : ""}</th>`).join("")}<th>المتوسط</th></tr></thead><tbody>${C.rows.map(r => `<tr><td>${maAr(r.rank)}</td><td class="n"><i style="background:${PR_LV[r.lv].c}"></i>${ptEsc(r.n)}</td>${r.wk.map(x => x.w.st === "upc" ? `<td class="${x.pre ? "st" : "up"}">${x.pre ? "★" : "·"}</td>` : (() => { const c = prCell(x.v); return `<td style="background:${c.bg};color:${c.c}">${x.v == null ? "—" : c.t}</td>`; })()).join("")}<td style="color:${prPC(r.mean)};font-weight:900">${r.mean == null ? "—" : maAr(prR(r.mean))}</td></tr>`).join("")}</tbody></table>`;
+  const rank = `<table class="tb"><thead><tr><th>الترتيب</th><th>المعلم</th><th>المتوسط ٪</th><th>أدنى أسبوع</th><th>الأسبوع الأضعف</th><th>أسابيع مكتملة</th><th>أيام بلا تحضير</th><th>أيام جزئية</th><th>آخر ٣ أسابيع</th><th>القادم</th>${C.sysAll != null ? "<th>نسبة النظام</th>" : ""}<th>التصنيف</th></tr></thead><tbody>${C.rows.map(r => `<tr><td>${maAr(r.rank)}</td><td class="n">${ptEsc(r.n)}</td><td style="font-weight:900;color:${prPC(r.mean)}">${r.mean == null ? "٠" : maAr(prR(r.mean))}</td><td>${r.minX ? maAr(prR(r.minX.v)) : "٠"}</td><td>${r.minX && r.minX.v < 100 ? ptEsc(r.minX.w.lb) : "—"}</td><td>${maAr(r.comp)} من ${maAr(r.N)}</td><td style="color:${r.zero.length ? "#b91c1c" : "inherit"}">${maAr(r.zero.length)}</td><td>${maAr(r.part.length)}</td><td>${r.l3 == null ? "٠" : maAr(prR(r.l3))}</td><td>${r.pre ? '<b style="color:#15803d">حضّر ✓</b>' : '<span style="color:#94a3b8">لم يُحضّر</span>'}</td>${C.sysAll != null ? `<td>${r.sysP == null ? "—" : maAr(prR(r.sysP))}</td>` : ""}<td>${lv(r.lv)}</td></tr>`).join("")}</tbody></table>`;
+  const need = C.rows.filter(r => r.lv === "need").sort((a, b) => (a.l3 ?? 0) - (b.l3 ?? 0) || (a.mean ?? 0) - (b.mean ?? 0));
+  const fcards = need.map((r, i) => `<div class="fc"><div class="fh"><b>${ptEsc(r.n)}</b><span>أولوية ${maAr(i + 1)}</span></div>${lv(r.lv)}<div class="g"><div>متوسط الفترة<b>${prPct(r.mean)}</b></div><div>الأسبوع الأضعف<b>${r.minX ? ptEsc(r.minX.w.lb) + " · " + prPct(r.minX.v) : "—"}</b></div><div>أيام بلا تحضير<b>${maAr(r.zero.length)}</b></div><div>آخر ثلاثة أسابيع<b>${prPct(r.l3)}</b></div></div><p><b>الإجراء المقترح:</b> ${prAction(r)}</p></div>`).join("");
+  const top = C.best.slice(0, 3).map(r => `<div class="sx"><div class="s">★</div><b>${ptEsc(r.n)}</b><small>مكتمل في كل الأسابيع وحضّر الأسبوع القادم مسبقًا</small></div>`).join("");
+  const grp = ["full", "ex", "good"].map(k => { const L = C.rows.filter(r => r.lv === k); return L.length ? `<div class="grp" style="border-color:${PR_LV[k].c}"><div>${lv(k)} <small>العدد: ${maAr(L.length)}</small></div>${L.map(r => `<span class="pl" style="border-color:${PR_LV[k].c}">${ptEsc(r.n)} <b>${maAr(prR(r.mean))}٪</b></span>`).join("")}</div>` : ""; }).join("");
+  const drops = C.drops.slice(0, 8).map(d => `<div class="dr"><span>${ptEsc(d.r.n)} · الأسبوع ${ptEsc(d.x.w.lb)}</span><b>${maAr(prR(d.x.v))}٪</b></div>`).join("");
+  const appx = need.concat(C.rows.filter(r => r.lv === "chk")).map(r => `<div class="ax"><div class="fh"><b>${ptEsc(r.n)}</b>${lv(r.lv)}<small>الترتيب ${maAr(r.rank)} · المتوسط ${prPct(r.mean)}</small></div><table class="dt"><thead><tr><th>الأسبوع</th>${PR_DN.map(d => `<th>${d}</th>`).join("")}<th>الأسبوع ٪</th></tr></thead><tbody>${r.wk.map(x => `<tr><td>${ptEsc(x.w.lb)}${x.w.st === "upc" ? " (قادم)" : ""}</td>${[0, 1, 2, 3, 4].map(i => { const v = x.d[i]; if (x.w.st === "upc") return `<td class="${typeof v === "number" && v >= 100 ? "st" : "up"}">${typeof v === "number" && v >= 100 ? "★" : "·"}</td>`; const c = prCell(v); return `<td style="background:${c.bg};color:${c.c}">${c.t}</td>`; }).join("")}<td><b>${x.w.st === "upc" ? "·" : x.v == null ? "—" : maAr(prR(x.v))}</b></td></tr>`).join("")}</tbody></table></div>`).join("");
+  const T = prText(C);
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تحليل أداء المعلمين في التحضير</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&display=swap" rel="stylesheet"><style>
+@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a;font-size:12px}
+.pg{break-after:page}.pg:last-child{break-after:auto}
+.hero{border-radius:20px;color:#fff;padding:18px 20px;background:radial-gradient(420px 200px at 92% -20%,rgba(250,204,21,.35),transparent 60%),linear-gradient(135deg,#0b1f3a,#123b6b 52%,#0f766e)}.hero h1{margin:6px 0 2px;font-size:25px}.hero p{margin:0;font-size:11.5px;opacity:.9}.tg{background:#fde047;color:#422006;border-radius:999px;padding:1px 10px;font-weight:900;font-size:11px}
+.ld{margin-top:10px;border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.1);border-right:4px solid #fde047;font-size:12.5px;line-height:1.9}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.k{border-radius:14px;padding:8px 12px;border:1px solid #e8edf5;border-top:4px solid var(--c)}.k small{font-weight:800;color:#475569}.k b{display:block;font-size:24px;color:var(--c)}.k i{font-style:normal;font-size:10.5px;color:#64748b}
+.cd{border:1px solid #e8edf5;border-radius:16px;padding:12px;margin:8px 0;break-inside:avoid}.h{font-size:16px;font-weight:900;margin:0 0 3px;display:flex;gap:8px;align-items:center}.h::before{content:"";width:5px;height:18px;border-radius:9px;background:#2563eb}.sb{font-size:11px;color:#64748b;margin-bottom:8px}
+.lv{display:inline-block;border-radius:999px;padding:0 9px;font-weight:900;font-size:11px;border:1.5px solid}
+.hm{border-collapse:separate;border-spacing:2px;width:100%;font-size:10.5px}.hm th{background:#0b1f3a;color:#fff;padding:5px 2px;border-radius:6px}.hm th small{display:block;color:#fde047;font-size:9px}.hm td{text-align:center;font-weight:900;border-radius:5px;padding:3px 2px}.hm td.n{text-align:right;white-space:nowrap;font-weight:800}.hm td.n i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:5px}
+.up{background:repeating-linear-gradient(135deg,#f1f5f9,#f1f5f9 4px,#fff 4px,#fff 8px);color:#94a3b8}.st{background:#dcfce7!important;color:#15803d!important;outline:1.5px solid #15803d}
+.tb{width:100%;border-collapse:collapse;font-size:10.5px}.tb th{background:#0b1f3a;color:#fff;padding:5px 3px}.tb td{border-bottom:1px solid #eef2f7;padding:4px 3px;text-align:center}.tb td.n{text-align:right;font-weight:900;white-space:nowrap}.lv{white-space:nowrap}.tb th{white-space:nowrap;font-size:9.5px}
+.fcs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.fc{border:2px solid #fecaca;border-radius:14px;padding:9px;break-inside:avoid}.fh{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:4px}.fh span{color:#b91c1c;font-weight:900;font-size:11px}.g{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;font-size:10.5px;color:#64748b;margin:5px 0}.g b{display:block;color:#0f172a;font-size:12.5px}.fc p{margin:4px 0 0;border-top:1px dashed #fecaca;padding-top:4px;font-size:10.5px}
+.sxs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sx{text-align:center;border-radius:14px;padding:10px;background:linear-gradient(180deg,#fef9c3,#fde68a);border:1.5px solid #facc15}.sx .s{font-size:22px;color:#a16207}.sx b{display:block;font-size:14px}.sx small{color:#713f12;font-size:10.5px}
+.grp{border-right:4px solid;padding:4px 10px;margin:6px 0}.pl{display:inline-block;border:1.5px solid;border-radius:999px;padding:1px 9px;margin:2px;font-size:11px;font-weight:800}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dr{display:flex;justify-content:space-between;border-right:4px solid #f59e0b;background:#fff7ed;border-radius:8px;padding:4px 8px;margin:3px 0;font-weight:800}.dr b{color:#b91c1c}
+.axs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ax{border:1.5px solid #fecaca;border-top:5px solid #ef4444;border-radius:12px;padding:8px;break-inside:avoid}.dt{width:100%;border-collapse:separate;border-spacing:2px;font-size:10px}.dt th{background:#f1f5f9;padding:3px}.dt td{text-align:center;border-radius:4px;padding:2px;font-weight:800}
+.tx h4{display:inline-block;background:#1d4ed8;color:#fff;border-radius:999px;padding:2px 14px;margin:12px 0 6px;font-size:13px}.tx p,.tx li{font-size:12px;line-height:2}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.sg div{border:1px solid #dbeafe;background:#f8fbff;border-radius:14px;padding:10px;text-align:center}.sg b{display:block;font-size:18px;margin:4px 0}
+.ft{text-align:center;font-size:10px;color:#94a3b8;margin-top:6px}
+</style></head><body>
+<section class="pg"><div class="hero"><span class="tg">تقرير تحليلي</span><h1>تحليل أداء المعلمين في التحضير الأسبوعي</h1><p>${ptEsc(HFX_SCHOOL)} · الفصل الدراسي الأول · العام ١٤٤٨هـ · ${rng}${o.title ? " · " + ptEsc(o.title) : ""}</p><div class="ld">${T.lead}</div></div>
+<div class="kp"><div class="k" style="--c:#15803d"><small>متوسط الأسابيع المنتهية</small><b>${prPct(C.sMean)}</b><i>${maAr(finN)} أسابيع محسوبة</i></div><div class="k" style="--c:#2563eb"><small>النسبة الإجمالية في النظام</small><b>${prPct(C.sysAll)}</b><i>كما وردت في ملف الملخص</i></div><div class="k" style="--c:#0f766e"><small>مكتملون في كل الأسابيع</small><b>${maAr(C.cnt("full"))}</b><i>منهم ${maAr(C.best.length)} حضّروا القادم مسبقًا</i></div><div class="k" style="--c:#dc2626"><small>يحتاجون متابعة</small><b>${maAr(C.cnt("need"))}</b><i>${C.cnt("chk") ? `و${maAr(C.cnt("chk"))} يحتاج تحققًا من بياناته` : "—"}</i></div><div class="k" style="--c:#d97706"><small>أيام بلا تحضير</small><b>${maAr(C.zeroN)}</b><i>و${maAr(C.partN)} يومًا تحضير جزئي</i></div><div class="k" style="--c:#7c3aed"><small>حضّروا الأسبوع القادم مسبقًا</small><b>${maAr(C.upc.length ? C.act.filter(r => r.pre).length : 0)}</b><i>من ${maAr(C.act.length)} معلمًا</i></div></div>
+<div class="cd"><div class="h">مسار نسبة المدرسة أسبوعًا بأسبوع</div><div class="sb">الأخضر أعلى أسبوع، والبرتقالي أضعف أسبوع منتهٍ، والمخطط أسبوع لم يبدأ، والخط البنفسجي متوسط الأسابيع المنتهية.</div>${prSvgWeeks(C)}</div></section>
+<section class="pg"><div class="cd"><div class="h">توزيع المعلمين حسب مستوى التحضير</div><div style="display:flex;gap:16px;align-items:center">${prSvgDonut(C, 200)}<div style="flex:1">${Object.entries(PR_LV).map(([k, x]) => `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #eef2f7;padding:5px 0"><div><b style="color:${x.c}">● ${x.l}</b><br><small style="color:#64748b">${x.d}</small></div><b style="font-size:20px;color:${x.c}">${maAr(C.cnt(k))}</b></div>`).join("")}</div></div></div>
+<div class="cd"><div class="h">الأفضل والأكثر اكتمالًا</div><div class="sb">من أكمل التحضير في جميع الأسابيع المنتهية وحضّر الأسبوع القادم قبل بدايته.</div>${top ? `<div class="sxs">${top}</div>` : ""}${grp}</div></section>
+<section class="pg"><div class="cd"><div class="h">الخريطة الحرارية: كل معلم في كل أسبوع</div><div class="sb">مرتبة حسب الترتيب العام، والنقطة الملونة بجانب الاسم تمثل التصنيف.</div>${heat}</div></section>
+<section class="pg"><div class="cd"><div class="h">جدول الترتيب والمؤشرات</div><div class="sb">المتوسط = متوسط نسب الأسابيع المنتهية في الفترة المختارة. عند التساوي يُقدَّم الأعلى في أدنى أسبوع ثم من حضّر القادم مسبقًا.</div>${rank}</div></section>
+<section class="pg">${need.length ? `<div class="cd"><div class="h">من يحتاج متابعة</div><div class="sb">مرتبون حسب الأولوية: الأقل في آخر ثلاثة أسابيع أولًا.</div><div class="fcs">${fcards}</div>${C.rows.filter(r => r.lv === "good").length ? `<p style="font-weight:900;color:#b45309;margin:10px 0 4px">يكفيهم تذكير ودي:</p>${C.rows.filter(r => r.lv === "good").map(r => `<span class="pl" style="border-color:#f59e0b">${ptEsc(r.n)} — أضعف أسبوع: ${r.minX ? ptEsc(r.minX.w.lb) + " " + prPct(r.minX.v) : "—"}</span>`).join("")}` : ""}</div>` : ""}
+<div class="two"><div class="cd"><div class="h">متى يضعف التحضير؟</div><div class="sb">عدد الأيام غير المكتملة لكل يوم، ومتوسط نسبة اليوم تحت اسمه.</div>${prSvgWd(C)}</div><div class="cd"><div class="h">أبرز الانخفاضات الحادة</div><div class="sb">كل أسبوع منتهٍ نزلت فيه نسبة معلم عن ٧٠٪.</div>${drops || '<p style="color:#15803d;font-weight:900">لا توجد انخفاضات حادة 🌟</p>'}</div></div></section>
+${appx ? `<section class="pg"><div class="cd"><div class="h">ملحق: التحضير اليومي لمن يحتاج متابعة</div><div class="sb">تفاصيل يومية تساعد في اللقاء الفردي مع المعلم.</div><div class="axs">${appx}</div></div></section>` : ""}
+<section class="pg"><div class="cd tx"><div class="h">التحليل الشامل للتقرير</div>${T.html}</div>
+<div class="sg"><div>تاريخ إعداد التحليل<b>${asmHij(new Date())}</b><small>${ptEsc(HFX_SCHOOL)}</small></div><div>مدير المدرسة<b>فازع القرني</b><small>التوقيع: ......................</small></div></div></section>
+<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},600)})</script></body></html>`;
+}
+// ── النص التحليلي التلقائي
+function prText(C) {
+  const fin = C.wAvg.filter(x => x.w.st !== "upc" && x.v != null); const mx = fin.length ? fin.reduce((a, x) => x.v > a.v ? x : a, fin[0]) : null, mn = fin.length ? fin.reduce((a, x) => x.v < a.v ? x : a, fin[0]) : null;
+  const need = C.rows.filter(r => r.lv === "need"); const chk = C.rows.filter(r => r.lv === "chk"); const full = C.rows.filter(r => r.lv === "full");
+  const wdS = [...C.wd].filter(x => C.DS.includes(x.i)).sort((a, b) => b.miss - a.miss); const totMiss = wdS.reduce((a, x) => a + x.miss, 0); const top2 = wdS.slice(0, 2);
+  const share = totMiss ? Math.round((top2.reduce((a, x) => a + x.miss, 0)) / totMiss * 1000) / 10 : 0;
+  const lead = `الأداء الفعلي في الأسابيع المنتهية <b>${prPct(C.sMean)}</b>${C.sysAll != null ? `، بينما تُظهر النسبة الإجمالية في النظام <b>${prPct(C.sysAll)}</b>` : ""}. المكتملون: <b>${maAr(full.length)}</b> من ${maAr(C.act.length)}، ومن يحتاج متابعة: <b>${maAr(need.length)}</b>${top2.length && top2[0].miss ? `، وأكثر الخلل يقع يومي ${PR_DN[top2[0].i]}${top2[1] ? " و" + PR_DN[top2[1].i] : ""}` : ""}.`;
+  const li = a => `<ul>${a.map(x => `<li>${x}</li>`).join("")}</ul>`;
+  const html = `<h4>أولًا: ماذا يقول التقرير؟</h4><p>يغطي التحليل <b>${maAr(C.rows.length)}</b> معلمًا، منهم <b>${maAr(C.act.length)}</b> لديهم حصص مسجلة، خلال <b>${maAr(C.W.length)}</b> أسابيع (${maAr(C.done.length)} منتهية${C.upc.length ? ` و${maAr(C.upc.length)} لم يبدأ بعد` : ""}). ${C.sysAll != null && C.sMean != null ? `الفرق بين متوسط الأسابيع المنتهية والنسبة في النظام ${maAr(prR(Math.abs(C.sMean - C.sysAll)))} نقطة؛ لأن النظام يحتسب الأسابيع التي لم تبدأ، والمتوسط المنتهي هو المؤشر الأدق لأداء المدرسة.` : ""}</p>
+<h4>ثانيًا: مسار الأداء عبر الأسابيع</h4><p>${mx && mn ? `أعلى أسبوع هو <b>${ptEsc(mx.w.lb)}</b> بنسبة ${prPct(mx.v)}، وأضعفه <b>${ptEsc(mn.w.lb)}</b> بنسبة ${prPct(mn.v)}. ` : ""}${fin.length >= 3 ? (fin[fin.length - 1].v >= fin[0].v ? "الاتجاه العام مستقر إلى متحسن." : "الاتجاه العام يميل إلى التراجع ويحتاج متابعة.") : ""}</p>
+<h4>ثالثًا: التمايز بين المعلمين</h4>${li([`<b>مكتملون (${maAr(full.length)}):</b> ${full.slice(0, 8).map(r => ptEsc(r.n)).join("، ") || "—"}.`, `<b>متميزون (${maAr(C.cnt("ex"))}):</b> نقص بسيط في أيام متفرقة.`, `<b>جيد (${maAr(C.cnt("good"))}):</b> المستوى العام جيد مع أسبوع منخفض.`, `<b>يحتاجون متابعة (${maAr(need.length)}):</b> ${need.map(r => ptEsc(r.n)).join("، ") || "لا أحد"}.`])}
+<h4>رابعًا: مواطن الخلل</h4>${li([`<b>أيام بلا تحضير:</b> ${maAr(C.zeroN)} يومًا${need[0] && need[0].zero.length ? `، أكثرها عند ${ptEsc([...C.act].sort((a, b) => b.zero.length - a.zero.length)[0].n)}` : ""}.`, `<b>تحضير جزئي:</b> ${maAr(C.partN)} يومًا حُضّر فيها جزء من الحصص.`, top2.length && top2[0].miss ? `<b>أضعف الأيام:</b> ${PR_DN[top2[0].i]}${top2[1] ? " و" + PR_DN[top2[1].i] : ""} (${maAr(share)}٪ من الأيام غير المكتملة).` : "", C.drops.length ? `<b>انخفاضات حادة:</b> ${maAr(C.drops.length)} حالة نزلت فيها النسبة عن ٧٠٪.` : "", chk.length ? `<b>ملاحظة على البيانات:</b> ${chk.map(r => ptEsc(r.n)).join("، ")} بلا حصص مسجلة — يُتحقق من إسناد الجدول قبل أي حكم.` : ""].filter(Boolean))}
+<h4>خامسًا: التوصيات مرتبة حسب الأولوية</h4><ol>${[need.length ? `<b>لقاء فردي</b> مع ${need.slice(0, 3).map(r => ptEsc(r.n)).join("، ")} ومتابعة أسبوعية مكتوبة حتى الثبات.` : "", chk.length ? `<b>التحقق من وضع</b> ${chk.map(r => ptEsc(r.n)).join("، ")} في النظام (إسناد الجدول).` : "", top2.length && top2[0].miss ? `<b>تذكير جماعي</b> يوم ${PR_DN[(top2[0].i + 4) % 5]} بتحضير ${PR_DN[top2[0].i]}${top2[1] ? " و" + PR_DN[top2[1].i] : ""}.` : "", `<b>تعزيز المكتملين:</b> شكر مكتوب أو إشادة في اجتماع المعلمين.`, `<b>تحديد موعد ثابت</b> للتحضير المسبق للأسبوع القادم قبل بدايته.`].filter(Boolean).map(x => `<li>${x}</li>`).join("")}</ol>
+<h4>سادسًا: منهجية القراءة</h4><p style="font-size:11px;color:#475569">النسب الأسبوعية واليومية من ملف النظام كما هي. المتوسط = متوسط بسيط لنسب الأسابيع المنتهية (وعند اختيار أيام أو تواريخ تقطع الأسبوع يُحسب متوسط الأيام المختارة). «إجازة» و«—» لا تُحسب. الأسبوع الذي لم يبدأ لا يُحسب تقصيرًا، ويُعلَّم ★ لمن حضّره مسبقًا.</p>`;
+  return { lead, html };
+}
+// تقرير معلم واحد للطباعة
+function prPrintTeacher(r, C, notes) {
+  const lvx = PR_LV[r.lv];
+  return `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير التحضير — ${ptEsc(r.n)}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&display=swap" rel="stylesheet"><style>@page{size:A4;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a;font-size:12px}
+.hero{border-radius:18px;color:#fff;padding:16px 18px;background:linear-gradient(135deg,#0b1f3a,#123b6b 52%,#0f766e);display:flex;gap:16px;align-items:center}.hero h1{margin:0;font-size:22px}.hero p{margin:2px 0 0;opacity:.9}
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.k{border:1px solid #e8edf5;border-top:4px solid var(--c);border-radius:12px;padding:7px 10px}.k small{color:#64748b;font-weight:800}.k b{display:block;font-size:20px;color:var(--c)}
+.cd{border:1px solid #e8edf5;border-radius:14px;padding:10px;margin:8px 0}.h{font-weight:900;font-size:14.5px;margin-bottom:6px}
+table{width:100%;border-collapse:separate;border-spacing:2px;font-size:11px}th{background:#0b1f3a;color:#fff;padding:5px;border-radius:5px}td{text-align:center;padding:4px;border-radius:4px;font-weight:800}
+.up{background:repeating-linear-gradient(135deg,#f1f5f9,#f1f5f9 4px,#fff 4px,#fff 8px);color:#94a3b8}.st{background:#dcfce7;color:#15803d;outline:1.5px solid #15803d}
+.nt{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:6px 10px;margin:4px 0}.sg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px;text-align:center}.sg div{border-top:1.5px solid #cbd5e1;padding-top:6px;font-weight:800}</style></head><body>
+<div class="hero">${prRing(r.mean, 110, "#fde047")}<div><h1>تقرير التحضير: ${ptEsc(r.n)}</h1><p>${ptEsc(HFX_SCHOOL)} · ${C.W.length ? asmHij(maDate(C.W[0].from)) + " — " + asmHij(maDate(C.W[C.W.length - 1].to)) : ""}</p><p><b style="background:${lvx.bg};color:${lvx.c};border-radius:999px;padding:1px 12px">${lvx.l}</b> · الترتيب ${maAr(r.rank)} من ${maAr(C.rows.length)}</p></div></div>
+<div class="kp"><div class="k" style="--c:${prPC(r.mean)}"><small>نسبة الإنجاز للفترة</small><b>${prPct(r.mean)}</b></div><div class="k" style="--c:#2563eb"><small>أسابيع مكتملة</small><b>${maAr(r.comp)} من ${maAr(r.N)}</b></div><div class="k" style="--c:#b91c1c"><small>أيام بلا تحضير</small><b>${maAr(r.zero.length)}</b></div><div class="k" style="--c:#d97706"><small>أيام تحضير جزئي</small><b>${maAr(r.part.length)}</b></div></div>
+<div class="cd"><div class="h">نسبتي أسبوعًا بأسبوع (الخط البنفسجي متوسط المدرسة)</div>${prSvgTeacher(r, C)}</div>
+<div class="cd"><div class="h">التحضير اليومي</div><table><thead><tr><th>الأسبوع</th>${PR_DN.map(d => `<th>${d}</th>`).join("")}<th>الأسبوع ٪</th></tr></thead><tbody>${r.wk.map(x => `<tr><td><b>${ptEsc(x.w.lb)}</b></td>${[0, 1, 2, 3, 4].map(i => { const v = x.d[i]; if (x.w.st === "upc") return `<td class="${typeof v === "number" && v >= 100 ? "st" : "up"}">${typeof v === "number" && v >= 100 ? "★" : "·"}</td>`; const c = prCell(v); return `<td style="background:${c.bg};color:${c.c}">${c.t}</td>`; }).join("")}<td><b>${x.w.st === "upc" ? (x.pre ? "حضّر مسبقًا" : "قادم") : x.v == null ? "—" : maAr(prR(x.v)) + "٪"}</b></td></tr>`).join("")}</tbody></table></div>
+${r.zero.length || r.part.length ? `<div class="cd"><div class="h">مواطن التقصير</div>${r.zero.length ? `<p><b style="color:#b91c1c">أيام بلا تحضير (${maAr(r.zero.length)}):</b> ${r.zero.map(x => PR_DN[x.i] + " " + asmHij(maDate(x.k), false)).join("، ")}</p>` : ""}${r.part.length ? `<p><b style="color:#c2410c">تحضير جزئي (${maAr(r.part.length)}):</b> ${r.part.map(x => PR_DN[x.i] + " " + asmHij(maDate(x.k), false) + " (" + maAr(prR(x.v)) + "٪)").join("، ")}</p>` : ""}</div>` : ""}
+${notes.length ? `<div class="cd"><div class="h">ملاحظات الإدارة</div>${notes.map(n => `<div class="nt">${ptEsc(n.t)} <small style="color:#94a3b8">— ${ptEsc(n.by || "")} ${asmHij(new Date(n.at))}</small></div>`).join("")}</div>` : ""}
+<div class="sg"><div>المعلم<br>..................</div><div>وكيل الشؤون التعليمية<br>..................</div><div>مدير المدرسة<br>فازع القرني</div></div>
+<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},500)})</script></body></html>`;
+}
+
+// ── واجهة الفلاتر المشتركة
+function PrFilters({ W, st, set, tList, showT }) {
+  const today = maKey(new Date());
+  const presets = [["all", "كل الفترة"], ["l4", "آخر ٤ أسابيع"], ["l2", "آخر أسبوعين"], ["cust", "من تاريخ إلى تاريخ"]];
+  const apply = k => { const fin = W.filter(w => w.from <= today); if (k === "all") set({ ...st, k, f: "", t: "", wk: "" }); else if (k === "l4" || k === "l2") { const n = k === "l4" ? 4 : 2; const L = fin.slice(-n); set({ ...st, k, f: L.length ? L[0].from : "", t: L.length ? L[L.length - 1].to : "", wk: "" }); } else set({ ...st, k }); };
+  return <div className="pr-card" style={{ display: "grid", gap: 8 }}>
+    <div className="flex gap-2 flex-wrap items-center"><b style={{ fontSize: 13.5 }}>🗓️ الفترة:</b>{presets.map(([k, l]) => <button key={k} className={`pr-chip ${st.k === k ? "on" : ""}`} onClick={() => apply(k)}>{l}</button>)}
+      {st.k === "cust" && <><input type="date" className="pr-in" value={st.f} onChange={e => set({ ...st, f: e.target.value, wk: "" })} /><span>إلى</span><input type="date" className="pr-in" value={st.t} onChange={e => set({ ...st, t: e.target.value, wk: "" })} /></>}</div>
+    <div className="flex gap-1 flex-wrap items-center"><b style={{ fontSize: 13.5 }}>📅 أسبوع محدد:</b>{W.map(w => <button key={w.from} className={`pr-chip ${st.wk === w.from ? "on" : ""}`} onClick={() => st.wk === w.from ? apply("all") : set({ ...st, k: "wk", wk: w.from, f: w.from, t: w.to })}>{w.lb}<small style={{ opacity: .7 }}> {prFmt(w.from)}</small></button>)}</div>
+    <div className="flex gap-1 flex-wrap items-center"><b style={{ fontSize: 13.5 }}>📆 الأيام:</b>{PR_DN.map((d, i) => <button key={i} className={`pr-chip ${st.days.includes(i) ? "on" : ""}`} onClick={() => { const n = st.days.includes(i) ? st.days.filter(x => x !== i) : [...st.days, i].sort(); if (n.length) set({ ...st, days: n }); }}>{d}</button>)}{st.days.length < 5 && <button className="pr-chip" onClick={() => set({ ...st, days: [0, 1, 2, 3, 4] })}>كل الأيام</button>}
+      {showT && <><b style={{ fontSize: 13.5, marginInlineStart: 10 }}>👤 المعلم:</b><select className="pr-in" value={st.tk || ""} onChange={e => set({ ...st, tk: e.target.value })}><option value="">— كل المعلمين —</option>{tList.map(r => <option key={r.tk} value={r.tk}>{r.n}</option>)}</select></>}</div>
+  </div>;
+}
+const prDayGrid = (r) => <div className="pr-wrap"><table className="pr-hm"><thead><tr><th>الأسبوع</th>{PR_DN.map(d => <th key={d}>{d}</th>)}<th>الأسبوع ٪</th></tr></thead><tbody>{r.wk.map(x => <tr key={x.w.from}><td className="n">{x.w.lb} <small style={{ color: "#94a3b8" }}>{prFmt(x.w.from)}</small></td>{[0, 1, 2, 3, 4].map(i => { const v = x.d[i]; if (x.w.st === "upc") return <td key={i} className={typeof v === "number" && v >= 100 ? "st" : "up"}>{typeof v === "number" && v >= 100 ? "★" : "·"}</td>; const c = prCell(v); return <td key={i} style={{ background: c.bg, color: c.c }}>{c.t}</td>; })}<td style={{ background: "#f8fafc", color: prPC(x.v) }}>{x.w.st === "upc" ? (x.pre ? "★ مسبقًا" : "قادم") : x.v == null ? "—" : `${maAr(prR(x.v))}٪`}</td></tr>)}</tbody></table></div>;
+
+// ── صفحة المدير
+function PrepAdminPage({ by = "الإدارة" }) {
+  const [D, setD] = useState(null); const [tab, setTab] = useState("dash"); const [st, setSt] = useState({ k: "all", f: "", t: "", wk: "", days: [0, 1, 2, 3, 4], tk: "" }); const [busy, setBusy] = useState(""); const [msg, setMsg] = useState(""); const [imp, setImp] = useState(null); const [nt, setNt] = useState(""); const [q, setQ] = useState("");
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  const load = async () => { const d = await maGet(PR_NODE); setD(ptObj(d)); };
+  useEffect(() => { load(); }, []);
+  if (!D) return <div className="p-10 text-center font-bold text-gray-400">⏳</div>;
+  const W = Object.values(ptObj(D.w)).filter(w => w && w.from).sort((a, b) => a.from.localeCompare(b.from));
+  const C = prCompute(W, { f: st.f, t: st.t, days: st.days, sys: st.k === "all" && st.days.length === 5 ? D.sys : null });
+  const onFile = async e => { const fl = Array.from(e.target.files || []); e.target.value = ""; if (!fl.length) return; setBusy("⏳ قراءة الملف…"); try { const all = { weeks: [], sys: null, asOf: "" }; for (const f of fl) { const r = await prParse(f); all.weeks.push(...r.weeks); if (r.sys) all.sys = r.sys; if (r.asOf && r.asOf > all.asOf) all.asOf = r.asOf; } if (!all.asOf) all.asOf = maKey(new Date()); if (!all.weeks.length) alert("لم أجد أوراق أسابيع في الملف. يجب أن تحتوي كل ورقة على «اسم المعلم» و«التاريخ من … إلى …» وأيام الأسبوع."); else setImp(all); } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); } setBusy(""); };
+  const confirmImp = async () => { setBusy("⏳ حفظ…"); const o = {}; imp.weeks.forEach(w => { o[`${PR_NODE}/w/${w.from}`] = { ...w, asOf: imp.asOf, up: Date.now(), by }; }); if (imp.sys) o[`${PR_NODE}/sys`] = { ...imp.sys, up: Date.now() }; const ok = await fbPatch(o); setBusy(""); if (ok) { setImp(null); await load(); toast(`✅ حُفظ ${maAr(imp.weeks.length)} أسبوعًا — والتحليل محدّث وظاهر للمعلمين في حساباتهم`); setTab("dash"); } else toast("⚠️ تعذّر الحفظ"); };
+  const delW = async w => { if (!window.confirm(`حذف بيانات الأسبوع ${w.lb}؟`)) return; await maPut(`${PR_NODE}/w/${w.from}`, null); load(); };
+  const notesOf = tk => Object.entries(ptObj(ptObj(D.notes)[tk])).map(([id, v]) => ({ id, ...v })).filter(x => x && x.t).sort((a, b) => b.at - a.at);
+  const addNote = async tk => { const t = nt.trim(); if (!t) return; const id = "n" + Date.now().toString(36); await maPut(`${PR_NODE}/notes/${tk}/${id}`, { t, at: Date.now(), by }); setNt(""); await load(); toast("✅ أُضيفت الملاحظة وتظهر للمعلم في حسابه"); };
+  const delNote = async (tk, id) => { await maPut(`${PR_NODE}/notes/${tk}/${id}`, null); load(); };
+  const cfgOn = ptObj(D.cfg).on !== 0;
+  const fin = C.done.length; const sel = st.tk ? C.rows.find(r => r.tk === st.tk) : null;
+  const T = prText(C); const lvPill = k => <span className="pr-lv" style={{ color: PR_LV[k].c, borderColor: PR_LV[k].c, background: PR_LV[k].bg }}>{PR_LV[k].l}</span>;
+  const need = C.rows.filter(r => r.lv === "need").sort((a, b) => (a.l3 ?? 0) - (b.l3 ?? 0) || (a.mean ?? 0) - (b.mean ?? 0));
+  const shown = C.rows.filter(r => !q || cvNorm(r.n).includes(cvNorm(q)));
+  return <div className="pr grid gap-3" dir="rtl" style={{ maxWidth: 1150, margin: "0 auto" }}><style>{PR_CSS}</style>
+    {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9500, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+    <div className="pr-hero"><span className="pr-tag">تقرير تحليلي</span><h2>تحليل أداء المعلمين في التحضير الأسبوعي</h2><p>{HFX_SCHOOL} · الفصل الدراسي الأول ١٤٤٨هـ{C.W.length ? ` · ${asmHij(maDate(C.W[0].from))} — ${asmHij(maDate(C.W[C.W.length - 1].to))}` : ""}</p>{W.length > 0 && <div className="pr-lead" dangerouslySetInnerHTML={{ __html: T.lead }} />}
+      <div className="flex gap-2 flex-wrap mt-3"><label className="pr-b gold" style={{ cursor: "pointer" }}>📥 رفع ملف Excel<input type="file" multiple accept=".xlsx,.xls" hidden onChange={onFile} /></label>{W.length > 0 && <button className="pr-b" onClick={() => printWindow(prPrintHTML(C, { title: st.k === "wk" ? "الأسبوع " + (W.find(w => w.from === st.wk) || {}).lb : st.k !== "all" ? "فترة مختارة" : "" }))}>🖨 طباعة التقرير الكامل</button>}<label className="pr-b" style={{ cursor: "pointer", background: "rgba(255,255,255,.15)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }}><input type="checkbox" checked={cfgOn} onChange={async e => { await maPut(`${PR_NODE}/cfg/on`, e.target.checked ? 1 : 0); load(); }} /> يظهر للمعلمين في حساباتهم</label></div>
+      {busy && <div style={{ marginTop: 8, fontWeight: 900 }}>{busy}</div>}
+    </div>
+    {imp && <div className="pr-card" style={{ borderColor: "#facc15" }}><b style={{ fontSize: 15 }}>معاينة الملف</b>
+      <div className="flex gap-1 flex-wrap mt-2">{imp.weeks.map(w => <span key={w.from} className="pr-pill" style={{ borderColor: W.some(x => x.from === w.from) ? "#f59e0b" : "#22c55e" }}>الأسبوع {w.lb} · {prFmt(w.from)}–{prFmt(w.to)} · {maAr(Object.keys(w.R).length)} معلم{W.some(x => x.from === w.from) ? " (تحديث)" : " (جديد)"}</span>)}{imp.sys && <span className="pr-pill" style={{ borderColor: "#2563eb" }}>📋 ملخص النظام ({maAr(Object.keys(imp.sys.R).length)})</span>}</div>
+      <label style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontWeight: 900, fontSize: 13, marginTop: 8 }}>📅 تاريخ إصدار الملف من النظام <input type="date" className="pr-in" value={imp.asOf} onChange={e => setImp({ ...imp, asOf: e.target.value })} /> <small style={{ color: "#64748b", fontWeight: 700 }}>قُرئ من الملف تلقائيًا — الأيام بعده لا تُحسب تقصيرًا، ويُعدّ الأسبوع الذي يبدأ بعده «قادمًا» ويُعلَّم ★ لمن حضّره مسبقًا</small></label>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b", marginTop: 6 }}>الأسابيع الموجودة سابقًا تُحدَّث بالبيانات الجديدة، ولا تُحذف بقية الأسابيع؛ فيمكنك رفع ملف كل أسبوع أو ملف الفصل كاملًا.</div>
+      <div className="flex gap-2 justify-end mt-2"><button className="pr-b" onClick={() => setImp(null)}>إلغاء</button><button className="pr-b pri" onClick={confirmImp}>✅ اعتماد وتحليل</button></div></div>}
+    {!W.length ? <div className="pr-card" style={{ textAlign: "center", padding: 30 }}><div style={{ fontSize: 46 }}>📘</div><b style={{ fontSize: 17 }}>ارفع ملف Excel «تقرير إحصائيات التحضير الأسبوعي» من النظام</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 6 }}>يقرأ الموقع ورقة كل أسبوع (النسبة الأسبوعية والأيام) وورقة «ملخص الأسابيع»، ثم يحلّلها تلقائيًا ويظهر لكل معلم وضعه في حسابه.</div></div> : <>
+    <PrFilters W={W} st={st} set={setSt} tList={[...C.rows].sort((a, b) => a.n.localeCompare(b.n, "ar"))} showT />
+    <div className="pr-tabs">{[["dash", "📊 لوحة التحليل"], ["heat", "🗺️ الخريطة الحرارية"], ["rank", "🏆 الترتيب والمؤشرات"], ["fol", `🚩 المتابعة (${maAr(C.cnt("need"))})`], ["one", "👤 تقرير معلم"], ["text", "📝 التحليل الشامل"], ["files", "📂 الملفات المرفوعة"]].map(([k, l]) => <button key={k} className={`pr-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+
+    {tab === "dash" && <>
+      <div className="pr-kp">{[["#15803d", "متوسط الأسابيع المنتهية", prPct(C.sMean), `${maAr(fin)} أسابيع محسوبة`], ["#2563eb", "النسبة الإجمالية في النظام", prPct(C.sysAll), C.sysAll == null ? "تظهر عند اختيار «كل الفترة» وكل الأيام" : "تشمل الأسابيع التي لم تبدأ"], ["#0f766e", "مكتملون في كل الأسابيع", maAr(C.cnt("full")), `منهم ${maAr(C.best.length)} أكملوا القادم مسبقًا`], ["#dc2626", "يحتاجون متابعة", maAr(C.cnt("need")), C.cnt("chk") ? `و${maAr(C.cnt("chk"))} يحتاج تحققًا من بياناته` : "—"], ["#d97706", "أيام بلا تحضير", maAr(C.zeroN), `و${maAr(C.partN)} يومًا حُضّرت جزئيًا`], ["#7c3aed", "حضّروا الأسبوع القادم مسبقًا", maAr(C.act.filter(r => r.pre).length), `من ${maAr(C.act.length)} معلمًا لديهم حصص`]].map(([c, l, v, s]) => <div key={l} className="pr-k" style={{ "--c": c }}><small>{l}</small><b>{v}</b><i>{s}</i></div>)}</div>
+      <div className="pr-card" style={{ "--hc": "#2563eb" }}><div className="pr-h">مسار نسبة المدرسة أسبوعًا بأسبوع</div><div className="pr-sub">الأخضر أعلى أسبوع، والبرتقالي أضعف أسبوع منتهٍ، والمخطط أسبوع لم يبدأ (★ عدد من حضّره مسبقًا)، والخط البنفسجي المتوسط.</div><PrSvg h={prSvgWeeks(C)} /></div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))" }}>
+        <div className="pr-card" style={{ "--hc": "#7c3aed" }}><div className="pr-h">توزيع المعلمين حسب مستوى التحضير</div><div className="flex gap-3 items-center flex-wrap"><PrSvg h={prSvgDonut(C)} /><div style={{ flex: "1 1 180px" }}>{Object.entries(PR_LV).map(([k, x]) => <div key={k} className="flex items-center justify-between" style={{ borderBottom: "1px solid #eef2f7", padding: "5px 0" }}><div><b style={{ color: x.c }}>● {x.l}</b><div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>{x.d}</div></div><b style={{ fontSize: 22, color: x.c }}>{maAr(C.cnt(k))}</b></div>)}</div></div></div>
+        <div className="pr-card" style={{ "--hc": "#f59e0b" }}><div className="pr-h">متى يضعف التحضير؟</div><div className="pr-sub">عدد الأيام غير المكتملة لكل يوم، ومتوسط نسبة اليوم تحت اسمه.</div><PrSvg h={prSvgWd(C)} /></div>
+      </div>
+      <div className="pr-card" style={{ "--hc": "#ca8a04" }}><div className="pr-h">الأفضل والأكثر اكتمالًا</div><div className="pr-sub">من أكمل التحضير في جميع الأسابيع المنتهية وحضّر الأسبوع القادم قبل بدايته.</div>
+        {C.best.length > 0 && <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>{C.best.slice(0, 3).map(r => <div key={r.tk} className="pr-star"><div style={{ fontSize: 26, color: "#a16207" }}>★</div><b style={{ fontSize: 16 }}>{r.n}</b><div style={{ fontSize: 12, fontWeight: 700, color: "#713f12" }}>مكتمل في كل الأسابيع المنتهية وحضّر القادم مسبقًا</div></div>)}</div>}
+        {["full", "ex", "good"].map(k => { const L = C.rows.filter(r => r.lv === k); return L.length ? <div key={k} style={{ borderInlineStart: `4px solid ${PR_LV[k].c}`, padding: "6px 12px", marginTop: 10 }}><div className="flex items-center gap-2">{lvPill(k)}<small style={{ fontWeight: 800, color: "#64748b" }}>العدد: {maAr(L.length)}</small></div><div className="flex gap-1 flex-wrap mt-1">{L.map(r => <span key={r.tk} className="pr-pill" style={{ borderColor: PR_LV[k].c, cursor: "pointer" }} onClick={() => { setSt({ ...st, tk: r.tk }); setTab("one"); }}>{r.n} <b style={{ color: PR_LV[k].c }}>{maAr(prR(r.mean))}٪</b></span>)}</div></div> : null; })}
+      </div>
+      <div className="pr-card" style={{ "--hc": "#ef4444" }}><div className="pr-h">أبرز الانخفاضات الحادة</div><div className="pr-sub">كل أسبوع منتهٍ نزلت فيه نسبة معلم عن ٧٠٪.</div>{C.drops.length ? <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}>{C.drops.slice(0, 10).map((d, i) => <div key={i} className="flex justify-between" style={{ borderInlineStart: `4px solid ${d.x.v < 50 ? "#ef4444" : "#f59e0b"}`, background: d.x.v < 50 ? "#fef2f2" : "#fff7ed", borderRadius: 10, padding: "6px 10px", fontWeight: 800, fontSize: 13 }}><span>{d.r.n} · {d.x.w.lb}</span><b style={{ color: "#b91c1c" }}>{maAr(prR(d.x.v))}٪</b></div>)}</div> : <b style={{ color: "#15803d" }}>🌟 لا توجد انخفاضات حادة في الفترة</b>}</div>
+    </>}
+
+    {tab === "heat" && <div className="pr-card" style={{ "--hc": "#0f766e" }}><div className="pr-h">الخريطة الحرارية: كل معلم في كل أسبوع</div><div className="pr-sub">مرتبة حسب الترتيب العام؛ اضغط على أي معلم لفتح تقريره.</div>
+      <div className="pr-wrap"><table className="pr-hm"><thead><tr><th>#</th><th>المعلم</th>{C.W.map(w => <th key={w.from}>{w.lb}{w.st !== "fin" && <small>{w.st === "upc" ? "قادم" : "جارٍ"}</small>}</th>)}<th>المتوسط</th></tr></thead><tbody>{C.rows.map(r => <tr key={r.tk} style={{ cursor: "pointer" }} onClick={() => { setSt({ ...st, tk: r.tk }); setTab("one"); }}><td style={{ color: "#64748b" }}>{maAr(r.rank)}</td><td className="n"><span style={{ color: PR_LV[r.lv].c }}>● </span>{r.n}</td>{r.wk.map(x => x.w.st === "upc" ? <td key={x.w.from} className={x.pre ? "st" : "up"}>{x.pre ? "★" : "·"}</td> : (() => { const c = prCell(x.v); return <td key={x.w.from} style={{ background: c.bg, color: c.c }}>{x.v == null ? "—" : c.t}</td>; })())}<td style={{ background: PR_LV[r.lv].bg, color: prPC(r.mean) }}>{r.mean == null ? "—" : maAr(prR(r.mean))}</td></tr>)}</tbody></table></div>
+      <div className="flex gap-2 flex-wrap mt-2" style={{ fontSize: 12, fontWeight: 800 }}>{[["#86efac", "مكتمل"], ["#d9f99d", "مرتفع ٩٠+"], ["#fde68a", "متوسط ٧٥+"], ["#fecaca", "منخفض"], ["#ef4444", "بلا تحضير"], ["#ede9fe", "إجازة"]].map(([c, l]) => <span key={l} className="flex items-center gap-1"><i style={{ width: 14, height: 14, borderRadius: 4, background: c, display: "inline-block" }} />{l}</span>)}<span>★ حضّر مسبقًا · ⁄⁄ لم يبدأ</span></div></div>}
+
+    {tab === "rank" && <div className="pr-card" style={{ "--hc": "#1d4ed8" }}><div className="pr-h">جدول الترتيب والمؤشرات</div><div className="pr-sub">المتوسط = متوسط نسب الأسابيع المنتهية في الفترة المختارة؛ عند التساوي يُقدَّم الأعلى في أدنى أسبوع ثم من حضّر القادم مسبقًا.</div>
+      <input className="pr-in" style={{ marginBottom: 8, width: 240 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث بالاسم" />
+      <div className="pr-wrap"><table className="pr-tb"><thead><tr><th>الترتيب</th><th>المعلم</th><th>المتوسط ٪</th><th>أدنى أسبوع</th><th>الأسبوع الأضعف</th><th>أسابيع مكتملة</th><th>أيام بلا تحضير</th><th>أيام جزئية</th><th>آخر ٣ أسابيع</th><th>القادم</th>{C.sysAll != null && <th>نسبة النظام</th>}<th>التصنيف</th></tr></thead>
+        <tbody>{shown.map(r => <tr key={r.tk} style={{ cursor: "pointer" }} onClick={() => { setSt({ ...st, tk: r.tk }); setTab("one"); }}><td>{maAr(r.rank)}</td><td className="n">{r.n}</td><td><span style={{ background: PR_LV[r.lv].bg, color: prPC(r.mean), borderRadius: 8, padding: "2px 10px", fontWeight: 900 }}>{r.mean == null ? "٠" : maAr(prR(r.mean))}</span></td><td>{r.minX ? maAr(prR(r.minX.v)) : "٠"}</td><td>{r.minX && r.minX.v < 100 ? r.minX.w.lb : "—"}</td><td>{maAr(r.comp)} من {maAr(r.N)}</td><td style={{ color: r.zero.length ? "#b91c1c" : undefined, fontWeight: 900 }}>{maAr(r.zero.length)}</td><td>{maAr(r.part.length)}</td><td>{r.l3 == null ? "٠" : maAr(prR(r.l3))}</td><td>{r.pre ? <b style={{ color: "#15803d" }}>حضّر ✓</b> : <span style={{ color: "#94a3b8" }}>لم يُحضّر</span>}</td>{C.sysAll != null && <td>{r.sysP == null ? "—" : maAr(prR(r.sysP))}</td>}<td>{lvPill(r.lv)}</td></tr>)}</tbody></table></div></div>}
+
+    {tab === "fol" && <div className="pr-card" style={{ "--hc": "#ef4444" }}><div className="pr-h">من يحتاج متابعة</div><div className="pr-sub">مرتبون حسب الأولوية: الأقل في آخر ثلاثة أسابيع أولًا. الإجراء المقترح مبني على الاتجاه الأخير وليس على أسوأ أسبوع فقط.</div>
+      {!need.length && <b style={{ color: "#15803d" }}>🌟 لا يوجد من يحتاج متابعة في الفترة المختارة</b>}
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}>{need.map((r, i) => <div key={r.tk} className="pr-fc"><div className="flex justify-between items-center"><b style={{ fontSize: 15 }}>{r.n}</b><b style={{ color: "#b91c1c", fontSize: 12 }}>أولوية {maAr(i + 1)}</b></div>{lvPill(r.lv)}<div className="g" style={{ marginTop: 6 }}><div>متوسط الفترة<b>{prPct(r.mean)}</b></div><div>الأسبوع الأضعف<b>{r.minX ? `${r.minX.w.lb} · ${prPct(r.minX.v)}` : "—"}</b></div><div>أيام بلا تحضير<b>{maAr(r.zero.length)}</b></div><div>آخر ثلاثة أسابيع<b>{prPct(r.l3)}</b></div></div><div style={{ borderTop: "1px dashed #fecaca", marginTop: 6, paddingTop: 6, fontSize: 12.5, fontWeight: 800 }}><b style={{ color: "#b91c1c" }}>الإجراء المقترح:</b> {prAction(r)}</div><button className="pr-b" style={{ marginTop: 6, fontSize: 12 }} onClick={() => { setSt({ ...st, tk: r.tk }); setTab("one"); }}>👤 التفاصيل والملاحظات</button></div>)}
+        {C.rows.filter(r => r.lv === "chk").map(r => <div key={r.tk} className="pr-fc" style={{ borderColor: "#cbd5e1" }}><b style={{ fontSize: 15 }}>{r.n}</b> {lvPill("chk")}<div style={{ fontSize: 12.5, fontWeight: 800, marginTop: 6 }}>جميع أيامه بلا حصص مسجلة (—). <b>الإجراء المقترح:</b> التحقق من إسناد جدوله في النظام.</div></div>)}</div>
+      {C.rows.filter(r => r.lv === "good").length > 0 && <><b style={{ color: "#b45309", display: "block", marginTop: 12 }}>يكفيهم تذكير ودي:</b><div className="flex gap-1 flex-wrap mt-1">{C.rows.filter(r => r.lv === "good").map(r => <span key={r.tk} className="pr-pill" style={{ borderColor: "#f59e0b" }}>{r.n} <b style={{ color: "#c2410c" }}>أضعف أسبوع: {r.minX ? `${r.minX.w.lb} ${prPct(r.minX.v)}` : "—"}</b></span>)}</div></>}
+    </div>}
+
+    {tab === "one" && <div className="grid gap-3">{!sel ? <div className="pr-card" style={{ textAlign: "center" }}>اختر معلمًا من قائمة «👤 المعلم» أعلاه، أو اضغط على اسمه في الجداول.</div> : <PrTeacherCard r={sel} C={C} notes={notesOf(sel.tk)} admin onPrint={() => printWindow(prPrintTeacher(sel, C, notesOf(sel.tk)))} nt={nt} setNt={setNt} addNote={() => addNote(sel.tk)} delNote={id => delNote(sel.tk, id)} />}</div>}
+
+    {tab === "text" && <div className="pr-card" style={{ "--hc": "#0b1f3a" }}><div className="pr-h">التحليل الشامل للتقرير</div><div className="pr-txt" style={{ fontSize: 14, lineHeight: 2.1, fontWeight: 600 }} dangerouslySetInnerHTML={{ __html: T.html.replace(/<h4>/g, '<h4 style="display:inline-block;background:#1d4ed8;color:#fff;border-radius:999px;padding:2px 16px;margin:14px 0 6px;font-size:14px">') }} /></div>}
+
+    {tab === "files" && <div className="pr-card"><div className="pr-h">الأسابيع المرفوعة ({maAr(W.length)})</div><div className="grid gap-1">{W.map(w => <div key={w.from} className="flex items-center gap-2 flex-wrap" style={{ padding: "7px 10px", borderRadius: 12, background: "#f8fafc" }}><b style={{ minWidth: 110 }}>الأسبوع {w.lb}</b><span style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>{asmHij(maDate(w.from))} — {asmHij(maDate(w.to))} · {maAr(Object.keys(ptObj(w.R)).length)} معلمًا · رُفع {w.up ? new Date(w.up).toLocaleDateString("ar-SA") : ""}</span><button className="pr-b" style={{ marginInlineStart: "auto", color: "#b91c1c" }} onClick={() => delW(w)}>🗑</button></div>)}</div>{D.sys && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", marginTop: 8 }}>📋 ملخص النظام: من {D.sys.from} إلى {D.sys.to}</div>}</div>}
+    </>}
+  </div>;
+}
+
+// بطاقة تقرير معلم (للمدير وللمعلم)
+function PrTeacherCard({ r, C, notes, admin, onPrint, nt, setNt, addNote, delNote }) {
+  const lvx = PR_LV[r.lv]; const sch = C.sMean;
+  return <>
+    <div className="pr-card" style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", background: "linear-gradient(135deg,#f8fbff,#fff)" }}>
+      <PrSvg h={prRing(r.mean, 130)} />
+      <div style={{ flex: "1 1 240px" }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>نسبة الإنجاز في التحضير للفترة المختارة</div><b style={{ fontSize: 22 }}>{r.n}</b>
+        <div className="flex gap-2 flex-wrap items-center mt-1"><span className="pr-lv" style={{ color: lvx.c, borderColor: lvx.c, background: lvx.bg, fontSize: 13 }}>{lvx.l}</span><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>الترتيب {maAr(r.rank)} من {maAr(C.rows.length)}</span>{sch != null && r.mean != null && <span style={{ fontSize: 12.5, fontWeight: 800, color: r.mean >= sch ? "#15803d" : "#b91c1c" }}>{r.mean >= sch ? "▲ أعلى" : "▼ أقل"} من متوسط المدرسة ({prPct(sch)}) بـ {maAr(prR(Math.abs(r.mean - sch)))} نقطة</span>}</div>
+        <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, marginTop: 4 }}>{lvx.d}</div></div>
+      {onPrint && <button className="pr-b gold" onClick={onPrint}>🖨 طباعة تقرير المعلم</button>}
+    </div>
+    <div className="pr-kp">{[[prPC(r.mean), "نسبة الإنجاز", prPct(r.mean)], ["#2563eb", "أسابيع مكتملة", `${maAr(r.comp)} من ${maAr(r.N)}`], ["#b91c1c", "أيام بلا تحضير", maAr(r.zero.length)], ["#d97706", "أيام تحضير جزئي", maAr(r.part.length)], ["#0f766e", "آخر ثلاثة أسابيع", prPct(r.l3)], ["#7c3aed", "الأسبوع القادم", r.pre ? "حضّر ✓" : C.upc.length ? "لم يُحضّر" : "—"]].map(([c, l, v]) => <div key={l} className="pr-k" style={{ "--c": c }}><small>{l}</small><b style={{ fontSize: 24 }}>{v}</b></div>)}</div>
+    <div className="pr-card" style={{ "--hc": "#2563eb" }}><div className="pr-h">نسبتي أسبوعًا بأسبوع</div><div className="pr-sub">الأعمدة نسبة المعلم، والخط البنفسجي المتقطع متوسط المدرسة.</div><PrSvg h={prSvgTeacher(r, C)} /></div>
+    <div className="pr-card" style={{ "--hc": "#0f766e" }}><div className="pr-h">التحضير اليومي</div>{prDayGrid(r)}</div>
+    {(r.zero.length > 0 || r.part.length > 0) && <div className="pr-card" style={{ "--hc": "#ef4444" }}><div className="pr-h">مواطن التقصير</div>
+      {r.zero.length > 0 && <div style={{ marginBottom: 6 }}><b style={{ color: "#b91c1c" }}>أيام بلا تحضير ({maAr(r.zero.length)}):</b><div className="flex gap-1 flex-wrap mt-1">{r.zero.map((x, i) => <span key={i} className="pr-pill" style={{ borderColor: "#ef4444", background: "#fef2f2" }}>{PR_DN[x.i]} {asmHij(maDate(x.k), false)}</span>)}</div></div>}
+      {r.part.length > 0 && <div><b style={{ color: "#c2410c" }}>تحضير جزئي ({maAr(r.part.length)}):</b><div className="flex gap-1 flex-wrap mt-1">{r.part.map((x, i) => <span key={i} className="pr-pill" style={{ borderColor: "#f59e0b", background: "#fff7ed" }}>{PR_DN[x.i]} {asmHij(maDate(x.k), false)} <b>{maAr(prR(x.v))}٪</b></span>)}</div></div>}
+      {r.minX && r.minX.v < 100 && <div style={{ marginTop: 8, fontWeight: 800, fontSize: 13 }}>📉 الأسبوع الأضعف: {r.minX.w.lb} ({prPct(r.minX.v)})</div>}</div>}
+    <div className="pr-card" style={{ "--hc": "#ca8a04" }}><div className="pr-h">ملاحظات الإدارة</div>
+      {!notes.length && <div style={{ color: "#94a3b8", fontWeight: 800 }}>{admin ? "لا توجد ملاحظات بعد" : "لا توجد ملاحظات من الإدارة 🌟"}</div>}
+      {notes.map(n => <div key={n.id} style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "7px 12px", marginTop: 6, fontWeight: 700, display: "flex", gap: 8 }}><span style={{ flex: 1 }}>💬 {n.t} <small style={{ color: "#94a3b8" }}>— {n.by || ""} {asmHij(new Date(n.at))}</small></span>{admin && <button className="pr-b" style={{ padding: "1px 8px", color: "#b91c1c" }} onClick={() => delNote(n.id)}>✕</button>}</div>)}
+      {admin && <div className="flex gap-2 mt-2"><input className="pr-in" style={{ flex: 1 }} value={nt} onChange={e => setNt(e.target.value)} placeholder="اكتب ملاحظة أو توجيهًا للمعلم يظهر في حسابه…" onKeyDown={e => e.key === "Enter" && addNote()} /><button className="pr-b pri" onClick={addNote}>إضافة</button></div>}
+      {admin && <div className="flex gap-1 flex-wrap mt-2">{["أحسنت، استمر على هذا المستوى المتميز", "نأمل استكمال التحضير قبل بداية كل أسبوع", "يُرجى تحضير يومي الأربعاء والخميس مبكرًا", "نأمل استدراك الأيام غير المحضّرة"].map(s => <button key={s} className="pr-chip" onClick={() => setNt(s)}>{s}</button>)}</div>}
+    </div>
+  </>;
+}
+
+// ── واجهة المعلم: تحضيري
+function PrepTeacherView({ me }) {
+  const [D, setD] = useState(null); const [st, setSt] = useState({ k: "all", f: "", t: "", wk: "", days: [0, 1, 2, 3, 4] });
+  useEffect(() => { maGet(PR_NODE).then(d => setD(ptObj(d))).catch(() => setD({})); }, []);
+  if (!D) return <div className="p-10 text-center font-bold text-gray-400">⏳</div>;
+  if (ptObj(D.cfg).on === 0) return <div className="pr-card" style={{ textAlign: "center" }}>لم تُتح الإدارة عرض تحليل التحضير بعد.</div>;
+  const W = Object.values(ptObj(D.w)).filter(w => w && w.from).sort((a, b) => a.from.localeCompare(b.from));
+  if (!W.length) return <div className="pr" dir="rtl"><style>{PR_CSS}</style><div className="pr-card" style={{ textAlign: "center", padding: 28 }}><div style={{ fontSize: 42 }}>📘</div><b>لم يُرفع تقرير التحضير بعد</b></div></div>;
+  const C = prCompute(W, { f: st.f, t: st.t, days: st.days, sys: null });
+  const names = Object.fromEntries(C.rows.map(r => [r.tk, { name: r.n }])); const tk = names[prK(me.name)] ? prK(me.name) : cvMatch(me.name, names);
+  const r = tk ? C.rows.find(x => x.tk === tk) : null;
+  const notes = r ? Object.entries(ptObj(ptObj(D.notes)[r.tk])).map(([id, v]) => ({ id, ...v })).filter(x => x && x.t).sort((a, b) => b.at - a.at) : [];
+  return <div className="pr grid gap-3" dir="rtl"><style>{PR_CSS}</style>
+    <div className="pr-hero"><span className="pr-tag">تحضيري</span><h2>وضعي في التحضير الأسبوعي</h2><p>أ. {me.name} · {asmHij(maDate(W[0].from))} — {asmHij(maDate(W[W.length - 1].to))}</p></div>
+    <PrFilters W={W} st={st} set={setSt} />
+    {!r ? <div className="pr-card" style={{ textAlign: "center" }}>لم يُعثر على اسمك في تقرير التحضير — راجع الإدارة.</div> : <PrTeacherCard r={r} C={C} notes={notes} onPrint={() => printWindow(prPrintTeacher(r, C, notes))} />}
+  </div>;
+}
+
 // ══════════ 📌 المهام اليومية للإداريين (وكيل شؤون الطلاب • وكيل الشؤون التعليمية • الموجه الطلابي) ══════════
 // school-adm = { P:{k:{k,n,r,idHash?,id4?,o}}, T:{id:{id,t,d,to:{k:1},fq:"d"|"w"|"o",wd:{0..4:1},due,from,pr,tm,by,at,off}}, O:{id:{pk:{st,why,note,at,dk}}}, ping:{pk:{at,by,m}} }
 // school-adm-log/{YYYY-MM-DD}/{taskId}_{pk} = {st:"d"|"n", why, note, at, n}
@@ -45815,7 +46330,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -46205,6 +46720,7 @@ function SchoolWebsiteInner() {
     { id: "prolicense",     label: "الرخصة المهنية",         icon: "🏅" },
     { id: "teacherreports", label: "ملفات المعلمين",       icon: "🗄️" },
     { id: "classvisits", label: "الزيارات الصفية", icon: "🎯" },
+    { id: "prepadm", label: "تحليل تحضير المعلمين", icon: "📘" },
     { id: "alreport", label: "تقرير الغياب والتأخر المتكرر", icon: "🔁" },
     { id: "ttnow", label: "الحصص الآن — شاشة العرض", icon: "📺" },
     { id: "trash", label: "سلة المحذوفات والاسترجاع", icon: "🗃️" },
@@ -46216,7 +46732,7 @@ function SchoolWebsiteInner() {
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","studentexcuses"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["studentperf","nafes","treasureadm","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
-    { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
+    { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
     { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","hfx","hdisc","timetable","ttnow","trash","audit","settings"] },
@@ -46509,7 +47025,7 @@ function SchoolWebsiteInner() {
                 {page === "studentclassify" && <StudentClassifyPage />}{page === "stulevels" && <StudentLevelsPage admin />}{page === "readweak" && <ReadingWeakPage by="" admin />}
                 {page === "weeklyplan" && <WeeklyPlanPage />}
                 {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
-                {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
+                {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
@@ -46689,7 +47205,7 @@ function SchoolWebsiteInner() {
         {page === "studentclassify" && <StudentClassifyPage />}{page === "stulevels" && <StudentLevelsPage admin />}{page === "readweak" && <ReadingWeakPage by="" admin />}
         {page === "weeklyplan" && <WeeklyPlanPage />}
         {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
-        {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
+        {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
