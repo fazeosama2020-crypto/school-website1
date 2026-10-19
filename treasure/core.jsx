@@ -22,8 +22,12 @@ export const WORLDS = [
 export const worldOf = n => WORLDS.find(w => n >= w.from && n <= w.to) || WORLDS[0];
 
 // تحميل محتوى العالم عند الحاجة فقط (كل عالم ملف مستقل)
-const LOADERS = { 1: () => import("./data/w1.js") };
-export const READY = 5; // آخر مرحلة جاهز محتواها — يزيد مع إضافة العوالم
+const LOADERS = { 1: () => import("./data/w1.js"), 2: () => import("./w2.js"), 3: () => import("./w3.js"), 4: () => import("./w4.js") };
+export const READY = 20; // جميع المراحل جاهزة
+// 👨‍🏫 وضع الشرح للمعلم: بصمات (SHA-256) لا أرقام هوية صريحة — تضاف هويات أخرى من إعدادات لوحة المتابعة
+export const DEMO_H = ["bbaadbd6d39b9b341ef4e24820e3a21638c819788ec72a0a5760573a3c938e82"];
+// تحميل كل المراحل (لخريطة نواتج التعلم في لوحة المتابعة)
+export async function loadAllStages() { const ms = await Promise.all(Object.values(LOADERS).map(L => L())); return ms.flatMap(m => m.default || []).sort((x, y) => x.n - y.n); }
 export async function loadStage(n) {
   const w = worldOf(n); const L = LOADERS[w.n]; if (!L) return null;
   const m = await L(); return (m.default || []).find(s => s.n === n) || null;
@@ -48,6 +52,30 @@ export const SUBJ = {
 };
 export const LEVELS = { 1: "معرفة", 2: "تطبيق", 3: "استدلال" };
 
+// 🧠 مهارات التفكير العليا — تظهر مع كل سؤال كداعم ومحفّز
+export const HOTS = {
+  an: { ic: "🔍", n: "التحليل", d: "تفكيك المعطيات واكتشاف العلاقات بينها" },
+  in: { ic: "💡", n: "الاستنتاج", d: "الوصول إلى ما لم يُذكر صراحةً اعتماداً على الأدلة" },
+  ev: { ic: "⚖️", n: "التقويم وإصدار الحكم", d: "الحكم على فكرة أو حل بمعايير واضحة واختيار الأفضل" },
+  cr: { ic: "🧐", n: "التفكير الناقد", d: "التمييز بين الحقيقة والرأي وفحص قوة الدليل" },
+  ps: { ic: "🧩", n: "حل المشكلات", d: "تحويل الموقف إلى خطوات واختيار الاستراتيجية المناسبة" },
+  cm: { ic: "🔀", n: "المقارنة والتصنيف", d: "إيجاد أوجه الشبه والاختلاف وتجميع ما يتشابه" },
+  ex: { ic: "🔬", n: "التفسير العلمي", d: "ربط الظاهرة بسببها العلمي" },
+  pr: { ic: "🔮", n: "التنبؤ", d: "توقّع النتيجة اعتماداً على قاعدة أو نمط" },
+  tr: { ic: "🔁", n: "النقل والتطبيق", d: "استعمال القاعدة في موقف جديد من الحياة" },
+  sy: { ic: "🧱", n: "التركيب", d: "جمع أكثر من فكرة أو خطوة لبناء حل متكامل" },
+  dt: { ic: "📊", n: "تفسير البيانات", d: "قراءة الجداول والرسوم واستخلاص النتائج منها" },
+};
+// المهارة المصرَّح بها في السؤال، وإلا تُستنتج من المهارة والمستوى (لأسئلة العالم الأول)
+export function hotsOf(q, sub) {
+  if (!q) return null; if (q.ht) return HOTS[q.ht] ? q.ht : null;
+  const k = String(q.k || ""), lv = +q.lv || 1, f = q.fig && (q.fig.t === "line" || q.fig.t === "bars" || q.fig.t === "table");
+  if (k[0] === "R") return { R2: "an", R3: "in", R4: "an", R5: "an", R6: "cr", R7: "ev", R8: "dt" }[k] || (lv >= 2 ? "an" : null);
+  if (k[0] === "M") return f ? "dt" : lv >= 3 ? "ps" : lv === 2 ? "tr" : null;
+  if (k[0] === "S") return f ? "dt" : k === "S1" ? "an" : lv >= 3 ? "ex" : lv === 2 ? "tr" : null;
+  return null;
+}
+
 // ── أرقام عربية: ٣٫٦ • ٢٥٪
 export const ar = v => String(v ?? "")
   .replace(/(\d)\.(\d)/g, "$1٫$2").replace(/%/g, "٪")
@@ -63,6 +91,8 @@ export function Rich({ t, style }) {
     if (p.startsWith("{{")) { const [a, b] = p.slice(2, -2).split("|"); return <span key={i} className="tr-frac"><span>{ar(a)}</span><span>{ar(b)}</span></span>; }
     if (p.startsWith("[[")) return <mark key={i} className="tr-mark">{ar(p.slice(2, -2))}</mark>;
     if (p.startsWith("**")) return <b key={i}>{ar(p.slice(2, -2))}</b>;
+    // الجذور (√50 ، √(36 + 64)) تُعزل باتجاه يسار←يمين حتى لا ينقلب ترتيبها داخل النص العربي
+    if (p.includes("√")) return <React.Fragment key={i}>{p.split(/(√(?:\([^)]*\)|[\d.]+))/g).map((x, j) => x.startsWith("√") ? <span key={j} dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{ar(x)}</span> : ar(x))}</React.Fragment>;
     return <React.Fragment key={i}>{ar(p)}</React.Fragment>;
   })}</span>;
 }
@@ -163,14 +193,43 @@ export const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)
 export const trLink = () => { try { return window.location.origin + window.location.pathname + "#treasure"; } catch { return "#treasure"; } };
 
 // ── أصوات قصيرة تُولَّد بالكود (بدون ملفات)
-let actx = null;
-export function beep(kind) {
+// 🔊 مؤثرات صوتية مُولَّدة بالكود (بلا ملفات) — تُكتم من زر الصوت
+let actx;
+function tone(f, d, { type = "triangle", vol = .12, at = 0, to = 0 } = {}) {
+  const t = actx.currentTime + at, o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + d + .02);
+}
+function whoosh(d = .45, at = 0, up = true) {
+  const t = actx.currentTime + at, n = Math.floor(actx.sampleRate * d), b = actx.createBuffer(1, n, actx.sampleRate), x = b.getChannelData(0);
+  for (let i = 0; i < n; i++) x[i] = Math.random() * 2 - 1;
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain(); src.buffer = b; f.type = "bandpass"; f.Q.value = 1.4;
+  f.frequency.setValueAtTime(up ? 300 : 2400, t); f.frequency.exponentialRampToValueAtTime(up ? 2600 : 260, t + d);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.16, t + d * .3); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  src.connect(f); f.connect(g); g.connect(actx.destination); src.start(t); src.stop(t + d);
+}
+export function beep(kind, lvl = 0) {
   if (lsGet("tr-mute", false)) return;
   try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const seq = { ok: [[660, .09], [880, .14]], bad: [[220, .16]], win: [[523, .1], [659, .1], [784, .1], [1046, .25]], click: [[440, .04]] }[kind] || [];
-    let t = actx.currentTime;
-    seq.forEach(([fq, d]) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = kind === "bad" ? "sawtooth" : "triangle"; o.frequency.value = fq; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + d); t += d * .9; });
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume();
+    const N = [523, 587, 659, 784, 880, 1047, 1175, 1319, 1568];
+    switch (kind) {
+      case "click": tone(520, .05, { vol: .06 }); break;
+      case "ok": tone(988, .09, { type: "sine", vol: .13 }); tone(1319, .28, { type: "sine", vol: .13, at: .08 }); tone(2637, .12, { type: "sine", vol: .03, at: .1 }); break; // رنين عملة
+      case "streak": { const b = Math.min(lvl, 5); [0, 2, 4].forEach((k, j) => tone(N[k + b] || 1568, .12, { vol: .1, at: j * .07 })); tone((N[4 + b] || 1568) * 2, .3, { type: "sine", vol: .05, at: .22 }); break; }
+      case "bad": tone(330, .16, { vol: .09, to: 220 }); tone(247, .22, { vol: .07, at: .13, to: 165 }); break; // نغمة لطيفة غير مُحبِطة
+      case "twin": tone(659, .08, { vol: .1 }); tone(784, .08, { vol: .1, at: .07 }); tone(1047, .22, { type: "sine", vol: .1, at: .14 }); break;
+      case "hint": tone(880, .1, { type: "sine", vol: .07 }); tone(1175, .18, { type: "sine", vol: .06, at: .09 }); break;
+      case "gate": whoosh(.5); tone(392, .12, { vol: .07, at: .3 }); tone(523, .25, { vol: .08, at: .4 }); break;
+      case "key": [784, 988, 1175, 1568].forEach((f, j) => tone(f, .16, { vol: .1, at: j * .09 })); tone(2093, .45, { type: "sine", vol: .06, at: .38 }); break;
+      case "start": whoosh(.6, 0, true); [392, 523, 659, 784].forEach((f, j) => tone(f, .18, { vol: .1, at: .25 + j * .12 })); tone(1047, .5, { vol: .1, at: .75 }); break;
+      case "drum": for (let j = 0; j < 10; j++) tone(110 + j * 6, .06, { type: "square", vol: .035, at: j * .06 }); break;
+      case "star": tone(1319 + lvl * 220, .22, { type: "sine", vol: .1 }); tone(2637 + lvl * 440, .15, { type: "sine", vol: .03, at: .05 }); break;
+      case "win": [523, 659, 784, 1047].forEach((f, j) => tone(f, .14, { vol: .11, at: j * .11 })); [784, 1047, 1319].forEach(f => tone(f, .7, { vol: .07, at: .5 })); break;
+      case "lose": tone(392, .2, { vol: .08 }); tone(349, .2, { vol: .08, at: .18 }); tone(392, .4, { vol: .08, at: .36 }); break;
+      default: break;
+    }
   } catch {}
 }
 

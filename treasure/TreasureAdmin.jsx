@@ -2,7 +2,7 @@
 // 🗺️ رحلة الكنز — لوحة الإدارة: الرابط والإعدادات ومتابعة تقدم الطلاب
 // ══════════════════════════════════════════════════════════
 import React, { useEffect, useMemo, useState } from "react";
-import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, SKILLS, SUBJ, ar, arr, obj, when, trLink, useFonts, BASE_CSS } from "./core.jsx";
+import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, SKILLS, SUBJ, LEVELS, HOTS, hotsOf, loadAllStages, ar, arr, obj, when, trLink, useFonts, BASE_CSS } from "./core.jsx";
 
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -31,7 +31,7 @@ export default function TreasureAdmin({ by, api }) {
   const load = async () => {
     setLoading(true);
     const [c, p, r] = await Promise.all([api.maGet(TR_CFG), api.maGet(TR_PROG), api.maGet(api.MA_ROSTER)]);
-    const C = obj(c); setCfg({ open: C.open !== false, upTo: +C.upTo || READY, onlyG3: C.onlyG3 !== false });
+    const C = obj(c); setCfg({ open: C.open !== false, upTo: +C.upTo || READY, onlyG3: C.onlyG3 !== false, demo: arr(C.demo) });
     setProg(obj(p)); setRos(obj(r)); setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -58,7 +58,7 @@ export default function TreasureAdmin({ by, api }) {
     const n = scoped.length; const sum = k => scoped.reduce((a, r) => a + (+r[k] || 0), 0);
     const playedRows = scoped.filter(r => r.played);
     const avgOf = k => playedRows.length ? Math.round(playedRows.reduce((a, r) => a + r[k], 0) / playedRows.length) : 0;
-    return { n, passed: sum("passed"), stars: sum("stars"), avgStage: n ? (sum("passed") / n).toFixed(1) : "0", w1: scoped.filter(r => r.passed >= 5).length, r: avgOf("r"), m: avgOf("m"), s: avgOf("s"), avg: avgOf("avg") };
+    return { n, passed: sum("passed"), stars: sum("stars"), avgStage: n ? (sum("passed") / n).toFixed(1) : "0", w1: scoped.filter(r => r.passed >= 5).length, w2: scoped.filter(r => r.passed >= 10).length, w3: scoped.filter(r => r.passed >= 15).length, w4: scoped.filter(r => r.passed >= 20).length, r: avgOf("r"), m: avgOf("m"), s: avgOf("s"), avg: avgOf("avg") };
   }, [scoped]);
 
   const skills = useMemo(() => {
@@ -119,7 +119,7 @@ export default function TreasureAdmin({ by, api }) {
       {g3 > 0 && withId < g3 && <div className="tra-warn">⚠️ {ar(g3 - withId)} من طلاب الصف الثالث ليست أرقام هوياتهم مرتبطة بكشوف الفصول، ولن يتمكنوا من الدخول. استورد كشوف نور التي فيها «رقم السجل المدني» من صفحة الفصول.</div>}
     </div>
 
-    <div className="tra-tabs">{[["track", "📊 المتابعة"], ["skills", "🧠 المهارات"], ["none", `⏳ لم يبدؤوا (${ar(notStarted.length)})`], ["top", "🏆 الأوائل"], ["set", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div className="tra-tabs">{[["track", "📊 المتابعة"], ["skills", "🧠 المهارات"], ["map", "🗺️ خريطة النواتج"], ["none", `⏳ لم يبدؤوا (${ar(notStarted.length)})`], ["top", "🏆 الأوائل"], ["set", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
 
     <div className="tra-filter">
       <select value={cls} onChange={e => setCls(e.target.value)}><option value="all">جميع الفصول</option>{classes.map(c => <option key={c} value={c}>{api.maClassName(c)}</option>)}</select>
@@ -135,6 +135,9 @@ export default function TreasureAdmin({ by, api }) {
         <div><b>{ar(kpi.n)} <small>من {ar(target)}</small></b><span>المشاركون</span><i style={{ width: pct(kpi.n, target) + "%" }} /></div>
         <div><b>{ar(kpi.avgStage)}</b><span>متوسط المراحل المنجزة</span></div>
         <div><b>{ar(kpi.w1)}</b><span>أنهوا العالم الأول 🥉</span></div>
+        <div><b>{ar(kpi.w2)}</b><span>أنهوا العالم الثاني 🥈</span></div>
+        <div><b>{ar(kpi.w3)}</b><span>أنهوا العالم الثالث 🥇</span></div>
+        <div><b>{ar(kpi.w4)}</b><span>وصلوا إلى الكنز 👑</span></div>
         <div><b>{ar(kpi.stars)}</b><span>مجموع النجوم ⭐</span></div>
         {["r", "m", "s"].map(k => <div key={k} style={{ "--c": SUBJ[k].c }}><b style={{ color: SUBJ[k].c }}>{ar(kpi[k])}٪</b><span>{SUBJ[k].icon} {SUBJ[k].name}</span><i style={{ width: kpi[k] + "%", background: SUBJ[k].c }} /></div>)}
       </div>
@@ -163,6 +166,8 @@ export default function TreasureAdmin({ by, api }) {
       </div>; })}
     </div>}
 
+    {tab === "map" && <OutcomeMap />}
+
     {tab === "none" && <div className="tra-card">
       <b>⏳ طلاب لم يبدؤوا الرحلة ({ar(notStarted.length)})</b>
       {notStarted.length === 0 ? <p className="tra-note">رائع! جميع الطلاب بدؤوا 🎉</p> :
@@ -182,6 +187,7 @@ export default function TreasureAdmin({ by, api }) {
       <div><span>إتاحة المراحل حتى المرحلة: </span><select value={cfg.upTo} onChange={e => saveCfg({ upTo: +e.target.value })}>{Array.from({ length: READY }, (_, i) => i + 1).map(n => <option key={n} value={n}>{ar(n)} — {worldOf(n).name}</option>)}</select>
         <p className="tra-note">يمكنك فتح المراحل تدريجياً (مثلاً مرحلة كل أسبوع). الطالب الذي يُنهي آخر مرحلة متاحة يرى رسالة «ستتاح قريباً».</p></div>
       <div className="tra-worlds">{WORLDS.map(w => <div key={w.n} style={{ background: w.soft, color: w.c1 }}><span>{w.icon}</span><b>{w.name}</b><small>المراحل {ar(w.from)}–{ar(w.to)} • {w.to <= READY ? "✅ جاهزة" : "🛠️ قيد الإعداد"}</small></div>)}</div>
+      <DemoIds cfg={cfg} api={api} saveCfg={saveCfg} toast={toast} />
       <p className="tra-note">• شرط عبور المرحلة: {ar(TR_PASS)} من ١٥ • الإجابة الصحيحة من أول مرة = درجة، والسؤال التعويضي = نصف درجة • النجوم: ⭐⭐⭐ من ١٤ فأكثر، ⭐⭐ من ١٢، ⭐ من {ar(TR_PASS)}.</p>
     </div>}
 
@@ -194,6 +200,46 @@ export default function TreasureAdmin({ by, api }) {
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}><button className="tra-b" style={{ background: "#fee2e2", color: "#991b1b" }} onClick={() => reset(detail)}>🗑️ إعادة تعيين رحلة الطالب</button></div>
     </div></div>}
     {msg && <div className="tra-toast">{msg}</div>}
+  </div>;
+}
+
+// 👨‍🏫 حسابات وضع الشرح: تُحفظ بصمة الهوية فقط (لا الرقم)، وتفتح كل المراحل دون أن تُحتسب ضمن الطلاب
+function DemoIds({ cfg, api, saveCfg, toast }) {
+  const [id, setId] = useState(""); const [nm, setNm] = useState("");
+  const L = arr(cfg.demo);
+  const add = async () => {
+    const n = String(id).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/\D/g, "");
+    if (n.length !== 10) { toast("⚠️ رقم الهوية ١٠ أرقام"); return; }
+    const h = await api.stuHash(n); if (L.some(d => d.h === h)) { toast("مضاف مسبقاً"); return; }
+    await saveCfg({ demo: [...L, { h, n4: n.slice(-4), name: nm.trim() || "معلم" }] }); setId(""); setNm("");
+  };
+  return <div className="tra-demo">
+    <b>👨‍🏫 حسابات وضع الشرح (للمعلمين)</b>
+    <p className="tra-note">من يدخل الرحلة برقم هوية مضاف هنا تُفتح له المراحل العشرون كلها مع لوحة تُظهر التلميحة والحل والشرح والسؤال التوأم، ولا يُحفظ له شيء ولا يظهر في المتابعة. حساب مدير المدرسة مفعّل دائماً.</p>
+    <div className="tra-demo-l"><span>🔐 مدير المدرسة ***٢٩٢٥</span>{L.map(d => <span key={d.h}>👨‍🏫 {d.name} ***{ar(d.n4)} <button onClick={() => saveCfg({ demo: L.filter(x => x.h !== d.h) })} title="حذف">✕</button></span>)}</div>
+    <div className="tra-demo-f"><input placeholder="اسم المعلم" value={nm} onChange={e => setNm(e.target.value)} /><input placeholder="رقم الهوية" inputMode="numeric" dir="ltr" value={id} onChange={e => setId(e.target.value)} /><button className="tra-b" onClick={add}>➕ إضافة</button></div>
+  </div>;
+}
+
+// 🗺️ خريطة نواتج التعلم: توزيع أسئلة الرحلة على المهارات والمراحل والمستويات ومهارات التفكير العليا
+function OutcomeMap() {
+  const [S, setS] = useState(null);
+  useEffect(() => { let on = true; loadAllStages().then(x => on && setS(x)).catch(() => on && setS([])); return () => { on = false; }; }, []);
+  if (!S) return <div className="tra-card"><p className="tra-note">⏳ جارٍ تحميل محتوى المراحل…</p></div>;
+  const qsOf = s => [...((s.read && s.read.qs) || []), ...(s.math || []), ...(s.sci || [])];
+  const keys = Object.keys(SKILLS), grid = {}, lv = {}, ht = {}; let total = 0;
+  S.forEach(s => qsOf(s).forEach(q => { total++; (grid[q.k] = grid[q.k] || {})[s.n] = (grid[q.k][s.n] || 0) + 1; lv[q.lv] = (lv[q.lv] || 0) + 1; const h = hotsOf(q); if (h) ht[h] = (ht[h] || 0) + 1; }));
+  const rowSum = k => Object.values(grid[k] || {}).reduce((a, b) => a + b, 0);
+  const subOf = k => SUBJ[k[0] === "R" ? "r" : k[0] === "M" ? "m" : "s"];
+  return <div className="tra-card">
+    <b>🗺️ خريطة نواتج التعلم في الرحلة</b>
+    <p className="tra-note">{ar(S.length)} مرحلة • {ar(total)} سؤال أساسي، ولكل سؤال توأم تعويضي بالمهارة نفسها. كل خانة = عدد أسئلة المهارة في المرحلة.</p>
+    <div className="tra-tbl-wrap"><table className="tra-tbl tra-map"><thead><tr><th className="r">المهارة (ناتج التعلم)</th>{S.map(s => <th key={s.n} style={{ background: worldOf(s.n).c1, color: "#fff" }}>{ar(s.n)}</th>)}<th>المجموع</th></tr></thead>
+      <tbody>{keys.map(k => { const sub = subOf(k); return <tr key={k}><td className="r"><span style={{ color: sub.c }}>{sub.icon}</span> {SKILLS[k]}</td>{S.map(s => { const v = (grid[k] || {})[s.n] || 0; return <td key={s.n} style={{ background: v ? sub.soft : "transparent", color: v ? sub.c : "#cbd5e1" }}>{v ? ar(v) : "·"}</td>; })}<td><b>{ar(rowSum(k))}</b></td></tr>; })}</tbody></table></div>
+    <div className="tra-map-foot">
+      <div><b>المستويات المعرفية</b>{Object.keys(LEVELS).map(l => <span key={l}>{LEVELS[l]}: {ar(lv[l] || 0)}</span>)}</div>
+      <div><b>🧠 مهارات التفكير العليا</b>{Object.keys(HOTS).map(h => <span key={h}>{HOTS[h].ic} {HOTS[h].n}: {ar(ht[h] || 0)}</span>)}</div>
+    </div>
   </div>;
 }
 
@@ -254,6 +300,14 @@ const ADM_CSS = `
 .tra-sk-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px}
 .tra-bar{height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden;margin-top:4px}
 .tra-bar i{display:block;height:100%;border-radius:99px}
+.tra-map{min-width:900px;font-size:12px}.tra-map td{padding:5px 3px;font-weight:900}.tra-map th{padding:7px 3px}.tra-map td.r{white-space:nowrap;font-weight:800}
+.tra-map-foot{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.tra-map-foot>div{background:#f8fafc;border-radius:12px;padding:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tra-map-foot b{width:100%;font-size:13px}
+.tra-map-foot span{background:#fff;border:1px solid #e2e8f0;border-radius:99px;padding:3px 9px;font-size:12px;font-weight:800}
+.tra-demo{background:#eef2ff;border:1.5px dashed #818cf8;border-radius:14px;padding:12px;margin:10px 0}.tra-demo b{color:#3730a3}
+.tra-demo-l{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.tra-demo-l span{background:#fff;border-radius:99px;padding:4px 10px;font-weight:800;font-size:12.5px;display:inline-flex;gap:6px;align-items:center}.tra-demo-l button{border:none;background:#fee2e2;color:#991b1b;border-radius:99px;width:20px;height:20px;font-size:11px;cursor:pointer}
+.tra-demo-f{display:flex;gap:6px;flex-wrap:wrap}.tra-demo-f input{flex:1 1 140px;border:1px solid #c7d2fe;border-radius:10px;padding:8px 10px;font-family:inherit;font-weight:700}
 .tra-none h4{margin:12px 0 6px;color:#1e3a8a}
 .tra-none>div{display:flex;flex-wrap:wrap;gap:6px}
 .tra-none span{background:#f8fafc;border:1px solid #e2e8f0;border-radius:99px;padding:4px 10px;font-size:12.5px;font-weight:700}

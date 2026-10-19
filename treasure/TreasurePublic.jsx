@@ -3,7 +3,7 @@
 // تُحمَّل عند فتح الرابط فقط (React.lazy) فلا تؤثر على سرعة بقية الموقع
 // ══════════════════════════════════════════════════════════
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, loadStage, SUBJ, LEVELS, Rich, Fig, ar, shuffleIdx, starsOf, arr, obj, lsGet, lsSet, beep, useFonts, BASE_CSS } from "./core.jsx";
+import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, DEMO_H, SKILLS, loadStage, SUBJ, LEVELS, HOTS, hotsOf, Rich, Fig, ar, shuffleIdx, starsOf, arr, obj, lsGet, lsSet, beep, useFonts, BASE_CSS } from "./core.jsx";
 
 const LET = ["أ", "ب", "ج", "د"];
 const normId = v => String(v ?? "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/\D/g, "");
@@ -18,12 +18,15 @@ export default function TreasurePublic({ onBack, api }) {
   const [loadingStage, setLoadingStage] = useState(0);
   const [mute, setMute] = useState(() => lsGet("tr-mute", false));
   const [playId, setPlayId] = useState(0);
+  const [demo, setDemo] = useState(false);
+  const [intro, setIntro] = useState(false);
 
-  const avail = Math.min(READY, cfg && +cfg.upTo ? +cfg.upTo : READY);
+  const avail = demo ? READY : Math.min(READY, cfg && +cfg.upTo ? +cfg.upTo : READY);
 
   useEffect(() => { (async () => {
-    const c = obj(await api.maGet(TR_CFG)); setCfg({ open: c.open !== false, upTo: +c.upTo || READY, onlyG3: c.onlyG3 !== false });
+    const c = obj(await api.maGet(TR_CFG)); setCfg({ open: c.open !== false, upTo: +c.upTo || READY, onlyG3: c.onlyG3 !== false, demo: arr(c.demo).map(d => d && d.h).filter(Boolean) });
     const saved = lsGet("tr-me", null);
+    if (saved && saved.demo && Date.now() - (saved.at || 0) < 30 * 864e5) { enterDemo(); return; }
     if (saved && saved.sid && saved.ck && Date.now() - (saved.at || 0) < 30 * 864e5) {
       const r = obj(await api.maGet(`${api.MA_ROSTER}/${saved.ck}`)); const st = arr(r.students).find(x => x.id === saved.sid);
       if (st) { await enter({ ...st, ck: saved.ck }); return; }
@@ -36,10 +39,17 @@ export default function TreasurePublic({ onBack, api }) {
     const base = { sid, name: st.name, ck: st.ck, n4: st.n4 || "", unlocked: 1, stars: {}, best: {}, start: Date.now() };
     const rec = { ...base, ...p, name: st.name, ck: st.ck, n4: st.n4 || p.n4 || "" };
     setMe({ id: sid, name: st.name, ck: st.ck, n4: st.n4 || "" }); setProg(rec);
-    lsSet("tr-me", { sid, ck: st.ck, at: Date.now() }); setView("map");
+    lsSet("tr-me", { sid, ck: st.ck, at: Date.now() }); setView("map"); setDemo(false);
+    if (!lsGet("tr-intro-" + sid, false)) setIntro(true);
     try { api.logLogin && api.logLogin({ sid, name: st.name, ck: st.ck, n4: st.n4 || "" }, "treasure"); } catch {}
   }
-  const logout = () => { lsSet("tr-me", null); setMe(null); setProg(null); setView("login"); };
+  // 👨‍🏫 وضع الشرح: كل المراحل مفتوحة، ولا يُحفظ شيء في سجلات الطلاب ولا يظهر في المتابعة
+  function enterDemo() {
+    setMe({ id: "demo", name: "وضع الشرح", ck: "", n4: "" }); setProg({ sid: "demo", unlocked: TR_TOTAL, stars: {}, best: {}, start: Date.now() });
+    setDemo(true); lsSet("tr-me", { demo: true, at: Date.now() }); setView("map");
+  }
+  const logout = () => { lsSet("tr-me", null); setMe(null); setProg(null); setDemo(false); setView("login"); };
+  const closeIntro = () => { setIntro(false); if (me && !demo) lsSet("tr-intro-" + me.id, true); };
 
   async function play(n) {
     setLoadingStage(n); const s = await loadStage(n); setLoadingStage(0);
@@ -54,7 +64,7 @@ export default function TreasurePublic({ onBack, api }) {
     const stars = { ...obj(prog.stars), [n]: Math.max(+obj(prog.stars)[n] || 0, starsOf(res.sc)) };
     const unlocked = Math.max(+prog.unlocked || 1, res.sc >= TR_PASS ? Math.min(TR_TOTAL, n + 1) : 1);
     const rec = { ...prog, best, stars, unlocked, last: Date.now(), done: Math.max(+prog.done || 0, res.sc >= TR_PASS ? n : 0) };
-    setProg(rec); await api.maPut(`${TR_PROG}/${me.id}`, rec);
+    setProg(rec); if (!demo) await api.maPut(`${TR_PROG}/${me.id}`, rec);
     return { tries, unlockedNew: unlocked > (+prog.unlocked || 1) };
   }
 
@@ -62,21 +72,24 @@ export default function TreasurePublic({ onBack, api }) {
 
   return <div className="tr-root tr-pub"><style>{BASE_CSS + PUB_CSS}</style>
     {view === "boot" && <div className="tr-boot"><div className="tr-compass">🧭</div><b className="tr-disp">جارٍ تجهيز الخريطة…</b></div>}
-    {view === "login" && <Login api={api} cfg={cfg} onEnter={enter} onBack={onBack} />}
+    {view === "login" && <Login api={api} cfg={cfg} onEnter={enter} onDemo={enterDemo} onBack={onBack} />}
     {view === "map" && cfg && !cfg.open && <Closed onBack={onBack} />}
-    {view === "map" && cfg && cfg.open && <MapView me={me} prog={prog} avail={avail} loading={loadingStage} onPlay={play} onLogout={logout} onBack={onBack} mute={mute} toggleMute={toggleMute} />}
-    {view === "play" && stage && <Player key={playId} stage={stage} prog={prog} avail={avail} onFinish={finish} onExit={() => { setView("map"); setStage(null); }} onNext={n => play(n)} />}
+    {view === "map" && cfg && cfg.open && <MapView me={me} prog={prog} avail={avail} demo={demo} loading={loadingStage} onPlay={play} onLogout={logout} onBack={onBack} mute={mute} toggleMute={toggleMute} onIntro={() => setIntro(true)} />}
+    {view === "map" && intro && <Journey name={demo ? "" : me && me.name} onClose={closeIntro} />}
+    {view === "play" && stage && <Player key={playId} stage={stage} prog={prog} avail={avail} demo={demo} mute={mute} toggleMute={toggleMute} onFinish={finish} onExit={() => { setView("map"); setStage(null); }} onNext={n => play(n)} />}
   </div>;
 }
 
 // ══════════ الدخول برقم الهوية ══════════
-function Login({ api, cfg, onEnter, onBack }) {
+function Login({ api, cfg, onEnter, onDemo, onBack }) {
   const [id, setId] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   const go = async () => {
     const n = normId(id); if (n.length !== 10) { setErr("رقم الهوية يتكوّن من ١٠ أرقام"); return; }
     setBusy(true); setErr("");
     try {
-      const h = await api.stuHash(n); const ros = obj(await api.maGet(api.MA_ROSTER)); let found = null;
+      const h = await api.stuHash(n);
+      if (DEMO_H.includes(h) || arr(cfg && cfg.demo).includes(h)) { beep("start"); onDemo(); return; }
+      const ros = obj(await api.maGet(api.MA_ROSTER)); let found = null;
       Object.entries(ros).forEach(([ck, r]) => arr(r && r.students).forEach(st => { if (!found && st && st.nh === h) found = { ...st, ck }; }));
       if (!found) { setErr("لم نجد هذا الرقم في كشوف الطلاب. تأكد من الرقم أو راجع إدارة المدرسة."); setBusy(false); return; }
       if (cfg && cfg.onlyG3 && !String(found.ck).startsWith("3-")) { setErr("هذه الرحلة مخصصة لطلاب الصف الثالث المتوسط 🌟"); setBusy(false); return; }
@@ -92,7 +105,7 @@ function Login({ api, cfg, onEnter, onBack }) {
       <small className="tr-school">{TR_SCHOOL}</small>
       <h1 className="tr-disp tr-title">رحلة الكنز</h1>
       <div className="tr-sub">طريقي إلى نافس • الصف الثالث المتوسط</div>
-      <p className="tr-lead">٢٠ مرحلة • ٤ عوالم • القراءة والرياضيات والعلوم<br />اجمع المفاتيح وافتح الصناديق حتى تصل إلى الكنز الكبير 🏆</p>
+      <p className="tr-lead">من <b>مدرسة الأمير عبدالمجيد</b> ننطلق إلى <b>جزيرة كنز نافس</b> 🏝️<br />٢٠ مرحلة • ٤ عوالم • القراءة والرياضيات والعلوم<br />اجمع المفاتيح وافتح الصناديق حتى تصل إلى الكنز الكبير 🏆</p>
       <label className="tr-lbl">رقم الهوية (السجل المدني)</label>
       <input className="tr-inp" inputMode="numeric" dir="ltr" maxLength={14} value={id} placeholder="1xxxxxxxxx" onChange={e => { setId(e.target.value); setErr(""); }} onKeyDown={e => e.key === "Enter" && go()} autoFocus />
       {err && <div className="tr-err">{err}</div>}
@@ -108,19 +121,21 @@ function Closed({ onBack }) {
 
 // ══════════ الخريطة ══════════
 const XS = [74, 30, 66, 24, 58];
-function MapView({ me, prog, avail, loading, onPlay, onLogout, onBack, mute, toggleMute }) {
-  const cur = Math.min(+prog.unlocked || 1, TR_TOTAL); const stars = obj(prog.stars);
+function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mute, toggleMute, onIntro }) {
+  const cur = demo ? TR_TOTAL : Math.min(+prog.unlocked || 1, TR_TOTAL); const stars = obj(prog.stars);
   const totalStars = Object.values(stars).reduce((a, b) => a + (+b || 0), 0);
   const keys = Object.keys(obj(prog.best)).filter(k => (+obj(prog.best[k]).sc || 0) >= TR_PASS).length;
   const curRef = useRef(null);
   useEffect(() => { setTimeout(() => { try { curRef.current && curRef.current.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {} }, 350); }, []);
   return <div className="tr-map">
     <header className="tr-hud">
-      <div className="tr-hud-me"><span className="tr-avatar">🧭</span><div><b>{me.name.split(" ").slice(0, 2).join(" ")}</b><small>المستكشف • {ar(me.ck.replace("3-", "ثالث/"))}</small></div></div>
+      <div className="tr-hud-me"><span className="tr-avatar">{demo ? "👨‍🏫" : "🧭"}</span><div><b>{demo ? "وضع الشرح" : me.name.split(" ").slice(0, 2).join(" ")}</b><small>{demo ? "للمعلم • لا يُحتسب" : "المستكشف • " + ar(me.ck.replace("3-", "ثالث/"))}</small></div></div>
       <div className="tr-hud-stats"><span title="المفاتيح">🗝️ {ar(keys)}</span><span title="النجوم">⭐ {ar(totalStars)}</span></div>
-      <div className="tr-hud-act"><button onClick={toggleMute} title="الصوت">{mute ? "🔇" : "🔊"}</button><button onClick={onLogout} title="خروج">🚪</button></div>
+      <div className="tr-hud-act"><button onClick={onIntro} title="قصة الرحلة">📜</button><button onClick={toggleMute} title="الصوت">{mute ? "🔇" : "🔊"}</button><button onClick={onLogout} title="خروج">🚪</button></div>
     </header>
-    <div className="tr-map-title"><h1 className="tr-disp">رحلة الكنز</h1><p>كل مرحلة تفتح التي بعدها — تحتاج {ar(TR_PASS)} من ١٥ لتعبر</p></div>
+    {demo && <div className="tr-demo-bar">👨‍🏫 <b>وضع الشرح:</b> جميع المراحل مفتوحة • داخل كل سؤال لوحة تُظهر التلميحة والحل والشرح والسؤال التوأم • لا يُحفظ شيء ولا يظهر في متابعة الطلاب</div>}
+    <div className="tr-map-title"><h1 className="tr-disp">رحلة الكنز</h1><p>من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس — تحتاج {ar(TR_PASS)} من ١٥ لتعبر كل مرحلة</p></div>
+    <div className="tr-start-pt"><span className="tr-school-ic">🏫</span><div><small>نقطة الانطلاق</small><b className="tr-disp">مدرسة الأمير عبدالمجيد</b></div><span className="tr-start-flag">🚩</span></div>
     {WORLDS.map(w => {
       const done = Array.from({ length: 5 }, (_, i) => w.from + i).every(n => (+obj(prog.best[n]).sc || 0) >= TR_PASS);
       const H = 5 * 118 + 60;
@@ -133,7 +148,7 @@ function MapView({ me, prog, avail, loading, onPlay, onLogout, onBack, mute, tog
           <svg className="tr-path" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" aria-hidden="true"><path d={d} fill="none" stroke="rgba(120,53,15,.35)" strokeWidth="9" strokeLinecap="round" vectorEffect="non-scaling-stroke" /><path d={d} fill="none" stroke="#fff8e7" strokeWidth="3" strokeDasharray="2 10" strokeLinecap="round" vectorEffect="non-scaling-stroke" /></svg>
           {pts.map(([x, y], i) => {
             const n = w.from + i; const b = obj(prog.best[n]); const passed = (+b.sc || 0) >= TR_PASS;
-            const open = n <= cur; const soon = open && n > avail; const isCur = open && !passed && !soon;
+            const open = n <= cur; const soon = open && n > avail; const isCur = !demo && open && !passed && !soon;
             const st = +stars[n] || 0;
             return <div key={n} ref={isCur ? curRef : null} className={"tr-node" + (open ? " open" : "") + (passed ? " passed" : "") + (isCur ? " cur" : "") + (soon ? " soon" : "")} style={{ left: x + "%", top: y }}>
               {isCur && <span className="tr-me-pin">🧭</span>}
@@ -147,7 +162,7 @@ function MapView({ me, prog, avail, loading, onPlay, onLogout, onBack, mute, tog
         <div className={"tr-chest" + (done ? " open" : "")}><span>{done ? "🏆" : "🧰"}</span><div><b>{done ? w.badgeName + " — مبروك!" : "صندوق " + w.name}</b><small>{done ? "أنهيت مراحل هذا العالم كلها" : `أنهِ المراحل ${ar(w.from)}–${ar(w.to)} لتفتحه`}</small></div></div>
       </section>;
     })}
-    <div className={"tr-final" + ((+prog.done || 0) >= TR_TOTAL ? " won" : "")}><div className="tr-final-chest">{(+prog.done || 0) >= TR_TOTAL ? "👑" : "💎"}</div><b className="tr-disp">الكنز الكبير</b><small>{(+prog.done || 0) >= TR_TOTAL ? "أنت بطل نافس! 🎉" : "في نهاية الطريق… هل تصل إليه؟"}</small></div>
+    <div className={"tr-final" + ((+prog.done || 0) >= TR_TOTAL ? " won" : "")}><div className="tr-final-chest">{(+prog.done || 0) >= TR_TOTAL ? "👑" : "💎"}</div><b className="tr-disp">جزيرة كنز نافس</b><small>{(+prog.done || 0) >= TR_TOTAL ? "وصلت إلى الكنز… أنت بطل نافس! 🎉" : "الكنز الكبير في نهاية الطريق… هل تصل إليه؟"}</small></div>
     {onBack && <div style={{ textAlign: "center", padding: "10px 0 30px" }}><button className="tr-link" onClick={onBack}>العودة لموقع المدرسة</button></div>}
   </div>;
 }
@@ -161,7 +176,12 @@ function Decor({ w }) {
 // ══════════ لاعب المرحلة ══════════
 function swapTwin(q) { return q.t ? { ...q, q: q.t.q, fig: q.t.fig, o: q.t.o, a: q.t.a, e: q.t.e, t: { q: q.q, fig: q.fig, o: q.o, a: q.a, e: q.e } } : q; }
 
-function Player({ stage, prog, avail, onFinish, onExit, onNext }) {
+// عبارات التحفيز
+const PRAISE = ["أحسنت! 🌟", "رائع يا بطل! 🔥", "إجابة ذكية! 💡", "ممتاز! 🎯", "عبقري! 🧠", "هكذا يفكر العلماء! 🔬", "ضربة معلّم! 🏹", "مستكشف حقيقي! 🧭", "تألّق! ✨", "إجابة ذهبية! 🪙", "لا شيء يوقفك! 🚀", "الكنز يقترب! 🏝️"];
+const STREAK = { 3: "🔥 ثلاث متتالية! سلسلة نارية", 5: "⚡ خمس متتالية! لا أحد يوقفك", 7: "🌪️ سبع متتالية! إعصار المعرفة", 10: "👑 عشر متتالية! أسطورة نافس", 15: "💎 مرحلة كاملة بلا خطأ!" };
+const OOPS = ["لا تقلق… حتى الأبطال يتعثرون 💪", "قريب جداً! خذ هذه التلميحة 💡", "فرصة ثانية تنتظرك 🔄", "فكّر بطريقة أخرى… أنت قادر 🧭"];
+
+function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, onNext }) {
   const w = worldOf(stage.n); const [tries] = useState(() => +obj(prog.best[stage.n]).tries || 0);
   const items = useMemo(() => {
     const L = [...stage.read.qs.map(q => ({ ...q, sub: "r" })), ...stage.math.map(q => ({ ...q, sub: "m" })), ...stage.sci.map(q => ({ ...q, sub: "s" }))];
@@ -171,65 +191,82 @@ function Player({ stage, prog, avail, onFinish, onExit, onNext }) {
   const [gate, setGate] = useState("intro"); // intro | gate | q | done
   const [phase, setPhase] = useState("ask"); // ask | ok | wrong | twin | twinok | twinbad
   const [pick, setPick] = useState(null);
-  const [res, setRes] = useState([]); // {v:1|.5|0, first:bool}
+  const [res, setRes] = useState([]); // [j] = {v:1|.5|0, first:bool}
   const [showText, setShowText] = useState(true);
   const [confirmExit, setConfirmExit] = useState(false);
   const [summary, setSummary] = useState(null);
   const [fx, setFx] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [toast, setToast] = useState(null);
+  const [rev, setRev] = useState({}); // وضع الشرح: {h: تلميحة, s: حل}
   const topRef = useRef(null);
 
   const q = items[i]; const sub = SUBJ[q.sub];
   const isTwin = phase === "twin" || phase === "twinok" || phase === "twinbad";
   const cq = isTwin ? { ...q.t, k: q.k } : q;
   const order = useMemo(() => shuffleIdx(cq.o.length, tries * 31 + i * 7 + (isTwin ? 3 : 1)), [i, isTwin, tries]);
-  const score = res.reduce((a, r) => a + r.v, 0);
+  const score = res.reduce((a, r) => a + (r ? r.v : 0), 0);
+  const left = items.length - 1 - i;
 
   const scrollTop = () => { try { topRef.current && topRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {} };
+  const pop = (t, ms = 2600) => { setToast(t); setTimeout(() => setToast(x => x === t ? null : x), ms); };
+  const record = (v, first) => setRes(r => { const c = [...r]; c[i] = { v, first }; return c; });
+  const gotKey = add => { if (score < TR_PASS && score + add >= TR_PASS) setTimeout(() => { beep("key"); pop("🗝️ حصلت على مفتاح المرحلة التالية! أكمل لتجمع النجوم ⭐", 3200); }, 450); };
   const check = () => {
     if (pick === null) return; const ok = +pick === +cq.a;
     if (!isTwin) {
-      if (ok) { setPhase("ok"); setRes(r => [...r, { v: 1, first: true }]); beep("ok"); setFx(x => x + 1); }
-      else if (q.t) { setPhase("wrong"); beep("bad"); }
-      else { setPhase("twinbad"); setRes(r => [...r, { v: 0, first: false }]); beep("bad"); }
+      if (ok) {
+        const st = streak + 1; setStreak(st); setBestStreak(b => Math.max(b, st));
+        setPhase("ok"); record(1, true); setFx(x => x + 1);
+        if (st >= 3) { beep("streak", st - 3); if (STREAK[st]) pop(STREAK[st]); } else beep("ok");
+        gotKey(1);
+      }
+      else { setStreak(0); if (q.t) { setPhase("wrong"); beep("bad"); setTimeout(() => beep("hint"), 380); } else { setPhase("twinbad"); record(0, false); beep("bad"); } }
     } else {
-      if (ok) { setPhase("twinok"); setRes(r => [...r, { v: .5, first: false }]); beep("ok"); setFx(x => x + 1); }
-      else { setPhase("twinbad"); setRes(r => [...r, { v: 0, first: false }]); beep("bad"); }
+      if (ok) { setPhase("twinok"); record(.5, false); beep("twin"); setFx(x => x + 1); gotKey(.5); }
+      else { setPhase("twinbad"); record(0, false); beep("bad"); }
     }
   };
-  const toTwin = () => { setPick(null); setPhase("twin"); scrollTop(); };
+  const toTwin = () => { setPick(null); setPhase("twin"); beep("click"); scrollTop(); };
+  const go = j => { setI(j); setPick(null); setPhase("ask"); setRev({}); setGate("q"); beep("click"); scrollTop(); };
   const next = async () => {
-    setPick(null); setPhase("ask");
+    setPick(null); setPhase("ask"); setRev({});
     if (i + 1 >= items.length) {
-      const R = [...res]; const by = s => R.filter((_, j) => items[j].sub === s).reduce((a, r) => a + r.v, 0);
+      const R = [...res]; const by = s => R.filter((r, j) => r && items[j].sub === s).reduce((a, r) => a + r.v, 0);
       const sk = {}; items.forEach((it, j) => { const k = it.k || "?"; sk[k] = sk[k] || [0, 0]; sk[k][1]++; if (R[j] && R[j].first) sk[k][0]++; });
-      const out = { sc: R.reduce((a, r) => a + r.v, 0), r: by("r"), m: by("m"), s: by("s"), first: R.filter(r => r.first).length, sk };
-      setGate("done"); setSummary({ ...out, saving: true });
-      const meta = await onFinish(out); setSummary({ ...out, ...meta, saving: false });
-      if (out.sc >= TR_PASS) beep("win");
+      const out = { sc: R.reduce((a, r) => a + (r ? r.v : 0), 0), r: by("r"), m: by("m"), s: by("s"), first: R.filter(r => r && r.first).length, sk };
+      beep("drum"); setGate("done"); setSummary({ ...out, streak: bestStreak, saving: true });
+      const meta = await onFinish(out); setSummary({ ...out, ...meta, streak: bestStreak, saving: false });
       window.scrollTo(0, 0); return;
     }
     const ni = i + 1; setI(ni);
-    if (items[ni].sub !== q.sub) setGate("gate"); else scrollTop();
+    if (items[ni].sub !== q.sub && !demo) setGate("gate"); else { if (demo) setGate("q"); scrollTop(); }
   };
 
-  if (gate === "done" && summary) return <Result stage={stage} w={w} s={summary} avail={avail} onExit={onExit} onNext={onNext} />;
+  if (gate === "done" && summary) return <Result stage={stage} w={w} s={summary} avail={avail} demo={demo} onExit={onExit} onNext={onNext} />;
 
+  const done = phase !== "ask" && phase !== "twin";
   return <div className="tr-play" style={{ "--w1": w.c1, "--w2": w.c2, "--ws": w.soft, "--wsky": w.sky, "--sc": sub.c, "--ss": sub.soft }}>
     <header className="tr-play-hud" ref={topRef}>
       <button className="tr-x" onClick={() => setConfirmExit(true)} aria-label="خروج">✕</button>
-      <div className="tr-play-t"><small>{w.icon} {w.name}</small><b className="tr-disp">المرحلة {ar(stage.n)}: {stage.title}</b></div>
+      <div className="tr-play-t"><small>{w.icon} {w.name}{demo ? " • 👨‍🏫 وضع الشرح" : ""}</small><b className="tr-disp">المرحلة {ar(stage.n)}: {stage.title}</b></div>
+      <button className="tr-mute" onClick={toggleMute} aria-label="الصوت">{mute ? "🔇" : "🔊"}</button>
       <div className="tr-coins" key={fx}><span>🪙</span>{ar(score)}</div>
     </header>
-    <div className="tr-dots">{items.map((it, j) => { const r = res[j]; return <i key={j} className={(j === i && gate === "q" ? "cur " : "") + (r ? (r.v === 1 ? "ok" : r.v ? "half" : "bad") : "") + (j % 5 === 0 ? " gap" : "")} style={{ "--c": SUBJ[it.sub].c }} />; })}</div>
+    <div className="tr-dots">{items.map((it, j) => { const r = res[j]; return <i key={j} onClick={demo ? () => go(j) : undefined} className={(j === i && gate === "q" ? "cur " : "") + (r ? (r.v === 1 ? "ok" : r.v ? "half" : "bad") : "") + (j % 5 === 0 ? " gap" : "") + (demo ? " nav" : "")} style={{ "--c": SUBJ[it.sub].c }} />; })}</div>
+    {gate === "q" && <div className="tr-meter"><div className="tr-meter-row"><div className="tr-meter-bar"><i style={{ width: Math.min(100, score / TR_PASS * 100) + "%" }} /></div><span className={"tr-meter-key" + (score >= TR_PASS ? " on" : "")}>{score >= TR_PASS ? "🗝️" : "🔒"}</span>{streak >= 2 && <span className="tr-combo" key={streak}>🔥 ×{ar(streak)}</span>}</div><small>{score >= TR_PASS ? `🗝️ المفتاح معك! باقي ${ar(left + (done ? 0 : 1))} أسئلة لجمع النجوم` : `تحتاج ${ar(TR_PASS - score)} لتعبر • باقي ${ar(left + (done ? 0 : 1))} أسئلة`}</small></div>}
 
     {gate === "intro" && <div className="tr-card tr-intro tr-pop">
       <div className="tr-intro-ic">{w.icon}</div>
       <h2 className="tr-disp">{stage.title}</h2>
       <p className="tr-story"><Rich t={stage.story} /></p>
       <div className="tr-gates">{["r", "m", "s"].map(k => <div key={k} style={{ "--c": SUBJ[k].c, "--s": SUBJ[k].soft }}><span>{SUBJ[k].icon}</span><b>{SUBJ[k].gate}</b><small>{SUBJ[k].name} • ٥ أسئلة</small></div>)}</div>
-      <div className="tr-rules">✅ إجابة صحيحة = عملة كاملة 🪙 • ❌ خطأ؟ تأتيك تلميحة وسؤال تعويضي بنصف عملة • تحتاج {ar(TR_PASS)} عملات لتعبر</div>
-      {tries > 0 && <div className="tr-rules" style={{ background: "#fef3c7" }}>🔁 هذه محاولتك رقم {ar(tries + 1)} — الأسئلة تتغير في كل محاولة</div>}
-      <button className="tr-btn tr-gold tr-big" onClick={() => { setGate("gate"); beep("click"); }}>انطلق 🚀</button>
+      {(() => { const by = { r: [], m: [], s: [] }; items.forEach(it => { const h = hotsOf(it); if (h && !by[it.sub].includes(h)) by[it.sub].push(h); }); return <div className="tr-hots-box"><b>🧠 مهارات التفكير العليا في هذه المرحلة</b>{["r", "m", "s"].map(k => by[k].length ? <div key={k}><span style={{ color: SUBJ[k].c }}>{SUBJ[k].icon} {SUBJ[k].name}:</span> {by[k].map(h => <em key={h} title={HOTS[h].d}>{HOTS[h].ic} {HOTS[h].n}</em>)}</div> : null)}</div>; })()}
+      <div className="tr-rules">✅ إجابة صحيحة = عملة كاملة 🪙 • 🔥 الإجابات المتتالية تشعل السلسلة • ❌ خطأ؟ تأتيك تلميحة وسؤال تعويضي بنصف عملة • تحتاج {ar(TR_PASS)} عملات لتعبر</div>
+      {tries > 0 && !demo && <div className="tr-rules" style={{ background: "#fef3c7" }}>🔁 هذه محاولتك رقم {ar(tries + 1)} — الأسئلة تتغير في كل محاولة</div>}
+      {demo && <div className="tr-rules" style={{ background: "#e0e7ff" }}>👨‍🏫 وضع الشرح: تنقّل بين الأسئلة بالنقاط أعلاه أو بأزرار لوحة الشرح، وأظهر التلميحة والحل متى شئت.</div>}
+      <button className="tr-btn tr-gold tr-big" onClick={() => { setGate(demo ? "q" : "gate"); beep("start"); }}>{demo ? "ابدأ الشرح 👨‍🏫" : "انطلق 🚀"}</button>
     </div>}
 
     {gate === "gate" && <div className="tr-card tr-gatecard tr-pop" style={{ "--c": sub.c, "--s": sub.soft }}>
@@ -237,7 +274,8 @@ function Player({ stage, prog, avail, onFinish, onExit, onNext }) {
       <small>البوابة {ar(q.sub === "r" ? 1 : q.sub === "m" ? 2 : 3)} من ٣</small>
       <h2 className="tr-disp">{sub.gate}</h2>
       <p>{q.sub === "r" ? "اقرأ النص بتمعّن ثم أجب — النص يبقى أمامك طوال الأسئلة" : q.sub === "m" ? "فكّر بهدوء، واكتب خطواتك في ورقة جانبية إن احتجت" : "لاحظ الرسوم والجداول جيداً، فالعالِم يستنتج من الأدلة"}</p>
-      <button className="tr-btn tr-big" style={{ background: sub.c, color: "#fff" }} onClick={() => { setGate("q"); beep("click"); }}>ادخل البوابة ←</button>
+      {q.sub !== "r" && <p className="tr-gate-score">🪙 جمعت حتى الآن {ar(score)} — {score >= TR_PASS ? "المفتاح معك، اجمع النجوم!" : `تحتاج ${ar(TR_PASS - score)} لتعبر`}</p>}
+      <button className="tr-btn tr-big" style={{ background: sub.c, color: "#fff" }} onClick={() => { setGate("q"); beep("gate"); }}>ادخل البوابة ←</button>
     </div>}
 
     {gate === "q" && <>
@@ -251,61 +289,87 @@ function Player({ stage, prog, avail, onFinish, onExit, onNext }) {
           <span className="tr-chip" style={{ background: sub.soft, color: sub.c }}>{sub.icon} {sub.name}</span>
           <span className="tr-chip">السؤال {ar(i + 1)} / ١٥</span>
           {q.lv && <span className="tr-chip lv">{LEVELS[q.lv]}</span>}
+          {hotsOf(q) && <span className="tr-chip ht" title={HOTS[hotsOf(q)].d}>🧠 {HOTS[hotsOf(q)].n}</span>}
           {isTwin && <span className="tr-chip tw">🔄 سؤال تعويضي</span>}
         </div>
         <div className="tr-q-text"><Rich t={cq.q} /></div>
         <Fig f={cq.fig} />
         <div className={"tr-opts" + (cq.o.some(o => String(o).length > 28) ? " col" : "")}>
           {order.map((oi, j) => {
-            const done = phase !== "ask" && phase !== "twin"; const right = oi === +cq.a;
-            const cls = "tr-opt" + (pick === oi ? " sel" : "") + (done && right && phase !== "wrong" ? " right" : "") + (done && pick === oi && !right ? " wrong" : "");
+            const right = oi === +cq.a;
+            const cls = "tr-opt" + (pick === oi ? " sel" : "") + ((done && right && phase !== "wrong") || (demo && rev.s && right) ? " right" : "") + (done && pick === oi && !right ? " wrong" : "");
             return <button key={oi} className={cls} disabled={done} onClick={() => { setPick(oi); beep("click"); }}><span className="tr-let">{LET[j]}</span><span className="tr-opt-t"><Rich t={cq.o[oi]} /></span></button>;
           })}
         </div>
 
         {(phase === "ask" || phase === "twin") && <button className="tr-btn tr-big tr-check" disabled={pick === null} onClick={check}>تحقّق ✓</button>}
 
-        {phase === "ok" && <Feedback kind="ok" title={["أحسنت! 🌟", "رائع يا بطل! 🔥", "إجابة ذكية! 💡", "ممتاز! 🎯"][i % 4]} e={cq.e} onNext={next} last={i === items.length - 1} />}
+        {phase === "ok" && <Feedback kind="ok" title={STREAK[streak] || PRAISE[(i * 5 + stage.n * 3 + streak) % PRAISE.length]} e={cq.e} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
         {phase === "wrong" && <div className="tr-fb hint tr-pop">
-          <b>💡 تلميحة</b><p><Rich t={q.h || "أعد قراءة السؤال وحدّد المطلوب بدقة، ثم استبعد الخيارات غير المنطقية."} /></p>
+          <b>{OOPS[(i + stage.n) % OOPS.length]}</b><p><b>💡 تلميحة:</b> <Rich t={q.h || "أعد قراءة السؤال وحدّد المطلوب بدقة، ثم استبعد الخيارات غير المنطقية."} /></p>
           <button className="tr-btn tr-big" style={{ background: "#7c3aed", color: "#fff" }} onClick={toTwin}>جرّب السؤال التعويضي 🔄</button>
         </div>}
-        {phase === "twinok" && <Feedback kind="ok" title="عوّضتها! نصف عملة 🪙" e={cq.e} onNext={next} last={i === items.length - 1} />}
-        {phase === "twinbad" && <Feedback kind="bad" title="لا بأس — تعلّم منها 💪" ans={cq.o[+cq.a]} e={cq.e} onNext={next} last={i === items.length - 1} />}
+        {phase === "twinok" && <Feedback kind="ok" title="عوّضتها! نصف عملة 🪙 — هذا هو الإصرار 💪" e={cq.e} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
+        {phase === "twinbad" && <Feedback kind="bad" title="لا بأس — كل خطأ درس جديد 💪" ans={cq.o[+cq.a]} e={cq.e} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
       </div>
+
+      {demo && <div className="tr-card tr-teach">
+        <div className="tr-teach-h"><b>👨‍🏫 لوحة الشرح</b><small>{SKILLS[q.k] || ""} • {LEVELS[q.lv] || ""}</small></div>
+        <div className="tr-teach-btns">
+          <button className={rev.h ? "on" : ""} onClick={() => { setRev(r => ({ ...r, h: !r.h })); beep("hint"); }}>💡 التلميحة</button>
+          <button className={rev.s ? "on" : ""} onClick={() => { setRev(r => ({ ...r, s: !r.s })); beep("ok"); }}>✅ الحل والشرح</button>
+          {q.t && <button onClick={() => { setPick(null); setRev({}); setPhase(isTwin ? "ask" : "twin"); beep("twin"); }}>{isTwin ? "↩️ السؤال الأصلي" : "🔄 السؤال التوأم"}</button>}
+          <button disabled={i === 0} onClick={() => go(i - 1)}>→ السابق</button>
+          <button disabled={i === items.length - 1} onClick={() => go(i + 1)}>التالي ←</button>
+        </div>
+        {rev.h && <div className="tr-fb hint"><b>💡 التلميحة (خطوة البداية)</b><p><Rich t={q.h || "—"} /></p></div>}
+        {rev.s && <div className="tr-fb ok"><b>✅ الإجابة: <Rich t={cq.o[+cq.a]} /></b><p className="tr-exp"><b>خطوات الحل والشرح:</b> <Rich t={cq.e} /></p>{hotsOf(q) && <p className="tr-hots">🧠 المهارة العليا: <b>{HOTS[hotsOf(q)].ic} {HOTS[hotsOf(q)].n}</b> — {HOTS[hotsOf(q)].d}</p>}</div>}
+      </div>}
     </>}
 
-    {fx > 0 && (phase === "ok" || phase === "twinok") && <Burst key={"b" + fx} />}
-    {confirmExit && <div className="tr-modal" onClick={() => setConfirmExit(false)}><div className="tr-card tr-pop" onClick={e => e.stopPropagation()} style={{ maxWidth: 360, textAlign: "center" }}><div style={{ fontSize: 40 }}>🧭</div><b className="tr-disp" style={{ fontSize: 22 }}>تغادر المرحلة؟</b><p style={{ color: "#78716c", fontWeight: 700 }}>لن تُحفظ إجاباتك في هذه المرحلة، وستبدأها من جديد لاحقاً.</p><div style={{ display: "flex", gap: 8 }}><button className="tr-btn" style={{ flex: 1, background: "#f5f5f4" }} onClick={() => setConfirmExit(false)}>أكمل</button><button className="tr-btn" style={{ flex: 1, background: "#dc2626", color: "#fff" }} onClick={onExit}>مغادرة</button></div></div></div>}
+    {fx > 0 && (phase === "ok" || phase === "twinok") && <Burst key={"b" + fx} plus={phase === "ok" ? "+١" : "+½"} big={streak >= 3} />}
+    {toast && <div className="tr-toast tr-pop" key={toast}>{toast}</div>}
+    {confirmExit && <div className="tr-modal" onClick={() => setConfirmExit(false)}><div className="tr-card tr-pop" onClick={e => e.stopPropagation()} style={{ maxWidth: 360, textAlign: "center" }}><div style={{ fontSize: 40 }}>🧭</div><b className="tr-disp" style={{ fontSize: 22 }}>تغادر المرحلة؟</b><p style={{ color: "#78716c", fontWeight: 700 }}>{demo ? "ستعود إلى الخريطة." : "لن تُحفظ إجاباتك في هذه المرحلة، وستبدأها من جديد لاحقاً."}</p><div style={{ display: "flex", gap: 8 }}><button className="tr-btn" style={{ flex: 1, background: "#f5f5f4" }} onClick={() => setConfirmExit(false)}>أكمل</button><button className="tr-btn" style={{ flex: 1, background: "#dc2626", color: "#fff" }} onClick={onExit}>مغادرة</button></div></div></div>}
   </div>;
 }
 
-function Feedback({ kind, title, e, ans, onNext, last }) {
+function Feedback({ kind, title, e, ans, ht, onNext, last }) {
   return <div className={"tr-fb tr-pop " + kind}>
     <b>{title}</b>
     {ans !== undefined && <p>الإجابة الصحيحة: <b><Rich t={ans} /></b></p>}
     {e && <p className="tr-exp"><Rich t={e} /></p>}
+    {ht && HOTS[ht] && <p className="tr-hots">🧠 {kind === "ok" ? "استعملتَ مهارة" : "هذا السؤال يدرّبك على مهارة"} <b>{HOTS[ht].ic} {HOTS[ht].n}</b>: {HOTS[ht].d}{kind === "ok" ? " — عقلك يكبر مع كل تحدٍّ! 🚀" : ""}</p>}
     <button className="tr-btn tr-big tr-gold" onClick={onNext}>{last ? "افتح الصندوق 🧰" : "التالي ←"}</button>
   </div>;
 }
 
-function Burst() {
-  return <div className="tr-burst" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ "--a": (i * 360 / 14) + "deg", "--d": (60 + (i % 3) * 25) + "px" }}>{["🪙", "✨", "⭐"][i % 3]}</i>)}</div>;
+function Burst({ plus, big }) {
+  const n = big ? 22 : 14;
+  return <div className="tr-burst" aria-hidden="true">{Array.from({ length: n }, (_, i) => <i key={i} style={{ "--a": (i * 360 / n) + "deg", "--d": (60 + (i % 3) * 25 + (big ? 30 : 0)) + "px" }}>{(big ? ["🔥", "🪙", "⭐"] : ["🪙", "✨", "⭐"])[i % 3]}</i>)}{plus && <b className="tr-plus">{plus} 🪙</b>}</div>;
 }
 
-function Result({ stage, w, s, avail, onExit, onNext }) {
+function Result({ stage, w, s, avail, demo, onExit, onNext }) {
   const pass = s.sc >= TR_PASS; const st = starsOf(s.sc); const n = stage.n;
   const worldDone = pass && n === w.to; const hasNext = pass && n < TR_TOTAL;
   const nextOpen = hasNext && n + 1 <= avail;
+  useEffect(() => {
+    const T = [];
+    if (pass) { for (let k = 1; k <= st; k++) T.push(setTimeout(() => beep("star", k - 1), 500 + k * 280)); T.push(setTimeout(() => beep("win"), 600 + st * 280 + 200)); }
+    else T.push(setTimeout(() => beep("lose"), 500));
+    return () => T.forEach(clearTimeout);
+  }, []);
   return <div className="tr-play tr-result" style={{ "--w1": w.c1, "--w2": w.c2, "--ws": w.soft, "--wsky": w.sky }}>
     {pass && <div className="tr-confetti" aria-hidden="true">{Array.from({ length: 40 }, (_, i) => <i key={i} style={{ left: (i * 2.5) + "%", animationDelay: (i % 10) * .12 + "s", background: ["#f59e0b", "#ef4444", "#10b981", "#3b82f6", "#a855f7"][i % 5] }} />)}</div>}
     <div className="tr-card tr-pop" style={{ textAlign: "center" }}>
-      <div className={"tr-big-chest" + (pass ? " open" : "")}>{pass ? (worldDone ? w.badge : "🗝️") : "🧰"}</div>
-      <h2 className="tr-disp" style={{ fontSize: 30, margin: "4px 0" }}>{pass ? (worldDone ? `حصلت على ${w.badgeName}!` : "عبرت المرحلة!") : "اقتربت كثيراً!"}</h2>
-      <div className="tr-res-stars">{[1, 2, 3].map(k => <i key={k} className={k <= st ? "on" : ""} style={{ animationDelay: k * .25 + "s" }}>★</i>)}</div>
+      <div className={"tr-big-chest" + (pass ? " open" : "")}>{pass ? (n === TR_TOTAL ? "👑" : worldDone ? w.badge : "🗝️") : "🧰"}</div>
+      <h2 className="tr-disp" style={{ fontSize: 30, margin: "4px 0" }}>{pass ? (n === TR_TOTAL ? "وصلت إلى كنز نافس!" : worldDone ? `حصلت على ${w.badgeName}!` : "عبرت المرحلة!") : "اقتربت كثيراً!"}</h2>
+      <div className="tr-res-stars">{[1, 2, 3].map(k => <i key={k} className={k <= st ? "on" : ""} style={{ animationDelay: k * .28 + .3 + "s" }}>★</i>)}</div>
       <div className="tr-res-score"><b>{ar(s.sc)}</b> <span>من ١٥</span></div>
+      {s.streak >= 3 && <div className="tr-res-streak">🔥 أطول سلسلة إجابات متتالية: <b>{ar(s.streak)}</b></div>}
       <div className="tr-res-subs">{[["r", s.r], ["m", s.m], ["s", s.s]].map(([k, v]) => <div key={k} style={{ "--c": SUBJ[k].c, "--s": SUBJ[k].soft }}><span>{SUBJ[k].icon}</span><b>{ar(v)} / ٥</b><small>{SUBJ[k].name}</small><i style={{ width: (v / 5 * 100) + "%" }} /></div>)}</div>
       <p className="tr-res-msg">{pass ? (st === 3 ? "أداء أسطوري! ثلاث نجوم كاملة 🌟" : `أصبت ${ar(s.first)} من أول محاولة — أعد المرحلة متى شئت لتجمع نجوماً أكثر`) : `تحتاج ${ar(TR_PASS)} عملات لتعبر — راجع التلميحات وحاول مرة أخرى، ستتغير الأسئلة 💪`}</p>
+      {pass && !demo && n < TR_TOTAL && <p className="tr-res-msg" style={{ color: "#0f766e" }}>🏝️ باقي {ar(TR_TOTAL - n)} مراحل على جزيرة كنز نافس!</p>}
+      {demo && <div className="tr-rules" style={{ background: "#e0e7ff" }}>👨‍🏫 وضع الشرح — لم تُحفظ هذه النتيجة</div>}
       {s.saving && <small style={{ color: "#78716c" }}>جارٍ حفظ تقدمك…</small>}
       <div className="tr-res-act">
         {nextOpen && <button className="tr-btn tr-gold tr-big" onClick={() => onNext(n + 1)}>المرحلة {ar(n + 1)} ←</button>}
@@ -314,6 +378,55 @@ function Result({ stage, w, s, avail, onExit, onNext }) {
       </div>
     </div>
   </div>;
+}
+
+// ══════════ قصة الرحلة: من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس ══════════
+const JPATH = "M300 392 C 240 372, 330 300, 262 268 S 120 262, 150 200 S 300 150, 232 112 S 110 92, 78 52";
+function Journey({ name, onClose }) {
+  const [k, setK] = useState(0);
+  useEffect(() => { beep(k === 0 ? "start" : "gate"); }, [k]);
+  const first = name ? String(name).split(" ")[0] : "";
+  const slides = [
+    <div key="0" className="tr-j-slide">
+      <svg className="tr-j-map" viewBox="0 0 360 420" aria-hidden="true">
+        <defs><linearGradient id="jsea" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#7dd3fc" /><stop offset="1" stopColor="#0ea5e9" /></linearGradient></defs>
+        <rect width="360" height="420" rx="22" fill="#f6e7c1" />
+        <path d="M0 0 H200 C 170 40, 140 120, 40 150 C 20 156, 8 160, 0 162 Z" fill="url(#jsea)" opacity=".85" />
+        <text x="44" y="118" fontSize="18">🌊</text><text x="150" y="40" fontSize="16">🐬</text>
+        <ellipse cx="78" cy="60" rx="38" ry="20" fill="#fde68a" stroke="#d97706" strokeWidth="2" />
+        <path className="tr-j-trail" d={JPATH} fill="none" stroke="#92400e" strokeWidth="4" strokeDasharray="8 8" strokeLinecap="round" />
+        <text x="62" y="58" fontSize="26">🏝️</text><text x="92" y="58" fontSize="18" className="tr-j-x">❌</text>
+        <text x="248" y="280" fontSize="26">🌴</text><text x="136" y="212" fontSize="26">🐪</text><text x="218" y="122" fontSize="26">⛰️</text>
+        <text x="282" y="404" fontSize="30">🏫</text>
+        <g fontSize="11.5" fontWeight="800" fill="#7c2d12" textAnchor="middle">
+          <text x="300" y="356">مدرسة الأمير عبدالمجيد</text><text x="262" y="300">واحة البدايات</text><text x="150" y="232">صحراء الألغاز</text><text x="232" y="144">جبال التحدي</text>
+        </g>
+        <text x="78" y="96" fontSize="13" fontWeight="900" fill="#1e3a8a" textAnchor="middle">جزيرة كنز نافس</text>
+        <g><text fontSize="24" x="-12" y="8">🧭</text><animateMotion dur="7s" repeatCount="indefinite" rotate="0" keyPoints="1;0" keyTimes="0;1" calcMode="linear" path={JPATH} /></g>
+      </svg>
+      <h2 className="tr-disp">{first ? `يا ${first}… ` : ""}من هنا تبدأ الرحلة!</h2>
+      <p>في مكتبة <b>مدرسة الأمير عبدالمجيد</b> عُثر على خريطة قديمة تقود إلى <b>جزيرة كنز نافس</b> 🏝️. الطريق يعبر أربعة عوالم مليئة بالألغاز، ولا يصل إلى الكنز إلا مستكشف يقرأ بعمق، ويحسب بدقة، ويفكّر كالعلماء.</p>
+    </div>,
+    <div key="1" className="tr-j-slide">
+      <h2 className="tr-disp">كيف تعبر المراحل؟</h2>
+      <div className="tr-j-rules">
+        {[["🚪", "٣ بوابات في كل مرحلة", "📖 القراءة • 🔢 الرياضيات • 🔬 العلوم — ٥ أسئلة لكل بوابة"], ["🪙", "عملة لكل إجابة صحيحة", "اسمع رنين العملات مع كل إجابة صحيحة"], ["🔥", "سلسلة نارية", "٣ إجابات متتالية تشعل السلسلة وتضاعف الحماس"], ["🔄", "أخطأت؟ لا مشكلة", "تأتيك تلميحة وسؤال تعويضي بنصف عملة"], ["🗝️", "١٠ عملات = مفتاح", "المفتاح يفتح المرحلة التالية على الخريطة"], ["⭐", "اجمع النجوم", "١٤ فأكثر = ٣ نجوم • أعد المرحلة لتحسّن نجومك"]].map(([ic, t, d]) => <div key={t}><span>{ic}</span><b>{t}</b><small>{d}</small></div>)}
+      </div>
+    </div>,
+    <div key="2" className="tr-j-slide">
+      <h2 className="tr-disp">العوالم الأربعة</h2>
+      <div className="tr-j-worlds">{WORLDS.map(w => <div key={w.n} style={{ background: w.soft, color: w.c1 }}><span>{w.icon}</span><b>{w.name}</b><small>المراحل {ar(w.from)}–{ar(w.to)} • {w.badge} {w.badgeName}</small></div>)}</div>
+      <p>في كل سؤال ستدرّب عقلك على <b>مهارات التفكير العليا</b>: التحليل 🔍 والاستنتاج 💡 وحل المشكلات 🧩 والتفسير العلمي 🔬 — وهي ما يقيسه <b>اختبار نافس</b>. أنت جاهز يا بطل؟</p>
+    </div>,
+  ];
+  return <div className="tr-modal tr-journey"><div className="tr-card tr-pop">
+    {slides[k]}
+    <div className="tr-j-dots">{slides.map((_, j) => <i key={j} className={j === k ? "on" : ""} onClick={() => setK(j)} />)}</div>
+    <div className="tr-j-act">
+      {k < slides.length - 1 ? <><button className="tr-btn" style={{ background: "#f5f5f4" }} onClick={onClose}>تخطٍّ</button><button className="tr-btn tr-gold tr-big" onClick={() => setK(k + 1)}>التالي ←</button></>
+        : <button className="tr-btn tr-gold tr-big" style={{ flex: 1 }} onClick={() => { beep("win"); onClose(); }}>⛵ انطلق إلى الجزيرة!</button>}
+    </div>
+  </div></div>;
 }
 
 const PUB_CSS = `
@@ -433,6 +546,11 @@ const PUB_CSS = `
 .tr-q-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .tr-chip{background:#f5f5f4;color:#57534e;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:800}
 .tr-chip.lv{background:#fef3c7;color:#92400e}
+.tr-chip.ht{background:#ede9fe;color:#5b21b6}
+.tr-hots{margin:8px 0 0;padding:8px 12px;border-radius:14px;background:#f5f3ff;border:1.5px dashed #a78bfa;color:#4c1d95;font-size:14px;line-height:1.8}
+.tr-hots-box{margin:10px 0;padding:10px 12px;border-radius:16px;background:linear-gradient(135deg,#f5f3ff,#fff);border:1.5px solid #ddd6fe;text-align:right;font-size:13.5px;line-height:2}
+.tr-hots-box b{display:block;color:#5b21b6;font-size:14.5px}
+.tr-hots-box em{font-style:normal;display:inline-block;background:#ede9fe;color:#4c1d95;border-radius:999px;padding:0 10px;margin:2px 3px;font-weight:800;font-size:12.5px}
 .tr-chip.tw{background:#ede9fe;color:#6d28d9}
 .tr-q-text{font-size:18px;font-weight:800;line-height:1.95}
 .tr-opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
@@ -477,4 +595,43 @@ const PUB_CSS = `
 @keyframes trFall{to{transform:translateY(105vh) rotate(720deg)}}
 @media (max-width:420px){.tr-opts{grid-template-columns:1fr}.tr-q-text{font-size:17px}.tr-title{font-size:46px}}
 @media (prefers-reduced-motion:reduce){.tr-root *{animation:none!important}}
+/* ── وضع الشرح وقصة الرحلة والتحفيز ── */
+.tr-demo-bar{margin:10px 12px 0;background:linear-gradient(135deg,#e0e7ff,#ede9fe);border:2px dashed #6366f1;color:#312e81;border-radius:16px;padding:10px 12px;font-weight:700;font-size:13.5px;line-height:1.8}
+.tr-start-pt{display:flex;align-items:center;gap:10px;margin:6px auto 0;max-width:440px;background:linear-gradient(135deg,#fff7ed,#fde68a);border:2px solid #f59e0b;border-radius:18px;padding:10px 14px;box-shadow:0 6px 16px rgba(180,83,9,.18)}
+.tr-start-pt>div{flex:1}.tr-start-pt small{display:block;color:#92400e;font-weight:800;font-size:12px}.tr-start-pt b{font-size:20px;color:#7c2d12}
+.tr-school-ic{font-size:34px;animation:trBob 2.6s ease-in-out infinite}.tr-start-flag{font-size:24px;animation:trWave 1.4s ease-in-out infinite;transform-origin:bottom left}
+@keyframes trBob{50%{transform:translateY(-4px)}}@keyframes trWave{50%{transform:rotate(-12deg)}}
+.tr-mute{background:rgba(0,0,0,.18);border:none;color:#fff;border-radius:12px;width:38px;height:38px;font-size:17px}
+.tr-meter{max-width:680px;margin:0 auto;padding:0 14px 6px;display:flex;flex-direction:column;gap:3px}
+.tr-meter-row{display:flex;align-items:center;gap:8px}
+.tr-meter-bar{flex:1;height:12px;background:rgba(0,0,0,.08);border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.12)}
+.tr-meter-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#fbbf24,#f59e0b,#d97706);transition:width .6s cubic-bezier(.3,1.5,.5,1)}
+.tr-meter-key{font-size:20px;filter:grayscale(.6)}.tr-meter-key.on{filter:none;animation:trKey 1.2s ease-in-out infinite}
+@keyframes trKey{50%{transform:scale(1.25) rotate(-12deg)}}
+.tr-meter small{font-weight:800;color:#78716c;font-size:12px;text-align:center}
+.tr-combo{background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;font-weight:900;border-radius:99px;padding:3px 10px;font-size:14px;box-shadow:0 4px 12px rgba(220,38,38,.35);animation:trCombo .5s cubic-bezier(.3,1.8,.5,1)}
+@keyframes trCombo{0%{transform:scale(.3)}100%{transform:scale(1)}}
+.tr-toast{position:fixed;top:84px;left:50%;transform:translateX(-50%);z-index:70;background:linear-gradient(135deg,#1e1b4b,#4c1d95);color:#fde68a;font-weight:900;font-size:16px;padding:12px 18px;border-radius:18px;box-shadow:0 14px 30px rgba(0,0,0,.35);max-width:92vw;text-align:center;border:2px solid #fbbf24}
+.tr-plus{direction:ltr;unicode-bidi:isolate;position:absolute;left:-30px;top:-20px;font-size:26px;font-weight:900;color:#d97706;text-shadow:0 2px 0 #fff;white-space:nowrap;animation:trPlus 1s ease-out forwards}
+@keyframes trPlus{0%{transform:translateY(0) scale(.6);opacity:0}25%{opacity:1;transform:translateY(-14px) scale(1.2)}100%{transform:translateY(-70px) scale(1);opacity:0}}
+.tr-gate-score{font-weight:800;color:#92400e;background:#fef3c7;border-radius:12px;padding:6px 10px;display:inline-block}
+.tr-res-streak{font-weight:800;color:#c2410c;margin:4px 0}
+.tr-dots i.nav{cursor:pointer;height:12px}
+.tr-teach{border:2px solid #6366f1;background:linear-gradient(180deg,#eef2ff,#fff)}
+.tr-teach-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tr-teach-h b{color:#3730a3;font-size:16px}.tr-teach-h small{color:#6366f1;font-weight:800}
+.tr-teach-btns{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.tr-teach-btns button{border:none;background:#fff;border:1.5px solid #c7d2fe;color:#3730a3;font-weight:800;border-radius:12px;padding:9px 12px;font-size:14px}
+.tr-teach-btns button.on{background:#4f46e5;color:#fff;border-color:#4f46e5}.tr-teach-btns button:disabled{opacity:.4}
+.tr-journey .tr-card{max-width:440px;width:100%;max-height:92vh;overflow-y:auto;text-align:center}
+.tr-j-slide h2{font-size:26px;margin:8px 0 4px;color:#7c2d12}.tr-j-slide p{font-weight:600;line-height:2;color:#44403c;margin:6px 0}
+.tr-j-map{width:100%;max-width:340px;display:block;margin:0 auto;border-radius:22px;box-shadow:0 10px 24px rgba(120,53,15,.25)}
+.tr-j-trail{animation:trTrail 1.2s linear infinite}@keyframes trTrail{to{stroke-dashoffset:-32}}
+.tr-j-x{animation:trKey 1.4s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+.tr-j-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.tr-j-rules>div{background:#fffbeb;border:1.5px solid #fde68a;border-radius:16px;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.tr-j-rules span{font-size:28px}.tr-j-rules b{font-size:14px;color:#7c2d12}.tr-j-rules small{font-size:11.5px;color:#78716c;font-weight:700;line-height:1.6}
+.tr-j-worlds{display:grid;gap:6px;margin:8px 0}.tr-j-worlds>div{display:flex;align-items:center;gap:10px;border-radius:14px;padding:8px 12px;text-align:right}
+.tr-j-worlds span{font-size:26px}.tr-j-worlds b{flex:1;font-size:15px}.tr-j-worlds small{font-weight:800;font-size:11.5px}
+.tr-j-dots{display:flex;gap:6px;justify-content:center;margin:12px 0 8px}.tr-j-dots i{width:9px;height:9px;border-radius:99px;background:#e7e5e4;cursor:pointer;transition:.3s}.tr-j-dots i.on{width:26px;background:#f59e0b}
+.tr-j-act{display:flex;gap:8px}.tr-j-act .tr-big{flex:1}
 `;
