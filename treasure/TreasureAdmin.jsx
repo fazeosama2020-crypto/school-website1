@@ -2,17 +2,17 @@
 // 🗺️ رحلة الكنز — لوحة الإدارة: الرابط والإعدادات ومتابعة تقدم الطلاب
 // ══════════════════════════════════════════════════════════
 import React, { useEffect, useMemo, useState } from "react";
-import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, SKILLS, SUBJ, LEVELS, HOTS, hotsOf, loadAllStages, ar, arr, obj, when, trLink, useFonts, BASE_CSS } from "./core.jsx";
+import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, passOf, isPassed, TR_SCHOOL, WORLDS, worldOf, READY, SKILLS, SUBJ, LEVELS, HOTS, hotsOf, loadAllStages, ar, arr, obj, when, trLink, useFonts, BASE_CSS } from "./core.jsx";
 
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 function rowStats(p) {
   const best = obj(p.best); const ks = Object.keys(best).map(Number).filter(n => n >= 1 && n <= TR_TOTAL);
-  const passed = ks.filter(n => (+best[n].sc || 0) >= TR_PASS);
-  let r = 0, m = 0, s = 0, tries = 0; ks.forEach(n => { r += +best[n].r || 0; m += +best[n].m || 0; s += +best[n].s || 0; tries += +best[n].tries || 0; });
+  const passed = ks.filter(n => isPassed(best[n]));
+  let r = 0, m = 0, s = 0, tries = 0, per = 0; ks.forEach(n => { r += +best[n].r || 0; m += +best[n].m || 0; s += +best[n].s || 0; tries += +best[n].tries || 0; per += (+best[n].of || 15) / 3; });
   const stars = Object.values(obj(p.stars)).reduce((a, b) => a + (+b || 0), 0);
-  return { played: ks.length, passed: passed.length, stage: Math.min(+p.unlocked || 1, TR_TOTAL), stars, tries, r: pct(r, ks.length * 5), m: pct(m, ks.length * 5), s: pct(s, ks.length * 5), avg: pct(r + m + s, ks.length * 15) };
+  return { played: ks.length, passed: passed.length, stage: Math.min(+p.unlocked || 1, TR_TOTAL), stars, tries, r: pct(r, per), m: pct(m, per), s: pct(s, per), avg: pct(r + m + s, per * 3) };
 }
 
 export default function TreasureAdmin({ by, api }) {
@@ -58,7 +58,7 @@ export default function TreasureAdmin({ by, api }) {
     const n = scoped.length; const sum = k => scoped.reduce((a, r) => a + (+r[k] || 0), 0);
     const playedRows = scoped.filter(r => r.played);
     const avgOf = k => playedRows.length ? Math.round(playedRows.reduce((a, r) => a + r[k], 0) / playedRows.length) : 0;
-    return { n, passed: sum("passed"), stars: sum("stars"), avgStage: n ? (sum("passed") / n).toFixed(1) : "0", w1: scoped.filter(r => r.passed >= 5).length, w2: scoped.filter(r => r.passed >= 10).length, w3: scoped.filter(r => r.passed >= 15).length, w4: scoped.filter(r => r.passed >= 20).length, r: avgOf("r"), m: avgOf("m"), s: avgOf("s"), avg: avgOf("avg") };
+    return { n, passed: sum("passed"), stars: sum("stars"), avgStage: n ? (sum("passed") / n).toFixed(1) : "0", w1: scoped.filter(r => r.passed >= 5).length, w2: scoped.filter(r => r.passed >= 10).length, w3: scoped.filter(r => r.passed >= 15).length, w4: scoped.filter(r => r.passed >= 20).length, w5: scoped.filter(r => r.passed >= 25).length, r: avgOf("r"), m: avgOf("m"), s: avgOf("s"), avg: avgOf("avg") };
   }, [scoped]);
 
   const skills = useMemo(() => {
@@ -102,7 +102,7 @@ export default function TreasureAdmin({ by, api }) {
 
   return <div className="tr-root tra"><style>{BASE_CSS + ADM_CSS}</style>
     <div className="tra-hero">
-      <div><small>{TR_SCHOOL}</small><h1 className="tr-disp">🗺️ رحلة الكنز — متابعة الطلاب</h1><p>٢٠ مرحلة • ٤ عوالم • ١٥ سؤالاً في كل مرحلة (قراءة • رياضيات • علوم) مع أسئلة تعويضية • المحتوى الجاهز: المراحل ١–{ar(READY)}</p></div>
+      <div><small>{TR_SCHOOL}</small><h1 className="tr-disp">🗺️ رحلة الكنز — متابعة الطلاب</h1><p>٢٥ مرحلة • ٥ عوالم • ٢١ سؤالاً في كل مرحلة (قراءة • رياضيات • علوم) مع أسئلة تعويضية • المحتوى الجاهز: المراحل ١–{ar(READY)}</p></div>
       <div className={"tra-status" + (cfg.open ? " on" : "")} onClick={() => saveCfg({ open: !cfg.open })} role="button">{cfg.open ? "🟢 الرحلة مفتوحة" : "🔴 الرحلة مغلقة"}<small>اضغط للتبديل</small></div>
     </div>
 
@@ -137,7 +137,8 @@ export default function TreasureAdmin({ by, api }) {
         <div><b>{ar(kpi.w1)}</b><span>أنهوا العالم الأول 🥉</span></div>
         <div><b>{ar(kpi.w2)}</b><span>أنهوا العالم الثاني 🥈</span></div>
         <div><b>{ar(kpi.w3)}</b><span>أنهوا العالم الثالث 🥇</span></div>
-        <div><b>{ar(kpi.w4)}</b><span>وصلوا إلى الكنز 👑</span></div>
+        <div><b>{ar(kpi.w4)}</b><span>أنهوا مدينة المستقبل 💎</span></div>
+        <div><b>{ar(kpi.w5)}</b><span>وصلوا إلى الكنز 👑</span></div>
         <div><b>{ar(kpi.stars)}</b><span>مجموع النجوم ⭐</span></div>
         {["r", "m", "s"].map(k => <div key={k} style={{ "--c": SUBJ[k].c }}><b style={{ color: SUBJ[k].c }}>{ar(kpi[k])}٪</b><span>{SUBJ[k].icon} {SUBJ[k].name}</span><i style={{ width: kpi[k] + "%", background: SUBJ[k].c }} /></div>)}
       </div>
@@ -150,7 +151,7 @@ export default function TreasureAdmin({ by, api }) {
             <tbody>{view.map((r, i) => <tr key={r.sid}>
               <td>{ar(i + 1)}</td><td className="r"><b>{r.name}</b></td><td>{api.maClassName(r.ck)}</td><td dir="ltr">{r.n4 ? "***" + ar(r.n4) : "—"}</td>
               <td><span className="tra-stage" style={{ background: worldOf(r.stage).soft, color: worldOf(r.stage).c1 }}>{worldOf(r.stage).icon} {ar(r.stage)}</span></td>
-              <td><div className="tra-prog"><i style={{ width: pct(r.passed, TR_TOTAL) + "%" }} /><span>{ar(r.passed)} من ٢٠</span></div></td>
+              <td><div className="tra-prog"><i style={{ width: pct(r.passed, TR_TOTAL) + "%" }} /><span>{ar(r.passed)} من {ar(TR_TOTAL)}</span></div></td>
               <td>{ar(r.stars)}</td><td style={{ color: r.r < 60 ? "#dc2626" : "#166534" }}>{ar(r.r)}٪</td><td style={{ color: r.m < 60 ? "#dc2626" : "#166534" }}>{ar(r.m)}٪</td><td style={{ color: r.s < 60 ? "#dc2626" : "#166534" }}>{ar(r.s)}٪</td>
               <td className="sm">{r.last ? when(r.last) : "—"}</td><td><button className="tra-b sm" onClick={() => setDetail(r)}>تفاصيل</button></td>
             </tr>)}</tbody></table></div>}
@@ -188,14 +189,14 @@ export default function TreasureAdmin({ by, api }) {
         <p className="tra-note">يمكنك فتح المراحل تدريجياً (مثلاً مرحلة كل أسبوع). الطالب الذي يُنهي آخر مرحلة متاحة يرى رسالة «ستتاح قريباً».</p></div>
       <div className="tra-worlds">{WORLDS.map(w => <div key={w.n} style={{ background: w.soft, color: w.c1 }}><span>{w.icon}</span><b>{w.name}</b><small>المراحل {ar(w.from)}–{ar(w.to)} • {w.to <= READY ? "✅ جاهزة" : "🛠️ قيد الإعداد"}</small></div>)}</div>
       <DemoIds cfg={cfg} api={api} saveCfg={saveCfg} toast={toast} />
-      <p className="tra-note">• شرط عبور المرحلة: {ar(TR_PASS)} من ١٥ • الإجابة الصحيحة من أول مرة = درجة، والسؤال التعويضي = نصف درجة • النجوم: ⭐⭐⭐ من ١٤ فأكثر، ⭐⭐ من ١٢، ⭐ من {ar(TR_PASS)}.</p>
+      <p className="tra-note">• شرط عبور المرحلة: ثلثا الأسئلة (١٤ من ٢١) • الإجابة الصحيحة من أول مرة = درجة، والسؤال التعويضي = نصف درجة • النجوم (من ٢١): ⭐⭐⭐ من ٢٠ فأكثر، ⭐⭐ من ١٧، ⭐ من ١٤ • 💡 التلميحة متاحة للطالب في كل سؤال.</p>
     </div>}
 
     {detail && <div className="tra-modal" onClick={() => setDetail(null)}><div className="tra-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 640, width: "100%", maxHeight: "86vh", overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}><b style={{ flex: 1, fontSize: 17 }}>🧭 {detail.name}</b><button className="tra-b sm" onClick={() => setDetail(null)}>✕</button></div>
       <small className="tra-note">{api.maClassName(detail.ck)} • الهوية ***{ar(detail.n4)} • بدأ: {detail.start ? when(detail.start) : "—"}</small>
       <div className="tra-tbl-wrap" style={{ marginTop: 8 }}><table className="tra-tbl"><thead><tr><th>المرحلة</th><th>الدرجة</th><th>📖</th><th>🔢</th><th>🔬</th><th>⭐</th><th>المحاولات</th><th>التاريخ</th></tr></thead>
-        <tbody>{Object.keys(obj(detail.best)).map(Number).sort((a, b) => a - b).map(n => { const b = detail.best[n]; return <tr key={n} style={{ background: (+b.sc || 0) >= TR_PASS ? "#f0fdf4" : "#fff7ed" }}><td>{worldOf(n).icon} {ar(n)}</td><td><b>{ar(b.sc)}</b> من ١٥</td><td>{ar(b.r)}</td><td>{ar(b.m)}</td><td>{ar(b.s)}</td><td>{"★".repeat(+obj(detail.stars)[n] || 0) || "—"}</td><td>{ar(b.tries)}</td><td className="sm">{b.ts ? when(b.ts) : ""}</td></tr>; })}</tbody></table></div>
+        <tbody>{Object.keys(obj(detail.best)).map(Number).sort((a, b) => a - b).map(n => { const b = detail.best[n]; return <tr key={n} style={{ background: isPassed(b) ? "#f0fdf4" : "#fff7ed" }}><td>{worldOf(n).icon} {ar(n)}</td><td><b>{ar(b.sc)}</b> من {ar(b.of || 15)}</td><td>{ar(b.r)}</td><td>{ar(b.m)}</td><td>{ar(b.s)}</td><td>{"★".repeat(+obj(detail.stars)[n] || 0) || "—"}</td><td>{ar(b.tries)}</td><td className="sm">{b.ts ? when(b.ts) : ""}</td></tr>; })}</tbody></table></div>
       {(() => { const A = {}; Object.values(obj(detail.best)).forEach(b => Object.entries(obj(b.sk)).forEach(([k, v]) => { A[k] = A[k] || [0, 0]; A[k][0] += +v[0] || 0; A[k][1] += +v[1] || 0; })); const W = Object.entries(A).filter(([k, [o, t]]) => SKILLS[k] && t && o / t < .6); return W.length ? <div className="tra-warn" style={{ marginTop: 10 }}>🎯 مهارات تحتاج دعماً: {W.map(([k]) => SKILLS[k]).join(" • ")}</div> : null; })()}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}><button className="tra-b" style={{ background: "#fee2e2", color: "#991b1b" }} onClick={() => reset(detail)}>🗑️ إعادة تعيين رحلة الطالب</button></div>
     </div></div>}

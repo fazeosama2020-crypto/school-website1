@@ -8,29 +8,40 @@ import React from "react";
 
 export const TR_CFG = "school-tr-cfg";
 export const TR_PROG = "school-tr-prog";
-export const TR_TOTAL = 20;          // عدد مراحل الرحلة
-export const TR_PASS = 10;           // الحد الأدنى لفتح المرحلة التالية (من ١٥)
+export const TR_TOTAL = 25;          // عدد مراحل الرحلة
+export const TR_PASS = 10;           // حد العبور القديم (من ١٥) — للسجلات السابقة
+// حد العبور = ثلثا أسئلة المرحلة (١٤ من ٢١ • ١٠ من ١٥)
+export const passOf = of => Math.ceil((+of || 15) * 2 / 3);
+export const isPassed = b => !!b && (+b.sc || 0) >= passOf(b.of || 15);
 export const TR_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة";
 
-// العوالم الأربعة — كل عالم ٥ مراحل
+// العوالم الخمسة — كل عالم ٥ مراحل
 export const WORLDS = [
   { n: 1, name: "واحة البدايات", icon: "🌴", from: 1, to: 5, c1: "#0f766e", c2: "#14b8a6", soft: "#ccfbf1", sky: "#e6fffa", badge: "🥉", badgeName: "وسام الواحة" },
   { n: 2, name: "صحراء الألغاز", icon: "🐪", from: 6, to: 10, c1: "#c2410c", c2: "#f59e0b", soft: "#ffedd5", sky: "#fff7ed", badge: "🥈", badgeName: "وسام الصحراء" },
   { n: 3, name: "جبال التحدي", icon: "⛰️", from: 11, to: 15, c1: "#5b21b6", c2: "#8b5cf6", soft: "#ede9fe", sky: "#f5f3ff", badge: "🥇", badgeName: "وسام القمة" },
-  { n: 4, name: "جزيرة الكنز", icon: "🏝️", from: 16, to: 20, c1: "#1d4ed8", c2: "#06b6d4", soft: "#dbeafe", sky: "#eff6ff", badge: "👑", badgeName: "تاج الكنز" },
+  { n: 4, name: "مدينة المستقبل", icon: "🏙️", from: 16, to: 20, c1: "#0f172a", c2: "#6366f1", soft: "#e0e7ff", sky: "#eef2ff", badge: "💎", badgeName: "وسام المستقبل" },
+  { n: 5, name: "جزيرة الكنز", icon: "🏝️", from: 21, to: 25, c1: "#1d4ed8", c2: "#06b6d4", soft: "#dbeafe", sky: "#eff6ff", badge: "👑", badgeName: "تاج الكنز" },
 ];
 export const worldOf = n => WORLDS.find(w => n >= w.from && n <= w.to) || WORLDS[0];
 
 // تحميل محتوى العالم عند الحاجة فقط (كل عالم ملف مستقل)
-const LOADERS = { 1: () => import("./data/w1.js"), 2: () => import("./w2.js"), 3: () => import("./w3.js"), 4: () => import("./w4.js") };
-export const READY = 20; // جميع المراحل جاهزة
+const LOADERS = { 1: () => import("./data/w1.js"), 2: () => import("./w2.js"), 3: () => import("./w3.js"), 4: () => import("./w4.js"), 5: () => import("./w5.js") };
+// أسئلة إضافية (السؤالان السادس والسابع لكل مادة) لمراحل العوالم ١ و٢ و٣ و٥ (العالم الرابع مكتوب بسبعة أسئلة أصلاً)
+const EXTRA = { 1: () => import("./x1.js"), 2: () => import("./x2.js"), 3: () => import("./x3.js"), 5: () => import("./x5.js") };
+async function loadWorld(n) {
+  const [m, x] = await Promise.all([LOADERS[n](), EXTRA[n] ? EXTRA[n]() : Promise.resolve(null)]);
+  const X = (x && x.default) || {};
+  return (m.default || []).map(s => { const e = X[s.n]; return e ? { ...s, read: { ...s.read, qs: [...s.read.qs, ...(e.r || [])] }, math: [...s.math, ...(e.m || [])], sci: [...s.sci, ...(e.s || [])] } : s; });
+}
+export const READY = 25; // جميع المراحل جاهزة
 // 👨‍🏫 وضع الشرح للمعلم: بصمات (SHA-256) لا أرقام هوية صريحة — تضاف هويات أخرى من إعدادات لوحة المتابعة
 export const DEMO_H = ["bbaadbd6d39b9b341ef4e24820e3a21638c819788ec72a0a5760573a3c938e82"];
 // تحميل كل المراحل (لخريطة نواتج التعلم في لوحة المتابعة)
-export async function loadAllStages() { const ms = await Promise.all(Object.values(LOADERS).map(L => L())); return ms.flatMap(m => m.default || []).sort((x, y) => x.n - y.n); }
+export async function loadAllStages() { const ms = await Promise.all(Object.keys(LOADERS).map(k => loadWorld(+k))); return ms.flat().sort((x, y) => x.n - y.n); }
 export async function loadStage(n) {
   const w = worldOf(n); const L = LOADERS[w.n]; if (!L) return null;
-  const m = await L(); return (m.default || []).find(s => s.n === n) || null;
+  const L2 = await loadWorld(w.n); return L2.find(s => s.n === n) || null;
 }
 
 // المهارات (مأخوذة من نواتج التعلم في نافس للصف الثالث المتوسط)
@@ -178,13 +189,14 @@ export function Fig({ f }) {
   else if (f.t === "nline") el = <NumLine f={f} />;
   else if (f.t === "table") el = <Table f={f} />;
   else if (f.t === "svg") el = <svg viewBox={`0 0 ${f.w || 300} ${f.h || 180}`} className="tr-svg" direction="ltr" style={{ maxWidth: f.max || 340 }} dangerouslySetInnerHTML={{ __html: `<rect width="${f.w || 300}" height="${f.h || 180}" rx="10" fill="#fff"/>` + arSvg(f.body) }} />;
+  else if (f.t === "scene") el = <div className="tr-scene">{f.items.map((it, i) => Array.isArray(it) ? <div key={i} className="tr-sc-it"><span>{it[0]}</span>{it[1] && <small>{ar(it[1])}</small>}</div> : <b key={i} className="tr-sc-op">{it}</b>)}</div>;
   else if (f.t === "info") el = <div className="tr-info">{f.items.map(([ic, v, l], i) => <div key={i}><span>{ic}</span><b>{ar(v)}</b><small>{ar(l)}</small></div>)}</div>;
   return <figure className="tr-fig">{el}{f.cap && <figcaption>{ar(f.cap)}</figcaption>}</figure>;
 }
 
 // ── خلط مع بذرة (ترتيب خيارات مختلف في كل محاولة)
 export function shuffleIdx(n, seed) { const a = Array.from({ length: n }, (_, i) => i); let s = seed || 1; for (let i = n - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor(s / 233280 * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-export const starsOf = sc => sc >= 14 ? 3 : sc >= 12 ? 2 : sc >= TR_PASS ? 1 : 0;
+export const starsOf = (sc, of = 15) => sc >= Math.ceil(of * .93) ? 3 : sc >= Math.ceil(of * .8) ? 2 : sc >= passOf(of) ? 1 : 0;
 export const arr = v => Array.isArray(v) ? v.filter(Boolean) : (v && typeof v === "object" ? Object.values(v).filter(Boolean) : []);
 export const obj = v => (v && typeof v === "object" ? v : {});
 export const when = ms => { try { const d = new Date(ms); return d.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" }) + " • " + d.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
@@ -227,6 +239,8 @@ export function beep(kind, lvl = 0) {
       case "drum": for (let j = 0; j < 10; j++) tone(110 + j * 6, .06, { type: "square", vol: .035, at: j * .06 }); break;
       case "star": tone(1319 + lvl * 220, .22, { type: "sine", vol: .1 }); tone(2637 + lvl * 440, .15, { type: "sine", vol: .03, at: .05 }); break;
       case "win": [523, 659, 784, 1047].forEach((f, j) => tone(f, .14, { vol: .11, at: j * .11 })); [784, 1047, 1319].forEach(f => tone(f, .7, { vol: .07, at: .5 })); break;
+      case "pop": tone(900, .05, { type: "square", vol: .05, to: 300 }); whoosh(.08, 0, false); break;
+      case "fireworks": for (let j = 0; j < 4; j++) { const at = j * .42; tone(500 + j * 90, .32, { type: "sine", vol: .045, at, to: 1700 + j * 120 }); whoosh(.38, at + .3, false); tone(90, .25, { type: "triangle", vol: .12, at: at + .3, to: 45 }); for (let k = 0; k < 4; k++) tone(1800 + k * 400 + j * 150, .07, { type: "sine", vol: .025, at: at + .38 + k * .05 }); } break;
       case "lose": tone(392, .2, { vol: .08 }); tone(349, .2, { vol: .08, at: .18 }); tone(392, .4, { vol: .08, at: .36 }); break;
       default: break;
     }
@@ -248,6 +262,10 @@ export const BASE_CSS = `
 .tr-mark{background:#fef08a;padding:0 3px;border-radius:4px;color:inherit}
 .tr-fig{margin:10px 0;display:flex;flex-direction:column;align-items:center;gap:4px}
 .tr-figs{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tr-scene{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#fff7ed,#f0f9ff);border:1.5px dashed #fbbf24;border-radius:18px;padding:12px 10px;max-width:420px}
+.tr-sc-it{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border-radius:14px;padding:8px 10px;min-width:70px;box-shadow:0 3px 10px rgba(0,0,0,.06)}
+.tr-sc-it span{font-size:38px;line-height:1.1}.tr-sc-it small{font-size:12px;font-weight:800;color:#57534e;text-align:center;max-width:110px;line-height:1.4}
+.tr-sc-op{font-size:24px;color:#d97706;font-weight:900}
 .tr-fig figcaption{font-size:12px;color:var(--muted);font-weight:700}
 .tr-svg{width:100%;height:auto;border:1px solid #e7e5e4;border-radius:10px;display:block}
 .tr-tbl-wrap{max-width:100%;overflow-x:auto}

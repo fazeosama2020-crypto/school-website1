@@ -3,7 +3,7 @@
 // تُحمَّل عند فتح الرابط فقط (React.lazy) فلا تؤثر على سرعة بقية الموقع
 // ══════════════════════════════════════════════════════════
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, TR_SCHOOL, WORLDS, worldOf, READY, DEMO_H, SKILLS, loadStage, SUBJ, LEVELS, HOTS, hotsOf, Rich, Fig, ar, shuffleIdx, starsOf, arr, obj, lsGet, lsSet, beep, useFonts, BASE_CSS } from "./core.jsx";
+import { TR_CFG, TR_PROG, TR_TOTAL, TR_PASS, passOf, isPassed, TR_SCHOOL, WORLDS, worldOf, READY, DEMO_H, SKILLS, loadStage, SUBJ, LEVELS, HOTS, hotsOf, Rich, Fig, ar, shuffleIdx, starsOf, arr, obj, lsGet, lsSet, beep, useFonts, BASE_CSS } from "./core.jsx";
 
 const LET = ["أ", "ب", "ج", "د"];
 const normId = v => String(v ?? "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/\D/g, "");
@@ -61,9 +61,10 @@ export default function TreasurePublic({ onBack, api }) {
     const n = stage.n; const old = obj(prog.best && prog.best[n]); const tries = (+old.tries || 0) + 1;
     const better = !old.sc || res.sc >= old.sc;
     const best = { ...obj(prog.best), [n]: better ? { ...res, tries, ts: Date.now() } : { ...old, tries, lastSc: res.sc, sk: res.sk, ts: Date.now() } };
-    const stars = { ...obj(prog.stars), [n]: Math.max(+obj(prog.stars)[n] || 0, starsOf(res.sc)) };
-    const unlocked = Math.max(+prog.unlocked || 1, res.sc >= TR_PASS ? Math.min(TR_TOTAL, n + 1) : 1);
-    const rec = { ...prog, best, stars, unlocked, last: Date.now(), done: Math.max(+prog.done || 0, res.sc >= TR_PASS ? n : 0) };
+    const ok = res.sc >= passOf(res.of);
+    const stars = { ...obj(prog.stars), [n]: Math.max(+obj(prog.stars)[n] || 0, starsOf(res.sc, res.of)) };
+    const unlocked = Math.max(+prog.unlocked || 1, ok ? Math.min(TR_TOTAL, n + 1) : 1);
+    const rec = { ...prog, best, stars, unlocked, last: Date.now(), done: Math.max(+prog.done || 0, ok ? n : 0) };
     setProg(rec); if (!demo) await api.maPut(`${TR_PROG}/${me.id}`, rec);
     return { tries, unlockedNew: unlocked > (+prog.unlocked || 1) };
   }
@@ -105,7 +106,7 @@ function Login({ api, cfg, onEnter, onDemo, onBack }) {
       <small className="tr-school">{TR_SCHOOL}</small>
       <h1 className="tr-disp tr-title">رحلة الكنز</h1>
       <div className="tr-sub">طريقي إلى نافس • الصف الثالث المتوسط</div>
-      <p className="tr-lead">من <b>مدرسة الأمير عبدالمجيد</b> ننطلق إلى <b>جزيرة كنز نافس</b> 🏝️<br />٢٠ مرحلة • ٤ عوالم • القراءة والرياضيات والعلوم<br />اجمع المفاتيح وافتح الصناديق حتى تصل إلى الكنز الكبير 🏆</p>
+      <p className="tr-lead">من <b>مدرسة الأمير عبدالمجيد</b> ننطلق إلى <b>جزيرة كنز نافس</b> 🏝️<br />٢٥ مرحلة • ٥ عوالم • القراءة والرياضيات والعلوم<br />اجمع المفاتيح وافتح الصناديق حتى تصل إلى الكنز الكبير 🏆</p>
       <label className="tr-lbl">رقم الهوية (السجل المدني)</label>
       <input className="tr-inp" inputMode="numeric" dir="ltr" maxLength={14} value={id} placeholder="1xxxxxxxxx" onChange={e => { setId(e.target.value); setErr(""); }} onKeyDown={e => e.key === "Enter" && go()} autoFocus />
       {err && <div className="tr-err">{err}</div>}
@@ -124,7 +125,7 @@ const XS = [74, 30, 66, 24, 58];
 function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mute, toggleMute, onIntro }) {
   const cur = demo ? TR_TOTAL : Math.min(+prog.unlocked || 1, TR_TOTAL); const stars = obj(prog.stars);
   const totalStars = Object.values(stars).reduce((a, b) => a + (+b || 0), 0);
-  const keys = Object.keys(obj(prog.best)).filter(k => (+obj(prog.best[k]).sc || 0) >= TR_PASS).length;
+  const keys = Object.keys(obj(prog.best)).filter(k => isPassed(obj(prog.best[k]))).length;
   const curRef = useRef(null);
   useEffect(() => { setTimeout(() => { try { curRef.current && curRef.current.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {} }, 350); }, []);
   return <div className="tr-map">
@@ -134,10 +135,11 @@ function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mut
       <div className="tr-hud-act"><button onClick={onIntro} title="قصة الرحلة">📜</button><button onClick={toggleMute} title="الصوت">{mute ? "🔇" : "🔊"}</button><button onClick={onLogout} title="خروج">🚪</button></div>
     </header>
     {demo && <div className="tr-demo-bar">👨‍🏫 <b>وضع الشرح:</b> جميع المراحل مفتوحة • داخل كل سؤال لوحة تُظهر التلميحة والحل والشرح والسؤال التوأم • لا يُحفظ شيء ولا يظهر في متابعة الطلاب</div>}
-    <div className="tr-map-title"><h1 className="tr-disp">رحلة الكنز</h1><p>من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس — تحتاج {ar(TR_PASS)} من ١٥ لتعبر كل مرحلة</p></div>
+    <div className="tr-map-title"><h1 className="tr-disp">رحلة الكنز</h1><p>من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس — ٢١ سؤالاً في كل مرحلة، تحتاج ١٤ لتعبر</p></div>
+    <HuntCard done={+prog.done || 0} />
     <div className="tr-start-pt"><span className="tr-school-ic">🏫</span><div><small>نقطة الانطلاق</small><b className="tr-disp">مدرسة الأمير عبدالمجيد</b></div><span className="tr-start-flag">🚩</span></div>
     {WORLDS.map(w => {
-      const done = Array.from({ length: 5 }, (_, i) => w.from + i).every(n => (+obj(prog.best[n]).sc || 0) >= TR_PASS);
+      const done = Array.from({ length: 5 }, (_, i) => w.from + i).every(n => isPassed(obj(prog.best[n])));
       const H = 5 * 118 + 60;
       const pts = XS.map((x, i) => [x, 84 + i * 118]);
       const d = pts.map(([x, y], i) => i === 0 ? `M ${x} ${y}` : `C ${pts[i - 1][0]} ${y - 70}, ${x} ${pts[i - 1][1] + 70}, ${x} ${y}`).join(" ");
@@ -147,7 +149,7 @@ function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mut
           <Decor w={w.n} />
           <svg className="tr-path" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" aria-hidden="true"><path d={d} fill="none" stroke="rgba(120,53,15,.35)" strokeWidth="9" strokeLinecap="round" vectorEffect="non-scaling-stroke" /><path d={d} fill="none" stroke="#fff8e7" strokeWidth="3" strokeDasharray="2 10" strokeLinecap="round" vectorEffect="non-scaling-stroke" /></svg>
           {pts.map(([x, y], i) => {
-            const n = w.from + i; const b = obj(prog.best[n]); const passed = (+b.sc || 0) >= TR_PASS;
+            const n = w.from + i; const b = obj(prog.best[n]); const passed = isPassed(b);
             const open = n <= cur; const soon = open && n > avail; const isCur = !demo && open && !passed && !soon;
             const st = +stars[n] || 0;
             return <div key={n} ref={isCur ? curRef : null} className={"tr-node" + (open ? " open" : "") + (passed ? " passed" : "") + (isCur ? " cur" : "") + (soon ? " soon" : "")} style={{ left: x + "%", top: y }}>
@@ -162,13 +164,13 @@ function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mut
         <div className={"tr-chest" + (done ? " open" : "")}><span>{done ? "🏆" : "🧰"}</span><div><b>{done ? w.badgeName + " — مبروك!" : "صندوق " + w.name}</b><small>{done ? "أنهيت مراحل هذا العالم كلها" : `أنهِ المراحل ${ar(w.from)}–${ar(w.to)} لتفتحه`}</small></div></div>
       </section>;
     })}
-    <div className={"tr-final" + ((+prog.done || 0) >= TR_TOTAL ? " won" : "")}><div className="tr-final-chest">{(+prog.done || 0) >= TR_TOTAL ? "👑" : "💎"}</div><b className="tr-disp">جزيرة كنز نافس</b><small>{(+prog.done || 0) >= TR_TOTAL ? "وصلت إلى الكنز… أنت بطل نافس! 🎉" : "الكنز الكبير في نهاية الطريق… هل تصل إليه؟"}</small></div>
+    <div className={"tr-final" + ((+prog.done || 0) >= TR_TOTAL ? " won" : "")}><div className="tr-final-chest">{(+prog.done || 0) >= TR_TOTAL ? "👑" : "💎"}</div><b className="tr-disp">جزيرة كنز نافس</b><small>{(+prog.done || 0) >= TR_TOTAL ? "وصلت إلى الكنز… أنت بطل نافس! 🎉" : "الكنز الكبير في نهاية الطريق… هل تصل إليه؟"}</small>{(+prog.done || 0) >= TR_TOTAL && !demo && <button className="tr-btn tr-gold" style={{ marginTop: 10 }} onClick={() => printCert(me, prog)}>🎓 اطبع شهادة «بطل نافس»</button>}</div>
     {onBack && <div style={{ textAlign: "center", padding: "10px 0 30px" }}><button className="tr-link" onClick={onBack}>العودة لموقع المدرسة</button></div>}
   </div>;
 }
 
 function Decor({ w }) {
-  const set = { 1: ["🌴", "🌿", "💧", "🌴", "🦜", "🌺"], 2: ["🌵", "🐪", "☀️", "🏜️", "🦂", "🌵"], 3: ["🏔️", "🦅", "❄️", "🌲", "⛰️", "🪨"], 4: ["🌊", "🐚", "🦀", "⚓", "🐠", "🏝️"] }[w];
+  const set = { 1: ["🌴", "🌿", "💧", "🌴", "🦜", "🌺"], 2: ["🌵", "🐪", "☀️", "🏜️", "🦂", "🌵"], 3: ["🏔️", "🦅", "❄️", "🌲", "⛰️", "🪨"], 4: ["🏙️", "🚇", "🤖", "🛰️", "💡", "🚁"], 5: ["🌊", "🐚", "🦀", "⚓", "🐠", "🏝️"] }[w] || [];
   const pos = [[8, 9], [86, 22], [12, 40], [88, 58], [6, 76], [84, 90]];
   return <div className="tr-decor" aria-hidden="true">{set.map((e, i) => <span key={i} style={{ right: pos[i][0] + "%", top: pos[i][1] + "%", animationDelay: i * .7 + "s" }}>{e}</span>)}</div>;
 }
@@ -200,6 +202,8 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
   const [bestStreak, setBestStreak] = useState(0);
   const [toast, setToast] = useState(null);
   const [rev, setRev] = useState({}); // وضع الشرح: {h: تلميحة, s: حل}
+  const [hintOn, setHintOn] = useState(false);
+  const [party, setParty] = useState(null); // {k, kind}
   const topRef = useRef(null);
 
   const q = items[i]; const sub = SUBJ[q.sub];
@@ -207,35 +211,37 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
   const cq = isTwin ? { ...q.t, k: q.k } : q;
   const order = useMemo(() => shuffleIdx(cq.o.length, tries * 31 + i * 7 + (isTwin ? 3 : 1)), [i, isTwin, tries]);
   const score = res.reduce((a, r) => a + (r ? r.v : 0), 0);
-  const left = items.length - 1 - i;
+  const left = items.length - 1 - i; const N = items.length; const P = passOf(N);
+  const per = { r: items.filter(x => x.sub === "r").length, m: items.filter(x => x.sub === "m").length, s: items.filter(x => x.sub === "s").length };
+  const celebrate = kind => setParty({ k: Date.now(), kind });
 
   const scrollTop = () => { try { topRef.current && topRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {} };
   const pop = (t, ms = 2600) => { setToast(t); setTimeout(() => setToast(x => x === t ? null : x), ms); };
   const record = (v, first) => setRes(r => { const c = [...r]; c[i] = { v, first }; return c; });
-  const gotKey = add => { if (score < TR_PASS && score + add >= TR_PASS) setTimeout(() => { beep("key"); pop("🗝️ حصلت على مفتاح المرحلة التالية! أكمل لتجمع النجوم ⭐", 3200); }, 450); };
+  const gotKey = add => { if (score < P && score + add >= P) setTimeout(() => { beep("key"); setTimeout(() => beep("fireworks"), 500); celebrate("party"); pop("🗝️ حصلت على مفتاح المرحلة التالية! أكمل لتجمع النجوم ⭐", 3400); }, 450); };
   const check = () => {
     if (pick === null) return; const ok = +pick === +cq.a;
     if (!isTwin) {
       if (ok) {
         const st = streak + 1; setStreak(st); setBestStreak(b => Math.max(b, st));
         setPhase("ok"); record(1, true); setFx(x => x + 1);
-        if (st >= 3) { beep("streak", st - 3); if (STREAK[st]) pop(STREAK[st]); } else beep("ok");
+        if (st >= 3) { beep("streak", st - 3); if (STREAK[st]) { pop(STREAK[st]); celebrate("balloons"); setTimeout(() => beep("pop"), 900); } else celebrate("petals"); } else { beep("ok"); celebrate("petals"); }
         gotKey(1);
       }
       else { setStreak(0); if (q.t) { setPhase("wrong"); beep("bad"); setTimeout(() => beep("hint"), 380); } else { setPhase("twinbad"); record(0, false); beep("bad"); } }
     } else {
-      if (ok) { setPhase("twinok"); record(.5, false); beep("twin"); setFx(x => x + 1); gotKey(.5); }
+      if (ok) { setPhase("twinok"); record(.5, false); beep("twin"); setFx(x => x + 1); celebrate("petals"); gotKey(.5); }
       else { setPhase("twinbad"); record(0, false); beep("bad"); }
     }
   };
-  const toTwin = () => { setPick(null); setPhase("twin"); beep("click"); scrollTop(); };
-  const go = j => { setI(j); setPick(null); setPhase("ask"); setRev({}); setGate("q"); beep("click"); scrollTop(); };
+  const toTwin = () => { setPick(null); setPhase("twin"); setHintOn(false); beep("click"); scrollTop(); };
+  const go = j => { setI(j); setPick(null); setPhase("ask"); setRev({}); setHintOn(false); setGate("q"); beep("click"); scrollTop(); };
   const next = async () => {
-    setPick(null); setPhase("ask"); setRev({});
+    setPick(null); setPhase("ask"); setRev({}); setHintOn(false);
     if (i + 1 >= items.length) {
       const R = [...res]; const by = s => R.filter((r, j) => r && items[j].sub === s).reduce((a, r) => a + r.v, 0);
       const sk = {}; items.forEach((it, j) => { const k = it.k || "?"; sk[k] = sk[k] || [0, 0]; sk[k][1]++; if (R[j] && R[j].first) sk[k][0]++; });
-      const out = { sc: R.reduce((a, r) => a + (r ? r.v : 0), 0), r: by("r"), m: by("m"), s: by("s"), first: R.filter(r => r && r.first).length, sk };
+      const out = { sc: R.reduce((a, r) => a + (r ? r.v : 0), 0), r: by("r"), m: by("m"), s: by("s"), first: R.filter(r => r && r.first).length, sk, of: N, per: per.r };
       beep("drum"); setGate("done"); setSummary({ ...out, streak: bestStreak, saving: true });
       const meta = await onFinish(out); setSummary({ ...out, ...meta, streak: bestStreak, saving: false });
       window.scrollTo(0, 0); return;
@@ -244,7 +250,7 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
     if (items[ni].sub !== q.sub && !demo) setGate("gate"); else { if (demo) setGate("q"); scrollTop(); }
   };
 
-  if (gate === "done" && summary) return <Result stage={stage} w={w} s={summary} avail={avail} demo={demo} onExit={onExit} onNext={onNext} />;
+  if (gate === "done" && summary) return <Result stage={stage} w={w} s={summary} per={per} avail={avail} demo={demo} onExit={onExit} onNext={onNext} />;
 
   const done = phase !== "ask" && phase !== "twin";
   return <div className="tr-play" style={{ "--w1": w.c1, "--w2": w.c2, "--ws": w.soft, "--wsky": w.sky, "--sc": sub.c, "--ss": sub.soft }}>
@@ -254,16 +260,16 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
       <button className="tr-mute" onClick={toggleMute} aria-label="الصوت">{mute ? "🔇" : "🔊"}</button>
       <div className="tr-coins" key={fx}><span>🪙</span>{ar(score)}</div>
     </header>
-    <div className="tr-dots">{items.map((it, j) => { const r = res[j]; return <i key={j} onClick={demo ? () => go(j) : undefined} className={(j === i && gate === "q" ? "cur " : "") + (r ? (r.v === 1 ? "ok" : r.v ? "half" : "bad") : "") + (j % 5 === 0 ? " gap" : "") + (demo ? " nav" : "")} style={{ "--c": SUBJ[it.sub].c }} />; })}</div>
-    {gate === "q" && <div className="tr-meter"><div className="tr-meter-row"><div className="tr-meter-bar"><i style={{ width: Math.min(100, score / TR_PASS * 100) + "%" }} /></div><span className={"tr-meter-key" + (score >= TR_PASS ? " on" : "")}>{score >= TR_PASS ? "🗝️" : "🔒"}</span>{streak >= 2 && <span className="tr-combo" key={streak}>🔥 ×{ar(streak)}</span>}</div><small>{score >= TR_PASS ? `🗝️ المفتاح معك! باقي ${ar(left + (done ? 0 : 1))} أسئلة لجمع النجوم` : `تحتاج ${ar(TR_PASS - score)} لتعبر • باقي ${ar(left + (done ? 0 : 1))} أسئلة`}</small></div>}
+    <div className="tr-dots">{items.map((it, j) => { const r = res[j]; return <i key={j} onClick={demo ? () => go(j) : undefined} className={(j === i && gate === "q" ? "cur " : "") + (r ? (r.v === 1 ? "ok" : r.v ? "half" : "bad") : "") + (j > 0 && items[j - 1].sub !== it.sub ? " gap" : "") + (demo ? " nav" : "")} style={{ "--c": SUBJ[it.sub].c }} />; })}</div>
+    {gate === "q" && <div className="tr-meter"><div className="tr-meter-row"><div className="tr-meter-bar"><i style={{ width: Math.min(100, score / P * 100) + "%" }} /></div><span className={"tr-meter-key" + (score >= P ? " on" : "")}>{score >= P ? "🗝️" : "🔒"}</span>{streak >= 2 && <span className="tr-combo" key={streak}>🔥 ×{ar(streak)}</span>}</div><small>{score >= P ? `🗝️ المفتاح معك! باقي ${ar(left + (done ? 0 : 1))} أسئلة لجمع النجوم` : `تحتاج ${ar(P - score)} لتعبر • باقي ${ar(left + (done ? 0 : 1))} أسئلة`}</small></div>}
 
     {gate === "intro" && <div className="tr-card tr-intro tr-pop">
       <div className="tr-intro-ic">{w.icon}</div>
       <h2 className="tr-disp">{stage.title}</h2>
       <p className="tr-story"><Rich t={stage.story} /></p>
-      <div className="tr-gates">{["r", "m", "s"].map(k => <div key={k} style={{ "--c": SUBJ[k].c, "--s": SUBJ[k].soft }}><span>{SUBJ[k].icon}</span><b>{SUBJ[k].gate}</b><small>{SUBJ[k].name} • ٥ أسئلة</small></div>)}</div>
+      <div className="tr-gates">{["r", "m", "s"].map(k => <div key={k} style={{ "--c": SUBJ[k].c, "--s": SUBJ[k].soft }}><span>{SUBJ[k].icon}</span><b>{SUBJ[k].gate}</b><small>{SUBJ[k].name} • {ar(per[k])} أسئلة</small></div>)}</div>
       {(() => { const by = { r: [], m: [], s: [] }; items.forEach(it => { const h = hotsOf(it); if (h && !by[it.sub].includes(h)) by[it.sub].push(h); }); return <div className="tr-hots-box"><b>🧠 مهارات التفكير العليا في هذه المرحلة</b>{["r", "m", "s"].map(k => by[k].length ? <div key={k}><span style={{ color: SUBJ[k].c }}>{SUBJ[k].icon} {SUBJ[k].name}:</span> {by[k].map(h => <em key={h} title={HOTS[h].d}>{HOTS[h].ic} {HOTS[h].n}</em>)}</div> : null)}</div>; })()}
-      <div className="tr-rules">✅ إجابة صحيحة = عملة كاملة 🪙 • 🔥 الإجابات المتتالية تشعل السلسلة • ❌ خطأ؟ تأتيك تلميحة وسؤال تعويضي بنصف عملة • تحتاج {ar(TR_PASS)} عملات لتعبر</div>
+      <div className="tr-rules">✅ إجابة صحيحة = عملة كاملة 🪙 • 🔥 الإجابات المتتالية تشعل السلسلة • 💡 تلميحة متاحة في كل سؤال • ❌ خطأ؟ سؤال تعويضي بنصف عملة • تحتاج {ar(P)} من {ar(N)} لتعبر</div>
       {tries > 0 && !demo && <div className="tr-rules" style={{ background: "#fef3c7" }}>🔁 هذه محاولتك رقم {ar(tries + 1)} — الأسئلة تتغير في كل محاولة</div>}
       {demo && <div className="tr-rules" style={{ background: "#e0e7ff" }}>👨‍🏫 وضع الشرح: تنقّل بين الأسئلة بالنقاط أعلاه أو بأزرار لوحة الشرح، وأظهر التلميحة والحل متى شئت.</div>}
       <button className="tr-btn tr-gold tr-big" onClick={() => { setGate(demo ? "q" : "gate"); beep("start"); }}>{demo ? "ابدأ الشرح 👨‍🏫" : "انطلق 🚀"}</button>
@@ -274,7 +280,7 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
       <small>البوابة {ar(q.sub === "r" ? 1 : q.sub === "m" ? 2 : 3)} من ٣</small>
       <h2 className="tr-disp">{sub.gate}</h2>
       <p>{q.sub === "r" ? "اقرأ النص بتمعّن ثم أجب — النص يبقى أمامك طوال الأسئلة" : q.sub === "m" ? "فكّر بهدوء، واكتب خطواتك في ورقة جانبية إن احتجت" : "لاحظ الرسوم والجداول جيداً، فالعالِم يستنتج من الأدلة"}</p>
-      {q.sub !== "r" && <p className="tr-gate-score">🪙 جمعت حتى الآن {ar(score)} — {score >= TR_PASS ? "المفتاح معك، اجمع النجوم!" : `تحتاج ${ar(TR_PASS - score)} لتعبر`}</p>}
+      {q.sub !== "r" && <p className="tr-gate-score">🪙 جمعت حتى الآن {ar(score)} — {score >= P ? "المفتاح معك، اجمع النجوم!" : `تحتاج ${ar(P - score)} لتعبر`}</p>}
       <button className="tr-btn tr-big" style={{ background: sub.c, color: "#fff" }} onClick={() => { setGate("q"); beep("gate"); }}>ادخل البوابة ←</button>
     </div>}
 
@@ -287,7 +293,7 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
       <div className={"tr-card tr-q " + (phase === "wrong" ? "shake" : "") + (isTwin ? " twin" : "")} key={i + (isTwin ? "t" : "")}>
         <div className="tr-q-meta">
           <span className="tr-chip" style={{ background: sub.soft, color: sub.c }}>{sub.icon} {sub.name}</span>
-          <span className="tr-chip">السؤال {ar(i + 1)} / ١٥</span>
+          <span className="tr-chip">السؤال {ar(i + 1)} / {ar(N)}</span>
           {q.lv && <span className="tr-chip lv">{LEVELS[q.lv]}</span>}
           {hotsOf(q) && <span className="tr-chip ht" title={HOTS[hotsOf(q)].d}>🧠 {HOTS[hotsOf(q)].n}</span>}
           {isTwin && <span className="tr-chip tw">🔄 سؤال تعويضي</span>}
@@ -302,15 +308,16 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
           })}
         </div>
 
+        {(phase === "ask" || phase === "twin") && !demo && q.h && <div className="tr-hintbox">{hintOn ? <div className="tr-fb hint tr-pop"><b>💡 تلميحة</b><p><Rich t={q.h} /></p></div> : <button className="tr-hint-btn" onClick={() => { setHintOn(true); beep("hint"); }}>💡 أحتاج تلميحة</button>}</div>}
         {(phase === "ask" || phase === "twin") && <button className="tr-btn tr-big tr-check" disabled={pick === null} onClick={check}>تحقّق ✓</button>}
 
-        {phase === "ok" && <Feedback kind="ok" title={STREAK[streak] || PRAISE[(i * 5 + stage.n * 3 + streak) % PRAISE.length]} e={cq.e} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
+        {phase === "ok" && <Feedback kind="ok" title={STREAK[streak] || PRAISE[(i * 5 + stage.n * 3 + streak) % PRAISE.length]} e={cq.e} ep={cq.ep} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
         {phase === "wrong" && <div className="tr-fb hint tr-pop">
           <b>{OOPS[(i + stage.n) % OOPS.length]}</b><p><b>💡 تلميحة:</b> <Rich t={q.h || "أعد قراءة السؤال وحدّد المطلوب بدقة، ثم استبعد الخيارات غير المنطقية."} /></p>
           <button className="tr-btn tr-big" style={{ background: "#7c3aed", color: "#fff" }} onClick={toTwin}>جرّب السؤال التعويضي 🔄</button>
         </div>}
-        {phase === "twinok" && <Feedback kind="ok" title="عوّضتها! نصف عملة 🪙 — هذا هو الإصرار 💪" e={cq.e} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
-        {phase === "twinbad" && <Feedback kind="bad" title="لا بأس — كل خطأ درس جديد 💪" ans={cq.o[+cq.a]} e={cq.e} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
+        {phase === "twinok" && <Feedback kind="ok" title="عوّضتها! نصف عملة 🪙 — هذا هو الإصرار 💪" e={cq.e} ep={cq.ep} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
+        {phase === "twinbad" && <Feedback kind="bad" title="لا بأس — كل خطأ درس جديد 💪" ans={cq.o[+cq.a]} e={cq.e} ep={cq.ep} ht={hotsOf(q)} onNext={next} last={i === items.length - 1} />}
       </div>
 
       {demo && <div className="tr-card tr-teach">
@@ -323,21 +330,23 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
           <button disabled={i === items.length - 1} onClick={() => go(i + 1)}>التالي ←</button>
         </div>
         {rev.h && <div className="tr-fb hint"><b>💡 التلميحة (خطوة البداية)</b><p><Rich t={q.h || "—"} /></p></div>}
-        {rev.s && <div className="tr-fb ok"><b>✅ الإجابة: <Rich t={cq.o[+cq.a]} /></b><p className="tr-exp"><b>خطوات الحل والشرح:</b> <Rich t={cq.e} /></p>{hotsOf(q) && <p className="tr-hots">🧠 المهارة العليا: <b>{HOTS[hotsOf(q)].ic} {HOTS[hotsOf(q)].n}</b> — {HOTS[hotsOf(q)].d}</p>}</div>}
+        {rev.s && <div className="tr-fb ok"><b>✅ الإجابة: <Rich t={cq.o[+cq.a]} /></b><p className="tr-exp"><b>خطوات الحل والشرح:</b> <Rich t={cq.e} /></p>{cq.ep && <div className="tr-ep"><small>🖼️ صورة الفكرة</small><Fig f={cq.ep} /></div>}{hotsOf(q) && <p className="tr-hots">🧠 المهارة العليا: <b>{HOTS[hotsOf(q)].ic} {HOTS[hotsOf(q)].n}</b> — {HOTS[hotsOf(q)].d}</p>}</div>}
       </div>}
     </>}
 
     {fx > 0 && (phase === "ok" || phase === "twinok") && <Burst key={"b" + fx} plus={phase === "ok" ? "+١" : "+½"} big={streak >= 3} />}
     {toast && <div className="tr-toast tr-pop" key={toast}>{toast}</div>}
+    {party && <Celebrate key={party.k} kind={party.kind} />}
     {confirmExit && <div className="tr-modal" onClick={() => setConfirmExit(false)}><div className="tr-card tr-pop" onClick={e => e.stopPropagation()} style={{ maxWidth: 360, textAlign: "center" }}><div style={{ fontSize: 40 }}>🧭</div><b className="tr-disp" style={{ fontSize: 22 }}>تغادر المرحلة؟</b><p style={{ color: "#78716c", fontWeight: 700 }}>{demo ? "ستعود إلى الخريطة." : "لن تُحفظ إجاباتك في هذه المرحلة، وستبدأها من جديد لاحقاً."}</p><div style={{ display: "flex", gap: 8 }}><button className="tr-btn" style={{ flex: 1, background: "#f5f5f4" }} onClick={() => setConfirmExit(false)}>أكمل</button><button className="tr-btn" style={{ flex: 1, background: "#dc2626", color: "#fff" }} onClick={onExit}>مغادرة</button></div></div></div>}
   </div>;
 }
 
-function Feedback({ kind, title, e, ans, ht, onNext, last }) {
+function Feedback({ kind, title, e, ep, ans, ht, onNext, last }) {
   return <div className={"tr-fb tr-pop " + kind}>
     <b>{title}</b>
     {ans !== undefined && <p>الإجابة الصحيحة: <b><Rich t={ans} /></b></p>}
     {e && <p className="tr-exp"><Rich t={e} /></p>}
+    {ep && <div className="tr-ep"><small>🖼️ صورة الفكرة</small><Fig f={ep} /></div>}
     {ht && HOTS[ht] && <p className="tr-hots">🧠 {kind === "ok" ? "استعملتَ مهارة" : "هذا السؤال يدرّبك على مهارة"} <b>{HOTS[ht].ic} {HOTS[ht].n}</b>: {HOTS[ht].d}{kind === "ok" ? " — عقلك يكبر مع كل تحدٍّ! 🚀" : ""}</p>}
     <button className="tr-btn tr-big tr-gold" onClick={onNext}>{last ? "افتح الصندوق 🧰" : "التالي ←"}</button>
   </div>;
@@ -348,27 +357,29 @@ function Burst({ plus, big }) {
   return <div className="tr-burst" aria-hidden="true">{Array.from({ length: n }, (_, i) => <i key={i} style={{ "--a": (i * 360 / n) + "deg", "--d": (60 + (i % 3) * 25 + (big ? 30 : 0)) + "px" }}>{(big ? ["🔥", "🪙", "⭐"] : ["🪙", "✨", "⭐"])[i % 3]}</i>)}{plus && <b className="tr-plus">{plus} 🪙</b>}</div>;
 }
 
-function Result({ stage, w, s, avail, demo, onExit, onNext }) {
-  const pass = s.sc >= TR_PASS; const st = starsOf(s.sc); const n = stage.n;
+function Result({ stage, w, s, per, avail, demo, onExit, onNext }) {
+  const of = s.of || 15; const pass = s.sc >= passOf(of); const st = starsOf(s.sc, of); const n = stage.n;
   const worldDone = pass && n === w.to; const hasNext = pass && n < TR_TOTAL;
   const nextOpen = hasNext && n + 1 <= avail;
   useEffect(() => {
     const T = [];
-    if (pass) { for (let k = 1; k <= st; k++) T.push(setTimeout(() => beep("star", k - 1), 500 + k * 280)); T.push(setTimeout(() => beep("win"), 600 + st * 280 + 200)); }
+    if (pass) { for (let k = 1; k <= st; k++) T.push(setTimeout(() => beep("star", k - 1), 500 + k * 280)); T.push(setTimeout(() => beep("win"), 600 + st * 280 + 200)); T.push(setTimeout(() => beep("fireworks"), 1500 + st * 280)); }
     else T.push(setTimeout(() => beep("lose"), 500));
     return () => T.forEach(clearTimeout);
   }, []);
   return <div className="tr-play tr-result" style={{ "--w1": w.c1, "--w2": w.c2, "--ws": w.soft, "--wsky": w.sky }}>
+    {pass && <Celebrate kind="finale" />}
     {pass && <div className="tr-confetti" aria-hidden="true">{Array.from({ length: 40 }, (_, i) => <i key={i} style={{ left: (i * 2.5) + "%", animationDelay: (i % 10) * .12 + "s", background: ["#f59e0b", "#ef4444", "#10b981", "#3b82f6", "#a855f7"][i % 5] }} />)}</div>}
     <div className="tr-card tr-pop" style={{ textAlign: "center" }}>
       <div className={"tr-big-chest" + (pass ? " open" : "")}>{pass ? (n === TR_TOTAL ? "👑" : worldDone ? w.badge : "🗝️") : "🧰"}</div>
       <h2 className="tr-disp" style={{ fontSize: 30, margin: "4px 0" }}>{pass ? (n === TR_TOTAL ? "وصلت إلى كنز نافس!" : worldDone ? `حصلت على ${w.badgeName}!` : "عبرت المرحلة!") : "اقتربت كثيراً!"}</h2>
       <div className="tr-res-stars">{[1, 2, 3].map(k => <i key={k} className={k <= st ? "on" : ""} style={{ animationDelay: k * .28 + .3 + "s" }}>★</i>)}</div>
-      <div className="tr-res-score"><b>{ar(s.sc)}</b> <span>من ١٥</span></div>
+      <div className="tr-res-score"><b>{ar(s.sc)}</b> <span>من {ar(of)}</span></div>
       {s.streak >= 3 && <div className="tr-res-streak">🔥 أطول سلسلة إجابات متتالية: <b>{ar(s.streak)}</b></div>}
-      <div className="tr-res-subs">{[["r", s.r], ["m", s.m], ["s", s.s]].map(([k, v]) => <div key={k} style={{ "--c": SUBJ[k].c, "--s": SUBJ[k].soft }}><span>{SUBJ[k].icon}</span><b>{ar(v)} / ٥</b><small>{SUBJ[k].name}</small><i style={{ width: (v / 5 * 100) + "%" }} /></div>)}</div>
-      <p className="tr-res-msg">{pass ? (st === 3 ? "أداء أسطوري! ثلاث نجوم كاملة 🌟" : `أصبت ${ar(s.first)} من أول محاولة — أعد المرحلة متى شئت لتجمع نجوماً أكثر`) : `تحتاج ${ar(TR_PASS)} عملات لتعبر — راجع التلميحات وحاول مرة أخرى، ستتغير الأسئلة 💪`}</p>
+      <div className="tr-res-subs">{[["r", s.r], ["m", s.m], ["s", s.s]].map(([k, v]) => <div key={k} style={{ "--c": SUBJ[k].c, "--s": SUBJ[k].soft }}><span>{SUBJ[k].icon}</span><b>{ar(v)} / {ar(per[k])}</b><small>{SUBJ[k].name}</small><i style={{ width: (v / per[k] * 100) + "%" }} /></div>)}</div>
+      <p className="tr-res-msg">{pass ? (st === 3 ? "أداء أسطوري! ثلاث نجوم كاملة 🌟" : `أصبت ${ar(s.first)} من أول محاولة — أعد المرحلة متى شئت لتجمع نجوماً أكثر`) : `تحتاج ${ar(passOf(of))} من ${ar(of)} لتعبر — استعن بالتلميحات وحاول مرة أخرى، ستتغير الأسئلة 💪`}</p>
       {pass && !demo && n < TR_TOTAL && <p className="tr-res-msg" style={{ color: "#0f766e" }}>🏝️ باقي {ar(TR_TOTAL - n)} مراحل على جزيرة كنز نافس!</p>}
+      {pass && n === TR_TOTAL && !demo && <div className="tr-rules" style={{ background: "#fef3c7" }}>🎓 مبروك! اطبع شهادة «بطل نافس» من زر «جزيرة كنز نافس» في آخر الخريطة، وأخبر معلمك بإنجازك 🏆</div>}
       {demo && <div className="tr-rules" style={{ background: "#e0e7ff" }}>👨‍🏫 وضع الشرح — لم تُحفظ هذه النتيجة</div>}
       {s.saving && <small style={{ color: "#78716c" }}>جارٍ حفظ تقدمك…</small>}
       <div className="tr-res-act">
@@ -381,40 +392,99 @@ function Result({ stage, w, s, avail, demo, onExit, onNext }) {
 }
 
 // ══════════ قصة الرحلة: من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس ══════════
-const JPATH = "M300 392 C 240 372, 330 300, 262 268 S 120 262, 150 200 S 300 150, 232 112 S 110 92, 78 52";
+const JPATH = "M300 396 C 250 380, 330 330, 268 304 S 120 296, 150 246 S 300 214, 236 186 S 330 140, 298 112 S 150 56, 80 54";
+const JSTOPS = [["🌴", 268, 304, "واحة البدايات"], ["🐪", 150, 246, "صحراء الألغاز"], ["⛰️", 236, 186, "جبال التحدي"], ["🏙️", 298, 112, "مدينة المستقبل"]];
+function JourneyMap() {
+  return <svg className="tr-j-map" viewBox="0 0 360 420" aria-hidden="true">
+    <defs><linearGradient id="jsea" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#7dd3fc" /><stop offset="1" stopColor="#0ea5e9" /></linearGradient></defs>
+    <rect width="360" height="420" rx="22" fill="#f6e7c1" />
+    <path d="M0 0 H360 V40 C 300 60, 250 30, 200 70 C 160 100, 120 110, 60 130 C 30 140, 10 150, 0 152 Z" fill="url(#jsea)" opacity=".85" />
+    <text x="190" y="40" fontSize="16">🐬</text><text x="140" y="96" fontSize="16">⛵</text>
+    <ellipse cx="80" cy="60" rx="40" ry="20" fill="#fde68a" stroke="#d97706" strokeWidth="2" />
+    <path className="tr-j-trail" d={JPATH} fill="none" stroke="#92400e" strokeWidth="4" strokeDasharray="8 8" strokeLinecap="round" />
+    <text x="62" y="62" fontSize="26">🏝️</text><text x="94" y="60" fontSize="18" className="tr-j-x">❌</text>
+    {JSTOPS.map(([e, x, y]) => <text key={e} x={x - 14} y={y + 9} fontSize="26">{e}</text>)}
+    <text x="284" y="412" fontSize="28">🏫</text>
+    <g fontSize="11.5" fontWeight="800" fill="#7c2d12" textAnchor="middle">
+      <text x="296" y="372">مدرسة الأمير عبدالمجيد</text>{JSTOPS.map(([e, x, y, l]) => <text key={l} x={x} y={y + 26}>{l}</text>)}
+    </g>
+    <text x="80" y="100" fontSize="13" fontWeight="900" fill="#1e3a8a" textAnchor="middle">جزيرة كنز نافس</text>
+    <g><text fontSize="24" x="-12" y="8">🧭</text><animateMotion dur="8s" repeatCount="indefinite" rotate="0" keyPoints="1;0" keyTimes="0;1" calcMode="linear" path={JPATH} /></g>
+  </svg>;
+}
+
+// 🖼️ لوحة التنقيب عن الكنز والجوائز المنتظرة
+const PRIZES = [["🥉", "وسام الواحة", "المراحل ١–٥"], ["🥈", "وسام الصحراء", "المراحل ٦–١٠"], ["🥇", "وسام القمة", "المراحل ١١–١٥"], ["💎", "وسام المستقبل", "المراحل ١٦–٢٠"], ["👑", "تاج الكنز", "المراحل ٢١–٢٥"], ["🎓", "شهادة بطل نافس", "تُطبع باسمك"], ["🏆", "لوحة الشرف", "اسمك بين الأوائل"], ["🎁", "مفاجأة المدرسة", "لمن يصل إلى الكنز"]];
+function HuntScene() {
+  return <svg className="tr-hunt-svg" viewBox="0 0 360 190" aria-hidden="true">
+    <defs><linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fde68a" /><stop offset="1" stopColor="#fef3c7" /></linearGradient><radialGradient id="hglow"><stop offset="0" stopColor="#fff7ad" stopOpacity="1" /><stop offset="1" stopColor="#fbbf24" stopOpacity="0" /></radialGradient></defs>
+    <rect width="360" height="190" rx="18" fill="url(#hsky)" />
+    <text x="300" y="44" fontSize="30">☀️</text><text x="22" y="70" fontSize="30">🌴</text><text x="318" y="128" fontSize="26">🌴</text>
+    <path d="M0 132 C 80 118, 160 128, 230 120 S 330 126, 360 120 V190 H0 Z" fill="#e8c27a" />
+    <ellipse cx="180" cy="150" rx="70" ry="22" fill="#8a5a2b" />
+    <g className="tr-hunt-glow"><circle cx="180" cy="134" r="58" fill="url(#hglow)" />{[0, 30, 60, 90, 120, 150].map(a => <line key={a} x1="180" y1="134" x2={180 + 70 * Math.cos((a + 195) * Math.PI / 180)} y2={134 + 70 * Math.sin((a + 195) * Math.PI / 180)} stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" opacity=".7" />)}</g>
+    <text x="156" y="152" fontSize="44" className="tr-hunt-chest">🧰</text>
+    <text x="112" y="104" fontSize="20" className="tr-hunt-coin">🪙</text><text x="228" y="98" fontSize="20" className="tr-hunt-coin d2">💎</text><text x="196" y="80" fontSize="18" className="tr-hunt-coin d3">⭐</text>
+    <text x="70" y="150" fontSize="36">🧑‍🚀</text><text x="96" y="132" fontSize="30" className="tr-hunt-dig">⛏️</text>
+    <text x="250" y="160" fontSize="30">🗺️</text><text x="282" y="172" fontSize="20">🧭</text>
+  </svg>;
+}
+function HuntCard({ done }) {
+  const [open, setOpen] = useState(() => !lsGet("tr-hunt-closed", false));
+  const got = WORLDS.filter(w => done >= w.to).length;
+  return <section className="tr-hunt">
+    <button className="tr-hunt-h" onClick={() => { const v = !open; setOpen(v); lsSet("tr-hunt-closed", !v); beep("click"); }}><span>⛏️ التنقيب عن الكنز… والجوائز المنتظرة</span><small>{open ? "▲" : "▼"}</small></button>
+    {open && <><HuntScene />
+      <div className="tr-prizes">{PRIZES.map(([e, t, d], i) => { const on = i < 5 ? i < got : (done >= TR_TOTAL); return <div key={t} className={on ? "on" : ""}><span>{e}</span><b>{t}</b><small>{on ? "✅ حصلت عليها" : d}</small></div>; })}</div></>}
+  </section>;
+}
+
+// 🎓 شهادة «بطل نافس» للطباعة
+function printCert(me, prog) {
+  const w = window.open("", "_blank"); if (!w) return;
+  const stars = Object.values(obj(prog.stars)).reduce((a, b) => a + (+b || 0), 0);
+  const d = new Date().toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long", year: "numeric" });
+  w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>شهادة بطل نافس</title><link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@500;800&display=swap" rel="stylesheet"><style>@page{size:A4 landscape;margin:0}body{margin:0;font-family:Tajawal,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.c{width:297mm;height:210mm;box-sizing:border-box;padding:14mm;background:radial-gradient(circle at 50% 0,#fff7d6,#fde68a 70%,#f59e0b);display:flex}.in{flex:1;border:6px double #92400e;border-radius:18px;background:#fffdf5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10mm;position:relative}.e{font-size:64px}.t{font-family:Lalezar,sans-serif;font-size:58px;color:#92400e;margin:4px 0}.s{font-size:20px;color:#57534e;font-weight:800}.n{font-family:Lalezar,sans-serif;font-size:50px;color:#1e3a8a;margin:10px 0;border-bottom:3px dashed #d97706;padding:0 30px}.p{font-size:20px;line-height:2;max-width:820px;color:#292524;font-weight:500}.b{display:flex;gap:18px;font-size:40px;margin:10px 0}.f{display:flex;justify-content:space-between;width:100%;margin-top:18px;font-weight:800;color:#57534e;font-size:16px}</style></head><body><div class="c"><div class="in"><div class="e">👑</div><div class="t">شهادة بطل نافس</div><div class="s">${TR_SCHOOL} — رحلة الكنز: من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس</div><div class="n">${String(me.name || "").replace(/[<>&]/g, "")}</div><div class="p">أتمّ بنجاح مراحل رحلة الكنز الخمس والعشرين في القراءة والرياضيات والعلوم، وجمع ${ar(stars)} نجمة ⭐، متحلّياً بمهارات التفكير العليا والإصرار والعزيمة. نبارك له هذا الإنجاز، ونتمنى له التفوق في اختبارات نافس.</div><div class="b">🥉 🥈 🥇 💎 👑</div><div class="f"><span>التاريخ: ${d}</span><span>قائد المدرسة</span></div></div></div><script>setTimeout(()=>print(),800)<\/script></body></html>`);
+  w.document.close();
+}
+
+// 🎉 احتفالات: ورد ينتثر • بالونات • ألعاب نارية
+function Celebrate({ kind }) {
+  const [on, setOn] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setOn(false), kind === "petals" ? 2600 : 4800); return () => clearTimeout(t); }, []);
+  if (!on) return null;
+  const petals = kind === "petals" ? 12 : 26, balloons = kind === "petals" ? 0 : kind === "balloons" ? 9 : 14, fw = kind === "party" || kind === "finale" ? (kind === "finale" ? 6 : 4) : 0;
+  const PET = ["🌹", "🌸", "🌺", "💮", "🌷"], BAL = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#a855f7", "#ec4899"];
+  return <div className="tr-cel" aria-hidden="true">
+    {Array.from({ length: petals }, (_, i) => <i key={"p" + i} className="tr-petal" style={{ left: (i * 37 + 7) % 100 + "%", animationDelay: (i % 6) * .18 + "s", "--r": (i % 2 ? 1 : -1) * (180 + i * 20) + "deg", "--x": ((i % 5) - 2) * 30 + "px", fontSize: 18 + (i % 3) * 6 }}>{PET[i % 5]}</i>)}
+    {Array.from({ length: balloons }, (_, i) => <i key={"b" + i} className="tr-balloon" style={{ left: (i * 23 + 5) % 92 + "%", animationDelay: (i % 5) * .25 + "s", "--c": BAL[i % 6] }}><b /></i>)}
+    {Array.from({ length: fw }, (_, i) => <i key={"f" + i} className="tr-fw" style={{ left: 15 + (i * 29) % 70 + "%", top: 12 + (i * 17) % 35 + "%", animationDelay: i * .42 + .3 + "s", "--c": BAL[(i * 2) % 6] }}>{Array.from({ length: 12 }, (_, k) => <s key={k} style={{ "--a": k * 30 + "deg" }} />)}</i>)}
+  </div>;
+}
+
 function Journey({ name, onClose }) {
   const [k, setK] = useState(0);
   useEffect(() => { beep(k === 0 ? "start" : "gate"); }, [k]);
   const first = name ? String(name).split(" ")[0] : "";
   const slides = [
     <div key="0" className="tr-j-slide">
-      <svg className="tr-j-map" viewBox="0 0 360 420" aria-hidden="true">
-        <defs><linearGradient id="jsea" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#7dd3fc" /><stop offset="1" stopColor="#0ea5e9" /></linearGradient></defs>
-        <rect width="360" height="420" rx="22" fill="#f6e7c1" />
-        <path d="M0 0 H200 C 170 40, 140 120, 40 150 C 20 156, 8 160, 0 162 Z" fill="url(#jsea)" opacity=".85" />
-        <text x="44" y="118" fontSize="18">🌊</text><text x="150" y="40" fontSize="16">🐬</text>
-        <ellipse cx="78" cy="60" rx="38" ry="20" fill="#fde68a" stroke="#d97706" strokeWidth="2" />
-        <path className="tr-j-trail" d={JPATH} fill="none" stroke="#92400e" strokeWidth="4" strokeDasharray="8 8" strokeLinecap="round" />
-        <text x="62" y="58" fontSize="26">🏝️</text><text x="92" y="58" fontSize="18" className="tr-j-x">❌</text>
-        <text x="248" y="280" fontSize="26">🌴</text><text x="136" y="212" fontSize="26">🐪</text><text x="218" y="122" fontSize="26">⛰️</text>
-        <text x="282" y="404" fontSize="30">🏫</text>
-        <g fontSize="11.5" fontWeight="800" fill="#7c2d12" textAnchor="middle">
-          <text x="300" y="356">مدرسة الأمير عبدالمجيد</text><text x="262" y="300">واحة البدايات</text><text x="150" y="232">صحراء الألغاز</text><text x="232" y="144">جبال التحدي</text>
-        </g>
-        <text x="78" y="96" fontSize="13" fontWeight="900" fill="#1e3a8a" textAnchor="middle">جزيرة كنز نافس</text>
-        <g><text fontSize="24" x="-12" y="8">🧭</text><animateMotion dur="7s" repeatCount="indefinite" rotate="0" keyPoints="1;0" keyTimes="0;1" calcMode="linear" path={JPATH} /></g>
-      </svg>
+      <JourneyMap />
       <h2 className="tr-disp">{first ? `يا ${first}… ` : ""}من هنا تبدأ الرحلة!</h2>
-      <p>في مكتبة <b>مدرسة الأمير عبدالمجيد</b> عُثر على خريطة قديمة تقود إلى <b>جزيرة كنز نافس</b> 🏝️. الطريق يعبر أربعة عوالم مليئة بالألغاز، ولا يصل إلى الكنز إلا مستكشف يقرأ بعمق، ويحسب بدقة، ويفكّر كالعلماء.</p>
+      <p>في مكتبة <b>مدرسة الأمير عبدالمجيد</b> عُثر على خريطة قديمة تقود إلى <b>جزيرة كنز نافس</b> 🏝️. الطريق يعبر خمسة عوالم مليئة بالألغاز، ولا يصل إلى الكنز إلا مستكشف يقرأ بعمق، ويحسب بدقة، ويفكّر كالعلماء.</p>
     </div>,
     <div key="1" className="tr-j-slide">
       <h2 className="tr-disp">كيف تعبر المراحل؟</h2>
       <div className="tr-j-rules">
-        {[["🚪", "٣ بوابات في كل مرحلة", "📖 القراءة • 🔢 الرياضيات • 🔬 العلوم — ٥ أسئلة لكل بوابة"], ["🪙", "عملة لكل إجابة صحيحة", "اسمع رنين العملات مع كل إجابة صحيحة"], ["🔥", "سلسلة نارية", "٣ إجابات متتالية تشعل السلسلة وتضاعف الحماس"], ["🔄", "أخطأت؟ لا مشكلة", "تأتيك تلميحة وسؤال تعويضي بنصف عملة"], ["🗝️", "١٠ عملات = مفتاح", "المفتاح يفتح المرحلة التالية على الخريطة"], ["⭐", "اجمع النجوم", "١٤ فأكثر = ٣ نجوم • أعد المرحلة لتحسّن نجومك"]].map(([ic, t, d]) => <div key={t}><span>{ic}</span><b>{t}</b><small>{d}</small></div>)}
+        {[["🚪", "٣ بوابات في كل مرحلة", "📖 القراءة • 🔢 الرياضيات • 🔬 العلوم — ٧ أسئلة لكل بوابة"], ["🪙", "عملة لكل إجابة صحيحة", "رنين العملات وورد ينتثر مع كل إجابة صحيحة"], ["💡", "تلميحة عند الحاجة", "اضغط «أحتاج تلميحة» في أي سؤال"], ["🔄", "أخطأت؟ لا مشكلة", "سؤال تعويضي بنصف عملة"], ["🗝️", "١٤ من ٢١ = مفتاح", "المفتاح يفتح المرحلة التالية… مع ألعاب نارية 🎆"], ["🔥", "سلسلة نارية", "الإجابات المتتالية تطلق البالونات 🎈"]].map(([ic, t, d]) => <div key={t}><span>{ic}</span><b>{t}</b><small>{d}</small></div>)}
       </div>
     </div>,
     <div key="2" className="tr-j-slide">
-      <h2 className="tr-disp">العوالم الأربعة</h2>
+      <h2 className="tr-disp">الكنز والجوائز المنتظرة</h2>
+      <HuntScene />
+      <div className="tr-prizes sm">{PRIZES.map(([e, t, d]) => <div key={t}><span>{e}</span><b>{t}</b><small>{d}</small></div>)}</div>
+    </div>,
+    <div key="3" className="tr-j-slide">
+      <h2 className="tr-disp">العوالم الخمسة</h2>
       <div className="tr-j-worlds">{WORLDS.map(w => <div key={w.n} style={{ background: w.soft, color: w.c1 }}><span>{w.icon}</span><b>{w.name}</b><small>المراحل {ar(w.from)}–{ar(w.to)} • {w.badge} {w.badgeName}</small></div>)}</div>
       <p>في كل سؤال ستدرّب عقلك على <b>مهارات التفكير العليا</b>: التحليل 🔍 والاستنتاج 💡 وحل المشكلات 🧩 والتفسير العلمي 🔬 — وهي ما يقيسه <b>اختبار نافس</b>. أنت جاهز يا بطل؟</p>
     </div>,
@@ -424,7 +494,7 @@ function Journey({ name, onClose }) {
     <div className="tr-j-dots">{slides.map((_, j) => <i key={j} className={j === k ? "on" : ""} onClick={() => setK(j)} />)}</div>
     <div className="tr-j-act">
       {k < slides.length - 1 ? <><button className="tr-btn" style={{ background: "#f5f5f4" }} onClick={onClose}>تخطٍّ</button><button className="tr-btn tr-gold tr-big" onClick={() => setK(k + 1)}>التالي ←</button></>
-        : <button className="tr-btn tr-gold tr-big" style={{ flex: 1 }} onClick={() => { beep("win"); onClose(); }}>⛵ انطلق إلى الجزيرة!</button>}
+        : <button className="tr-btn tr-gold tr-big" style={{ flex: 1 }} onClick={() => { beep("win"); beep("fireworks"); onClose(); }}>⛵ انطلق إلى الجزيرة!</button>}
     </div>
   </div></div>;
 }
@@ -634,4 +704,31 @@ const PUB_CSS = `
 .tr-j-worlds span{font-size:26px}.tr-j-worlds b{flex:1;font-size:15px}.tr-j-worlds small{font-weight:800;font-size:11.5px}
 .tr-j-dots{display:flex;gap:6px;justify-content:center;margin:12px 0 8px}.tr-j-dots i{width:9px;height:9px;border-radius:99px;background:#e7e5e4;cursor:pointer;transition:.3s}.tr-j-dots i.on{width:26px;background:#f59e0b}
 .tr-j-act{display:flex;gap:8px}.tr-j-act .tr-big{flex:1}
+/* ── التلميحة • صورة الفكرة • لوحة التنقيب • الاحتفالات ── */
+.tr-hintbox{margin:6px 0 2px}
+.tr-hint-btn{width:100%;border:1.5px dashed #a78bfa;background:#f5f3ff;color:#6d28d9;font-weight:900;border-radius:14px;padding:9px;font-size:14.5px}
+.tr-ep{margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.tr-ep>small{font-weight:900;color:#b45309;font-size:12.5px}
+.tr-hunt{max-width:460px;margin:10px auto 0;padding:0 12px}
+.tr-hunt-h{width:100%;display:flex;justify-content:space-between;align-items:center;border:none;background:linear-gradient(135deg,#92400e,#b45309);color:#fde68a;font-weight:900;font-size:15px;border-radius:16px;padding:11px 14px;box-shadow:0 6px 16px rgba(146,64,14,.3)}
+.tr-hunt-svg{width:100%;display:block;margin-top:8px;border-radius:18px;box-shadow:0 8px 20px rgba(120,53,15,.2)}
+.tr-hunt-glow{animation:trGlow 2.2s ease-in-out infinite;transform-origin:180px 134px}@keyframes trGlow{50%{opacity:.55;transform:scale(1.08)}}
+.tr-hunt-chest{animation:trBob 1.8s ease-in-out infinite}
+.tr-hunt-coin{animation:trFloat 2.6s ease-in-out infinite}.tr-hunt-coin.d2{animation-delay:.6s}.tr-hunt-coin.d3{animation-delay:1.2s}@keyframes trFloat{50%{transform:translateY(-10px)}}
+.tr-hunt-dig{transform-box:fill-box;transform-origin:bottom left;animation:trDig 1s ease-in-out infinite}@keyframes trDig{50%{transform:rotate(-28deg)}}
+.tr-prizes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.tr-prizes>div{background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:7px 4px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px;filter:grayscale(.15)}
+.tr-prizes>div.on{background:linear-gradient(135deg,#fef08a,#fbbf24);border-color:#d97706;filter:none;box-shadow:0 4px 12px rgba(217,119,6,.35)}
+.tr-prizes span{font-size:26px}.tr-prizes b{font-size:11.5px;color:#7c2d12;line-height:1.4}.tr-prizes small{font-size:10px;color:#78716c;font-weight:800;line-height:1.4}
+.tr-prizes.sm span{font-size:22px}
+.tr-cel{position:fixed;inset:0;pointer-events:none;z-index:65;overflow:hidden}
+.tr-petal{position:absolute;top:-40px;font-style:normal;animation:trPetal 2.6s ease-in forwards}
+@keyframes trPetal{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translate(var(--x),105vh) rotate(var(--r));opacity:.85}}
+.tr-balloon{position:absolute;bottom:-90px;width:44px;height:56px;animation:trBal 4.2s ease-out forwards}
+.tr-balloon b{display:block;width:44px;height:54px;border-radius:50% 50% 48% 48%;background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.75) 0 12%,var(--c) 34%);box-shadow:inset -6px -8px 0 rgba(0,0,0,.12)}
+.tr-balloon:after{content:"";position:absolute;left:50%;top:54px;width:1.5px;height:40px;background:rgba(0,0,0,.35)}
+@keyframes trBal{0%{transform:translateY(0)}60%{transform:translateY(-70vh) translateX(14px)}100%{transform:translateY(-125vh) translateX(-10px)}}
+.tr-fw{position:absolute;width:0;height:0;opacity:0;animation:trFwShow 1.3s ease-out forwards}
+.tr-fw s{position:absolute;left:0;top:0;width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c),0 0 3px #fff;transform:rotate(var(--a)) translateX(0);animation:trFw 1.3s ease-out forwards;animation-delay:inherit}
+@keyframes trFwShow{0%{opacity:1}85%{opacity:1}100%{opacity:0}}
+@keyframes trFw{0%{transform:rotate(var(--a)) translateX(0) scale(1.4)}100%{transform:rotate(var(--a)) translateX(90px) scale(.4)}}
 `;
