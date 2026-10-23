@@ -225,6 +225,22 @@ const CSS = `
 .nb-alert{display:grid;gap:8px;background:#fff;border-radius:16px;padding:12px 14px;border-right:6px solid var(--c);box-shadow:0 4px 16px -10px rgba(0,0,0,.35)}
 .nb-alert.new{background:linear-gradient(90deg,#fff,#fff7ed)}
 .nb-opent{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,var(--c),#0f172a);color:#fff;border-radius:16px;padding:12px 14px}
+/* مفاتيح الإجابات */
+.nb-keys{max-width:1100px;margin:8px auto 0;background:#fffbeb;border:2px solid #f59e0b;border-radius:14px;overflow:hidden;box-shadow:0 6px 18px -12px rgba(146,64,14,.5)}
+.nb-keys .kh{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;background:#fef3c7;flex-wrap:wrap}
+.nb-keys .kh b{font-size:14.5px;color:#92400e}
+.nb-keys .ke{padding:10px 12px;font-weight:800;font-size:13px;color:#92400e}
+.nb-keys .kg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;padding:8px;max-height:38vh;overflow:auto}
+.nb-keys .ki{display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #fde68a;border-radius:10px;padding:6px 8px;transition:filter .2s}
+.nb-keys .ki.blur{cursor:pointer}.nb-keys .ki.blur .ka{filter:blur(7px);user-select:none}
+.nb-keys .kn{flex:none;min-width:26px;height:26px;border-radius:999px;background:#b45309;color:#fff;display:grid;place-items:center;font-weight:900;font-size:12.5px;padding:0 6px}
+.nb-keys small{display:block;color:#a16207;font-weight:800;font-size:11.5px}
+.nb-keys .ka{font-weight:800;font-size:14.5px;color:#1c1917;line-height:1.7}
+.nb-keys .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.85em;line-height:1.15;margin:0 2px}
+.nb-keys .fr .nu{border-bottom:1.5px solid currentColor;padding:0 2px}.nb-keys .fr .de{padding:0 2px}
+.nb-keys .sq .rad{border-top:1.5px solid currentColor;padding:0 1px}
+.nb-keys .lat{direction:ltr;unicode-bidi:isolate}
+.nb-keys mark{background:#fde68a}
 /* الفهرس */
 .nb-drawer-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80}
 .nb-drawer{position:fixed;top:0;bottom:0;right:0;width:min(440px,94vw);background:#f8fafc;z-index:81;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(0,0,0,.25);animation:nbIn .2s ease-out}
@@ -268,7 +284,7 @@ const CSS = `
 .nb-conf{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
 .nb-conf i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:nbFall 2.6s ease-in forwards}
 @keyframes nbFall{to{top:105vh;transform:rotate(720deg)}}
-@media (max-width:560px){.nb-top b{font-size:13.5px}.nb-tbl{font-size:12.5px}.nb-hide-s{display:none!important}}
+@media (max-width:560px){.nb-top b{font-size:13.5px}.nb-tbl{font-size:12.5px}.nb-hide-s{display:none!important}.nb-keys .kg{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));max-height:30vh;padding:6px;gap:5px}.nb-keys .ki{padding:4px 6px}.nb-keys .ka{font-size:13.5px}}
 @media print{.nb-top,.nb-tools,.nb-nav,.nb-save,.nb-ribbon,.nb-scrub{display:none!important}}
 `;
 
@@ -545,10 +561,32 @@ function IndexDrawer({ book, doc, page, onGo, onClose, mark, weekP, weekLbl }) {
   </>;
 }
 
+// ══════════════════════ 🔑 إجابات الصفحة للمعلم ══════════════════════
+// المفاتيح في ملف مستقل يُحمَّل عند الحاجة فقط في شاشات المعلم والإدارة
+let keysP = null;
+const loadKeys = () => keysP || (keysP = import("./keys.js").then(m => m.default).catch(e => { keysP = null; throw e; }));
+function KeysPanel({ book, page, hidden, setHidden, open, setOpen }) {
+  const [K, setK] = useState(null); const [err, setErr] = useState(false); const [rev, setRev] = useState({});
+  useEffect(() => { loadKeys().then(setK).catch(() => setErr(true)); }, []);
+  useEffect(() => setRev({}), [page, hidden]);
+  const L = K ? arr(obj(K[book])[page]) : [];
+  return <div className="nb-keys">
+    <div className="kh" onClick={() => setOpen(!open)}>
+      <b>🔑 إجابات صفحة {ar(page)}</b>{K && <span className="nb-st" style={{ background: "#fef3c7", color: "#92400e" }}>{L.length ? `${ar(L.length)} إجابة` : "لا أسئلة"}</span>}
+      <span className="nb-sp" />
+      {open && L.length > 0 && <button className="nb-b" onClick={e => { e.stopPropagation(); setHidden(!hidden); }} title="للعرض أمام الطلاب: تُخفى الإجابات وتظهر بالضغط على كل سؤال">{hidden ? "👁️ إظهار الكل" : "🙈 إخفاء عن الطلاب"}</button>}
+      <button className="nb-b" onClick={e => { e.stopPropagation(); setOpen(!open); }}>{open ? "▲ طي" : "▼ عرض"}</button>
+    </div>
+    {open && (err ? <div className="ke">تعذّر تحميل المفاتيح — تأكد من رفع ملف nafs/keys.js</div> : !K ? <div className="ke">⏳</div> : !L.length ? <div className="ke">لا توجد في هذه الصفحة أسئلة لها إجابات (شرح أو أمثلة محلولة)</div> :
+      <div className="kg">{L.map(([n, t, a], i) => { const show = !hidden || rev[i]; return <div key={i} className={"ki" + (show ? "" : " blur")} onClick={() => hidden && setRev(r => ({ ...r, [i]: !r[i] }))}>
+        <span className="kn" dangerouslySetInnerHTML={{ __html: n }} /><div style={{ minWidth: 0 }}><small dangerouslySetInnerHTML={{ __html: t }} /><div className="ka" dangerouslySetInnerHTML={{ __html: a }} /></div></div>; })}</div>)}
+  </div>;
+}
+
 // ══════════════════════ عارض الصفحة مع طبقة الكتابة والسبورة ══════════════════════
 // store: مسار حفظ الكتابة (null = مؤقتة) • idx: فهرس الصفحات المحلولة • marks: مسار فهرس للاطّلاع فقط
 // tc: "show" / "edit" تعليق المعلم • tp: {tkey,tname,cks,ck} تسجيل «تم شرح الصفحة» • boards: مسار السبورات
-function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null, marks = null, readOnly = false, tc: tcMode = null, tcPath = null, tp = null, boards = null, boardsRO = false, seenSid = null, who = "x", title = "", by = "", onBack }) {
+function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null, marks = null, readOnly = false, tc: tcMode = null, tcPath = null, tp = null, keys = false, boards = null, boardsRO = false, seenSid = null, who = "x", title = "", by = "", onBack }) {
   const B = BOOKS[book];
   const [doc, setDoc] = useState(null);
   const [err, setErr] = useState("");
@@ -571,6 +609,8 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const [pb, setPb] = useState({});
   const [bo, setBo] = useState(null);
   const [fs, setFs] = useState(false);
+  const [kOpen, setKOpen0] = useState(() => lsGet("nb-keys-open", true)); const setKOpen = v => { setKOpen0(v); lsSet("nb-keys-open", v); };
+  const [kHide, setKHide] = useState(false);
   const rootRef = useRef(null), stageRef = useRef(null), pdfRef = useRef(null), inkRef = useRef(null), topRef = useRef(null), pageRef = useRef(null);
   const hist = useRef([]), drawing = useRef(null), saveT = useRef(null), renderT = useRef(null), annRef = useRef(ann), msgT = useRef(null), touch = useRef(null), pinD = useRef(null);
   annRef.current = ann;
@@ -619,7 +659,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   useEffect(() => { render(); }, [render]);
   useEffect(() => { let t; const f = () => { clearTimeout(t); t = setTimeout(render, 200); }; window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [render]);
   useEffect(() => { if (topRef.current && rootRef.current) rootRef.current.style.setProperty("--th", topRef.current.offsetHeight + "px"); });
-  useEffect(() => { const f = () => setFs(!!document.fullscreenElement); document.addEventListener("fullscreenchange", f); return () => document.removeEventListener("fullscreenchange", f); }, []);
+  useEffect(() => { const f = () => { const on = !!document.fullscreenElement; setFs(on); if (on) setKHide(true); }; document.addEventListener("fullscreenchange", f); return () => document.removeEventListener("fullscreenchange", f); }, []);
   const toggleFs = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else (rootRef.current || document.documentElement).requestFullscreen(); } catch {} };
 
   const paint = useCallback(() => {
@@ -764,6 +804,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
       <button className={"nb-b" + (fs ? " on" : "")} onClick={toggleFs} title="ملء الشاشة للعرض (F)">⛶ {fs ? "خروج" : "عرض"}</button>
       <span className="sep" />
       <button className="nb-b" style={{ background: "linear-gradient(135deg,#1e3a8a,#0f766e)", color: "#fff", borderColor: "transparent" }} onClick={() => bo ? null : newBoard()} title="سبورة عائمة لحل المسائل والمعادلات">🧑‍🏫 سبورة{nBoards ? ` (${ar(nBoards)})` : ""}</button>
+      {keys && <button className={"nb-b" + (kOpen ? " on" : "")} style={{ "--c": "#b45309" }} onClick={() => setKOpen(!kOpen)} title="مفتاح إجابات هذه الصفحة">🔑 الإجابات</button>}
       {!readOnly && <>
         <span className="sep" />
         <button className={"nb-b" + (tool === "view" ? " on" : "")} onClick={() => setTool("view")}>✋ تصفح</button>
@@ -800,6 +841,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
       </div>
     </div>}
 
+    {keys && <KeysPanel book={book} page={page} hidden={kHide} setHidden={setKHide} open={kOpen} setOpen={setKOpen} />}
     <div className="nb-stage" ref={stageRef} onTouchStart={tStart} onTouchEnd={tEnd}>
       {err ? <div className="nb-msg">{err}</div> : !doc ? <div className="nb-msg">📚 جارٍ تحميل المرجع…</div> :
         <div className="nb-page" ref={pageRef} style={{ width: size.w || "100%", height: size.h || "60vh" }} onPointerMove={pinMove} onPointerUp={pinUp}>
@@ -992,9 +1034,9 @@ function ClassStudents({ api, ros, idx, seen = {}, cks, books, onPick }) {
   </div>;
 }
 
-function StudentReview({ api, st, books, by, onBack }) {
+function StudentReview({ api, st, books, by, onBack }) { // يفتحه المعلم أو الإدارة فقط
   const [open, setOpen] = useState(null);
-  return open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} marks={`${NB_IDX}/${st.id}`} readOnly tc="edit" tcPath={`${NB_TC}/${st.id}`} by={by}
+  return open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} marks={`${NB_IDX}/${st.id}`} readOnly keys tc="edit" tcPath={`${NB_TC}/${st.id}`} by={by}
       boards={`${NB_B}/s_${st.id}`} boardsRO who="rv" title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} />
     : <Library api={api} student={st} books={books} readOnly onOpen={(book, page) => setOpen({ book, page })} onBack={onBack} />;
 }
@@ -1025,7 +1067,7 @@ export function NafsBooksTeacher({ api, by }) {
   const myAl = Object.values(al).filter(a => a && a.tkey === S.key);
 
   if (V && V.k === "present") return wrapIn(<BookViewer api={api} book={V.book} startPage={V.page || lsGet(`nb-last-t_${S.key}-${V.book}`, 1) || 1}
-    tp={{ tkey: S.key, tname: S.name, cks: S.assign[V.book], ck: V.ck, storeBase: `${NB_T}/${S.key}` }} boards={`${NB_B}/t_${S.key}`} who={"t_" + S.key} title="العرض والشرح" onBack={back} />);
+    tp={{ tkey: S.key, tname: S.name, cks: S.assign[V.book], ck: V.ck, storeBase: `${NB_T}/${S.key}` }} keys boards={`${NB_B}/t_${S.key}`} who={"t_" + S.key} title="العرض والشرح" onBack={back} />);
   if (V && V.k === "plan") return wrapIn(<div className="nb-home"><div className="nb-book nb-h" style={{ "--c": BOOKS[V.book].c }}><b>🗓️ إنجازي في {BOOKS[V.book].name}</b><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div>
     <PlanGrid api={api} tkey={S.key} tname={S.name} book={V.book} cks={S.assign[V.book]} editable alerts={al} onOpen={pg => setView({ k: "present", book: V.book, ck: selCk[V.book] || S.assign[V.book][0], page: pg })} /></div>);
   if (V && V.k === "stu") return wrapIn(<StudentReview api={api} st={V.st} books={[V.book]} by={S.name} onBack={() => setView({ k: "studs", book: V.book })} />);
@@ -1110,8 +1152,8 @@ export function NafsBooksAdmin({ api, by = "الإدارة", tab0 = "sum" }) {
   const closeTest = a => setAl(a, { st: "new" }, () => api.maPut(`${NB_OPEN}/${a.ck}/${a.book}/${a.w}`, null));
   const doneTest = a => { if (!window.confirm(`اعتماد تطبيق اختبار الأسبوع ${a.w + 1} لفصل ${cls(a.ck)} وإغلاقه؟`)) return; setAl(a, { st: "done", doneAt: Date.now(), by }, async () => { await api.maPut(`${NB_OPEN}/${a.ck}/${a.book}/${a.w}`, null); if (a.tkey) await api.maPut(`${NB_TP}/${a.tkey}/${a.book}/${a.ck}/t${a.w}`, Date.now()); }); };
 
-  if (V && V.k === "book") return wrapIn(<BookViewer api={api} book={V.book} startPage={V.page || 1} title="تصفح الإدارة" who="adm" onBack={back} />);
-  if (V && V.k === "board") return wrapIn(<BookViewer api={api} book={V.book} startPage={V.page || 1} store={`${NB_T}/${V.r.key}/${V.ck}`} readOnly boards={`${NB_B}/t_${V.r.key}`} boardsRO who="adm" title={`عرض ${V.r.name} • ${cls(V.ck)}`} onBack={() => setView({ k: "teacher", r: V.r })} />);
+  if (V && V.k === "book") return wrapIn(<BookViewer api={api} book={V.book} startPage={V.page || 1} keys title="تصفح الإدارة" who="adm" onBack={back} />);
+  if (V && V.k === "board") return wrapIn(<BookViewer api={api} book={V.book} startPage={V.page || 1} store={`${NB_T}/${V.r.key}/${V.ck}`} readOnly keys boards={`${NB_B}/t_${V.r.key}`} boardsRO who="adm" title={`عرض ${V.r.name} • ${cls(V.ck)}`} onBack={() => setView({ k: "teacher", r: V.r })} />);
   if (V && V.k === "stu") return wrapIn(<StudentReview api={api} st={V.st} books={V.books || BOOK_IDS} by={by} onBack={() => setView(V.from || null)} />);
   if (V && V.k === "teacher") { const r = V.r, B = BOOKS[r.book]; return wrapIn(<div className="nb-home">
     <div className="nb-book nb-h" style={{ "--c": B.c }}><b>👨‍🏫 {r.name} • {B.name}</b><span className="nb-tag" style={{ "--c": B.c }}>{r.cks.map(cls).join("، ")}</span><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div>
