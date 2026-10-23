@@ -33090,6 +33090,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "ttnotes") return wrap("📒 ملاحظات متابعة حصصي", <TeacherPeriodNotesView me={me} />);
   if (view === "pnotes" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("📡 حصر ملاحظات الحصص", <PeriodNotesPage by={me.name} />);
   if (view === "nafes") return wrap("🎯 نتائج نافس لطلابي", <NqTeacherView me={me} />);
+  if (view === "nbadm" && ["principal", "deputy"].includes(me.role)) return wrap("📚 مراجع نافس – متابعة الإدارة", <React.Suspense fallback={NB_WAIT}><NafsBooksAdmin by={me.name} api={trApi()} tab0="alerts" /></React.Suspense>);
   if (view === "nbooks") return wrap("📚 مراجع نافس – موادي وطلابي", <React.Suspense fallback={NB_WAIT}><NafsBooksTeacher by={me.name} api={trApi()} /></React.Suspense>);
   if (view === "hd") return wrap("📈 انضباطي اليومي", <HdTeacherView me={me} />);
   if (view === "score") return wrap(["principal", "deputy"].includes(me.role) ? "🏆 ترتيب المعلمين في الانضباط الشامل" : "🏆 بطاقتي الشاملة وترتيبي", <TchScoreView me={me} admin={["principal", "deputy"].includes(me.role)} />);
@@ -33140,6 +33141,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             </div>}
             <div className="pt-tiles">
               <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
+              {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><NbAlertBanner onOpen={() => setView("nbadm")} /></div>}
               {me.role === "principal" ? <div style={{ gridColumn: "1/-1" }}><AtHomeBanner me={me} boss onOpen={() => setView("admtasks")} /></div> : <div style={{ gridColumn: "1/-1" }}><AtHomeBanner me={me} onOpen={() => setView("mytasks")} /></div>}
               {me.role === "principal" && ptTile("admtasks", "📌", "المهام اليومية للإداريين", "أضف المهام وأسندها للوكلاء والموجهين • تابع «تم التنفيذ / لم تُنفذ» والأسباب مع التنبيهات", "#1e3a8a", "#0f766e", () => setView("admtasks"))}
               {me.role !== "principal" && ptTile("mytasks", "📌", "مهامي اليومية", "مهامك من مدير المدرسة — أشّر «تم التنفيذ» أو «لم تُنفذ» مع السبب", "#1e3a8a", "#0f766e", () => setView("mytasks"))}
@@ -33197,7 +33199,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("readwk", "📖", "حصر الضعف القرائي", "ضعف شديد / متوسط • المهارات • العلاج • المتابعة", "#c2410c", "#f59e0b", () => setView("readwk"))}
             {ptTile("formative", "📘", "التقويم التكويني", "إعداد سجلك الخاص للدرجات وطباعته", "#2563eb", "#3b82f6", () => setView("formative"))}
             {ptTile("nafes", "🎯", "نتائج نافس لطلابي", "طلاب فصولك في مادتك حسب الجدول: الدرجات وتحليل الإجابات والمهارات ومن بقي", "#1e3a8a", "#0f766e", () => setView("nafes"))}
-            {ptTile("nbooks", "📚", "مراجع نافس", "اعرض مرجع مادتك للشرح، وسجّل ما شرحته لكل فصل، وتابع حلول طلابك وعلّق عليها", "#5b21b6", "#7c3aed", () => setView("nbooks"))}
+            {ptTile("nbooks", "📚", "مراجع نافس", "اعرض مرجع مادتك بسبورة ذكية، وسجّل «تم شرح الصفحة»، وتابع تقدّمك ودخول طلابك وحلولهم", "#5b21b6", "#7c3aed", () => setView("nbooks"))}
+            {["principal", "deputy"].includes(me.role) && ptTile("nbadm", "📊", "مراجع نافس – متابعة الإدارة", "إنجاز المعلمين أسبوعًا بأسبوع • تنبيهات الاختبارات • دخول الطلاب وحلولهم", "#9a3412", "#f59e0b", () => setView("nbadm"))}
           </div></div>
           <div className="pt-sec"><h3>📝 السلوك</h3><div className="pt-tiles">
             {ptTile("beh", "📝", "الملاحظات السلوكية", "سجّل ملاحظة سلوكية لطالب بلمستين — تُحفظ فوراً", "#7c3aed", "#db2777", () => setView("beh"))}
@@ -42242,6 +42245,20 @@ function atUpdates(D, log, since) {
 }
 
 // ─── شريط التنبيه في البوابة (للمدير وللإداري)
+// 🔔 تنبيه المدير: أسابيع اكتمل شرحها في «مراجع نافس» وتنتظر الاختبار
+function NbAlertBanner({ onOpen }) {
+  const [L, setL] = useState([]); const prev = useRef(-1);
+  useEffect(() => { let a = true; const f = async () => { const d = ptObj(await maGet("school-nafsbook-alerts")); if (!a) return; const n = Object.values(d).filter(x => x && x.book && (!x.st || x.st === "new"));
+    if (prev.current >= 0 && n.length > prev.current) atNotify("📚 مراجع نافس", "اكتمل شرح أسبوع جديد — جاهز للاختبار"); prev.current = n.length; setL(n); };
+    f(); const t = setInterval(f, 120000); return () => { a = false; clearInterval(t); }; }, []);
+  if (!L.length) return null; const BN = { math: "الرياضيات", sci: "العلوم", ar: "لغتي" };
+  return <button type="button" onClick={onOpen} style={{ all: "unset", cursor: "pointer", display: "block", borderRadius: 22, padding: "12px 16px", color: "#fff", background: "linear-gradient(135deg,#7c2d12,#c2410c 55%,#f59e0b)", boxShadow: "0 18px 34px -26px rgba(124,45,18,.9)" }}>
+    <div className="flex items-center gap-3 flex-wrap"><span style={{ fontSize: 30 }}>🔔</span>
+      <div style={{ flex: 1, minWidth: 180 }}><b style={{ fontSize: 15.5 }}>مراجع نافس: {maAr(L.length)} أسبوع اكتمل شرحه وجاهز للاختبار</b>
+        <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .92 }}>{L.slice(0, 3).map(x => `${BN[x.book] || ""} الأسبوع ${maAr(+x.w + 1)} (${maAr(String(x.ck).split("-")[1])}/${maAr(String(x.ck).split("-")[0])})`).join(" • ")}{L.length > 3 ? " …" : ""}</div></div>
+      <span className="at-bell">افتح الاختبار ←</span></div>
+  </button>;
+}
 function AtHomeBanner({ me, boss, onOpen }) {
   const [s, setS] = useState(null); const prev = useRef(-1);
   useEffect(() => { let a = true; const dk = maKey(new Date());
@@ -42530,7 +42547,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
   const [wk, setWk] = useState(null); const [rng, setRng] = useState({ kind: "month", f: "", t: "", data: null });
   const [q, setQ] = useState(""); const [flt, setFlt] = useState(""); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
   const [pend, setPend] = useState(Object.keys(asmQGet()).length); const [unlock, setUnlock] = useState(false); const [now, setNow] = useState(new Date());
-  const [note, setNote] = useState(null); const [addN, setAddN] = useState(""); const [imp, setImp] = useState(null);
+  const [note, setNote] = useState(null); const [addN, setAddN] = useState(""); const [imp, setImp] = useState(null); const [hdi, setHdi] = useState(null);
   const [ttT, setTtT] = useState(null); const [tAbs, setTAbs] = useState({}); const [ttTimes, setTtTimes] = useState(null); // ربط «غائب اليوم» بغياب جدول الحصص
   useEffect(() => { if (ro) return; maGet(TT_NODE).then(a => setTtT(ttFresh(a))).catch(() => {}); maGet(TT_CFG).then(c => setTtTimes(ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : TT_PDF.times))).catch(() => setTtTimes(ttFixTimes(TT_PDF.times))); }, []);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
@@ -42598,6 +42615,36 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
     const o = {}; const n = { ...day }; rest.forEach(t => { const r = { st: "p", t: nowHM, by, at: Date.now() }; o[`${ASM_NODE}/${dateK}/${t.k}`] = r; n[t.k] = r; }); setDay(n); const ok = await asmWrite(o); setPend(Object.keys(asmQGet()).length); toast(ok ? `✅ سُجّل حضور ${maAr(rest.length)} معلم` : "📴 حُفظ على الجهاز");
   };
   const setCut = async (v, always) => { if (!v) return; if (always) await saveCfg({ cut: v }); setDay(d => ({ ...d, _cut: v })); await asmWrite({ [`${ASM_NODE}/${dateK}/_cut`]: v }); toast(`⏱ ينتهي الحصر الساعة ${mlFmtT(v)}${always ? " (افتراضياً لكل الأيام)" : " اليوم"}`); };
+
+  // ── 📥 الرصد من ملف «حضوري»: من سجّل حضوره حتى وقت الطابور = حضر، والباقي اقتراح يعدّله الوكيل قبل الاعتماد
+  const hdPropose = (r, cv) => { if (!r) return ""; const st = String(r.st || ""); if (/اجازة|إجازة|استئذان/.test(st)) return "x"; if (/غياب/.test(st) || !r.a) return ""; return r.a <= cv ? "p" : "l"; };
+  const hdVal = (H, it) => H.sel[it.t.k] !== undefined ? H.sel[it.t.k] : it.cur ? "" : hdPropose(it.r, H.cut);
+  const hdOpen = async file => {
+    setBusy(true);
+    try {
+      const P = await hdParse(file); const rows = P.rows.filter(x => x.dk === dateK);
+      if (!rows.length) { const ds = [...new Set(P.rows.map(x => x.dk))].sort(); toast(P.rows.length ? `الملف لا يحتوي على يوم ${maDay(D)} ${asmHij(D)} — تاريخ الملف: ${ds.slice(0, 3).map(k => asmHij(maDate(k))).join("، ")}. اختر ذلك اليوم أولاً ثم ارفع الملف` : "لم أتعرّف على الملف — ارفع تقرير «حضوري» بصيغة Excel"); return; }
+      // المطابقة برقم الهوية أولاً، ثم بالاسم مقارنةً بكل القائمة (حتى لا يلتبس اسمان متشابهان)
+      const used = new Set(); const M = {}; const dict = Object.fromEntries(L.map(t => [t.k, { name: t.n }]));
+      L.forEach(t => { const r = t.rid ? rows.find(x => x.nid === licNormId(t.rid)) : null; if (r) { M[t.k] = r; used.add(r); } });
+      rows.forEach(r => { if (used.has(r)) return; const k = cvMatch(r.n, dict); if (k && !M[k]) { M[k] = r; used.add(r); } });
+      const items = L.map(t => { const cur = day[t.k]; return { t, r: M[t.k] || null, cur: cur && cur.st ? cur : null }; });
+      setHdi({ items, extra: rows.filter(x => !used.has(x)), cut: cfg.hdCut || "07:00", sel: {}, name: file.name });
+    } catch (e) { toast("تعذّر قراءة الملف: " + (e?.message || e)); }
+    finally { setBusy(false); }
+  };
+  const hdApply = async () => {
+    const H = hdi; const o = {}; const n = { ...day }; const gs = []; let c = 0;
+    H.items.forEach(it => { const v = hdVal(H, it); if (!v) return; const cur = day[it.t.k]; if (cur && cur.st === v) return;
+      const hist = cur && cur.st ? [...maArr(cur.h), { st: cur.st, t: cur.t || "", by: cur.by || "", at: cur.at || 0, ...(cur.note ? { note: cur.note } : {}) }].slice(-6) : null;
+      const rec = { st: v, t: (it.r && it.r.a) || nowHM, by, at: Date.now(), src: "hd", ...(hist ? { h: hist } : {}) };
+      o[`${ASM_NODE}/${dateK}/${it.t.k}`] = rec; n[it.t.k] = rec; c++; if (v === "g") gs.push(it.t); });
+    if (H.cut !== (cfg.hdCut || "07:00")) saveCfg({ hdCut: H.cut });
+    setHdi(null); if (!c) { toast("لا تغييرات للاعتماد"); return; }
+    setDay(n); const ok = await asmWrite(o); setPend(Object.keys(asmQGet()).length);
+    for (const t of gs) await syncAbs(t, true);
+    toast(ok ? `📥 اعتُمد رصد ${maAr(c)} معلم من ملف حضوري — يمكنك تعديل أي معلم من أزراره` : "📴 حُفظ على الجهاز — سيُرفع عند عودة الاتصال");
+  };
 
   // ── استيراد الأسماء
   const doImport = async (src) => {
@@ -42713,6 +42760,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
           {!dpOn && !asmHas(day) && past && work && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", background: "#f1f5f9", borderRadius: 14, padding: "8px 12px" }}>لم يُسجَّل حصر للطابور في هذا اليوم</div>}
           <div className="flex gap-2 flex-wrap items-center">
             <input className="ma-inp" style={{ flex: "1 1 200px", height: 42 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 ابحث عن معلم…" />
+            {canEdit && !ro && <label className="ma-btn pri" style={{ cursor: "pointer", opacity: busy ? .5 : 1 }}>📥 من ملف حضوري<input type="file" accept=".xlsx,.xls,.csv" hidden disabled={busy} onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) hdOpen(f); }} /></label>}
             {!locked && un > 0 && <button className="ma-btn grn" onClick={allPresent}>✅ الباقون حضروا</button>}
             <button className="ma-btn gold" onClick={printDay}>🖨 إحصائية اليوم</button>
             {canEdit && (past || !isToday) && <button className="ma-btn" onClick={() => setUnlock(!unlock)}>{unlock ? "🔒 قفل" : "🔓 تعديل"}</button>}
@@ -42720,7 +42768,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
           <div className="grid gap-2">{shown.map((t, i) => { const e = eff(t.k); const s = ASM_ST[e.st]; const n = wkAbs(t.k); const lv = asmLvl(n, warn); return (
             <div key={t.k} className="asm-row" style={{ background: s ? s.bg + "88" : "#fff", borderColor: s ? s.c + "44" : "#eef2f7" }}>
               <div className="asm-av" style={{ background: avC[i % avC.length] }}>{t.n.trim()[0]}</div>
-              <div className="nm"><b>{t.n}</b><small>{t.s ? t.s + " • " : ""}{e.r && e.r.t ? `${e.r.st === "lx" || e.r.st === "l" ? "وصل" : e.r.st === "p" ? "حضر" : "رُصد"} ${maAr(e.r.t)}` : e.dp ? "حاضر (افتراضي)" : e.auto ? "بعد انتهاء الحصر" : "لم يُرصد"}{e.r && asmLateM(e.r, cut) ? ` • تأخر ${maAr(asmLateM(e.r, cut))} د` : ""}{e.r && maArr(e.r.h).length ? " • ✎ معدَّل" : ""}{e.r && e.r.note ? ` • ${e.r.note}` : ""}{e.r && e.r.out ? ` • خرج ${mlFmtT(e.r.out)}` : ""}{e.r && e.r.ret ? ` • عاد ${mlFmtT(e.r.ret)}` : ""}</small>{canEdit && (!locked || isToday) && !(e.r && (e.r.st === "x" || e.r.st === "o")) && (() => { const own = e.r && ASM_NOTE[e.r.st] && ASM_NOTE[e.r.st].at; return <button className="asm-wk" title="تعديل وقت الحضور" style={{ background: "#7c3aed", color: "#fff", border: "none", cursor: "pointer", marginRight: 4, padding: "3px 10px", fontWeight: 900 }} onClick={() => setNote(own ? { t, st: e.r.st, v: e.r.note || "", tm: e.r.t || nowHM, out: e.r.out || "", ed: 1 } : { t, st: "p", v: e.r ? "رُصد بالخطأ وكان حاضراً" : "", tm: isToday ? nowHM : "" })}>🕒 {own ? "تعديل الوقت" : e.r ? "حضر مبكراً؟" : "وقت الحضور"}</button>; })()}{e.r && !e.r.ret && (e.r.st === "g" || e.r.st === "o" || (e.r.st === "x" && e.r.out)) && isToday && canEdit && <button className="asm-wk" style={{ background: "#0f766e", color: "#fff", border: "none", cursor: "pointer", marginRight: 4 }} onClick={() => retT(t)}>↩️ عاد</button>}{n > 0 && <span className="asm-wk" style={{ background: lv.bg, color: lv.c, marginRight: 4 }}>❌ {maAr(n)} هذا الأسبوع</span>}</div>
+              <div className="nm"><b>{t.n}</b><small>{t.s ? t.s + " • " : ""}{e.r && e.r.t ? `${e.r.st === "lx" || e.r.st === "l" ? "وصل" : e.r.st === "p" ? "حضر" : "رُصد"} ${maAr(e.r.t)}` : e.dp ? "حاضر (افتراضي)" : e.auto ? "بعد انتهاء الحصر" : "لم يُرصد"}{e.r && e.r.src === "hd" ? " • 📥 حضوري" : ""}{e.r && asmLateM(e.r, cut) ? ` • تأخر ${maAr(asmLateM(e.r, cut))} د` : ""}{e.r && maArr(e.r.h).length ? " • ✎ معدَّل" : ""}{e.r && e.r.note ? ` • ${e.r.note}` : ""}{e.r && e.r.out ? ` • خرج ${mlFmtT(e.r.out)}` : ""}{e.r && e.r.ret ? ` • عاد ${mlFmtT(e.r.ret)}` : ""}</small>{canEdit && (!locked || isToday) && !(e.r && (e.r.st === "x" || e.r.st === "o")) && (() => { const own = e.r && ASM_NOTE[e.r.st] && ASM_NOTE[e.r.st].at; return <button className="asm-wk" title="تعديل وقت الحضور" style={{ background: "#7c3aed", color: "#fff", border: "none", cursor: "pointer", marginRight: 4, padding: "3px 10px", fontWeight: 900 }} onClick={() => setNote(own ? { t, st: e.r.st, v: e.r.note || "", tm: e.r.t || nowHM, out: e.r.out || "", ed: 1 } : { t, st: "p", v: e.r ? "رُصد بالخطأ وكان حاضراً" : "", tm: isToday ? nowHM : "" })}>🕒 {own ? "تعديل الوقت" : e.r ? "حضر مبكراً؟" : "وقت الحضور"}</button>; })()}{e.r && !e.r.ret && (e.r.st === "g" || e.r.st === "o" || (e.r.st === "x" && e.r.out)) && isToday && canEdit && <button className="asm-wk" style={{ background: "#0f766e", color: "#fff", border: "none", cursor: "pointer", marginRight: 4 }} onClick={() => retT(t)}>↩️ عاد</button>}{n > 0 && <span className="asm-wk" style={{ background: lv.bg, color: lv.c, marginRight: 4 }}>❌ {maAr(n)} هذا الأسبوع</span>}</div>
               <div className="asm-bt">{Object.entries(ASM_ST).map(([k, x]) => <button key={k} disabled={locked && !lateOK(k)} onClick={() => { const c0 = day[t.k]; if (ASM_NOTE[k] && (k !== "p" || (c0 && c0.st === "p"))) { if (c0 && c0.st === k) setNote({ t, st: k, v: c0.note || "", tm: c0.t || nowHM, out: c0.out || "", ed: 1 }); else setNote({ t, st: k, v: "", tm: isToday ? nowHM : "", out: k === "o" ? nowHM : "" }); } else setSt(t, k); }} style={e.st === k && !e.auto ? { background: x.c, borderColor: x.c, color: "#fff" } : e.st === k ? { borderColor: x.c, color: x.c, borderStyle: "dashed" } : null}><span>{x.ic}</span>{x.l}</button>)}</div>
             </div>); })}{!shown.length && <div className="ma-card p-6 text-center text-gray-400 font-bold">لا يوجد</div>}</div>
         </>}
@@ -42790,6 +42838,19 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
         {N.out && <div style={{ fontSize: 12, fontWeight: 800, color: "#0369a1", marginTop: 6 }}>🗓️ عند تحديد وقت الخروج تُضاف حصصه المتبقية لجدول الحصص لتُغطّى بالانتظار، وعند عودته اضغط «↩️ عاد».</div>}
         <div className="flex gap-2 justify-end mt-3">{note.ed && note.st !== "p" && <button className="ma-btn grn" style={{ marginInlineEnd: "auto" }} onClick={async () => { await setSt(note.t, "p", { keep: 1 }); setNote(null); }}>↩ إرجاعه «حاضر»</button>}<button className="ma-btn" onClick={() => setNote(null)}>إلغاء</button><button className="ma-btn pri" style={{ background: C.c, borderColor: C.c }} onClick={async () => { if (N.req && !note.out) { alert("حدد وقت الخروج"); return; } await setSt(note.t, note.st || "x", { keep: 1, fix: note.st === "p" ? 1 : 0, note: note.v.trim(), ...(N.at && note.tm ? { t: note.tm } : {}), ...(N.out && note.out ? { out: note.out } : {}) }); setNote(null); }}>حفظ</button></div></>; })()}
       </div></div>}
+      {hdi && (() => { const H = hdi; const vals = H.items.map(it => hdVal(H, it)); const cn = k => vals.filter(v => v === k).length; const setSel = (k, v) => setHdi(h => ({ ...h, sel: { ...h.sel, [k]: v } }));
+        return <div style={{ position: "fixed", inset: 0, zIndex: 700, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 10 }} onClick={() => setHdi(null)}><div className="ma-card" style={{ width: "min(680px,100%)", maxHeight: "90vh", overflow: "auto", padding: 14, display: "grid", gap: 10 }} onClick={e => e.stopPropagation()} dir="rtl">
+          <div><b style={{ fontSize: 16 }}>📥 رصد الطابور من ملف «حضوري»</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{maDay(D)} {asmHij(D)} • {H.name}</div></div>
+          <div className="flex gap-2 flex-wrap items-center" style={{ fontSize: 13.5, fontWeight: 800 }}>من سجّل حضوره حتى الساعة<input type="time" className="ma-inp" style={{ width: 120, height: 38 }} value={H.cut} onChange={e => e.target.value && setHdi(h => ({ ...h, cut: e.target.value, sel: {} }))} />يُرصد ✅ حضر</div>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: "#14532d", background: "#f0fdf4", border: "1.5px solid #bbf7d0", borderRadius: 12, padding: "7px 10px", lineHeight: 1.8 }}>غيّر حالة أي معلم من القائمة قبل الاعتماد، أو اعتمد ثم عدّل من أزراره كالمعتاد. «بلا تغيير» يترك المعلم كما هو. من رُصد يدوياً قبل الرفع يبقى كما هو إلا إن غيّرته.</div>
+          <div className="flex gap-2 flex-wrap">{["p", "l", "x", "g", "a"].map(k => <span key={k} style={{ background: ASM_ST[k].bg, color: ASM_ST[k].c, borderRadius: 999, padding: "3px 10px", fontWeight: 900, fontSize: 12.5, whiteSpace: "nowrap" }}>{ASM_ST[k].ic} {ASM_ST[k].l}: {maAr(cn(k))}</span>)}<span style={{ background: "#f1f5f9", color: "#475569", borderRadius: 999, padding: "3px 10px", fontWeight: 900, fontSize: 12.5 }}>بلا تغيير: {maAr(cn(""))}</span></div>
+          <div className="grid gap-1">{H.items.map((it, i) => { const v = vals[i]; const S = ASM_ST[v]; const r = it.r; return <div key={it.t.k} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 8, alignItems: "center", padding: "6px 8px", borderRadius: 10, background: S ? S.bg + "99" : "#f8fafc" }}>
+            <div style={{ minWidth: 0 }}><b style={{ fontSize: 13.5 }}>{it.t.n}</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{r ? <>حضوري: {r.a ? `دخل ${maAr(r.a)}` : "لم يسجّل حضوره"}{r.st && !/^حضور$/.test(r.st) ? ` • ${r.st}` : ""}</> : <span style={{ color: "#b91c1c" }}>غير موجود في الملف</span>}{it.cur ? ` • مرصود سابقاً: ${ASM_ST[it.cur.st] ? ASM_ST[it.cur.st].l : ""}` : ""}</div></div>
+            <select className="ma-inp" style={{ height: 36, padding: "0 6px", fontSize: 13, fontWeight: 800, width: 170, color: S ? S.c : "#475569" }} value={v} onChange={e => setSel(it.t.k, e.target.value)}><option value="">— بلا تغيير</option>{Object.entries(ASM_ST).map(([k, x]) => <option key={k} value={k}>{x.ic} {x.l}</option>)}</select>
+          </div>; })}</div>
+          {H.extra.length > 0 && <details style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}><summary style={{ cursor: "pointer" }}>في الملف {maAr(H.extra.length)} اسم ليس في قائمة الطابور (إداريون أو أسماء غير مربوطة)</summary><div style={{ marginTop: 6, lineHeight: 1.9 }}>{H.extra.map(x => `${x.n}${x.a ? " (" + maAr(x.a) + ")" : ""}`).join(" • ")}</div></details>}
+          <div className="flex gap-2 justify-end" style={{ position: "sticky", bottom: -14, background: "#fff", padding: "8px 0" }}><button className="ma-btn" onClick={() => setHdi(null)}>إلغاء</button><button className="ma-btn pri" onClick={hdApply}>✅ اعتماد الرصد</button></div>
+        </div></div>; })()}
       {imp && <div style={{ position: "fixed", inset: 0, zIndex: 700, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 14 }} onClick={() => setImp(null)}><div className="ma-card" style={{ width: "min(520px,100%)", maxHeight: "85vh", overflow: "auto", padding: 16 }} onClick={e => e.stopPropagation()} dir="rtl">
         <b style={{ fontSize: 16 }}>📥 استيراد الأسماء</b>
         <div style={{ fontSize: 13, fontWeight: 800, color: "#64748b", margin: "4px 0 8px" }}>وُجد {maAr(imp.total)} اسماً • الجديد منها {maAr(Object.keys(imp.add).length)} (المكرر يُتجاهل تلقائياً)</div>
