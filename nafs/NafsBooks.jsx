@@ -12,6 +12,7 @@
 // • ملفات PDF في public/nafs/ ولا تدخل في حزمة الموقع؛ ومكتبة pdf.js تُحمَّل فقط عند فتح هذه الصفحة
 // ════════════════════════════════════════════════════════════════════
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 const NB = "school-nafsbook", NB_IDX = "school-nafsbook-idx", NB_TC = "school-nafsbook-tc";
 const NB_T = "school-nafsbook-t", NB_TP = "school-nafsbook-tp", NB_B = "school-nafsbook-b";
@@ -143,6 +144,10 @@ function confetti() {
 const CSS = `
 .nb{direction:rtl;font-family:inherit;color:#1d2433;min-height:100vh;background:#eef0f4}
 .nb *{box-sizing:border-box}
+.nb-fs{position:fixed;inset:0;z-index:2000;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;height:100vh;height:100dvh;min-height:0;padding-bottom:env(safe-area-inset-bottom,0px);animation:nbFsIn .18s ease-out}
+@keyframes nbFsIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.nb-fs .nb-page canvas.pdf{transition:opacity .15s}
+@media (max-width:560px){.nb-fs .nb-top{padding:6px 8px;gap:5px}.nb-fs .nb-top .nb-b{padding:6px 8px}.nb-fs .nb-top b{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nb-fs .nb-top .nb-sp{display:none}.nb-fs .nb-pg{width:100%;justify-content:center}.nb-fs .nb-tools{gap:5px;padding:5px 8px}.nb-fs .nb-tools .nb-b{padding:6px 8px;font-size:12.5px}.nb-fs .nb-stage{padding-top:6px}}
 .nb-top{position:sticky;top:0;z-index:30;background:#fff;border-bottom:3px solid var(--c,#334155);padding:7px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .nb-top b{font-size:15px}
 .nb-sp{flex:1}
@@ -185,8 +190,8 @@ const CSS = `
 .nb-wk i b{display:block;height:100%;background:var(--c)}
 .nb-wk.done{background:var(--c);color:#fff;border-color:var(--c)}
 .nb-wk.done i{background:rgba(255,255,255,.35)}.nb-wk.done i b{background:#fff}
-.nb-save{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:14px;z-index:60;background:#1d2433;color:#fff;border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:800;opacity:.95;max-width:70vw}
-.nb-nav{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));right:12px;z-index:40;display:flex;gap:8px}
+.nb-save{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:14px;z-index:2060;background:#1d2433;color:#fff;border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:800;opacity:.95;max-width:70vw}
+.nb-nav{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));right:12px;z-index:2040;display:flex;gap:8px}
 .nb-nav button{width:52px;height:46px;border-radius:14px;border:0;background:var(--c,#334155);color:#fff;font-size:22px;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer}
 .nb-list{display:grid;gap:6px}
 .nb-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:800;flex-wrap:wrap}
@@ -242,8 +247,8 @@ const CSS = `
 .nb-keys .lat{direction:ltr;unicode-bidi:isolate}
 .nb-keys mark{background:#fde68a}
 /* الفهرس */
-.nb-drawer-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80}
-.nb-drawer{position:fixed;top:0;bottom:0;right:0;width:min(440px,94vw);background:#f8fafc;z-index:81;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(0,0,0,.25);animation:nbIn .2s ease-out}
+.nb-drawer-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:2080}
+.nb-drawer{position:fixed;top:0;bottom:0;right:0;width:min(440px,94vw);background:#f8fafc;z-index:2081;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(0,0,0,.25);animation:nbIn .2s ease-out}
 @keyframes nbIn{from{transform:translateX(100%)}to{transform:none}}
 .nb-drawer header{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border-bottom:3px solid var(--c)}
 .nb-drawer .body{overflow:auto;padding:10px;display:grid;gap:8px;align-content:start;grid-auto-rows:max-content;flex:1;min-height:0}
@@ -259,7 +264,7 @@ const CSS = `
 .nb-th.cur{box-shadow:0 0 0 3px var(--c)}
 .nb-th em{position:absolute;top:3px;left:3px;font-style:normal;background:#16a34a;color:#fff;border-radius:999px;font-size:10px;padding:0 5px;font-weight:900}
 /* السبورة */
-.bd{position:fixed;z-index:70;background:#fff;border-radius:16px;box-shadow:0 24px 60px -18px rgba(0,0,0,.55),0 0 0 1px rgba(15,23,42,.08);display:flex;flex-direction:column;overflow:hidden;direction:rtl}
+.bd{position:fixed;z-index:2070;background:#fff;border-radius:16px;box-shadow:0 24px 60px -18px rgba(0,0,0,.55),0 0 0 1px rgba(15,23,42,.08);display:flex;flex-direction:column;overflow:hidden;direction:rtl}
 .bd.max{inset:0;border-radius:0}
 .bd-h{display:flex;align-items:center;gap:6px;padding:6px 8px;background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;cursor:move;touch-action:none;user-select:none}
 .bd-h input{flex:1;min-width:60px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:8px;color:#fff;font:inherit;font-weight:900;font-size:13.5px;padding:4px 8px}
@@ -279,9 +284,9 @@ const CSS = `
 .bd-cv canvas{display:block;touch-action:none;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .bd-cv textarea{position:absolute;border:2px dashed #2563eb;background:rgba(255,255,255,.85);outline:none;font-weight:800;resize:none;padding:2px 4px;line-height:1.25;min-width:120px;font-family:inherit;z-index:3}
 .bd-rs{position:absolute;left:0;bottom:0;width:22px;height:22px;cursor:nesw-resize;touch-action:none;background:linear-gradient(225deg,transparent 50%,#1e3a8a 50%);opacity:.8;z-index:4}
-.bd-min{position:fixed;z-index:70;border-radius:999px;background:linear-gradient(135deg,#1e3a8a,#0f766e);color:#fff;font-weight:900;padding:10px 16px;box-shadow:0 12px 26px -10px rgba(0,0,0,.6);cursor:grab;touch-action:none;user-select:none;border:2px solid #fbbf24;font-size:14px}
+.bd-min{position:fixed;z-index:2070;border-radius:999px;background:linear-gradient(135deg,#1e3a8a,#0f766e);color:#fff;font-weight:900;padding:10px 16px;box-shadow:0 12px 26px -10px rgba(0,0,0,.6);cursor:grab;touch-action:none;user-select:none;border:2px solid #fbbf24;font-size:14px}
 .bd-ft{display:flex;gap:6px;padding:5px 8px;align-items:center;background:#fff;border-top:1px solid #e2e8f0;font-size:12px;font-weight:800;color:#64748b;flex-wrap:wrap}
-.nb-conf{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+.nb-conf{position:fixed;inset:0;pointer-events:none;z-index:2200;overflow:hidden}
 .nb-conf i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:nbFall 2.6s ease-in forwards}
 @keyframes nbFall{to{top:105vh;transform:rotate(720deg)}}
 @media (max-width:560px){.nb-top b{font-size:13.5px}.nb-tbl{font-size:12.5px}.nb-hide-s{display:none!important}.nb-keys .kg{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));max-height:30vh;padding:6px;gap:5px}.nb-keys .ki{padding:4px 6px}.nb-keys .ka{font-size:13.5px}}
@@ -642,7 +647,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
     const pg = await doc.getPage(page);
     const v1 = pg.getViewport({ scale: 1 });
     const W0 = stageRef.current.clientWidth - 16;
-    const H0 = window.innerHeight - (topRef.current ? topRef.current.getBoundingClientRect().bottom : 110) - 24;
+    const H0 = window.innerHeight - (topRef.current ? topRef.current.offsetHeight : 110) - 26;
     let w = fit === "page" ? Math.min(W0, H0 * v1.width / v1.height) : Math.min(W0, 1100);
     w = Math.floor(w * zoom); const h = Math.floor(w * v1.height / v1.width);
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -654,6 +659,8 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
     const c = pdfRef.current; if (!c) return;
     c.width = off.width; c.height = off.height; c.getContext("2d").drawImage(off, 0, 0);
     setSize({ w, h });
+    // «صفحة كاملة»: تظهر الصفحة كلها تحت شريط الأدوات مباشرة دون تمرير
+    if (fit === "page" && rootRef.current && stageRef.current && topRef.current) requestAnimationFrame(() => { const r = rootRef.current; if (r) r.scrollTop = Math.max(0, stageRef.current.offsetTop - topRef.current.offsetHeight); });
     if (page < (doc.numPages || B.pages)) doc.getPage(page + 1).catch(() => {});
   }, [doc, page, fit, zoom, fs]);
   useEffect(() => { render(); }, [render]);
@@ -731,7 +738,9 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const total = doc ? doc.numPages : B.pages;
   const go = d => setPage(p => Math.min(Math.max(1, p + d), total));
   const goTo = p => { setPage(Math.min(Math.max(1, p), total)); setIdxOpen(false); };
-  useEffect(() => { window.scrollTo({ top: 0 }); if (stageRef.current) stageRef.current.scrollTop = 0; }, [page]);
+  useEffect(() => { if (rootRef.current) rootRef.current.scrollTop = 0; if (stageRef.current) stageRef.current.scrollTop = 0; }, [page]);
+  // قفل تمرير صفحة الموقع خلفه، وإعادته كما كان عند الخروج
+  useEffect(() => { const b = document.body, h = document.documentElement; const o = [b.style.overflow, h.style.overflow]; b.style.overflow = "hidden"; h.style.overflow = "hidden"; return () => { b.style.overflow = o[0]; h.style.overflow = o[1]; }; }, []);
   useEffect(() => { const k = e => { if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || bo) return;
     if (e.key === "ArrowLeft" || e.key === "PageDown") { e.preventDefault(); go(1); } if (e.key === "ArrowRight" || e.key === "PageUp") { e.preventDefault(); go(-1); }
     if (e.key === "Home") goTo(1); if (e.key === "End") goTo(total); if (e.key.toLowerCase() === "f") toggleFs(); };
@@ -780,7 +789,8 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const curW = weekOfPage(book, page);
   const nBoards = Object.keys(pb).length;
 
-  return <div ref={rootRef} className="nb" style={{ "--c": B.c, minHeight: fs ? "100vh" : undefined }}>
+  // يُعرض في طبقة كاملة فوق الموقع (لا تتداخل معه القوائم والعناوين وأشرطة التنقل)
+  return createPortal(<div ref={rootRef} className="nb nb-fs" dir="rtl" style={{ "--c": B.c }} role="dialog" aria-label={`مرجع ${B.name}`}><style>{CSS}</style>
     <div className="nb-top" ref={topRef}>
       <button className="nb-b" onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); onBack(); }}>→ رجوع</button>
       <b>{B.name}{title ? ` • ${title}` : ""}</b>
@@ -868,7 +878,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
       weekLbl={tp && ck ? w => `فصل ${cls(ck)}: ${weekPct(C, book, w) === 100 ? "اكتمل الشرح ✅" : `شُرح ${ar(weekPct(C, book, w))}٪`}` : null} />}
     {bo && <Board key={bo.id} init={bo.init} readOnly={boardsRO} canSave={canBoard} label={`${B.name} • ص ${ar(bo.page)}`}
       onSave={d => saveBoard(bo, d)} onClose={closeBoard} onDelete={pb[bo.id] || canBoard ? delBoard : null} />}
-  </div>;
+  </div>, document.body);
 }
 
 // ══════════════════════ دخول الطالب ومكتبته ══════════════════════
@@ -903,7 +913,7 @@ const Bar = ({ v, c = "#16a34a", w }) => <div className="nb-bar" style={{ "--c":
 const Ring = ({ v, c, label }) => <div style={{ display: "grid", justifyItems: "center", gap: 2 }}><div className="nb-ring" style={{ "--p": v, "--c": v === 100 ? "#16a34a" : c }}><span>{ar(v)}٪</span></div>{label && <small style={{ fontWeight: 900, color: "#475569" }}>{label}</small>}</div>;
 const WeekBars = ({ vals, c, onPick, cur }) => <div className="nb-wbars" style={{ "--c": c }}>{vals.map((v, w) => <i key={w} className={v === 100 ? "full" : ""} title={`الأسبوع ${w + 1}: ${v}%`} onClick={() => onPick && onPick(w)} style={cur === w ? { outline: `2px solid ${c}` } : null}><b style={{ height: Math.max(v ? 8 : 0, v) + "%" }} /></i>)}</div>;
 
-function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, readOnly }) {
+function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, onProfile, readOnly }) {
   const [done, setDone] = useState({}); const [open, setOpen] = useState({});
   useEffect(() => { if (!student) return; api.maGet(`${NB_IDX}/${student.id}`).then(d => setDone(obj(d))); api.maGet(`${NB_OPEN}/${student.ck}`).then(d => setOpen(obj(d))); }, [student && student.id]);
   const count = book => Object.keys(obj(done[book])).length;
@@ -914,6 +924,7 @@ function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, rea
         <div style={{ fontWeight: 900, fontSize: 17 }}>{readOnly ? "دفتر الطالب: " : "أهلًا "}{student.name}</div>
         <div style={{ color: "#64748b", fontWeight: 700, fontSize: 13 }}>الثالث المتوسط / {ar(String(student.ck).split("-")[1])} • الشريط تحت كل أسبوع يبيّن نسبة ما حللته فيه</div>
       </div>
+      {onProfile && <button className="nb-b on" style={{ "--c": "#1e3a8a" }} onClick={onProfile} title="الغياب والتأخر وتقييم المعلمين والملاحظات">📋 ملفي الشامل</button>}
       {onLogout && <button className="nb-b" onClick={onLogout}>تبديل الطالب</button>}
       {onBack && <button className="nb-b" onClick={onBack}>رجوع</button>}
     </div>
@@ -947,7 +958,8 @@ export function NafsBooksStudent({ api, onBack }) {
     {!st ? <StudentLogin api={api} onIn={setSt} onBack={onBack} />
       : open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} idx={`${NB_IDX}/${st.id}`} tc="show" tcPath={`${NB_TC}/${st.id}`}
           boards={`${NB_B}/s_${st.id}`} seenSid={st.id} who={"s_" + st.id} title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} />
-        : <Library api={api} student={st} onOpen={(book, page) => setOpen({ book, page })} onLogout={logout} onBack={onBack} />}
+        : <Library api={api} student={st} onOpen={(book, page) => setOpen({ book, page })} onLogout={logout} onBack={onBack}
+            onProfile={() => { lsSet("pam-parent", { ck: st.ck, sid: st.id, name: st.name, nh: st.nh }); window.location.hash = "parent"; window.location.reload(); }} />}
   </div>;
 }
 
