@@ -33470,8 +33470,7 @@ function ParentInbox({ by = "الإدارة" }) {
     const ord = k => (a, b) => (ptPend(b, k) - ptPend(a, k)) || ((b.pAt || b.at) - (a.pAt || a.at));
     setD({ exc: E.sort(ord("exc")), notes: N.sort(ord("note")), comms: comms.sort((a, b) => b.at - a.at), six });
     // مزامنة فهرس «بانتظار الرد» مع الحالة الفعلية (يشمل الأعذار القديمة قبل التحديث)
-    try { const cur = ptObj(await maGet(PT_IDX)); const want = {}; E.forEach(x => { const v = ptIdxVal("exc", x); if (v) want[x.id] = v; }); N.forEach(x => { const v = ptIdxVal("note", x); if (v) want[x.id] = v; });
-      const o = {}; Object.keys(cur).forEach(id => { if (!want[id]) o[`${PT_IDX}/${id}`] = null; }); Object.entries(want).forEach(([id, v]) => { if (!cur[id] || cur[id].at !== v.at || cur[id].st !== v.st) o[`${PT_IDX}/${id}`] = v; }); if (Object.keys(o).length) fbPatch(o); } catch {}
+    ptIdxSync();
   };
   useEffect(() => { load(); }, []);
   const upd = async (path, patch, key, id) => {
@@ -46167,15 +46166,26 @@ function GdThread({ x, path, who, by, k, onUpd }) {
     <div className="flex gap-2"><input className="ma-inp" style={{ height: 38 }} value={t} maxLength={600} onChange={e => setT(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder={who === "p" ? "اكتب تعليقًا أو توضيحًا للمدرسة…" : "اكتب ردًا لولي الأمر…"} /><button className="ma-btn pri" disabled={busy || !t.trim()} onClick={send}>إرسال</button></div>
   </div>;
 }
+// يبني الفهرس من الأعذار والملاحظات الفعلية (يشمل ما رُفع قبل هذا التحديث)
+async function ptIdxSync() {
+  try { const [ex, nt, cur0] = await Promise.all([maGet(PT_EXC), maGet(PT_NOTES), maGet(PT_IDX)]); if (ex === undefined) return null; const cur = ptObj(cur0); const want = {};
+    ptVals(ex).forEach(x => { const v = x && x.id && ptIdxVal("exc", x); if (v) want[x.id] = v; }); ptVals(nt).forEach(x => { const v = x && x.id && ptIdxVal("note", x); if (v) want[x.id] = v; });
+    const o = {}; Object.keys(cur).forEach(id => { if (!want[id]) o[`${PT_IDX}/${id}`] = null; }); Object.entries(want).forEach(([id, v]) => { if (!cur[id] || cur[id].at !== v.at || cur[id].st !== v.st) o[`${PT_IDX}/${id}`] = v; });
+    if (Object.keys(o).length) await fbPatch(o); try { sessionStorage.setItem("pt-sync", String(Date.now())); } catch {} return want; } catch { return null; }
+}
 // شريط حيّ أعلى صفحات الإدارة: عدد الأعذار والملاحظات التي تنتظر الرد، وأحدث الطلاب وفصولهم
 function PtInboxStrip({ onOpen }) {
   const [L, setL] = useState([]); const prev = useRef(-1);
   useEffect(() => { let a = true;
-    const f = async () => { const d = ptVals(await maGet(PT_IDX)).filter(x => x && x.k).sort((x, y) => (y.at || 0) - (x.at || 0)); if (!a) return;
+    const f = async () => { let last = 0; try { last = +sessionStorage.getItem("pt-sync") || 0; } catch {} if (Date.now() - last > 6e5) await ptIdxSync();
+      const d = ptVals(await maGet(PT_IDX)).filter(x => x && x.k).sort((x, y) => (y.at || 0) - (x.at || 0)); if (!a) return;
       if (prev.current >= 0 && d.length > prev.current && d[0]) atNotify("📝 أولياء الأمور", `${d[0].k === "exc" ? "عذر جديد" : "ملاحظة جديدة"}: ${d[0].sname} — ${d[0].ck ? maClassName(d[0].ck) : ""}`); prev.current = d.length; setL(d); };
     f(); const t = setInterval(f, 45000); const v = () => { if (document.visibilityState === "visible") f(); }; document.addEventListener("visibilitychange", v);
     return () => { a = false; clearInterval(t); document.removeEventListener("visibilitychange", v); }; }, []);
-  if (!L.length) return null;
+  if (!L.length) return <button type="button" onClick={onOpen} dir="rtl" style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", width: "100%", display: "flex", alignItems: "center", gap: 10, borderRadius: 16, padding: "8px 14px", background: "#fff", border: "1.5px solid #e0e7ff", color: "#3730a3", fontFamily: "inherit" }}>
+    <span style={{ width: 34, height: 34, borderRadius: 11, display: "grid", placeItems: "center", background: "#eef2ff", flex: "none" }}><GdIco n="mail" s={18} /></span>
+    <b style={{ fontSize: 13.5, flex: 1 }}>أعذار وملاحظات أولياء الأمور — لا يوجد ما ينتظر الرد</b>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 900, color: "#15803d" }}><i style={{ width: 7, height: 7, borderRadius: 9, background: "#22c55e", display: "inline-block" }} />محدّث</span></button>;
   const ex = L.filter(x => x.k === "exc").length, nt = L.length - ex;
   return <button type="button" onClick={onOpen} dir="rtl" style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", width: "100%", display: "flex", alignItems: "center", gap: 12, borderRadius: 18, padding: "10px 14px", color: "#fff", background: "linear-gradient(135deg,#1e3a8a,#4338ca 55%,#7c3aed)", boxShadow: "0 14px 30px -20px rgba(67,56,202,.9)", fontFamily: "inherit" }}>
     <span style={{ position: "relative", width: 42, height: 42, flex: "none", borderRadius: 13, display: "grid", placeItems: "center", background: "rgba(255,255,255,.16)" }}><GdIco n="mail" s={22} /><b style={{ position: "absolute", top: -6, left: -6, minWidth: 22, height: 22, borderRadius: 99, background: "#ef4444", display: "grid", placeItems: "center", fontSize: 12, padding: "0 5px", boxShadow: "0 0 0 2px #fff" }}>{maAr(L.length)}</b></span>
