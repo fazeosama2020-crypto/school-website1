@@ -33174,6 +33174,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           </>
         ) : (
           <div className="grid gap-5">
+          <TchStatsBoard me={me} go={setView} />
           <div className="pt-bns">
             <div className="pt-bn"><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
             <div className="pt-bn"><CircBanner me={me} onOpen={() => setView("circ")} /></div>
@@ -39774,6 +39775,120 @@ async function tchScores(k) {
   return { f, t, L, n: R.length, avg: R.length ? Math.round(R.reduce((a, x) => a + x.score, 0) / R.length * 10) / 10 : null };
 }
 const scLvl = v => v == null ? ["—", "#64748b", "#f1f5f9"] : v >= 95 ? ["متميز", "#15803d", "#dcfce7"] : v >= 90 ? ["ممتاز", "#0f766e", "#ccfbf1"] : v >= 80 ? ["جيد جداً", "#1d4ed8", "#dbeafe"] : v >= 70 ? ["يحتاج تحسيناً", "#b45309", "#fef3c7"] : ["يحتاج متابعة", "#b91c1c", "#fee2e2"];
+// ══════════ 📊 لوحة أدائي — إحصائية المعلم في واجهة بوابته (المصدر نفسه لـ«بطاقتي الشاملة»: tchScores) ══════════
+const tsbH = d => String(maHijri(d) || "").replace(/\s*[١1][٤4][٠-٩0-9]{2}.*$/, "");
+const TSB_CSS = `
+.tsb{display:grid;gap:12px;font-family:inherit}
+.tsb>*{min-width:0}.tsb-k>*{min-width:0}
+.tsb-hero{position:relative;overflow:hidden;border-radius:26px;padding:18px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,#155e75 0%,#0f1e3d 52%,#111827 100%);box-shadow:0 26px 50px -30px rgba(15,30,61,.9)}
+.tsb-hero:before{content:"";position:absolute;inset:auto -80px -120px auto;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(212,160,23,.28),transparent 65%)}
+.tsb-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap;position:relative}
+.tsb-ring{--v:0;--c:#22c55e;width:128px;height:128px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--v)*1%),rgba(255,255,255,.12) 0)}
+.tsb-ring>div{width:104px;height:104px;border-radius:50%;background:#0f1e3d;display:grid;place-items:center;text-align:center;line-height:1.1}
+.tsb-ring b{font-size:30px;font-weight:900}.tsb-ring small{font-size:11px;font-weight:800;opacity:.75;display:block}
+.tsb-per{display:inline-flex;background:rgba(255,255,255,.1);border-radius:999px;padding:3px;gap:2px}
+.tsb-per button{all:unset;cursor:pointer;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:900;color:#cbd5e1}
+.tsb-per button.on{background:#fff;color:#0f1e3d}
+.tsb-rank{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.tsb-rk{display:inline-flex;align-items:baseline;gap:6px;background:linear-gradient(135deg,#d4a017,#f59e0b);color:#1c1917;border-radius:16px;padding:6px 14px;font-weight:900}
+.tsb-rk b{font-size:26px}.tsb-rk span{font-size:12.5px}
+.tsb-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:900}
+.tsb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px}
+.tsb-k{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:6px;align-content:start;border-radius:20px;padding:13px 14px;background:#fff;border:1px solid #e8edf3;box-shadow:0 10px 24px -20px rgba(15,23,42,.6);transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.tsb-k:hover{transform:translateY(-2px);box-shadow:0 18px 30px -20px rgba(15,23,42,.55)}
+.tsb-k:after{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--c)}
+.tsb-kh{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;font-size:13px;font-weight:900;color:#334155}
+.tsb-kh i{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;background:var(--bg);color:var(--c);flex:none}
+.tsb-kv{display:flex;align-items:baseline;gap:6px}.tsb-kv b{font-size:30px;font-weight:900;color:var(--c);line-height:1}
+.tsb-kv span{font-size:12px;font-weight:900;color:#64748b}
+.tsb-bar{height:7px;border-radius:9px;background:#eef2f7;overflow:hidden}.tsb-bar>i{display:block;height:100%;border-radius:9px;background:var(--c)}
+.tsb-ks{font-size:11.5px;font-weight:800;color:#64748b;line-height:1.7}
+.tsb-kr{margin-inline-start:auto;font-size:11px;font-weight:900;color:#0f1e3d;background:#fef3c7;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.tsb-card{border-radius:22px;padding:14px;background:#fff;border:1px solid #e8edf3}
+.tsb-days{display:flex;align-items:flex-end;gap:4px;height:136px;padding:4px 2px 0;overflow-x:auto;scrollbar-width:thin}
+.tsb-day{flex:1 0 22px;max-width:72px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%}
+.tsb-day i{width:100%;border-radius:8px 8px 3px 3px;min-height:4px}
+.tsb-day small{font-size:9.5px;font-weight:800;color:#94a3b8;white-space:nowrap}
+.tsb-dots{display:flex;gap:2px;height:7px}.tsb-dots u{width:6px;height:6px;border-radius:9px;text-decoration:none}
+.tsb-leg{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;font-weight:800;color:#64748b;margin-top:8px}
+.tsb-leg span{display:inline-flex;align-items:center;gap:5px}.tsb-leg u{width:9px;height:9px;border-radius:9px;text-decoration:none;display:inline-block}
+.tsb-bad{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tsb-bad span{font-size:11.5px;font-weight:900;border-radius:10px;padding:4px 9px}
+@media (max-width:640px){.tsb-hero{padding:14px;border-radius:22px}.tsb-ring{width:104px;height:104px}.tsb-ring>div{width:84px;height:84px}.tsb-ring b{font-size:24px}.tsb-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tsb-kv b{font-size:24px}.tsb-k{padding:11px}}
+`;
+const _tsbCache = {};
+const tsbRank = (L, f, row) => { const v = f(row); if (v == null) return null; const A = L.map(f).filter(x => x != null); return { r: 1 + A.filter(x => x > v).length, n: A.length }; };
+function TchStatsBoard({ me, go }) {
+  const [k, setK] = useState(() => { try { return localStorage.getItem("tsb-k") || "m"; } catch { return "m"; } }); const [D, setD] = useState(_tsbCache[k] ? _tsbCache[k].d : null); const [err, setErr] = useState("");
+  useEffect(() => { let a = true; try { localStorage.setItem("tsb-k", k); } catch {} const c = _tsbCache[k]; if (c && Date.now() - c.at < 3e5) { setD(c.d); return; } setD(null); setErr("");
+    tchScores(k).then(d => { _tsbCache[k] = { d, at: Date.now() }; if (a) setD(d); }).catch(e => a && setErr(String(e && e.message || e))); return () => { a = false; }; }, [k]);
+  const per = <div className="tsb-per">{[["w", "الأسبوع"], ["m", "الشهر"], ["term", "الفصل"]].map(([kk, l]) => <button key={kk} className={k === kk ? "on" : ""} onClick={() => setK(kk)}>{l}</button>)}</div>;
+  if (err) return null;
+  if (!D) return <div className="tsb"><style>{TSB_CSS}</style><div className="tsb-hero"><div className="tsb-top"><div className="tsb-ring" style={{ "--v": 0 }}><div><b>…</b></div></div><div><b style={{ fontSize: 18 }}>لوحة أدائي</b><div style={{ fontSize: 13, fontWeight: 800, opacity: .8, marginTop: 4 }}>⏳ جارٍ حساب نسبك وترتيبك…</div></div></div></div></div>;
+  const r = D.L.find(x => cvNorm(x.n) === cvNorm(me.name)) || D.L.find(x => cvMatch(me.name, { a: { name: x.n } }) === "a");
+  if (!r) return null;
+  const L = D.L; const lv = scLvl(r.score);
+  // التحضير
+  const pr = r.pr; const prV = r.C.pr; const prBad = pr ? [...(pr.zero || []), ...(pr.part || [])].sort((a, b) => b.k.localeCompare(a.k)) : [];
+  const prRk = tsbRank(L, x => x.C.pr, r);
+  // الحضور والتأخر (حضوري)
+  const hd = r.hd; const hdN = hd ? hd.L.length : 0; const absP = hd && hdN ? Math.round(hd.abs / hdN * 1000) / 10 : null; const lateP = hd && hd.work ? Math.round(hd.lateDays / hd.work * 1000) / 10 : null;
+  const attRk = tsbRank(L, x => x.hd && x.hd.L.length ? 100 - x.hd.abs / x.hd.L.length * 100 : null, r);
+  const lateRk = tsbRank(L, x => x.hd && x.hd.work ? 100 - x.hd.lateDays / x.hd.work * 100 : null, r);
+  // الحصص والطابور والملاحظات
+  const ttRk = tsbRank(L, x => x.C.tt, r); const asmRk = tsbRank(L, x => x.C.asm, r);
+  const nNeg = r.neg + r.notes.filter(x => !x.nt && (x.st === "late" || x.st === "early" || x.kd === "absent")).length + r.prNotes.length; const nPos = r.pos;
+  const nRk = tsbRank(L, x => -((x.neg || 0) + x.notes.filter(y => !y.nt && (y.st === "late" || y.st === "early" || y.kd === "absent")).length + (x.prNotes || []).length), r);
+  const col = v => scLvl(v)[1]; const soft = v => scLvl(v)[2];
+  const rkTxt = R => R ? `#${maAr(R.r)} من ${maAr(R.n)}` : "";
+  const K = [
+    { id: "prep", ic: "book", t: "التحضير", v: prV, u: "٪", s: pr ? `أسابيع مكتملة ${maAr(pr.comp)} من ${maAr(pr.N)} • أيام خلل ${maAr(prBad.length)}` : "لا يوجد ملف تحضير للفترة", rk: prRk, bar: prV },
+    { id: "hd", ic: "check", t: "الحضور (حضوري)", v: absP == null ? null : Math.round((100 - absP) * 10) / 10, u: "٪", s: hd ? `غياب ${maAr(hd.abs)} يوم (${maAr(absP)}٪) • استئذان ${maAr(hd.perm)}` : "لم يُرفع تقرير حضوري", rk: attRk, bar: absP == null ? null : 100 - absP },
+    { id: "hdrep", ic: "clock", t: "التأخر الصباحي", v: lateP, u: "٪", s: hd ? `${maAr(hd.lateDays)} يوم من ${maAr(hd.work)} • ${maAr(hd.late)} دقيقة • انصراف مبكر ${maAr(hd.earlyDays)}` : "—", rk: lateRk, bar: lateP == null ? null : 100 - lateP, inv: 1 },
+    { id: "ttnotes", ic: "calendar", t: "الانضباط في الحصص", v: r.C.tt, u: "٪", s: `${maAr(r.sch)} حصة • تأخر ${maAr(r.late)} • خروج ${maAr(r.early)} • غياب ${maAr(r.ab)}`, rk: ttRk, bar: r.C.tt },
+    { id: "asm", ic: "megaphone", t: "حضور الطابور", v: r.C.asm, u: "٪", s: r.asm ? `حضر ${maAr(r.asm.p || 0)} • عليها ملاحظة ${maAr(r.asm.list.length)}` : "غير مسند إليك", rk: asmRk, bar: r.C.asm },
+    { id: "ttnotes", ic: "clipboard", t: "الملاحظات عليّ", v: nNeg, u: nNeg === 1 ? "ملاحظة" : "ملاحظات", s: `إيجابية ${maAr(nPos)} • على التحضير ${maAr(r.prNotes.length)}`, rk: nRk, bar: null, cnt: 1 },
+  ];
+  // النسبة اليومية: انضباط كل يوم من «حضوري» + علامات الخلل (طابور • حصص • تحضير)
+  const dayMap = {}; (hd ? hd.L : []).forEach(x => { dayMap[x.k] = { k: x.k, v: x.kind === "abs" ? 0 : x.pct, kind: x.kind }; });
+  const mark = (dk, t) => { (dayMap[dk] = dayMap[dk] || { k: dk, v: null })[t] = 1; };
+  (r.asm ? r.asm.list : []).forEach(x => mark(x.dk, "asm")); r.notes.filter(x => x.st === "late" || x.st === "early" || x.kd === "absent" || (x.nt && !/^(⭐|👍|💻|🎯)/.test(x.nt))).forEach(x => mark(x.k, "tt")); prBad.forEach(x => mark(x.k, "pr"));
+  const days = Object.values(dayMap).filter(x => x.k >= D.f && x.k <= D.t && !maOff(x.k)).sort((a, b) => a.k.localeCompare(b.k)).slice(-30);
+  const badDays = days.filter(x => (x.v != null && x.v < 100) || x.asm || x.tt || x.pr);
+  const why = x => [x.kind === "abs" ? "غياب" : x.v != null && x.v < 100 ? `انضباط ${maAr(Math.round(x.v))}٪` : "", x.asm ? "الطابور" : "", x.tt ? "الحصص" : "", x.pr ? "التحضير" : ""].filter(Boolean).join(" • ");
+  return <div className="tsb" dir="rtl"><style>{TSB_CSS}</style>
+    <div className="tsb-hero">
+      <div className="tsb-top">
+        <div className="tsb-ring" style={{ "--v": r.score || 0, "--c": lv[1] === "#15803d" ? "#4ade80" : lv[1] === "#0f766e" ? "#2dd4bf" : lv[1] === "#1d4ed8" ? "#60a5fa" : lv[1] === "#b45309" ? "#fbbf24" : "#f87171" }}><div><b>{r.score == null ? "—" : maAr(r.score)}</b><small>المؤشر العام ٪</small></div></div>
+        <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+          <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 19 }}>لوحة أدائي</b><span className="tsb-chip" style={{ background: lv[2], color: lv[1] }}>{lv[0]}</span><span style={{ marginInlineStart: "auto" }}>{per}</span></div>
+          <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .75, marginTop: 3 }}>من {tsbH(maDate(D.f))} إلى {tsbH(maDate(D.t))} • التحضير والحضور والطابور والحصص</div>
+          <div className="tsb-rank">{r.rank ? <span className="tsb-rk"><b>#{maAr(r.rank)}</b><span>ترتيبي من {maAr(D.n)} معلماً</span></span> : null}
+            {D.avg != null && r.score != null && <span className="tsb-chip" style={{ background: "rgba(255,255,255,.12)", color: "#fff" }}><GdIco n="trend" s={14} /> متوسط المدرسة {maAr(D.avg)}٪ • {r.score >= D.avg ? `أعلى بـ ${maAr(Math.round((r.score - D.avg) * 10) / 10)}` : `أقل بـ ${maAr(Math.round((D.avg - r.score) * 10) / 10)}`}</span>}
+            <button type="button" onClick={() => go("score")} className="tsb-chip" style={{ all: "unset", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 999, padding: "4px 11px", fontSize: 12, fontWeight: 900, border: "1px solid rgba(255,255,255,.3)" }}>التفاصيل والترتيب ←</button></div>
+        </div>
+      </div>
+    </div>
+    <div className="tsb-grid">{K.map((x, i) => { const c = x.cnt ? (x.v ? (x.v >= 3 ? "#b91c1c" : "#b45309") : "#15803d") : x.inv ? (x.v == null ? "#64748b" : x.v === 0 ? "#15803d" : x.v <= 10 ? "#b45309" : "#b91c1c") : col(x.v); const bg = x.cnt || x.inv ? (c === "#15803d" ? "#dcfce7" : c === "#b45309" ? "#fef3c7" : c === "#64748b" ? "#f1f5f9" : "#fee2e2") : soft(x.v);
+      return <button key={i} type="button" className="tsb-k" style={{ "--c": c, "--bg": bg }} onClick={() => go(x.id)}>
+        <div className="tsb-kh"><i><GdIco n={x.ic} s={17} /></i><span style={{ minWidth: 0 }}>{x.t}</span>{x.rk && <span className="tsb-kr" title="ترتيبي بين الزملاء">{rkTxt(x.rk)}</span>}</div>
+        <div className="tsb-kv"><b>{x.v == null ? "—" : maAr(x.v)}</b>{x.v != null && <span>{x.u}</span>}</div>
+        {x.bar != null && <div className="tsb-bar"><i style={{ width: `${Math.max(2, Math.min(100, x.bar))}%` }} /></div>}
+        <div className="tsb-ks">{x.s}</div>
+      </button>; })}</div>
+    <div className="tsb-card">
+      <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15, display: "inline-flex", alignItems: "center", gap: 6 }}><GdIco n="bars" s={18} /> نسبتي كل يوم</b><span className="tsb-chip" style={{ background: badDays.length ? "#fee2e2" : "#dcfce7", color: badDays.length ? "#b91c1c" : "#15803d" }}>{badDays.length ? `أيام الخلل ${maAr(badDays.length)} من ${maAr(days.length)}` : "لا أيام خلل"}</span><button type="button" className="tsb-chip" style={{ all: "unset", cursor: "pointer", marginInlineStart: "auto", fontSize: 12, fontWeight: 900, color: "#0f766e" }} onClick={() => go("hd")}>انضباطي اليومي ←</button></div>
+      {days.length ? <><div className="tsb-days">{days.map(x => { const v = x.v; const c = v == null ? "#cbd5e1" : v >= 100 ? "#16a34a" : v >= 90 ? "#0d9488" : v >= 75 ? "#f59e0b" : "#dc2626"; const d0 = maDate(x.k);
+        return <div key={x.k} className="tsb-day" title={`${maDay(d0)} ${tsbH(d0)} — ${v == null ? "لا تقرير حضوري" : maAr(Math.round(v)) + "٪"}${why(x) ? " • خلل: " + why(x) : ""}`}>
+          <small style={{ color: c, fontWeight: 900 }}>{v == null ? "" : maAr(Math.round(v))}</small><i style={{ height: `${v == null ? 6 : Math.max(5, v)}%`, background: c, opacity: v == null ? .5 : 1 }} />
+          <div className="tsb-dots">{x.asm && <u style={{ background: "#7c3aed" }} />}{x.tt && <u style={{ background: "#ea580c" }} />}{x.pr && <u style={{ background: "#2563eb" }} />}</div>
+          <small style={{ lineHeight: 1.15, textAlign: "center" }}>{maDay(d0).replace("ال", "").slice(0, 3)}<br />{maAr(d0.getDate())}</small></div>; })}</div>
+        <div className="tsb-leg"><span><u style={{ background: "#16a34a" }} />منضبط ١٠٠٪</span><span><u style={{ background: "#f59e0b" }} />تأخر/انصراف</span><span><u style={{ background: "#dc2626" }} />غياب أو خلل كبير</span><span><u style={{ background: "#7c3aed" }} />ملاحظة طابور</span><span><u style={{ background: "#ea580c" }} />ملاحظة حصص</span><span><u style={{ background: "#2563eb" }} />تحضير ناقص</span></div>
+        {badDays.length > 0 && <div className="tsb-bad">{badDays.slice().reverse().slice(0, 12).map(x => { const d0 = maDate(x.k); return <span key={x.k} style={{ background: x.kind === "abs" ? "#fee2e2" : "#fff7ed", color: x.kind === "abs" ? "#b91c1c" : "#9a3412" }}>{maDay(d0)} {tsbH(d0)}: {why(x)}</span>; })}</div>}
+      </> : <div style={{ fontSize: 13, fontWeight: 800, color: "#64748b", marginTop: 8 }}>لا توجد بيانات يومية في هذه الفترة بعد.</div>}
+    </div>
+  </div>;
+}
 function TchScoreView({ me, admin = false }) {
   const [k, setK] = useState("m"); const [D, setD] = useState(null); const [err, setErr] = useState(""); const [sel, setSel] = useState(null);
   useEffect(() => { setD(null); setErr(""); tchScores(k).then(setD).catch(e => setErr(String(e && e.message || e))); }, [k]);
