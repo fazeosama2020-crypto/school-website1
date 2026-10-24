@@ -33142,6 +33142,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             </div>}
             <div className="pt-tiles">
               <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
+              {["principal", "deputy", "counselor", "admin"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><PtInboxStrip onOpen={() => setView("inbox")} /></div>}
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><AbsAlertBanner onOpen={() => setView("absalert")} /></div>}
               {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><NbAlertBanner onOpen={() => setView("nbadm")} /></div>}
               {me.role === "principal" ? <div style={{ gridColumn: "1/-1" }}><AtHomeBanner me={me} boss onOpen={() => setView("admtasks")} /></div> : <div style={{ gridColumn: "1/-1" }}><AtHomeBanner me={me} onOpen={() => setView("mytasks")} /></div>}
@@ -33232,6 +33233,8 @@ function GuardianPortal({ onBack }) {
   const [cm, setCm] = useState("");
   const [exc, setExc] = useState({ from: maKey(new Date()), to: maKey(new Date()), type: "مرضي", text: "", img: "" });
   const [note, setNote] = useState("");
+  const [dayExc, setDayExc] = useState(null); const [thr, setThr] = useState("");
+  useEffect(() => { const el = document.querySelector(".gd-tabs .on"); if (el && el.scrollIntoView) el.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, [tab]);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
   const grad = "linear-gradient(160deg,#1e3a8a,#2563eb 50%,#38bdf8)";
   const findStudent = async (h) => {
@@ -33298,15 +33301,26 @@ function GuardianPortal({ onBack }) {
     const v = { id, nh: me.nh, sname: me.name, ck: me.ck, sid: me.sid, from: exc.from, to: exc.to, type: exc.type, text: exc.text.trim().slice(0, 800), img: exc.img || "", status: "new", at: Date.now() };
     const ok = await maPut(`${PT_EXC}/${id}`, v); setBusy(false);
     if (!ok) { alert("⚠️ تعذّر الإرسال — قد يكون المرفق كبيراً"); return; }
-    setD(p => ({ ...p, exc: [v, ...p.exc] })); setExc({ from: maKey(new Date()), to: maKey(new Date()), type: "مرضي", text: "", img: "" }); toast("✅ تم رفع العذر للمدرسة");
+    ptIdxSet("exc", v); setD(p => ({ ...p, exc: [v, ...p.exc] })); setExc({ from: maKey(new Date()), to: maKey(new Date()), type: "مرضي", text: "", img: "" }); toast("✅ تم رفع العذر للمدرسة");
   };
   const sendNote = async () => {
     const t = note.trim(); if (!t) return; setBusy(true); const id = ptId();
     const v = { id, nh: me.nh, sname: me.name, ck: me.ck, text: t.slice(0, 1000), at: Date.now() };
     const ok = await maPut(`${PT_NOTES}/${id}`, v); setBusy(false);
     if (!ok) { alert("⚠️ تعذّر الإرسال"); return; }
-    setD(p => ({ ...p, notes: [v, ...p.notes] })); setNote(""); toast("✅ وصلت ملاحظتك للمدرسة");
+    ptIdxSet("note", v); setD(p => ({ ...p, notes: [v, ...p.notes] })); setNote(""); toast("✅ وصلت ملاحظتك للمدرسة");
   };
+  // رفع عذر ليوم غياب بعينه من قائمة الغياب
+  const sendDayExc = async () => {
+    const f = dayExc; if (!f) return; if (!f.text.trim() && f.type === "أخرى") { alert("اكتب تفاصيل العذر"); return; }
+    setBusy(true); const id = ptId(); const now = Date.now();
+    const v = { id, nh: me.nh, sname: me.name, ck: me.ck, sid: me.sid, from: f.dk, to: f.dk, type: f.type, text: f.text.trim().slice(0, 800), img: f.img || "", status: "new", src: "day", at: now, pAt: now };
+    const ok = await maPut(`${PT_EXC}/${id}`, v); setBusy(false);
+    if (!ok) { alert("⚠️ تعذّر الإرسال — قد يكون المرفق كبيراً"); return; }
+    ptIdxSet("exc", v); setD(p => ({ ...p, exc: [v, ...p.exc] })); setDayExc(null); setThr(id); toast("✅ وصل العذر للمدرسة — تظهر حالته أمام اليوم");
+  };
+  const updExc = nx => setD(p => ({ ...p, exc: p.exc.map(y => y.id === nx.id ? nx : y) }));
+  const updNote = nx => setD(p => ({ ...p, notes: p.notes.map(y => y.id === nx.id ? nx : y) }));
   const excSt = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
   const tabs = [["file", "🧾 الملف الشامل"], ["tt", "🗓️ جدولي"], ["perf", "📈 تقريري"], ["nafes", "🎯 نافس"], ["pnotes", "📒 ملاحظات الحصص"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["beh", `📝 السلوك${d && d.bn ? ` (${maAr(d.bn.length)})` : ""}`], ["alerts", `📨 التنبيهات والدعوات${d && d.reps && d.reps.filter(GD_PENDING).length ? ` (${maAr(d.reps.filter(GD_PENDING).length)} جديد)` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
   return (
@@ -33371,8 +33385,23 @@ function GuardianPortal({ onBack }) {
             {tab === "grades" && <GuardianGrades me={me} />}
             {tab === "abs" && (() => { const excS = gdExcSet(d.exc); const n = d.abs.length, en = d.abs.filter(k => excS.has(k)).length; const sx = d.sx; return <div className="pt-item grid gap-2">
               <div className="flex items-center gap-2 flex-wrap"><span className="gd-ch" style={{ background: "#fee2e2", color: "#b91c1c" }}><GdIco n="ban" /></span><b style={{ fontSize: 16 }}>الغياب: {maAr(n)} {n === 1 ? "يوم" : "أيام"}</b>{sx && sx.days ? <span className="gd-tag" style={{ background: "#f1f5f9", color: "#334155" }}>{maAr(Math.round(1000 * n / sx.days) / 10)}٪ من {maAr(sx.days)} يوم دراسي مرصود</span> : null}{en > 0 && <span className="gd-tag" style={{ background: "#dcfce7", color: "#15803d" }}>بعذر مقبول: {maAr(en)}</span>}{n - en > 0 && <span className="gd-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>بدون عذر: {maAr(n - en)}</span>}</div>
-              {n ? d.abs.map((k, i) => { const ok = excS.has(k); return <div key={k} className="gd-row" style={{ borderRight: `4px solid ${ok ? "#16a34a" : "#dc2626"}` }}><span className="h" style={{ minWidth: 18 }}>{maAr(n - i)}</span><span className="d">{maDay(maDate(k))}</span><span className="h">{maHijri(maDate(k))} • {maGreg(maDate(k))}</span><span className="gd-tag" style={{ marginInlineStart: "auto", background: ok ? "#dcfce7" : "#fef2f2", color: ok ? "#15803d" : "#b91c1c" }}>{ok ? "بعذر مقبول" : "بدون عذر"}</span></div>; }) : <div className="gd-ok"><GdIco n="star" s={22} /><div><b>لا يوجد غياب مسجّل</b>بارك الله فيه</div></div>}
-              <div className="gd-how">المصدر: كشف الحضور اليومي لفصل الطالب كما رصده المعلم أو وكيل شؤون الطلاب. «بعذر مقبول» = يوم يقع ضمن عذر رفعتموه وقبلته المدرسة من تبويب «الأعذار».</div>
+              {n ? d.abs.map((k, i) => { const ex = d.exc.filter(x => x.from <= k && (x.to || x.from) >= k).sort((a, b) => b.at - a.at)[0]; const st = ex ? (ex.status || "new") : ""; const ok = st === "ok";
+                const tag = ok ? ["بعذر مقبول", "#dcfce7", "#15803d"] : st === "new" ? ["العذر قيد المراجعة", "#fef3c7", "#92400e"] : st === "no" ? ["لم يُقبل العذر", "#fee2e2", "#b91c1c"] : ["بدون عذر", "#fef2f2", "#b91c1c"];
+                const nM = ex ? (() => { const M = Object.values(ptObj(ex.msgs)); return M.length + (ex.reply && !M.some(m => m && m.who === "s" && m.t === ex.reply) ? 1 : 0); })() : 0; const canUp = !ex || st === "no";
+                return <div key={k} className="grid gap-2"><div className="gd-row" style={{ borderRight: `4px solid ${tag[2]}` }}><span className="h" style={{ minWidth: 18 }}>{maAr(n - i)}</span><span className="d">{maDay(maDate(k))}</span><span className="h">{maHijri(maDate(k))} • {maGreg(maDate(k))}</span>
+                  <span className="flex gap-2 flex-wrap items-center" style={{ marginInlineStart: "auto" }}><span className="gd-tag" style={{ background: tag[1], color: tag[2] }}>{tag[0]}</span>
+                    {ex && <button className="gd-btn" onClick={() => setThr(thr === ex.id ? "" : ex.id)}><GdIco n="msg" s={14} /> {nM ? `التعليقات (${maAr(nM)})` : "تعليق"}</button>}
+                    {canUp && <button className="gd-btn pri" onClick={() => setDayExc(dayExc && dayExc.dk === k ? null : { dk: k, type: "مرضي", text: "", img: "" })}><GdIco n="pen" s={14} /> {st === "no" ? "رفع عذر آخر" : "رفع عذر"}</button>}</span></div>
+                  {dayExc && dayExc.dk === k && <div className="gd-dexc">
+                    <b style={{ fontSize: 13.5, display: "flex", alignItems: "center", gap: 6 }}><GdIco n="doc" s={16} /> عذر غياب يوم {maDay(maDate(k))} {maHijri(maDate(k))}</b>
+                    <div className="flex gap-2 flex-wrap">{["مرضي", "ظرف عائلي", "موعد رسمي", "سفر", "أخرى"].map(t => <button key={t} className={`gd-chip ${dayExc.type === t ? "on" : ""}`} onClick={() => setDayExc({ ...dayExc, type: t })}>{t}</button>)}</div>
+                    <textarea className="ma-inp" style={{ minHeight: 64, padding: 10 }} value={dayExc.text} maxLength={800} onChange={e => setDayExc({ ...dayExc, text: e.target.value })} placeholder={dayExc.type === "أخرى" ? "اكتب سبب الغياب…" : "تفاصيل إضافية (اختياري)"} />
+                    <div className="flex gap-2 flex-wrap items-center"><label className="gd-btn" style={{ cursor: "pointer" }}><GdIco n="file" s={14} /> إرفاق تقرير أو صورة<input type="file" accept="image/*" hidden onChange={async e => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; const u = await licCompressImage(f); setDayExc(x => ({ ...x, img: u })); }} /></label>{dayExc.img && <img src={dayExc.img} alt="" style={{ height: 44, borderRadius: 8, border: "1px solid #e2e8f0" }} />}
+                      <span style={{ marginInlineStart: "auto" }} className="flex gap-2"><button className="ma-btn pri" disabled={busy} onClick={sendDayExc}>{busy ? "⏳" : "إرسال العذر للمدرسة"}</button><button className="ma-btn" onClick={() => setDayExc(null)}>إلغاء</button></span></div>
+                  </div>}
+                  {ex && thr === ex.id && <div style={{ paddingInlineStart: 14 }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>عذر: {ex.type}{ex.text ? ` — ${ex.text}` : ""}</div><GdThread x={ex} path={`${PT_EXC}/${ex.id}`} who="p" by={`ولي أمر ${String(me.name).split(" ")[0]}`} k="exc" onUpd={updExc} /></div>}
+                </div>; }) : <div className="gd-ok"><GdIco n="star" s={22} /><div><b>لا يوجد غياب مسجّل</b>بارك الله فيه</div></div>}
+              <div className="gd-how">المصدر: كشف الحضور اليومي لفصل الطالب كما رصده المعلم أو وكيل شؤون الطلاب. يمكنكم رفع عذر لأي يوم من أمامه مباشرة، فيصل لإدارة المدرسة فورًا، وتظهر حالته هنا (قيد المراجعة / مقبول / لم يُقبل) مع ردود المدرسة وتعليقاتكم.</div>
             </div>; })()}
             {tab === "late" && d.reps && d.reps.filter(r => r.type !== "week" && r.type !== "warn").map(r => <div key={r.id} className="pt-item" style={{ borderRight: "4px solid #ea580c", background: "linear-gradient(90deg,#fff7ed,#fff)" }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14.5 }}>📄 {r.title}</b><span style={{ marginRight: "auto", fontSize: 11.5, fontWeight: 700, color: "#94a3b8" }}>{ptWhen(r.at)}</span></div><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2, whiteSpace: "pre-wrap", marginTop: 6 }}>{r.text}</div><div className="flex gap-2 mt-2"><span className="pt-st" style={{ background: "#ffedd5", color: "#9a3412" }}>⏰ {maAr(r.n)} مرة</span><span className="pt-st" style={{ background: "#ffedd5", color: "#9a3412" }}>⏱ {maAr(r.m)} دقيقة</span></div></div>)}
             {tab === "beh" && <div className="pt-item">{maArr(d.bn).length ? <div className="grid gap-2">{d.bn.map((x, i) => <div key={i} className="flex items-center gap-3 flex-wrap" style={{ padding: "8px 10px", borderRadius: 12, background: x.neg ? "#fff1f2" : "#f0fdf4", borderRight: `4px solid ${x.neg ? "#be123c" : "#15803d"}` }}><b style={{ fontSize: 14 }}>{maDay(maDate(x.dk))} {maHijri(maDate(x.dk))}</b><span style={{ fontSize: 13.5, fontWeight: 800, color: x.neg ? "#be123c" : "#15803d" }}>{x.ct}</span>{x.note && <span style={{ fontSize: 12.5, color: "#475569", fontWeight: 700 }}>{x.note}</span>}{x.by && <small style={{ color: "#94a3b8", fontWeight: 700 }}>({x.by})</small>}</div>)}</div> : <div className="text-center" style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا توجد ملاحظات سلوكية مسجّلة</div>}</div>}
@@ -33409,7 +33438,7 @@ function GuardianPortal({ onBack }) {
                   <button className="ma-btn pri" style={{ marginRight: "auto", padding: "10px 22px" }} disabled={busy} onClick={sendExc}>{busy ? "⏳" : "📤 رفع العذر"}</button>
                 </div>
               </div>
-              {d.exc.map(x => { const [l, bg, c] = excSt(x.status); return <div key={x.id} className="pt-item"><div className="flex items-center gap-2 flex-wrap"><b>📝 {x.type}</b><span style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>{maHijri(maDate(x.from))}{x.to !== x.from ? " — " + maHijri(maDate(x.to)) : ""}</span><span className="pt-st" style={{ background: bg, color: c, marginRight: "auto" }}>{l}</span></div>{x.text && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>{x.text}</div>}{x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ رد المدرسة: {x.reply}</div>}</div>; })}
+              {d.exc.map(x => { const [l, bg, c] = excSt(x.status); return <div key={x.id} className="pt-item"><div className="flex items-center gap-2 flex-wrap"><b>📝 {x.type}</b><span style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>{maHijri(maDate(x.from))}{x.to !== x.from ? " — " + maHijri(maDate(x.to)) : ""}</span><span className="pt-st" style={{ background: bg, color: c, marginRight: "auto" }}>{l}</span></div>{x.text && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>{x.text}</div>}<GdThread x={x} path={`${PT_EXC}/${x.id}`} who="p" by={`ولي أمر ${String(me.name).split(" ")[0]}`} k="exc" onUpd={updExc} /></div>; })}
             </>}
             {tab === "note" && <>
               <div className="pt-item grid gap-3">
@@ -33417,7 +33446,7 @@ function GuardianPortal({ onBack }) {
                 <textarea className="ma-inp" rows={4} style={{ height: "auto", padding: 10 }} maxLength={1000} value={note} onChange={e => setNote(e.target.value)} placeholder="اكتب ملاحظتك أو استفسارك عن الطالب…" />
                 <div><button className="ma-btn pri" style={{ padding: "10px 22px" }} disabled={busy || !note.trim()} onClick={sendNote}>📤 إرسال</button></div>
               </div>
-              {d.notes.map(x => <div key={x.id} className="pt-item"><div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>{ptWhen(x.at)}</div><div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 4 }}>{x.text}</div>{x.reply ? <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ رد المدرسة ({x.replyBy || "الإدارة"}): {x.reply}</div> : <div style={{ fontSize: 12, fontWeight: 800, color: "#b45309", marginTop: 6 }}>⏳ بانتظار الرد</div>}</div>)}
+              {d.notes.map(x => <div key={x.id} className="pt-item"><div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>{ptWhen(x.at)}</div><div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 4 }}>{x.text}</div>{!x.reply && !Object.values(ptObj(x.msgs)).some(m => m && m.who === "s") && <div style={{ fontSize: 12, fontWeight: 800, color: "#b45309", marginTop: 6 }}>⏳ بانتظار الرد</div>}<GdThread x={x} path={`${PT_NOTES}/${x.id}`} who="p" by={`ولي أمر ${String(me.name).split(" ")[0]}`} k="note" onUpd={updNote} /></div>)}
             </>}
           </div>
         )}
@@ -33437,30 +33466,39 @@ function ParentInbox({ by = "الإدارة" }) {
     const [ex, nt, cm, ann] = await Promise.all([maGet(PT_EXC), maGet(PT_NOTES), maGet(PT_COMM), annLoadAll().then(a => Object.fromEntries(a.filter(x => x && x.id != null).map(x => [String(x.id), x])))]);
     const titles = {}; ptVals(ann).forEach(a => { if (a.id) titles[a.id] = a.title; });
     const comms = []; Object.entries(ptObj(cm)).forEach(([aid, o]) => ptVals(o).forEach(c => comms.push({ ...c, aid, atitle: titles[aid] || "إعلان" })));
-    setD({ exc: ptVals(ex).sort((a, b) => b.at - a.at), notes: ptVals(nt).sort((a, b) => b.at - a.at), comms: comms.sort((a, b) => b.at - a.at) });
+    const E = ptVals(ex), N = ptVals(nt); const six = ptObj(await maGet(SIDX));
+    const ord = k => (a, b) => (ptPend(b, k) - ptPend(a, k)) || ((b.pAt || b.at) - (a.pAt || a.at));
+    setD({ exc: E.sort(ord("exc")), notes: N.sort(ord("note")), comms: comms.sort((a, b) => b.at - a.at), six });
+    // مزامنة فهرس «بانتظار الرد» مع الحالة الفعلية (يشمل الأعذار القديمة قبل التحديث)
+    try { const cur = ptObj(await maGet(PT_IDX)); const want = {}; E.forEach(x => { const v = ptIdxVal("exc", x); if (v) want[x.id] = v; }); N.forEach(x => { const v = ptIdxVal("note", x); if (v) want[x.id] = v; });
+      const o = {}; Object.keys(cur).forEach(id => { if (!want[id]) o[`${PT_IDX}/${id}`] = null; }); Object.entries(want).forEach(([id, v]) => { if (!cur[id] || cur[id].at !== v.at || cur[id].st !== v.st) o[`${PT_IDX}/${id}`] = v; }); if (Object.keys(o).length) fbPatch(o); } catch {}
   };
   useEffect(() => { load(); }, []);
   const upd = async (path, patch, key, id) => {
-    const cur = d[key].find(x => x.id === id); const v = { ...cur, ...patch }; delete v.aid; delete v.atitle;
+    const cur = d[key].find(x => x.id === id); const now = Date.now(); const v = { ...cur, ...patch, ...(key !== "comms" ? { sAt: now } : {}) }; delete v.aid; delete v.atitle;
+    if (key !== "comms" && patch.reply) { const mid = "m" + now.toString(36); v.msgs = { ...ptObj(cur.msgs), [mid]: { who: "s", by: patch.replyBy || by, t: patch.reply, at: now } }; }
     const ok = await maPut(path, v); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; }
-    setD(p => ({ ...p, [key]: p[key].map(x => x.id === id ? { ...x, ...patch } : x) })); setRep(r => ({ ...r, [id]: "" }));
+    if (key === "exc") ptIdxSet("exc", v); if (key === "notes") ptIdxSet("note", v);
+    setD(p => ({ ...p, [key]: p[key].map(x => x.id === id ? { ...x, ...v } : x) })); setRep(r => ({ ...r, [id]: "" }));
   };
   const del = async (path, key, id) => { if (!window.confirm("حذف نهائياً؟")) return; try { await fetch(`${FIREBASE_URL}/school/${path}.json`, { method: "DELETE" }); } catch {} setD(p => ({ ...p, [key]: p[key].filter(x => x.id !== id) })); };
   if (!d) return <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div>;
-  const nNew = d.exc.filter(x => !x.status || x.status === "new").length, nN = d.notes.filter(x => !x.reply).length;
+  const nNew = d.exc.filter(x => ptPend(x, "exc")).length, nN = d.notes.filter(x => ptPend(x, "note")).length;
+  const updL = key => nx => setD(p => ({ ...p, [key]: p[key].map(y => y.id === nx.id ? { ...y, ...nx } : y) }));
   const who = x => <span style={{ fontSize: 12.5, fontWeight: 800, color: "#2563eb" }}>👦 {x.sname} • {x.ck ? maClassName(x.ck) : ""}</span>;
   const repBox = (id, onSend, label = "رد") => <div className="flex gap-2 mt-2"><input className="ma-inp" value={rep[id] || ""} onChange={e => setRep({ ...rep, [id]: e.target.value })} placeholder="✍️ اكتب الرد…" /><button className="ma-btn pri" disabled={!(rep[id] || "").trim()} onClick={onSend}>{label}</button></div>;
   return (
     <div className="ma pt" dir="rtl">
-      <style>{MA_CSS + PT_CSS}</style>
-      <div className="ma-tabs mb-3">{[["exc", `📝 الأعذار (${maAr(nNew)} جديد)`], ["notes", `💬 الملاحظات (${maAr(nN)} بلا رد)`], ["comms", `📣 تعليقات الإعلانات (${maAr(d.comms.length)})`]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}<button className="ma-tab" onClick={load}>🔄 تحديث</button>{tab === "exc" && d.exc.length > 0 && <button className="ma-tab" style={{ color: "#b91c1c" }} onClick={async () => { if (!window.confirm(`مسح جميع الأعذار (${d.exc.length})؟`) || !window.confirm("تأكيد أخير: لا يمكن التراجع")) return; try { await fetch(`${FIREBASE_URL}/school/${PT_EXC}.json`, { method: "DELETE" }); } catch {} setD(p => ({ ...p, exc: [] })); }}>🗑 مسح جميع الأعذار</button>}</div>
+      <style>{MA_CSS + PT_CSS + GD_CSS}</style>
+      <div className="ma-tabs mb-3">{[["exc", `📝 الأعذار (${maAr(nNew)} بانتظار الرد)`], ["notes", `💬 الملاحظات (${maAr(nN)} بانتظار الرد)`], ["comms", `📣 تعليقات الإعلانات (${maAr(d.comms.length)})`]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}<button className="ma-tab" onClick={load}>🔄 تحديث</button>{tab === "exc" && d.exc.length > 0 && <button className="ma-tab" style={{ color: "#b91c1c" }} onClick={async () => { if (!window.confirm(`مسح جميع الأعذار (${d.exc.length})؟`) || !window.confirm("تأكيد أخير: لا يمكن التراجع")) return; try { await fetch(`${FIREBASE_URL}/school/${PT_EXC}.json`, { method: "DELETE" }); } catch {} setD(p => ({ ...p, exc: [] })); }}>🗑 مسح جميع الأعذار</button>}</div>
       <div className="grid gap-3">
         {tab === "exc" && (d.exc.length ? d.exc.map(x => { const st = x.status || "new"; return (
           <div key={x.id} className="pt-item" style={{ borderRight: `4px solid ${st === "ok" ? "#16a34a" : st === "no" ? "#dc2626" : "#f59e0b"}` }}>
             <div className="flex items-center gap-2 flex-wrap">{who(x)}<b>📝 {x.type}</b><span style={{ fontSize: 12.5, fontWeight: 700, color: "#64748b" }}>{maHijri(maDate(x.from))}{x.to !== x.from ? " — " + maHijri(maDate(x.to)) : ""}</span><span style={{ marginRight: "auto", fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(x.at)}</span></div>
+            <div className="flex gap-2 flex-wrap mt-2">{ptPend(x, "exc") && <span className="pt-st" style={{ background: "#ef4444", color: "#fff" }}>بانتظار الرد</span>}{x.src === "day" && <span className="pt-st" style={{ background: "#eff6ff", color: "#1d4ed8" }}>رُفع من قائمة الغياب أمام اليوم</span>}{x.sid && (() => { const A = ptObj(ptObj(d.six[x.sid]).a); let n = 0, m = 0; let dd = maDate(x.from); for (let i = 0; i < 40; i++) { const k = maKey(dd); if (k > (x.to || x.from)) break; if (!maOff(k)) { n++; if (A[k]) m++; } dd.setDate(dd.getDate() + 1); } return n ? <span className="pt-st" style={{ background: m === n ? "#dcfce7" : m ? "#fef3c7" : "#f1f5f9", color: m === n ? "#15803d" : m ? "#92400e" : "#64748b" }}>{m === n ? "✓ مسجّل غائبًا في كشف الحضور" : m ? `مسجّل غائبًا ${maAr(m)} من ${maAr(n)} أيام` : "غير مسجّل غائبًا في الكشف"}</span> : null; })()}</div>
             {x.text && <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6 }}>{x.text}</div>}
             {x.img && <img src={x.img} alt="" onClick={() => setImg(x.img)} style={{ height: 80, borderRadius: 10, marginTop: 8, cursor: "zoom-in", border: "1px solid #e2e8f0" }} />}
-            {x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ {x.replyBy}: {x.reply}</div>}
+            <GdThread x={x} path={`${PT_EXC}/${x.id}`} who="s" by={by} k="exc" onUpd={updL("exc")} />
             <div className="flex gap-2 flex-wrap mt-2">
               <button className="ma-btn grn" onClick={() => upd(`${PT_EXC}/${x.id}`, { status: "ok", by, reply: (rep[x.id] || "").trim() || x.reply || "تم قبول العذر", replyBy: by }, "exc", x.id)}>✅ قبول</button>
               <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => upd(`${PT_EXC}/${x.id}`, { status: "no", by, reply: (rep[x.id] || "").trim() || x.reply || "لم يُقبل العذر", replyBy: by }, "exc", x.id)}>❌ رفض</button>
@@ -33472,8 +33510,8 @@ function ParentInbox({ by = "الإدارة" }) {
           <div key={x.id} className="pt-item" style={{ borderRight: `4px solid ${x.reply ? "#16a34a" : "#2563eb"}` }}>
             <div className="flex items-center gap-2 flex-wrap">{who(x)}<span style={{ marginRight: "auto", fontSize: 11.5, color: "#94a3b8", fontWeight: 700 }}>{ptWhen(x.at)}</span><button className="ma-btn" style={{ padding: "3px 10px" }} onClick={() => del(`${PT_NOTES}/${x.id}`, "notes", x.id)}>🗑</button></div>
             <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 6 }}>{x.text}</div>
-            {x.reply && <div style={{ fontSize: 13, fontWeight: 800, color: "#0f766e", marginTop: 6 }}>↩ {x.replyBy}: {x.reply}</div>}
-            {repBox(x.id, () => upd(`${PT_NOTES}/${x.id}`, { reply: rep[x.id].trim(), replyBy: by, replyAt: Date.now() }, "notes", x.id), x.reply ? "تعديل الرد" : "رد")}
+            {ptPend(x, "note") && <span className="pt-st" style={{ background: "#ef4444", color: "#fff", marginTop: 6, display: "inline-block" }}>بانتظار الرد</span>}
+            <GdThread x={x} path={`${PT_NOTES}/${x.id}`} who="s" by={by} k="note" onUpd={updL("notes")} />
           </div>)) : <div className="pt-item text-center" style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد ملاحظات</div>)}
         {tab === "comms" && (d.comms.length ? d.comms.map(x => (
           <div key={x.aid + x.id} className="pt-item">
@@ -45177,7 +45215,7 @@ function ReadingWeakPage({ by = "", admin = false }) {
 const TR_NODE = "school-trash";
 const TR_BASE = FIREBASE_URL + "/school";
 // عقد مؤقتة أو فهارس أو نسخ احتياطية — لا داعي لأرشفتها
-const TR_SKIP = [TR_NODE, "school-audit", "school-stlog", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-ann-meta", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old"];
+const TR_SKIP = [TR_NODE, "school-pinbox-idx", "school-audit", "school-stlog", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-ann-meta", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old"];
 const trSkip = p => !p || TR_SKIP.some(s => p === s || p.startsWith(s + "/") || p.startsWith(s + "-"));
 function trPath(url) {
   const u = String(url || ""); if (!u.startsWith(TR_BASE)) return null;
@@ -45205,7 +45243,7 @@ let _trFetch = null;
 // ══════════ 🔒 لا حذف إلا بموافقة مدير المدرسة (برقم هويته) ══════════
 // كل حذف (DELETE أو حفظ قيمة فارغة) يتوقف حتى يُدخل مدير المدرسة رقم هويته. الموافقة صالحة ١٠ دقائق على هذا الجهاز.
 // مستثنى: العمليات الفنية التلقائية (المسودات، الفهارس، الحالات اليومية التي تُبدَّل بين تشغيل/إيقاف، صور الصفحات عند إعادة الرفع)
-const GATE_EXEMPT = ["school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-pinbox-idx", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -46050,6 +46088,16 @@ const GD_CSS = `
 @keyframes gdring{0%,100%{transform:rotate(0)}20%{transform:rotate(18deg)}40%{transform:rotate(-16deg)}60%{transform:rotate(10deg)}80%{transform:rotate(-6deg)}}
 .gd-tabs{position:sticky;top:0;z-index:20;display:flex;gap:4px;overflow-x:auto;padding:6px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border:1px solid #e2e8f0;border-radius:16px;scrollbar-width:none;box-shadow:0 6px 18px -14px rgba(15,23,42,.5)}
 .gd-tabs::-webkit-scrollbar{display:none}
+@media (min-width:700px){.gd-tabs{flex-wrap:wrap;overflow:visible;justify-content:flex-start}}
+@media (max-width:699px){.gd-tabs{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%);scroll-padding:0 28px}}
+.gd-thr{display:grid;gap:6px;margin-top:8px;padding:8px;border-radius:14px;background:#f8fafc;border:1px solid #eef2f7}
+.gd-msg{max-width:88%;padding:7px 11px;border-radius:14px;font-size:13px;font-weight:700;line-height:1.7;display:grid}
+.gd-msg b{font-size:11.5px;font-weight:900}.gd-msg small{font-size:10.5px;font-weight:800;opacity:.6}
+.gd-msg.p{justify-self:start;background:#dbeafe;color:#1e3a8a;border-bottom-right-radius:4px}
+.gd-msg.s{justify-self:end;background:#dcfce7;color:#14532d;border-bottom-left-radius:4px}
+.gd-dexc{display:grid;gap:8px;padding:10px 12px;border-radius:14px;background:#eff6ff;border:1.5px solid #bfdbfe}
+.gd-btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:10px;padding:5px 10px;font-size:12px;font-weight:900;border:1.5px solid #cbd5e1;background:#fff;color:#1e3a8a}
+.gd-btn.pri{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
 .gd-tabs button{all:unset;cursor:pointer;flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:11px;font-size:13px;font-weight:800;color:#475569;white-space:nowrap}
 .gd-tabs button:hover{background:#f1f5f9}
 .gd-tabs button.on{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;box-shadow:0 6px 14px -8px rgba(37,99,235,.9)}
@@ -46096,6 +46144,46 @@ const GD_IP = {
 };
 const GdIco = ({ n, s = 18, w = 1.9, style }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", ...style }}><path d={GD_IP[n] || GD_IP.file} /></svg>;
 const GD_TABI = { file: "file", tt: "calendar", perf: "trend", nafes: "target", pnotes: "notebook", level: "bars", week: "medal", grades: "grad", abs: "ban", late: "clock", beh: "shield", alerts: "mail", daily: "clipboard", ann: "megaphone", exc: "doc", note: "msg" };
+// 📨 ما ينتظر رد المدرسة من أولياء الأمور (فهرس خفيف حتى لا تُحمَّل صور الأعذار مع كل تحديث للعدّاد)
+const PT_IDX = "school-pinbox-idx";
+const ptPend = (x, k) => !x ? false : k === "exc" ? (!x.status || x.status === "new" || (x.pAt || 0) > (x.sAt || 0)) : (!x.reply && !(x.sAt) ? true : (x.pAt || 0) > (x.sAt || x.replyAt || 0));
+const ptIdxVal = (k, x) => ptPend(x, k) ? { k, sname: x.sname || "", ck: x.ck || "", at: x.pAt || x.at || Date.now(), d: k === "exc" ? (x.from || "") : "", st: k === "exc" ? (x.status || "new") : "" } : null;
+const ptIdxSet = (k, x) => x && x.id ? maPut(`${PT_IDX}/${x.id}`, ptIdxVal(k, x)).catch(() => {}) : null;
+// محادثة (تعليقات وردود) على العذر أو الملاحظة — who: "p" ولي الأمر • "s" المدرسة
+function GdThread({ x, path, who, by, k, onUpd }) {
+  const [t, setT] = useState(""); const [busy, setBusy] = useState(false);
+  const M = Object.values(ptObj(x.msgs)).filter(m => m && m.t).sort((a, b) => a.at - b.at);
+  const send = async () => {
+    const tx = t.trim(); if (!tx) return; setBusy(true); const now = Date.now(); const mid = "m" + now.toString(36);
+    const m = { who, by, t: tx.slice(0, 600), at: now }; const fld = who === "p" ? "pAt" : "sAt";
+    const ok = await fbPatch({ [`${path}/msgs/${mid}`]: m, [`${path}/${fld}`]: now }); setBusy(false);
+    if (!ok) { alert("تعذّر الإرسال — تحقق من الاتصال"); return; }
+    const nx = { ...x, msgs: { ...ptObj(x.msgs), [mid]: m }, [fld]: now }; setT(""); onUpd && onUpd(nx); ptIdxSet(k, nx);
+  };
+  return <div className="gd-thr">
+    {x.reply && !M.some(m => m.who === "s" && m.t === x.reply) && <div className="gd-msg s"><b>{x.replyBy || "المدرسة"}</b>{x.reply}</div>}
+    {M.map((m, i) => <div key={i} className={"gd-msg " + (m.who === "p" ? "p" : "s")}><b>{m.who === "p" ? (m.by || "ولي الأمر") : (m.by || "المدرسة")}</b>{m.t}<small>{ptWhen(m.at)}</small></div>)}
+    {!M.length && !x.reply && <div style={{ fontSize: 12, fontWeight: 800, color: "#94a3b8" }}>لا توجد تعليقات بعد</div>}
+    <div className="flex gap-2"><input className="ma-inp" style={{ height: 38 }} value={t} maxLength={600} onChange={e => setT(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder={who === "p" ? "اكتب تعليقًا أو توضيحًا للمدرسة…" : "اكتب ردًا لولي الأمر…"} /><button className="ma-btn pri" disabled={busy || !t.trim()} onClick={send}>إرسال</button></div>
+  </div>;
+}
+// شريط حيّ أعلى صفحات الإدارة: عدد الأعذار والملاحظات التي تنتظر الرد، وأحدث الطلاب وفصولهم
+function PtInboxStrip({ onOpen }) {
+  const [L, setL] = useState([]); const prev = useRef(-1);
+  useEffect(() => { let a = true;
+    const f = async () => { const d = ptVals(await maGet(PT_IDX)).filter(x => x && x.k).sort((x, y) => (y.at || 0) - (x.at || 0)); if (!a) return;
+      if (prev.current >= 0 && d.length > prev.current && d[0]) atNotify("📝 أولياء الأمور", `${d[0].k === "exc" ? "عذر جديد" : "ملاحظة جديدة"}: ${d[0].sname} — ${d[0].ck ? maClassName(d[0].ck) : ""}`); prev.current = d.length; setL(d); };
+    f(); const t = setInterval(f, 45000); const v = () => { if (document.visibilityState === "visible") f(); }; document.addEventListener("visibilitychange", v);
+    return () => { a = false; clearInterval(t); document.removeEventListener("visibilitychange", v); }; }, []);
+  if (!L.length) return null;
+  const ex = L.filter(x => x.k === "exc").length, nt = L.length - ex;
+  return <button type="button" onClick={onOpen} dir="rtl" style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", width: "100%", display: "flex", alignItems: "center", gap: 12, borderRadius: 18, padding: "10px 14px", color: "#fff", background: "linear-gradient(135deg,#1e3a8a,#4338ca 55%,#7c3aed)", boxShadow: "0 14px 30px -20px rgba(67,56,202,.9)", fontFamily: "inherit" }}>
+    <span style={{ position: "relative", width: 42, height: 42, flex: "none", borderRadius: 13, display: "grid", placeItems: "center", background: "rgba(255,255,255,.16)" }}><GdIco n="mail" s={22} /><b style={{ position: "absolute", top: -6, left: -6, minWidth: 22, height: 22, borderRadius: 99, background: "#ef4444", display: "grid", placeItems: "center", fontSize: 12, padding: "0 5px", boxShadow: "0 0 0 2px #fff" }}>{maAr(L.length)}</b></span>
+    <span style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 14.5, display: "block" }}>{ex ? `${maAr(ex)} عذر` : ""}{ex && nt ? " و" : ""}{nt ? `${maAr(nt)} ملاحظة` : ""} من أولياء الأمور بانتظار الرد</b>
+      <span style={{ fontSize: 12.5, fontWeight: 800, opacity: .92, display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{L.slice(0, 3).map(x => `${String(x.sname || "").split(" ").slice(0, 2).join(" ")} (${x.ck ? maClassName(x.ck) : "—"})`).join(" • ")}{L.length > 3 ? " …" : ""}</span></span>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 900, background: "rgba(255,255,255,.16)", borderRadius: 99, padding: "4px 10px", whiteSpace: "nowrap" }}><i style={{ width: 7, height: 7, borderRadius: 9, background: "#4ade80", display: "inline-block", boxShadow: "0 0 0 3px rgba(74,222,128,.3)" }} />محدّث</span>
+  </button>;
+}
 // أيام الغياب المغطاة بعذر مقبول من «الأعذار»
 const gdExcSet = exc => { const S = new Set(); maArr(exc).filter(x => x && x.status === "ok" && x.from).forEach(x => { let d = maDate(x.from); const e = x.to || x.from; for (let i = 0; i < 60; i++) { const k = maKey(d); if (k > e) break; S.add(k); d.setDate(d.getDate() + 1); } }); return S; };
 const GdRing = ({ v, c, l, sub }) => <div style={{ display: "grid", justifyItems: "center", gap: 4, minWidth: 110 }}><div className="gd-ring" style={{ "--p": v == null ? 0 : v, "--c": c }}><div><b>{v == null ? "—" : maAr(Math.round(v)) + "٪"}</b><small>{l}</small></div></div>{sub && <small style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b", textAlign: "center" }}>{sub}</small>}</div>;
@@ -47802,6 +47890,7 @@ function SchoolWebsiteInner() {
             </div>
 
             {/* ── محتوى الصفحة (قابل للتمرير) ── */}
+            {page !== "parentinbox" && <div style={{ flexShrink: 0, padding: "6px 8px 0", background: "#f8fafc" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /></div>}
             <div ref={mScrollRef} style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", overscrollBehavior:"contain", background:"#f8fafc" }}>
               <div style={{ direction:"rtl", padding: narrow ? "6px 8px 14px" : 0 }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
                 {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
@@ -47987,6 +48076,7 @@ function SchoolWebsiteInner() {
           )}
         </div>
       </nav>
+      {page !== "parentinbox" && <div className="px-3 pt-3" style={{ maxWidth: 1400, margin: "0 auto" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /></div>}
       <div className="pam-row"><PamSide groups={navGroups} pageById={pageById} page={page} navigate={navigate} onLogout={() => setUser(null)} />
       <main className="w-full py-3 pam-main"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
         {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
