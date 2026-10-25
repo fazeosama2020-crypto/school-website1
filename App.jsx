@@ -47088,7 +47088,7 @@ let _trFetch = null;
 // ══════════ 🔒 لا حذف إلا بموافقة مدير المدرسة (برقم هويته) ══════════
 // كل حذف (DELETE أو حفظ قيمة فارغة) يتوقف حتى يُدخل مدير المدرسة رقم هويته. الموافقة صالحة ١٠ دقائق على هذا الجهاز.
 // مستثنى: العمليات الفنية التلقائية (المسودات، الفهارس، الحالات اليومية التي تُبدَّل بين تشغيل/إيقاف، صور الصفحات عند إعادة الرفع)
-const GATE_EXEMPT = ["school-pinbox-idx", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-pinbox-idx", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
