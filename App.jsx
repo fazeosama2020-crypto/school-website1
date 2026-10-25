@@ -1928,7 +1928,10 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
     if (u) { onLogin(u); setError(""); } else setError("اسم المستخدم أو كلمة المرور غير صحيحة");
   };
 
-  const [adm, setAdm] = useState(false);
+  const [adm, setAdm] = useState(false); const [byId, setById] = useState(false); const [nid, setNid] = useState(""); const [idBusy, setIdBusy] = useState(false);
+  const idLogin = async () => { setIdBusy(true); setError(""); const r = await ptStaffLogin(nid); setIdBusy(false);
+    if (r.err) { setError(r.err); return; } if (!["deputy", "principal"].includes(r.role)) { setError("الدخول برقم الهوية هنا مخصّص للوكلاء — الإداريون والموجهون يدخلون من «بوابة الإداريين والمرشد الطلابي»"); return; }
+    onLogin({ username: "wakil-" + String(r.rid || "").slice(-6), role: r.role === "principal" ? "مدير" : "وكيل", name: r.name, job: r.job || "", byId: 1 }); };
   const goHash = h => { window.location.hash = h; window.location.reload(); };
   const card = (h, ic, t, items, c, c2, cta, idTag, onClick) => (
     <div className="gt-card" style={{ "--c": c, "--c2": c2 }} onClick={onClick} role="button">
@@ -1958,6 +1961,10 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
               <div style={{ position: "relative" }}><input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="كلمة المرور" onKeyDown={e => e.key === "Enter" && handleLogin()} /><button type="button" onClick={() => setShowPass(!showPass)} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer" }}>{showPass ? "🙈" : "👁️"}</button></div>
               {error && <div style={{ background: "#fee2e2", color: "#b91c1c", fontSize: 12, fontWeight: 800, padding: 8, borderRadius: 10, textAlign: "center" }}>{error}</div>}
               <button type="button" onClick={handleLogin} className="gt-go" style={{ border: "none", color: "#fff", fontFamily: "inherit", cursor: "pointer" }}><span>دخول — الإدارة</span><span>←</span></button>
+              <button type="button" onClick={() => { setById(!byId); setError(""); }} style={{ background: "none", border: "none", color: "#0f766e", fontFamily: "inherit", fontWeight: 900, fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>🪪 {byId ? "إخفاء" : "دخول الوكلاء برقم الهوية"}</button>
+              {byId && <div style={{ display: "grid", gap: 6, background: "#f0fdfa", border: "1.5px dashed #5eead4", borderRadius: 12, padding: 8 }}>
+                <input type="text" inputMode="numeric" value={nid} onChange={e => setNid(e.target.value)} placeholder="رقم الهوية الوطنية (١٠ أرقام)" onKeyDown={e => e.key === "Enter" && idLogin()} />
+                <button type="button" disabled={idBusy} onClick={idLogin} className="gt-go" style={{ border: "none", color: "#fff", fontFamily: "inherit", cursor: "pointer", background: "linear-gradient(135deg,#0d4f3c,#12305a)" }}><span>{idBusy ? "جارٍ التحقق…" : "دخول الوكيل"}</span><span>←</span></button></div>}
             </div>}
           </div>
           {card("teacher", "👨‍🏫", "المعلمون", ["زياراتي الصفية وتقييمي", "غياب الحصة الثانية", "تصنيف الطلاب", "التقويم التكويني"], "#8b5cf6", "#6d28d9", "بوابة المعلمين", "الهوية الوطنية", () => goHash("teacher"))}
@@ -1981,7 +1988,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
 // ===== لوحة الأقسام: بطاقات مصنّفة + لوحة أدوات جانبية =====
 const HUB_GROUPS = [
   { title:"الحضور والدوام", desc:"متابعة الحضور والغياب والتقارير اليومية", icon:"🗓️", c:"#2563eb", tint:"#e0edff",
-    tools:[{id:"liveops",label:"غرفة العمليات اللحظية",icon:"🛰️"},{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"admtasks",label:"المهام اليومية للإداريين",icon:"📌"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"periodnotes",label:"حصر ملاحظات الحصص (مباشر)",icon:"📡"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"staffdisc",label:"متابعة أداء انضباط المعلمين والإداريين",icon:"🏅"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"}] },
+    tools:[{id:"liveops",label:"غرفة العمليات اللحظية",icon:"🛰️"},{id:"holidays",label:"الإجازات والأيام المستثناة",icon:"🏖️"},{id:"morningboard",label:"شاشة الصباح",icon:"📺"},{id:"morningattend",label:"غياب الطلاب — المعلمون",icon:"📋"},{id:"morninglate",label:"سجل التأخر الصباحي",icon:"🌅"},{id:"asmfollow",label:"حضور المعلمين للطابور",icon:"🎺"},{id:"admtasks",label:"المهام اليومية للإداريين",icon:"📌"},{id:"duty",label:"الإشراف اليومي والمناوبة",icon:"🛡️"},{id:"periodfollow",label:"متابعة الحصص اليومية",icon:"🗓️"},{id:"periodnotes",label:"حصر ملاحظات الحصص (مباشر)",icon:"📡"},{id:"attendance",label:"الحضور اليومي",icon:"📅"},{id:"staffdisc",label:"متابعة أداء انضباط المعلمين والإداريين",icon:"🏅"},{id:"student-absence",label:"غياب الطلاب",icon:"🎒"},{id:"studentexcuses",label:"أعذار الطلاب",icon:"📄"}] },
   { title:"الطلاب", desc:"إدارة شؤون الطلاب والتقارير والبيانات", icon:"🎓", c:"#7c3aed", tint:"#f0e7ff",
     tools:[{id:"dplan",label:"خطة وسجل الانضباط المدرسي",icon:"📘"},{id:"nafes",label:"منصة نافس التدريبية",icon:"🎯"},{id:"treasureadm",label:"رحلة الكنز إلى نافس",icon:"🗺️"},{id:"nafsbooks",label:"مراجع نافس – متابعة الإنجاز",icon:"📚"},{id:"studentperf",label:"متابعة أداء الطلاب",icon:"🎓"},{id:"behavior",label:"الملاحظات السلوكية اليومية",icon:"📝"},{id:"conduct",label:"متابعة السلوك اليومي",icon:"🚸"},{id:"students",label:"تقييم الطلاب",icon:"🎓"},{id:"formative",label:"التقويم التكويني",icon:"📘"},{id:"studentclassify",label:"تصنيف الطلاب",icon:"🏷️"},{id:"stulevels",label:"سجل مستويات الطلاب",icon:"📊"},{id:"stlogins",label:"سجل دخول الطلاب",icon:"🪪"},{id:"readweak",label:"حصر الضعف القرائي",icon:"📖"},{id:"weeklyplan",label:"الخطة الأسبوعية",icon:"🗓️"},{id:"termplan",label:"الخطة الفصلية",icon:"📚"},{id:"gradeanalysis",label:"تحليل درجات الطلاب",icon:"📈"},{id:"assessment",label:"بطاقة التشخيص",icon:"🔍"},{id:"lessonrecommend",label:"الخطط العلاجية",icon:"🩺"},{id:"quiz",label:"اختبارات الطلاب",icon:"📝"},{id:"dailyquiz",label:"الاختبار اليومي",icon:"🎯"},{id:"honorboard",label:"لوحة الشرف",icon:"🌟"},{id:"certificates",label:"الشهادات الرقمية",icon:"🏅"},{id:"raffle",label:"سحب الطلاب",icon:"🎰"},{id:"luckywheel",label:"عجلة الحظ",icon:"🎡"}] },
   { title:"المعلمون", desc:"إدارة شؤون المعلمين والأداء المهني", icon:"👨‍🏫", c:"#059669", tint:"#d6f5e6",
@@ -32239,10 +32246,64 @@ const maClassName = ck => { const [l, s] = String(ck).split("-"); return `${MA_L
 //    اليوم الوطني ٢٣–٢٦/٩/٢٠٢٦ • الخريف ٢٠–٢٨/١١ • منتصف العام ٨–١٦/١/٢٠٢٧ • التأسيس ١٩–٢٢/٢ • الفطر ٢٦/٢–١٣/٣ • الأضحى ٣٠/٤–٢٢/٥ • نهاية العام من ١/٧ حتى عودة المعلمين ٢٢/٨/٢٠٢٧
 const SCHOOL_HOL_1448 = {"2026-09-23":"إجازة اليوم الوطني","2026-09-24":"إجازة اليوم الوطني","2026-11-22":"إجازة الخريف","2026-11-23":"إجازة الخريف","2026-11-24":"إجازة الخريف","2026-11-25":"إجازة الخريف","2026-11-26":"إجازة الخريف","2027-01-10":"إجازة منتصف العام الدراسي","2027-01-11":"إجازة منتصف العام الدراسي","2027-01-12":"إجازة منتصف العام الدراسي","2027-01-13":"إجازة منتصف العام الدراسي","2027-01-14":"إجازة منتصف العام الدراسي","2027-02-21":"إجازة يوم التأسيس","2027-02-22":"إجازة يوم التأسيس","2027-02-28":"إجازة عيد الفطر","2027-03-01":"إجازة عيد الفطر","2027-03-02":"إجازة عيد الفطر","2027-03-03":"إجازة عيد الفطر","2027-03-04":"إجازة عيد الفطر","2027-03-07":"إجازة عيد الفطر","2027-03-08":"إجازة عيد الفطر","2027-03-09":"إجازة عيد الفطر","2027-03-10":"إجازة عيد الفطر","2027-03-11":"إجازة عيد الفطر","2027-05-02":"إجازة عيد الأضحى","2027-05-03":"إجازة عيد الأضحى","2027-05-04":"إجازة عيد الأضحى","2027-05-05":"إجازة عيد الأضحى","2027-05-06":"إجازة عيد الأضحى","2027-05-09":"إجازة عيد الأضحى","2027-05-10":"إجازة عيد الأضحى","2027-05-11":"إجازة عيد الأضحى","2027-05-12":"إجازة عيد الأضحى","2027-05-13":"إجازة عيد الأضحى","2027-05-16":"إجازة عيد الأضحى","2027-05-17":"إجازة عيد الأضحى","2027-05-18":"إجازة عيد الأضحى","2027-05-19":"إجازة عيد الأضحى","2027-05-20":"إجازة عيد الأضحى","2027-07-01":"إجازة نهاية العام الدراسي","2027-07-04":"إجازة نهاية العام الدراسي","2027-07-05":"إجازة نهاية العام الدراسي","2027-07-06":"إجازة نهاية العام الدراسي","2027-07-07":"إجازة نهاية العام الدراسي","2027-07-08":"إجازة نهاية العام الدراسي","2027-07-11":"إجازة نهاية العام الدراسي","2027-07-12":"إجازة نهاية العام الدراسي","2027-07-13":"إجازة نهاية العام الدراسي","2027-07-14":"إجازة نهاية العام الدراسي","2027-07-15":"إجازة نهاية العام الدراسي","2027-07-18":"إجازة نهاية العام الدراسي","2027-07-19":"إجازة نهاية العام الدراسي","2027-07-20":"إجازة نهاية العام الدراسي","2027-07-21":"إجازة نهاية العام الدراسي","2027-07-22":"إجازة نهاية العام الدراسي","2027-07-25":"إجازة نهاية العام الدراسي","2027-07-26":"إجازة نهاية العام الدراسي","2027-07-27":"إجازة نهاية العام الدراسي","2027-07-28":"إجازة نهاية العام الدراسي","2027-07-29":"إجازة نهاية العام الدراسي","2027-08-01":"إجازة نهاية العام الدراسي","2027-08-02":"إجازة نهاية العام الدراسي","2027-08-03":"إجازة نهاية العام الدراسي","2027-08-04":"إجازة نهاية العام الدراسي","2027-08-05":"إجازة نهاية العام الدراسي","2027-08-08":"إجازة نهاية العام الدراسي","2027-08-09":"إجازة نهاية العام الدراسي","2027-08-10":"إجازة نهاية العام الدراسي","2027-08-11":"إجازة نهاية العام الدراسي","2027-08-12":"إجازة نهاية العام الدراسي","2027-08-15":"إجازة نهاية العام الدراسي","2027-08-16":"إجازة نهاية العام الدراسي","2027-08-17":"إجازة نهاية العام الدراسي","2027-08-18":"إجازة نهاية العام الدراسي","2027-08-19":"إجازة نهاية العام الدراسي"};
 // ── أيام الإجازة: الجمعة والسبت + الإجازات الرسمية المسجلة في سجل المناوبة (DU_OFF_H) + التقويم الدراسي الرسمي (SCHOOL_HOL_1448)
-const maOffName = k => { try { const d = maDate(k); const w = d.getDay(); if (w === 5 || w === 6) return "إجازة نهاية الأسبوع"; const H = typeof DU_OFF_H !== "undefined" ? DU_OFF_H : null; return (H && H[k]) || SCHOOL_HOL_1448[k] || ""; } catch { return ""; } };
+// ── إجازات يضيفها مدير المدرسة (إجازة مطولة • اليوم الوطني • يوم التأسيس • تعليق دراسة …) أو إلغاء إجازة لتصبح دواماً
+//    school-holx/{YYYY-MM-DD} = { n: "إجازة مطولة", t: "long", by, at }  أو { work: 1 } لاعتبار اليوم دواماً
+const MA_HOLX = "school-holx";
+const MA_HOLX_DEF = { "2026-10-25": { n: "إجازة مطولة", t: "long" } };
+let _maHolX = MA_HOLX_DEF;
+const maHolX = k => { const v = _maHolX && _maHolX[k]; return v ? (typeof v === "string" ? { n: v } : v) : null; };
+async function maHolXLoad() { try { const r = await fetch(`${FIREBASE_URL}/school/${MA_HOLX}.json`); const v = await r.json(); _maHolX = v && typeof v === "object" ? v : MA_HOLX_DEF; } catch {} return _maHolX; }
+const maOffName = k => { try { const d = maDate(k); const w = d.getDay(); if (w === 5 || w === 6) return "إجازة نهاية الأسبوع"; const X = maHolX(k); if (X) return X.work ? "" : (X.n || "إجازة"); const H = typeof DU_OFF_H !== "undefined" ? DU_OFF_H : null; return (H && H[k]) || SCHOOL_HOL_1448[k] || ""; } catch { return ""; } };
 const maOff = k => !!maOffName(k);
 const maLastWork = k => { const d = maDate(k); for (let i = 0; i < 20; i++) { const x = maKey(d); if (!maOff(x)) return x; d.setDate(d.getDate() - 1); } return k; };
 const maWorkDay = () => maLastWork(maKey(new Date())); // اليوم إن كان دواماً، وإلا آخر يوم دوام
+// ══════════ 🏖️ الإجازات والأيام المستثناة (يضيفها مدير المدرسة) ══════════
+const HOL_TY = [["long", "إجازة مطولة", "🏖️", "#0e7490"], ["nat", "إجازة اليوم الوطني", "🇸🇦", "#15803d"], ["fnd", "إجازة يوم التأسيس", "🏛️", "#a16207"], ["sus", "تعليق الدراسة", "⛈️", "#7c3aed"], ["oth", "إجازة رسمية", "📅", "#475569"], ["work", "دوام رسمي (إلغاء إجازة)", "🏫", "#b91c1c"]];
+function HolidaysPage({ by = "الإدارة" }) {
+  const [X, setX] = useState(() => ({ ..._maHolX })); const [f, setF] = useState(() => ({ from: maKey(new Date()), to: "", t: "long", n: "إجازة مطولة" })); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
+  useEffect(() => { maHolXLoad().then(v => setX({ ...v })); }, []);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  const ty = k => HOL_TY.find(x => x[0] === k) || HOL_TY[4];
+  const days = (() => { if (!f.from) return []; const a = maDate(f.from), b = maDate(f.to && f.to >= f.from ? f.to : f.from); const L = []; for (let d = new Date(a), i = 0; d <= b && i < 120; d.setDate(d.getDate() + 1), i++) { const w = d.getDay(); if (w !== 5 && w !== 6) L.push(maKey(d)); } return L; })();
+  const add = async () => { if (!days.length) { alert("اختر تاريخاً من أيام الأحد إلى الخميس"); return; } setBusy(true);
+    const v = f.t === "work" ? { work: 1, n: "دوام رسمي", t: "work", by, at: Date.now() } : { n: f.n.trim() || ty(f.t)[1], t: f.t, by, at: Date.now() };
+    const base = X === MA_HOLX_DEF || !Object.keys(X).length ? { ...MA_HOLX_DEF } : { ...X }; days.forEach(k => { base[k] = v; });
+    const ok = await maPut(MA_HOLX, base); setBusy(false); if (!ok) { toast("⚠️ تعذّر الحفظ"); return; } _maHolX = base; setX({ ...base }); toast(`✅ سُجّل ${maAr(days.length)} يوم — ${v.n}`); };
+  const del = async ks => { if (!confirm(`حذف ${maAr(ks.length)} يوم من الإجازات المضافة؟`)) return; const n = { ...X }; ks.forEach(k => delete n[k]); const ok = await maPut(MA_HOLX, Object.keys(n).length ? n : { _: 0 }); if (!ok) { toast("⚠️ تعذّر الحذف"); return; } _maHolX = n; setX(n); toast("🗑 حُذف"); };
+  // تجميع الأيام المتتالية بنفس الاسم
+  const grp = (() => { const ks = Object.keys(X).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort(); const G = []; ks.forEach(k => { const x = maHolX(k); const last = G[G.length - 1]; const prevW = last ? (() => { const d = maDate(last.ks[last.ks.length - 1]); for (let i = 0; i < 4; i++) { d.setDate(d.getDate() + 1); const kk = maKey(d); if (kk === k) return true; const w = d.getDay(); if (w !== 5 && w !== 6) return false; } return false; })() : false;
+    if (last && prevW && last.n === x.n && !!last.work === !!x.work) last.ks.push(k); else G.push({ n: x.n, t: x.t, work: x.work, by: x.by, ks: [k] }); }); return G; })();
+  const offi = (() => { const H = { ...SCHOOL_HOL_1448, ...(typeof DU_OFF_H !== "undefined" ? DU_OFF_H : {}) }; const ks = Object.keys(H).sort(); const G = []; ks.forEach(k => { const l = G[G.length - 1]; if (l && l.n === H[k] && (maDate(k) - maDate(l.ks[l.ks.length - 1])) / 864e5 <= 3) l.ks.push(k); else G.push({ n: H[k], ks: [k] }); }); return G; })();
+  const rng = ks => { const a = maDate(ks[0]), b = maDate(ks[ks.length - 1]); return ks.length === 1 ? `${maDay(a)} ${maHijri(a)}` : `من ${maDay(a)} ${maHijri(a)} إلى ${maDay(b)} ${maHijri(b)}`; };
+  const today = maKey(new Date()); const tOff = maOffName(today);
+  return <div className="ma pt px-3 md:px-6 py-4" dir="rtl"><style>{MA_CSS + PT_CSS}</style><div className="grid gap-4" style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div className="pt-hero" style={{ background: "linear-gradient(135deg,#0d4f3c,#12305a 70%)" }}><div style={{ position: "relative", zIndex: 1 }}>
+      <div style={{ fontSize: 22, fontWeight: 900 }}>🏖️ الإجازات والأيام المستثناة من الدوام</div>
+      <div style={{ fontSize: 13, fontWeight: 700, opacity: .9, lineHeight: 1.9 }}>أضف الإجازة المطولة أو اليوم الوطني أو يوم التأسيس أو تعليق الدراسة، فتُستثنى تلقائياً من حضور المعلمين ونسبهم، وغياب الطلاب وتأخرهم، والمناوبة والإشراف، وتبادل الزيارات، واختيار مواعيد الزيارات الصفية الجديدة. جدول الزيارات الصفية السابق لا يتغيّر.</div>
+      <div style={{ marginTop: 10, display: "inline-block", background: "rgba(255,255,255,.15)", borderRadius: 999, padding: "4px 14px", fontWeight: 900, fontSize: 13 }}>اليوم {maDay(maDate(today))} {maHijri(maDate(today))}: {tOff ? `🌙 ${tOff}` : "🏫 يوم دوام"}</div>
+    </div></div>
+    {msg && <div className="ma-card p-3 text-center font-black" style={{ color: msg[0] === "✅" || msg[0] === "🗑" ? "#15803d" : "#b91c1c" }}>{msg}</div>}
+    <div className="ma-card p-4 grid gap-3" style={{ borderTop: "4px solid #a8874a" }}>
+      <b style={{ fontSize: 15, color: "#12305a" }}>➕ إضافة إجازة</b>
+      <div className="flex gap-2 flex-wrap">{HOL_TY.map(([k, l, ic, c]) => <button key={k} className="ma-btn" style={f.t === k ? { background: c, color: "#fff", borderColor: c } : {}} onClick={() => setF({ ...f, t: k, n: k === "oth" ? "" : l })}>{ic} {l}</button>)}</div>
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}>
+        <label className="text-sm font-bold">من تاريخ<input type="date" className="ma-inp" value={f.from} onChange={e => setF({ ...f, from: e.target.value })} /></label>
+        <label className="text-sm font-bold">إلى تاريخ (اختياري)<input type="date" className="ma-inp" value={f.to} min={f.from} onChange={e => setF({ ...f, to: e.target.value })} /></label>
+        {f.t !== "work" && <label className="text-sm font-bold">المسمّى<input className="ma-inp" value={f.n} placeholder="مثال: إجازة مطولة" onChange={e => setF({ ...f, n: e.target.value })} /></label>}
+      </div>
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>{days.length ? <>📅 {maAr(days.length)} يوم دراسي: {days.slice(0, 8).map(k => `${maDay(maDate(k))} ${maHijri(maDate(k))}`).join(" • ")}{days.length > 8 ? " …" : ""}</> : "اختر التاريخ (تُستبعد الجمعة والسبت تلقائياً)"}</div>
+      <div><button className="ma-btn gold" disabled={busy || !days.length} onClick={add}>💾 {f.t === "work" ? "اعتماد الأيام دواماً رسمياً" : "حفظ الإجازة"}</button></div>
+    </div>
+    <div className="ma-card p-4 grid gap-2"><b style={{ fontSize: 15, color: "#12305a" }}>🗂️ الإجازات المضافة من الإدارة ({maAr(grp.length)})</b>
+      {grp.length ? grp.map((g, i) => { const T = g.work ? HOL_TY[5] : ty(g.t); return <div key={i} className="flex items-center gap-2 flex-wrap" style={{ border: `1.5px solid ${T[3]}33`, background: `${T[3]}0d`, borderRadius: 14, padding: "8px 12px" }}>
+        <span style={{ fontSize: 22 }}>{T[2]}</span><div style={{ flex: "1 1 240px", minWidth: 0 }}><b style={{ color: T[3] }}>{g.work ? "دوام رسمي (أُلغيت الإجازة)" : g.n}</b> <small style={{ fontWeight: 800, color: "#64748b" }}>({g.ks.length === 1 ? "يوم واحد" : `${maAr(g.ks.length)} أيام`})</small><div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155" }}>{rng(g.ks)}</div></div>
+        {g.ks[g.ks.length - 1] < today && <span className="ma-chip" style={{ fontSize: 11 }}>منتهية</span>}<button className="ma-btn" onClick={() => del(g.ks)}>🗑 حذف</button></div>; }) : <div style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد إجازات مضافة</div>}
+    </div>
+    <details className="ma-card p-4"><summary style={{ fontWeight: 900, color: "#12305a", cursor: "pointer" }}>📘 إجازات التقويم الدراسي الرسمي المسجلة مسبقاً ({maAr(offi.length)})</summary>
+      <div className="grid gap-1 mt-2">{offi.map((g, i) => { const w = g.ks.some(k => maHolX(k) && maHolX(k).work); return <div key={i} style={{ fontSize: 12.5, fontWeight: 800, color: w ? "#94a3b8" : "#334155", textDecoration: w ? "line-through" : "none" }}>• {g.n} — {rng(g.ks)}</div>; })}</div>
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", marginTop: 6 }}>لإلغاء يوم منها واعتباره دواماً اختر «دوام رسمي (إلغاء إجازة)» في الإضافة.</div></details>
+  </div></div>;
+}
 function MaOffCard({ dk, what = "الرصد", onLast, onReports }) {
   const last = maLastWork(dk); const D = maDate(dk), L = maDate(last);
   return <div className="ma-card p-6 text-center grid gap-2" style={{ border: "2px solid #c7d2fe", background: "linear-gradient(180deg,#eef2ff,#fff)", justifyItems: "center" }}>
@@ -32966,13 +33027,33 @@ async function ptLinkLegacy(nid, ros) {
 }
 
 // ── دخول الموظف بالسجل المدني
+// ── منسوبو المدرسة المعتمدون للدخول بالهوية (الوكلاء • الموجهون الطلابيون • الإداريون) — تُحفظ بصمة الهوية فقط
+const PT_SEED_VER = 2, PT_SEED_FLAG = "school-staff-seed";
+const PT_SEED = [
+  { h: "aacec0d8da7f0248ba05c141362a12079ef8eff5dade3b385039f01deb0b469b", id4: "6857", name: "عبدالله بن زيدي بن بلغيث السهيمي", role: "deputy", job: "وكيل شؤون الطلاب", fixJ: 1 },
+  { h: "1a261b32e917cb5f2a17de86543ed0221d98e6efdfd71bb5918d8de3d7a5720c", id4: "1398", name: "عوض محمد عالي العماري", role: "deputy", job: "وكيل الشؤون التعليمية" },
+  { h: "34b00669a8fcd4c413a93e7f973113dd8ee404c85ceca8e982ecb42d70f6a0e2", id4: "4737", name: "عادل علي بن صالح الغامدي", role: "counselor", job: "موجه طلابي" },
+  { h: "12cbb5ea5ada129a23adf29cb96e677965fc79c0c72b7fe5cfb893a7b65a9cc2", id4: "1240", name: "فايز ابن عابد ابن غلاب الزلفي", role: "counselor", job: "موجه طلابي" },
+  { h: "65e3db385a4cda5fb318177bbf7176d3fa7b2d843f6c023992fd1a849c466c81", id4: "6984", name: "تركي محمد عمر الزهراني", role: "admin", job: "إداري" },
+  { h: "228f9d6b325a32b73b0f6e542e97a6b765f53004f4cae89fc206852d1792d456", id4: "8609", name: "جابر محمد على الشمراني", role: "admin", job: "إداري" },
+  { h: "9ec55c630d0a056c3f3e04ff1ddcb1db6f9a752ceb09d098557d3128e5e30c50", id4: "0414", name: "الوليد طلال مصطفى سابق", role: "admin", job: "إداري", fix: 1 },
+  { h: "92e1f017140fdcc2e6f6e6f27e8d43c39d33341c7fa99ab20f0fbedc91d8f4ec", id4: "5704", name: "علي زاهر علي الشهري", role: "admin", job: "إداري" }
+];
+async function ptSeedSync(force) {
+  try { const f = await maGet(PT_SEED_FLAG); if (!force && +f >= PT_SEED_VER) return false;
+    const vals = ptVals(await maGet(PT_STAFF));
+    for (const x of PT_SEED) { const ex = vals.find(y => y.idHash === x.h);
+      if (!ex) { const id = "sd" + x.id4 + x.h.slice(0, 4); await maPut(`${PT_STAFF}/${id}`, { id, name: x.name, idHash: x.h, id4: x.id4, job: x.job, role: x.role, seed: 1 }); }
+      else if ((x.fix && ex.name !== x.name) || (!ex.role && x.role) || (x.fixJ && ex.job !== x.job)) await maPut(`${PT_STAFF}/${ex.id}`, { ...ex, name: x.fix ? x.name : ex.name, role: ex.role || x.role, job: x.fixJ ? x.job : (ex.job || x.job) }); }
+    await maPut(PT_SEED_FLAG, PT_SEED_VER); return true; } catch { return false; } }
+const PT_WELCOME = { deputy: "شريكٌ أصيل في قيادة المدرسة — بين يديك متابعة الدوام والزيارات الصفية والانضباط المدرسي. أهلاً بك وسهلاً", counselor: "أهلاً بك في التوجيه الطلابي — بك نرعى أبناءنا ونصنع بيئةً آمنةً محفّزة. حيّاك الله", admin: "أهلاً بك في فريق الإدارة المدرسية — عطاؤك اليومي أساس انضباط المدرسة ونجاحها", principal: "أهلاً بقائد المدرسة", teacher: "أهلاً بك — رسالتك تصنع الأجيال" };
 async function ptStaffLogin(nid) {
   const n = licNormId(nid);
   if (n.length !== 10) return { err: "أدخل رقم السجل المدني كاملاً (١٠ أرقام)" };
-  const h = await licHash(n);
+  const h = await licHash(n); if (PT_SEED.some(x => x.h === h)) await ptSeedSync();
   const [staff, lic, roles] = await Promise.all([maGet(PT_STAFF), maGet(LIC_NODE), maGet(PT_ROLES)]);
   const s = ptVals(staff).find(x => x.idHash === h);
-  if (s) return { name: s.name, hash: h, role: s.role || ptGuessRole(s.job), rid: s.id, src: "staff", perms: s.perms || null, day: maKey(new Date()) };
+  if (s) return { name: s.name, hash: h, role: s.role || ptGuessRole(s.job), job: s.job || "", rid: s.id, src: "staff", perms: s.perms || null, day: maKey(new Date()) };
   const e = Object.entries(ptObj(lic)).find(([, x]) => x && x.idHash === h);
   if (e) { const [rid, r] = e; return { name: r.name, hash: h, role: ptObj(roles)[rid] || "teacher", rid, src: "lic", day: maKey(new Date()) }; }
   return { err: "رقم السجل المدني غير مسجّل — يرجى مراجعة الإدارة" };
@@ -33089,7 +33170,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
       <span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span>
     </div>
   );
-  const wrap = (t, node) => <div className="pt px-2 md:px-5 py-4" dir="rtl" style={{ minHeight: "100vh", background: "#f8fafc" }}><style>{MA_CSS + PT_CSS}</style><Bar t={t} />{node}</div>;
+  const pxAll = isStaff && ["principal", "deputy"].includes(me.role); const pxW = <PxWatcher me={me} all={pxAll} onOpen={() => setView(pxAll ? "pxadm" : "px")} />;
+  const wrap = (t, node) => <div className="pt px-2 md:px-5 py-4" dir="rtl" style={{ minHeight: "100vh", background: "#f8fafc" }}><style>{MA_CSS + PT_CSS}</style><Bar t={t} />{node}{pxW}</div>;
   if (view === "attend") return wrap("📋 غياب الحصة الثانية", <MorningAttendancePage mode="teacher" />);
   if (view === "classify") return wrap("🏷️ تصنيف الطلاب", <StudentClassifyPage mode="teacher" />);
   if (view === "stlv") return wrap("📊 سجل تصنيف مستويات الطلاب", <StudentLevelsPage by={me.name} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
@@ -33137,7 +33219,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
 
   return (
     <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f1f5f9,#f8fafc)" }}>
-      <style>{MA_CSS + PT_CSS}</style>
+      <style>{MA_CSS + PT_CSS}</style>{pxW}{isStaff && <><style>{PAM_UI_CSS}</style><PamSplash name={me.name} /></>}
       <div style={{ maxWidth: 1100, margin: "0 auto" }} className="grid gap-5">
         <div className="pt-hero" style={{ background: grad }}>
           <div className="flex items-center gap-3 flex-wrap" style={{ position: "relative", zIndex: 1 }}>
@@ -33145,7 +33227,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{isStaff ? "🗂️ بوابة الإداريين والمرشد الطلابي" : "👨‍🏫 بوابة المعلمين"}</div>
               <div style={{ fontSize: 22, fontWeight: 900 }}>مرحباً أ. {me.name}</div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{PT_ROLE_LBL[me.role] || "معلم"} • {maDay(new Date())} {maHijri(new Date())}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{me.job || PT_ROLE_LBL[me.role] || "معلم"} • {maDay(new Date())} {maHijri(new Date())}</div>
+              {isStaff && <div style={{ marginTop: 6, display: "inline-block", fontSize: 12.5, fontWeight: 800, background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.3)", borderRadius: 12, padding: "4px 12px" }}>🌟 {PT_WELCOME[me.role] || PT_WELCOME.admin}</div>}
             </div>
             <div className="flex gap-2"><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={logout}>خروج</button>{onBack && <button className="ma-btn" onClick={onBack}>🏠 الرئيسية</button>}</div>
           </div>
@@ -33199,7 +33282,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           </>
         ) : (
           <div className="grid gap-5">
-          <TchMustSign me={me} onCirc={() => setView("circ")} />
+          <TchMustSign me={me} onCirc={() => setView("circ")} onCv={() => setView("cv")} />
           <TchStatsBoard me={me} go={setView} />
           <div className="pt-bns">
             <div className="pt-bn"><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
@@ -33647,6 +33730,7 @@ function PortalsAdminPage() {
   const [add, setAdd] = useState({ name: "", nid: "", role: "counselor" }); const fileRef = useRef(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
   const load = async () => {
+    await ptSeedSync();
     const [l, s, r, ros] = await Promise.all([maGet(LIC_NODE), maGet(PT_STAFF), maGet(PT_ROLES), maGet(MA_ROSTER)]);
     setLic(ptVals(l).filter(x => x.name).sort((a, b) => a.name.localeCompare(b.name, "ar"))); setStaff(ptVals(s).sort((a, b) => a.name.localeCompare(b.name, "ar"))); setRoles(ptObj(r));
     let t = 0, n = 0; ptVals(ros).forEach(x => maArr(x.students).forEach(st => { if (st) { t++; if (st.nh) n++; } })); setCov({ t, n });
@@ -36899,7 +36983,7 @@ const IN_PCSS = `@page{size:A4;margin:8mm}*{box-sizing:border-box;-webkit-print-
 h3{font-size:13px;margin:10px 0 4px;color:#0f766e}
 table{width:100%;border-collapse:collapse;font-size:10.5px}th{background:#0f766e;color:#fff;padding:4px;font-weight:900}td{border:1px solid #e2e8f0;padding:4px;text-align:center}.r{text-align:right}
 .bar{height:9px;border-radius:9px;background:#e2e8f0;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px}
-.sg{display:flex;justify-content:space-around;margin-top:16px;font-weight:800;font-size:11.5px;text-align:center}.sg span{display:block;margin-top:12px;color:#94a3b8}.sg .pn{display:block;margin-top:3px;color:#0f766e}
+.sg{display:flex;justify-content:space-around;margin-top:16px;font-weight:800;font-size:11.5px;text-align:center}.sg span{display:block;margin-top:12px;color:#94a3b8}.sg .pn{display:block;margin-top:3px;color:#0f766e}.vs-r{margin-top:10px}.sg .pn{display:block}.vs-i{display:block;height:40px;max-width:150px;margin:2px auto 0;object-fit:contain}.vs-c{flex:1}
 .lv{display:inline-block;border-radius:999px;padding:2px 9px;font-weight:900;font-size:10px}`;
 const inHdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub || `${maDay(new Date())}<br>${maHijri(new Date())}<br>${maGreg(new Date())}`}</div></div><div class="tt"><span>${title}</span></div>`;
 const inSig = (by, mid = "الموجه الطلابي") => `<div class="sg"><div>المُعِد<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>${mid}<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`;
@@ -37648,7 +37732,7 @@ const CV_TMFIX = { "الرابعة": ["9:15-10:00", "9:35-10:20"], "السابع
 const cvFixRow = r => r && CV_TMFIX[r.p] && r.tm === CV_TMFIX[r.p][0] ? { ...r, tm: CV_TMFIX[r.p][1] } : r;
 // زيارات يوم واحد مربوطة بالجدول: المفتاح «رقم المعلم_رقم الحصة»
 function cvDayMap(plan, T, dk) { const o = {}; if (!T || !T.T) return o; Object.values(ptObj(plan)).forEach(r0 => { const r = cvFixRow(r0); if (!r || r.date !== dk) return; const ti = sttFindMe(T, r.t); const p = TT_ORD.indexOf(r.p); const m = String(r.c || "").match(/^(\d)\/(\d)$/); o[ti >= 0 && p >= 0 ? `${ti}_${p}` : "x" + r.id] = { ...r, pn: r.p, ti, p, ck: m ? `${m[2]}-${m[1]}` : "" }; }); return o; }
-async function cvLoad() {
+async function cvLoad() { vsLoad().catch(() => {});
   let [plan, ev, cfg, lic, msgs] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL), maGet(CV_CFG), maGet(LIC_NODE), maGet(CV_MSG)]);
   plan = Object.fromEntries(Object.entries(ptObj(plan)).map(([k, r]) => [k, cvFixRow(r)])); cfg = ptObj(cfg);
   return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: [], gen: ptObj(cfg.gen), resched: cfg.resched || "", links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
@@ -37691,6 +37775,8 @@ const PX_FB = [["str", "أبرز نقاط القوة مدعومة بشواهد"]
 const pxRes = e => { const sc = ptObj(e && e.sc); const v = PX_CRIT.map((_, i) => sc[i + 1]).filter(x => x !== "na" && +x >= 1 && +x <= 4).map(Number); const sum = v.reduce((a, x) => a + x, 0); const max = v.length * 4; return { n: v.length, sum, max, pct: max ? Math.round(1000 * sum / max) / 10 : null }; };
 const pxLvl = p => p == null ? ["—", "#64748b", "#f1f5f9"] : p >= 87.5 ? ["متحقق بدرجة عالية", "#15803d", "#dcfce7"] : p >= 62.5 ? ["متحقق", "#0d9488", "#ccfbf1"] : p >= 37.5 ? ["متحقق جزئياً", "#b45309", "#fef3c7"] : ["يحتاج إلى تطوير", "#b91c1c", "#fee2e2"];
 const pxTimes = (T, cfg) => ttFixTimes(Array.isArray(ptObj(cfg).times) ? ptObj(cfg).times : (T && Array.isArray(T.times) ? T.times : TT_DEF_TIMES));
+const PX_GC = { sci: ["#0e7490", "#cffafe"], math: ["#4338ca", "#e0e7ff"], ar: ["#15803d", "#dcfce7"], eng: ["#9f1239", "#ffe4e6"] };
+const pxTmV = (D, v) => v.tm || pxTm(D.times, v.p);
 const pxTm = (times, p) => { const x = (times || [])[p] || []; return x[0] ? `${hdHM(hdMin(x[0]))} - ${hdHM(hdMin(x[1]))}` : ""; };
 // معلمو التخصصات الأربعة من الجدول المدرسي
 function pxTeachers(T) {
@@ -37716,7 +37802,7 @@ function pxGen(T, start, maxV = 3, keep = {}) {
   }
   return { plan: out, left: PX_GRP.flatMap(([g]) => queue[g].map(o => ({ g, n: o.n }))) };
 }
-async function pxLoad() { const [tt, tc, px] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(PX_NODE)]); const T = ttFresh(tt); const P = ptObj(px); return { T, times: pxTimes(T, tc), cfg: ptObj(P.cfg), plan: ptObj(P.plan), ev: ptObj(P.ev), seen: ptObj(P.seen) }; }
+async function pxLoad() { vsLoad().catch(() => {}); const [tt, tc, px] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(PX_NODE)]); const T = ttFresh(tt); const P = ptObj(px); return { T, times: pxTimes(T, tc), cfg: ptObj(P.cfg), plan: ptObj(P.plan), ev: ptObj(P.ev), seen: ptObj(P.seen) }; }
 const pxVisits = D => Object.values(D.plan).filter(v => v && v.id).sort((a, b) => a.date.localeCompare(b.date) || PX_GRP.findIndex(g => g[0] === a.g) - PX_GRP.findIndex(g => g[0] === b.g));
 const pxEvOf = (D, v, ti) => ptObj(ptObj(D.ev[v.id])[ti]);
 const pxDone = (D, v) => v.vis.filter(x => pxEvOf(D, v, x.ti).fin).length;
@@ -37730,23 +37816,68 @@ table{width:100%;border-collapse:collapse;margin-bottom:6px}th{background:${PX_I
 .sc{display:inline-block;border-radius:99px;padding:1px 8px;font-weight:800;font-size:9.5px}
 .res{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0}.res div{border:1px solid #cbd5e1;border-radius:8px;text-align:center;padding:5px}.res b{display:block;font-size:15px;color:${PX_NV}}
 .fb{display:grid;grid-template-columns:1fr 1fr;gap:6px}.fb div{border:1px solid #cbd5e1;border-radius:8px;padding:5px 8px;min-height:44px}.fb b{color:${PX_INK};display:block;font-size:10px}
-.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;text-align:center;font-weight:700;color:${PX_NV}}.sg div{border-top:1px dashed #94a3b8;padding-top:6px;line-height:2}
+.sg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;margin-top:14px;text-align:center;font-weight:700;color:${PX_NV}}.sg div{border-top:1px dashed #94a3b8;padding-top:6px;line-height:2}.sg div:empty{border:none}.vs-r{margin-top:10px}.sg .pn{display:block}.vs-i{display:block;height:40px;max-width:150px;margin:2px auto 0;object-fit:contain}.vs-c{flex:1}
 .ft{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:8.5px;color:#64748b}
 .land{size:A4 landscape}`;
 const pxHead = (sub) => `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br>${HFX_SCHOOL}</div><img src="${SCHOOL_LOGO}"><div class="l">${sub || ""}</div></div>`;
 const pxOpen = (body, t, land) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet"><style>${PX_PCSS}${land ? "@page{size:A4 landscape;margin:8mm}" : ""}</style></head><body>${body}<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>setTimeout(()=>print(),700))</script></body></html>`);
+// ══════════ ✍️ المعتمدون في سجلات الزيارات (الوكيل • المشرف المقيم • مدير المدرسة) ══════════
+const VS_NODE = "school-vsig";
+let _vs = null, _vsMgr = null;
+const vsGet = () => { const S = ptObj(_vs), M = ptObj(_vsMgr); return { show: S.show !== false,
+  dep: { t: "وكيل الشؤون التعليمية", n: "أ/ عوض العماري", ...ptObj(S.dep) }, sup: { t: "المشرف المقيم", n: "أ/ حمد الجابري", ...ptObj(S.sup) },
+  mgr: { t: M.mgrT || "مدير المدرسة", n: M.mgr || HDR_MGR, sig: M.sig || "" } }; };
+async function vsLoad() { const [a, b] = await Promise.all([maGet(VS_NODE), maGet(HFX_CFG)]); _vs = ptObj(a); _vsMgr = ptObj(b); return vsGet(); }
+const vsCell = (k, over) => { const g = vsGet(); const o = { ...g[k], ...ptObj(over) }; const nm = o.n || "";
+  return `<div class="vs-c">${ptEsc(o.t)}<br><b class="pn">${ptEsc(nm || "")}</b>${g.show && o.sig ? `<img class="vs-i" src="${o.sig}" alt="">` : `<span>التوقيع: ............</span>`}</div>`; };
+// صفّ المعتمدين: الوكيل • المشرف المقيم • مدير المدرسة
+const vsRow = (keys = ["dep", "sup", "mgr"], over = {}) => `<div class="sg vs-r">${keys.map(k => vsCell(k, over[k])).join("")}</div>`;
+const VS_PCSS = `.vs-r{margin-top:10px}.sg .pn{display:block}.vs-i{display:block;height:40px;max-width:150px;margin:2px auto 0;object-fit:contain}.sg+.vs-r{margin-top:8px}`;
+function useVsig() { const [g, setG] = useState(vsGet); useEffect(() => { vsLoad().then(setG).catch(() => {}); }, []); return g; }
+function VsSigCfg() {
+  const [S, setS] = useState(null); const [pad, setPad] = useState(null); const [msg, setMsg] = useState("");
+  useEffect(() => { vsLoad().then(() => setS({ show: true, ...ptObj(_vs), dep: { n: "أ/ عوض العماري", ...ptObj(ptObj(_vs).dep) }, sup: { n: "أ/ حمد الجابري", ...ptObj(ptObj(_vs).sup) } })); }, []);
+  if (!S) return <div className="ma-card p-6 text-center font-bold text-gray-400">⏳ جارٍ التحميل…</div>;
+  const save = async n => { setS(n); const ok = await maPut(VS_NODE, n); _vs = n; setMsg(ok ? "✅ حُفظت — تظهر في كل سجلات الزيارات الصفية وتبادل الزيارات" : "⚠️ تعذّر الحفظ"); setTimeout(() => setMsg(""), 3500); };
+  const saveMgrSig = async sig => { const c = { ...ptObj(_vsMgr), sig }; const ok = await maPut(HFX_CFG, c); _vsMgr = c; setS({ ...S }); setMsg(ok ? "✅ حُفظ توقيع مدير المدرسة" : "⚠️ تعذّر الحفظ"); setTimeout(() => setMsg(""), 3500); };
+  const g = vsGet(); const card = (k, ttl, ic, edit) => { const o = k === "mgr" ? g.mgr : { ...g[k], ...S[k] };
+    return <div className="ma-card p-4 grid gap-2" style={{ borderTop: `4px solid ${k === "sup" ? PX_GD : k === "mgr" ? PX_INK : PX_NV}` }}>
+      <div style={{ fontWeight: 900, fontSize: 15, color: PX_NV }}>{ic} {ttl}</div>
+      {edit ? <><label className="text-sm font-bold">المسمّى<input className="ma-inp" value={S[k].t ?? o.t} onChange={e => setS({ ...S, [k]: { ...S[k], t: e.target.value } })} /></label>
+        <label className="text-sm font-bold">الاسم<input className="ma-inp" value={S[k].n ?? ""} placeholder={k === "dep" ? "مثال: أ/ ..." : ""} onChange={e => setS({ ...S, [k]: { ...S[k], n: e.target.value } })} /></label></>
+        : <div className="text-sm font-bold" style={{ color: "#475569" }}>{o.t}: <b style={{ color: PX_NV }}>{o.n}</b><br /><small>الاسم من إعدادات التعاميم والمساءلات</small></div>}
+      <div style={{ minHeight: 64, border: "1.5px dashed #cbd5e1", borderRadius: 14, display: "grid", placeItems: "center", background: "#fff" }}>{o.sig ? <img src={o.sig} alt="التوقيع" style={{ maxHeight: 60, maxWidth: "90%" }} /> : <span style={{ color: "#94a3b8", fontWeight: 800, fontSize: 12.5 }}>لا يوجد توقيع محفوظ</span>}</div>
+      <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={() => setPad(k)}>✍️ {o.sig ? "إعادة التوقيع" : "رسم التوقيع"}</button>
+        {o.sig && <button className="ma-btn" onClick={() => k === "mgr" ? saveMgrSig("") : save({ ...S, [k]: { ...S[k], sig: "" } })}>🗑 حذف التوقيع</button>}
+        {edit && <button className="ma-btn gold" onClick={() => save(S)}>💾 حفظ</button>}</div>
+    </div>; };
+  return <div className="grid gap-3">
+    <div className="ma-card p-4" style={{ background: `linear-gradient(135deg,${PX_INK},${PX_NV})`, color: "#fff" }}>
+      <div style={{ fontWeight: 900, fontSize: 16 }}>✍️ المعتمدون في سجلات الزيارات</div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9, marginTop: 4 }}>يظهر اسم وكيل الشؤون التعليمية والمشرف المقيم ومدير المدرسة مع توقيعاتهم في كل مطبوعات الزيارات الصفية (السابقة والحالية) وتبادل الزيارات.</div>
+      <label className="flex items-center gap-2 mt-3" style={{ fontWeight: 800, fontSize: 13 }}><input type="checkbox" checked={S.show !== false} onChange={e => save({ ...S, show: e.target.checked })} /> إظهار التوقيعات المحفوظة في الطباعة (عند الإلغاء يظهر سطر توقيع فارغ)</label>
+    </div>
+    {msg && <div className="ma-card p-3 text-center font-black" style={{ color: msg[0] === "✅" ? "#15803d" : "#b91c1c" }}>{msg}</div>}
+    <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
+      {card("dep", "وكيل الشؤون التعليمية", "🧑‍💼", true)}{card("sup", "المشرف المقيم", "🎓", true)}{card("mgr", "مدير المدرسة", "🏫", false)}
+    </div>
+    {pad && <HfxSigPad title={`توقيع ${pad === "sup" ? "المشرف المقيم" : pad === "mgr" ? "مدير المدرسة" : "وكيل الشؤون التعليمية"}`} onCancel={() => setPad(null)} onDone={sig => { const k = pad; setPad(null); if (k === "mgr") saveMgrSig(sig); else save({ ...S, [k]: { ...S[k], sig } }); }} />}
+  </div>;
+}
+
 function pxFormHtml(D, v, x) { const e = pxEvOf(D, v, x.ti); const R = pxRes(e); const L = pxLvl(R.pct); const sc = ptObj(e.sc), nt = ptObj(e.nt); const dt = maDate(v.date); const term = dt.getMonth() >= 7 ? "الأول" : "الثاني";
   return `<section class="pg">${pxHead(`العام الدراسي ${maAr(String(maHijri(dt)).match(/[١1][٤4][٠-٩0-9]{2}/) ? String(maHijri(dt)).match(/[١1][٤4][٠-٩0-9]{2}/)[0] : "")}هـ<br>الفصل الدراسي ${term}`)}<div class="tt"><span>استمارة تبادل الزيارات بين المعلمين</span></div>
-  <div class="inf"><div class="w2"><b>المعلم الزائر</b>${ptEsc(x.n)}</div><div class="w2"><b>المعلم المستضاف</b>${ptEsc(v.host.n)}</div><div><b>المادة</b>${pxGrpL(v.g)}</div><div><b>الصف / الفصل</b>${maClassName(v.ck)}</div><div><b>اليوم / التاريخ</b>${maDay(dt)} ${maHijri(dt)}</div><div><b>الحصة</b>${TT_ORD[v.p] || ""} (${pxTm(D.times, v.p)})</div><div class="w2"><b>الوحدة / موضوع الدرس</b>${ptEsc(e.topic || "")}&nbsp;</div><div class="w2"><b>هدف الزيارة</b>${ptEsc(e.goal || "تبادل الخبرات وتحسين الممارسة الصفية")}</div></div>
+  <div class="inf"><div class="w2"><b>المعلم الزائر</b>${ptEsc(x.n)}</div><div class="w2"><b>المعلم المستضاف</b>${ptEsc(v.host.n)}</div><div><b>المادة</b>${pxGrpL(v.g)}</div><div><b>الصف / الفصل</b>${maClassName(v.ck)}</div><div><b>اليوم / التاريخ</b>${maDay(dt)} ${maHijri(dt)}</div><div><b>الحصة</b>${TT_ORD[v.p] || ""} (${pxTmV(D, v)})</div><div class="w2"><b>الوحدة / موضوع الدرس</b>${ptEsc(e.topic || "")}&nbsp;</div><div class="w2"><b>هدف الزيارة</b>${ptEsc(e.goal || "تبادل الخبرات وتحسين الممارسة الصفية")}</div></div>
   <table><thead><tr><th style="width:4%">م</th><th style="width:17%">المعيار</th><th>المؤشر المشاهد</th><th style="width:16%">التقدير</th><th style="width:27%">الشاهد أو الملاحظة</th></tr></thead><tbody>${PX_CRIT.map(([t, d], i) => { const s = sc[i + 1]; const S = PX_SC[s]; return `<tr><td class="c">${maAr(i + 1)}</td><td><b>${t}</b></td><td>${d}</td><td class="c">${S ? `<span class="sc" style="background:${S[2]};color:${S[1]}">${s === "na" ? "غ م" : maAr(s)} — ${S[0]}</span>` : "—"}</td><td>${ptEsc(nt[i + 1] || "")}</td></tr>`; }).join("")}</tbody></table>
   <div class="res"><div><b>${maAr(R.n)} / ١٢</b>البنود المقيّمة</div><div><b>${maAr(R.sum)}</b>مجموع الدرجات</div><div><b>${maAr(R.max)}</b>الدرجة القصوى</div><div><b style="color:${L[1]}">${R.pct == null ? "—" : maAr(R.pct) + "٪"}</b>النسبة المئوية</div><div><b style="color:${L[1]};font-size:12px">${L[0]}</b>مستوى التحقق</div></div>
   <div class="fb">${PX_FB.map(([k, l]) => `<div><b>${l}</b>${ptEsc(e[k] || "")}</div>`).join("")}</div>
-  <div class="sg"><div>المعلم المستضاف<br>${ptEsc(v.host.n)}<br>التوقيع: ........</div><div>المعلم الزائر<br>${ptEsc(x.n)}<br>${e.fin ? `اعتمد التقييم ${maHijri(new Date(e.fin))}` : "التوقيع: ........"}</div><div>اطلاع مدير المدرسة<br>${ptEsc(HDR_MGR)}<br>التوقيع: ........</div></div>
+  <div class="sg"><div>المعلم المستضاف<br>${ptEsc(v.host.n)}<br>التوقيع: ........</div><div>المعلم الزائر<br>${ptEsc(x.n)}<br>${e.fin ? `اعتمد التقييم ${maHijri(new Date(e.fin))}` : "التوقيع: ........"}</div></div>${vsRow()}
   <div style="font-size:8.5px;color:#64748b;margin-top:8px">سلم التقدير: ٤ متحقق بدرجة عالية • ٣ متحقق • ٢ متحقق جزئياً • ١ يحتاج إلى تطوير • غ م غير ملاحظ ويستبعد من الحساب. النسبة = مجموع الدرجات ÷ (عدد البنود المقيمة × ٤) × ١٠٠.</div></section>`; }
-function pxPrintPlan(D, by) { const V = pxVisits(D); const rows = V.map((v, i) => { const dt = maDate(v.date); const fin = pxDone(D, v); return `<tr><td class="c">${maAr(i + 1)}</td><td class="c"><b>${pxGrpL(v.g)}</b></td><td class="c">${maDay(dt)}</td><td class="c">${maHijri(dt)}</td><td class="c">${TT_ORD[v.p] || ""}</td><td class="c">${pxTm(D.times, v.p)}</td><td class="c">${maClassName(v.ck)}</td><td><b>${ptEsc(v.host.n)}</b></td><td>${v.vis.map(x => ptEsc(x.n)).join("، ")}</td><td class="c">${fin === v.vis.length ? "✔ منفذة" : fin ? `${maAr(fin)}/${maAr(v.vis.length)}` : ""}</td></tr>`; }).join("");
-  pxOpen(`<section class="pg">${pxHead(`${maDay(new Date())}<br>${maHijri(new Date())}`)}<div class="tt"><span>جدول تبادل الزيارات بين المعلمين — العلوم • الرياضيات • لغتي • الإنجليزي</span></div><table style="font-size:9.5px"><thead><tr><th>م</th><th>المادة</th><th>اليوم</th><th>التاريخ</th><th>الحصة</th><th>الوقت</th><th>الفصل</th><th>المعلم المستضاف</th><th>المعلمون الزائرون</th><th>التنفيذ</th></tr></thead><tbody>${rows}</tbody></table>
+function pxPrintPlan(D, by) { const V = pxVisits(D); let i = 0; const days = [...new Set(V.map(v => v.date))];
+  const rows = days.map(dk => { const dt = maDate(dk); const L = V.filter(v => v.date === dk); return `<tr><td colspan="9" style="background:linear-gradient(90deg,${PX_NV},${PX_INK});color:#fff;font-weight:800;font-size:11px;padding:5px 10px">📅 ${maDay(dt)} — ${maHijri(dt)} <span style="float:left;font-weight:600;opacity:.85">${maAr(L.length)} زيارات</span></td></tr>` + L.map(v => { i++; const fin = pxDone(D, v); const C = PX_GC[v.g] || ["#334155", "#f1f5f9"]; return `<tr><td class="c">${maAr(i)}</td><td class="c"><span class="sc" style="background:${C[1]};color:${C[0]}">${pxGrpL(v.g)}</span></td><td class="c"><b>${TT_ORD[v.p] || ""}</b></td><td class="c" style="direction:ltr">${pxTmV(D, v)}</td><td class="c">${maClassName(v.ck)}</td><td><b>${ptEsc(v.host.n)}</b></td><td>${v.vis.map(x => ptEsc(x.n)).join("، ")}</td><td class="c">${fin === v.vis.length ? "✔ منفذة" : fin ? `${maAr(fin)}/${maAr(v.vis.length)}` : ""}</td><td></td></tr>`; }).join(""); }).join("");
+  pxOpen(`<section class="pg">${pxHead(`${maDay(new Date())}<br>${maHijri(new Date())}`)}<div class="tt"><span>جدول تبادل الزيارات بين المعلمين — العلوم • الرياضيات • لغتي • الإنجليزي</span></div><table style="font-size:9.5px"><thead><tr><th style="width:4%">م</th><th style="width:11%">المادة</th><th style="width:8%">الحصة</th><th style="width:11%">الوقت</th><th style="width:11%">الفصل</th><th style="width:15%">المعلم المستضاف</th><th>المعلمون الزائرون</th><th style="width:8%">التنفيذ</th><th style="width:10%">توقيع المستضاف</th></tr></thead><tbody>${rows}</tbody></table>
   <div style="font-size:9.5px;color:#475569;margin-top:6px">رُتّب الجدول آلياً من الجدول المدرسي: الزيارة في حصة المعلم المستضاف، والزائرون من نفس التخصص ليس لديهم حصة في الوقت نفسه. يدخل الزائر بهويته في بوابة المعلمين ← «تبادل الزيارات» ويقيّم ثم يعتمد، فتظهر النتيجة والملاحظات للمعلم المستضاف.</div>
-  <div class="sg"><div>وكيل الشؤون التعليمية<br>التوقيع: ........</div><div></div><div>مدير المدرسة<br>${ptEsc(HDR_MGR)}<br>التوقيع: ........</div></div></section>`, "جدول تبادل الزيارات", true); }
+  ${vsRow()}</section>`, "جدول تبادل الزيارات", true); }
 
 // نموذج تقييم الزائر
 function PxForm({ D, v, me, ti, onSaved, onClose }) {
@@ -37756,7 +37887,7 @@ function PxForm({ D, v, me, ti, onSaved, onClose }) {
     setBusy(true); const v2 = { ...e, n: me.name, at: Date.now(), ...(fin ? { fin: Date.now() } : {}) }; const ok = await maPut(`${PX_NODE}/ev/${v.id}/${ti}`, v2); setBusy(false); if (!ok) { alert("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return; } onSaved(v2, fin); };
   const set = (k, val) => setE(x => ({ ...x, [k]: val }));
   return <div className="grid gap-3" dir="rtl">
-    <div className="ma-card p-3" style={{ background: "linear-gradient(135deg,#0d4f3c,#12305a)", color: "#fff" }}><b style={{ fontSize: 16 }}>📝 استمارة تبادل الزيارات — {pxGrpL(v.g)}</b><div style={{ fontSize: 13, fontWeight: 700, opacity: .92 }}>المعلم المستضاف: {v.host.n} • {maClassName(v.ck)} • {maDay(maDate(v.date))} {maHijri(maDate(v.date))} • الحصة {TT_ORD[v.p]} ({pxTm(D.times, v.p)})</div></div>
+    <div className="ma-card p-3" style={{ background: "linear-gradient(135deg,#0d4f3c,#12305a)", color: "#fff" }}><b style={{ fontSize: 16 }}>📝 استمارة تبادل الزيارات — {pxGrpL(v.g)}</b><div style={{ fontSize: 13, fontWeight: 700, opacity: .92 }}>المعلم المستضاف: {v.host.n} • {maClassName(v.ck)} • {maDay(maDate(v.date))} {maHijri(maDate(v.date))} • الحصة {TT_ORD[v.p]} ({pxTmV(D, v)})</div></div>
     <div className="ma-card p-3 grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}><label className="text-sm font-bold">الوحدة / موضوع الدرس<input className="ma-inp" disabled={ro} value={e.topic} onChange={x => set("topic", x.target.value)} /></label><label className="text-sm font-bold">هدف الزيارة<input className="ma-inp" disabled={ro} value={e.goal} onChange={x => set("goal", x.target.value)} /></label></div>
     <div className="ma-card p-2" style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>دوّن درجة لكل بند: ٤ متحقق بدرجة عالية • ٣ متحقق • ٢ متحقق جزئياً • ١ يحتاج إلى تطوير • «غ م» للبند غير الملاحظ (يُستبعد من الحساب)، وسجّل شاهداً مختصراً.</div>
     {PX_CRIT.map(([t, d], i) => { const k = i + 1; const s = e.sc[k]; return <div key={k} className="ma-card p-3 grid gap-2" style={{ borderRight: `5px solid ${s != null ? PX_SC[s][1] : "#cbd5e1"}` }}>
@@ -37787,7 +37918,7 @@ function PeerXTeacher({ me }) {
   if (cur) return <PxForm D={D} v={cur} me={me} ti={ti} onClose={() => setCur(null)} onSaved={(e2, fin) => { setD(d => ({ ...d, ev: { ...d.ev, [cur.id]: { ...ptObj(d.ev[cur.id]), [ti]: e2 } } })); if (fin) { alert("✅ اعتُمد التقييم وأُرسل للمعلم المستضاف"); setCur(null); } else alert("💾 حُفظت المسودة"); }} />;
   const row = (v, role) => { const dt = maDate(v.date); const e = pxEvOf(D, v, ti); const today = v.date === k; return <div key={v.id + role} className="ma-card p-3 grid gap-2" style={{ borderRight: `5px solid ${today ? "#dc2626" : PX_INK}` }}>
     <div className="flex gap-2 items-center flex-wrap"><span className="sc-badge" style={{ background: "#e8eef6", color: PX_NV }}>{pxGrpL(v.g)}</span><b>{role === "v" ? `زيارة الأستاذ ${v.host.n}` : "زيارة لحصتي"}</b>{today && <span className="sc-badge" style={{ background: "#fee2e2", color: "#b91c1c" }}>اليوم</span>}</div>
-    <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>📅 {maDay(dt)} {maHijri(dt)} • ⏰ الحصة {TT_ORD[v.p]} ({pxTm(D.times, v.p)}) • 🚪 {maClassName(v.ck)}{role === "h" ? ` • الزائرون: ${v.vis.map(x => x.n).join("، ")}` : ""}</div>
+    <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>📅 {maDay(dt)} {maHijri(dt)} • ⏰ الحصة {TT_ORD[v.p]} ({pxTmV(D, v)}) • 🚪 {maClassName(v.ck)}{role === "h" ? ` • الزائرون: ${v.vis.map(x => x.n).join("، ")}` : ""}</div>
     {role === "v" ? <div className="flex gap-2 flex-wrap">{e.fin ? <span className="sc-badge" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اعتمدت التقييم — {maAr(pxRes(e).pct)}٪</span> : <button className="ma-btn pri" onClick={() => setCur(v)}>{e.at ? "✏️ إكمال التقييم" : "📝 ابدأ التقييم"}</button>}{e.fin && <button className="ma-btn" onClick={() => setCur(v)}>عرض</button>}</div>
       : <><button className="ma-btn" style={{ justifySelf: "start" }} onClick={() => setOpen(open === v.id ? null : v.id)}>{pxDone(D, v) ? `📊 نتائج الزيارة (${maAr(pxDone(D, v))})` : "⏳ لم يُعتمد تقييم بعد"}</button>{open === v.id && <PxResults D={D} v={v} onPrint={x => pxOpen(pxFormHtml(D, v, x), "نتيجة الزيارة")} />}</>}</div>; };
   return <div className="grid gap-3" dir="rtl">
@@ -37805,9 +37936,31 @@ function PxHomeBanner({ me, onOpen }) {
   return <button type="button" onClick={onOpen} style={{ width: "100%", border: "none", cursor: "pointer", fontFamily: "inherit", borderRadius: 20, padding: "12px 16px", color: "#fff", textAlign: "right", display: "flex", alignItems: "center", gap: 12, background: "linear-gradient(135deg,#0d4f3c,#12305a)", boxShadow: "0 14px 28px -18px rgba(18,48,90,.8)" }}>
     <span style={{ fontSize: 28 }}>🤝</span><span><b style={{ fontSize: 15.5 }}>{n.today.length ? `لديك زيارة تبادلية اليوم — الحصة ${TT_ORD[n.today[0].p]}` : `${maAr(n.pend)} زيارة تبادلية بانتظار تقييمك`}</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>اضغط للتقييم والاعتماد</div></span></button>;
 }
+function PxEdit({ D, v, onSave, onClose }) {
+  const T = D.T; const M = pxTeachers(T); const [f, setF] = useState({ date: v.date, p: v.p, ck: v.ck, tm: v.tm || "", vis: v.vis.map(x => x.ti) }); const [busy, setBusy] = useState(false);
+  const di = ttDayIdx(T, maDate(f.date)); const P = T.P || 7;
+  const hostAt = p => di < 0 ? null : Object.keys(T.C).find(ck => { const c = maArr(T.C[ck][di])[p]; return c && c[1] === v.host.ti; });
+  const grp = Object.values(M).filter(o => o.g === v.g && o.ti !== v.host.ti).sort((a, b) => a.n.localeCompare(b.n, "ar"));
+  const setP = p => { const ck = hostAt(p); setF(x => ({ ...x, p, ck: ck || x.ck })); };
+  const save = async () => { if (!f.vis.length) { alert("اختر زائراً واحداً على الأقل"); return; } if (maOff(f.date)) { if (!confirm("التاريخ إجازة — الحفظ رغم ذلك؟")) return; } setBusy(true);
+    const nv = { ...v, date: f.date, di, p: +f.p, ck: f.ck, tm: f.tm.trim() || null, vis: f.vis.map(ti => ({ ti, n: (M[ti] || {}).n || (v.vis.find(x => x.ti === ti) || {}).n || ttClean(T.T[ti]) })), edAt: Date.now() }; if (!nv.tm) delete nv.tm;
+    const ok = await maPut(`${PX_NODE}/plan/${v.id}`, nv); setBusy(false); if (!ok) { alert("تعذّر الحفظ"); return; } onSave(nv); };
+  return <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9000, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}><div onClick={e => e.stopPropagation()} dir="rtl" className="ma-card p-4 grid gap-3" style={{ width: "min(620px,100%)", maxHeight: "90vh", overflowY: "auto" }}>
+    <b style={{ fontSize: 16 }}>✏️ تعديل موعد زيارة {v.host.n} — {pxGrpL(v.g)}</b>
+    <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
+      <label className="text-sm font-bold">التاريخ<input type="date" className="ma-inp" value={f.date} onChange={e => setF({ ...f, date: e.target.value })} /><small style={{ color: "#64748b" }}>{f.date ? `${maDay(maDate(f.date))} ${maHijri(maDate(f.date))}` : ""}{f.date && maOff(f.date) ? " — إجازة" : ""}</small></label>
+      <label className="text-sm font-bold">الحصة<select className="ma-inp" value={f.p} onChange={e => setP(+e.target.value)}>{Array.from({ length: P }, (_, p) => { const ck = hostAt(p); return <option key={p} value={p}>{TT_ORD[p]} ({pxTm(D.times, p)}){ck ? ` — ${maClassName(ck)}` : " — لا حصة للمعلم"}</option>; })}</select></label>
+      <label className="text-sm font-bold">الفصل<select className="ma-inp" value={f.ck} onChange={e => setF({ ...f, ck: e.target.value })}>{Object.keys(T.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true })).map(ck => <option key={ck} value={ck}>{maClassName(ck)}</option>)}</select></label>
+      <label className="text-sm font-bold">وقت مخصص (اختياري)<input className="ma-inp" value={f.tm} placeholder={pxTm(D.times, f.p)} onChange={e => setF({ ...f, tm: e.target.value })} /></label>
+    </div>
+    {di >= 0 && !hostAt(f.p) && <div style={{ background: "#fef3c7", color: "#92400e", borderRadius: 10, padding: "6px 10px", fontWeight: 800, fontSize: 13 }}>⚠️ ليس للمعلم المستضاف حصة في هذا الوقت حسب الجدول المدرسي</div>}
+    <div><b className="text-sm">الزائرون</b><div className="grid gap-1 mt-1">{grp.map(o => { const b = di >= 0 && pxBusy(T, o.ti, di, +f.p); const on = f.vis.includes(o.ti); return <label key={o.ti} style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 10px", borderRadius: 10, background: on ? "#ecfdf5" : "#f8fafc", border: `1px solid ${on ? "#86efac" : "#e2e8f0"}`, fontWeight: 800, fontSize: 13.5 }}><input type="checkbox" checked={on} onChange={e => setF(x => ({ ...x, vis: e.target.checked ? [...x.vis, o.ti] : x.vis.filter(t => t !== o.ti) }))} />{o.n}{b ? <span style={{ marginInlineStart: "auto", color: "#b91c1c", fontSize: 12 }}>⚠️ لديه حصة في هذا الوقت</span> : <span style={{ marginInlineStart: "auto", color: "#15803d", fontSize: 12 }}>✓ متاح</span>}</label>; })}</div></div>
+    <div className="flex gap-2"><button className="ma-btn pri" disabled={busy} onClick={save}>{busy ? "⏳" : "💾 حفظ التعديل"}</button><button className="ma-btn" onClick={onClose}>إلغاء</button></div>
+  </div></div>;
+}
 // ── الإدارة: إنشاء الجدول ومتابعة النتائج
 function PeerXAdmin({ by = "الإدارة" }) {
-  const [D, setD] = useState(null); const [tab, setTab] = useState("plan"); const [start, setStart] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 1); return maKey(d); }); const [maxV, setMaxV] = useState(3); const [open, setOpen] = useState(null); const [busy, setBusy] = useState(false);
+  const [D, setD] = useState(null); const [tab, setTab] = useState("plan"); const [start, setStart] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 1); return maKey(d); }); const [maxV, setMaxV] = useState(3); const [open, setOpen] = useState(null); const [busy, setBusy] = useState(false); const [ed, setEd] = useState(null);
   const load = () => pxLoad().then(setD); useEffect(() => { load(); }, []);
   if (!D) return <div className="ma-card p-8 text-center font-bold text-gray-400">⏳ جارٍ تحميل الجدول المدرسي وتبادل الزيارات…</div>;
   const V = pxVisits(D); const M = pxTeachers(D.T); const anyEv = Object.keys(D.ev).length > 0;
@@ -37819,20 +37972,28 @@ function PeerXAdmin({ by = "الإدارة" }) {
   return <div className="ma pt grid gap-3" dir="rtl" style={{ maxWidth: 1180, margin: "0 auto" }}><style>{MA_CSS + PT_CSS}</style>
     <div className="pt-hero" style={{ background: "linear-gradient(135deg,#0d4f3c,#12305a)" }}><div style={{ position: "relative", zIndex: 1 }}><div style={{ fontSize: 20, fontWeight: 900 }}>🤝 تبادل الزيارات بين المعلمين</div><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>العلوم • الرياضيات • لغتي • الإنجليزي — جدولة آلية من الجدول المدرسي، وتقييم الزائر بهويته ثم الاعتماد</div>
       <div className="pt-kpis" style={{ marginTop: 12 }}>{[[maAr(V.length), "زيارة مجدولة"], [maAr(V.reduce((a, v) => a + v.vis.length, 0)), "تقييم مطلوب"], [maAr(fins.length), "تقييم معتمد"], [fins.length ? `${maAr(Math.round(fins.reduce((a, o) => a + (pxRes(o.e).pct || 0), 0) / fins.length))}٪` : "—", "متوسط النتائج"]].map(([a, b]) => <div key={b} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 22, fontWeight: 900 }}>{a}</div><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{b}</div></div>)}</div></div></div>
-    <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["res", `📊 النتائج المعتمدة (${maAr(fins.length)})`], ["tch", "👥 معلمو التخصصات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
+    <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["res", `📊 النتائج المعتمدة (${maAr(fins.length)})`], ["tch", "👥 معلمو التخصصات"], ["vsig", "✍️ المعتمدون والتوقيعات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
     {tab === "plan" && <>
       <div className="ma-card p-3 flex gap-2 flex-wrap items-end"><label className="text-sm font-bold">بداية الزيارات<input type="date" className="ma-inp" value={start} onChange={e => setStart(e.target.value)} /></label><label className="text-sm font-bold">عدد الزائرين للزيارة<select className="ma-inp" value={maxV} onChange={e => setMaxV(e.target.value)}>{[1, 2, 3].map(n => <option key={n} value={n}>{maAr(n)}</option>)}</select></label>
         <button className="ma-btn pri" disabled={busy} onClick={gen}>{busy ? "⏳" : V.length ? "🔄 إعادة إنشاء الجدول" : "✨ إنشاء الجدول من الجدول المدرسي"}</button>{V.length > 0 && <button className="ma-btn gold" onClick={() => pxPrintPlan(D, by)}>🖨 طباعة الجدول</button>}
         <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", flex: "1 1 260px" }}>زيارة واحدة لكل تخصص يومياً (أيام الدوام فقط)، في حصة المعلم المستضاف، والزائرون من نفس التخصص ممن ليس لديهم حصة في الوقت نفسه.</span></div>
-      {V.length ? <div className="ma-card" style={{ overflowX: "auto", padding: 8 }}><table className="nq-tbl" style={{ minWidth: 820 }}><thead><tr><th>م</th><th>المادة</th><th>اليوم والتاريخ</th><th>الحصة</th><th>الفصل</th><th style={{ textAlign: "right" }}>المعلم المستضاف</th><th style={{ textAlign: "right" }}>الزائرون</th><th>التقييمات</th><th></th></tr></thead>
-        <tbody>{V.map((v, i) => { const dt = maDate(v.date); const f = pxDone(D, v); return <React.Fragment key={v.id}><tr><td>{maAr(i + 1)}</td><td><b>{pxGrpL(v.g)}</b></td><td>{maDay(dt)}<br /><small>{maHijri(dt)}</small></td><td>{TT_ORD[v.p]}<br /><small>{pxTm(D.times, v.p)}</small></td><td>{maClassName(v.ck)}</td><td style={{ textAlign: "right", fontWeight: 800 }}>{v.host.n}</td><td style={{ textAlign: "right" }}>{v.vis.map(x => <div key={x.ti}>{pxEvOf(D, v, x.ti).fin ? "✅" : pxEvOf(D, v, x.ti).at ? "✏️" : "▫️"} {x.n}</div>)}</td>
-          <td><button className="ma-btn" style={{ padding: "3px 10px" }} onClick={() => setOpen(open === v.id ? null : v.id)}>{maAr(f)}/{maAr(v.vis.length)}</button></td><td>{!Object.keys(ptObj(D.ev[v.id])).length && <button className="ma-btn" style={{ padding: "3px 8px", color: "#b91c1c" }} onClick={() => del(v)}>✕</button>}</td></tr>
-          {open === v.id && <tr><td colSpan={9} style={{ textAlign: "right" }}><PxResults D={D} v={v} onPrint={x => pxOpen(pxFormHtml(D, v, x), "نتيجة الزيارة")} /></td></tr>}</React.Fragment>; })}</tbody></table></div>
+      {V.length ? <div className="grid gap-3">{[...new Set(V.map(v => v.date))].map(dk => { const dt = maDate(dk); const L = V.filter(v => v.date === dk); const isT = dk === maKey(new Date());
+        return <div key={dk} className="grid gap-2"><div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 14, padding: "8px 14px", color: "#fff", background: isT ? "linear-gradient(90deg,#b91c1c,#7f1d1d)" : "linear-gradient(90deg,#12305a,#0d4f3c)" }}><b style={{ fontSize: 15.5 }}>📅 {maDay(dt)}</b><span style={{ fontWeight: 700, opacity: .9 }}>{maHijri(dt)}</span>{isT && <span className="sc-badge" style={{ background: "#fff", color: "#b91c1c" }}>اليوم</span>}<span style={{ marginInlineStart: "auto", fontSize: 12.5, fontWeight: 800, opacity: .85 }}>{maAr(L.length)} زيارات</span></div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 10 }}>{L.map(v => { const C = PX_GC[v.g] || ["#334155", "#f1f5f9"]; const f = pxDone(D, v); const evd = Object.keys(ptObj(D.ev[v.id])).length > 0;
+            return <div key={v.id} style={{ background: "#fff", borderRadius: 18, border: "1px solid #e2e8f0", borderTop: `5px solid ${C[0]}`, padding: "12px 14px", display: "grid", gap: 8, boxShadow: "0 12px 26px -22px rgba(15,23,42,.7)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}><span className="sc-badge" style={{ background: C[1], color: C[0] }}>{pxGrpL(v.g)}</span><span className="sc-badge" style={{ background: "#0f172a", color: "#fff" }}>الحصة {TT_ORD[v.p]}</span><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", direction: "ltr" }}>{pxTmV(D, v)}</span><span style={{ marginInlineStart: "auto", fontSize: 12.5, fontWeight: 800, color: "#475569" }}>🚪 {maClassName(v.ck)}</span></div>
+              <div><div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>المعلم المستضاف</div><b style={{ fontSize: 16 }}>{v.host.n}</b></div>
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{v.vis.map(x => { const e = pxEvOf(D, v, x.ti); return <span key={x.ti} style={{ display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 99, padding: "3px 10px", fontSize: 12.5, fontWeight: 800, background: e.fin ? "#dcfce7" : e.at ? "#fef3c7" : "#f1f5f9", color: e.fin ? "#15803d" : e.at ? "#92400e" : "#334155" }}>{e.fin ? `✓ ${maAr(pxRes(e).pct)}٪` : e.at ? "✏️" : "👤"} {x.n}</span>; })}</div>
+              <div style={{ height: 6, borderRadius: 9, background: "#f1f5f9", overflow: "hidden" }}><div style={{ width: `${f / v.vis.length * 100}%`, height: "100%", background: C[0] }} /></div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}><button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12.5 }} onClick={() => setEd(v)}>✏️ تعديل الموعد</button><button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12.5 }} onClick={() => setOpen(open === v.id ? null : v.id)}>📊 النتائج {maAr(f)}/{maAr(v.vis.length)}</button>{!evd && <button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12.5, color: "#b91c1c", marginInlineStart: "auto" }} onClick={() => del(v)}>✕</button>}</div>
+              {open === v.id && <PxResults D={D} v={v} onPrint={x => pxOpen(pxFormHtml(D, v, x), "نتيجة الزيارة")} />}</div>; })}</div></div>; })}</div>
         : <div className="ma-card p-6 text-center font-bold" style={{ color: "#64748b" }}>لم يُنشأ الجدول بعد — اختر تاريخ البداية واضغط «إنشاء الجدول».</div>}</>}
+    {tab === "vsig" && <VsSigCfg />}
     {tab === "res" && <><div className="flex gap-2"><button className="ma-btn gold" disabled={!fins.length} onClick={() => pxOpen(fins.map(o => pxFormHtml(D, o.v, o.x)).join(""), "استمارات تبادل الزيارات")}>🖨 طباعة كل الاستمارات المعتمدة</button></div>
       {fins.length ? <div className="ma-card" style={{ overflowX: "auto", padding: 8 }}><table className="nq-tbl" style={{ minWidth: 760 }}><thead><tr><th>م</th><th>المادة</th><th style={{ textAlign: "right" }}>المستضاف</th><th style={{ textAlign: "right" }}>الزائر</th><th>التاريخ</th>{PX_CRIT.map((_, i) => <th key={i}>{maAr(i + 1)}</th>)}<th>النسبة</th><th></th></tr></thead>
         <tbody>{fins.map((o, i) => { const R = pxRes(o.e); const L = pxLvl(R.pct); const sc = ptObj(o.e.sc); return <tr key={o.v.id + o.x.ti}><td>{maAr(i + 1)}</td><td>{pxGrpL(o.v.g)}</td><td style={{ textAlign: "right", fontWeight: 800 }}>{o.v.host.n}</td><td style={{ textAlign: "right" }}>{o.x.n}</td><td>{maHijri(maDate(o.v.date))}</td>{PX_CRIT.map((_, j) => { const s = sc[j + 1]; const S = PX_SC[s] || PX_SC.na; return <td key={j} style={{ background: S[2], color: S[1], fontWeight: 900 }}>{s === "na" || s == null ? "غ" : maAr(s)}</td>; })}<td><span className="sc-badge" style={{ background: L[2], color: L[1] }}>{maAr(R.pct)}٪</span></td><td><button className="ma-btn" style={{ padding: "3px 8px" }} onClick={() => pxOpen(pxFormHtml(D, o.v, o.x), "نتيجة الزيارة")}>🖨</button></td></tr>; })}</tbody></table>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginTop: 6 }}>{PX_CRIT.map(([t], i) => `${maAr(i + 1)} ${t}`).join(" • ")}</div></div> : <div className="ma-card p-6 text-center font-bold" style={{ color: "#64748b" }}>لا توجد تقييمات معتمدة بعد.</div>}</>}
+    {ed && <PxEdit D={D} v={ed} onClose={() => setEd(null)} onSave={nv => { setD(d => ({ ...d, plan: { ...d.plan, [nv.id]: nv } })); setEd(null); }} />}
     {tab === "tch" && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10 }}>{PX_GRP.map(([g, l]) => <div key={g} className="ma-card p-3"><b>{l}</b>{Object.values(M).filter(o => o.g === g).map(o => <div key={o.ti} style={{ fontSize: 13, fontWeight: 700, padding: "3px 0", borderBottom: "1px dashed #e2e8f0" }}>{o.n} <small style={{ color: "#64748b" }}>({maAr(o.cnt[g])} حصة)</small></div>)}</div>)}</div>}
   </div>;
 }
@@ -37848,13 +38009,13 @@ function CvApproved({ D, TS }) {
     <table style="font-size:8.5px"><thead><tr><th>م</th><th>المعلم</th><th>المادة</th><th>الزيارة</th><th>التاريخ</th>${OB_ITEMS.map(it => `<th title="${OB_SHORT[it.n - 1]}">${maAr(it.n)}</th>`).join("")}<th>المتوسط</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>${rows.map((o, i) => { const ov = obOverall(o.e); const p = pctOf(o.e); return `<tr><td class="c">${maAr(i + 1)}</td><td><b>${ptEsc(o.t.name)}</b></td><td class="c">${ptEsc(o.t.s || "")}</td><td class="c">${CV_VN[o.r.v - 1] || maAr(o.r.v)}</td><td class="c">${cvHij(o.r.hij)}</td>${OB_ITEMS.map(it => { const l = lvOf(o.e, it.n); return `<td class="c" style="font-weight:800;${l ? `background:${LC[l][1]};color:${LC[l][0]}` : "color:#cbd5e1"}">${l ? maAr(l) : "—"}</td>`; }).join("")}<td class="c"><b>${obAvg(o.e) == null ? "—" : maAr(Math.round(obAvg(o.e) * 100) / 100)}</b></td><td class="c"><b>${p == null ? "—" : maAr(p) + "٪"}</b></td><td class="c" style="font-weight:800;color:${ov ? ov[1] : "#64748b"}">${ov ? ov[0] : "—"}</td></tr>`; }).join("")}</tbody></table>
     <table style="font-size:8.5px"><tbody><tr>${OB_ITEMS.map(it => `<td><b>${maAr(it.n)}</b> ${OB_SHORT[it.n - 1]}</td>`).slice(0, 9).join("")}</tr><tr>${OB_ITEMS.map(it => `<td><b>${maAr(it.n)}</b> ${OB_SHORT[it.n - 1]}</td>`).slice(9).join("")}<td></td></tr></tbody></table>
     <div style="font-size:9px;color:#475569">سلم الأداء: ٤ متحقق بدرجة عالية • ٣ متحقق • ٢ متحقق جزئياً • ١ بحاجة إلى تطوير • المتوسط من المؤشرات المرصودة، والنسبة = المتوسط ÷ ٤ × ١٠٠.</div>
-    <div class="sg"><div>وكيل الشؤون التعليمية<br>التوقيع: ........</div><div></div><div>مدير المدرسة<br>${ptEsc(HDR_MGR)}<br>التوقيع: ........</div></div></section>`; pxOpen(body, "الزيارات الصفية المعتمدة", true); };
+    ${vsRow()}</section>`; pxOpen(body, "الزيارات الصفية المعتمدة", true); };
   const printOne = o => { const ov = obOverall(o.e); const p = pctOf(o.e); pxOpen(`<section class="pg">${pxHead(`${maDay(maDate(o.r.date))}<br>${cvHij(o.r.hij)}`)}<div class="tt"><span>نتيجة الزيارة الصفية ${CV_VN[o.r.v - 1] || ""} — ${ptEsc(o.t.name)}</span></div>
     <div class="inf"><div class="w2"><b>المعلم</b>${ptEsc(o.t.name)}</div><div><b>المادة</b>${ptEsc(o.t.s || "")}</div><div><b>الفصل / الحصة</b>${cvCls(o.r.c)} • ${o.r.p || ""}</div></div>
     <table><thead><tr><th style="width:5%">م</th><th>المؤشر</th><th style="width:22%">مستوى الأداء</th></tr></thead><tbody>${OB_ITEMS.map(it => { const l = lvOf(o.e, it.n); return `<tr><td class="c">${maAr(it.n)}</td><td>${it.t}</td><td class="c">${l ? `<span class="sc" style="background:${LC[l][1]};color:${LC[l][0]}">${maAr(l)} — ${OB_LV[l][0]}</span>` : "—"}</td></tr>`; }).join("")}</tbody></table>
     <div class="res" style="grid-template-columns:repeat(3,1fr)"><div><b>${obAvg(o.e) == null ? "—" : maAr(Math.round(obAvg(o.e) * 100) / 100)}</b>المتوسط من ٤</div><div><b>${p == null ? "—" : maAr(p) + "٪"}</b>النسبة</div><div><b style="color:${ov ? ov[1] : "#64748b"};font-size:12px">${ov ? ov[0] : "—"}</b>التقدير العام</div></div>
     <div class="fb"><div><b>نقاط القوة</b>${ptEsc(o.e.str || "")}</div><div><b>فرص التحسين</b>${ptEsc(o.e.imp || "")}</div><div style="grid-column:span 2"><b>التوصيات</b>${ptEsc(o.e.rec || "")}</div></div>
-    <div class="sg"><div>المعلم<br>${ptEsc(o.t.name)}<br>التوقيع: ........</div><div>الزائر<br>${ptEsc(o.e.by || "")}</div><div>مدير المدرسة<br>${ptEsc(HDR_MGR)}<br>التوقيع: ........</div></div></section>`, "نتيجة الزيارة الصفية"); };
+    <div class="sg"><div>المعلم<br>${ptEsc(o.t.name)}<br>التوقيع: ........</div><div>الزائر<br>${ptEsc(o.e.by || "")}</div></div>${vsRow()}</section>`, "نتيجة الزيارة الصفية"); };
   return <div className="grid gap-3" dir="rtl">
     <div className="ma-card p-3 flex gap-2 flex-wrap items-center"><b>📋 الزيارات الصفية المعتمدة ({maAr(rows.length)})</b><input className="ma-inp" style={{ flex: "1 1 200px" }} value={q} onChange={e => setQ(e.target.value)} placeholder="بحث باسم المعلم أو المادة…" /><button className="ma-btn gold" disabled={!rows.length} onClick={print}>🖨 طباعة الجدول</button></div>
     {rows.length ? <div className="ma-card" style={{ overflowX: "auto", padding: 8 }}><table className="nq-tbl" style={{ minWidth: 1100, fontSize: 12 }}><thead><tr><th>م</th><th style={{ textAlign: "right" }}>المعلم</th><th>المادة</th><th>الزيارة</th><th>التاريخ</th>{OB_ITEMS.map(it => <th key={it.n} title={OB_SHORT[it.n - 1]}>{maAr(it.n)}</th>)}<th>المتوسط</th><th>النسبة</th><th>التقدير</th><th></th></tr></thead>
@@ -37864,8 +38025,87 @@ function CvApproved({ D, TS }) {
   </div>;
 }
 
+// ══════════ 🖨 جدول الزيارات الصفية للطباعة + خلاصة كل معلم مع توقيعه ══════════
+// school-cv-sig/{tk} = { req, rBy, sig, at, n, seenA }
+const CV_SIG = "school-cv-sig";
+const CV_SGC = [["#0e7490", "#cffafe"], ["#4338ca", "#e0e7ff"], ["#15803d", "#dcfce7"], ["#9f1239", "#ffe4e6"], ["#a16207", "#fef9c3"], ["#7c3aed", "#ede9fe"], ["#0f766e", "#ccfbf1"], ["#be185d", "#fce7f3"]];
+const cvSubC = (s, all) => CV_SGC[Math.max(0, all.indexOf(s)) % CV_SGC.length];
+function cvSchedHtml(D, TS, o) {
+  const k = maKey(new Date()); const subs = [...new Set(TS.map(t => t.s || ""))];
+  const ok = (r, e) => o.flt === "done" ? !!e.fin : o.flt === "todo" ? !e.fin : true;
+  const L = TS.filter(t => t.vis.some(r => ok(r, ptObj(ptObj(D.ev[t.tk])[r.v])))).sort((a, b) => String(a.s).localeCompare(String(b.s), "ar") || a.name.localeCompare(b.name, "ar"));
+  const all = TS.flatMap(t => t.vis.map(r => ptObj(ptObj(D.ev[t.tk])[r.v]))); const nDone = all.filter(e => e.fin).length;
+  const cell = (t, r) => { const e = ptObj(ptObj(D.ev[t.tk])[r.v]); if (!r || !ok(r, e)) return `<td class="c" style="color:#cbd5e1">—</td>`; const dt = maDate(r.date); const ov = e.fin ? obOverall(e) : null;
+    const st = e.fin ? `<div class="sc" style="background:#dcfce7;color:#15803d;margin-top:2px">✔ نُفذت${o.res && ov ? ` • ${ov[0]}` : ""}</div>` : r.date < k ? `<div class="sc" style="background:#fee2e2;color:#b91c1c;margin-top:2px">لم تُنفذ</div>` : `<div class="sc" style="background:#eef2ff;color:#3730a3;margin-top:2px">مجدولة</div>`;
+    return `<td class="c" style="${e.fin ? "background:#f0fdf4" : ""}">${o.dates ? `<b>${maDay(dt)}</b><br>${cvHij(r.hij)}<br><span style="color:#475569">${r.p ? `الحصة ${r.p}` : ""}${r.tm ? ` • <span dir="ltr">${cvTm(r.tm)}</span>` : ""}<br>${cvCls(r.c)}</span>` : ""}${o.st ? st : ""}</td>`; };
+  return `<section class="pg">${pxHead(`${maDay(new Date())}<br>${maHijri(new Date())}`)}<div class="tt"><span>جدول الزيارات الصفية — ${o.flt === "done" ? "الزيارات المنفذة" : o.flt === "todo" ? "الزيارات المتبقية" : "الفصل الدراسي الأول ١٤٤٨هـ"}</span></div>
+  <div class="res" style="grid-template-columns:repeat(4,1fr)"><div><b>${maAr(TS.length)}</b>معلماً</div><div><b>${maAr(all.length)}</b>زيارة مجدولة</div><div><b style="color:#15803d">${maAr(nDone)}</b>زيارة منفذة</div><div><b style="color:#b45309">${maAr(all.length - nDone)}</b>متبقية</div></div>
+  <table style="font-size:9px"><thead><tr><th style="width:4%">م</th><th style="width:17%">المعلم</th><th style="width:12%">المادة</th><th>الزيارة الأولى</th><th>الزيارة الثانية</th><th>الزيارة الثالثة</th>${o.res ? `<th style="width:9%">المتوسط</th>` : ""}</tr></thead><tbody>${L.map((t, i) => { const C = cvSubC(t.s || "", subs); const E = ptObj(D.ev[t.tk]); const av = t.vis.map(r => ptObj(E[r.v])).filter(e => e.fin).map(e => obAvg(e)).filter(x => x != null); const m = av.length ? av.reduce((a, x) => a + x, 0) / av.length : null;
+    return `<tr><td class="c">${maAr(i + 1)}</td><td><b>${ptEsc(t.name)}</b></td><td class="c"><span class="sc" style="background:${C[1]};color:${C[0]}">${ptEsc(t.s || "")}</span></td>${[1, 2, 3].map(v => cell(t, t.vis.find(r => r.v === v))).join("")}${o.res ? `<td class="c"><b>${m == null ? "—" : maAr(Math.round(m / 4 * 1000) / 10) + "٪"}</b></td>` : ""}</tr>`; }).join("")}</tbody></table>
+  ${vsRow()}</section>`;
+}
+function CvSchedPrint({ D, TS }) {
+  const [o, setO] = useState({ flt: "all", dates: true, st: true, res: false });
+  const html = cvSchedHtml(D, TS, o);
+  return <div className="grid gap-3" dir="rtl">
+    <div className="ma-card p-3 flex gap-3 flex-wrap items-center"><b>🖨 طباعة جدول الزيارات</b>
+      {[["all", "كل الزيارات"], ["done", "المنفذة فقط"], ["todo", "المتبقية فقط"]].map(([k, l]) => <button key={k} className={`ma-tab ${o.flt === k ? "on" : ""}`} onClick={() => setO({ ...o, flt: k })}>{l}</button>)}
+      {[["dates", "التواريخ والحصص والفصول"], ["st", "حالة التنفيذ"], ["res", "النتيجة والتقدير"]].map(([k, l]) => <label key={k} style={{ display: "inline-flex", gap: 5, alignItems: "center", fontWeight: 800, fontSize: 13 }}><input type="checkbox" checked={o[k]} onChange={e => setO({ ...o, [k]: e.target.checked })} />{l}</label>)}
+      <button className="ma-btn gold" style={{ marginInlineStart: "auto" }} onClick={() => pxOpen(html, "جدول الزيارات الصفية", true)}>🖨 طباعة</button></div>
+    <div className="ma-card" style={{ padding: 10, overflowX: "auto" }}><div style={{ minWidth: 900 }}><style>{`.cvsp table{width:100%;border-collapse:collapse}.cvsp th{background:#0d4f3c;color:#fff;padding:6px;font-size:12px}.cvsp td{border:1px solid #e2e8f0;padding:5px 6px;font-size:12px}.cvsp .c{text-align:center}.cvsp .sc{display:inline-block;border-radius:99px;padding:1px 8px;font-weight:800;font-size:11px}.cvsp .hd,.cvsp .sg{display:none}.cvsp .tt{text-align:center;margin:4px 0 8px}.cvsp .tt span{display:inline-block;background:linear-gradient(135deg,#0d4f3c,#12305a);color:#fff;font-weight:800;padding:6px 20px;border-radius:10px}.cvsp .res{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}.cvsp .res div{border:1px solid #e2e8f0;border-radius:10px;text-align:center;padding:6px;font-weight:700;font-size:12px}.cvsp .res b{display:block;font-size:18px}`}</style><div className="cvsp" dangerouslySetInnerHTML={{ __html: html }} /></div></div>
+  </div>;
+}
+function cvTeacherHtml(T, E, sg, cf) {
+  const vis = T.vis.map(r => ({ r, e: ptObj(E[r.v]) })); const done = vis.filter(o => o.e.fin);
+  const avs = done.map(o => obAvg(o.e)).filter(x => x != null); const av = avs.length ? avs.reduce((a, x) => a + x, 0) / avs.length : null; const lv = obLvOfAvg(av); const Lv = lv ? OB_LV[lv] : null; const fin = ptObj(E.final);
+  const LC = { 4: ["#15803d", "#dcfce7"], 3: ["#0d9488", "#ccfbf1"], 2: ["#b45309", "#fef3c7"], 1: ["#b91c1c", "#fee2e2"] };
+  const uniq = k => [...new Set(done.map(o => String(o.e[k] || "").trim()).filter(Boolean))];
+  const sum = [["نقاط القوة", uniq("str")], ["فرص التحسين", uniq("imp")], ["التوصيات", uniq("rec")]];
+  return `<section class="pg">${pxHead(`${maDay(new Date())}<br>${maHijri(new Date())}`)}<div class="tt"><span>خلاصة الزيارات الصفية — أ. ${ptEsc(T.name)}</span></div>
+  <div class="res"><div><b style="font-size:12px">${ptEsc(T.s || "—")}</b>المادة</div><div><b>${maAr(done.length)} / ${maAr(vis.length)}</b>الزيارات المنفذة</div><div><b>${av == null ? "—" : maAr(Math.round(av * 100) / 100)}</b>المتوسط من ٤</div><div><b>${av == null ? "—" : maAr(Math.round(av / 4 * 1000) / 10) + "٪"}</b>النسبة</div><div><b style="color:${Lv ? Lv[1] : "#64748b"};font-size:11.5px">${fin.pub && fin.lv ? OB_LV[fin.lv][0] : Lv ? Lv[0] : "—"}</b>التقدير العام</div></div>
+  <table style="font-size:9.5px"><thead><tr><th>الزيارة</th><th>اليوم والتاريخ</th><th>الحصة</th><th>الفصل</th><th>المتوسط</th><th>التقدير</th></tr></thead><tbody>${vis.map(({ r, e }) => { const ov = e.fin ? obOverall(e) : null; return `<tr><td class="c"><b>${CV_VN[r.v - 1] || ""}</b></td><td class="c">${maDay(maDate(r.date))} ${cvHij(r.hij)}</td><td class="c">${r.p || ""}</td><td class="c">${cvCls(r.c)}</td><td class="c">${e.fin && obAvg(e) != null ? maAr(Math.round(obAvg(e) * 100) / 100) : "—"}</td><td class="c" style="font-weight:800;color:${ov ? ov[1] : "#94a3b8"}">${ov ? ov[0] : e.fin ? "منفذة" : "لم تُنفذ"}</td></tr>`; }).join("")}</tbody></table>
+  <table style="font-size:9px"><thead><tr><th style="width:5%">م</th><th>المؤشر</th>${vis.map(({ r }) => `<th style="width:11%">${CV_VN[r.v - 1] || ""}</th>`).join("")}</tr></thead><tbody>${OB_ITEMS.map(it => `<tr><td class="c">${maAr(it.n)}</td><td>${OB_SHORT[it.n - 1]}</td>${vis.map(({ e }) => { const l = e.fin ? +obIt(e, it.n).lv || 0 : 0; return `<td class="c" style="font-weight:800;${l ? `background:${LC[l][1]};color:${LC[l][0]}` : "color:#cbd5e1"}">${l ? `${maAr(l)} ${OB_LV[l][0]}` : "—"}</td>`; }).join("")}</tr>`).join("")}</tbody></table>
+  <div class="fb">${sum.map(([h, L]) => `<div${h === "التوصيات" ? ' style="grid-column:span 2"' : ""}><b>${h}</b>${L.length ? L.map(x => `• ${ptEsc(x)}`).join("<br>") : "—"}</div>`).join("")}${fin.pub && fin.txt ? `<div style="grid-column:span 2"><b>التقييم النهائي</b>${ptEsc(fin.txt)}</div>` : ""}</div>
+  <div class="sg"><div>المعلم: ${ptEsc(T.name)}<br>${sg && sg.sig ? `<img src="${sg.sig}" style="height:46px;max-width:180px"><br><small>وقّع إلكترونياً ${maHijri(new Date(sg.at))}</small>` : "التوقيع: ................"}</div></div>${vsRow()}</section>`;
+}
+// قائمة المعلمين: طباعة الخلاصة وإرسالها للتوقيع ومتابعة التوقيع
+function CvTeacherFiles({ D, TS, by }) {
+  const [S, setS] = useState(null); const [cf, setCf] = useState({}); const [q, setQ] = useState("");
+  useEffect(() => { Promise.all([maGet(CV_SIG), maGet(HFX_CFG)]).then(([a, c]) => { const A = ptObj(a); setS(A); setCf(ptObj(c)); const up = {}; Object.entries(A).forEach(([tk, x]) => { if (x && x.sig && !x.seenA) up[`${CV_SIG}/${tk}/seenA`] = Date.now(); }); if (Object.keys(up).length) fbPatch(up); }); }, []);
+  if (!S) return <div className="ma-card p-6 text-center font-bold text-gray-400">⏳</div>;
+  const L = TS.filter(t => !q || cvNorm(t.name).includes(cvNorm(q)) || cvNorm(t.s).includes(cvNorm(q))).sort((a, b) => a.name.localeCompare(b.name, "ar"));
+  const send = async (t, re) => { const v = { ...ptObj(S[t.tk]), req: Date.now(), rBy: by, ...(re ? { sig: null, at: null, seenA: null } : {}) }; Object.keys(v).forEach(k => v[k] == null && delete v[k]); const ok = await maPut(`${CV_SIG}/${t.tk}`, v); if (ok) setS(x => ({ ...x, [t.tk]: v })); else alert("تعذّر الإرسال"); };
+  const sendAll = async () => { const L2 = L.filter(t => t.vis.some(r => ptObj(ptObj(D.ev[t.tk])[r.v]).fin) && !ptObj(S[t.tk]).req); if (!L2.length) { alert("لا يوجد معلمون جدد لديهم زيارات منفذة"); return; } if (!confirm(`إرسال الخلاصة للتوقيع إلى ${maAr(L2.length)} معلماً؟`)) return; const up = {}; const now = Date.now(); L2.forEach(t => { up[`${CV_SIG}/${t.tk}/req`] = now; up[`${CV_SIG}/${t.tk}/rBy`] = by; }); const ok = await fbPatch(up); if (ok) setS(x => { const n = { ...x }; L2.forEach(t => { n[t.tk] = { ...ptObj(n[t.tk]), req: now, rBy: by }; }); return n; }); };
+  const nSig = L.filter(t => ptObj(S[t.tk]).sig).length, nReq = L.filter(t => ptObj(S[t.tk]).req && !ptObj(S[t.tk]).sig).length;
+  return <div className="grid gap-3" dir="rtl">
+    <div className="ma-card p-3 flex gap-2 flex-wrap items-center"><b>👤 خلاصة كل معلم والتوقيع</b><span className="sc-badge" style={{ background: "#dcfce7", color: "#15803d" }}>✍️ وقّع {maAr(nSig)}</span><span className="sc-badge" style={{ background: "#fef3c7", color: "#92400e" }}>⏳ بانتظار {maAr(nReq)}</span>
+      <input className="ma-inp" style={{ flex: "1 1 180px" }} value={q} onChange={e => setQ(e.target.value)} placeholder="بحث…" /><button className="ma-btn pri" onClick={sendAll}>📨 إرسال للجميع (من لديه زيارة منفذة)</button><button className="ma-btn gold" onClick={() => pxOpen(L.map(t => cvTeacherHtml(t, ptObj(D.ev[t.tk]), ptObj(S[t.tk]), cf)).join(""), "خلاصة الزيارات الصفية")}>🖨 طباعة الكل</button></div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 10 }}>{L.map(t => { const E = ptObj(D.ev[t.tk]); const done = t.vis.filter(r => ptObj(E[r.v]).fin); const av = done.map(r => obAvg(ptObj(E[r.v]))).filter(x => x != null); const m = av.length ? av.reduce((a, x) => a + x, 0) / av.length : null; const lv = obLvOfAvg(m); const sg = ptObj(S[t.tk]);
+      return <div key={t.tk} className="ma-card p-3 grid gap-2" style={{ borderTop: `4px solid ${lv ? OB_LV[lv][1] : "#cbd5e1"}` }}>
+        <div className="flex items-center gap-2"><b style={{ flex: 1 }}>{t.name}</b><small style={{ color: "#64748b", fontWeight: 800 }}>{t.s}</small></div>
+        <div className="flex gap-1 flex-wrap">{t.vis.map(r => { const e = ptObj(E[r.v]); const ov = e.fin ? obOverall(e) : null; return <span key={r.v} className="sc-badge" style={{ background: ov ? ov[2] : e.fin ? "#dcfce7" : "#f1f5f9", color: ov ? ov[1] : e.fin ? "#15803d" : "#64748b" }}>{CV_VN[r.v - 1]}: {ov ? ov[0] : e.fin ? "منفذة" : "—"}</span>; })}</div>
+        <div style={{ fontSize: 13, fontWeight: 800 }}>المتوسط: {m == null ? "—" : `${maAr(Math.round(m / 4 * 1000) / 10)}٪`} {lv ? `• ${OB_LV[lv][0]}` : ""}</div>
+        <div style={{ borderRadius: 10, padding: "6px 10px", fontSize: 12.5, fontWeight: 800, background: sg.sig ? "#ecfdf5" : sg.req ? "#fffbeb" : "#f8fafc", color: sg.sig ? "#15803d" : sg.req ? "#92400e" : "#64748b", display: "flex", alignItems: "center", gap: 8 }}>{sg.sig ? <><span>✍️ وقّع {maHijri(new Date(sg.at))}</span><img src={sg.sig} alt="" style={{ height: 30, marginInlineStart: "auto", background: "#fff", borderRadius: 6 }} /></> : sg.req ? `⏳ أُرسلت للتوقيع ${maHijri(new Date(sg.req))}` : "لم تُرسل للتوقيع بعد"}</div>
+        <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={() => pxOpen(cvTeacherHtml(t, E, sg, cf), `خلاصة الزيارات — ${t.name}`)}>🖨 طباعة الخلاصة</button>{!sg.sig ? <button className="ma-btn pri" disabled={!done.length} onClick={() => send(t)}>{sg.req ? "🔁 إعادة الإرسال" : "📨 إرسال للتوقيع"}</button> : <button className="ma-btn" onClick={() => confirm("طلب توقيع جديد بعد تحديث الخلاصة؟") && send(t, true)}>🔁 طلب توقيع جديد</button>}</div></div>; })}</div>
+  </div>;
+}
+// عند المعلم: توقيع خلاصة الزيارات
+function CvSignBox({ T, E, me }) {
+  const [sg, setSg] = useState(null); const [pad, setPad] = useState(false); const [cf, setCf] = useState({});
+  useEffect(() => { Promise.all([maGet(`${CV_SIG}/${T.tk}`), maGet(HFX_CFG)]).then(([a, c]) => { setSg(ptObj(a)); setCf(ptObj(c)); }); }, [T.tk]);
+  if (!sg || !sg.req) return null;
+  const signed = !!sg.sig;
+  const save = async sig => { const v = { ...sg, sig, at: Date.now(), n: me.name }; delete v.seenA; const ok = await maPut(`${CV_SIG}/${T.tk}`, v); if (ok) { setSg(v); alert("✅ تم توقيعك على خلاصة الزيارات وأُبلغت الإدارة"); } else alert("تعذّر الحفظ — تحقق من الاتصال"); };
+  return <div className="ma-card p-4 grid gap-2" style={{ border: `2px solid ${signed ? "#86efac" : "#fca5a5"}`, background: signed ? "#f0fdf4" : "linear-gradient(135deg,#fef2f2,#fff)" }}>
+    <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 16, color: signed ? "#15803d" : "#b91c1c" }}>{signed ? "✍️ وقّعت على خلاصة زياراتك الصفية" : "🔴 مطلوب توقيعك على خلاصة الزيارات الصفية"}</b>{signed && <img src={sg.sig} alt="" style={{ height: 34, background: "#fff", borderRadius: 6 }} />}</div>
+    <div style={{ fontSize: 13, fontWeight: 700, color: "#475569" }}>{signed ? `بتاريخ ${maHijri(new Date(sg.at))} — يظهر توقيعك في النسخة المطبوعة لدى الإدارة.` : "اطّلع على الخلاصة ثم وقّع بإصبعك — تُبلَّغ الإدارة فور توقيعك."}</div>
+    <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={() => pxOpen(cvTeacherHtml(T, E, sg, cf), "خلاصة زياراتي الصفية")}>👁 عرض الخلاصة وطباعتها</button>{!signed && <button className="ma-btn pri" onClick={() => setPad(true)}>✍️ التوقيع الآن</button>}</div>
+    {pad && <HfxSigPad title="توقيعك على خلاصة الزيارات الصفية" onCancel={() => setPad(false)} onDone={sig => { setPad(false); save(sig); }} />}
+  </div>;
+}
+
 function ClassVisitsPage({ by = "الإدارة" }) {
-  const [D, setD] = useState(null); const [tab, setTab] = useState("plan"); const [msg, setMsg] = useState("");
+  const [D, setD] = useState(null); const [tab, setTab] = useState(() => { try { const t = localStorage.getItem("cv-tab"); if (t) { localStorage.removeItem("cv-tab"); return t; } } catch {} return "plan"; }); const [msg, setMsg] = useState("");
   const [tk, setTk] = useState(null); const [vn, setVn] = useState(1); const [f, setF] = useState({ q: "", v: "", st: "" }); const [mv, setMv] = useState(null);
   const toast = t => { setMsg(t); clearTimeout(toast.t); toast.t = setTimeout(() => setMsg(""), 3000); };
   const load = async () => { const d = await cvLoad(); if (!Object.keys(d.plan).length) { const p0 = cvSeedPlan(); const p = { ...p0, ...cvReflow(p0, {}, "2026-09-30", typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null, TT_DEF_TIMES) }; d.cfg.resched = "2026-09-30"; cvPatch({ [`${CV_CFG}/resched`]: "2026-09-30" }); const ok = await maPut(CV_PLAN, p); if (ok) d.plan = p; const links = {}; cvTeachers(p).forEach(T => { const rid = cvMatch(T.name, d.lic); if (rid) links[T.tk] = rid; }); d.cfg.links = links; await cvPatch({ [`${CV_CFG}/links`]: links }); } setD(d); };
@@ -37893,7 +38133,7 @@ function ClassVisitsPage({ by = "الإدارة" }) {
             {[["✅", `${maAr(done)} / ${maAr(all.length)}`, "زيارة منفذة"], ["📌", maAr(todayL.length), "زيارات اليوم"], ["🔄", maAr(late), "تحتاج تعويضاً"], ["📨", maAr(reqs.length + nMsg), "طلبات وملاحظات"], ["⏭️", next ? `${maDay(maDate(next.date))} ${cvHij(next.hij)}` : "—", next ? `القادمة: ${next.t}` : "لا زيارات قادمة"]].map((x, i) => <div key={i} style={{ background: "rgba(255,255,255,.14)", borderRadius: 16, padding: "10px 12px" }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>{x[0]} {x[2]}</div><div style={{ fontSize: i === 3 ? 14 : 22, fontWeight: 900 }}>{x[1]}</div></div>)}
           </div>
         </div>
-        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["add", "➕ اختيار المعلم وإضافة زيارة"], ["eval", "🔭 رصد الملاحظة"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "🏁 التقييم النهائي وأبرز الملاحظات"], ["appr", "📋 جدول الزيارات المعتمدة"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
+        <div className="ma-tabs">{[["plan", "📅 جدول الزيارات"], ["add", "➕ اختيار المعلم وإضافة زيارة"], ["eval", "🔭 رصد الملاحظة"], ["msg", `📨 ملاحظات وطلبات المعلمين${nMsg + reqs.length ? ` (${maAr(nMsg + reqs.length)})` : ""}`], ["ind", "🏁 التقييم النهائي وأبرز الملاحظات"], ["sched", "🖨 طباعة جدول الزيارات"], ["appr", "📋 جدول الزيارات المعتمدة"], ["tfile", "👤 خلاصة كل معلم والتوقيع"], ["vsig", "✍️ المعتمدون والتوقيعات"], ["cfg", "🔗 ربط المعلمين والإعدادات"]].map(([x, l]) => <button key={x} className={`ma-tab ${tab === x ? "on" : ""}`} onClick={() => setTab(x)}>{l}</button>)}</div>
         {tab === "plan" && !D.cfg.resched && <div className="ma-card p-3 flex items-center gap-2 flex-wrap" style={{ background: "#faf5ff", border: "2px dashed #a78bfa" }}><b>↪️ لبدء الزيارات من الأربعاء ١٩/٤/١٤٤٨هـ مع اختيار الحصص من جدول كل معلم:</b><button className="ma-btn pri" onClick={() => setTab("cfg")}>فتح أداة إعادة الجدولة</button></div>}
         {tab === "plan" && reqs.length > 0 && <CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} />}
         {tab === "plan" && <CvPlan D={D} all={all} evOf={evOf} f={f} setF={setF} openEval={(r) => { setTk(r.tk); setVn(r.v); setTab("eval"); }} setMv={setMv} by={by} />}
@@ -37902,6 +38142,9 @@ function ClassVisitsPage({ by = "الإدارة" }) {
         {tab === "msg" && <><CvReqs D={D} setD={setD} reqs={reqs} toast={toast} setMv={setMv} /><CvMsgs D={D} setD={setD} toast={toast} /></>}
         {tab === "ind" && <ObsInd D={D} setD={setD} TS={TS} by={by} toast={toast} openT={t => { setTk(t); setTab("eval"); }} />}
         {tab === "appr" && <CvApproved D={D} TS={TS} />}
+        {tab === "sched" && <CvSchedPrint D={D} TS={TS} />}
+        {tab === "tfile" && <CvTeacherFiles D={D} TS={TS} by={by} />}
+        {tab === "vsig" && <VsSigCfg />}
         {tab === "cfg" && <><CvResched D={D} setD={setD} toast={toast} /><CvCfg D={D} setD={setD} TS={TS} toast={toast} /></>}
       </div>
       {mv && <CvMove D={D} setD={setD} r={mv} close={() => setMv(null)} toast={toast} />}
@@ -37913,7 +38156,7 @@ function CvPlan({ D, all, evOf, f, setF, openEval, setMv, by }) {
   const L = all.filter(r => (!f.v || r.v === +f.v) && (!f.q || r.t.includes(f.q) || r.s.includes(f.q)) && (!f.st || cvStatus(r, evOf(r))[0] === f.st));
   const byWk = {}; L.forEach(r => (byWk[r.wk] = byWk[r.wk] || []).push(r));
   const k = maKey(new Date());
-  const print = () => inOpen(`<section class="pg">${inHdr("جدول الزيارات الصفية وفق التقويم الدراسي وجداول الحصص", "العام الدراسي ١٤٤٨هـ<br>الفصل الدراسي الأول")}<table><thead><tr><th>م</th><th>الأسبوع</th><th>اليوم</th><th>التاريخ الهجري</th><th>المعلم</th><th>التخصص</th><th>الحصة</th><th>الوقت</th><th>الصف</th><th>التنفيذ</th></tr></thead><tbody>${[1, 2, 3].map(v => `<tr><td colspan="10" class="r" style="background:#f0fdfa;font-weight:900">الزيارة ${CV_VN[v - 1]}</td></tr>` + L.filter(r => r.v === v).map(r => { const t = cvTotal(evOf(r)); const o = obOverall(evOf(r)); return `<tr><td>${maAr(r.n)}</td><td>الأسبوع ${maAr(r.wk)}</td><td>${maDay(maDate(r.date))}</td><td>${cvHij(r.hij)}</td><td class="r"><b>${ptEsc(r.t)}</b></td><td>${ptEsc(r.s)}</td><td>${ptEsc(r.p)}</td><td>${ptEsc(cvTm(r.tm) || "—")}</td><td>${ptEsc(cvCls(r.c))}</td><td>${t != null ? `✓ ${o ? o[0] : "منفذة"}` : ""}</td></tr>`; }).join("")).join("")}</tbody></table><div style="font-size:10px;margin-top:6px"><b>أيام التعويض:</b> ${D.cfg.comp.map(c => `${maDay(maDate(c[0]))} ${cvHij(c[1])}`).join(" • ")}</div><div class="sg"><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "جدول الزيارات", `@page{size:A4 landscape;margin:7mm}`);
+  const print = () => inOpen(`<section class="pg">${inHdr("جدول الزيارات الصفية وفق التقويم الدراسي وجداول الحصص", "العام الدراسي ١٤٤٨هـ<br>الفصل الدراسي الأول")}<table><thead><tr><th>م</th><th>الأسبوع</th><th>اليوم</th><th>التاريخ الهجري</th><th>المعلم</th><th>التخصص</th><th>الحصة</th><th>الوقت</th><th>الصف</th><th>التنفيذ</th></tr></thead><tbody>${[1, 2, 3].map(v => `<tr><td colspan="10" class="r" style="background:#f0fdfa;font-weight:900">الزيارة ${CV_VN[v - 1]}</td></tr>` + L.filter(r => r.v === v).map(r => { const t = cvTotal(evOf(r)); const o = obOverall(evOf(r)); return `<tr><td>${maAr(r.n)}</td><td>الأسبوع ${maAr(r.wk)}</td><td>${maDay(maDate(r.date))}</td><td>${cvHij(r.hij)}</td><td class="r"><b>${ptEsc(r.t)}</b></td><td>${ptEsc(r.s)}</td><td>${ptEsc(r.p)}</td><td>${ptEsc(cvTm(r.tm) || "—")}</td><td>${ptEsc(cvCls(r.c))}</td><td>${t != null ? `✓ ${o ? o[0] : "منفذة"}` : ""}</td></tr>`; }).join("")).join("")}</tbody></table><div style="font-size:10px;margin-top:6px"><b>أيام التعويض:</b> ${D.cfg.comp.map(c => `${maDay(maDate(c[0]))} ${cvHij(c[1])}`).join(" • ")}</div>${vsRow()}</section>`, "جدول الزيارات", `@page{size:A4 landscape;margin:7mm}`);
   return (
     <div className="grid gap-3">
       <div className="ma-card p-3 flex gap-2 flex-wrap items-center">
@@ -38292,7 +38535,7 @@ const OB_PCSS = `@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-
 .box{border-radius:14px;padding:8px 12px;margin-top:8px;page-break-inside:avoid}.box b{display:block;margin-bottom:2px}
 .bub{border-radius:12px;padding:5px 10px;margin:4px 0;max-width:85%}.bub small{display:block;font-weight:900;font-size:9px}
 .imgs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}.imgs img{width:100%;height:110px;object-fit:cover;border-radius:10px;border:2px solid #ede9fe}
-.sg{display:flex;justify-content:space-around;margin-top:14px;font-weight:800;text-align:center}.sg span{display:block;margin-top:12px;color:#94a3b8}.sg .pn{display:block;margin-top:3px;color:#6d28d9}
+.sg{display:flex;justify-content:space-around;margin-top:14px;font-weight:800;text-align:center}.sg span{display:block;margin-top:12px;color:#94a3b8}.sg .pn{display:block;margin-top:3px;color:#6d28d9}.vs-r{margin-top:10px}.sg .pn{display:block}.vs-i{display:block;height:40px;max-width:150px;margin:2px auto 0;object-fit:contain}.vs-c{flex:1}
 .fin{border-radius:18px;padding:12px 16px;background:linear-gradient(135deg,#fdf4ff,#ecfdf5);border:2px solid #c4b5fd;margin-top:10px}
 .bar{height:9px;border-radius:9px;background:#ede9fe;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px}
 table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;border-bottom:1px solid #f3e8ff;text-align:right}th{background:#6d28d9;color:#fff}`;
@@ -38324,8 +38567,8 @@ async function obPrintTeacher(T, D, idx, opts = {}) {
     <div class="sec" style="margin-top:10px"><div class="band" style="background:#6d28d9">📈 مسار العناصر عبر الزيارات</div><table><thead><tr><th>العنصر</th>${CV_VN.map(v => `<th style="text-align:center">${v}</th>`).join("")}</tr></thead><tbody>${itemBest.map(x => `<tr><td>${maAr(x.it.n)}. ${ptEsc(x.it.t)}</td>${x.ls.map(l => `<td style="text-align:center">${l ? `<span class="pill" style="background:${OB_LV[l][2]};color:${OB_LV[l][1]};margin:0">${OB_LV[l][3]}</span>` : "—"}</td>`).join("")}</tr>`).join("")}</tbody></table><div style="padding:6px 10px;font-size:9.5px;color:#64748b">${Object.entries(OB_LV).reverse().map(([k, v]) => `${v[3]} ${v[0]}`).join(" • ")}</div></div>
     ${strong.length ? `<div class="box" style="background:#f0fdf4;border-right:5px solid #15803d"><b style="color:#15803d">🌟 عناصر متحققة بتميز</b>${strong.map(x => `• ${ptEsc(x.it.t)}`).join("<br>")}</div>` : ""}
     ${weak.length ? `<div class="box" style="background:#fffbeb;border-right:5px solid #b45309"><b style="color:#b45309">🎯 عناصر للتطوير</b>${weak.map(x => `• ${ptEsc(x.it.t)}`).join("<br>")}</div>` : ""}
-    <div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر (الوكيل)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`;
-  const visits = V.map(r => `<section class="pg">${obVisitHTML(T, r, ptObj(E[r.v]), IM[r.v] || { a: [], t: [] }, opts.full)}${cvQuickHtml(ptObj(E[r.v]))}<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر<br><b class="pn">${ptEsc(ptObj(E[r.v]).by || "")}</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`).join("");
+    <div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div>${vsCell("dep", { t: "الزائر (وكيل الشؤون التعليمية)" })}</div>${vsRow(["sup", "mgr"])}</section>`;
+  const visits = V.map(r => `<section class="pg">${obVisitHTML(T, r, ptObj(E[r.v]), IM[r.v] || { a: [], t: [] }, opts.full)}${cvQuickHtml(ptObj(E[r.v]))}<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(T.name)}</b><span>............</span></div><div>الزائر<br><b class="pn">${ptEsc(ptObj(E[r.v]).by || "")}</b><span>............</span></div></div>${vsRow(["sup", "mgr"])}</section>`).join("");
   printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>رصد الملاحظة الصفية — ${ptEsc(T.name)}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${OB_PCSS}</style></head><body>${cover}${visits}<script>setTimeout(()=>print(),1200)</script></body></html>`);
 }
 // ══════════ التقييم النهائي والمؤشرات العامة ══════════
@@ -38345,7 +38588,7 @@ function ObsInd({ D, setD, TS, by, openT, toast }) {
     ${gen.txt ? `<div class="fin"><b style="color:#6d28d9">📢 ملاحظات عامة للزملاء</b><div style="font-weight:700;line-height:2;white-space:pre-wrap">${ptEsc(gen.txt)}</div></div>` : ""}
     <div class="sec"><div class="band" style="background:#6d28d9">📊 مستوى تحقق العناصر على مستوى المدرسة</div><table>${S.items.map(x => { const l = obLvOfAvg(x.avg); return `<tr><td>${maAr(x.it.n)}. ${ptEsc(x.it.t)}</td><td style="width:26%"><div class="bar"><i style="width:${x.avg ? x.avg / 4 * 100 : 0}%;background:${l ? OB_LV[l][1] : "#cbd5e1"}"></i></div></td><td style="width:18%">${l ? obLvHtml(l) : "—"}</td></tr>`; }).join("")}</table></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="box" style="background:#f0fdf4;border-right:5px solid #15803d"><b style="color:#15803d">✅ الأكثر رصداً</b>${S.topEv.map(x => `• ${ptEsc(x.t)} <b>(${maAr(x.c)})</b>`).join("<br>")}</div><div class="box" style="background:#fffbeb;border-right:5px solid #b45309"><b style="color:#b45309">▫️ الأقل رصداً (فرص تطوير)</b>${S.lowEv.map(x => `• ${ptEsc(x.t)} <b>(${maAr(x.c)})</b>`).join("<br>")}</div></div>
-    <div class="sg"><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "أبرز الملاحظات");
+    ${vsRow()}</section>`, "أبرز الملاحظات");
   const printAll = async () => { for (let i = 0; i < TS.length; i++) { const E = ptObj(D.ev[TS[i].tk]); if ([1, 2, 3].some(v => ptObj(E[v]).fin)) { await obPrintTeacher(TS[i], D, i); break; } } };
   return (
     <div className="grid gap-3">
@@ -38382,7 +38625,7 @@ function ObsInd({ D, setD, TS, by, openT, toast }) {
 function cvReflow(plan, ev, start, TT, times) {
   const V = Object.values(plan).filter(Boolean).sort((a, b) => a.n - b.n);
   const done = r => ptObj(ptObj(ev[r.tk])[r.v]).fin;
-  const mov = V.filter(r => !done(r) && !(r.date < start && r.moved));
+  const mov = V.filter(r => !done(r) && r.date >= start); // الزيارات السابقة لتاريخ البداية تبقى بتاريخها (قد تكون نُفّذت ولم تُقيَّم بعد)
   const hijOf = {}, wkOf = {}; CV_SEED.forEach(x => { hijOf[x[3]] = x[4]; wkOf[wkStart(x[3])] = x[2]; }); CV_COMP.forEach(c => { hijOf[c[0]] = c[1]; });
   const seedDays = [...new Set(CV_SEED.map(x => x[3]))].sort();
   const days = [...new Set([...seedDays, ...CV_COMP.filter(c => c[0] > seedDays[seedDays.length - 1]).map(c => c[0])])].filter(d => d >= start).sort();
@@ -38419,7 +38662,7 @@ const cvGrpL = k => (CV_GRP.find(g => g[0] === k) || [0, "أخرى"])[1];
 function cvReflowMix(plan, ev, start, TT, times, perDay = 4, mix = true) {
   const V = Object.values(plan).filter(Boolean).sort((a, b) => a.v - b.v || a.n - b.n);
   const done = r => ptObj(ptObj(ev[r.tk])[r.v]).fin;
-  const mov = V.filter(r => !done(r) && !(r.date < start && r.moved));
+  const mov = V.filter(r => !done(r) && r.date >= start); // الزيارات السابقة لتاريخ البداية تبقى بتاريخها (قد تكون نُفّذت ولم تُقيَّم بعد)
   const fixed = V.filter(r => !mov.includes(r));
   const wkOf = {}; CV_SEED.forEach(x => { wkOf[wkStart(x[3])] = x[2]; });
   const wkNum = d => { const w = wkStart(d); if (wkOf[w]) return wkOf[w]; const ks = Object.keys(wkOf).sort(); const b = ks[ks.length - 1]; return b ? wkOf[b] + Math.round((maDate(w) - maDate(b)) / 6048e5) : 0; };
@@ -38578,6 +38821,52 @@ const CVW_CSS = `
 @media (prefers-reduced-motion:reduce){.cvw,.cvw .bell{animation:none!important}}
 `;
 const cvwFmt = sec => { const a = Math.abs(sec); const m = Math.floor(a / 60), x = a % 60; return `${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`; };
+// ══════════ 🔔 تنبيه تبادل الزيارات قبل الموعد بنصف ساعة (المدير • المعلم المستضاف • الزائرون) ══════════
+const PX_LEAD = 30;
+const pxDig = s => String(s || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+const pxStartAt = (D, v) => { const m = hdMin(pxDig(v.tm || ((D.times || [])[v.p] || [])[0])); if (m == null || !v.date) return null; const d = maDate(v.date); d.setHours(0, m < 360 ? m + 720 : m, 0, 0); return +d; };
+const PXW_CSS = `.cvw.pxw{background:radial-gradient(420px 180px at 100% 0,rgba(168,135,74,.45),transparent 60%),linear-gradient(135deg,#0d4f3c,#12305a 70%);box-shadow:0 30px 60px -20px rgba(18,48,90,.85)}
+.cvw.pxw.now{background:radial-gradient(420px 180px at 100% 0,rgba(254,202,202,.35),transparent 60%),linear-gradient(135deg,#7f1d1d,#b91c1c 50%,#dc2626)}
+.cvw.pxw .role{display:inline-block;background:#a8874a;color:#fff;border-radius:999px;padding:1px 10px;font-size:11.5px;font-weight:900;margin-inline-start:6px}
+.cvw.pxw .cvw-act button.go{color:#12305a}.cvw-pill.pxp{background:linear-gradient(135deg,#0d4f3c,#12305a);bottom:64px}`;
+function PxWatcher({ me, all = false, onOpen }) {
+  const [D, setD] = useState(null); const [now, setNow] = useState(Date.now()); const [snz, setSnz] = useState({}); const fired = useRef({});
+  const [hid, setHid] = useState(() => { try { return JSON.parse(localStorage.getItem("px-whid") || "{}"); } catch { return {}; } });
+  useEffect(() => { let ok = true; const load = () => pxLoad().then(d => ok && setD(d)).catch(() => {}); load(); const a = setInterval(load, 120000); const t = setInterval(() => setNow(Date.now()), 1000);
+    const unlock = () => { try { _cvAC = _cvAC || new (window.AudioContext || window.webkitAudioContext)(); if (_cvAC.state === "suspended") _cvAC.resume(); } catch {} };
+    document.addEventListener("pointerdown", unlock, { once: true });
+    return () => { ok = false; clearInterval(a); clearInterval(t); document.removeEventListener("pointerdown", unlock); }; }, []);
+  if (!D) return null;
+  const k = maKey(new Date(now)); const ti = me && me.name ? sttFindMe(D.T, me.name) : -1;
+  const roleOf = v => v.host.ti === ti && ti >= 0 ? "host" : ti >= 0 && v.vis.some(x => x.ti === ti) ? "vis" : all ? "adm" : null;
+  const L = pxVisits(D).filter(v => v.date === k).map(v => ({ v, r: roleOf(v), at: pxStartAt(D, v) })).filter(o => o.r && o.at && !(o.r === "vis" && pxEvOf(D, o.v, ti).fin)).sort((a, b) => a.at - b.at);
+  const hk = o => `${o.v.id}-${o.v.date}-${o.r}`;
+  const cur = L.find(o => now >= o.at - PX_LEAD * 60000 && now <= o.at + 10 * 60000 && !hid[hk(o)] && !(snz[o.v.id] > now));
+  const next = L.find(o => o.at > now && o !== cur);
+  if (cur) { const f = fired.current[cur.v.id] = fired.current[cur.v.id] || {}; const say = (t, b) => { try { if ("Notification" in window && Notification.permission === "granted") new Notification(t, { body: b, tag: "px-" + cur.v.id }); } catch {} };
+    const g = PX_GRP.find(x => x[0] === cur.v.g) || []; const info = `${cur.v.host.n} • ${g[1] || ""} • الحصة ${cur.v.p} • ${maClassName(cur.v.ck)}`;
+    if (!f.pre && now < cur.at) { f.pre = 1; setTimeout(() => { cvChime(3); say(`🤝 تبادل زيارات بعد ${maAr(Math.max(1, Math.round((cur.at - Date.now()) / 60000)))} دقيقة`, info); }, 0); }
+    if (!f.st && now >= cur.at && now < cur.at + 60000) { f.st = 1; setTimeout(() => { cvChime(4); say("⏰ بدأت حصة تبادل الزيارة الآن", info); }, 0); } }
+  const hide = o => { const n = { ...hid, [hk(o)]: 1 }; setHid(n); try { localStorage.setItem("px-whid", JSON.stringify(n)); } catch {} };
+  const RL = { host: "أنت المعلم المستضاف", vis: "أنت معلم زائر", adm: "متابعة الإدارة" };
+  const TIP = { host: "💡 جهّز الدرس والوسائل ورحّب بالزملاء الزائرين — ستصلك نتيجة الزيارة وملاحظاتها بعد اعتمادها.", vis: "💡 توجّه للفصل قبل بداية الحصة بدقائق، وافتح «تبادل الزيارات» لتعبئة الاستمارة ثم اعتمادها.", adm: "💡 تأكد من حضور الزائرين وجاهزية الفصل، وتابع اعتماد الاستمارات بعد الحصة." };
+  if (cur) { const left = Math.round((cur.at - now) / 1000); const st = left <= 0; const g = PX_GRP.find(x => x[0] === cur.v.g) || [];
+    return <div className={`cvw pxw ${st ? "now" : ""}`} dir="rtl" role="alert" aria-live="assertive"><style>{CV_ALERT_CSS + CVW_CSS + PXW_CSS}</style>
+      <div className="cvw-in"><span className="bell" aria-hidden="true">🔔</span>
+        <div style={{ minWidth: 0 }}><h3>{st ? "⏰ بدأت حصة تبادل الزيارة الآن" : "🤝 تنبيه: تبادل زيارة بعد قليل"}<span className="role">{RL[cur.r]}</span></h3>
+          <div className="who">المستضاف: أ. {cur.v.host.n}</div>
+          <div className="det"><b>📘 {g[1] || ""}</b><b>🚪 {maClassName(cur.v.ck)}</b><b>🕘 الحصة {cur.v.p}{pxTmV(D, cur.v) ? ` • ${pxTmV(D, cur.v)}` : ""}</b></div>
+          <div className="det"><b style={{ background: "rgba(168,135,74,.35)" }}>👥 الزائرون: {cur.v.vis.map(x => x.n).join("، ")}</b></div>
+          <div style={{ fontSize: 12, fontWeight: 700, opacity: .92, marginTop: 6 }}>{TIP[cur.r]}</div></div>
+        <div className="cd"><div className="n">{cvwFmt(left)}</div><small>{st ? "منذ بداية الحصة" : "متبقٍ على الموعد"}</small></div></div>
+      <div className="cvw-act">{onOpen && <button className="go" onClick={() => onOpen(cur.v)}>{cur.r === "vis" ? "📝 فتح استمارة الزيارة" : "🤝 فتح تبادل الزيارات"}</button>}
+        {!st && <button onClick={() => setSnz(s => ({ ...s, [cur.v.id]: Date.now() + 5 * 60000 }))}>⏰ ذكّرني بعد ٥ دقائق</button>}
+        <button onClick={() => cvChime(1)}>🎵 النغمة</button><button onClick={() => hide(cur)}>✕ إخفاء</button></div>
+    </div>; }
+  if (next && next.at - now <= 3 * 3600000) { const m = Math.round((next.at - now) / 60000);
+    return <button className="cvw-pill pxp" dir="rtl" onClick={() => onOpen && onOpen(next.v)} title="تبادل الزيارات"><style>{CVW_CSS + PXW_CSS}</style>🤝 تبادل زيارة الحصة {maAr(next.v.p)} • أ. {String(next.v.host.n).split(" ").slice(0, 2).join(" ")} • بعد {m >= 60 ? `${maAr(Math.floor(m / 60))} س ${maAr(m % 60)} د` : `${maAr(m)} د`}</button>; }
+  return null;
+}
 function CvAdminWatcher({ navigate }) {
   const [V, setV] = useState([]); const [now, setNow] = useState(Date.now());
   const [lead, setLead] = useState(() => { try { return +localStorage.getItem("cv-alead") || 15; } catch { return 15; } });
@@ -38659,6 +38948,7 @@ function TeacherVisitsView({ me }) {
           {next && <div style={{ background: "rgba(255,255,255,.14)", borderRadius: 20, padding: "12px 18px", textAlign: "center", minWidth: 190 }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .9 }}>الزيارة {CV_VN[next.v - 1]} {dd === 0 ? "اليوم" : "بعد"}</div>{dd > 0 && <div className="cv-cd">{maAr(dd)}<small style={{ fontSize: 16 }}> {dd === 1 ? "يوم" : dd === 2 ? "يومين" : dd <= 10 ? "أيام" : "يوماً"}</small></div>}{dd === 0 && <div className="cv-cd">📌</div>}<div style={{ fontSize: 12.5, fontWeight: 800 }}>{maDay(maDate(next.date))} {cvHij(next.hij)}</div><div style={{ fontSize: 12, fontWeight: 700, opacity: .9 }}>الحصة {next.p}{next.tm ? ` (${cvTm(next.tm)})` : ""} • {cvCls(next.c)}</div></div>}
         </div>
       </div>
+      <CvSignBox T={T} E={E} me={me} />
       <CvAlert T={T} E={E} />
       {fin.pub ? <div className="ma-card p-4" style={{ background: "linear-gradient(135deg,#fdf4ff,#ecfdf5)", border: "2px solid #c4b5fd" }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 16, color: "#6d28d9" }}>🏁 التقييم النهائي</b>{fin.lv ? obLvPill(+fin.lv, true) : null}</div><div style={{ fontSize: 14, fontWeight: 700, lineHeight: 2.1, whiteSpace: "pre-wrap", marginTop: 6 }}>{fin.txt}</div></div> : null}
       {gen.pub && gen.txt ? <div className="ma-card p-4" style={{ borderRight: "5px solid #7c3aed" }}><b style={{ color: "#6d28d9" }}>📢 ملاحظات عامة للزملاء</b><div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 2, whiteSpace: "pre-wrap", marginTop: 4 }}>{gen.txt}</div></div> : null}
@@ -40019,37 +40309,40 @@ function AsmRank({ by = "الإدارة" }) {
 }
 
 // ══════════ 🔴 تنبيه المعلم الدائم: تعاميم ومساءلات بانتظار التوقيع والإرسال ══════════
-function TchMustSign({ me, onCirc }) {
+function TchMustSign({ me, onCirc, onCv }) {
   const [S, setS] = useState(null);
   useEffect(() => { let a = true; if (!me || !me.hash) return; (async () => { const [cr, hf] = await Promise.all([crMine(me).catch(() => []), maGet(HFX_NODE).catch(() => null)]);
     const H = Object.values(ptObj(hf)).filter(c => c && c.id && c.tok && c.h === me.hash && ["sent", "opened"].includes(c.st)).sort((x, y) => (y.at || 0) - (x.at || 0));
-    if (a) setS({ C: cr.filter(c => !(c.my && c.my.at)), H }); })(); return () => { a = false; }; }, []);
-  if (!S || (!S.C.length && !S.H.length)) return null;
+    let V = null; try { const [sgA, pl, cf] = await Promise.all([maGet(CV_SIG), maGet(CV_PLAN), maGet(CV_CFG)]); const TS = cvTeachers(ptObj(pl)); const links = ptObj(ptObj(cf).links); const T = TS.find(x => links[x.tk] && links[x.tk] === me.rid) || TS.find(x => !links[x.tk] && cvMatch(x.name, { me: { name: me.name } }) === "me"); const g = T && ptObj(ptObj(sgA)[T.tk]); if (g && g.req && !g.sig) V = 1; } catch {}
+    if (a) setS({ C: cr.filter(c => !(c.my && c.my.at)), H, V }); })(); return () => { a = false; }; }, []);
+  if (!S || (!S.C.length && !S.H.length && !S.V)) return null;
   const openH = c => { window.location.hash = `hfx=${c.id}.${c.tok}`; window.location.reload(); };
   return <div dir="rtl" style={{ borderRadius: 22, padding: "14px 16px", color: "#fff", background: "linear-gradient(135deg,#7f1d1d,#b91c1c 55%,#dc2626)", boxShadow: "0 18px 34px -20px rgba(185,28,28,.95)", display: "grid", gap: 10, animation: "tmsPulse 2.2s ease-in-out infinite" }}>
     <style>{"@keyframes tmsPulse{0%,100%{box-shadow:0 18px 34px -20px rgba(185,28,28,.95)}50%{box-shadow:0 0 0 4px rgba(254,202,202,.55),0 18px 34px -20px rgba(185,28,28,.95)}}"}</style>
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 46, height: 46, borderRadius: 14, background: "rgba(255,255,255,.16)", display: "grid", placeItems: "center", flex: "none" }}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l10 18H2z" /><path d="M12 10v4" /><path d="M12 17h.01" /></svg></span>
-      <div><b style={{ fontSize: 16.5 }}>مطلوب منك توقيع {S.C.length ? `${maAr(S.C.length)} ${S.C.length === 1 ? "تعميم" : "تعاميم"}` : ""}{S.C.length && S.H.length ? " و" : ""}{S.H.length ? `${maAr(S.H.length)} ${S.H.length === 1 ? "مساءلة" : "مساءلات"}` : ""}</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .92 }}>يبقى هذا التنبيه ظاهراً حتى تطّلع وتوقّع وترسل</div></div></div>
+      <div><b style={{ fontSize: 16.5 }}>مطلوب منك توقيع {[S.C.length ? `${maAr(S.C.length)} ${S.C.length === 1 ? "تعميم" : "تعاميم"}` : "", S.H.length ? `${maAr(S.H.length)} ${S.H.length === 1 ? "مساءلة" : "مساءلات"}` : "", S.V ? "خلاصة الزيارات الصفية" : ""].filter(Boolean).join(" و")}</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .92 }}>يبقى هذا التنبيه ظاهراً حتى تطّلع وتوقّع وترسل</div></div></div>
     <div style={{ display: "grid", gap: 6 }}>
       {S.C.slice(0, 4).map(c => <button key={c.id} type="button" onClick={onCirc} style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", borderRadius: 12, padding: "7px 12px", fontWeight: 800, fontSize: 13.5 }}>📜 <span style={{ flex: 1 }}>تعميم: {c.title || "بدون عنوان"}</span><span style={{ background: "#fff", color: "#b91c1c", borderRadius: 99, padding: "2px 10px", fontSize: 12, fontWeight: 900 }}>{c.need ? "وقّع الآن" : "اطّلع الآن"}</span></button>)}
+      {S.V && <button type="button" onClick={onCv} style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", borderRadius: 12, padding: "7px 12px", fontWeight: 800, fontSize: 13.5 }}>🎯 <span style={{ flex: 1 }}>خلاصة زياراتك الصفية</span><span style={{ background: "#fff", color: "#b91c1c", borderRadius: 99, padding: "2px 10px", fontSize: 12, fontWeight: 900 }}>وقّع الآن</span></button>}
       {S.H.slice(0, 4).map(c => <button key={c.id} type="button" onClick={() => openH(c)} style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", borderRadius: 12, padding: "7px 12px", fontWeight: 800, fontSize: 13.5 }}>📑 <span style={{ flex: 1 }}>{HFX_F[c.f] ? HFX_F[c.f].n : "نموذج مساءلة"}{c.v && c.v.hd ? ` — ${hfxHijTxt(c.v.hd)}` : ""}</span><span style={{ background: "#fff", color: "#b91c1c", borderRadius: 99, padding: "2px 10px", fontSize: 12, fontWeight: 900 }}>وقّع وأرسل</span></button>)}
     </div></div>;
 }
 
 // ══════════ 💬 شريط رسائل المعلمين للإدارة (استئذانات واعتراضات الدوام + تعليقات المساءلات) ══════════
-function TchMsgStrip({ onHd, onHfx }) {
+function TchMsgStrip({ onHd, onHfx, onCv }) {
   const [D, setD] = useState(null);
-  useEffect(() => { let a = true; const f = async () => { try { const [o, cm, nmz] = await Promise.all([maGet(HD_OBJ), maGet(HFX_CM), maGet(HD_T)]); const N = ptObj(nmz);
+  useEffect(() => { let a = true; const f = async () => { try { const [o, cm, nmz, sg] = await Promise.all([maGet(HD_OBJ), maGet(HFX_CM), maGet(HD_T), maGet(CV_SIG)]); const N = ptObj(nmz); const SG = Object.values(ptObj(sg)).filter(x => x && x.sig && !x.seenA).sort((x, y) => (y.at || 0) - (x.at || 0));
       const H = []; Object.entries(ptObj(o)).forEach(([hk, x]) => Object.entries(ptObj(x)).forEach(([k, v]) => { if (v && v.st === "new") H.push({ n: v.n || ptObj(N[hk]).n || "معلم", k, kind: v.kind || "obj", at: v.at || 0 }); }));
       const M = []; Object.entries(ptObj(cm)).forEach(([id, x]) => hfxCmList(x).forEach(m => { if (!m.seen) M.push({ n: m.n || "معلم", k: m.k, at: m.at || 0 }); }));
-      H.sort((x, y) => y.at - x.at); M.sort((x, y) => y.at - x.at); if (a) setD({ H, M }); } catch {} };
+      H.sort((x, y) => y.at - x.at); M.sort((x, y) => y.at - x.at); if (a) setD({ H, M, SG }); } catch {} };
     f(); const t = setInterval(f, 60000); return () => { a = false; clearInterval(t); }; }, []);
-  if (!D || (!D.H.length && !D.M.length)) return null;
+  if (!D || (!D.H.length && !D.M.length && !D.SG.length)) return null;
   const nm2 = n => String(n).split(" ").slice(0, 2).join(" ");
   const chip = (on, ic, t, sub, bg) => <button type="button" onClick={on || undefined} style={{ all: "unset", cursor: on ? "pointer" : "default", boxSizing: "border-box", flex: "1 1 260px", display: "flex", alignItems: "center", gap: 10, borderRadius: 16, padding: "9px 13px", color: "#fff", background: bg, fontFamily: "inherit", minWidth: 0 }}>
     <span style={{ fontSize: 22 }}>{ic}</span><span style={{ minWidth: 0, flex: 1 }}><b style={{ fontSize: 14, display: "block" }}>{t}</b><span style={{ fontSize: 12, fontWeight: 800, opacity: .9, display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</span></span></button>;
   return <div dir="rtl" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
     {D.H.length > 0 && chip(onHd, "🙋", `${maAr(D.H.length)} طلب من المعلمين (استئذان/اعتراض على الدوام)`, D.H.slice(0, 3).map(x => `${nm2(x.n)} • ${(HD_OBK[x.kind] || HD_OBK.obj).l}`).join("، "), "linear-gradient(135deg,#0c4a6e,#0e7490)")}
+    {D.SG.length > 0 && chip(onCv, "✍️", `${maAr(D.SG.length)} معلم وقّع على خلاصة الزيارات الصفية`, D.SG.slice(0, 3).map(x => nm2(x.n || "")).join("، "), "linear-gradient(135deg,#065f46,#0d4f3c)")}
     {D.M.length > 0 && chip(onHfx, "📑", `${maAr(D.M.length)} رسالة على المساءلات${D.M.some(m => m.k === "obj") ? " (فيها اعتراض)" : ""}`, D.M.slice(0, 3).map(x => nm2(x.n)).join("، "), D.M.some(m => m.k === "obj") ? "linear-gradient(135deg,#7f1d1d,#b91c1c)" : "linear-gradient(135deg,#312e81,#4338ca)")}
   </div>;
 }
@@ -43442,6 +43735,7 @@ async function duLoad() { const [d, a] = await Promise.all([maGet(DU_NODE), maGe
   else if (cfg.offM !== DU_OFF_MVER) { M = DU_OFF_M; H = { ...H, ...DU_OFF_H }; cfg._needOffM = 1; }
   // الفسحة ٩:١٥–٩:٣٥ (كانت محفوظة ١٠:٠٠–١٠:٢٠)
   S = Object.fromEntries(Object.entries(S).map(([k, x]) => [k, x && x.ty === "brk" && x.f === "10:00" && x.t === "10:20" ? { ...x, f: "09:15", t: "09:35" } : x]));
+  Object.keys(ptObj(_maHolX)).forEach(k => { const x = maHolX(k); if (!x) return; if (x.work) { if (H[k]) { H = { ...H }; delete H[k]; } } else if (!H[k]) H = { ...H, [k]: x.n || "إجازة" }; }); // إجازات المدير
   return { cfg, S, M, H, ack: ptObj(a) }; }
 
 // ── عرض المعلم (بعد الدخول بالهوية)
@@ -45686,7 +45980,7 @@ let _trFetch = null;
 // ══════════ 🔒 لا حذف إلا بموافقة مدير المدرسة (برقم هويته) ══════════
 // كل حذف (DELETE أو حفظ قيمة فارغة) يتوقف حتى يُدخل مدير المدرسة رقم هويته. الموافقة صالحة ١٠ دقائق على هذا الجهاز.
 // مستثنى: العمليات الفنية التلقائية (المسودات، الفهارس، الحالات اليومية التي تُبدَّل بين تشغيل/إيقاف، صور الصفحات عند إعادة الرفع)
-const GATE_EXEMPT = ["school-pinbox-idx", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-pinbox-idx", "school-holx", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -47734,7 +48028,7 @@ function cvWkOf(plan, date) {
   const s = CV_SEED.find(x => wkStart(x[3]) === ws); if (s) return s[2];
   const b = CV_SEED[0]; return b[2] + Math.round((maDate(ws) - maDate(wkStart(b[3]))) / (7 * 864e5));
 }
-const cvHol = d => { const H = typeof DU_OFF_H !== "undefined" ? DU_OFF_H : {}; return H[d] || ""; };
+const cvHol = d => { const X = maHolX(d); if (X) return X.work ? "" : (X.n || "إجازة"); const H = typeof DU_OFF_H !== "undefined" ? DU_OFF_H : {}; return H[d] || ""; };
 function cvTkOf(plan, name) { const TS = cvTeachers(plan); const E = Object.fromEntries(TS.map(x => [x.tk, { name: x.name }])); return cvMatch(name, E) || ("tx" + asmK(name)); }
 function cvNextV(plan, ev, tk) { for (let v = 1; v <= 3; v++) { const e = ptObj(ptObj(ev[tk])[v]); if (!e.fin) return v; } return 3; }
 async function cvReadNames(file) {
@@ -47913,6 +48207,9 @@ class PamSafe extends React.Component {
 }
 
 export default function SchoolWebsite(props) {
+  const [hok, setHok] = useState(false);
+  useEffect(() => { let d = false; const done = () => { if (!d) { d = true; setHok(true); } }; maHolXLoad().finally(done); const t = setTimeout(done, 2500); return () => clearTimeout(t); }, []);
+  if (!hok) return <div dir="rtl" style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#f0fdfa,#ecfdf5 50%,#f5f5f4)", fontFamily: "Cairo,Tahoma,sans-serif" }}><div style={{ textAlign: "center", fontWeight: 900, color: "#0f766e" }}><div style={{ fontSize: 54 }}>🏫</div>جارٍ التحميل…</div></div>;
   return <><PamSafe><PamGuard /></PamSafe><SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary></>;
 }
 
@@ -48314,7 +48611,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -48709,6 +49006,7 @@ function SchoolWebsiteInner() {
     { id: "teacherreports", label: "ملفات المعلمين",       icon: "🗄️" },
     { id: "classvisits", label: "الزيارات الصفية", icon: "🎯" },
     { id: "peerx", label: "تبادل الزيارات بين المعلمين", icon: "🤝" },
+    { id: "holidays", label: "الإجازات والأيام المستثناة", icon: "🏖️" },
     { id: "prepadm", label: "تحليل تحضير المعلمين", icon: "📘" },
     { id: "alreport", label: "تقرير الغياب والتأخر المتكرر", icon: "🔁" },
     { id: "ttnow", label: "الحصص الآن — شاشة العرض", icon: "📺" },
@@ -48719,7 +49017,7 @@ function SchoolWebsiteInner() {
   const extraPages = [...classToolPages, ...reportPages];
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
-    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","studentexcuses"] },
+    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","holidays","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","studentexcuses"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
@@ -48958,6 +49256,7 @@ function SchoolWebsiteInner() {
 
       {user && <AgendaWatcher uk={user.username || user.name} page={page} navigate={navigate} />}
       {user && <CvAdminWatcher navigate={navigate} />}
+      {user && <PxWatcher all onOpen={() => navigate("peerx")} />}
       {user && <HfxCmWatcher navigate={navigate} />}
       {/* ══════════════════════════════════════════
           وضع الجوال — إطار هاتف
@@ -49003,7 +49302,7 @@ function SchoolWebsiteInner() {
             </div>
 
             {/* ── محتوى الصفحة (قابل للتمرير) ── */}
-            {page !== "parentinbox" && <div style={{ flexShrink: 0, padding: "6px 8px 0", background: "#f8fafc" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /><TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} navigate("hdisc"); }} onHfx={() => navigate("hfx")} /></div>}
+            {page !== "parentinbox" && <div style={{ flexShrink: 0, padding: "6px 8px 0", background: "#f8fafc" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /><TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} navigate("hdisc"); }} onHfx={() => navigate("hfx")} onCv={() => { try { localStorage.setItem("cv-tab", "tfile"); } catch {} navigate("classvisits"); }} /></div>}
             <div ref={mScrollRef} style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", overscrollBehavior:"contain", background:"#f8fafc" }}>
               <div style={{ direction:"rtl", padding: narrow ? "6px 8px 14px" : 0 }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
                 {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
@@ -49017,7 +49316,7 @@ function SchoolWebsiteInner() {
                 {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "holidays" && <HolidaysPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
                 {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
                 {page === "portals" && <PortalsAdminPage />}
@@ -49190,7 +49489,7 @@ function SchoolWebsiteInner() {
           )}
         </div>
       </nav>
-      {page !== "parentinbox" && <div className="px-3 pt-3" style={{ maxWidth: 1400, margin: "0 auto" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /><TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} navigate("hdisc"); }} onHfx={() => navigate("hfx")} /></div>}
+      {page !== "parentinbox" && <div className="px-3 pt-3" style={{ maxWidth: 1400, margin: "0 auto" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /><TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} navigate("hdisc"); }} onHfx={() => navigate("hfx")} onCv={() => { try { localStorage.setItem("cv-tab", "tfile"); } catch {} navigate("classvisits"); }} /></div>}
       <div className="pam-row"><PamSide groups={navGroups} pageById={pageById} page={page} navigate={navigate} onLogout={() => setUser(null)} />
       <main className="w-full py-3 pam-main"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
         {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
@@ -49204,7 +49503,7 @@ function SchoolWebsiteInner() {
         {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
-                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
+                {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "holidays" && <HolidaysPage by={user?.name || "الإدارة"} />}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
         {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
         {page === "portals" && <PortalsAdminPage />}
