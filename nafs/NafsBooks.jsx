@@ -17,6 +17,14 @@ import { createPortal } from "react-dom";
 const NB = "school-nafsbook", NB_IDX = "school-nafsbook-idx", NB_TC = "school-nafsbook-tc";
 const NB_T = "school-nafsbook-t", NB_TP = "school-nafsbook-tp", NB_B = "school-nafsbook-b";
 const NB_SEEN = "school-nafsbook-seen", NB_AL = "school-nafsbook-alerts", NB_OPEN = "school-nafsbook-open";
+// مواضع الإجابات على الصفحة (يضعها المعلم مرة واحدة) {book}/{page}/{i}={x,y}  • إتاحة الإجابات للطلاب {ck}/{book}/{page}={at,by}
+const NB_ANS = "school-nafsbook-ans", NB_REL = "school-nafsbook-rel";
+// لوحة الرموز والقوالب الرياضية والعلمية للكتابة في الفراغ
+const NB_SYM = [["رياضيات", ["×", "÷", "−", "+", "=", "≠", "≈", "<", ">", "≤", "≥", "±", "√", "∛", "π", "∞", "°", "%", "½", "¼", "¾", "⅓", "|  |", "(  )", "∠", "△", "⊥", "∥", "≅", "∼", "→"]], ["قوالب", ["√(  )", "(  )²", "(  )³", "× ١٠ⁿ", "س²", "س³", "أ/ب", "∑", "م = ك ÷ ح", "ق = ك × ت", "ع = ف ÷ ز"]], ["علوم", ["H₂O", "CO₂", "O₂", "H₂", "NaCl", "CH₄", "→", "⇌", "°س", "سم²", "سم³", "م/ث", "م/ث²", "كجم", "نيوتن", "جول", "واط", "أمبير", "فولت", "pH"]], ["أُس", ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹", "⁻", "⁺", "ⁿ"]], ["سفلي", ["₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉", "₊", "₋"]]];
+// طابور حفظ عند انقطاع الإنترنت: يُرفع تلقائيًا عند عودة الاتصال
+const NBQ = "nb-offq-v1"; const qGet = () => lsGet(NBQ, {}) || {}; const qSet = o => lsSet(NBQ, o);
+async function qFlush(api) { const Q = qGet(); const ks = Object.keys(Q); if (!ks.length) return 0; let n = 0; for (const k of ks) { const ok = await api.maPut(k, Q[k]); if (ok !== false) { const q = qGet(); delete q[k]; qSet(q); n++; } } return n; }
+const stripH = h => String(h || "").replace(/<br\s*\/?>/g, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
 const PDFJS_W = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 const REMEMBER = "nafsbook-stu-v1", TMAN = "nafsbook-tman-v1";
@@ -174,6 +182,15 @@ const CSS = `
 .nb-page canvas.pdf,.nb-page canvas.ink{position:absolute;inset:0;width:100%;height:100%}
 .nb-done{position:absolute;top:8px;left:8px;z-index:6;background:#16a34a;color:#fff;border-radius:999px;padding:3px 10px;font-weight:900;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .nb-note{position:absolute;transform:translate(50%,-50%);background:#fff8c5;border:1.5px solid #e0b100;border-radius:8px;padding:2px 6px;font-weight:800;color:#7c2d12;min-width:40px;max-width:60%;box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:5;white-space:pre-wrap;line-height:1.5}
+.nb-fill{position:absolute;transform:translateY(-50%);z-index:6;font-weight:800;line-height:1.25;white-space:nowrap;font-family:inherit;padding:0 2px;border-radius:4px}
+.nb-fill.ed{background:rgba(255,255,255,.92);box-shadow:0 0 0 2px #3b82f6}.nb-fill input{border:0;outline:0;background:transparent;font:inherit;color:inherit;min-width:2.5em;padding:0}.nb-fill span{text-shadow:0 0 2px #fff,0 0 2px #fff}
+.nb-fill .x{position:absolute;top:-9px;left:-9px;width:16px;height:16px;border-radius:50%;background:#dc2626;color:#fff;border:0;font-size:10px;line-height:16px;cursor:pointer;padding:0;opacity:.75}
+.nb-ansp{position:absolute;transform:translateY(-50%);z-index:7;color:#15803d;background:rgba(220,252,231,.92);border:1.5px dashed #16a34a;border-radius:6px;padding:0 5px;font-weight:900;max-width:46%;line-height:1.35;pointer-events:none}
+.nb-placeov{position:absolute;inset:0;z-index:9;cursor:copy;background:rgba(15,118,110,.06);outline:2px dashed #0f766e}
+.nb-place{position:sticky;top:calc(var(--th,52px) + 46px);z-index:28;display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 10px;background:#ecfdf5;border-bottom:1px solid #a7f3d0;font-size:13px}
+.nb-pal{position:fixed;inset:auto 0 0 0;z-index:60;background:#fff;border-top:2px solid #3b82f6;box-shadow:0 -10px 30px rgba(0,0,0,.15);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.nb-pal .pt{display:flex;gap:5px;align-items:center;overflow-x:auto}.nb-pal .ps{display:flex;gap:5px;overflow-x:auto;padding-top:6px}
+.nb-pal .ps button{flex:none;min-width:42px;height:40px;border-radius:10px;border:1px solid #cbd5e1;background:#f8fafc;font:inherit;font-size:17px;font-weight:800;cursor:pointer;padding:0 8px;direction:ltr}
 .nb-note textarea{border:0;background:transparent;font:inherit;color:inherit;resize:none;width:100%;min-width:120px;outline:none}
 .nb-note .x{position:absolute;top:-10px;left:-10px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:0;font-size:12px;line-height:20px;cursor:pointer;padding:0}
 .nb-pin{position:absolute;z-index:7;transform:translate(50%,-50%);background:linear-gradient(135deg,#1e293b,#334155);color:#fff;border-radius:12px 12px 12px 3px;padding:5px 10px;font-weight:900;font-size:12.5px;cursor:grab;box-shadow:0 6px 16px -6px rgba(0,0,0,.6);white-space:nowrap;user-select:none;touch-action:none;border:2px solid #fbbf24}
@@ -591,7 +608,7 @@ function KeysPanel({ book, page, hidden, setHidden, open, setOpen }) {
 // ══════════════════════ عارض الصفحة مع طبقة الكتابة والسبورة ══════════════════════
 // store: مسار حفظ الكتابة (null = مؤقتة) • idx: فهرس الصفحات المحلولة • marks: مسار فهرس للاطّلاع فقط
 // tc: "show" / "edit" تعليق المعلم • tp: {tkey,tname,cks,ck} تسجيل «تم شرح الصفحة» • boards: مسار السبورات
-function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null, marks = null, readOnly = false, tc: tcMode = null, tcPath = null, tp = null, keys = false, boards = null, boardsRO = false, seenSid = null, who = "x", title = "", by = "", onBack }) {
+function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null, marks = null, readOnly = false, tc: tcMode = null, tcPath = null, tp = null, keys = false, boards = null, boardsRO = false, seenSid = null, who = "x", title = "", by = "", onBack, rel = null }) {
   const B = BOOKS[book];
   const [doc, setDoc] = useState(null);
   const [err, setErr] = useState("");
@@ -616,6 +633,9 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const [fs, setFs] = useState(false);
   const [kOpen, setKOpen0] = useState(() => lsGet("nb-keys-open", true)); const setKOpen = v => { setKOpen0(v); lsSet("nb-keys-open", v); };
   const [kHide, setKHide] = useState(false);
+  const [penOnly, setPenOnly] = useState(() => lsGet("nb-penonly", false)); const [fz, setFz] = useState(1); const [symT, setSymT] = useState(0);
+  const [K, setK] = useState(null); const [ansPos, setAnsPos] = useState({}); const [placing, setPlacing] = useState(null); const [relP, setRelP] = useState({}); const [ansOn, setAnsOn] = useState(false); const [ansList, setAnsList] = useState(false);
+  const fillRef = useRef(null);
   const rootRef = useRef(null), stageRef = useRef(null), pdfRef = useRef(null), inkRef = useRef(null), topRef = useRef(null), pageRef = useRef(null);
   const hist = useRef([]), drawing = useRef(null), saveT = useRef(null), renderT = useRef(null), annRef = useRef(ann), msgT = useRef(null), touch = useRef(null), pinD = useRef(null);
   annRef.current = ann;
@@ -623,6 +643,14 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const seg = segAt(book, page);
   const flash = (m, ms = 1700) => { setSaved(m); clearTimeout(msgT.current); msgT.current = setTimeout(() => setSaved(""), ms); };
   useSeen(api, seenSid, book, page);
+  // ── الإجابات: إتاحتها للطلاب ومواضعها على الصفحة
+  useEffect(() => { const c = rel || (tp && ck); if (!c) { setRelP({}); return; } api.maGet(`${NB_REL}/${c}/${book}`).then(d => setRelP(obj(d))); }, [book, rel, ck]);
+  const released = !!relP[page];
+  const canAns = keys || (rel && released);
+  useEffect(() => { setPlacing(null); if (!canAns) { setAnsPos({}); if (rel) setAnsOn(false); return; } api.maGet(`${NB_ANS}/${book}/${page}`).then(d => setAnsPos(obj(d))); }, [book, page, canAns]);
+  useEffect(() => { if (canAns && !K) loadKeys().then(setK).catch(() => {}); }, [canAns]);
+  useEffect(() => { qFlush(api).then(n => n && flash(`☁️ رُفع ${ar(n)} حفظ كان مؤجَّلاً`)); const f = () => qFlush(api).then(n => n && flash(`☁️ عاد الاتصال — رُفع ${ar(n)} حفظ مؤجَّل`)); window.addEventListener("online", f); return () => window.removeEventListener("online", f); }, []);
+  const keyL = K ? arr(obj(K[book])[page]) : [];
 
   useEffect(() => { let ok = true; openDoc(book).then(d => ok && setDoc(d)).catch(() => ok && setErr("تعذّر تحميل المرجع. تأكد من الاتصال بالإنترنت ثم أعد المحاولة.")); return () => { ok = false; }; }, [book]);
   useEffect(() => { const m = idx || marks; if (m) api.maGet(`${m}/${book}`).then(d => setSolved(obj(d))); }, [book]);
@@ -677,6 +705,11 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
     const all = [...annRef.current.s, ...(drawing.current ? [drawing.current] : [])];
     for (const s of all) {
       if (!s.p || !s.p.length) continue;
+      if (["ell", "line", "arrow", "ok", "no"].includes(s.k)) { g.globalAlpha = 1; g.strokeStyle = s.c; g.lineWidth = 0.0042 * size.w; const [a, b] = [s.p[0], s.p[s.p.length - 1]]; const X = q => q[0] * size.w, Y = q => q[1] * size.h; g.beginPath();
+        if (s.k === "ell") { g.ellipse((X(a) + X(b)) / 2, (Y(a) + Y(b)) / 2, Math.max(4, Math.abs(X(b) - X(a)) / 2), Math.max(4, Math.abs(Y(b) - Y(a)) / 2), 0, 0, Math.PI * 2); }
+        else if (s.k === "line" || s.k === "arrow") { g.moveTo(X(a), Y(a)); g.lineTo(X(b), Y(b)); if (s.k === "arrow") { const t = Math.atan2(Y(b) - Y(a), X(b) - X(a)), L = 0.018 * size.w; g.moveTo(X(b), Y(b)); g.lineTo(X(b) - L * Math.cos(t - .45), Y(b) - L * Math.sin(t - .45)); g.moveTo(X(b), Y(b)); g.lineTo(X(b) - L * Math.cos(t + .45), Y(b) - L * Math.sin(t + .45)); } }
+        else { const r = 0.016 * size.w, x = X(a), y = Y(a); g.lineWidth = 0.0055 * size.w; if (s.k === "ok") { g.moveTo(x - r, y); g.lineTo(x - r * .3, y + r * .7); g.lineTo(x + r, y - r * .8); } else { g.moveTo(x - r * .8, y - r * .8); g.lineTo(x + r * .8, y + r * .8); g.moveTo(x + r * .8, y - r * .8); g.lineTo(x - r * .8, y + r * .8); } }
+        g.stroke(); continue; }
       g.globalAlpha = s.k === "hl" ? 0.3 : 1; g.strokeStyle = s.c; g.lineWidth = (s.k === "hl" ? 0.022 : 0.004) * size.w;
       g.beginPath(); s.p.forEach((q, i) => i ? g.lineTo(q[0] * size.w, q[1] * size.h) : g.moveTo(q[0] * size.w, q[1] * size.h));
       if (s.p.length === 1) g.lineTo(s.p[0][0] * size.w + 0.1, s.p[0][1] * size.h);
@@ -691,9 +724,10 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
     saveT.current = setTimeout(async () => {
       const empty = !next.s.length && !next.n.length;
       const v = empty ? null : { s: next.s.map(x => ({ k: x.k, c: x.c, p: enc(x.p) })), n: next.n, at: Date.now() };
-      const ok = await api.maPut(`${store}/${base}`, v);
-      if (idx) { await api.maPut(`${idx}/${base}`, empty ? null : Date.now()); setSolved(o => { const n = { ...o }; if (empty) delete n[page]; else n[page] = Date.now(); return n; }); }
-      flash(ok === false ? "تعذّر الحفظ – سيُعاد تلقائيًا" : "تم الحفظ ✓", 1500);
+      const key = `${store}/${base}`; let ok = navigator.onLine === false ? false : await api.maPut(key, v);
+      if (ok === false) { const q = qGet(); q[key] = v; qSet(q); } else { const q = qGet(); if (q[key] !== undefined) { delete q[key]; qSet(q); } }
+      if (idx && ok !== false) { await api.maPut(`${idx}/${base}`, empty ? null : Date.now()); setSolved(o => { const n = { ...o }; if (empty) delete n[page]; else n[page] = Date.now(); return n; }); }
+      flash(ok === false ? "📴 لا يوجد اتصال — حُفظ على جهازك وسيُرفع تلقائيًا" : "تم الحفظ ✓", ok === false ? 3000 : 1500);
     }, 900);
   };
   const commit = (next) => { hist.current.push(annRef.current); if (hist.current.length > 60) hist.current.shift(); setAnn(next); persist(next); };
@@ -709,8 +743,12 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const erased = useRef(false);
   const down = e => {
     if (readOnly || tool === "view") return;
+    if (penOnly && e.pointerType === "touch") return; // «القلم فقط»: يُتجاهل لمس اليد
     e.preventDefault(); inkRef.current.setPointerCapture(e.pointerId);
     const p = pos(e);
+    if (tool === "ok" || tool === "no") { commit({ ...annRef.current, s: [...annRef.current.s, { k: tool, c: tool === "ok" ? "#16a34a" : "#dc2626", p: [p] }] }); return; }
+    if (tool === "type") { const id = "f" + Date.now().toString(36); const next = { ...ann, n: [...ann.n, { id, x: p[0], y: p[1], t: "", k: "f", z: fz, c: color }] }; hist.current.push(ann); setAnn(next); setEditNote(id); return; }
+    if (["ell", "line", "arrow"].includes(tool)) { drawing.current = { k: tool, c: color, p: [p, p] }; paint(); return; }
     if (tool === "text") { const id = "n" + Date.now().toString(36); const next = { ...ann, n: [...ann.n, { id, x: p[0], y: p[1], t: "" }] }; hist.current.push(ann); setAnn(next); setEditNote(id); return; }
     if (tool === "erase") { hist.current.push(annRef.current); erased.current = eraseAt(p); return; }
     drawing.current = { k: tool, c: tool === "hl" ? "#facc15" : color, p: [p] }; paint();
@@ -719,17 +757,24 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
     if (readOnly) return;
     if (tool === "erase" && e.buttons) { if (eraseAt(pos(e))) erased.current = true; return; }
     if (!drawing.current) return;
+    if (["ell", "line", "arrow"].includes(drawing.current.k)) { drawing.current.p[1] = pos(e); paint(); return; }
     const p = pos(e), last = drawing.current.p[drawing.current.p.length - 1];
     if (Math.hypot(p[0] - last[0], p[1] - last[1]) > 0.002) { drawing.current.p.push(p); paint(); }
   };
   const up = () => {
     if (tool === "erase") { if (erased.current) persist(annRef.current); else hist.current.pop(); erased.current = false; return; }
-    if (!drawing.current) return; const s = drawing.current; drawing.current = null; commit({ ...annRef.current, s: [...annRef.current.s, s] });
+    if (!drawing.current) return; const s = drawing.current; drawing.current = null; if (["ell", "line", "arrow"].includes(s.k) && Math.hypot(s.p[0][0] - s.p[1][0], s.p[0][1] - s.p[1][1]) < 0.008) { paint(); return; } commit({ ...annRef.current, s: [...annRef.current.s, s] });
   };
   const setNoteText = (id, t) => setAnn(a => ({ ...a, n: a.n.map(x => x.id === id ? { ...x, t } : x) }));
   const finishNote = (id) => { setEditNote(null); const next = { ...annRef.current, n: annRef.current.n.filter(x => x.id !== id || x.t.trim()) }; setAnn(next); persist(next); };
   const delNote = (id) => commit({ ...ann, n: ann.n.filter(x => x.id !== id) });
 
+  const ins = sym => { const el = fillRef.current; if (!el || !editNote) return; const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? el.value.length; const v = el.value.slice(0, a) + sym + el.value.slice(b); setNoteText(editNote, v); requestAnimationFrame(() => { try { el.focus(); const c = a + sym.length - (/\(  \)|\|  \|/.test(sym) ? sym.length - 2 : 0); el.setSelectionRange(c, c); } catch {} }); };
+  const setFillZ = d => { if (!editNote) return; setAnn(a => ({ ...a, n: a.n.map(x => x.id === editNote ? { ...x, z: Math.max(.6, Math.min(2.4, +((x.z || 1) + d).toFixed(2))) } : x) })); setFz(z => Math.max(.6, Math.min(2.4, +(z + d).toFixed(2)))); };
+  const placeAt = async e => { if (placing == null) return; const r = pageRef.current.getBoundingClientRect(); const v = { x: +((e.clientX - r.left) / r.width).toFixed(4), y: +((e.clientY - r.top) / r.height).toFixed(4) }; await api.maPut(`${NB_ANS}/${book}/${page}/${placing}`, v); setAnsPos(o => ({ ...o, [placing]: v })); setAnsOn(true); const nx = keyL.findIndex((_, i) => i > placing && !ansPos[i]); setPlacing(nx >= 0 ? nx : null); flash("📍 وُضعت الإجابة"); };
+  const unplace = async i => { await api.maPut(`${NB_ANS}/${book}/${page}/${i}`, null); setAnsPos(o => { const n = { ...o }; delete n[i]; return n; }); };
+  const relPage = async on => { if (!tp || !ck) return; const v = on ? { at: Date.now(), by: tp.tname || "" } : null; await api.maPut(`${NB_REL}/${ck}/${book}/${page}`, v); setRelP(o => { const n = { ...o }; if (on) n[page] = v; else delete n[page]; return n; }); flash(on ? `👁 أُتيحت إجابات الصفحة ${ar(page)} لطلاب ${cls(ck)}` : `🙈 أُخفيت إجابات الصفحة ${ar(page)} عن ${cls(ck)}`, 2600); };
+  const relWeek = async () => { if (!tp || !ck || !seg || seg.k !== "u") return; const P = [...weekPages(book, seg.w), ...testPages(book, seg.w)]; if (!window.confirm(`إتاحة إجابات الأسبوع ${ar(seg.w + 1)} كاملاً (${ar(P.length)} صفحة) لطلاب ${cls(ck)}؟`)) return; const v = { at: Date.now(), by: tp.tname || "" }; await Promise.all(P.map(pg => api.maPut(`${NB_REL}/${ck}/${book}/${pg}`, v))); setRelP(o => { const n = { ...o }; P.forEach(pg => { n[pg] = v; }); return n; }); flash(`👁 أُتيحت إجابات الأسبوع ${ar(seg.w + 1)} لطلاب ${cls(ck)}`, 2600); };
   const saveTc = async () => {
     const v = tcDraft.trim() ? { t: tcDraft.trim(), by: by || "المعلم", at: Date.now() } : null;
     await api.maPut(`${tcPath}/${base}`, v); setTc(v); flash("تم حفظ التعليق ✓");
@@ -784,6 +829,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const pinUp = () => { const D = pinD.current; pinD.current = null; if (!D) return; const b = pb[D.id]; if (D.moved && canBoard) { api.maPut(`${boardPath(page, D.id)}/px`, b.px); api.maPut(`${boardPath(page, D.id)}/py`, b.py); } else setBo({ id: D.id, page, init: b }); };
 
   const drawingMode = !readOnly && tool !== "view";
+  const fillEd = !!editNote && (ann.n.find(x => x.id === editNote) || {}).k === "f";
   const COLORS = ["#1d4ed8", "#dc2626", "#16a34a", "#111827"];
   const wP = w => tp && ck ? weekPct(C, book, w) : (idx || marks) ? stuWeekPct(solved, book, w) : null;
   const curW = weekOfPage(book, page);
@@ -815,13 +861,24 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
       <span className="sep" />
       <button className="nb-b" style={{ background: "linear-gradient(135deg,#1e3a8a,#0f766e)", color: "#fff", borderColor: "transparent" }} onClick={() => bo ? null : newBoard()} title="سبورة عائمة لحل المسائل والمعادلات">🧑‍🏫 سبورة{nBoards ? ` (${ar(nBoards)})` : ""}</button>
       {keys && <button className={"nb-b" + (kOpen ? " on" : "")} style={{ "--c": "#b45309" }} onClick={() => setKOpen(!kOpen)} title="مفتاح إجابات هذه الصفحة">🔑 الإجابات</button>}
+      {keys && keyL.length > 0 && <button className={"nb-b" + (ansOn ? " on" : "")} style={{ "--c": "#15803d" }} onClick={() => setAnsOn(!ansOn)} title="إظهار الإجابات في أماكنها على الصفحة">✅ على الصفحة</button>}
+      {keys && !readOnly && keyL.length > 0 && <button className={"nb-b" + (placing != null ? " on" : "")} style={{ "--c": "#0f766e" }} onClick={() => { if (placing != null) { setPlacing(null); return; } const i = keyL.findIndex((_, j) => !ansPos[j]); setPlacing(i >= 0 ? i : 0); setAnsOn(true); }} title="ضع كل إجابة في فراغها مرة واحدة لتظهر للطلاب في مكانها">📍 وضع الإجابات في الفراغات</button>}
+      {rel && released && <button className={"nb-b" + (ansOn ? " on" : "")} style={{ "--c": "#15803d" }} onClick={() => { setAnsOn(!ansOn); if (!Object.keys(ansPos).length) setAnsList(true); }} title="أتاحها معلمك">🔑 الإجابات {ansOn ? "(ظاهرة)" : ""}</button>}
+      {rel && released && <button className={"nb-b" + (ansList ? " on" : "")} onClick={() => setAnsList(!ansList)}>📋 قائمة الإجابات</button>}
       {!readOnly && <>
         <span className="sep" />
         <button className={"nb-b" + (tool === "view" ? " on" : "")} onClick={() => setTool("view")}>✋ تصفح</button>
         <button className={"nb-b" + (tool === "pen" ? " on" : "")} onClick={() => setTool("pen")}>✏️ قلم</button>
         {COLORS.map(c => <span key={c} className={"nb-dot" + (tool === "pen" && color === c ? " on" : "")} style={{ background: c }} onClick={() => { setColor(c); setTool("pen"); }} role="button" aria-label="لون" />)}
         <button className={"nb-b" + (tool === "hl" ? " on" : "")} onClick={() => setTool("hl")}>🖍️ تظليل</button>
+        <button className={"nb-b" + (tool === "type" ? " on" : "")} onClick={() => setTool("type")} title="اضغط على الفراغ واكتب — تنفتح لوحة المفاتيح ولوحة الرموز">⌨️ كتابة في الفراغ</button>
+        <button className={"nb-b" + (tool === "ell" ? " on" : "")} onClick={() => setTool("ell")} title="اسحب حول الإجابة لتحويطها">⭕ تحويط</button>
+        <button className={"nb-b" + (tool === "line" ? " on" : "")} onClick={() => setTool("line")} title="اسحب من البند إلى ما يقابله">🔗 توصيل</button>
+        <button className={"nb-b" + (tool === "arrow" ? " on" : "")} onClick={() => setTool("arrow")}>➚ سهم</button>
+        <button className={"nb-b" + (tool === "ok" ? " on" : "")} onClick={() => setTool("ok")} title="اضغط مكان العلامة">✔️</button>
+        <button className={"nb-b" + (tool === "no" ? " on" : "")} onClick={() => setTool("no")}>✖️</button>
         <button className={"nb-b" + (tool === "text" ? " on" : "")} onClick={() => setTool("text")}>💬 ملاحظة</button>
+        <button className={"nb-b" + (penOnly ? " on" : "")} onClick={() => { setPenOnly(!penOnly); lsSet("nb-penonly", !penOnly); flash(!penOnly ? "🖊️ الكتابة بالقلم فقط — لمس اليد للتمرير" : "✋ الكتابة بالإصبع مفعّلة"); }} title="للأجهزة اللوحية مع القلم: يمنع خطوط راحة اليد">🖊️ القلم فقط</button>
         <button className={"nb-b" + (tool === "erase" ? " on" : "")} onClick={() => setTool("erase")}>🧽 ممحاة</button>
         <button className="nb-b" onClick={undo} disabled={!hist.current.length}>↩︎ تراجع</button>
         <button className="nb-b" onClick={clearPage}>🗑️ مسح الصفحة</button>
@@ -839,6 +896,8 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
       </> : seg && seg.k === "t" ? <span className="lbl" style={{ color: "#b45309" }}>📝 صفحات اختبار الأسبوع {ar(seg.w + 1)} — تُطبَّق بعد اكتمال الشرح بتوجيه الإدارة</span>
         : <span className="lbl" style={{ color: "#64748b" }}>صفحات التمهيد والخطة</span>}
       <span className="nb-sp" />
+      <button className={"nb-b" + (released ? " ok" : "")} onClick={() => relPage(!released)} title="يرى طلاب هذا الفصل إجابات الصفحة على أجهزتهم وفي فراغاتها">{released ? "👁 الإجابات متاحة للطلاب" : "🔒 إتاحة إجابات الصفحة للطلاب"}</button>
+      {seg && seg.k === "u" && <button className="nb-b" onClick={relWeek}>👁 إتاحة إجابات الأسبوع</button>}
       <small style={{ fontWeight: 900, color: "#475569" }}>إنجاز الكتاب لفصل {cls(ck)}: {ar(bookPct(C, book))}٪</small>
     </div>}
     {!readOnly && !store && <div className="nb-info">وضع العرض: ما تكتبه على الصفحة للشرح فقط ولا يُحفظ</div>}
@@ -852,6 +911,9 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
     </div>}
 
     {keys && <KeysPanel book={book} page={page} hidden={kHide} setHidden={setKHide} open={kOpen} setOpen={setKOpen} />}
+    {rel && released && ansList && <KeysPanel book={book} page={page} hidden={false} setHidden={() => {}} open={true} setOpen={() => setAnsList(false)} />}
+    {rel && released && !ansOn && !ansList && <div className="nb-info" style={{ background: "#dcfce7", color: "#166534", borderColor: "#86efac" }}>🔑 أتاح معلمك إجابات هذه الصفحة — حُلّ أولاً ثم اضغط «الإجابات» لتقارن حلك</div>}
+    {placing != null && <div className="nb-place"><b>📍 اضغط على الصفحة مكان إجابة:</b>{keyL.map((k, i) => <button key={i} className={"nb-b" + (placing === i ? " on" : "")} style={{ "--c": "#0f766e" }} onClick={() => setPlacing(i)}>{ansPos[i] ? "✓ " : ""}{stripH(k[0])}: {stripH(k[2]).slice(0, 22)}</button>)}{ansPos[placing] && <button className="nb-b" onClick={() => unplace(placing)}>✕ إزالة موضعها</button>}<button className="nb-b" onClick={() => setPlacing(null)}>تم</button></div>}
     <div className="nb-stage" ref={stageRef} onTouchStart={tStart} onTouchEnd={tEnd}>
       {err ? <div className="nb-msg">{err}</div> : !doc ? <div className="nb-msg">📚 جارٍ تحميل المرجع…</div> :
         <div className="nb-page" ref={pageRef} style={{ width: size.w || "100%", height: size.h || "60vh" }} onPointerMove={pinMove} onPointerUp={pinUp}>
@@ -860,7 +922,15 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
             onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
           {tp && pageDone && <div className="nb-done">✅ شُرحت لفصل {cls(ck)}</div>}
           {!tp && solved[page] && (idx || marks) && <div className="nb-done" style={{ background: "#7c3aed" }}>✍️ فيها حل</div>}
-          {ann.n.map(n => <div key={n.id} className="nb-note" style={{ right: `${(1 - n.x) * 100}%`, top: `${n.y * 100}%`, fontSize: Math.max(12, size.w * 0.022) }}
+          {ann.n.filter(n => n.k === "f").map(n => <div key={n.id} className={"nb-fill" + (editNote === n.id ? " ed" : "")} style={{ right: `${(1 - n.x) * 100}%`, top: `${n.y * 100}%`, fontSize: Math.max(11, size.w * 0.02 * (n.z || 1)), color: n.c || "#1d4ed8" }}
+            onPointerDown={e => e.stopPropagation()} onClick={e => { if (!readOnly) { e.stopPropagation(); setEditNote(n.id); } }}>
+            {editNote === n.id ? <input ref={fillRef} autoFocus value={n.t} dir="auto" onChange={e => setNoteText(n.id, e.target.value)} onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }} onBlur={() => setTimeout(() => { if (document.activeElement && document.activeElement.closest && document.activeElement.closest(".nb-pal")) return; finishNote(n.id); }, 120)} placeholder="اكتب…" size={Math.max(4, n.t.length + 1)} />
+              : <span>{n.t}</span>}
+            {!readOnly && editNote !== n.id && <button className="x" onClick={e => { e.stopPropagation(); delNote(n.id); }} aria-label="حذف">×</button>}
+          </div>)}
+          {ansOn && keyL.map((k, i) => ansPos[i] ? <div key={"a" + i} className="nb-ansp" style={{ right: `${(1 - ansPos[i].x) * 100}%`, top: `${ansPos[i].y * 100}%`, fontSize: Math.max(10, size.w * 0.017) }} title={stripH(k[1])}>{stripH(k[2])}</div> : null)}
+          {placing != null && <div className="nb-placeov" onPointerDown={e => { e.stopPropagation(); placeAt(e); }} />}
+          {ann.n.filter(n => n.k !== "f").map(n => <div key={n.id} className="nb-note" style={{ right: `${(1 - n.x) * 100}%`, top: `${n.y * 100}%`, fontSize: Math.max(12, size.w * 0.022) }}
             onClick={e => { if (!readOnly) { e.stopPropagation(); setEditNote(n.id); } }}>
             {editNote === n.id ? <textarea autoFocus rows={2} value={n.t} onChange={e => setNoteText(n.id, e.target.value)} onBlur={() => finishNote(n.id)} placeholder="اكتب هنا…" />
               : <span>{n.t}</span>}
@@ -871,7 +941,10 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
         </div>}
     </div>
 
-    <div className="nb-nav"><button onClick={() => go(-1)} aria-label="السابقة">›</button><button onClick={() => go(1)} aria-label="التالية">‹</button></div>
+    {fillEd && <div className="nb-pal" onMouseDown={e => e.preventDefault()} onPointerDown={e => e.preventDefault()}>
+      <div className="pt">{NB_SYM.map(([l], i) => <button key={l} className={"nb-b" + (symT === i ? " on" : "")} onClick={() => setSymT(i)}>{l}</button>)}<span className="nb-sp" /><button className="nb-b" onClick={() => setFillZ(-0.15)}>A−</button><button className="nb-b" onClick={() => setFillZ(0.15)}>A+</button>{["#1d4ed8", "#dc2626", "#111827"].map(c => <span key={c} className="nb-dot" style={{ background: c }} onClick={() => { setColor(c); setAnn(a => ({ ...a, n: a.n.map(x => x.id === editNote ? { ...x, c } : x) })); }} />)}<button className="nb-b on" onClick={() => { const id = editNote; finishNote(id); }}>✓ تم</button></div>
+      <div className="ps">{NB_SYM[symT][1].map(x => <button key={x} onClick={() => ins(x)}>{x}</button>)}</div></div>}
+    {!fillEd && <div className="nb-nav"><button onClick={() => go(-1)} aria-label="السابقة">›</button><button onClick={() => go(1)} aria-label="التالية">‹</button></div>}
     {saved && <div className="nb-save">{saved}</div>}
     {idxOpen && <IndexDrawer book={book} doc={doc} page={page} onGo={goTo} onClose={() => setIdxOpen(false)}
       mark={p => tp && ck ? (C["p" + p] ? "✓" : "") : solved[p] ? "✍️" : ""} weekP={(tp && ck) || idx || marks ? wP : null}
@@ -956,7 +1029,7 @@ export function NafsBooksStudent({ api, onBack }) {
   const logout = () => { try { localStorage.removeItem(REMEMBER); } catch {} setSt(null); setOpen(null); };
   return <div className="nb"><style>{CSS}</style>
     {!st ? <StudentLogin api={api} onIn={setSt} onBack={onBack} />
-      : open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} idx={`${NB_IDX}/${st.id}`} tc="show" tcPath={`${NB_TC}/${st.id}`}
+      : open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} idx={`${NB_IDX}/${st.id}`} tc="show" tcPath={`${NB_TC}/${st.id}`} rel={st.ck}
           boards={`${NB_B}/s_${st.id}`} seenSid={st.id} who={"s_" + st.id} title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} />
         : <Library api={api} student={st} onOpen={(book, page) => setOpen({ book, page })} onLogout={logout} onBack={onBack}
             onProfile={() => { lsSet("pam-parent", { ck: st.ck, sid: st.id, name: st.name, nh: st.nh }); window.location.hash = "parent"; window.location.reload(); }} />}
