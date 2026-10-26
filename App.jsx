@@ -42945,10 +42945,14 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
     if (f.st === "perm" && f.prs) v.rsn = f.prs;
     if ((f.st === "absent" || f.st === "perm") && f.sub !== "" && f.sub != null) { if (f.st === "perm") v.pm = 1; v.st = "sub"; v.sub = +f.sub; v.lvl = f.lvl || 0; if (f.so) { v.so = f.so; if (f.so === "late") v.som = +f.som || 0; if (f.act.trim()) v.act = f.act.trim(); v.soAt = Date.now(); } }
     if (f.note.trim()) v.note = f.note.trim();
-    onSave(v);
+    onSave(v, v.st === "sub" && f.mv ? f.mv : "");
   };
-  const Cand = ({ i, lvl, dis, why }) => { const L = TT_LVC[lvl]; return (
-    <button type="button" disabled={dis} className={`stt-cand ${+f.sub === i && f.sub !== "" ? "on" : ""}`} style={{ "--lc": L.c, "--lb": L.bg }} onClick={() => setF({ ...f, sub: i, lvl })}>
+  // المشغول (يغطي فصلاً آخر أو لديه حصة) يمكن اختياره بعد التأكيد لتصحيح الأخطاء؛ الغائب فقط لا يُختار
+  const Cand = ({ i, lvl, dis, why, hard, mv }) => { const L = TT_LVC[lvl]; return (
+    <button type="button" disabled={!!hard} className={`stt-cand ${+f.sub === i && f.sub !== "" ? "on" : ""}`} style={{ "--lc": L.c, "--lb": L.bg, opacity: dis && !(+f.sub === i && f.sub !== "") ? .72 : 1 }} onClick={() => {
+      if (hard) return; const nm = ttClean(T.T[i]);
+      if (dis && !window.confirm(mv != null ? `أ. ${nm} مكلّف بتغطية ${maClassName(mv)} في نفس الحصة.\n\nنقله إلى هذا الفصل؟ يُلغى تكليفه هناك ويُعاد اقتراح بديل لتلك الحصة.` : `أ. ${nm}: ${why} في هذا الوقت حسب الجدول.\n\nاختياره بديلاً رغم ذلك؟`)) return;
+      setF({ ...f, sub: i, lvl, mv: dis && mv != null ? mv : "" }); }}>
       <i>{L.l}</i>
       <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, fontWeight: 900, color: "#0f172a" }}>{ttClean(T.T[i])}</b><small style={{ fontSize: 11.5, fontWeight: 800, color: dis ? "#b91c1c" : "#64748b" }}>{why || (cover[i] ? `غطّى اليوم ${maAr(cover[i])} حصة` : "متاح الآن ✓")}</small></span>
       {+f.sub === i && f.sub !== "" && <span style={{ fontSize: 20 }}>✔️</span>}
@@ -42986,8 +42990,8 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
         </div>}
         {(f.st === "absent" || f.st === "perm") && <div className="grid gap-2">
           <div style={{ fontSize: 13, fontWeight: 900, color: "#1e1b4b" }}>{f.st === "perm" ? "🛡️ تأمين الحصة: اختر المعلم الذي أمّن الحصة" : "🔄 اختر البديل من الاحتياط"}</div>
-          {res.map((t, i) => { const why = abs.includes(t) ? "🚫 غائب اليوم" : usedBy[t] != null ? `يغطي ${maClassName(usedBy[t])}` : busy.has(t) ? "لديه حصة" : ""; return <Cand key={i} i={t} lvl={i + 1} dis={!!why} why={why} />; })}
-          {free.length > 0 && <details open={f.st === "perm" || undefined}><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#0f766e", padding: "6px 2px" }}>🟢 معلمون متفرّغون في هذه الحصة ({maAr(free.length)})</summary><div className="grid gap-2 mt-2">{free.map(i => <Cand key={i} i={i} lvl={4} dis={usedBy[i] != null} why={usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : ""} />)}</div></details>}
+          {res.map((t, i) => { const why = abs.includes(t) ? "🚫 غائب اليوم" : usedBy[t] != null ? `يغطي ${maClassName(usedBy[t])}` : busy.has(t) ? "لديه حصة" : ""; return <Cand key={i} i={t} lvl={i + 1} dis={!!why} why={why} hard={abs.includes(t)} mv={usedBy[t]} />; })}
+          {free.length > 0 && <details open={f.st === "perm" || undefined}><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#0f766e", padding: "6px 2px" }}>🟢 معلمون متفرّغون في هذه الحصة ({maAr(free.length)})</summary><div className="grid gap-2 mt-2">{free.map(i => <Cand key={i} i={i} lvl={4} mv={usedBy[i]} dis={usedBy[i] != null} why={usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : ""} />)}</div></details>}
           {f.st === "perm" && (() => { const others = T.T.map((_, i) => i).filter(i => i !== ti && !res.includes(i) && !free.includes(i)); return others.length ? <details><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: "#475569", padding: "6px 2px" }}>👥 بقية المعلمين ({maAr(others.length)}) — لديهم حصة أو غائبون</summary><div className="grid gap-2 mt-2">{others.map(i => <Cand key={i} i={i} lvl={4} dis={abs.includes(i) || usedBy[i] != null} why={abs.includes(i) ? "🚫 غائب اليوم" : usedBy[i] != null ? `يغطي ${maClassName(usedBy[i])}` : busy.has(i) ? "لديه حصة الآن (دمج/تأمين)" : ""} />)}</div></details> : null; })()}
           <button type="button" className={`stt-chip ${f.sub === "" ? "on" : ""}`} style={{ "--cc": "#b91c1c", justifySelf: "start" }} onClick={() => setF({ ...f, sub: "", lvl: 0 })}>{f.st === "perm" ? "بدون تأمين" : "بدون بديل"}</button>
           {f.sub !== "" && f.sub != null && <div className="grid gap-2" style={{ background: "#f8fafc", border: "1.5px solid #c7d2fe", borderRadius: 18, padding: 12 }}>
@@ -43383,7 +43387,9 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
       </div>
 
       {cell && <SttSheet key={ttK(cell.d, cell.p, cell.ck)} T={T} d={cell.d} p={cell.p} ck={cell.ck} cur={cur} times={times} plan={cell.d === di ? plan : {}} abs={cell.d === di ? absList : []} log={cell.d === di ? log : {}} isToday={isToday && cell.d === di} ro={ro || !canRec || cell.d !== di} subName={si => T.S[si]} onClose={() => setCell(null)}
-        onSave={async v => { const ok = await putLog(cell.d, cell.p, cell.ck, v); if (ok) { setCell(null); toast("✅ تم الحفظ"); } }} onClear={async () => { await putLog(cell.d, cell.p, cell.ck, null); setCell(null); }} />}
+        onSave={async (v, mv) => { const ok = await putLog(cell.d, cell.p, cell.ck, v); if (!ok) return; let msg = "✅ تم الحفظ";
+          if (mv) { const o = log[ttK(cell.d, cell.p, mv)]; if (o && o.st === "sub" && +o.sub === +v.sub) await putLog(cell.d, cell.p, mv, null); msg = `↪️ نُقل أ. ${ttClean(T.T[v.sub])} — وأُعيد اقتراح بديل لـ ${maClassName(mv)}، راجعه واعتمده`; }
+          setCell(null); toast(msg); }} onClear={async () => { await putLog(cell.d, cell.p, cell.ck, null); setCell(null); }} />}
       {jEd && <TtEditor T0={T} times={times} by={by} onClose={() => setJEd(false)} onSaved={n => { setTt(n); setJEd(false); toast("✅ حُفظ الجدول المعدّل — والسابق محفوظ نسخةً احتياطية"); }} />}
       {tEd && <SttTimesEditor times={times} P={T.P} by={by} onClose={() => setTEd(false)} onSaved={tm => { setTimes0(tm); setTEd(false); toast("✅ حُفظت أوقات الحصص"); }} />}
       {addA && <div className="stt-sheet" onClick={() => setAddA(false)}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ padding: 16 }}>
