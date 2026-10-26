@@ -34050,8 +34050,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "pnotes" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("📡 حصر ملاحظات الحصص", <PeriodNotesPage by={me.name} />);
   if (view === "nafes") return wrap("🎯 نتائج نافس لطلابي", <NqTeacherView me={me} />);
   if (view === "absalert" && ["principal", "deputy", "counselor", "admin"].includes(me.role)) return wrap("🚨 حد الغياب واستدعاء أولياء الأمور", <AbsAlertPage by={me.name} />);
-  if (view === "nbadm" && ["principal", "deputy"].includes(me.role)) return wrap("📚 مراجع نافس – متابعة الإدارة", <React.Suspense fallback={NB_WAIT}><NafsBooksAdmin by={me.name} api={trApi()} tab0="alerts" /></React.Suspense>);
-  if (view === "nbooks") return wrap("📚 مراجع نافس – موادي وطلابي", <React.Suspense fallback={NB_WAIT}><NafsBooksTeacher by={me.name} api={trApi()} /></React.Suspense>);
+  if (view === "nbadm" && ["principal", "deputy"].includes(me.role)) return wrap("📚 مراجع نافس – متابعة الإدارة", <React.Suspense fallback={NB_WAIT}><NbPinSet by={me.name} /><NafsBooksAdmin by={me.name} api={trApi()} tab0="alerts" /></React.Suspense>);
+  if (view === "nbooks") return wrap("📚 مراجع نافس – موادي وطلابي", <NbPinGate><React.Suspense fallback={NB_WAIT}><NafsBooksTeacher by={me.name} api={trApi()} /></React.Suspense></NbPinGate>);
   if (view === "hd") return wrap("📈 انضباطي اليومي", <HdTeacherView me={me} />);
   if (view === "asmrank" && ["principal", "deputy"].includes(me.role)) return wrap("🎺 مفاضلة الطابور", <AsmRank by={me.name} />);
   if (view === "score") return wrap(["principal", "deputy"].includes(me.role) ? "🏆 ترتيب المعلمين في الانضباط الشامل" : "🏆 بطاقتي الشاملة وترتيبي", <TchScoreView me={me} admin={["principal", "deputy"].includes(me.role)} />);
@@ -47103,7 +47103,47 @@ let _trFetch = null;
 // ══════════ 🔒 لا حذف إلا بموافقة مدير المدرسة (برقم هويته) ══════════
 // كل حذف (DELETE أو حفظ قيمة فارغة) يتوقف حتى يُدخل مدير المدرسة رقم هويته. الموافقة صالحة ١٠ دقائق على هذا الجهاز.
 // مستثنى: العمليات الفنية التلقائية (المسودات، الفهارس، الحالات اليومية التي تُبدَّل بين تشغيل/إيقاف، صور الصفحات عند إعادة الرفع)
-const GATE_EXEMPT = ["school-pinbox-idx", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+
+// ====== رقم سري لدخول المعلمين إلى مراجع نافس ======
+const NB_PIN = "school-nbpin"; const NB_PIN0 = "1447";
+async function nbPinHash(v) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("pam-nbpin:" + String(v).trim())); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
+const nbToEn = v => String(v || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g, "");
+async function nbPinGet() { try { const r = await maGet(NB_PIN); return r && r.h ? r : null; } catch { return null; } }
+function NbPinGate({ children }) {
+  const [st, setSt] = useState("load"); const [v, setV] = useState(""); const [err, setErr] = useState(""); const [h, setH] = useState(""); const [lock, setLock] = useState(0); const [n, setN] = useState(0);
+  useEffect(() => { (async () => { const r = await nbPinGet(); const hh = r ? r.h : await nbPinHash(NB_PIN0); setH(hh); let ok = false; try { ok = sessionStorage.getItem("nbpin-ok") === hh; } catch {} setSt(ok ? "open" : "ask"); })(); }, []);
+  useEffect(() => { if (!lock) return; const t = setInterval(() => { if (Date.now() >= lock) { setLock(0); setErr(""); } }, 1000); return () => clearInterval(t); }, [lock]);
+  const go = async () => { if (lock) return; const x = nbToEn(v); if (!x) return setErr("أدخل الرقم السري");
+    if (await nbPinHash(x) === h) { try { sessionStorage.setItem("nbpin-ok", h); } catch {} setSt("open"); return; }
+    const k = n + 1; setN(k); setV(""); if (k >= 5) { setLock(Date.now() + 60000); setN(0); setErr("⛔ محاولات كثيرة — انتظر دقيقة ثم أعد المحاولة"); } else setErr(`❌ الرقم السري غير صحيح (${maAr(5 - k)} محاولات متبقية)`); };
+  if (st === "open") return children;
+  if (st === "load") return <div style={{ padding: 40, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحقق…</div>;
+  return <div style={{ display: "flex", justifyContent: "center", padding: "40px 12px" }}><div className="ma-card" style={{ width: "min(380px,100%)", padding: 24, display: "grid", gap: 12, textAlign: "center" }}>
+    <div style={{ fontSize: 42 }}>🔐</div><b style={{ fontSize: 18 }}>مراجع نافس محمية</b>
+    <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>أدخل الرقم السري للدخول (تحصل عليه من الإدارة)</div>
+    <input className="ma-inp" type="password" inputMode="numeric" autoFocus value={v} disabled={!!lock} onChange={e => { setV(e.target.value); setErr(""); }} onKeyDown={e => e.key === "Enter" && go()} style={{ textAlign: "center", fontSize: 22, letterSpacing: 6 }} placeholder="••••" />
+    {err && <div style={{ color: "#b91c1c", fontWeight: 800, fontSize: 13 }}>{err}</div>}
+    <button className="ma-btn pri" disabled={!!lock} onClick={go}>🔓 دخول</button>
+  </div></div>;
+}
+function NbPinSet({ by = "الإدارة" }) {
+  const [cur, setCur] = useState(undefined); const [a, setA] = useState(""); const [b, setB] = useState(""); const [msg, setMsg] = useState(""); const [open, setOpen] = useState(false);
+  useEffect(() => { nbPinGet().then(setCur); }, []);
+  const save = async () => { const x = nbToEn(a), y = nbToEn(b); if (x.length < 4) return setMsg("❌ الرقم السري ٤ أرقام على الأقل"); if (x !== y) return setMsg("❌ الرقمان غير متطابقين");
+    const r = { h: await nbPinHash(x), at: new Date().toISOString(), by }; const ok = await maPut(NB_PIN, r); if (ok === false) return setMsg("❌ تعذّر الحفظ"); setCur(r); setA(""); setB(""); setOpen(false); setMsg("✅ تم تغيير الرقم السري — أبلغ المعلمين بالرقم الجديد"); };
+  return <div className="ma-card" style={{ padding: 14, margin: "0 0 12px", display: "grid", gap: 8, border: "1.5px solid #c7d2fe", background: "#f8faff" }}>
+    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><b>🔐 الرقم السري لدخول المعلمين إلى مراجع نافس</b>
+      <span style={{ fontSize: 12, fontWeight: 800, color: cur ? "#15803d" : "#b45309" }}>{cur === undefined ? "…" : cur ? `مخصّص • آخر تغيير ${new Date(cur.at).toLocaleDateString("ar-SA")}${cur.by ? " – " + cur.by : ""}` : `الافتراضي (${maAr(NB_PIN0)}) — يُنصح بتغييره`}</span>
+      <button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setOpen(!open); setMsg(""); }}>{open ? "إغلاق" : "✏️ تغيير الرقم السري"}</button></div>
+    {open && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <input className="ma-inp" type="password" inputMode="numeric" placeholder="الرقم الجديد" value={a} onChange={e => setA(e.target.value)} style={{ width: 150 }} />
+      <input className="ma-inp" type="password" inputMode="numeric" placeholder="تأكيد الرقم" value={b} onChange={e => setB(e.target.value)} style={{ width: 150 }} onKeyDown={e => e.key === "Enter" && save()} />
+      <button className="ma-btn pri" onClick={save}>💾 حفظ</button></div>}
+    {msg && <div style={{ fontSize: 12.5, fontWeight: 800 }}>{msg}</div>}
+    <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>يُطلب من المعلم عند فتح «مراجع نافس» من حسابه، ويبقى مفتوحاً حتى يغلق المتصفح. دخول الطلاب والإدارة لا يتأثر.</div>
+  </div>;
+}
+const GATE_EXEMPT = ["school-pinbox-idx", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -50443,7 +50483,7 @@ function SchoolWebsiteInner() {
                 {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
                 {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
                 {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
-                {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
+                {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NbPinSet by={user?.name || "الإدارة"} /><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "holidays" && <HolidaysPage by={user?.name || "الإدارة"} />}{page === "diag" && <div className="px-2 md:px-6 py-4"><DiagAdmin by={user?.name || "الإدارة"} /></div>}{page === "pgrec" && <div className="px-2 md:px-6 py-4"><PgAdmin by={user?.name || "الإدارة"} /></div>}{page === "plcr" && <div className="px-2 md:px-6 py-4"><PlrAdmin by={user?.name || "الإدارة"} /></div>}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
                 {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
@@ -50631,7 +50671,7 @@ function SchoolWebsiteInner() {
         {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
         {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
         {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
-                {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
+                {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NbPinSet by={user?.name || "الإدارة"} /><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "holidays" && <HolidaysPage by={user?.name || "الإدارة"} />}{page === "diag" && <div className="px-2 md:px-6 py-4"><DiagAdmin by={user?.name || "الإدارة"} /></div>}{page === "pgrec" && <div className="px-2 md:px-6 py-4"><PgAdmin by={user?.name || "الإدارة"} /></div>}{page === "plcr" && <div className="px-2 md:px-6 py-4"><PlrAdmin by={user?.name || "الإدارة"} /></div>}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
         {page === "morningboard" && <InsightsPage by={user?.name || "الإدارة"} initTab="morning" />}
