@@ -42538,7 +42538,9 @@ const ttBreak = tm => { let b = null; (tm || []).forEach((x, i) => { if (!i) ret
 
 // ── نافذة تعديل أوقات الحصص (تقديم/تأخير الكل بضغطة)
 function SttTimesEditor({ times, P, by, onClose, onSaved }) {
-  const [t, setT] = useState(() => Array.from({ length: P }, (_, i) => [...(times[i] || ["", ""])]));
+  // الدوام نهاراً: أي وقت قبل ٦ صباحاً يُفهم أنه بعد الظهر (١٢:٢٠ ص ← ١٢:٢٠ م)
+  const fixPM = v => { const m = String(v || "").match(/^(\d{1,2}):(\d{2})/); if (!m) return v; const h = +m[1]; return h < 6 ? `${String(h + 12).padStart(2, "0")}:${m[2]}` : v; };
+  const [t, setT] = useState(() => Array.from({ length: P }, (_, i) => [...(times[i] || ["", ""])].map(fixPM)));
   const [busy, setBusy] = useState(false);
   const shift = m => setT(x => x.map(([a, b]) => [a ? sttHM(mlToMin(a) + m) : a, b ? sttHM(mlToMin(b) + m) : b]));
   const err = t.map(([a, b], i) => { if (!a || !b) return "أكمل الوقت"; if (mlToMin(b) <= mlToMin(a)) return "النهاية قبل البداية"; const pe = i > 0 && t[i - 1][1] ? mlToMin(t[i - 1][1]) : null; if (pe != null && mlToMin(a) < pe) return "تتداخل مع السابقة"; return ""; });
@@ -42564,9 +42566,9 @@ function SttTimesEditor({ times, P, by, onClose, onSaved }) {
         {gap > 0 && <div style={{ fontSize: 11.5, fontWeight: 800, color: "#0f766e", textAlign: "center", margin: "0 0 4px" }}>☕ فاصل {maAr(gap)} دقيقة</div>}
         <div className="flex gap-2 items-center flex-wrap" style={{ padding: "8px 10px", borderRadius: 14, background: err[i] ? "#fef2f2" : "#f8fafc", border: `1.5px solid ${err[i] ? "#fecaca" : "#eef2f7"}` }}>
           <b style={{ width: 82, fontSize: 13.5 }}>{TT_ORD[i]}</b>
-          <input type="time" className="ma-inp" style={{ width: 130, height: 38 }} value={a} onChange={e => setT(x => x.map((y, j) => j === i ? [e.target.value, y[1]] : y))} aria-label={`بداية الحصة ${TT_ORD[i]}`} />
+          <input type="time" className="ma-inp" style={{ width: 130, height: 38 }} value={a} onChange={e => setT(x => x.map((y, j) => j === i ? [fixPM(e.target.value), y[1]] : y))} aria-label={`بداية الحصة ${TT_ORD[i]}`} />
           <span style={{ fontWeight: 900, color: "#94a3b8" }}>←</span>
-          <input type="time" className="ma-inp" style={{ width: 130, height: 38 }} value={b} onChange={e => setT(x => x.map((y, j) => j === i ? [y[0], e.target.value] : y))} aria-label={`نهاية الحصة ${TT_ORD[i]}`} />
+          <input type="time" className="ma-inp" style={{ width: 130, height: 38 }} value={b} onChange={e => setT(x => x.map((y, j) => j === i ? [y[0], fixPM(e.target.value)] : y))} aria-label={`نهاية الحصة ${TT_ORD[i]}`} />
           <span style={{ fontSize: 12, fontWeight: 900, color: err[i] ? "#b91c1c" : "#64748b" }}>{err[i] || (a && b ? `${maAr(mlToMin(b) - mlToMin(a))} د` : "")}</span>
         </div>
       </div>; })}
@@ -43343,14 +43345,16 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
             <div className="flex items-center gap-2 flex-wrap">
               <button className="ma-btn" onClick={() => setShowPlan(!openPlan)}>{openPlan ? "▾" : "▸"} توزيع الاحتياط ({maAr(planRows.length)} حصة{pending ? ` • ${maAr(pending)} بانتظار الاعتماد` : " • معتمد ✓"})</button>
               {canRec && pending > 0 && <button className="ma-btn grn" disabled={busy} onClick={approve}>{busy ? "⏳" : "✅ اعتماد التوزيع"}</button>}
+              {canRec && planRows.some(x => x.done) && <button className="ma-btn" disabled={busy} title="يُلغى الاعتماد ويعود التوزيع مقترحاً لتعدّله ثم تعتمده من جديد" onClick={async () => { const D0 = planRows.filter(x => x.done); if (!window.confirm(`إلغاء اعتماد ${maAr(D0.length)} حصة احتياط وإعادتها مقترحة للتعديل؟`)) return; setBusy(true); for (const x of D0) await putLog(di, x.p, x.ck, null); setBusy(false); toast("↺ أُلغي الاعتماد — عدّل ثم اضغط «اعتماد التوزيع»"); }}>↺ إلغاء الاعتماد وإعادة التوزيع</button>}
               <button className="ma-btn gold" onClick={printSubs}>🖨 كشف الاحتياط</button>
             </div>
             {openPlan && <div className="stt-pl">{planRows.map(x => { const [si] = T.C[x.ck][di][x.p]; const L = TT_LVC[x.lvl]; return <button key={x.ck + x.p} type="button" className="stt-pr" style={{ borderColor: L ? L.c + "66" : "#fecaca", background: x.done ? (L ? L.bg : "#fff") : "#fff", borderStyle: x.done ? "solid" : "dashed" }} onClick={() => setCell({ d: di, p: x.p, ck: x.ck })}>
               <span className="stt-lv" style={{ background: "#1e1b4b", color: "#fff" }}>الحصة {maAr(x.p + 1)}</span>
               <b style={{ fontSize: 13.5 }}>{maClassName(x.ck)}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: sc(si) }}>{subName(si)}</span>
               <span style={{ fontSize: 12.5, fontWeight: 800, color: "#b91c1c" }}>بدل {ttClean(T.T[x.a])}</span>
-              <span style={{ marginRight: "auto", display: "flex", gap: 6, alignItems: "center" }}>{L ? <><span className="stt-lv" style={{ background: L.c, color: "#fff" }}>{L.l}</span><b style={{ fontSize: 14 }}>{ttClean(T.T[x.sub])}</b></> : <b style={{ color: "#b91c1c" }}>⚠️ لا يوجد بديل متاح</b>}{x.done ? <span title="معتمد">✅</span> : <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 800 }}>مقترح</span>}</span>
+              <span style={{ marginRight: "auto", display: "flex", gap: 6, alignItems: "center" }}>{L ? <><span className="stt-lv" style={{ background: L.c, color: "#fff" }}>{L.l}</span><b style={{ fontSize: 14 }}>{ttClean(T.T[x.sub])}</b></> : <b style={{ color: "#b91c1c" }}>⚠️ لا يوجد بديل متاح</b>}{x.done ? <span title="معتمد">✅</span> : <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 800 }}>مقترح</span>}{canRec && <span className="stt-lv" style={{ background: "#eef2ff", color: "#3730a3" }}>✏️ تغيير البديل</span>}</span>
             </button>; })}{!planRows.length && <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>لا توجد حصص للغائبين في هذا اليوم</div>}</div>}
+            {openPlan && canRec && planRows.length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>💡 اضغط أي حصة لتغيير معلم الاحتياط أو جعلها بلا بديل — حتى بعد الاعتماد، ويُحفظ التعديل فوراً.</div>}
             {openPlan && planRows.some(x => x.sub != null) && <SttWaPanel T={T} rows={planRows} di={di} times={times} D={D} subName={subName} />}
           </>}
         </div>}
