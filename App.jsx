@@ -47508,10 +47508,10 @@ let _trFetch = null;
 const NB_PIN = "school-nbpin"; const NB_PIN0 = "1447";
 async function nbPinHash(v) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("pam-nbpin:" + String(v).trim())); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
 const nbToEn = v => String(v || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g, "");
-async function nbPinGet() { try { const r = await maGet(NB_PIN); return r && r.h ? r : null; } catch { return null; } }
+async function nbPinGet() { try { const r = await maGet(NB_PIN); return r && (r.h || r.off) ? r : null; } catch { return null; } }
 function NbPinGate({ children }) {
   const [st, setSt] = useState("load"); const [v, setV] = useState(""); const [err, setErr] = useState(""); const [h, setH] = useState(""); const [lock, setLock] = useState(0); const [n, setN] = useState(0);
-  useEffect(() => { (async () => { const r = await nbPinGet(); const hh = r ? r.h : await nbPinHash(NB_PIN0); setH(hh); let ok = false; try { ok = sessionStorage.getItem("nbpin-ok") === hh; } catch {} setSt(ok ? "open" : "ask"); })(); }, []);
+  useEffect(() => { (async () => { const r = await nbPinGet(); if (r && r.off) { setSt("open"); return; } const hh = r && r.h ? r.h : await nbPinHash(NB_PIN0); setH(hh); let ok = false; try { ok = sessionStorage.getItem("nbpin-ok") === hh; } catch {} setSt(ok ? "open" : "ask"); })(); }, []);
   useEffect(() => { if (!lock) return; const t = setInterval(() => { if (Date.now() >= lock) { setLock(0); setErr(""); } }, 1000); return () => clearInterval(t); }, [lock]);
   const go = async () => { if (lock) return; const x = nbToEn(v); if (!x) return setErr("أدخل الرقم السري");
     if (await nbPinHash(x) === h) { try { sessionStorage.setItem("nbpin-ok", h); } catch {} setSt("open"); return; }
@@ -47531,10 +47531,12 @@ function NbPinSet({ by = "الإدارة" }) {
   useEffect(() => { nbPinGet().then(setCur); }, []);
   const save = async () => { const x = nbToEn(a), y = nbToEn(b); if (x.length < 4) return setMsg("❌ الرقم السري ٤ أرقام على الأقل"); if (x !== y) return setMsg("❌ الرقمان غير متطابقين");
     const r = { h: await nbPinHash(x), at: new Date().toISOString(), by }; const ok = await maPut(NB_PIN, r); if (ok === false) return setMsg("❌ تعذّر الحفظ"); setCur(r); setA(""); setB(""); setOpen(false); setMsg("✅ تم تغيير الرقم السري — أبلغ المعلمين بالرقم الجديد"); };
+  const offPin = async () => { if (!window.confirm("إلغاء الرقم السري؟\n\nسيدخل المعلمون إلى «مراجع نافس» مباشرة دون رقم. يمكنك تفعيله لاحقاً برقم جديد.")) return; const r = { off: 1, at: new Date().toISOString(), by }; const ok = await maPut(NB_PIN, r); if (ok === false) return setMsg("❌ تعذّر الحفظ"); setCur(r); setOpen(false); setMsg("🔓 أُلغي الرقم السري — الدخول مفتوح للمعلمين"); };
   return <div className="ma-card" style={{ padding: 14, margin: "0 0 12px", display: "grid", gap: 8, border: "1.5px solid #c7d2fe", background: "#f8faff" }}>
     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><b>🔐 الرقم السري لدخول المعلمين إلى مراجع نافس</b>
-      <span style={{ fontSize: 12, fontWeight: 800, color: cur ? "#15803d" : "#b45309" }}>{cur === undefined ? "…" : cur ? `مخصّص • آخر تغيير ${new Date(cur.at).toLocaleDateString("ar-SA")}${cur.by ? " – " + cur.by : ""}` : `الافتراضي (${maAr(NB_PIN0)}) — يُنصح بتغييره`}</span>
-      <button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setOpen(!open); setMsg(""); }}>{open ? "إغلاق" : "✏️ تغيير الرقم السري"}</button></div>
+      <span style={{ fontSize: 12, fontWeight: 800, color: cur ? "#15803d" : "#b45309" }}>{cur === undefined ? "…" : cur && cur.off ? "🔓 مُلغى — المعلمون يدخلون دون رقم سري" : cur ? `🔒 مفعّل • آخر تغيير ${new Date(cur.at).toLocaleDateString("ar-SA")}${cur.by ? " – " + cur.by : ""}` : `الافتراضي (${maAr(NB_PIN0)}) — يُنصح بتغييره`}</span>
+      <button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setOpen(!open); setMsg(""); }}>{open ? "إغلاق" : cur && cur.off ? "🔒 تفعيل الرقم السري" : "✏️ تغيير الرقم السري"}</button>
+      {!(cur && cur.off) && <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={offPin}>🔓 إلغاء الرقم السري</button>}</div>
     {open && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
       <input className="ma-inp" type="password" inputMode="numeric" placeholder="الرقم الجديد" value={a} onChange={e => setA(e.target.value)} style={{ width: 150 }} />
       <input className="ma-inp" type="password" inputMode="numeric" placeholder="تأكيد الرقم" value={b} onChange={e => setB(e.target.value)} style={{ width: 150 }} onKeyDown={e => e.key === "Enter" && save()} />
