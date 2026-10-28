@@ -20,6 +20,7 @@ export default function TreasurePublic({ onBack, api }) {
   const [playId, setPlayId] = useState(0);
   const [demo, setDemo] = useState(false);
   const [intro, setIntro] = useState(false);
+  const [kg, setKg] = useState(null); // 🗝️ بوابة المفتاح بين مرحلتين {stage, qs, next}
 
   const avail = demo ? READY : Math.min(READY, cfg && +cfg.upTo ? +cfg.upTo : READY);
 
@@ -51,12 +52,28 @@ export default function TreasurePublic({ onBack, api }) {
   const logout = () => { lsSet("tr-me", null); setMe(null); setProg(null); setDemo(false); setView("login"); };
   const closeIntro = () => { setIntro(false); if (me && !demo) lsSet("tr-intro-" + me.id, true); };
 
-  async function play(n) {
+  async function play(n, viaGate) {
+    // 🗝️ قبل أول دخول لمرحلة جديدة: بوابة المفتاح من أسئلة المرحلة السابقة (مرة واحدة لكل مرحلة)
+    if (!viaGate && !demo && n > 1 && prog && isPassed(obj(prog.best[n - 1])) && !obj(prog.best)[n] && !obj(prog.gem)[n - 1]) {
+      setLoadingStage(n); const p = await loadStage(n - 1); setLoadingStage(0);
+      if (p) { openGate(p, null, null, n); return; }
+    }
     setLoadingStage(n); const s = await loadStage(n); setLoadingStage(0);
     if (!s) { alert("محتوى هذه المرحلة يُجهَّز قريباً"); return; }
     beep("click"); setPlayId(x => x + 1); setStage(s); setView("play"); window.scrollTo(0, 0);
   }
 
+  function openGate(st, items, res, next) { beep("gate"); setKg({ stage: st, qs: kgPick(st, items, res, (+obj(obj(prog && prog.best)[st.n]).tries || 0) + Date.now() % 5), next }); setView("gate"); window.scrollTo(0, 0); }
+  // ⏸️ حفظ التقدّم داخل المرحلة بعد كل سؤال — ليكمل الطالب من حيث توقف (من أي جهاز)
+  async function saveCur(c) {
+    if (demo || !prog) return; setProg(p => ({ ...p, cur: c })); lsSet("tr-cur-" + me.id, c);
+    try { await api.maPut(`${TR_PROG}/${me.id}/cur`, c); } catch {}
+  }
+  const curOf = n => { if (demo || !prog || !me) return null; const a = obj(prog.cur), b = obj(lsGet("tr-cur-" + me.id, null)); const c = (+b.at || 0) > (+a.at || 0) ? b : a; return c && +c.n === +n && arr(c.res).length ? c : null; };
+  async function takeGem(n) {
+    if (demo || !prog) return; const gem = { ...obj(prog.gem), [n]: Date.now() }; const rec = { ...prog, gem }; setProg(rec);
+    try { await api.maPut(`${TR_PROG}/${me.id}/gem`, gem); } catch {}
+  }
   async function finish(res) {
     const n = stage.n; const old = obj(prog.best && prog.best[n]); const tries = (+old.tries || 0) + 1;
     const better = !old.sc || res.sc >= old.sc;
@@ -64,20 +81,21 @@ export default function TreasurePublic({ onBack, api }) {
     const ok = res.sc >= passOf(res.of);
     const stars = { ...obj(prog.stars), [n]: Math.max(+obj(prog.stars)[n] || 0, starsOf(res.sc, res.of)) };
     const unlocked = Math.max(+prog.unlocked || 1, ok ? Math.min(TR_TOTAL, n + 1) : 1);
-    const rec = { ...prog, best, stars, unlocked, last: Date.now(), done: Math.max(+prog.done || 0, ok ? n : 0) };
-    setProg(rec); if (!demo) await api.maPut(`${TR_PROG}/${me.id}`, rec);
+    const rec = { ...prog, best, stars, unlocked, last: Date.now(), done: Math.max(+prog.done || 0, ok ? n : 0) }; delete rec.cur;
+    setProg(rec); if (!demo) { lsSet("tr-cur-" + me.id, null); await api.maPut(`${TR_PROG}/${me.id}`, rec); }
     return { tries, unlockedNew: unlocked > (+prog.unlocked || 1) };
   }
 
   const toggleMute = () => { const v = !mute; setMute(v); lsSet("tr-mute", v); };
 
-  return <div className="tr-root tr-pub"><style>{BASE_CSS + PUB_CSS}</style>
+  return <div className="tr-root tr-pub"><style>{BASE_CSS + PUB_CSS + KG_CSS + RS_CSS}</style>
     {view === "boot" && <div className="tr-boot"><div className="tr-compass">🧭</div><b className="tr-disp">جارٍ تجهيز الخريطة…</b></div>}
     {view === "login" && <Login api={api} cfg={cfg} onEnter={enter} onDemo={enterDemo} onBack={onBack} />}
     {view === "map" && cfg && !cfg.open && <Closed onBack={onBack} />}
-    {view === "map" && cfg && cfg.open && <MapView me={me} prog={prog} avail={avail} demo={demo} loading={loadingStage} onPlay={play} onLogout={logout} onBack={onBack} mute={mute} toggleMute={toggleMute} onIntro={() => setIntro(true)} />}
+    {view === "map" && cfg && cfg.open && <MapView me={me} prog={prog} avail={avail} demo={demo} loading={loadingStage} onPlay={play} curOf={curOf} onLogout={logout} onBack={onBack} mute={mute} toggleMute={toggleMute} onIntro={() => setIntro(true)} />}
     {view === "map" && intro && <Journey name={demo ? "" : me && me.name} onClose={closeIntro} />}
-    {view === "play" && stage && <Player key={playId} stage={stage} prog={prog} avail={avail} demo={demo} mute={mute} toggleMute={toggleMute} onFinish={finish} onExit={() => { setView("map"); setStage(null); }} onNext={n => play(n)} />}
+    {view === "play" && stage && <Player key={playId} stage={stage} prog={prog} avail={avail} demo={demo} mute={mute} toggleMute={toggleMute} onFinish={finish} saved={curOf(stage.n)} onSave={saveCur} onExit={() => { setView("map"); setStage(null); }} onNext={n => play(n)} onGate={(items, res, n) => (demo || obj(prog.gem)[n - 1] || obj(prog.best)[n]) ? play(n, true) : openGate(stage, items, res, n)} />}
+    {view === "gate" && kg && <KeyGate key={kg.stage.n} stage={kg.stage} qs={kg.qs} nextN={kg.next} demo={demo} onGem={() => takeGem(kg.stage.n)} onEnter={n => { setKg(null); play(n, true); }} onMap={() => { setKg(null); setView("map"); }} />}
   </div>;
 }
 
@@ -122,7 +140,7 @@ function Closed({ onBack }) {
 
 // ══════════ الخريطة ══════════
 const XS = [74, 30, 66, 24, 58];
-function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mute, toggleMute, onIntro }) {
+function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mute, toggleMute, onIntro, curOf }) {
   const cur = demo ? TR_TOTAL : Math.min(+prog.unlocked || 1, TR_TOTAL); const stars = obj(prog.stars);
   const totalStars = Object.values(stars).reduce((a, b) => a + (+b || 0), 0);
   const keys = Object.keys(obj(prog.best)).filter(k => isPassed(obj(prog.best[k]))).length;
@@ -131,7 +149,7 @@ function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mut
   return <div className="tr-map">
     <header className="tr-hud">
       <div className="tr-hud-me"><span className="tr-avatar">{demo ? "👨‍🏫" : "🧭"}</span><div><b>{demo ? "وضع الشرح" : me.name.split(" ").slice(0, 2).join(" ")}</b><small>{demo ? "للمعلم • لا يُحتسب" : "المستكشف • " + ar(me.ck.replace("3-", "ثالث/"))}</small></div></div>
-      <div className="tr-hud-stats"><span title="المفاتيح">🗝️ {ar(keys)}</span><span title="النجوم">⭐ {ar(totalStars)}</span></div>
+      <div className="tr-hud-stats"><span title="المفاتيح">🗝️ {ar(keys)}</span><span title="النجوم">⭐ {ar(totalStars)}</span><span className="gem" title="الجواهر">💎 {ar(Object.keys(obj(prog.gem)).length)}</span></div>
       <div className="tr-hud-act"><button onClick={onIntro} title="قصة الرحلة">📜</button><button onClick={toggleMute} title="الصوت">{mute ? "🔇" : "🔊"}</button><button onClick={onLogout} title="خروج">🚪</button></div>
     </header>
     {demo && <div className="tr-demo-bar">👨‍🏫 <b>وضع الشرح:</b> جميع المراحل مفتوحة • داخل كل سؤال لوحة تُظهر التلميحة والحل والشرح والسؤال التوأم • لا يُحفظ شيء ولا يظهر في متابعة الطلاب</div>}
@@ -154,6 +172,7 @@ function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mut
             const st = +stars[n] || 0;
             return <div key={n} ref={isCur ? curRef : null} className={"tr-node" + (open ? " open" : "") + (passed ? " passed" : "") + (isCur ? " cur" : "") + (soon ? " soon" : "")} style={{ left: x + "%", top: y }}>
               {isCur && <span className="tr-me-pin">🧭</span>}
+              {curOf && curOf(n) && <span className="tr-paused" title="مرحلة متوقفة — اضغط لتكمل">⏸️ {ar(Math.min(+curOf(n).i + 1, 21))}</span>}
               <button disabled={!open || soon || !!loading} onClick={() => onPlay(n)} aria-label={"المرحلة " + n}>
                 {loading === n ? <span className="tr-spin">⏳</span> : !open ? "🔒" : <span className="tr-disp">{ar(n)}</span>}
               </button>
@@ -183,7 +202,7 @@ const PRAISE = ["أحسنت! 🌟", "رائع يا بطل! 🔥", "إجابة ذ
 const STREAK = { 3: "🔥 ثلاث متتالية! سلسلة نارية", 5: "⚡ خمس متتالية! لا أحد يوقفك", 7: "🌪️ سبع متتالية! إعصار المعرفة", 10: "👑 عشر متتالية! أسطورة نافس", 15: "💎 مرحلة كاملة بلا خطأ!" };
 const OOPS = ["لا تقلق… حتى الأبطال يتعثرون 💪", "قريب جداً! خذ هذه التلميحة 💡", "فرصة ثانية تنتظرك 🔄", "فكّر بطريقة أخرى… أنت قادر 🧭"];
 
-function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, onNext }) {
+function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, onNext, onGate, saved, onSave }) {
   const w = worldOf(stage.n); const [tries] = useState(() => +obj(prog.best[stage.n]).tries || 0);
   const items = useMemo(() => {
     const L = [...stage.read.qs.map(q => ({ ...q, sub: "r" })), ...stage.math.map(q => ({ ...q, sub: "m" })), ...stage.sci.map(q => ({ ...q, sub: "s" }))];
@@ -205,6 +224,8 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
   const [hintOn, setHintOn] = useState(false);
   const [party, setParty] = useState(null); // {k, kind}
   const topRef = useRef(null);
+  const sv = saved && +saved.tries === tries && arr(saved.res).length ? saved : null; // تقدّم محفوظ لنفس نسخة الأسئلة
+  const [resumed, setResumed] = useState(false);
 
   const q = items[i]; const sub = SUBJ[q.sub];
   const isTwin = phase === "twin" || phase === "twinok" || phase === "twinbad";
@@ -217,7 +238,7 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
 
   const scrollTop = () => { try { topRef.current && topRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch {} };
   const pop = (t, ms = 2600) => { setToast(t); setTimeout(() => setToast(x => x === t ? null : x), ms); };
-  const record = (v, first) => setRes(r => { const c = [...r]; c[i] = { v, first }; return c; });
+  const record = (v, first) => setRes(r => { const c = [...r]; c[i] = { v, first }; if (!demo && onSave) onSave({ n: stage.n, tries, i: i + 1, res: c.map(x => x || { v: 0, first: false }), at: Date.now() }); return c; });
   const gotKey = add => { if (score < P && score + add >= P) setTimeout(() => { beep("key"); setTimeout(() => beep("fireworks"), 500); celebrate("party"); pop("🗝️ حصلت على مفتاح المرحلة التالية! أكمل لتجمع النجوم ⭐", 3400); }, 450); };
   const check = () => {
     if (pick === null) return; const ok = +pick === +cq.a;
@@ -236,21 +257,24 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
   };
   const toTwin = () => { setPick(null); setPhase("twin"); setHintOn(false); beep("click"); scrollTop(); };
   const go = j => { setI(j); setPick(null); setPhase("ask"); setRev({}); setHintOn(false); setGate("q"); beep("click"); scrollTop(); };
-  const next = async () => {
-    setPick(null); setPhase("ask"); setRev({}); setHintOn(false);
-    if (i + 1 >= items.length) {
-      const R = [...res]; const by = s => R.filter((r, j) => r && items[j].sub === s).reduce((a, r) => a + r.v, 0);
+  const complete = async R => { const by = s => R.filter((r, j) => r && items[j].sub === s).reduce((a, r) => a + r.v, 0);
       const sk = {}; items.forEach((it, j) => { const k = it.k || "?"; sk[k] = sk[k] || [0, 0]; sk[k][1]++; if (R[j] && R[j].first) sk[k][0]++; });
       const out = { sc: R.reduce((a, r) => a + (r ? r.v : 0), 0), r: by("r"), m: by("m"), s: by("s"), first: R.filter(r => r && r.first).length, sk, of: N, per: per.r };
       beep("drum"); setGate("done"); setSummary({ ...out, streak: bestStreak, saving: true });
       const meta = await onFinish(out); setSummary({ ...out, ...meta, streak: bestStreak, saving: false });
-      window.scrollTo(0, 0); return;
-    }
+      window.scrollTo(0, 0);
+  };
+  const resume = () => { const R = arr(sv.res).map(x => ({ v: +obj(x).v || 0, first: !!obj(x).first })); setRes(R); setResumed(true); beep("start");
+    const ni = Math.min(+sv.i || R.length, items.length); if (ni >= items.length) { complete(R); return; }
+    setI(ni); setPick(null); setPhase("ask"); setGate(ni === 0 || items[ni].sub !== items[ni - 1].sub ? "gate" : "q"); scrollTop(); };
+  const next = async () => {
+    setPick(null); setPhase("ask"); setRev({}); setHintOn(false);
+    if (i + 1 >= items.length) { await complete([...res]); return; }
     const ni = i + 1; setI(ni);
     if (items[ni].sub !== q.sub && !demo) setGate("gate"); else { if (demo) setGate("q"); scrollTop(); }
   };
 
-  if (gate === "done" && summary) return <Result stage={stage} w={w} s={summary} per={per} avail={avail} demo={demo} onExit={onExit} onNext={onNext} />;
+  if (gate === "done" && summary) return <Result stage={stage} w={w} s={summary} per={per} avail={avail} demo={demo} onExit={onExit} onNext={n => onGate ? onGate(items, res, n) : onNext(n)} />;
 
   const done = phase !== "ask" && phase !== "twin";
   return <div className="tr-play" style={{ "--w1": w.c1, "--w2": w.c2, "--ws": w.soft, "--wsky": w.sky, "--sc": sub.c, "--ss": sub.soft }}>
@@ -266,13 +290,19 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
     {gate === "intro" && <div className="tr-card tr-intro tr-pop">
       <div className="tr-intro-ic">{w.icon}</div>
       <h2 className="tr-disp">{stage.title}</h2>
+      {sv && !demo ? <div className="tr-resume">
+        <div className="tr-resume-h">⏸️ توقفت في هذه المرحلة عند السؤال <b>{ar(Math.min(+sv.i + 1, N))}</b> من {ar(N)} — ومعك <b>{ar(arr(sv.res).reduce((a, x) => a + (+obj(x).v || 0), 0))}</b> 🪙</div>
+        <div className="tr-resume-bar"><i style={{ width: Math.min(100, (+sv.i || 0) / N * 100) + "%" }} /></div>
+        <button className="tr-btn tr-gold tr-big" onClick={resume}>▶️ أكمل من حيث توقفت</button>
+        <button className="tr-btn" style={{ background: "#f5f5f4" }} onClick={() => { if (window.confirm("تبدأ المرحلة من أولها؟ سيُلغى تقدّمك المحفوظ فيها.")) { onSave && onSave(null); setGate("gate"); beep("start"); } }}>🔁 ابدأ المرحلة من جديد</button>
+      </div> : null}
       <p className="tr-story"><Rich t={stage.story} /></p>
       <div className="tr-gates">{["r", "m", "s"].map(k => <div key={k} style={{ "--c": SUBJ[k].c, "--s": SUBJ[k].soft }}><span>{SUBJ[k].icon}</span><b>{SUBJ[k].gate}</b><small>{SUBJ[k].name} • {ar(per[k])} أسئلة</small></div>)}</div>
       {(() => { const by = { r: [], m: [], s: [] }; items.forEach(it => { const h = hotsOf(it); if (h && !by[it.sub].includes(h)) by[it.sub].push(h); }); return <div className="tr-hots-box"><b>🧠 مهارات التفكير العليا في هذه المرحلة</b>{["r", "m", "s"].map(k => by[k].length ? <div key={k}><span style={{ color: SUBJ[k].c }}>{SUBJ[k].icon} {SUBJ[k].name}:</span> {by[k].map(h => <em key={h} title={HOTS[h].d}>{HOTS[h].ic} {HOTS[h].n}</em>)}</div> : null)}</div>; })()}
       <div className="tr-rules">✅ إجابة صحيحة = عملة كاملة 🪙 • 🔥 الإجابات المتتالية تشعل السلسلة • 💡 تلميحة متاحة في كل سؤال • ❌ خطأ؟ سؤال تعويضي بنصف عملة • تحتاج {ar(P)} من {ar(N)} لتعبر</div>
       {tries > 0 && !demo && <div className="tr-rules" style={{ background: "#fef3c7" }}>🔁 هذه محاولتك رقم {ar(tries + 1)} — الأسئلة تتغير في كل محاولة</div>}
       {demo && <div className="tr-rules" style={{ background: "#e0e7ff" }}>👨‍🏫 وضع الشرح: تنقّل بين الأسئلة بالنقاط أعلاه أو بأزرار لوحة الشرح، وأظهر التلميحة والحل متى شئت.</div>}
-      <button className="tr-btn tr-gold tr-big" onClick={() => { setGate(demo ? "q" : "gate"); beep("start"); }}>{demo ? "ابدأ الشرح 👨‍🏫" : "انطلق 🚀"}</button>
+      {!(sv && !demo) && <button className="tr-btn tr-gold tr-big" onClick={() => { setGate(demo ? "q" : "gate"); beep("start"); }}>{demo ? "ابدأ الشرح 👨‍🏫" : "انطلق 🚀"}</button>}
     </div>}
 
     {gate === "gate" && <div className="tr-card tr-gatecard tr-pop" style={{ "--c": sub.c, "--s": sub.soft }}>
@@ -337,7 +367,7 @@ function Player({ stage, prog, avail, demo, mute, toggleMute, onFinish, onExit, 
     {fx > 0 && (phase === "ok" || phase === "twinok") && <Burst key={"b" + fx} plus={phase === "ok" ? "+١" : "+½"} big={streak >= 3} />}
     {toast && <div className="tr-toast tr-pop" key={toast}>{toast}</div>}
     {party && <Celebrate key={party.k} kind={party.kind} />}
-    {confirmExit && <div className="tr-modal" onClick={() => setConfirmExit(false)}><div className="tr-card tr-pop" onClick={e => e.stopPropagation()} style={{ maxWidth: 360, textAlign: "center" }}><div style={{ fontSize: 40 }}>🧭</div><b className="tr-disp" style={{ fontSize: 22 }}>تغادر المرحلة؟</b><p style={{ color: "#78716c", fontWeight: 700 }}>{demo ? "ستعود إلى الخريطة." : "لن تُحفظ إجاباتك في هذه المرحلة، وستبدأها من جديد لاحقاً."}</p><div style={{ display: "flex", gap: 8 }}><button className="tr-btn" style={{ flex: 1, background: "#f5f5f4" }} onClick={() => setConfirmExit(false)}>أكمل</button><button className="tr-btn" style={{ flex: 1, background: "#dc2626", color: "#fff" }} onClick={onExit}>مغادرة</button></div></div></div>}
+    {confirmExit && <div className="tr-modal" onClick={() => setConfirmExit(false)}><div className="tr-card tr-pop" onClick={e => e.stopPropagation()} style={{ maxWidth: 360, textAlign: "center" }}><div style={{ fontSize: 40 }}>🧭</div><b className="tr-disp" style={{ fontSize: 22 }}>{demo ? "تغادر المرحلة؟" : "تريد أن تستريح؟"}</b><p style={{ color: "#78716c", fontWeight: 700, lineHeight: 1.8 }}>{demo ? "ستعود إلى الخريطة." : res.filter(Boolean).length ? <>✅ <b style={{ color: "#0f766e" }}>تقدّمك محفوظ</b>: أجبت {ar(res.filter(Boolean).length)} من {ar(N)} ومعك {ar(score)} 🪙<br />عندما تعود — من هذا الجهاز أو غيره — ستكمل من السؤال {ar(Math.min(res.filter(Boolean).length + 1, N))} مباشرة.</> : "لم تُجب عن أي سؤال بعد — ستبدأ المرحلة من أولها عندما تعود."}</p><div style={{ display: "flex", gap: 8 }}><button className="tr-btn" style={{ flex: 1, background: "#f5f5f4" }} onClick={() => setConfirmExit(false)}>أكمل الآن</button><button className="tr-btn" style={{ flex: 1, background: demo ? "#dc2626" : "#0f766e", color: "#fff" }} onClick={onExit}>{demo ? "مغادرة" : "⏸️ احفظ واخرج"}</button></div></div></div>}
   </div>;
 }
 
@@ -383,7 +413,7 @@ function Result({ stage, w, s, per, avail, demo, onExit, onNext }) {
       {demo && <div className="tr-rules" style={{ background: "#e0e7ff" }}>👨‍🏫 وضع الشرح — لم تُحفظ هذه النتيجة</div>}
       {s.saving && <small style={{ color: "#78716c" }}>جارٍ حفظ تقدمك…</small>}
       <div className="tr-res-act">
-        {nextOpen && <button className="tr-btn tr-gold tr-big" onClick={() => onNext(n + 1)}>المرحلة {ar(n + 1)} ←</button>}
+        {nextOpen && <button className="tr-btn tr-gold tr-big" onClick={() => onNext(n + 1)}>🗝️ إلى بوابة المرحلة {ar(n + 1)} ←</button>}
         {hasNext && !nextOpen && <div className="tr-rules">🔓 فُتحت المرحلة {ar(n + 1)} — ستتاح قريباً من إدارة المدرسة</div>}
         <button className="tr-btn tr-big" style={{ background: pass ? "#f5f5f4" : "#7c3aed", color: pass ? "#1c1917" : "#fff" }} onClick={onExit}>{pass ? "🗺️ العودة للخريطة" : "🗺️ الخريطة ثم المحاولة"}</button>
       </div>
@@ -731,4 +761,154 @@ const PUB_CSS = `
 .tr-fw s{position:absolute;left:0;top:0;width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c),0 0 3px #fff;transform:rotate(var(--a)) translateX(0);animation:trFw 1.3s ease-out forwards;animation-delay:inherit}
 @keyframes trFwShow{0%{opacity:1}85%{opacity:1}100%{opacity:0}}
 @keyframes trFw{0%{transform:rotate(var(--a)) translateX(0) scale(1.4)}100%{transform:rotate(var(--a)) translateX(90px) scale(.4)}}
+`;
+
+// ══════════ 🗝️ بوابة المفتاح بين المرحلتين ══════════
+// سؤال من كل مادة (قراءة • رياضيات • علوم) مختار من المرحلة التي عبرها الطالب — ويُفضَّل ما أخطأ فيه ليتعلّمه
+// الإجابات الثلاث تصنع المفتاح ← يفتح الصندوق ← تخرج جوهرة ومفتاح ← يأخذهما المستكشف ويمشي ليفتح بوابة المرحلة التالية ← ألعاب نارية
+function kgPick(stage, items, res, seed = 0) {
+  const L0 = items || [...stage.read.qs.map(q => ({ ...q, sub: "r" })), ...stage.math.map(q => ({ ...q, sub: "m" })), ...stage.sci.map(q => ({ ...q, sub: "s" }))];
+  return ["r", "m", "s"].map((s, k) => {
+    const L = L0.map((q, j) => ({ q, j })).filter(x => x.q.sub === s); if (!L.length) return null;
+    const wrong = res ? L.filter(x => res[x.j] && res[x.j].v < 1) : [];
+    const pool = wrong.length ? wrong : L; const x = pool[(seed * 7 + k * 5 + stage.n * 3) % pool.length];
+    return { ...(x.q.t ? swapTwin(x.q) : x.q), sub: s, wasWrong: wrong.length > 0 };
+  }).filter(Boolean);
+}
+const KG_KID = <svg viewBox="0 0 80 120" className="kg-kid-svg">
+  <g className="kg-leg l"><rect x="30" y="80" width="9" height="30" rx="4" fill="#1e3a8a" /><ellipse cx="33" cy="112" rx="8" ry="4.5" fill="#3f2a14" /></g>
+  <g className="kg-leg r"><rect x="42" y="80" width="9" height="30" rx="4" fill="#1e40af" /><ellipse cx="47" cy="112" rx="8" ry="4.5" fill="#3f2a14" /></g>
+  <rect x="47" y="46" width="16" height="26" rx="6" fill="#b45309" /><rect x="49" y="50" width="12" height="6" rx="2" fill="#f59e0b" />
+  <path d="M26 46 h30 a6 6 0 0 1 6 6 v30 h-42 v-30 a6 6 0 0 1 6 -6z" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1.5" />
+  <path d="M40 46 v36" stroke="#cbd5e1" strokeWidth="1.5" />
+  <g className="kg-arm"><rect x="16" y="50" width="8" height="26" rx="4" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1.2" /><circle cx="20" cy="77" r="4.5" fill="#f2c094" /></g>
+  <circle cx="40" cy="30" r="16" fill="#f2c094" /><circle cx="33" cy="30" r="2" fill="#1c1917" /><circle cx="45" cy="30" r="2" fill="#1c1917" /><path d="M34 37 q5 4 10 0" stroke="#9a3412" strokeWidth="2" fill="none" strokeLinecap="round" />
+  <path d="M22 22 q18 -18 36 0 l4 3 h-44z" fill="#a16207" /><rect x="18" y="22" width="44" height="5" rx="2.5" fill="#78350f" /><circle cx="27" cy="34" r="3" fill="#fca5a5" opacity=".6" /><circle cx="51" cy="34" r="3" fill="#fca5a5" opacity=".6" />
+</svg>;
+const KG_GEM = <svg viewBox="0 0 64 56"><path d="M14 2h36l14 16-32 36L0 18z" fill="#22d3ee" /><path d="M14 2 22 18 32 2 42 18 50 2M0 18h64M22 18l10 36 10-36" fill="none" stroke="#0e7490" strokeWidth="2" /><path d="M18 6l6 10" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".8" /></svg>;
+const KG_KEY = <svg viewBox="0 0 80 40"><circle cx="16" cy="20" r="12" fill="none" stroke="#f5b301" strokeWidth="7" /><path d="M28 20h46M62 20v12M72 20v9" stroke="#f5b301" strokeWidth="7" strokeLinecap="round" /><circle cx="16" cy="20" r="12" fill="none" stroke="#fde68a" strokeWidth="2" /></svg>;
+
+function KeyGate({ stage, qs, nextN, demo, onGem, onEnter, onMap }) {
+  const w = worldOf(stage.n); const nw = worldOf(Math.min(TR_TOTAL, nextN));
+  const [k, setK] = useState(-1); // -1 مقدمة • 0..2 الأسئلة • 3 العرض
+  const [pick, setPick] = useState(null); const [bad, setBad] = useState([]); const [ph, setPh] = useState("ask"); // ask | ok | reveal
+  const [got, setGot] = useState([]); const [show, setShow] = useState(true); const [sc, setSc] = useState(0); const [party, setParty] = useState(null); const T = useRef([]);
+  useEffect(() => () => T.current.forEach(clearTimeout), []);
+  const later = (ms, f) => T.current.push(setTimeout(f, ms));
+  const q = k >= 0 && k < 3 ? qs[k] : null; const sub = q ? SUBJ[q.sub] : null;
+  const order = useMemo(() => q ? shuffleIdx(q.o.length, stage.n * 13 + k * 7 + 5) : [], [k]);
+  const check = () => { if (pick === null) return; if (+pick === +q.a) { setPh("ok"); setGot(g => [...g, k]); beep("ok"); setParty({ k: Date.now(), kind: "petals" }); }
+    else { const b = [...bad, pick]; setBad(b); setPick(null); beep("bad"); if (b.length >= 2) { setPh("reveal"); setGot(g => [...g, k]); } } };
+  const nextQ = () => { setPick(null); setBad([]); setPh("ask"); setShow(true); if (k + 1 < 3) { setK(k + 1); beep("gate"); } else play(); window.scrollTo(0, 0); };
+  // 🎬 العرض: المفتاح ← الصندوق ← الجوهرة ← المستكشف ← البوابة ← الألعاب النارية
+  const play = () => { setK(3); setSc(1); beep("key");
+    later(1500, () => { setSc(2); beep("pop"); }); later(2300, () => { setSc(3); beep("win"); onGem && onGem(); });
+    later(3700, () => { setSc(4); beep("click"); }); later(4900, () => { setSc(5); beep("star", 2); }); later(5300, () => { setSc(6); beep("gate"); });
+    later(7600, () => { setSc(7); beep("key"); }); later(8300, () => { setSc(8); beep("fireworks"); setParty({ k: Date.now(), kind: "finale" }); }); later(9000, () => beep("win")); };
+  const skip = () => { T.current.forEach(clearTimeout); T.current = []; setSc(8); onGem && onGem(); beep("fireworks"); setParty({ k: Date.now(), kind: "finale" }); };
+  return <div className="tr-play kg" style={{ "--w1": w.c1, "--w2": w.c2, "--ws": w.soft, "--wsky": w.sky, "--n1": nw.c1, "--n2": nw.c2 }}>
+    <header className="tr-play-hud"><button className="tr-x" onClick={onMap} aria-label="الخريطة">✕</button><div className="tr-play-t"><small>بين المرحلتين {ar(stage.n)} و{ar(nextN)}</small><b className="tr-disp">🗝️ بوابة المفتاح</b></div>
+      <div className="kg-locks">{["r", "m", "s"].map((s, j) => <span key={s} className={got.includes(j) ? "on" : k === j ? "cur" : ""} style={{ "--c": SUBJ[s].c }}>{SUBJ[s].icon}</span>)}</div></header>
+    {k === -1 && <div className="tr-card tr-pop kg-intro">
+      <div className="kg-mini"><span className="kg-mini-chest"><svg viewBox="0 0 120 100" width="110"><path d="M10 40h100v50a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8z" fill="#92400e" /><path d="M10 40C10 16 30 4 60 4s50 12 50 36z" fill="#b45309" /><path d="M10 40h100M10 84h100" stroke="#f5c542" strokeWidth="6" /><path d="M32 8v90M88 8v90" stroke="#f5c542" strokeWidth="6" /><rect x="50" y="34" width="20" height="24" rx="4" fill="#f5c542" /><circle cx="60" cy="44" r="3.5" fill="#5a2a0c" /><path d="M60 47v6" stroke="#5a2a0c" strokeWidth="3" /></svg></span><span className="kg-mini-lock">🔒</span></div>
+      <h2 className="tr-disp">بطلٌ عبر المرحلة {ar(stage.n)}!</h2>
+      <p>بوابة <b>المرحلة {ar(nextN)}</b> مقفلة، ومفتاحها داخل <b>صندوق الكنز</b>. أجب عن <b>ثلاثة أسئلة</b> — سؤال من كل بوابة عبرتها — لتصنع المفتاح وتفتح الصندوق 💎</p>
+      <div className="tr-gates">{qs.map((x, j) => <div key={j} style={{ "--c": SUBJ[x.sub].c, "--s": SUBJ[x.sub].soft }}><span>{SUBJ[x.sub].icon}</span><b>قطعة المفتاح {ar(j + 1)}</b><small>{SUBJ[x.sub].name}{x.wasWrong ? " • من أسئلتك الصعبة" : ""}</small></div>)}</div>
+      <button className="tr-btn tr-gold tr-big" onClick={() => { setK(0); beep("start"); }}>اصنع المفتاح 🗝️</button>
+      {demo && <button className="tr-btn" style={{ background: "#e0e7ff" }} onClick={play}>👨‍🏫 عرض المشهد مباشرة</button>}
+    </div>}
+    {q && <>
+      {q.sub === "r" && stage.read && <div className={"tr-card tr-passage" + (show ? "" : " closed")}><button className="tr-passage-h" onClick={() => setShow(v => !v)}><span>📜 {stage.read.title}</span><small>{show ? "إخفاء النص ▲" : "عرض النص ▼"}</small></button>{show && <div className="tr-passage-b">{stage.read.text.map((p, j) => <p key={j}><Rich t={p} /></p>)}{stage.read.fig && <Fig f={stage.read.fig} />}</div>}</div>}
+      <div className={"tr-card tr-q kg-q" + (bad.length && ph === "ask" ? " shake" : "")} key={k + "-" + bad.length} style={{ "--sc": sub.c, "--ss": sub.soft }}>
+        <div className="tr-q-meta"><span className="tr-chip" style={{ background: sub.soft, color: sub.c }}>{sub.icon} قطعة المفتاح {ar(k + 1)} من ٣ — {sub.name}</span>{q.wasWrong && <span className="tr-chip tw">💪 سؤال سبق أن أتعبك</span>}</div>
+        <div className="tr-q-text"><Rich t={q.q} /></div><Fig f={q.fig} />
+        <div className={"tr-opts" + (q.o.some(o => String(o).length > 28) ? " col" : "")}>{order.map((oi, j) => { const right = oi === +q.a; const off = bad.includes(oi);
+          return <button key={oi} disabled={ph !== "ask" || off} className={"tr-opt" + (pick === oi ? " sel" : "") + (ph !== "ask" && right ? " right" : "") + (off ? " wrong" : "")} onClick={() => { setPick(oi); beep("click"); }}><span className="tr-let">{LET[j]}</span><span className="tr-opt-t"><Rich t={q.o[oi]} /></span></button>; })}</div>
+        {ph === "ask" && bad.length === 1 && <div className="tr-fb hint tr-pop"><b>💡 قريب! جرّب مرة أخرى</b><p><Rich t={q.h || "أعد قراءة السؤال، وحدّد المطلوب، واستبعد الخيار غير المنطقي."} /></p></div>}
+        {ph === "ask" && <button className="tr-btn tr-big tr-check" disabled={pick === null} onClick={check}>تحقّق ✓</button>}
+        {ph === "ok" && <div className="tr-fb ok tr-pop"><b>{["🧩 القطعة الأولى معك!", "🧩 القطعة الثانية! المفتاح يتشكّل…", "🗝️ اكتمل المفتاح!"][k]}</b>{q.e && <p className="tr-exp"><Rich t={q.e} /></p>}<button className="tr-btn tr-big tr-gold" onClick={nextQ}>{k < 2 ? "القطعة التالية ←" : "افتح الصندوق 🧰"}</button></div>}
+        {ph === "reveal" && <div className="tr-fb bad tr-pop"><b>لا بأس — تعلّمتها الآن 💪 وحصلت على القطعة</b><p>الإجابة الصحيحة: <b><Rich t={q.o[+q.a]} /></b></p>{q.e && <p className="tr-exp"><Rich t={q.e} /></p>}<button className="tr-btn tr-big tr-gold" onClick={nextQ}>{k < 2 ? "القطعة التالية ←" : "افتح الصندوق 🧰"}</button></div>}
+      </div>
+    </>}
+    {k === 3 && <div className="tr-card kg-stage tr-pop">
+      <div className={"kg-scene s" + sc}>
+        <div className="kg-sky" /><div className="kg-ground" />
+        <div className="kg-rays" />
+        <div className="kg-gate"><svg viewBox="0 0 100 120"><path d="M6 118V46a44 44 0 0 1 88 0v72z" fill="#78716c" /><path d="M14 118V48a36 36 0 0 1 72 0v70z" fill="#1c1917" /><path d="M6 46a44 44 0 0 1 88 0" fill="none" stroke="#a8a29e" strokeWidth="5" strokeDasharray="9 4" /></svg>
+          <div className="kg-light" /><div className="kg-door l" /><div className="kg-door r" /><b className="kg-gn">{ar(nextN)}</b><span className="kg-lock">🔒</span></div>
+        <div className="kg-chest"><div className="kg-glow" /><svg viewBox="0 0 120 100" className="kg-body"><path d="M10 40h100v50a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8z" fill="#92400e" /><path d="M10 40h100" stroke="#f5c542" strokeWidth="6" /><path d="M10 84h100" stroke="#f5c542" strokeWidth="4" /><path d="M32 40v58M88 40v58" stroke="#f5c542" strokeWidth="6" /><rect x="50" y="44" width="20" height="22" rx="4" fill="#f5c542" /><circle cx="60" cy="53" r="3.5" fill="#5a2a0c" /><path d="M60 56v6" stroke="#5a2a0c" strokeWidth="3" /></svg>
+          <svg viewBox="0 0 120 50" className="kg-lid"><path d="M10 48C10 18 30 4 60 4s50 14 50 44z" fill="#b45309" /><path d="M10 48C10 18 30 4 60 4s50 14 50 44" fill="none" stroke="#f5c542" strokeWidth="6" /><path d="M32 12v36M88 12v36" stroke="#f5c542" strokeWidth="6" /></svg>
+          <div className="kg-gem">{KG_GEM}</div><div className="kg-key2">{KG_KEY}</div></div>
+        <div className="kg-pieces">{["r", "m", "s"].map((s, j) => <span key={s} className={"p" + j} style={{ "--c": SUBJ[s].c }}>{SUBJ[s].icon}</span>)}</div>
+        <div className="kg-key">{KG_KEY}</div>
+        <div className="kg-kid"><div className="kg-bob">{KG_KID}<div className="kg-hold"><i>{KG_GEM}</i><i>{KG_KEY}</i></div></div></div>
+        <div className="kg-sparks">{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ "--a": i * 36 + "deg" }} />)}</div>
+      </div>
+      <div className="kg-cap">{sc < 2 ? "🧩 القطع الثلاث تتحد… المفتاح يتشكّل!" : sc < 3 ? "🗝️ المفتاح في قفل الصندوق…" : sc < 4 ? "💎 انفتح الصندوق! جوهرة… ومفتاح البوابة!" : sc < 6 ? "🧒 المستكشف يأخذ الجوهرة والمفتاح…" : sc < 7 ? `🚶 في الطريق إلى بوابة المرحلة ${ar(nextN)}…` : sc < 8 ? "🔓 المفتاح في القفل…" : `🎆 انفتحت بوابة المرحلة ${ar(nextN)}!`}</div>
+      {sc >= 8 ? <div className="kg-end tr-pop"><div className="kg-gem-won"><i>{KG_GEM}</i><b>+١ جوهرة</b></div>
+        <button className="tr-btn tr-gold tr-big" onClick={() => onEnter(nextN)}>ادخل المرحلة {ar(nextN)} ←</button>
+        <button className="tr-btn tr-big" style={{ background: "#f5f5f4" }} onClick={onMap}>🗺️ الخريطة</button></div>
+        : <button className="kg-skip" onClick={skip}>تخطّي المشهد ⏭</button>}
+    </div>}
+    {party && <Celebrate key={party.k} kind={party.kind} />}
+  </div>;
+}
+const KG_CSS = `
+.kg-locks{display:flex;gap:6px}.kg-locks span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#e7e5e4;filter:grayscale(1);opacity:.6;font-size:17px;transition:.3s}
+.kg-locks span.cur{opacity:1;filter:none;background:#fff;box-shadow:0 0 0 3px var(--c)}.kg-locks span.on{opacity:1;filter:none;background:var(--c);box-shadow:0 0 0 3px #fde68a;animation:trCoin .5s}
+.kg-intro{text-align:center;display:grid;gap:12px;justify-items:center}.kg-intro p{font-weight:700;line-height:1.9;color:#44403c;max-width:520px}
+.kg-mini{position:relative;font-size:64px;line-height:0;animation:trBob 2s ease-in-out infinite}.kg-mini-lock{position:absolute;bottom:-4px;left:-14px;font-size:30px}
+.kg-stage{padding:10px;overflow:hidden}
+.kg-scene{position:relative;width:100%;aspect-ratio:16/10;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,var(--wsky,#eff6ff),#fff7e6)}
+.kg-ground{position:absolute;left:0;right:0;bottom:0;height:24%;background:linear-gradient(180deg,#e9c46a,#c99a3d);border-top:4px solid #b7862c}
+.kg-rays{position:absolute;left:50%;top:58%;width:150%;aspect-ratio:1;transform:translate(-50%,-50%) scale(0);background:repeating-conic-gradient(from 0deg,rgba(253,224,71,.55) 0 8deg,transparent 8deg 22deg);border-radius:50%;transition:transform .9s cubic-bezier(.2,1.4,.4,1);opacity:.9}
+.s3 .kg-rays,.s4 .kg-rays,.s5 .kg-rays{transform:translate(-50%,-50%) scale(1);animation:kgSpin 9s linear infinite}
+.s6 .kg-rays,.s7 .kg-rays,.s8 .kg-rays{transform:translate(-50%,-50%) scale(.7);opacity:.35;animation:kgSpin 9s linear infinite}
+@keyframes kgSpin{to{transform:translate(-50%,-50%) scale(var(--sc,1)) rotate(360deg)}}
+.kg-gate{position:absolute;left:4%;bottom:20%;width:20%;aspect-ratio:100/120}.kg-gate svg{position:absolute;inset:0;width:100%;height:100%}
+.kg-light{position:absolute;left:14%;right:14%;bottom:0;top:22%;border-radius:40px 40px 0 0;background:radial-gradient(circle at 50% 70%,#fff,#fde68a 40%,var(--n2,#f59e0b));opacity:0;transition:opacity .6s}
+.kg-door{position:absolute;bottom:0;top:22%;width:36%;background:linear-gradient(90deg,#7c2d12,#9a3412);border:2px solid #451a03;transition:transform 1s ease}
+.kg-door.l{left:14%;border-radius:36px 0 0 0;transform-origin:left}.kg-door.r{right:14%;border-radius:0 36px 0 0;transform-origin:right}
+.kg-gn{position:absolute;top:-18%;left:50%;transform:translateX(-50%);background:var(--n1,#1d4ed8);color:#fff;font-family:Lalezar,Cairo;font-weight:400;font-size:clamp(14px,3.4vw,24px);min-width:2em;text-align:center;border-radius:10px;padding:0 6px;border:2px solid #fde68a}
+.kg-lock{position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);font-size:clamp(18px,4vw,30px);transition:transform .9s ease-in,opacity .9s}
+.s7 .kg-lock,.s8 .kg-lock{transform:translate(-50%,160%) rotate(70deg);opacity:0}
+.s8 .kg-door.l{transform:perspective(300px) rotateY(75deg)}.s8 .kg-door.r{transform:perspective(300px) rotateY(-75deg)}.s8 .kg-light{opacity:1}
+.kg-chest{position:absolute;left:50%;bottom:16%;width:24%;aspect-ratio:120/100;transform:translateX(-50%)}
+.kg-body{position:absolute;left:0;bottom:0;width:100%}.kg-lid{position:absolute;left:0;width:100%;top:-2%;transform-origin:8% 96%;transition:transform .7s cubic-bezier(.3,1.6,.5,1)}
+.s3 .kg-lid,.s4 .kg-lid,.s5 .kg-lid,.s6 .kg-lid,.s7 .kg-lid,.s8 .kg-lid{transform:rotate(-115deg)}
+.kg-glow{position:absolute;left:-30%;right:-30%;top:-40%;bottom:-10%;background:radial-gradient(circle,rgba(253,224,71,.95),rgba(253,224,71,0) 60%);opacity:0;transition:opacity .5s}.s3 .kg-glow,.s4 .kg-glow{opacity:1}
+.kg-gem,.kg-key2{position:absolute;left:50%;top:30%;width:36%;transform:translate(-50%,0) scale(.2);opacity:0;transition:transform 1s cubic-bezier(.2,1.5,.4,1),opacity .3s}
+.kg-key2{width:46%}
+.s3 .kg-gem{opacity:1;transform:translate(-90%,-150%) scale(1) rotate(-8deg);animation:kgFloat 1.6s ease-in-out .9s infinite}.s3 .kg-key2{opacity:1;transform:translate(-5%,-120%) scale(1) rotate(12deg)}
+@keyframes kgFloat{50%{margin-top:-6px}}
+.s4 .kg-gem,.s5 .kg-gem,.s6 .kg-gem,.s7 .kg-gem,.s8 .kg-gem,.s5 .kg-key2,.s6 .kg-key2,.s7 .kg-key2,.s8 .kg-key2{opacity:0}.s4 .kg-gem{opacity:1;transform:translate(-90%,-150%) scale(1)}.s4 .kg-key2{opacity:1;transform:translate(-5%,-120%) scale(1)}
+.kg-pieces span{position:absolute;width:9%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(14px,3.4vw,26px);background:var(--c);box-shadow:0 0 0 3px #fde68a;opacity:0;transition:all .9s cubic-bezier(.5,0,.3,1)}
+.kg-pieces .p0{left:10%;top:8%}.kg-pieces .p1{left:45.5%;top:4%}.kg-pieces .p2{left:81%;top:8%}
+.s1 .kg-pieces span{opacity:1;animation:kgJoin 1.4s cubic-bezier(.5,0,.3,1) forwards}
+.s1 .kg-pieces .p0{--x:220%}.s1 .kg-pieces .p2{--x:-220%}.s1 .kg-pieces .p1{--x:0%}
+@keyframes kgJoin{0%{transform:scale(.3)}30%{transform:scale(1.15)}100%{transform:translate(var(--x),120%) scale(.2);opacity:0}}
+.kg-key{position:absolute;left:50%;top:22%;width:16%;transform:translate(-50%,0) scale(0);opacity:0;transition:transform .6s cubic-bezier(.2,1.6,.4,1),top .8s ease-in,opacity .3s;filter:drop-shadow(0 0 8px #fde68a)}
+.s1 .kg-key{opacity:0}.s1 .kg-key{animation:kgKeyIn 1.5s ease forwards}@keyframes kgKeyIn{0%,60%{opacity:0;transform:translate(-50%,0) scale(0)}80%{opacity:1;transform:translate(-50%,0) scale(1.3) rotate(-15deg)}100%{opacity:1;transform:translate(-50%,0) scale(1) rotate(0)}}
+.s2 .kg-key{opacity:1;top:58%;transform:translate(-50%,0) scale(.55) rotate(90deg)}
+.kg-kid{position:absolute;left:82%;bottom:14%;width:13%;transition:left 1.2s linear}
+.kg-kid-svg{display:block;width:100%;transform:scaleX(-1)}
+.s4 .kg-kid,.s5 .kg-kid{left:62%}.s6 .kg-kid{left:20%;transition:left 2.3s linear}.s7 .kg-kid,.s8 .kg-kid{left:20%}
+.s4 .kg-bob,.s6 .kg-bob{animation:kgStep .32s ease-in-out infinite}@keyframes kgStep{50%{transform:translateY(-4%)}}
+.s4 .kg-leg.l,.s6 .kg-leg.l{animation:kgLeg .32s ease-in-out infinite}.s4 .kg-leg.r,.s6 .kg-leg.r{animation:kgLeg .32s ease-in-out infinite reverse}
+.kg-leg{transform-box:fill-box;transform-origin:50% 0}@keyframes kgLeg{0%{transform:rotate(18deg)}50%{transform:rotate(-18deg)}100%{transform:rotate(18deg)}}
+.kg-arm{transform-box:fill-box;transform-origin:50% 0;transition:transform .4s}.s5 .kg-arm,.s6 .kg-arm,.s7 .kg-arm,.s8 .kg-arm{transform:rotate(150deg)}
+.kg-bob{position:relative}.kg-hold{position:absolute;left:-20%;top:-26%;width:70%;display:flex;gap:2%;opacity:0;transform:scale(.3);transition:all .5s cubic-bezier(.2,1.6,.4,1)}.kg-hold i{display:block;flex:1}.kg-hold i:last-child{flex:1.4}
+.s5 .kg-hold,.s6 .kg-hold,.s7 .kg-hold,.s8 .kg-hold{opacity:1;transform:scale(1)}.s8 .kg-hold{animation:kgFloat 1s ease-in-out infinite}
+.kg-sparks{position:absolute;left:24%;bottom:40%;width:0;height:0}.kg-sparks i{position:absolute;width:8px;height:8px;border-radius:50%;background:#fde047;opacity:0}
+.s7 .kg-sparks i{animation:kgSpark .8s ease-out forwards;transform:rotate(var(--a))}@keyframes kgSpark{0%{opacity:1;transform:rotate(var(--a)) translateY(0)}100%{opacity:0;transform:rotate(var(--a)) translateY(-60px)}}
+.kg-cap{text-align:center;font-weight:900;font-size:clamp(15px,3.6vw,20px);color:#78350f;margin:10px 0 4px;min-height:1.6em}
+.kg-end{display:grid;gap:8px;justify-items:center}.kg-gem-won{display:flex;align-items:center;gap:8px;font-weight:900;color:#0e7490;font-size:18px}.kg-gem-won i{width:34px;display:block;animation:trBob 1.4s infinite}
+.s3 .kg-key,.s4 .kg-key,.s5 .kg-key,.s6 .kg-key,.s7 .kg-key,.s8 .kg-key{opacity:0}
+.kg-skip{display:block;margin:6px auto 0;background:none;border:0;color:#78716c;font-weight:800;cursor:pointer;font-family:inherit;text-decoration:underline}
+.tr-hud-stats .gem{color:#0e7490}
+`;
+const RS_CSS = `
+.tr-resume{display:grid;gap:8px;background:#ecfdf5;border:2px dashed #10b981;border-radius:18px;padding:12px}
+.tr-resume-h{font-weight:800;color:#065f46;line-height:1.8}.tr-resume-bar{height:10px;border-radius:99px;background:#d1fae5;overflow:hidden}.tr-resume-bar i{display:block;height:100%;background:linear-gradient(90deg,#10b981,#f59e0b)}
+.tr-paused{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#0f766e;color:#fff;font-weight:900;font-size:11.5px;border-radius:99px;padding:2px 8px;white-space:nowrap;border:2px solid #fde68a;z-index:3;animation:trBob 1.6s ease-in-out infinite}
 `;
