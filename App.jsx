@@ -32434,6 +32434,12 @@ function PeriodPicker({ pm, setPm, dateK, setDateK, allowTerm = true, ac = "#7c3
   );
 }
 const SC_META = "school-sclass-meta";
+// 💬 تعليق المعلم وشرح التصنيف + الإجراء المقترح
+const SC_AC = [["p", "📞", "التواصل مع ولي الأمر", "#1d4ed8", "#dbeafe"], ["r", "📘", "خطة علاجية", "#7c3aed", "#ede9fe"], ["g", "🧭", "تحويل للموجه الطلابي", "#0f766e", "#ccfbf1"], ["v", "🧑‍💼", "إحالة لوكيل شؤون الطلاب", "#b45309", "#fef3c7"], ["f", "👀", "متابعة صفية مستمرة", "#475569", "#f1f5f9"], ["e", "🌟", "تعزيز وتشجيع", "#15803d", "#dcfce7"]];
+const SC_ACM = Object.fromEntries(SC_AC.map(([k, ic, l, c, bg]) => [k, [ic, l, c, bg]]));
+const SC_CMQ = ["يمتلك قدرات جيدة ويحتاج إلى تركيز أكبر داخل الحصة", "يواجه صعوبة في المهارات الأساسية للمادة", "لا يُحضر الواجبات والأدوات بانتظام", "كثير الانشغال بالحديث الجانبي", "تأخره وغيابه يؤثران على تحصيله", "تحسّن ملحوظ مقارنة بالفترة السابقة", "متعاون ومشارك بفاعلية"];
+const scEsc = t => String(t || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const scCmHTML = cms => cms.map(c => `<div class="cm"><div class="cmh"><b>💬 أ. ${scEsc(c.teacher)}</b>${c.subject ? `<i>${scEsc(c.subject)}</i>` : ""}</div>${c.text ? `<div class="cmt">${scEsc(c.text)}</div>` : ""}${c.ac.length ? `<div class="acs">${c.ac.map(k => SC_ACM[k] ? `<span style="background:${SC_ACM[k][3]};color:${SC_ACM[k][2]}">${SC_ACM[k][0]} ${SC_ACM[k][1]}</span>` : "").join("")}</div>` : ""}</div>`).join("");
 const scFmtD = (iso, cal) => { if (!iso) return ""; const d = maDate(iso); return cal === "g" ? maGreg(d) : maHijri(d); };
 const SC_DIMS = [
   { k: "a", t: "المستوى الدراسي", ic: "📚", ac: "#4f46e5", ac2: "#7c3aed", soft: "#eef2ff", lv: [["مميز", "#15803d", "#dcfce7"], ["متوسط", "#2563eb", "#dbeafe"], ["متدنٍ", "#c2410c", "#ffedd5"], ["يحتاج متابعة عاجلة", "#b91c1c", "#fee2e2"]] },
@@ -32500,6 +32506,17 @@ const scCSS = `
 .sc-info span{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #ede9fe;border-radius:12px;padding:6px 12px;font-size:12.5px;font-weight:800;color:#334155}
 .sc-info span b{color:#6d28d9}
 @media (max-width:1100px){.sc-stages{grid-template-columns:1fr}}
+.sc-cm{margin:0 16px 16px;border-radius:18px;background:linear-gradient(135deg,#fdf4ff,#eff6ff);border:1px dashed #c4b5fd;padding:12px 14px;display:grid;gap:9px}
+.sc-cm-add{margin:0 16px 14px;display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);border:1.5px dashed #c4b5fd;background:#faf5ff;color:#6d28d9;border-radius:14px;padding:9px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer}.sc-cm-add:hover{background:#f3e8ff}
+.sc-cm-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sc-cm-h i{font-style:normal;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-size:15px}.sc-cm-h b{font-size:13.5px;color:#4c1d95}.sc-cm-h small{font-size:11px;color:#64748b;font-weight:700}
+.sc-cm-q{display:flex;gap:6px;flex-wrap:wrap}.sc-cm-q button{border:1px solid #ddd6fe;background:#fff;color:#5b21b6;border-radius:999px;padding:4px 10px;font-family:inherit;font-weight:800;font-size:11.5px;cursor:pointer}.sc-cm-q button:hover{background:#ede9fe}
+.sc-cm-t{width:100%;min-height:70px;border:1.5px solid #ddd6fe;border-radius:12px;padding:9px 11px;font-family:inherit;font-size:13px;font-weight:700;line-height:1.8;color:#1e293b;background:#fff;outline:none;resize:vertical}.sc-cm-t:focus{border-color:#7c3aed}
+.sc-cm-ac{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.sc-cm-ac>span{font-size:12px;font-weight:900;color:#334155}.sc-cm-ac button{border:1.5px solid #e2e8f0;border-radius:999px;padding:4px 10px;font-family:inherit;font-weight:900;font-size:11.5px;cursor:pointer;background:#fff;color:#475569}.sc-cm-ac button.on{color:#fff;border-color:transparent}
+.sc-cms{display:grid;gap:7px;margin-top:8px}
+.sc-cmc{position:relative;background:linear-gradient(135deg,#faf5ff,#f8fafc);border:1px solid #e9d5ff;border-right:4px solid #7c3aed;border-radius:14px;padding:8px 12px}
+.sc-cmc-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px}.sc-cmc-h .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-weight:900;font-size:11px}.sc-cmc-h b{color:#4c1d95;font-weight:900}.sc-cmc-h em{font-style:normal;background:#ede9fe;color:#6d28d9;border-radius:999px;padding:1px 8px;font-weight:900;font-size:11px}.sc-cmc-h small{margin-inline-start:auto;color:#94a3b8;font-weight:700;font-size:10.5px}
+.sc-cmc p{margin:5px 0 0;font-size:13px;font-weight:700;color:#1e293b;line-height:1.8}
+.sc-cmc-ac{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.sc-cmc-ac span{border-radius:999px;padding:2px 9px;font-weight:900;font-size:11px}
 .sc-nt{font-size:11.5px;font-weight:700;color:#475569;background:#f8fafc;border-right:3px solid #c4b5fd;border-radius:6px;padding:3px 8px;margin-top:4px}
 .sc-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:900;font-size:11.5px;white-space:nowrap}
 .sc-stack{display:flex;height:14px;border-radius:8px;overflow:hidden;background:#f1f5f9}
@@ -32565,6 +32582,10 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   }, [ck, recKey]);
   const isMine = (k) => !!(data[k] && Object.keys(data[k]).some(x => isT ? x.startsWith(tKey + "_") : x.startsWith("admin")));
   const changeSubject = (v) => { if (dirty && !window.confirm("لديك تغييرات غير محفوظة، هل تريد تركها؟")) return; setSubject(v); };
+  const [cmOpen, setCmOpen] = useState({});
+  const setCm = (sid, txt) => { setDraft(p => ({ ...p, [sid]: { ...(p[sid] || {}), cm: txt } })); setDirty(true); };
+  const addCm = (sid, t) => { setDraft(p => { const cur = p[sid] || {}; const o = String(cur.cm || "").trim(); return { ...p, [sid]: { ...cur, cm: o ? (o.includes(t) ? o : o.replace(/[.،]$/, "") + "، و" + t) : t } }; }); setDirty(true); };
+  const togAc = (sid, k) => { setDraft(p => { const cur = p[sid] || {}; const a = maArr(cur.ac); return { ...p, [sid]: { ...cur, ac: a.includes(k) ? a.filter(x => x !== k) : [...a, k] } }; }); setDirty(true); };
   const setNote = (sid, dk, txt) => { setDraft(p => ({ ...p, [sid]: { ...(p[sid] || {}), [SC_NK[dk]]: txt } })); setDirty(true); };
 
   const login = async () => {
@@ -32582,7 +32603,7 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   const setAll = (dk, i) => { const st = studentsOf(ck); setDraft(p => { const o = { ...p }; st.forEach(s => { o[s.id] = { ...(o[s.id] || {}), [dk]: i }; }); return o; }); setDirty(true); };
   const save = async () => {
     const st = studentsOf(ck);
-    const items = {}; st.forEach(s => { const v = draft[s.id]; if (v) { const o = {}; ["a", "b", "t"].forEach(k => { if (v[k] != null) o[k] = v[k]; const nt = String(v[SC_NK[k]] || "").trim(); if (nt) o[SC_NK[k]] = nt.slice(0, 300); }); if (Object.keys(o).length) items[s.id] = o; } });
+    const items = {}; st.forEach(s => { const v = draft[s.id]; if (v) { const o = {}; ["a", "b", "t"].forEach(k => { if (v[k] != null) o[k] = v[k]; const nt = String(v[SC_NK[k]] || "").trim(); if (nt) o[SC_NK[k]] = nt.slice(0, 300); }); const cm = String(v.cm || "").trim(); if (cm) o.cm = cm.slice(0, 800); const ac = maArr(v.ac).filter(k => SC_ACM[k]); if (ac.length) o.ac = ac; if (Object.keys(o).length) items[s.id] = o; } });
     if (!recKey) { alert("اختر المادة أولاً"); return; }
     setBusy(true);
     const rec = { teacher: tName, subject: subject, at: Date.now(), items, pm, pk };
@@ -32609,12 +32630,13 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
 
   // ── الخلاصة
   const spPass = r => { if (spf === "all") return true; if (spf === "term") return !r.pm || r.pm === "term"; if (spf === "week") return r.pm === "week" && r.pk === wkStart(maKey(new Date())); if (spf === "today") return r.pm === "day" && r.pk === maKey(new Date()); if (spf === "lastweek") { const d = new Date(); d.setDate(d.getDate() - 7); return (r.pm === "week" && r.pk === wkStart(maKey(d))); } return true; };
-  const sumOf = (k, sid) => { const recs = Object.values(data[k] || {}).filter(spPass); const o = { n: 0, by: [] }; SC_DIMS.forEach(d => { const vals = recs.map(r => r.items && r.items[sid] ? r.items[sid][d.k] : undefined).filter(v => v != null).map(Number); o[d.k] = scSummary(vals); }); o.notes = []; recs.forEach(r => { const it = r.items && r.items[sid]; if (it) { o.n++; o.by.push(r); SC_DIMS.forEach(d => { const t = it[SC_NK[d.k]]; if (t) o.notes.push({ dk: d.k, text: String(t), by: r.subject || r.teacher }); }); } }); return o; };
-  const notesJSX = (r) => r.sum.notes.length ? <div className="mt-1">{r.sum.notes.map((n, i) => <div key={i} className="sc-nt">{SC_DIMS.find(d => d.k === n.dk).ic} {n.text} <span style={{ color: "#94a3b8" }}>— {n.by}</span></div>)}</div> : null;
-  const notesHTML = (r) => r.sum.notes.map(n => `<div class="nt">${SC_DIMS.find(d => d.k === n.dk).ic} ${String(n.text).replace(/</g, "&lt;")} <i>(${n.by})</i></div>`).join("");
+  const sumOf = (k, sid) => { const recs = Object.values(data[k] || {}).filter(spPass); const o = { n: 0, by: [] }; SC_DIMS.forEach(d => { const vals = recs.map(r => r.items && r.items[sid] ? r.items[sid][d.k] : undefined).filter(v => v != null).map(Number); o[d.k] = scSummary(vals); }); o.notes = []; o.cms = []; recs.forEach(r => { const it = r.items && r.items[sid]; if (it) { o.n++; o.by.push(r); if (it.cm || maArr(it.ac).length) o.cms.push({ text: String(it.cm || ""), ac: maArr(it.ac), teacher: r.teacher || "", subject: r.subject || "", at: r.at }); SC_DIMS.forEach(d => { const t = it[SC_NK[d.k]]; if (t) o.notes.push({ dk: d.k, text: String(t), by: r.subject || r.teacher }); }); } }); return o; };
+  const cmJSX = (r) => r.sum.cms.length ? <div className="sc-cms">{r.sum.cms.map((c, i) => <div key={i} className="sc-cmc"><div className="sc-cmc-h"><span className="av">{String(c.teacher || "؟").trim().charAt(0)}</span><b>أ. {c.teacher}</b>{c.subject && <em>{c.subject}</em>}{c.at && <small>{maHijri(new Date(c.at))}</small>}</div>{c.text && <p>«{c.text}»</p>}{c.ac.length > 0 && <div className="sc-cmc-ac">{c.ac.map(k => SC_ACM[k] ? <span key={k} style={{ background: SC_ACM[k][3], color: SC_ACM[k][2] }}>{SC_ACM[k][0]} {SC_ACM[k][1]}</span> : null)}</div>}</div>)}</div> : null;
+  const notesJSX = (r) => (r.sum.notes.length || r.sum.cms.length) ? <div className="mt-1">{r.sum.notes.map((n, i) => <div key={i} className="sc-nt">{SC_DIMS.find(d => d.k === n.dk).ic} {n.text} <span style={{ color: "#94a3b8" }}>— {n.by}</span></div>)}{cmJSX(r)}</div> : null;
+  const notesHTML = (r) => r.sum.notes.map(n => `<div class="nt">${SC_DIMS.find(d => d.k === n.dk).ic} ${String(n.text).replace(/</g, "&lt;")} <i>(${n.by})</i></div>`).join("") + scCmHTML(r.sum.cms);
   const allRows = classes.flatMap(c => studentsOf(c.ck).map(s => ({ ...s, ck: c.ck, lv: c.lv, sum: sumOf(c.ck, s.id) })));
   const isFlag = (r) => (r.sum.a != null && r.sum.a >= 2) || (r.sum.b != null && r.sum.b >= 2) || (r.sum.t != null && r.sum.t >= 1);
-  const badge = (dk, i) => { if (i == null) return <span className="sc-badge" style={{ background: "#f1f5f9", color: "#94a3b8" }}>—</span>; const [l, c, bg] = scLv(dk, i); return <span className="sc-badge" style={{ background: bg, color: c }}>{l}</span>; };
+  const badge = (dk, i) => { const D = SC_DIMS.find(d => d.k === dk) || {}; const T = <small style={{ fontWeight: 800, opacity: .75, marginInlineEnd: 4 }}>{D.ic} {dk === "a" ? "دراسياً" : D.t}:</small>; if (i == null) return <span className="sc-badge" title={D.t + ": لم يُصنَّف بعد"} style={{ background: "#f1f5f9", color: "#94a3b8" }}>{T}لم يُصنَّف</span>; const [l, c, bg] = scLv(dk, i); return <span className="sc-badge" title={D.t + ": " + l} style={{ background: bg, color: c }}>{T}{l}</span>; };
 
   // ── الطباعة
   const header = (title) => hdr(title) + (periodTxt ? `<div class="per">🗓️ فترة التصنيف: ${periodTxt}</div>` : "");
@@ -32634,7 +32656,12 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
 .per{text-align:center;font-weight:900;font-size:12px;color:#6d28d9;margin:-4px 0 8px}
 .inf{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}.inf div{border:1.5px solid #e2e8f0;border-radius:12px;padding:6px 10px;font-size:11px;color:#64748b;font-weight:700}.inf b{display:block;color:#0f172a;font-size:13px;font-weight:900}
 .st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.st>div{border-radius:12px;padding:7px 9px;border:1.5px solid #e2e8f0}.st h4{margin:0 0 5px;font-size:11.5px;font-weight:900}.st .r{display:flex;gap:4px;flex-wrap:wrap}
-.by{font-size:9.5px;color:#475569;font-weight:700;line-height:1.5}`;
+.by{font-size:9.5px;color:#475569;font-weight:700;line-height:1.5}
+.cm{margin-top:4px;background:#faf5ff;border:1px solid #e9d5ff;border-right:3px solid #7c3aed;border-radius:8px;padding:4px 7px;text-align:right}.cmh{font-size:9.5px;color:#4c1d95}.cmh i{font-style:normal;background:#ede9fe;color:#6d28d9;border-radius:99px;padding:0 6px;margin-right:4px;font-weight:900}.cmt{font-size:10px;font-weight:700;color:#1e293b;line-height:1.6}
+.acs{display:flex;gap:3px;flex-wrap:wrap;margin-top:2px}.acs span{border-radius:99px;padding:0 6px;font-size:8.8px;font-weight:900}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}.card{border:1.5px solid #e2e8f0;border-radius:12px;padding:8px 10px;break-inside:avoid;background:#fff}.card h5{margin:0;font-size:12.5px;font-weight:900}.card .bs{display:flex;gap:4px;flex-wrap:wrap;margin:5px 0}
+.cls-h{margin:10px 0 6px;font-weight:900;font-size:13px;color:#0f766e;border-bottom:2px solid #ccfbf1;padding-bottom:3px}
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 10px}.kp div{border-radius:12px;padding:6px 8px;text-align:center;font-size:10.5px;font-weight:800;border:1.5px solid #e2e8f0}.kp b{display:block;font-size:17px;font-weight:900}`;
   const open = (body, title) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${css}</style></head><body>${body}<script>setTimeout(()=>print(),800)</script></body></html>`);
   const legend = () => `<div class="lg2">${SC_DIMS.map(d => `<b>${d.t}:</b>${d.lv.map((l, i) => pb(d.k, i)).join("")}`).join(" &nbsp; ")}</div>`;
   const classTable = (k) => { const rows = allRows.filter(r => r.ck === k); return `<table><thead><tr><th style="width:32px">م</th><th>اسم الطالب</th><th>📚 المستوى الدراسي</th><th>🤝 السلوك</th><th>🕒 الحضور</th><th>📝 الملاحظات</th><th>👤 المصنِّفون</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${r.name}</td><td>${pb("a", r.sum.a)}</td><td>${pb("b", r.sum.b)}</td><td>${pb("t", r.sum.t)}</td><td class="ntc">${notesHTML(r)}</td><td class="by">${r.sum.by.map(x => x.teacher + (x.subject ? " – " + x.subject : "")).join("<br>") || "—"}</td></tr>`).join("")}</tbody></table>`; };
@@ -32643,12 +32670,20 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
     const st = studentsOf(ck); const val = (sid, k) => { const v = draft[sid]; return v && v[k] != null ? v[k] : null; };
     const stats = SC_DIMS.map(d => `<div style="border-color:${d.ac}33;background:${d.soft}"><h4 style="color:${d.ac}">${d.ic} ${d.t}</h4><div class="r">${d.lv.map((l, i) => { const n = st.filter(x => val(x.id, d.k) === i).length; return `<span class="b" style="background:${l[2]};color:${l[1]}">${l[0]}: ${maAr(n)}</span>`; }).join("")}</div></div>`).join("");
     const esc = t => String(t || "").replace(/</g, "&lt;");
-    const rows = st.map((x, i) => { const v = draft[x.id] || {}; const nts = SC_DIMS.map(d => v[SC_NK[d.k]] ? `<div class="nt">${d.ic} ${esc(v[SC_NK[d.k]])}</div>` : "").join(""); return `<tr><td>${maAr(i + 1)}</td><td class="nm">${x.name}</td><td>${pb("a", val(x.id, "a"))}</td><td>${pb("b", val(x.id, "b"))}</td><td>${pb("t", val(x.id, "t"))}</td><td class="ntc">${nts}</td></tr>`; }).join("");
+    const rows = st.map((x, i) => { const v = draft[x.id] || {}; const nts = SC_DIMS.map(d => v[SC_NK[d.k]] ? `<div class="nt">${d.ic} ${esc(v[SC_NK[d.k]])}</div>` : "").join("") + ((v.cm || maArr(v.ac).length) ? scCmHTML([{ text: String(v.cm || "").trim(), ac: maArr(v.ac), teacher: tName, subject }]) : ""); return `<tr><td>${maAr(i + 1)}</td><td class="nm">${x.name}</td><td>${pb("a", val(x.id, "a"))}</td><td>${pb("b", val(x.id, "b"))}</td><td>${pb("t", val(x.id, "t"))}</td><td class="ntc">${nts}</td></tr>`; }).join("");
     open(`<section class="pg">${header("نموذج تصنيف الطلاب — " + pLabel(pm, pk).replace(/^\S+\s/, ""))}
       <div class="inf"><div>الفصل<b>${maClassName(ck)}</b></div><div>المادة<b>${subject || "—"}</b></div><div>المعلم المصنِّف<b>${isT ? "أ. " : ""}${tName}</b></div><div>عدد الطلاب<b>${maAr(st.length)}</b></div></div>
       <div class="st">${stats}</div>
       <table><thead><tr><th style="width:32px">م</th><th>اسم الطالب</th><th>📚 المستوى الدراسي</th><th>🤝 السلوك</th><th>🕒 الحضور</th><th>📝 الملاحظات</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="sg"><div>معلم المادة<br><b class="pn">${isT ? "أ. " : ""}${tName}</b><span>............</span></div>${sigP()}</div></section>`, "نموذج تصنيف " + maClassName(ck));
+  };
+  // 🖨 تقرير تعليقات المعلمين وشروح التصنيف — بطاقات مرتبة حسب الفصل
+  const printComments = () => {
+    const rows = allRows.filter(r => r.sum.cms.length && (!flt.ck || r.ck === flt.ck)); if (!rows.length) { alert("لا توجد تعليقات من المعلمين بعد"); return; }
+    const acCount = {}; rows.forEach(r => r.sum.cms.forEach(c => c.ac.forEach(k => { acCount[k] = (acCount[k] || 0) + 1; })));
+    const kp = `<div class="kp"><div><b>${maAr(rows.length)}</b>طالباً عليهم تعليقات</div><div><b>${maAr(rows.reduce((a, r) => a + r.sum.cms.length, 0))}</b>تعليقاً من المعلمين</div><div style="background:#dbeafe"><b>${maAr(acCount.p || 0)}</b>📞 تواصل مع ولي الأمر</div><div style="background:#ccfbf1"><b>${maAr(acCount.g || 0)}</b>🧭 تحويل للموجه</div></div>`;
+    const byC = classes.filter(c => rows.some(r => r.ck === c.ck)).map(c => `<div class="cls-h">🏫 ${maClassName(c.ck)} — ${maAr(rows.filter(r => r.ck === c.ck).length)} طالب</div><div class="cards">${rows.filter(r => r.ck === c.ck).map(r => `<div class="card"><h5>${scEsc(r.name)}</h5><div class="bs">${SC_DIMS.map(d => pb(d.k, r.sum[d.k]).replace('">', `">${d.ic} `)).join("")}</div>${scCmHTML(r.sum.cms)}</div>`).join("")}</div>`).join("");
+    open(`<section class="pg">${header("تعليقات المعلمين وشروح تصنيف الطلاب")}${kp}${legend()}${byC}<div class="sg"><div>الموجه الطلابي<br><span>............</span></div><div>وكيل شؤون الطلاب<br><span>............</span></div>${sigP()}</div></section>`, "تعليقات المعلمين على تصنيف الطلاب");
   };
   const printAll = () => {
     const flagged = allRows.filter(isFlag);
@@ -32788,6 +32823,12 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
                           <input className={`sc-note ${v[SC_NK[d.k]] ? "has" : ""}`} placeholder={`📝 ملاحظة على ${d.t}…`} value={v[SC_NK[d.k]] || ""} maxLength={300} onChange={e => setNote(s.id, d.k, e.target.value)} />
                         </div>))}
                     </div>
+                    {cmOpen[s.id] || v.cm || maArr(v.ac).length ? <div className="sc-cm">
+                      <div className="sc-cm-h"><i>💬</i><b>تعليق المعلم وشرح التصنيف</b><small>يظهر للإدارة والموجه الطلابي في الخلاصة والطباعة — ولا يظهر لولي الأمر</small></div>
+                      <div className="sc-cm-q">{SC_CMQ.map(t => <button key={t} type="button" onClick={() => addCm(s.id, t)}>＋ {t}</button>)}</div>
+                      <textarea className="sc-cm-t" maxLength={800} placeholder="اشرح سبب التصنيف: ما الذي لاحظته على الطالب؟ وما الذي يحتاجه ليتحسّن؟" value={v.cm || ""} onChange={e => setCm(s.id, e.target.value)} />
+                      <div className="sc-cm-ac"><span>🎯 الإجراء المقترح:</span>{SC_AC.map(([k, ic, l, c]) => { const on = maArr(v.ac).includes(k); return <button key={k} type="button" className={on ? "on" : ""} style={on ? { background: c } : null} onClick={() => togAc(s.id, k)}>{ic} {l}</button>; })}</div>
+                    </div> : <button type="button" className="sc-cm-add" onClick={() => setCmOpen(o => ({ ...o, [s.id]: 1 }))}>💬 إضافة تعليق وشرح للتصنيف</button>}
                   </div>); })}
                 {!cur.length && <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد طلاب في هذا الفصل — تواصل مع الإدارة</div>}
               </div>}
@@ -32871,6 +32912,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
               <div className="flex gap-2 flex-wrap">
                 <select className="ma-inp" style={{ width: 170, height: 36 }} value={flt.ck} onChange={e => setFlt({ ...flt, ck: e.target.value })}><option value="">كل الفصول</option>{classes.map(c => <option key={c.ck} value={c.ck}>{maClassName(c.ck)}</option>)}</select>
                 {flt.d !== "any" && <button className="ma-btn" style={{ padding: "6px 12px" }} onClick={() => setFlt({ d: "any", i: -1, ck: flt.ck })}>↺ المحتاجون للمتابعة</button>}
+                <button className="ma-btn" style={{ padding: "6px 12px", background: "linear-gradient(135deg,#7c3aed,#2563eb)", color: "#fff", border: 0 }} onClick={printComments}>🖨 طباعة تعليقات المعلمين ({maAr(allRows.filter(r => r.sum.cms.length && (!flt.ck || r.ck === flt.ck)).length)})</button>
               </div>
             </div>
             {filtered.length ? filtered.map(r => (
@@ -34265,7 +34307,7 @@ function GuardianPortal({ onBack }) {
   const first = String(me.name || "").split(" ")[0];
   // الخلاصة (الأكثر تكراراً، والأشد عند التساوي)
   const summ = d ? SC_DIMS.map(dm => ({ dm, v: scSummary(d.cls.map(r => r.it[dm.k]).filter(v => v != null).map(Number)) })) : [];
-  const badge = (dk, i) => { if (i == null) return <span className="sc-badge" style={{ background: "#f1f5f9", color: "#94a3b8" }}>—</span>; const [l, c, bg] = scLv(dk, i); return <span className="sc-badge" style={{ background: bg, color: c }}>{l}</span>; };
+  const badge = (dk, i) => { const D = SC_DIMS.find(d => d.k === dk) || {}; const T = <small style={{ fontWeight: 800, opacity: .75, marginInlineEnd: 4 }}>{D.ic} {dk === "a" ? "دراسياً" : D.t}:</small>; if (i == null) return <span className="sc-badge" title={D.t + ": لم يُصنَّف بعد"} style={{ background: "#f1f5f9", color: "#94a3b8" }}>{T}لم يُصنَّف</span>; const [l, c, bg] = scLv(dk, i); return <span className="sc-badge" title={D.t + ": " + l} style={{ background: bg, color: c }}>{T}{l}</span>; };
   const addComment = async (a) => {
     const t = cm.trim(); if (!t) return; setBusy(true);
     const id = ptId(); const v = { id, text: t.slice(0, 600), by: `ولي أمر الطالب ${first}`, sname: me.name, ck: me.ck, nh: me.nh, at: Date.now() };
