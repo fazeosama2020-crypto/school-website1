@@ -13,6 +13,7 @@
 // ════════════════════════════════════════════════════════════════════
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import PRE from "./pretest.js";
 
 const NB = "school-nafsbook", NB_IDX = "school-nafsbook-idx", NB_TC = "school-nafsbook-tc";
 const NB_T = "school-nafsbook-t", NB_TP = "school-nafsbook-tp", NB_B = "school-nafsbook-b";
@@ -836,7 +837,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const nBoards = Object.keys(pb).length;
 
   // يُعرض في طبقة كاملة فوق الموقع (لا تتداخل معه القوائم والعناوين وأشرطة التنقل)
-  return createPortal(<div ref={rootRef} className="nb nb-fs" dir="rtl" style={{ "--c": B.c }} role="dialog" aria-label={`مرجع ${B.name}`}><style>{CSS}</style>
+  return createPortal(<div ref={rootRef} className="nb nb-fs" dir="rtl" style={{ "--c": B.c }} role="dialog" aria-label={`مرجع ${B.name}`}><style>{CSS + LCSS}</style>
     <div className="nb-top" ref={topRef}>
       <button className="nb-b" onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); onBack(); }}>→ رجوع</button>
       <b>{B.name}{title ? ` • ${title}` : ""}</b>
@@ -986,7 +987,7 @@ const Bar = ({ v, c = "#16a34a", w }) => <div className="nb-bar" style={{ "--c":
 const Ring = ({ v, c, label }) => <div style={{ display: "grid", justifyItems: "center", gap: 2 }}><div className="nb-ring" style={{ "--p": v, "--c": v === 100 ? "#16a34a" : c }}><span>{ar(v)}٪</span></div>{label && <small style={{ fontWeight: 900, color: "#475569" }}>{label}</small>}</div>;
 const WeekBars = ({ vals, c, onPick, cur }) => <div className="nb-wbars" style={{ "--c": c }}>{vals.map((v, w) => <i key={w} className={v === 100 ? "full" : ""} title={`الأسبوع ${w + 1}: ${v}%`} onClick={() => onPick && onPick(w)} style={cur === w ? { outline: `2px solid ${c}` } : null}><b style={{ height: Math.max(v ? 8 : 0, v) + "%" }} /></i>)}</div>;
 
-function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, onProfile, readOnly }) {
+function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, onProfile, readOnly, learn }) {
   const [done, setDone] = useState({}); const [open, setOpen] = useState({});
   useEffect(() => { if (!student) return; api.maGet(`${NB_IDX}/${student.id}`).then(d => setDone(obj(d))); api.maGet(`${NB_OPEN}/${student.ck}`).then(d => setOpen(obj(d))); }, [student && student.id]);
   const count = book => Object.keys(obj(done[book])).length;
@@ -1001,6 +1002,7 @@ function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, onP
       {onLogout && <button className="nb-b" onClick={onLogout}>تبديل الطالب</button>}
       {onBack && <button className="nb-b" onClick={onBack}>رجوع</button>}
     </div>
+    {learn}
     {tests.map(x => { const B = BOOKS[x.b]; return <div key={x.b + x.w} className="nb-opent" style={{ "--c": x.solved ? "#16a34a" : B.c }}>
       <span style={{ fontSize: 30 }}>{x.solved ? "✅" : "📝"}</span>
       <div style={{ flex: 1, minWidth: 160 }}><b style={{ fontSize: 16 }}>اختبار الأسبوع {ar(x.w + 1)} – {B.name}</b><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>{x.solved ? "حللت فيه — يمكنك المراجعة" : "متاح الآن بتوجيه من المدرسة — حل في دفترك"}</div></div>
@@ -1023,15 +1025,16 @@ function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, onP
 // ══════════════════════ بوابة الطالب (#marji) ══════════════════════
 export function NafsBooksStudent({ api, onBack }) {
   const [st, setSt] = useState(() => { const s = lsGet(REMEMBER); return s && s.until > Date.now() ? s : null; });
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState(null); const [lv, setLv] = useState(null);
   useEffect(() => { if (!st) return; const k = "nb-visit-" + st.id; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch {}
     (async () => { const n = +(await api.maGet(`${NB_SEEN}/${st.id}/n`)) || 0; const now = Date.now(); api.maPut(`${NB_SEEN}/${st.id}/n`, n + 1); api.maPut(`${NB_SEEN}/${st.id}/at`, now); if (!n) api.maPut(`${NB_SEEN}/${st.id}/first`, now); })(); }, [st && st.id]);
   const logout = () => { try { localStorage.removeItem(REMEMBER); } catch {} setSt(null); setOpen(null); };
-  return <div className="nb"><style>{CSS}</style>
+  return <div className="nb"><style>{CSS + LCSS}</style>
     {!st ? <StudentLogin api={api} onIn={setSt} onBack={onBack} />
+      : lv ? (lv.k === "pre" ? <PreTest api={api} st={st} book={lv.b} onBack={() => setLv(null)} /> : <HwDo api={api} st={st} hw={lv.h} onBack={() => setLv(null)} />)
       : open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} idx={`${NB_IDX}/${st.id}`} tc="show" tcPath={`${NB_TC}/${st.id}`} rel={st.ck}
           boards={`${NB_B}/s_${st.id}`} seenSid={st.id} who={"s_" + st.id} title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} />
-        : <Library api={api} student={st} onOpen={(book, page) => setOpen({ book, page })} onLogout={logout} onBack={onBack}
+        : <Library api={api} student={st} onOpen={(book, page) => setOpen({ book, page })} onLogout={logout} onBack={onBack} learn={<StudentLearn key={st.id + (lv ? 1 : 0)} api={api} st={st} onPre={b => setLv({ k: "pre", b })} onHw={h => setLv({ k: "hw", h })} />}
             onProfile={() => { lsSet("pam-parent", { ck: st.ck, sid: st.id, name: st.name, nh: st.nh }); window.location.hash = "parent"; window.location.reload(); }} />}
   </div>;
 }
@@ -1143,12 +1146,12 @@ export function NafsBooksTeacher({ api, by }) {
     setRos(obj(r)); setIdx(obj(i)); setSeen(obj(sn)); setS({ name, key, fromTT, assign }); loadTp(key);
     api.maPut(`${NB_TP}/${key}/_n`, name); api.maPut(`${NB_TP}/${key}/_at`, Date.now());
   })(); }, []);
-  if (!S) return <div className="nb" style={{ minHeight: "auto", background: "transparent" }}><style>{CSS}</style><div className="nb-msg">⏳ جارٍ قراءة جدولك…</div></div>;
+  if (!S) return <div className="nb" style={{ minHeight: "auto", background: "transparent" }}><style>{CSS + LCSS}</style><div className="nb-msg">⏳ جارٍ قراءة جدولك…</div></div>;
   const books = BOOK_IDS.filter(b => arr(S.assign[b]).length);
   const allCks = Object.keys(ros).filter(k => k.startsWith("3-")).sort(byCk);
   const saveMan = M => { const A = Object.fromEntries(Object.entries(M).filter(([, v]) => v.length)); lsSet(TMAN, A); api.maPut(`${NB_TP}/${S.key}/_man`, Object.keys(A).length ? A : null); setS(s => ({ ...s, assign: A })); setMan(null); };
   const V = view; const back = () => { setView(null); loadTp(S.key); };
-  const wrapIn = n => <div className="nb" style={{ minHeight: "auto", background: "transparent" }}><style>{CSS}</style>{n}</div>;
+  const wrapIn = n => <div className="nb" style={{ minHeight: "auto", background: "transparent" }}><style>{CSS + LCSS}</style>{n}</div>;
   const myAl = Object.values(al).filter(a => a && a.tkey === S.key);
 
   if (V && V.k === "present") return wrapIn(<BookViewer api={api} book={V.book} startPage={V.page || lsGet(`nb-last-t_${S.key}-${V.book}`, 1) || 1}
@@ -1156,6 +1159,8 @@ export function NafsBooksTeacher({ api, by }) {
   if (V && V.k === "plan") return wrapIn(<div className="nb-home"><div className="nb-book nb-h" style={{ "--c": BOOKS[V.book].c }}><b>🗓️ إنجازي في {BOOKS[V.book].name}</b><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div>
     <PlanGrid api={api} tkey={S.key} tname={S.name} book={V.book} cks={S.assign[V.book]} editable alerts={al} onOpen={pg => setView({ k: "present", book: V.book, ck: selCk[V.book] || S.assign[V.book][0], page: pg })} /></div>);
   if (V && V.k === "stu") return wrapIn(<StudentReview api={api} st={V.st} books={[V.book]} by={S.name} onBack={() => setView({ k: "studs", book: V.book })} />);
+  if (V && (V.k === "pre" || V.k === "hw")) return wrapIn(<div className="nb-home"><div className="nb-book nb-h" style={{ "--c": BOOKS[V.book].c }}><b>{V.k === "pre" ? "🧪 الاختبار القبلي" : "📝 الواجبات والتغذية الراجعة"} – {BOOKS[V.book].name}</b><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div>
+    {V.k === "pre" ? <PreClass api={api} book={V.book} cks={S.assign[V.book]} ros={ros} by={S.name} /> : <HwTeacher api={api} book={V.book} cks={S.assign[V.book]} ros={ros} tkey={S.key} tname={S.name} />}</div>);
   if (V && V.k === "studs") return wrapIn(<div className="nb-home"><div className="nb-book nb-h" style={{ "--c": BOOKS[V.book].c }}><b>🎓 طلابي في {BOOKS[V.book].name}: الدخول والحل</b><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div>
     <ClassStudents api={api} ros={ros} idx={idx} seen={seen} cks={S.assign[V.book]} books={[V.book]} onPick={st => setView({ k: "stu", book: V.book, st })} /></div>);
 
@@ -1193,6 +1198,8 @@ export function NafsBooksTeacher({ api, by }) {
           <button className="nb-b on big" style={{ padding: 12, fontSize: 15, gridColumn: "1/-1", whiteSpace: "normal" }} onClick={() => setView({ k: "present", book: b, ck, page: nextW >= 0 ? (last && weekOfPage(b, last) === nextW ? last : B.units[nextW * 2]) : 1 })}>📽️ اعرض للشرح{nextW >= 0 ? ` — الأسبوع ${ar(nextW + 1)}` : ""}</button>
           <button className="nb-b big" style={{ padding: 12, fontSize: 15 }} onClick={() => setView({ k: "plan", book: b })}>🗓️ إنجازي (الخطة)</button>
           <button className="nb-b big" style={{ padding: 12, fontSize: 15 }} onClick={() => setView({ k: "studs", book: b })}>🎓 طلابي: الدخول والحل</button>
+          <button className="nb-b big" style={{ padding: 12, fontSize: 15 }} onClick={() => setView({ k: "pre", book: b })}>🧪 الاختبار القبلي: مستوى طلابي</button>
+          <button className="nb-b big" style={{ padding: 12, fontSize: 15 }} onClick={() => setView({ k: "hw", book: b })}>📝 الواجبات والتغذية الراجعة</button>
         </div>
         <small style={{ color: "#64748b", fontWeight: 700 }}>أثناء العرض: «✅ تم شرح الصفحة» يحسب الدرس والأسبوع تلقائيًا، وعند اكتمال الأسبوع تُبلَّغ الإدارة لعمل الاختبار. وسبورتك 🧑‍🏫 تُحفظ ملاحظةً على الصفحة لكل فصولك.</small>
       </div>; })}
@@ -1207,7 +1214,7 @@ export function NafsBooksAdmin({ api, by = "الإدارة", tab0 = "sum" }) {
     setD({ T, ros: obj(r), idx: obj(i), tp: obj(tp), tc: obj(tc), seen: obj(sn), al: obj(al), op: obj(op) });
   };
   useEffect(() => { load(); }, []);
-  const wrapIn = n => <div className="nb" style={{ minHeight: "auto", background: "transparent" }}><style>{CSS}</style>{n}</div>;
+  const wrapIn = n => <div className="nb" style={{ minHeight: "auto", background: "transparent" }}><style>{CSS + LCSS}</style>{n}</div>;
   const M = useMemo(() => {
     if (!D) return null;
     const cks = Object.keys(D.ros).filter(k => k.startsWith("3-") && arr(D.ros[k] && D.ros[k].students).length).sort(byCk);
@@ -1254,9 +1261,12 @@ export function NafsBooksAdmin({ api, by = "الإدارة", tab0 = "sum" }) {
     <div className="nb-book" style={{ "--c": "#7c3aed" }}>
       <div className="nb-h"><b>📚 مراجع نافس – متابعة الإدارة</b><span className="nb-sp" /><button className="nb-b" onClick={() => { setD(null); load(); }}>🔄 تحديث</button></div>
       <p style={{ margin: "6px 0 10px", color: "#475569", fontWeight: 700, fontSize: 13.5 }}>رابط الطلاب: <span dir="ltr" style={{ userSelect: "all" }}>{window.location.origin}/#marji</span> • المعلمون من «بوابة المعلمين» ويرى كلٌّ مادته وفصوله حسب الجدول</p>
-      <div className="nb-tabs">{[["sum", "📊 الملخص"], ["alerts", <>🔔 الاختبارات{nNew ? <span className="nb-badge">{ar(nNew)}</span> : null}</>], ["teachers", "👨‍🏫 المعلمون"], ["students", "🎓 الطلاب"], ["books", "📖 الكتب"]].map(([k, l]) => <button key={k} className={"nb-b" + (tab === k ? " on" : "")} onClick={() => setTab(k)}>{l}</button>)}</div>
+      <div className="nb-tabs">{[["sum", "📊 الملخص"], ["week", "📅 المتابعة الأسبوعية"], ["alerts", <>🔔 الاختبارات{nNew ? <span className="nb-badge">{ar(nNew)}</span> : null}</>], ["teachers", "👨‍🏫 المعلمون"], ["pre", "🧪 القبلي"], ["hw", "📝 الواجبات"], ["students", "🎓 الطلاب"], ["books", "📖 الكتب"]].map(([k, l]) => <button key={k} className={"nb-b" + (tab === k ? " on" : "")} onClick={() => setTab(k)}>{l}</button>)}</div>
     </div>
 
+    {tab === "week" && <WeekBoard api={api} D={D} rows={M.rows} cks={M.cks} />}
+    {tab === "pre" && BOOK_IDS.map(b => <PreClass key={b} api={api} book={b} cks={M.cks} ros={D.ros} by={by} />)}
+    {tab === "hw" && BOOK_IDS.map(b => <HwTeacher key={b} api={api} book={b} cks={M.cks} ros={D.ros} admin tname={by} />)}
     {tab === "sum" && <>
       {nNew > 0 && <button className="nb-opent" style={{ "--c": "#c2410c", border: 0, cursor: "pointer", textAlign: "right", font: "inherit" }} onClick={() => setTab("alerts")}><span style={{ fontSize: 30 }}>🔔</span><div style={{ flex: 1 }}><b style={{ fontSize: 16 }}>{ar(nNew)} أسبوع اكتمل شرحه وجاهز للاختبار</b><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>{M.alerts.filter(a => a.st === "new").slice(0, 3).map(a => `${BOOKS[a.book].name} الأسبوع ${ar(a.w + 1)} (${cls(a.ck)})`).join(" • ")}</div></div><span className="nb-b" style={{ color: "#0f172a" }}>عرض ←</span></button>}
       <div className="nb-kpis">
@@ -1321,4 +1331,301 @@ export function NafsBooksAdmin({ api, by = "الإدارة", tab0 = "sum" }) {
 
 export default function NafsBooks({ mode = "student", ...p }) {
   return mode === "admin" ? <NafsBooksAdmin {...p} /> : mode === "teacher" ? <NafsBooksTeacher {...p} /> : <NafsBooksStudent {...p} />;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🧪 الاختبار القبلي • 📝 الواجبات والتغذية الراجعة • 📅 متابعة الإدارة الأسبوعية
+//   school-nafsbook-pre/{book}/{sid} = {a:[], sc, of, at, n, ck}      نتيجة الاختبار القبلي
+//   school-nafsbook-prec/{book} = {closed}                              إغلاق/فتح الاختبار القبلي
+//   school-nafsbook-hw/{id} = {book,u,qs:[{p,n,ty,k}],cks,due,at,by,tkey,note}   الواجب من أسئلة الدرس في المرجع
+//   school-nafsbook-hwa/{id}/{sid} = {a:{i:v}, at, n, ck, fb:{i:{ok,c}}, fbAt, fbBy}  إجابات الطالب والتغذية الراجعة
+// ════════════════════════════════════════════════════════════════════
+const NB_PRE = "school-nafsbook-pre", NB_PREC = "school-nafsbook-prec", NB_HW = "school-nafsbook-hw", NB_HWA = "school-nafsbook-hwa";
+const LETS = ["أ", "ب", "ج", "د"];
+const PRE_LV = s => s >= 85 ? ["متمكّن", "#15803d", "#dcfce7"] : s >= 70 ? ["جيد جداً", "#0f766e", "#ccfbf1"] : s >= 50 ? ["متوسط", "#b45309", "#fef3c7"] : ["يحتاج دعماً", "#b91c1c", "#fee2e2"];
+const qKind = ty => /اختيار/.test(ty) ? "mc" : /صواب/.test(ty) ? "tf" : "open";
+const keyLet = k => { const m = String(k || "").trim().match(/^[أاإبجد]/); return m ? (m[0] === "ا" || m[0] === "إ" ? "أ" : m[0]) : ""; };
+const keyTF = k => /^\s*خطأ/.test(String(k || "")) ? "خطأ" : /^\s*صواب/.test(String(k || "")) ? "صواب" : "";
+const autoOk = (q, v) => { const kd = qKind(q.ty); if (kd === "mc") { const L = keyLet(q.k); return L && v ? (v === L ? 1 : 0) : null; } if (kd === "tf") { const T = keyTF(q.k); const s = v && typeof v === "object" ? v.s : v; return T && s ? (s === T ? 1 : 0) : null; } return null; };
+const hwScore = (hw, sub) => { const qs = arr(hw.qs); const A = obj(sub && sub.a), FB = obj(sub && sub.fb); let ok = 0, done = 0; qs.forEach((q, i) => { const f = obj(FB[i]); const v = f.ok != null ? f.ok : autoOk(q, A[i]); if (v != null) { done++; if (+v === 1) ok++; } }); return { ok, done, of: qs.length, pct: qs.length ? Math.round(ok / qs.length * 100) : 0, full: done === qs.length }; };
+const hwQsOf = (K, book, u) => unitPages(book, u).flatMap(p => arr(obj(K[book])[p]).map((x, j) => ({ p, j, n: x[0], ty: x[1], k: x[2] }))).filter(x => /^[0-9٠-٩]+$/.test(String(x.n)) && !/تمهيد|أكمل الحل/.test(x.ty));
+const wkS = (off = 0) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay() - off * 7); return d.getTime(); };
+const wkLbl = t => { const a = new Date(t), b = new Date(t + 4 * 864e5); const f = d => d.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long" }); return `${f(a)} – ${f(b)}`; };
+const dueTxt = d => d ? new Date(d + "T12:00").toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { weekday: "long", day: "numeric", month: "long" }) : "";
+const LCSS = `
+.lr-card{background:#fff;border-radius:18px;padding:14px;box-shadow:0 2px 12px rgba(15,23,42,.07);border:1px solid #eef2f6;min-width:0}
+.lr-hero{border-radius:18px;padding:14px 16px;color:#fff;background:linear-gradient(135deg,var(--c,#7c3aed),color-mix(in srgb,var(--c,#7c3aed) 55%,#0f172a));display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.lr-hero b{font-size:17px}.lr-hero small{display:block;opacity:.9;font-weight:700;font-size:12.5px}
+.lr-q{background:#fff;border-radius:18px;padding:16px;border:2px solid #eef2f6;display:grid;gap:10px}
+.lr-qt{font-size:16.5px;font-weight:900;line-height:1.9;color:#0f172a}
+.lr-op{display:flex;align-items:center;gap:10px;width:100%;text-align:right;border:2px solid #e2e8f0;background:#fff;border-radius:14px;padding:11px 12px;font:inherit;font-size:15px;font-weight:800;cursor:pointer;color:#1e293b}
+.lr-op b{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#f1f5f9;color:#475569}
+.lr-op.on{border-color:var(--c,#7c3aed);background:color-mix(in srgb,var(--c,#7c3aed) 10%,#fff)}.lr-op.on b{background:var(--c,#7c3aed);color:#fff}
+.lr-op.ok{border-color:#16a34a;background:#f0fdf4}.lr-op.ok b{background:#16a34a;color:#fff}.lr-op.bad{border-color:#dc2626;background:#fef2f2}.lr-op.bad b{background:#dc2626;color:#fff}
+.lr-prog{height:10px;border-radius:99px;background:#e2e8f0;overflow:hidden}.lr-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--c,#7c3aed),#f59e0b);transition:width .3s}
+.lr-score{display:grid;justify-items:center;gap:4px;text-align:center}.lr-score .rg{width:130px;height:130px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),#e2e8f0 0);position:relative}
+.lr-score .rg::after{content:"";position:absolute;inset:12px;border-radius:50%;background:#fff}.lr-score .rg span{position:relative;z-index:1;font-size:30px;font-weight:900;color:var(--c)}
+.lr-pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-weight:900;font-size:12px}
+.lr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.lr-k{background:#fff;border-radius:14px;padding:10px 12px;border-top:4px solid var(--c,#7c3aed);box-shadow:0 2px 8px rgba(0,0,0,.05)}.lr-k b{display:block;font-size:22px;font-weight:900}.lr-k small{font-weight:800;color:#64748b}
+.lr-hm{border-collapse:collapse;font-size:12.5px;font-weight:800;width:100%}.lr-hm th,.lr-hm td{border:1px solid #eef2f6;padding:4px 5px;text-align:center;white-space:nowrap}.lr-hm th{background:#f8fafc;position:sticky;top:0}.lr-hm td.r{text-align:right}
+.lr-c1{background:#dcfce7;color:#15803d}.lr-c0{background:#fee2e2;color:#b91c1c}
+.lr-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 4px;border-bottom:1px solid #f1f5f9}
+.lr-ans{display:grid;gap:10px}.lr-aq{border:1.5px solid #e2e8f0;border-radius:14px;padding:10px 12px;display:grid;gap:7px;background:#fff}
+.lr-aq h5{margin:0;font-size:14px;font-weight:900;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.lr-aq h5 small{color:#64748b;font-weight:800}
+.lr-lets{display:flex;gap:8px;flex-wrap:wrap}.lr-lets button{width:46px;height:46px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;font:inherit;font-size:18px;font-weight:900;cursor:pointer;color:#334155}
+.lr-lets button.on{background:var(--c,#7c3aed);border-color:var(--c,#7c3aed);color:#fff}.lr-lets button.ok{background:#16a34a;border-color:#16a34a;color:#fff}.lr-lets button.bad{background:#dc2626;border-color:#dc2626;color:#fff}
+.lr-ta{width:100%;min-height:60px;border:1.5px solid #cbd5e1;border-radius:12px;padding:8px 10px;font:inherit;font-size:14px;font-weight:700;resize:vertical}
+.lr-fb{border-radius:12px;padding:8px 10px;font-size:13px;font-weight:800;line-height:1.8}.lr-fb.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.lr-fb.bad{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}.lr-fb.wait{background:#fffbeb;color:#92400e;border:1px dashed #fcd34d}
+.lr-key{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:800;color:#1e3a8a}
+.lr-pg{width:100%;border-radius:12px;border:1px solid #e2e8f0;display:block;background:#fff}
+.lr-bar{height:8px;border-radius:99px;background:#e2e8f0;overflow:hidden;min-width:60px}.lr-bar i{display:block;height:100%;background:var(--c,#16a34a)}
+.lr-badge{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:99px;background:#dc2626;color:#fff;font-size:11px;font-weight:900;padding:0 5px;margin-inline-start:4px}
+.lr-tf{display:flex;gap:8px}.lr-tf button{flex:1;border:2px solid #cbd5e1;background:#fff;border-radius:12px;padding:9px;font:inherit;font-weight:900;cursor:pointer}.lr-tf button.on{background:var(--c,#7c3aed);border-color:var(--c,#7c3aed);color:#fff}
+.lr-okb{display:flex;gap:6px}.lr-okb button{border:2px solid #e2e8f0;background:#fff;border-radius:10px;padding:5px 12px;font:inherit;font-weight:900;cursor:pointer}.lr-okb button.y{background:#16a34a;border-color:#16a34a;color:#fff}.lr-okb button.n{background:#dc2626;border-color:#dc2626;color:#fff}
+`;
+const LBar = ({ v, c = "#16a34a" }) => <div className="lr-bar" style={{ "--c": c }}><i style={{ width: Math.min(100, v || 0) + "%" }} /></div>;
+const pageImgCache = {};
+function PageImg({ book, p, w = 900 }) {
+  const [src, setSrc] = useState(pageImgCache[book + p + w] || "");
+  useEffect(() => { if (src) return; let ok = true; (async () => { try { const doc = await openDoc(book); const pg = await doc.getPage(p); const v = pg.getViewport({ scale: 1 }); const vp = pg.getViewport({ scale: w / v.width }); const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height; await pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise; const u = c.toDataURL("image/jpeg", .82); pageImgCache[book + p + w] = u; if (ok) setSrc(u); } catch {} })(); return () => { ok = false; }; }, [book, p]);
+  return src ? <img className="lr-pg" src={src} alt={`صفحة ${p}`} /> : <div className="nb-msg" style={{ padding: 30 }}>⏳ تحميل صفحة {ar(p)}…</div>;
+}
+const lrPrint = (title, body) => { const w = window.open("", "_blank"); if (!w) return; w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet"><style>@page{size:A4;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}body{font-family:Cairo,Tahoma,sans-serif;color:#0f172a;margin:0}h1{font-size:18px;text-align:center;background:linear-gradient(135deg,#5b21b6,#1e3a8a);color:#fff;border-radius:99px;padding:6px 18px;display:table;margin:6px auto 10px}.sub{text-align:center;font-weight:800;color:#475569;font-size:12px;margin-bottom:8px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#1e3a8a;color:#fff;padding:5px}td{border:1px solid #cbd5e1;padding:4px;text-align:center}td.r{text-align:right;font-weight:800}.ok{background:#dcfce7;color:#15803d;font-weight:900}.no{background:#fee2e2;color:#b91c1c;font-weight:900}.k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.k div{border:1.5px solid #e2e8f0;border-radius:10px;padding:6px;text-align:center;font-weight:800;font-size:11px}.k b{display:block;font-size:18px}.sg{display:flex;justify-content:space-around;margin-top:24px;font-weight:800;font-size:12px}</style></head><body>${body}<script>setTimeout(()=>print(),700)<\/script></body></html>`); w.document.close(); };
+
+// ── 🧪 الاختبار القبلي للطالب
+function PreTest({ api, st, book, onBack }) {
+  const B = BOOKS[book]; const Q = arr(PRE[book]); const [rec, setRec] = useState(undefined); const [cfg, setCfg] = useState({}); const [i, setI] = useState(-1); const [a, setA] = useState([]); const [busy, setBusy] = useState(false); const t0 = useRef(0);
+  useEffect(() => { (async () => { const [r, c] = await Promise.all([api.maGet(`${NB_PRE}/${book}/${st.id}`), api.maGet(`${NB_PREC}/${book}`)]); setRec(r && r.at ? r : null); setCfg(obj(c)); })(); }, []);
+  const submit = async () => { if (a.filter(x => x != null).length < Q.length && !window.confirm("لم تُجب عن كل الأسئلة. إرسال الاختبار؟")) return; setBusy(true);
+    const sc = Q.filter((q, j) => +a[j] === q.a).length; const v = { a: Q.map((_, j) => a[j] == null ? -1 : a[j]), sc, of: Q.length, at: Date.now(), n: st.name, ck: st.ck, d: Math.round((Date.now() - t0.current) / 1000) };
+    await api.maPut(`${NB_PRE}/${book}/${st.id}`, v); setRec(v); setBusy(false); if (sc / Q.length >= .7) confetti(); window.scrollTo(0, 0); };
+  if (rec === undefined) return <div className="nb-msg">⏳</div>;
+  const hero = <div className="lr-hero" style={{ "--c": B.c }}><span style={{ fontSize: 32 }}>🧪</span><div style={{ flex: 1 }}><b>الاختبار القبلي – {B.name}</b><small>يعرّفك ويعرّف معلمك بمستواك قبل بداية الشرح</small></div><button className="nb-b" onClick={onBack}>رجوع</button></div>;
+  if (rec) { const p = Math.round(rec.sc / rec.of * 100); const L = PRE_LV(p); const byT = {}; Q.forEach((q, j) => { const k = q.t; byT[k] = byT[k] || [0, 0]; byT[k][1]++; if (+obj(rec.a)[j] === q.a || arr(rec.a)[j] === q.a) byT[k][0]++; });
+    return <div className="nb-home">{hero}
+      <div className="lr-card lr-score" style={{ "--c": L[1], "--p": p }}><div className="rg"><span>{ar(p)}٪</span></div><b style={{ fontSize: 20 }}>درجتك: {ar(rec.sc)} من {ar(rec.of)}</b><span className="lr-pill" style={{ background: L[2], color: L[1], fontSize: 14 }}>{L[0]}</span>
+        <small style={{ fontWeight: 800, color: "#64748b" }}>{p >= 70 ? "بداية قوية! ستبني على ما تعرفه 🌟" : "لا تقلق — هذا الاختبار لمعرفة نقطة البداية، ومعلمك سيركّز على ما تحتاجه 💪"}</small></div>
+      <div className="lr-card"><b>📋 إجاباتك والإجابات الصحيحة</b><div className="lr-ans" style={{ marginTop: 8 }}>{Q.map((q, j) => { const v = arr(rec.a).length ? rec.a[j] : obj(rec.a)[j]; const ok = +v === q.a; return <div key={j} className="lr-aq" style={{ borderColor: ok ? "#bbf7d0" : "#fecaca" }}>
+        <h5>{ok ? "✅" : "❌"} السؤال {ar(j + 1)} <small>• {q.t}</small></h5><div style={{ fontWeight: 800, lineHeight: 1.8 }}>{q.q}</div>
+        <div style={{ fontSize: 13, fontWeight: 800 }}>{v >= 0 && !ok && <span className="lr-pill lr-c0">إجابتك: {LETS[v]}) {q.o[v]}</span>} <span className="lr-pill lr-c1">الصحيحة: {LETS[q.a]}) {q.o[q.a]}</span></div></div>; })}</div></div>
+    </div>; }
+  if (cfg.closed) return <div className="nb-home">{hero}<div className="lr-card" style={{ textAlign: "center" }}><div style={{ fontSize: 40 }}>🔒</div><b>الاختبار القبلي مغلق حالياً</b><p style={{ color: "#64748b", fontWeight: 700 }}>سيفتحه معلمك قريباً.</p></div></div>;
+  if (i < 0) return <div className="nb-home">{hero}<div className="lr-card" style={{ textAlign: "center", display: "grid", gap: 10, justifyItems: "center" }}>
+    <div style={{ fontSize: 48 }}>🎯</div><b style={{ fontSize: 19 }}>{ar(Q.length)} سؤالاً من موضوعات المرجع كله</b>
+    <p style={{ color: "#475569", fontWeight: 700, lineHeight: 1.9, margin: 0 }}>سؤال من كل أسبوع • محاولة واحدة • تظهر درجتك فور الإرسال مع الإجابات الصحيحة.<br />أجب بما تعرفه دون مساعدة؛ فالهدف أن يعرف معلمك من أين يبدأ معك.</p>
+    <button className="nb-b on big" style={{ "--c": B.c, padding: "12px 26px", fontSize: 16 }} onClick={() => { setI(0); t0.current = Date.now(); }}>ابدأ الاختبار ←</button></div></div>;
+  const q = Q[i];
+  return <div className="nb-home">{hero}
+    <div className="lr-card" style={{ display: "grid", gap: 6 }}><div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 13 }}><span>السؤال {ar(i + 1)} من {ar(Q.length)}</span><span style={{ color: "#64748b" }}>{q.t}</span></div><div className="lr-prog" style={{ "--c": B.c }}><i style={{ width: ((i + 1) / Q.length * 100) + "%" }} /></div></div>
+    <div className="lr-q" style={{ "--c": B.c }}><div className="lr-qt">{q.q}</div>
+      {q.o.map((o, j) => <button key={j} className={"lr-op" + (a[i] === j ? " on" : "")} onClick={() => setA(x => { const c = [...x]; c[i] = j; return c; })}><b>{LETS[j]}</b><span>{o}</span></button>)}</div>
+    <div style={{ display: "flex", gap: 8 }}><button className="nb-b big" disabled={i === 0} onClick={() => setI(i - 1)}>→ السابق</button><span className="nb-sp" />
+      {i < Q.length - 1 ? <button className="nb-b on big" style={{ "--c": B.c }} onClick={() => setI(i + 1)}>التالي ←</button> : <button className="nb-b on big" style={{ "--c": "#16a34a" }} disabled={busy} onClick={submit}>{busy ? "⏳" : "📤 إرسال الاختبار"}</button>}</div>
+    <div className="nb-h" style={{ gap: 4, justifyContent: "center" }}>{Q.map((_, j) => <button key={j} className={"nb-chk" + (a[j] != null ? " on" : "")} style={j === i ? { outline: `2px solid ${B.c}` } : null} onClick={() => setI(j)}>{ar(j + 1)}</button>)}</div>
+  </div>;
+}
+
+// ── 🧪 نتائج الاختبار القبلي لفصل (للمعلم والإدارة)
+function PreClass({ api, book, cks, ros, by, canToggle = true }) {
+  const B = BOOKS[book]; const Q = arr(PRE[book]); const [R, setR] = useState(null); const [cfg, setCfg] = useState({}); const [ck, setCk] = useState(cks[0] || "");
+  useEffect(() => { (async () => { const [r, c] = await Promise.all([api.maGet(`${NB_PRE}/${book}`), api.maGet(`${NB_PREC}/${book}`)]); setR(obj(r)); setCfg(obj(c)); })(); }, [book]);
+  if (!R) return <div className="nb-msg">⏳</div>;
+  const studs = arr(ros[ck] && ros[ck].students).filter(s => s && s.id); const done = studs.filter(s => R[s.id]); const left = studs.filter(s => !R[s.id]);
+  const ans = (s, j) => { const r = R[s.id]; const v = arr(r.a).length ? r.a[j] : obj(r.a)[j]; return +v; };
+  const avg = done.length ? Math.round(done.reduce((t, s) => t + R[s.id].sc / R[s.id].of * 100, 0) / done.length) : 0;
+  const qp = Q.map((q, j) => done.length ? Math.round(done.filter(s => ans(s, j) === q.a).length / done.length * 100) : 0);
+  const bands = [0, 1, 2, 3].map(k => done.filter(s => { const p = R[s.id].sc / R[s.id].of * 100; return k === 0 ? p >= 85 : k === 1 ? p >= 70 && p < 85 : k === 2 ? p >= 50 && p < 70 : p < 50; }).length);
+  const weak = Q.map((q, j) => ({ q, j, v: qp[j] })).filter(x => done.length).sort((x, y) => x.v - y.v).slice(0, 4);
+  const toggle = async () => { const v = cfg.closed ? null : { closed: 1, at: Date.now(), by }; await api.maPut(`${NB_PREC}/${book}`, v); setCfg(obj(v)); };
+  const print = () => lrPrint("نتائج الاختبار القبلي", `<h1>نتائج الاختبار القبلي – ${B.name} – فصل ${cls(ck)}</h1><div class="sub">مراجع نافس • الصف الثالث المتوسط</div>
+    <div class="k"><div><b>${ar(done.length)}/${ar(studs.length)}</b>اختبروا</div><div><b>${ar(avg)}٪</b>متوسط الفصل</div><div><b>${ar(bands[0] + bands[1])}</b>متمكّن/جيد جداً</div><div><b>${ar(bands[3])}</b>يحتاجون دعماً</div></div>
+    <table><tr><th>م</th><th>الطالب</th>${Q.map((_, j) => `<th>${ar(j + 1)}</th>`).join("")}<th>الدرجة</th><th>المستوى</th></tr>${done.map((s, i) => { const p = Math.round(R[s.id].sc / R[s.id].of * 100); return `<tr><td>${ar(i + 1)}</td><td class="r">${s.name}</td>${Q.map((q, j) => `<td class="${ans(s, j) === q.a ? "ok" : "no"}">${ans(s, j) === q.a ? "✓" : "✗"}</td>`).join("")}<td><b>${ar(R[s.id].sc)}</b></td><td>${PRE_LV(p)[0]}</td></tr>`; }).join("")}
+    <tr><td></td><td class="r">نسبة الإجابة الصحيحة</td>${qp.map(v => `<td style="font-weight:900">${ar(v)}٪</td>`).join("")}<td colspan="2"></td></tr></table>
+    <p style="font-size:11.5px;font-weight:800">الموضوعات الأضعف: ${weak.map(x => `${x.q.t} (${ar(x.v)}٪)`).join("، ")}</p>${left.length ? `<p style="font-size:11.5px;font-weight:800;color:#b91c1c">لم يختبروا: ${left.map(s => s.name).join("، ")}</p>` : ""}<div class="sg"><span>معلم المادة: ${by || ""}</span><span>مدير المدرسة: ............</span></div>`);
+  return <div className="lr-card" style={{ display: "grid", gap: 10 }}>
+    <div className="nb-h" style={{ gap: 6 }}><b style={{ color: B.c }}>🧪 الاختبار القبلي – {B.name}</b><span className="nb-sp" />{cks.length > 1 && cks.map(c => <button key={c} className={"nb-b" + (ck === c ? " on" : "")} onClick={() => setCk(c)}>فصل {cls(c)}</button>)}
+      {canToggle && <button className="nb-b" onClick={toggle}>{cfg.closed ? "🔓 فتح الاختبار للطلاب" : "🔒 إغلاق الاختبار"}</button>}<button className="nb-b" onClick={print}>🖨 طباعة</button></div>
+    <div className="lr-grid">
+      <div className="lr-k" style={{ "--c": "#7c3aed" }}><b>{ar(done.length)} <small>/ {ar(studs.length)}</small></b><small>اختبروا</small></div>
+      <div className="lr-k" style={{ "--c": done.length ? PRE_LV(avg)[1] : "#94a3b8" }}><b>{done.length ? ar(avg) + "٪" : "—"}</b><small>متوسط الفصل{done.length ? " • " + PRE_LV(avg)[0] : ""}</small></div>
+      {["متمكّن", "جيد جداً", "متوسط", "يحتاج دعماً"].map((l, k) => <div key={l} className="lr-k" style={{ "--c": PRE_LV([90, 75, 60, 10][k])[1] }}><b>{ar(bands[k])}</b><small>{l}</small></div>)}
+    </div>
+    {done.length > 0 && <div className="lr-card" style={{ background: "#fffbeb", border: "1px solid #fde68a" }}><b>💡 انطباع قبل الشرح</b><div style={{ fontWeight: 700, lineHeight: 1.9, fontSize: 13.5, marginTop: 4 }}>
+      متوسط الفصل <b>{ar(avg)}٪</b> ({PRE_LV(avg)[0]}). {bands[3] ? <>يحتاج <b>{ar(bands[3])}</b> طالباً إلى دعم من البداية. </> : ""}أضعف الموضوعات: {weak.map((x, k) => <span key={k} className="lr-pill lr-c0" style={{ margin: "0 2px" }}>{x.q.t} {ar(x.v)}٪</span>)} — ركّز عليها عند شرح أسابيعها.</div></div>}
+    {done.length > 0 && <div style={{ overflowX: "auto" }}><table className="lr-hm"><thead><tr><th className="r" style={{ textAlign: "right" }}>الطالب</th>{Q.map((q, j) => <th key={j} title={q.t}>{ar(j + 1)}</th>)}<th>الدرجة</th></tr></thead><tbody>
+      {done.sort((x, y) => R[y.id].sc - R[x.id].sc).map(s => { const p = Math.round(R[s.id].sc / R[s.id].of * 100); return <tr key={s.id}><td className="r">{s.name}</td>{Q.map((q, j) => <td key={j} className={ans(s, j) === q.a ? "lr-c1" : "lr-c0"}>{ans(s, j) === q.a ? "✓" : "✗"}</td>)}<td><span className="lr-pill" style={{ background: PRE_LV(p)[2], color: PRE_LV(p)[1] }}>{ar(R[s.id].sc)}/{ar(R[s.id].of)}</span></td></tr>; })}
+      {done.length > 0 && <tr><td className="r" style={{ background: "#f8fafc" }}>٪ الإجابة الصحيحة</td>{qp.map((v, j) => <td key={j} style={{ background: v >= 70 ? "#dcfce7" : v >= 50 ? "#fef3c7" : "#fee2e2" }}>{ar(v)}</td>)}<td /></tr>}
+    </tbody></table></div>}
+    {!done.length && <div className="nb-msg">لم يختبر أحد من هذا الفصل بعد — رابط الطلاب: <span dir="ltr">{window.location.origin}/#marji</span></div>}
+    {left.length > 0 && <div style={{ fontSize: 13, fontWeight: 800, color: "#b91c1c" }}>⏳ لم يختبروا ({ar(left.length)}): <span style={{ color: "#475569" }}>{left.map(s => s.name.split(" ").slice(0, 2).join(" ")).join("، ")}</span></div>}
+  </div>;
+}
+
+// ── 📝 الواجب: حل الطالب ونتيجته والتغذية الراجعة
+function HwDo({ api, st, hw, onBack }) {
+  const B = BOOKS[hw.book]; const qs = arr(hw.qs); const [sub, setSub] = useState(undefined); const [a, setA] = useState({}); const [busy, setBusy] = useState(false); const [showP, setShowP] = useState(true);
+  useEffect(() => { api.maGet(`${NB_HWA}/${hw.id}/${st.id}`).then(r => { setSub(r && r.at ? r : null); if (r && r.a) setA(obj(r.a)); }); }, []);
+  const send = async () => { const n = qs.filter((_, i) => { const v = a[i]; return v != null && v !== "" && !(typeof v === "object" && !v.s); }).length; if (n < qs.length && !window.confirm(`أجبت عن ${n} من ${qs.length}. إرسال الواجب؟`)) return; setBusy(true);
+    const v = { a, at: Date.now(), n: st.name, ck: st.ck }; await api.maPut(`${NB_HWA}/${hw.id}/${st.id}`, v); setSub(v); setBusy(false); const s = hwScore(hw, v); if (s.ok / Math.max(1, s.done) >= .7) confetti(); window.scrollTo(0, 0); };
+  if (sub === undefined) return <div className="nb-msg">⏳</div>;
+  const S = sub ? hwScore(hw, sub) : null; const pages = [...new Set(qs.map(q => q.p))];
+  return <div className="nb-home">
+    <div className="lr-hero" style={{ "--c": B.c }}><span style={{ fontSize: 30 }}>📝</span><div style={{ flex: 1 }}><b>واجب {B.name}: {B.titles[hw.u]}</b><small>{hw.due ? `آخر موعد: ${dueTxt(hw.due)}` : ""}{hw.by ? ` • أ. ${hw.by}` : ""}</small></div><button className="nb-b" onClick={onBack}>رجوع</button></div>
+    {hw.note && <div className="lr-card" style={{ background: "#eff6ff" }}>💬 <b>توجيه المعلم:</b> {hw.note}</div>}
+    {S && <div className="lr-card lr-score" style={{ "--c": S.full ? PRE_LV(S.pct)[1] : "#7c3aed", "--p": S.done ? Math.round(S.ok / S.done * 100) : 0 }}>
+      <div className="rg"><span>{ar(S.ok)}/{ar(S.full ? S.of : S.done)}</span></div>
+      <b style={{ fontSize: 17 }}>{S.full ? `نتيجتك النهائية: ${ar(S.ok)} من ${ar(S.of)} (${ar(S.pct)}٪)` : `صُحّح آلياً ${ar(S.done)} من ${ar(S.of)} — أصبت ${ar(S.ok)}`}</b>
+      {!S.full && <span className="lr-pill" style={{ background: "#fef3c7", color: "#92400e" }}>⏳ {ar(S.of - S.done)} سؤال بانتظار تصحيح المعلم</span>}{sub.fbAt && <small style={{ fontWeight: 800, color: "#16a34a" }}>✅ صحّح المعلم واجبك</small>}</div>}
+    <div className="lr-card"><button className="nb-b" onClick={() => setShowP(v => !v)}>📖 {showP ? "إخفاء" : "عرض"} صفحات الدرس ({ar(pages.length)})</button>
+      {showP && <div style={{ display: "grid", gap: 8, marginTop: 8 }}>{pages.map(p => <PageImg key={p} book={hw.book} p={p} />)}</div>}</div>
+    <div className="lr-card"><b>✍️ ورقة الإجابة</b><div className="lr-ans" style={{ marginTop: 8, "--c": B.c }}>{qs.map((q, i) => { const kd = qKind(q.ty); const v = a[i]; const f = obj(obj(sub && sub.fb)[i]); const au = sub ? autoOk(q, v) : null; const res = f.ok != null ? +f.ok : au;
+      return <div key={i} className="lr-aq" style={sub && res != null ? { borderColor: res ? "#86efac" : "#fca5a5" } : null}>
+        <h5>{sub && res != null ? (res ? "✅" : "❌") : sub ? "⏳" : "❓"} السؤال {ar(q.n)} <small>• صفحة {ar(q.p)} • {q.ty}</small></h5>
+        {kd === "mc" && <div className="lr-lets">{LETS.map(L => <button key={L} disabled={!!sub} className={(v === L ? (sub ? (res ? "ok" : "bad") : "on") : sub && keyLet(q.k) === L ? "ok" : "")} onClick={() => setA(x => ({ ...x, [i]: L }))}>{L}</button>)}</div>}
+        {kd === "tf" && <><div className="lr-tf">{["صواب", "خطأ"].map(L => <button key={L} disabled={!!sub} className={obj(v).s === L ? "on" : ""} onClick={() => setA(x => ({ ...x, [i]: { ...obj(x[i]), s: L } }))}>{L === "صواب" ? "✔ صواب" : "✘ خطأ"}</button>)}</div>
+          {obj(v).s === "خطأ" && <input className="lr-ta" style={{ minHeight: 0 }} disabled={!!sub} placeholder="التصحيح…" value={obj(v).c || ""} onChange={e => setA(x => ({ ...x, [i]: { ...obj(x[i]), c: e.target.value } }))} />}</>}
+        {kd === "open" && <textarea className="lr-ta" disabled={!!sub} placeholder="اكتب إجابتك…" value={v || ""} onChange={e => setA(x => ({ ...x, [i]: e.target.value }))} />}
+        {sub && (res != null || f.c) && <div className={"lr-fb " + (res ? "ok" : res === 0 ? "bad" : "wait")}>{res ? "أحسنت! إجابة صحيحة 🌟" : res === 0 ? "إجابة غير صحيحة" : ""}{(res === 0 || f.ok != null) && <div className="lr-key">🔑 الإجابة النموذجية: {q.k}</div>}{f.c && <div>💬 المعلم: {f.c}</div>}</div>}
+        {sub && res == null && !f.c && <div className="lr-fb wait">⏳ بانتظار تصحيح المعلم وتغذيته الراجعة</div>}
+      </div>; })}</div>
+      {!sub && <button className="nb-b on big" style={{ "--c": "#16a34a", width: "100%", marginTop: 10, padding: 12, fontSize: 16 }} disabled={busy} onClick={send}>{busy ? "⏳" : "📤 إرسال الواجب"}</button>}</div>
+  </div>;
+}
+
+// ── واجبات الطالب ونتيجة الاختبار القبلي (تظهر في مكتبته)
+function StudentLearn({ api, st, onPre, onHw }) {
+  const [D, setD] = useState(null);
+  useEffect(() => { (async () => { const [hw, ...pre] = await Promise.all([api.maGet(NB_HW), ...BOOK_IDS.map(b => api.maGet(`${NB_PRE}/${b}/${st.id}`))]);
+    const L = Object.values(obj(hw)).filter(h => h && h.id && arr(h.cks).includes(st.ck)).sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 12);
+    const subs = await Promise.all(L.map(h => api.maGet(`${NB_HWA}/${h.id}/${st.id}`)));
+    setD({ hw: L.map((h, i) => ({ h, s: subs[i] && subs[i].at ? subs[i] : null })), pre: Object.fromEntries(BOOK_IDS.map((b, i) => [b, pre[i] && pre[i].at ? pre[i] : null])) }); })(); }, []);
+  if (!D) return null; const pend = D.hw.filter(x => !x.s);
+  return <div className="nb-book" style={{ "--c": "#0f766e", display: "grid", gap: 8 }}>
+    <b style={{ fontSize: 16 }}>🎯 اختباراتي القبلية وواجباتي</b>
+    <div className="lr-grid">{BOOK_IDS.map(b => { const r = D.pre[b]; const p = r ? Math.round(r.sc / r.of * 100) : 0; return <button key={b} className="lr-k" style={{ "--c": BOOKS[b].c, cursor: "pointer", font: "inherit", textAlign: "right", border: 0 }} onClick={() => onPre(b)}>
+      <small style={{ color: BOOKS[b].c }}>🧪 القبلي – {BOOKS[b].name}</small>{r ? <b style={{ color: PRE_LV(p)[1] }}>{ar(r.sc)}/{ar(r.of)} <small style={{ fontSize: 12 }}>{PRE_LV(p)[0]}</small></b> : <b style={{ fontSize: 15, color: "#7c3aed" }}>ابدأ الاختبار ←</b>}</button>; })}</div>
+    {D.hw.length > 0 && <div style={{ display: "grid", gap: 6 }}><b style={{ fontSize: 14 }}>📝 الواجبات {pend.length ? <span className="lr-badge">{ar(pend.length)}</span> : null}</b>
+      {D.hw.map(({ h, s }) => { const B = BOOKS[h.book]; const S = s ? hwScore(h, s) : null; const late = !s && h.due && h.due < new Date().toISOString().slice(0, 10);
+        return <button key={h.id} className="lr-row" style={{ border: `1.5px solid ${s ? "#bbf7d0" : late ? "#fecaca" : "#e2e8f0"}`, borderRadius: 12, background: "#fff", font: "inherit", cursor: "pointer", textAlign: "right" }} onClick={() => onHw(h)}>
+          <span style={{ fontSize: 22 }}>{s ? (S.full ? "✅" : "⏳") : "📝"}</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ color: B.c }}>{B.name}: {B.titles[h.u]}</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{ar(arr(h.qs).length)} أسئلة{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}</div></div>
+          {s ? <span className="lr-pill" style={{ background: S.full ? PRE_LV(S.pct)[2] : "#fef3c7", color: S.full ? PRE_LV(S.pct)[1] : "#92400e" }}>{S.full ? `${ar(S.ok)}/${ar(S.of)}` : "بانتظار التصحيح"}</span> : <span className="lr-pill" style={{ background: late ? "#fee2e2" : "#ede9fe", color: late ? "#b91c1c" : "#6d28d9" }}>{late ? "متأخر — حلّه الآن" : "حلّ الواجب ←"}</span>}</button>; })}</div>}
+  </div>;
+}
+
+// ── 📝 واجبات المعلم: إنشاء من أسئلة الدرس • نتائج الفصل • التصحيح والتغذية الراجعة
+function HwTeacher({ api, book, cks, ros, tkey, tname, admin }) {
+  const B = BOOKS[book]; const [L, setL] = useState(null); const [K, setK] = useState(null); const [ed, setEd] = useState(null); const [open, setOpen] = useState(null); const [subs, setSubs] = useState({}); const [gr, setGr] = useState(null); const [msg, setMsg] = useState("");
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 2600); };
+  const load = async () => { const h = obj(await api.maGet(NB_HW)); setL(Object.values(h).filter(x => x && x.id && x.book === book && (admin || x.tkey === tkey) && arr(x.cks).some(c => cks.includes(c))).sort((a, b) => (b.at || 0) - (a.at || 0))); };
+  useEffect(() => { load(); loadKeys().then(setK).catch(() => setK({})); }, [book]);
+  const loadSubs = async id => { const s = obj(await api.maGet(`${NB_HWA}/${id}`)); setSubs(x => ({ ...x, [id]: s })); };
+  if (!L || !K) return <div className="nb-msg">⏳</div>;
+  const startNew = () => { const u = 0; const qs = hwQsOf(K, book, u); setEd({ u, cks: [cks[0]], due: "", note: "", sel: qs.map((_, i) => i) }); };
+  const edQs = ed ? hwQsOf(K, book, ed.u) : [];
+  const save = async () => { if (!ed.cks.length) return toast("اختر فصلاً"); const qs = edQs.filter((_, i) => ed.sel.includes(i)).map(q => ({ p: q.p, n: q.n, ty: q.ty, k: q.k })); if (!qs.length) return toast("اختر سؤالاً واحداً على الأقل");
+    const id = "h" + Date.now().toString(36); const v = { id, book, u: ed.u, qs, cks: ed.cks, due: ed.due, note: ed.note.trim(), at: Date.now(), by: tname, tkey };
+    await api.maPut(`${NB_HW}/${id}`, v); setEd(null); await load(); toast("✅ نُشر الواجب للطلاب"); };
+  const del = async h => { if (!window.confirm("حذف الواجب وإجابات الطلاب عليه؟")) return; await api.maPut(`${NB_HW}/${h.id}`, null); await api.maPut(`${NB_HWA}/${h.id}`, null); setOpen(null); load(); };
+  // التصحيح
+  if (gr) { const h = gr.h, s = gr.s, sid = gr.sid; const qs = arr(h.qs); const fb = gr.fb;
+    const setF = (i, k, v) => setGr(g => ({ ...g, fb: { ...g.fb, [i]: { ...obj(g.fb[i]), [k]: v } } }));
+    const saveFb = async () => { const v = { ...s, fb: gr.fb, fbAt: Date.now(), fbBy: tname }; await api.maPut(`${NB_HWA}/${h.id}/${sid}`, v); setSubs(x => ({ ...x, [h.id]: { ...obj(x[h.id]), [sid]: v } })); setGr(null); toast("✅ حُفظ التصحيح ووصلت التغذية الراجعة للطالب"); };
+    return <div className="lr-card" style={{ display: "grid", gap: 8, "--c": B.c }}>
+      <div className="nb-h"><b>✍️ تصحيح واجب {s.n}</b><span className="nb-sp" /><button className="nb-b" onClick={() => setGr(null)}>رجوع</button></div>
+      {qs.map((q, i) => { const v = obj(s.a)[i]; const au = autoOk(q, v); const f = obj(fb[i]); const cur = f.ok != null ? +f.ok : au;
+        return <div key={i} className="lr-aq" style={{ borderColor: cur === 1 ? "#86efac" : cur === 0 ? "#fca5a5" : "#e2e8f0" }}>
+          <h5>السؤال {ar(q.n)} <small>• صفحة {ar(q.p)} • {q.ty}{au != null ? " • صُحّح آلياً" : ""}</small></h5>
+          <div style={{ fontWeight: 800 }}>إجابة الطالب: <span style={{ color: "#1e3a8a" }}>{v == null || v === "" ? "— لم يُجب —" : typeof v === "object" ? `${v.s || ""}${v.c ? " — " + v.c : ""}` : v}</span></div>
+          <div className="lr-key">🔑 النموذجية: {q.k}</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}><div className="lr-okb"><button className={cur === 1 ? "y" : ""} onClick={() => setF(i, "ok", 1)}>✔ صحيحة</button><button className={cur === 0 ? "n" : ""} onClick={() => setF(i, "ok", 0)}>✘ خاطئة</button></div>
+            <input className="lr-ta" style={{ minHeight: 0, flex: 1, minWidth: 180 }} placeholder="💬 تغذية راجعة للطالب (اختياري)…" value={f.c || ""} onChange={e => setF(i, "c", e.target.value)} />
+            <span style={{ display: "flex", gap: 4 }}>{["أحسنت 🌟", "راجع الخطوات", "انتبه للإشارة", "اقرأ السؤال جيداً"].map(t => <button key={t} className="nb-chk" onClick={() => setF(i, "c", t)}>{t}</button>)}</span></div>
+        </div>; })}
+      <button className="nb-b on big" style={{ "--c": "#16a34a", padding: 12 }} onClick={saveFb}>💾 اعتماد التصحيح وإرسال التغذية الراجعة</button>
+    </div>; }
+  if (ed) return <div className="lr-card" style={{ display: "grid", gap: 10, "--c": B.c }}>
+    <div className="nb-h"><b>➕ واجب جديد – {B.name}</b><span className="nb-sp" /><button className="nb-b" onClick={() => setEd(null)}>إلغاء</button></div>
+    <label style={{ fontWeight: 900, fontSize: 13 }}>الدرس (من موضوعات المرجع)<select className="lr-ta" style={{ minHeight: 0 }} value={ed.u} onChange={e => { const u = +e.target.value; setEd({ ...ed, u, sel: hwQsOf(K, book, u).map((_, i) => i) }); }}>{B.titles.map((t, u) => <option key={u} value={u}>الأسبوع {ar(Math.floor(u / 2) + 1)} • {t} (ص {ar(unitPages(book, u)[0])}–{ar(unitPages(book, u).slice(-1)[0])})</option>)}</select></label>
+    <div><b style={{ fontSize: 13 }}>الفصول:</b> {cks.map(c => <button key={c} className={"nb-chk" + (ed.cks.includes(c) ? " on" : "")} onClick={() => setEd({ ...ed, cks: ed.cks.includes(c) ? ed.cks.filter(x => x !== c) : [...ed.cks, c] })}>{cls(c)}</button>)}</div>
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><label style={{ fontWeight: 900, fontSize: 13 }}>آخر موعد للتسليم<input type="date" className="lr-ta" style={{ minHeight: 0 }} value={ed.due} onChange={e => setEd({ ...ed, due: e.target.value })} /></label>
+      <label style={{ fontWeight: 900, fontSize: 13, flex: 1, minWidth: 200 }}>توجيه للطلاب (اختياري)<input className="lr-ta" style={{ minHeight: 0 }} value={ed.note} onChange={e => setEd({ ...ed, note: e.target.value })} placeholder="مثال: حلّ في دفترك أولاً ثم أدخل الإجابات" /></label></div>
+    <div><div className="nb-h"><b style={{ fontSize: 13 }}>أسئلة الدرس ({ar(ed.sel.length)} من {ar(edQs.length)}) — الاختيار من متعدد والصواب والخطأ تُصحّح آلياً</b><span className="nb-sp" /><button className="nb-chk" onClick={() => setEd({ ...ed, sel: edQs.map((_, i) => i) })}>الكل</button><button className="nb-chk" onClick={() => setEd({ ...ed, sel: edQs.map((q, i) => qKind(q.ty) !== "open" ? i : -1).filter(i => i >= 0) })}>الآلية فقط</button></div>
+      <div style={{ display: "grid", gap: 4, marginTop: 6, maxHeight: 300, overflow: "auto" }}>{edQs.map((q, i) => <label key={i} className="lr-row" style={{ cursor: "pointer", padding: "5px 4px" }}><input type="checkbox" checked={ed.sel.includes(i)} onChange={() => setEd({ ...ed, sel: ed.sel.includes(i) ? ed.sel.filter(x => x !== i) : [...ed.sel, i] })} />
+        <b>س{ar(q.n)}</b><small style={{ color: "#64748b", fontWeight: 800 }}>ص {ar(q.p)}</small><span className="lr-pill" style={{ background: qKind(q.ty) === "open" ? "#fef3c7" : "#dcfce7", color: qKind(q.ty) === "open" ? "#92400e" : "#15803d" }}>{q.ty}{qKind(q.ty) === "open" ? " • يصحّحه المعلم" : " • آلي"}</span><small style={{ color: "#94a3b8", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>🔑 {q.k}</small></label>)}
+        {!edQs.length && <div className="nb-msg">لا توجد أسئلة مرقّمة في هذا الدرس</div>}</div></div>
+    <button className="nb-b on big" style={{ "--c": "#16a34a", padding: 12 }} onClick={save}>📤 نشر الواجب للطلاب</button>
+  </div>;
+  const studsOf = c => arr(ros[c] && ros[c].students).filter(s => s && s.id);
+  return <div className="lr-card" style={{ display: "grid", gap: 8, "--c": B.c }}>
+    <div className="nb-h"><b style={{ color: B.c }}>📝 الواجبات – {B.name}</b><span className="nb-sp" />{!admin && <button className="nb-b on" style={{ "--c": B.c }} onClick={startNew}>➕ واجب جديد</button>}</div>
+    {!L.length && <div className="nb-msg">لا توجد واجبات بعد{!admin ? " — اختر درساً من المرجع وانشر أسئلته واجباً بضغطة" : ""}</div>}
+    {L.map(h => { const S = subs[h.id]; const isO = open === h.id; const all = arr(h.cks).filter(c => cks.includes(c)).flatMap(c => studsOf(c).map(s => ({ ...s, ck: c })));
+      const got = S ? all.filter(s => S[s.id]) : []; const sc = got.map(s => hwScore(h, S[s.id])); const avg = sc.length ? Math.round(sc.reduce((t, x) => t + (x.done ? x.ok / x.done : 0), 0) / sc.length * 100) : 0; const pend = got.filter((s, i) => !sc[i].full || !S[s.id].fbAt).length;
+      return <div key={h.id} style={{ border: "1.5px solid #e2e8f0", borderRadius: 14, padding: 10 }}>
+        <div className="nb-h" style={{ gap: 6, cursor: "pointer" }} onClick={() => { setOpen(isO ? null : h.id); if (!S) loadSubs(h.id); }}>
+          <b>{B.titles[h.u]}</b><small style={{ color: "#64748b", fontWeight: 800 }}>{ar(arr(h.qs).length)} أسئلة • {arr(h.cks).map(cls).join("، ")}{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}{admin ? ` • أ. ${h.by}` : ""}</small><span className="nb-sp" />
+          {S && <><span className="lr-pill" style={{ background: "#ede9fe", color: "#6d28d9" }}>سلّم {ar(got.length)}/{ar(all.length)}</span><span className="lr-pill" style={{ background: PRE_LV(avg)[2], color: PRE_LV(avg)[1] }}>متوسط {ar(avg)}٪</span>{pend > 0 && <span className="lr-pill lr-c0">✍️ {ar(pend)} للتصحيح</span>}</>}<span>{isO ? "▲" : "▼"}</span></div>
+        {isO && (!S ? <div className="nb-msg">⏳</div> : <div style={{ marginTop: 8 }}>
+          {all.map(s => { const x = S[s.id]; const r = x ? hwScore(h, x) : null; return <div key={s.id} className="lr-row">
+            <b style={{ flex: 1, minWidth: 140 }}>{s.name} <small style={{ color: "#94a3b8" }}>{cls(s.ck)}</small></b>
+            {x ? <><LBar v={r.done ? r.ok / r.done * 100 : 0} c={PRE_LV(r.pct)[1]} /><span className="lr-pill" style={{ background: "#f1f5f9" }}>{ar(r.ok)}/{ar(r.of)}{!r.full ? ` • ${ar(r.of - r.done)} مفتوح` : ""}</span>{x.fbAt ? <span className="lr-pill lr-c1">✅ صُحّح</span> : null}
+              {!admin && <button className="nb-b" onClick={() => setGr({ h, s: x, sid: s.id, fb: obj(x.fb) })}>✍️ تصحيح وتغذية راجعة</button>}</> : <span className="lr-pill lr-c0">لم يسلّم</span>}</div>; })}
+          {!admin && <div className="nb-h" style={{ marginTop: 6 }}><span className="nb-sp" /><button className="nb-b" style={{ color: "#b91c1c" }} onClick={() => del(h)}>🗑 حذف الواجب</button></div>}
+        </div>)}
+      </div>; })}
+    {msg && <div className="nb-msg" style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "#0f172a", color: "#fff", borderRadius: 12, zIndex: 99 }}>{msg}</div>}
+  </div>;
+}
+
+// ── 📅 متابعة المدير الأسبوعية: الشرح بالصفحة • إنجاز الأسبوع • الواجبات • الطلاب غير المشاركين
+function WeekBoard({ api, D, rows, cks }) {
+  const [off, setOff] = useState(0); const [X, setX] = useState(null); const [sel, setSel] = useState(null);
+  useEffect(() => { (async () => { const [hw, hwa, pre] = await Promise.all([api.maGet(NB_HW), api.maGet(NB_HWA), api.maGet(NB_PRE)]); setX({ hw: obj(hw), hwa: obj(hwa), pre: obj(pre) }); })(); }, []);
+  if (!X) return <div className="nb-msg">⏳ جارٍ تحميل متابعة الأسبوع…</div>;
+  const s0 = wkS(off), s1 = s0 + 7 * 864e5; const inW = t => t >= s0 && t < s1;
+  const studsOf = ck => arr(D.ros[ck] && D.ros[ck].students).filter(s => s && s.id);
+  const R = rows.flatMap(r => r.cks.map(ck => { const C = obj(obj(obj(D.tp[r.key])[r.book])[ck]); const B = BOOKS[r.book];
+    const pw = Object.entries(C).filter(([k, t]) => k[0] === "p" && inW(+t)).map(([k]) => +k.slice(1)).sort((a, b) => a - b);
+    const vals = Array.from({ length: 15 }, (_, w) => weekPct(C, r.book, w)); let tw = vals.findIndex(v => v < 100); if (tw < 0) tw = 14;
+    const wp = weekPages(r.book, tw); const wDone = wp.filter(p => C["p" + p]).length;
+    const hws = Object.values(X.hw).filter(h => h && h.book === r.book && arr(h.cks).includes(ck) && inW(h.at));
+    const st = studsOf(ck); const subsIn = hws.flatMap(h => st.map(s => obj(X.hwa[h.id])[s.id]).filter(Boolean));
+    const scs = hws.flatMap(h => st.map(s => obj(X.hwa[h.id])[s.id]).filter(Boolean).map(x => hwScore(h, x))).filter(x => x.done);
+    const avg = scs.length ? Math.round(scs.reduce((t, x) => t + x.ok / x.done, 0) / scs.length * 100) : null;
+    const act = s => inW(+obj(D.seen[s.id]).at || 0) || Object.values(X.hw).some(h => inW(+obj(obj(X.hwa[h.id])[s.id]).at || 0));
+    const idle = st.filter(s => !act(s));
+    const pre = st.filter(s => obj(obj(X.pre[r.book])[s.id]).at); const preAvg = pre.length ? Math.round(pre.reduce((t, s) => { const x = X.pre[r.book][s.id]; return t + x.sc / x.of * 100; }, 0) / pre.length) : null;
+    return { r, ck, B, pw, tw, wp, wDone, wPct: Math.round(wDone / wp.length * 100), hws, subRate: hws.length && st.length ? Math.round(subsIn.length / (hws.length * st.length) * 100) : null, avg, idle, st, pre: pre.length, preAvg };
+  }));
+  const tot = R.reduce((t, x) => t + x.pw.length, 0); const avgW = R.length ? Math.round(R.reduce((t, x) => t + x.wPct, 0) / R.length) : 0; const idleN = new Set(R.flatMap(x => x.idle.map(s => s.id))).size; const hwN = R.reduce((t, x) => t + x.hws.length, 0);
+  const print = () => lrPrint("المتابعة الأسبوعية", `<h1>المتابعة الأسبوعية لمراجع نافس</h1><div class="sub">الأسبوع: ${wkLbl(s0)}</div><div class="k"><div><b>${ar(tot)}</b>صفحة شُرحت</div><div><b>${ar(avgW)}٪</b>متوسط إنجاز الأسبوع</div><div><b>${ar(hwN)}</b>واجباً</div><div><b>${ar(idleN)}</b>طالباً لم يشارك</div></div>
+    <table><tr><th>المعلم</th><th>المادة</th><th>الفصل</th><th>صفحات هذا الأسبوع</th><th>أسبوع الخطة</th><th>إنجازه</th><th>الواجبات</th><th>التسليم</th><th>أداء الطلاب</th><th>لم يشاركوا</th></tr>${R.map(x => `<tr><td class="r">${x.r.name}</td><td>${x.B.name}</td><td>${cls(x.ck)}</td><td>${ar(x.pw.length)}${x.pw.length ? `<br><small>${x.pw.map(ar).join("، ")}</small>` : ""}</td><td>${ar(x.tw + 1)}</td><td class="${x.wPct === 100 ? "ok" : x.wPct < 50 ? "no" : ""}">${ar(x.wDone)}/${ar(x.wp.length)} (${ar(x.wPct)}٪)</td><td>${ar(x.hws.length)}</td><td>${x.subRate == null ? "—" : ar(x.subRate) + "٪"}</td><td>${x.avg == null ? "—" : ar(x.avg) + "٪"}</td><td>${ar(x.idle.length)}</td></tr>`).join("")}</table>
+    ${R.filter(x => x.idle.length).map(x => `<p style="font-size:11px;font-weight:800"><b>${x.B.name} • ${cls(x.ck)}</b> — لم يشاركوا: ${x.idle.map(s => s.name).join("، ")}</p>`).join("")}<div class="sg"><span>وكيل الشؤون التعليمية: ............</span><span>مدير المدرسة: ............</span></div>`);
+  const S = sel && R.find(x => x.r.key + x.ck + x.r.book === sel);
+  return <div style={{ display: "grid", gap: 10 }}>
+    <div className="lr-card"><div className="nb-h" style={{ gap: 6 }}><b>📅 الأسبوع: {wkLbl(s0)}</b><span className="nb-sp" />{[0, 1, 2, 3].map(o => <button key={o} className={"nb-b" + (off === o ? " on" : "")} onClick={() => setOff(o)}>{o === 0 ? "هذا الأسبوع" : o === 1 ? "الماضي" : `قبل ${ar(o)} أسابيع`}</button>)}<button className="nb-b" onClick={print}>🖨 طباعة</button></div></div>
+    <div className="lr-grid">
+      <div className="lr-k" style={{ "--c": "#7c3aed" }}><b>{ar(tot)}</b><small>📖 صفحة شُرحت هذا الأسبوع</small></div>
+      <div className="lr-k" style={{ "--c": avgW >= 80 ? "#16a34a" : avgW >= 50 ? "#d97706" : "#dc2626" }}><b>{ar(avgW)}٪</b><small>متوسط إنجاز أسبوع الخطة</small><LBar v={avgW} c={avgW >= 80 ? "#16a34a" : avgW >= 50 ? "#d97706" : "#dc2626"} /></div>
+      <div className="lr-k" style={{ "--c": "#0f766e" }}><b>{ar(hwN)}</b><small>📝 واجباً نُشر</small></div>
+      <div className="lr-k" style={{ "--c": "#dc2626" }}><b>{ar(idleN)}</b><small>🚫 طالباً لم يشارك</small></div>
+    </div>
+    <div className="lr-card" style={{ overflowX: "auto" }}><table className="lr-hm"><thead><tr><th style={{ textAlign: "right" }}>المعلم</th><th>المادة</th><th>الفصل</th><th>📖 صفحات الأسبوع</th><th>أسبوع الخطة</th><th>العدّاد</th><th>📝 واجبات</th><th>التسليم</th><th>الأداء</th><th>🧪 القبلي</th><th>🚫 لم يشاركوا</th></tr></thead><tbody>
+      {R.map(x => <tr key={x.r.key + x.ck + x.r.book} style={{ cursor: "pointer" }} onClick={() => setSel(x.r.key + x.ck + x.r.book)}>
+        <td className="r">{x.r.name}</td><td style={{ color: x.B.c }}>{x.B.name}</td><td>{cls(x.ck)}</td>
+        <td><b style={{ color: x.pw.length ? "#15803d" : "#b91c1c" }}>{ar(x.pw.length)}</b></td><td>{ar(x.tw + 1)}</td>
+        <td style={{ minWidth: 120 }}><div style={{ display: "flex", gap: 4, alignItems: "center" }}><LBar v={x.wPct} c={x.wPct === 100 ? "#16a34a" : x.wPct >= 50 ? "#d97706" : "#dc2626"} /><small>{ar(x.wDone)}/{ar(x.wp.length)}</small></div></td>
+        <td>{ar(x.hws.length)}</td><td>{x.subRate == null ? "—" : ar(x.subRate) + "٪"}</td><td>{x.avg == null ? "—" : <span className="lr-pill" style={{ background: PRE_LV(x.avg)[2], color: PRE_LV(x.avg)[1] }}>{ar(x.avg)}٪</span>}</td>
+        <td>{x.pre ? `${ar(x.pre)} • ${ar(x.preAvg)}٪` : "—"}</td><td><span className={"lr-pill " + (x.idle.length ? "lr-c0" : "lr-c1")}>{ar(x.idle.length)}</span></td></tr>)}
+      {!R.length && <tr><td colSpan={11}>لا توجد بيانات معلمين</td></tr>}</tbody></table>
+      <small style={{ color: "#64748b", fontWeight: 700 }}>«صفحات الأسبوع» = الصفحات التي سجّل المعلم «✅ تم شرح الصفحة» خلالها • «العدّاد» = المشروح من صفحات أسبوع الخطة الحالي • «لم يشاركوا» = لم يدخلوا المراجع ولم يسلّموا واجباً هذا الأسبوع • اضغط أي صف للتفاصيل</small></div>
+    {S && <div className="lr-card" style={{ "--c": S.B.c, display: "grid", gap: 8 }}>
+      <div className="nb-h"><b>{S.r.name} • {S.B.name} • فصل {cls(S.ck)}</b><span className="nb-sp" /><button className="nb-b" onClick={() => setSel(null)}>✕</button></div>
+      <div><b style={{ fontSize: 13 }}>📖 صفحات أسبوع الخطة {ar(S.tw + 1)} ({S.B.titles[S.tw * 2]} • {S.B.titles[S.tw * 2 + 1]}):</b>
+        <div className="nb-h" style={{ gap: 4, marginTop: 4 }}>{S.wp.map(p => { const t = obj(obj(obj(D.tp[S.r.key])[S.r.book])[S.ck])["p" + p]; return <span key={p} className="lr-pill" title={t ? new Date(+t).toLocaleString("ar-SA") : "لم تُشرح"} style={{ background: t ? "#dcfce7" : "#f1f5f9", color: t ? "#15803d" : "#94a3b8" }}>{t ? "✓" : "○"} {ar(p)}</span>; })}</div></div>
+      {S.idle.length > 0 && <div><b style={{ fontSize: 13, color: "#b91c1c" }}>🚫 لم يشاركوا ({ar(S.idle.length)}):</b> <span style={{ fontWeight: 700, fontSize: 13 }}>{S.idle.map(s => s.name).join("، ")}</span></div>}
+      {S.hws.map(h => { const st = S.st; const got = st.filter(s => obj(X.hwa[h.id])[s.id]); return <div key={h.id} style={{ fontSize: 13, fontWeight: 800 }}>📝 {S.B.titles[h.u]}: سلّم {ar(got.length)}/{ar(st.length)} • لم يسلّم: <span style={{ color: "#b91c1c" }}>{st.filter(s => !got.includes(s)).map(s => s.name.split(" ").slice(0, 2).join(" ")).join("، ") || "—"}</span></div>; })}
+    </div>}
+  </div>;
 }
