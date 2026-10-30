@@ -47,7 +47,7 @@ function buildPrompt({ subj, grade, term, L, chap, title, note, nImg }) {
 ${title ? "عنوان الدرس كما كتبه المعلم: " + title : ""}${ref}
 ${nImg ? `مرفق ${nImg} صورة لصفحات الدرس من كتاب الطالب: اعتمد على محتواها وأمثلتها.` : ""}
 ${note ? "ملاحظة المعلم: " + note : ""}
-المطلوب: أخرج JSON واحدًا فقط بلا أي نص قبله أو بعده، بالمفاتيح الآتية وبالعربية، موجزًا (كل نص لا يتجاوز ٢٥ كلمة):
+المطلوب: أخرج JSON واحدًا فقط بلا أي نص قبله أو بعده، بالمفاتيح الآتية وبالعربية، موجزًا (كل نص لا يتجاوز ٢٥ كلمة). لا تستعمل علامة التنصيص " داخل النصوص إطلاقًا، واستعمل «» بدلًا منها:
 {
 "title":"عنوان الدرس","unit":"الفصل/الوحدة","big":"الفكرة الكبرى للدرس في جملة واحدة ملهمة","src":"${L ? "دليل المعلم" : "مستنتج من الكتاب"}",
 "obj":[{"t":"أن + فعل سلوكي قابل للقياس + المحتوى (مثل: أن يحلّ الطالب…)","b":"أحد: تذكر|فهم|تطبيق|تحليل|تقويم|إبداع","d":"معرفي|مهاري|وجداني"}] (٤–٦ أهداف متدرجة تشمل أهداف الكتاب وتصل إلى المستويات العليا، وهدف وجداني واحد),
@@ -63,12 +63,58 @@ ${note ? "ملاحظة المعلم: " + note : ""}
 "values":"قيمة أو ربط برؤية المملكة ٢٠٣٠ بلا تكلّف"${nf ? `,\n"nafes":"المهارة أو المجال المرتبط بالدرس في اختبارات نافس (${nf}) وكيف يُدرَّب عليه"` : ""}
 }`;
 }
-const parseJSON = txt => { const t = String(txt || "").replace(/```(json)?/g, ""); const s = t.indexOf("{"), e = t.lastIndexOf("}"); if (s < 0 || e < s) throw new Error("لم تُفهم إجابة الذكاء الاصطناعي — أعد المحاولة"); return JSON.parse(t.slice(s, e + 1).replace(/,\s*([}\]])/g, "$1")); };
+// قالب البيانات المطلوب (يُرسل للخادم فيُلزم الذكاء بإخراج JSON سليم)
+const S_ = { type: "string" }, SA = { type: "array", items: S_ };
+const OA = p => ({ type: "array", items: { type: "object", properties: Object.fromEntries(p.map(k => [k, k === "min" ? { type: "number" } : S_])), required: p } });
+const SCHEMA = { type: "object", properties: {
+  title: S_, unit: S_, big: S_, src: S_, obj: OA(["t", "b", "d"]), prior: SA, vocab: OA(["w", "d"]),
+  hook: { type: "object", properties: { t: S_, text: S_, q: S_ }, required: ["t", "text", "q"] },
+  life: OA(["t", "text", "q"]), hots: OA(["s", "q", "a"]), flow: OA(["ph", "min", "tch", "stu"]), strat: SA, exit: OA(["q", "a"]),
+  diff: { type: "object", properties: { low: S_, high: S_ }, required: ["low", "high"] }, values: S_, nafes: S_ },
+  required: ["title", "unit", "big", "obj", "prior", "vocab", "hook", "life", "hots", "flow", "strat", "exit", "diff", "values"] };
+// إصلاح ردود JSON المعيبة: علامات تنصيص غير مهرّبة داخل النصوص، أسطر جديدة، فواصل زائدة، رد مقطوع
+function repairJSON(t) {
+  let o = "", inS = false, key = false, st = [];
+  const nx = j => { while (j < t.length && /\s/.test(t[j])) j++; return j; };
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (inS) {
+      if (c === "\\") { o += c + (t[i + 1] || ""); i++; continue; }
+      if (c === '"') {
+        const j = nx(i + 1), n = t[j]; let end;
+        if (n === undefined) end = true;
+        else if (key) end = n === ":";
+        else if (n === "}" || n === "]") end = true;
+        else if (n === ",") { const k = t[nx(j + 1)]; end = k === undefined || /["{\[\-\d]/.test(k); }
+        else end = false;
+        if (end) { inS = false; o += c; } else o += '\\"';
+        continue;
+      }
+      if (c === "\n") { o += "\\n"; continue; } if (c === "\r" || c === "\t") { o += " "; continue; }
+      o += c; continue;
+    }
+    if (c === '"') { const p = o.replace(/\s+$/, "").slice(-1); key = st[st.length - 1] === "}" && (p === "{" || p === ","); inS = true; o += c; continue; }
+    if (c === "{" || c === "[") st.push(c === "{" ? "}" : "]"); else if (c === "}" || c === "]") st.pop();
+    o += c;
+  }
+  if (inS) o += '"';
+  o = o.replace(/[,:]\s*$/, "").replace(/,\s*"[^"]*"\s*$/, "");
+  while (st.length) o += st.pop();
+  return o.replace(/,\s*([}\]])/g, "$1");
+}
+const parseJSON = txt => {
+  const t = String(txt || "").replace(/```(json)?/g, ""); const s = t.indexOf("{"); if (s < 0) throw new Error("لم تُفهم إجابة الذكاء الاصطناعي — أعد المحاولة");
+  const e = t.lastIndexOf("}"); const body = e > s ? t.slice(s, e + 1) : t.slice(s);
+  try { return JSON.parse(body); } catch {}
+  try { return JSON.parse(repairJSON(body)); } catch {}
+  try { return JSON.parse(repairJSON(t.slice(s))); } catch {}
+  throw new Error("وصلت إجابة الذكاء غير مكتملة — اضغط «حلّل الدرس» مرة أخرى");
+};
 
 // ── الاتصال بالوسيط (/api/ai) مع البث التدريجي — وعند عدم ضبط المفتاح في Vercel يُستعمل مفتاح الجهاز إن وُجد
 async function callAI({ me, api, prompt, images, tag, onText }) {
   let r;
-  try { r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: me.hash, prompt, images, tag, max: 5000 }) }); }
+  try { r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: me.hash, prompt, images, tag, max: 6000, schema: SCHEMA }) }); }
   catch { throw new Error("تعذّر الاتصال — تحقق من الإنترنت"); }
   const ct = r.headers.get("content-type") || "";
   if (!r.ok && !ct.includes("json")) { if (api.directAI) return api.directAI(prompt, images); throw new Error("خدمة الذكاء الاصطناعي غير مفعّلة بعد على الخادم (api/ai.js)"); }
