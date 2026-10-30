@@ -37,7 +37,9 @@ module.exports = async function handler(req, res) {
     const now = ksa(), day = now.slice(0, 10), mon = now.slice(0, 7), hk = hash.slice(0, 16);
     if (b.kind === "ping") { const [u, m] = await Promise.all([fbGet(`school-sl-use/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]); return res.status(200).json({ ok: true, name: who.name, left: Math.max(0, daily - (+u || 0)), daily, mUsed: +m || 0, monthly }); }
     // ② الحدود
-    const [used, mUsed] = await Promise.all([fbGet(`school-sl-use/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]);
+    // الرسوم التوضيحية لها عدّاد يومي مستقل حتى لا تُنقص تحليلات المعلم
+    const UN = b.kind === "vis" ? "school-sl-usev" : "school-sl-use";
+    const [used, mUsed] = await Promise.all([fbGet(`${UN}/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]);
     if ((+used || 0) >= daily) return res.status(200).json({ ok: false, code: "daily", msg: `استنفدت حدّك اليومي (${daily} تحليلات) — يتجدد غدًا. يمكنك الاستفادة من بنك الدروس دون حدود.` });
     if ((+mUsed || 0) >= monthly) return res.status(200).json({ ok: false, code: "monthly", msg: "بلغت المدرسة السقف الشهري للتحليلات — راجع الإدارة" });
     // ③ تجهيز الطلب
@@ -46,8 +48,8 @@ module.exports = async function handler(req, res) {
     const imgs = (Array.isArray(b.images) ? b.images : []).filter(d => typeof d === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(d)).slice(0, 4);
     const content = [...imgs.map(d => ({ type: "image", source: { type: "base64", media_type: d.slice(5, d.indexOf(";")), data: d.slice(d.indexOf(",") + 1) } })), { type: "text", text: prompt }];
     // قالب منظَّم يُلزم الذكاء بإخراج بيانات سليمة (بدل نص قد يحتوي علامات تنصيص مكسورة)
-    const tool = b.schema && typeof b.schema === "object" ? { name: "lesson", description: "أعد تحليل الدرس كاملًا وفق القالب", input_schema: b.schema } : null;
-    await fbPatch({ [`school-sl-use/${day}/${hk}`]: { ".sv": { increment: 1 } }, [`school-sl-usem/${mon}`]: { ".sv": { increment: 1 } } });
+    const tool = b.schema && typeof b.schema === "object" ? { name: "lesson", description: "أعد النتيجة كاملة وفق القالب", input_schema: b.schema } : null;
+    await fbPatch({ [`${UN}/${day}/${hk}`]: { ".sv": { increment: 1 } }, [`school-sl-usem/${mon}`]: { ".sv": { increment: 1 } } });
     // ④ الاتصال مع البث التدريجي للنص (يرى المعلم التقدّم ولا تنتهي مهلة الخادم)
     let r = null, model = "", err = "";
     for (const m of MODELS) {
@@ -55,7 +57,7 @@ module.exports = async function handler(req, res) {
       if (r.ok) { model = m; break; }
       err = await r.text(); if (!/not_found|model/i.test(err)) break;
     }
-    if (!model) { await fbPatch({ [`school-sl-use/${day}/${hk}`]: { ".sv": { increment: -1 } }, [`school-sl-usem/${mon}`]: { ".sv": { increment: -1 } } }); let m = err; try { m = JSON.parse(err).error.message; } catch {} return res.status(200).json({ ok: false, msg: "تعذّر الاتصال بالذكاء الاصطناعي: " + String(m).slice(0, 300) }); }
+    if (!model) { await fbPatch({ [`${UN}/${day}/${hk}`]: { ".sv": { increment: -1 } }, [`school-sl-usem/${mon}`]: { ".sv": { increment: -1 } } }); let m = err; try { m = JSON.parse(err).error.message; } catch {} return res.status(200).json({ ok: false, msg: "تعذّر الاتصال بالذكاء الاصطناعي: " + String(m).slice(0, 300) }); }
     res.setHeader("Content-Type", "text/plain; charset=utf-8"); res.setHeader("Cache-Control", "no-cache"); res.setHeader("X-Accel-Buffering", "no");
     res.status(200);
     const dec = new TextDecoder(); let buf = "", tin = 0, tout = 0;
