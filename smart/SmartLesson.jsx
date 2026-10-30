@@ -10,6 +10,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import MATH3 from "./math3.js";
+import { visSVG, VIS_SCHEMA, visPrompt, VIS_NAMES, VFONT } from "./visuals.js";
+// خطوط ودودة للطلاب: «بالو بهيجان» للعناوين والعرض، و«تجوّل» للنصوص
+if (typeof document !== "undefined" && !document.getElementById("sl-fonts")) { const l = document.createElement("link"); l.id = "sl-fonts"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap"; document.head.appendChild(l); }
 
 const SL_MY = "school-sl-my", SL_BANK = "school-sl-bank", SL_CFG = "school-sl-cfg", SL_USEM = "school-sl-usem", SL_LOG = "school-sl-log", SL_USE = "school-sl-use";
 const IDX = { [`رياضيات|الثالث المتوسط|الفصل الدراسي الأول`]: MATH3 };
@@ -112,9 +115,9 @@ const parseJSON = txt => {
 };
 
 // ── الاتصال بالوسيط (/api/ai) مع البث التدريجي — وعند عدم ضبط المفتاح في Vercel يُستعمل مفتاح الجهاز إن وُجد
-async function callAI({ me, api, prompt, images, tag, onText }) {
+async function callAI({ me, api, prompt, images, tag, onText, schema = SCHEMA, kind = "", max = 6000 }) {
   let r;
-  try { r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: me.hash, prompt, images, tag, max: 6000, schema: SCHEMA }) }); }
+  try { r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: me.hash, prompt, images, tag, max, schema, kind }) }); }
   catch { throw new Error("تعذّر الاتصال — تحقق من الإنترنت"); }
   const ct = r.headers.get("content-type") || "";
   if (!r.ok && !ct.includes("json")) { if (api.directAI) return api.directAI(prompt, images); throw new Error("خدمة الذكاء الاصطناعي غير مفعّلة بعد على الخادم (api/ai.js)"); }
@@ -125,10 +128,10 @@ async function callAI({ me, api, prompt, images, tag, onText }) {
 }
 
 const CSS = `
-.sl{font-family:Cairo,Tahoma,sans-serif;color:#0f172a;--ink:#0b1b3a;--gold:#c9a227;--teal:#0f766e}
+.sl{font-family:'Tajawal',Cairo,Tahoma,sans-serif;color:#0f172a;--ink:#0b1b3a;--gold:#c9a227;--teal:#0f766e}
 .sl *{box-sizing:border-box}
 .sl-hero{position:relative;overflow:hidden;border-radius:26px;padding:22px 24px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,#1e3a8a 0%,#0b1b3a 55%,#062a2a 100%);box-shadow:0 24px 50px -30px #0b1b3a}
-.sl-hero h2{margin:0;font-size:24px;font-weight:900;letter-spacing:-.2px}.sl-hero p{margin:6px 0 0;font-size:13.5px;font-weight:700;opacity:.85;line-height:1.9}
+.sl-hero h2{margin:0;font-size:27px;font-weight:800;font-family:${VFONT}}.sl-h,.sl-top h1,.slp-t,.slp-k,.sl-vis b{font-family:${VFONT}!important}.sl-hero p{margin:6px 0 0;font-size:13.5px;font-weight:700;opacity:.85;line-height:1.9}
 .sl-hero .orb{position:absolute;width:240px;height:240px;border-radius:50%;left:-70px;top:-90px;background:radial-gradient(circle,#c9a22755,transparent 70%)}
 .sl-hero .orb2{position:absolute;width:180px;height:180px;border-radius:50%;left:30%;bottom:-120px;background:radial-gradient(circle,#14b8a655,transparent 70%)}
 .sl-q{display:inline-flex;gap:6px;align-items:center;background:#ffffff1f;border:1px solid #ffffff33;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;margin-top:10px}
@@ -178,8 +181,11 @@ const CSS = `
 .sl-my{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}.sl-my button.c{text-align:right;border:1px solid #e2e8f0;background:#fff;border-radius:18px;padding:12px 14px;cursor:pointer;font-family:inherit;position:relative}.sl-my b{display:block;font-size:14.5px;color:#0b1b3a}.sl-my small{font-size:12px;color:#64748b;font-weight:700}
 .sl-kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.sl-kp div{background:#fff;border:1px solid #e8edf4;border-radius:18px;padding:12px 14px}.sl-kp b{display:block;font-size:24px;font-weight:900;color:var(--c,#1e3a8a)}.sl-kp small{font-size:12px;font-weight:800;color:#64748b}
 .sl-tb{width:100%;border-collapse:collapse;font-size:13px}.sl-tb th{background:#0b1b3a;color:#fff;padding:8px 6px;font-weight:800}.sl-tb td{padding:7px 6px;border-bottom:1px solid #eef2f7;text-align:center}.sl-tb tr:nth-child(even) td{background:#f8fafc}
+.sl-vis{border-radius:20px;border:1.5px solid #e2e8f0;background:#fff;padding:12px;display:flex;flex-direction:column;gap:6px}.sl-vis b{font-size:17px;color:#0b1b3a}.sl-vis .k{align-self:flex-start;font-size:11.5px;font-weight:800;color:#7c3aed;background:#f5f3ff;border-radius:999px;padding:2px 10px}.sl-vis p{margin:0;font-size:14px;font-weight:700;line-height:1.9;color:#334155;background:#f8fafc;border-radius:12px;padding:8px 10px}
+.sl-vwait{display:flex;align-items:center;gap:12px;padding:18px;border-radius:18px;background:linear-gradient(135deg,#f5f3ff,#eef2ff);font-weight:800;color:#5b21b6}.sl-vwait i{width:26px;height:26px;border-radius:50%;border:3px solid #c4b5fd;border-top-color:#7c3aed;animation:slSpin 1s linear infinite}
+.slp-svg{background:#fff;border-radius:24px;padding:14px;max-width:min(980px,100%);margin:6px auto 0;max-height:62vh;display:flex;justify-content:center}.slp-svg svg{max-height:58vh}
 /* وضع العرض */
-.slp{position:fixed;inset:0;z-index:3000;background:radial-gradient(120% 120% at 100% 0%,#1e3a8a,#0b1b3a 50%,#04201f);color:#fff;font-family:Cairo,Tahoma,sans-serif;display:flex;flex-direction:column}
+.slp{position:fixed;inset:0;z-index:3000;background:radial-gradient(120% 120% at 100% 0%,#1e3a8a,#0b1b3a 50%,#04201f);color:#fff;font-family:'Tajawal',Cairo,Tahoma,sans-serif;display:flex;flex-direction:column}
 .slp-top{display:flex;align-items:center;gap:10px;padding:12px 18px;font-weight:800;font-size:14px;opacity:.9}.slp-top button{border:0;background:#ffffff1f;color:#fff;border-radius:12px;padding:6px 14px;font:800 14px Cairo,Tahoma;cursor:pointer}
 .slp-body{flex:1;display:grid;place-items:center;padding:10px 6vw;overflow:auto}
 .slp-s{width:min(1100px,100%);animation:slIn .45s ease}@keyframes slIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
@@ -197,7 +203,16 @@ const CSS = `
 const Ed = ({ on, v, set, area }) => on ? (area ? <textarea className="sl-e" rows={2} value={v || ""} onChange={e => set(e.target.value)} /> : <input className="sl-e" value={v || ""} onChange={e => set(e.target.value)} />) : <>{v}</>;
 
 // ═════════ عرض نتيجة التحليل ═════════
-function Result({ R, setR, meta, edit, showAns }) {
+function Visuals({ R, vis, onVis }) {
+  const V = arr(R.vis);
+  return <div className="sl-card"><h3 className="sl-h"><i style={{ "--c": "#7c3aed", "--c2": "#db2777" }}>🎨</i>صور توضيحية تبسّط الدرس للطلاب</h3>
+    {V.length ? <div className="sl-g2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,460px),1fr))" }}>{V.map((v, i) => { const h = visSVG(v); return h ? <div className="sl-vis" key={i}><span className="k">{VIS_NAMES[v.k] || ""}</span><b>{v.t}</b><div dangerouslySetInnerHTML={{ __html: h }} />{v.cap ? <p>🗣️ {v.cap}</p> : null}</div> : null; })}</div>
+      : vis === "busy" ? <div className="sl-vwait"><i />يرسم الذكاء الصور التوضيحية لهذا الدرس…</div>
+      : <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>{vis && vis !== "busy" ? <span style={{ color: "#b91c1c", fontWeight: 800, fontSize: 13 }}>⚠️ {vis}</span> : <span style={{ color: "#64748b", fontWeight: 800, fontSize: 13 }}>رسوم مبسّطة مثل الميزان وخط الأعداد والمستوى الإحداثي وخرائط المفاهيم</span>}<button className="sl-b gold sm" onClick={onVis}>🎨 ارسم الصور التوضيحية</button></div>}
+    {V.length && onVis ? <button className="sl-b gh sm" style={{ marginTop: 10 }} onClick={onVis}>🔄 رسوم أخرى</button> : null}
+  </div>;
+}
+function Result({ R, setR, meta, edit, showAns, vis, onVis }) {
   const up = (k, i, f, v) => setR(p => { const n = { ...p }; const a = [...arr(n[k])]; a[i] = f ? { ...a[i], [f]: v } : v; n[k] = a; return n; });
   const del = (k, i) => setR(p => ({ ...p, [k]: arr(p[k]).filter((_, j) => j !== i) }));
   const add = (k, o) => setR(p => ({ ...p, [k]: [...arr(p[k]), o] }));
@@ -226,6 +241,8 @@ function Result({ R, setR, meta, edit, showAns }) {
       <div style={{ marginTop: 10, fontSize: 12, fontWeight: 900, color: "#64748b" }}>سلّم بلوم: توزيع الأهداف على المستويات</div>
       <div className="sl-lad">{lad.map(([b, c, n]) => <div key={b}><i style={{ height: 6 + n / mx * 40, background: n ? c : "#e2e8f0" }} />{b}{n ? ` (${ar(n)})` : ""}</div>)}</div>
     </div>
+
+    <Visuals R={R} vis={vis} onVis={edit ? null : onVis} />
 
     <div className="sl-g2">
       <div className="sl-card"><H ic="🧱" t="المتطلبات السابقة" c="#475569" c2="#94a3b8" />
@@ -294,6 +311,7 @@ function Present({ R, meta, onClose }) {
     if (R.hook) s.push({ k: "⚡ تهيئة", t: R.hook.t, p: R.hook.text, ans: R.hook.q ? "❓ " + R.hook.q : "", q: 1 });
     if (arr(R.obj).length) s.push({ k: "🎯 أهداف الدرس", t: "في نهاية الدرس أكون قادرًا على:", li: arr(R.obj).map(o => String(o.t || "").replace(/^أن\s+يـ?/, "أن أ").replace(/الطالب\s*/, "")) });
     if (arr(R.vocab).length) s.push({ k: "🔤 المفردات", t: "مفردات الدرس", li: arr(R.vocab).map(v => v.w + " — " + v.d) });
+    arr(R.vis).forEach(v => { const h = visSVG(v); if (h) s.push({ k: "🎨 " + (VIS_NAMES[v.k] || "توضيح"), t: v.t, svg: h, p: v.cap }); });
     arr(R.life).forEach(l => s.push({ k: "🌍 من واقع الحياة", t: l.t, p: l.text, ans: l.q ? "❓ " + l.q : "", q: 1 }));
     arr(R.hots).forEach(h => s.push({ k: hotIc(h.s) + " فكّر: " + h.s, t: h.q, ans: h.a ? "✔ " + h.a : "" }));
     if (arr(R.exit).length) s.push({ k: "🎫 بطاقة الخروج", t: "قبل أن تغادر…", li: arr(R.exit).map(e => e.q), ans: arr(R.exit).map((e, i) => ar(i + 1) + ") " + e.a).join("   •   ") });
@@ -309,8 +327,9 @@ function Present({ R, meta, onClose }) {
     <div className="slp-body" onClick={e => { if (e.target.classList.contains("slp-body")) go(1); }}>
       <div className="slp-s" key={i}>
         <span className="slp-k">{s.k}</span>
-        <h2 className="slp-t">{s.t}</h2>
-        {s.p ? <div className="slp-p">{s.p}</div> : null}
+        <h2 className="slp-t" style={s.svg ? { fontSize: "clamp(22px,3vw,40px)", marginBottom: 6 } : null}>{s.t}</h2>
+        {s.svg ? <div className="slp-svg" dangerouslySetInnerHTML={{ __html: s.svg }} /> : null}
+        {s.p ? <div className="slp-p" style={s.svg ? { fontSize: "clamp(16px,2vw,24px)", marginTop: 10 } : null}>{s.svg ? "🗣️ " : ""}{s.p}</div> : null}
         {s.li ? s.li.map((x, j) => <div className="slp-li" key={j}><i>{ar(j + 1)}</i><span>{x}</span></div>) : null}
         {s.ans ? (show ? <div className="slp-ans">{s.ans}</div> : <button onClick={() => setShow(true)} style={{ marginTop: 16, border: "2px dashed #ffffff66", background: "transparent", color: "#fff", borderRadius: 16, padding: "10px 20px", font: "800 18px Cairo,Tahoma", cursor: "pointer" }}>{s.q ? "❓ اعرض السؤال" : "👁 اكشف الإجابة"}</button>) : null}
       </div>
@@ -323,8 +342,8 @@ function Present({ R, meta, onClose }) {
 function printLesson(R, meta, by) {
   const li = a => arr(a).map(x => `<li>${esc(x)}</li>`).join("");
   const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(R.title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&display=swap" rel="stylesheet">
-<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Cairo,Tahoma;color:#0f172a;margin:0;font-size:12.5px;line-height:1.75;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
+<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Tajawal,Cairo,Tahoma;color:#0f172a;margin:0;font-size:12.5px;line-height:1.75;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .hd{background:linear-gradient(135deg,#0b1b3a,#123b6b 60%,#0f766e);color:#fff;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .hd h1{margin:2px 0;font-size:21px}.hd small{opacity:.85;font-weight:700}.big{margin-top:6px;border-right:3px solid #c9a227;padding:2px 8px;background:#ffffff18;border-radius:6px;font-weight:700}
 h2{font-size:14px;margin:12px 0 6px;color:#0b1b3a;border-bottom:2px solid #e2e8f0;padding-bottom:3px}
@@ -335,6 +354,7 @@ ul{margin:0;padding-right:18px}.box{border:1px solid #e2e8f0;border-radius:10px;
 <h2>🎯 أهداف الدرس</h2><table><tr><th style="width:28px">م</th><th>الهدف</th><th style="width:70px">المستوى</th><th style="width:60px">المجال</th></tr>${arr(R.obj).map((o, i) => `<tr><td>${i + 1}</td><td>${esc(o.t)}</td><td><span class="b" style="background:${bColor(o.b)}">${esc(o.b)}</span></td><td>${esc(o.d || "")}</td></tr>`).join("")}</table>
 <div class="g2"><div><h2>🧱 المتطلبات السابقة</h2><ul>${li(R.prior)}</ul></div><div><h2>🔤 المفردات</h2><ul>${arr(R.vocab).map(v => `<li><b>${esc(v.w)}</b>: ${esc(v.d)}</li>`).join("")}</ul></div></div>
 ${R.hook ? `<h2>⚡ التهيئة: ${esc(R.hook.t)}</h2><div class="box">${esc(R.hook.text)}${R.hook.q ? `<br><b>❓ ${esc(R.hook.q)}</b>` : ""}</div>` : ""}
+${arr(R.vis).length ? `<h2>🎨 صور توضيحية</h2><div class="g2">${arr(R.vis).map(v => { const h = visSVG(v); return h ? `<div class="box"><b>${esc(v.t)}</b>${h}<div style="font-size:11.5px;color:#475569">${esc(v.cap || "")}</div></div>` : ""; }).join("")}</div>` : ""}
 <h2>🗺️ خطة سير الحصة</h2><table><tr><th style="width:90px">المرحلة</th><th style="width:40px">الزمن</th><th>دور المعلم</th><th>نشاط الطالب</th></tr>${arr(R.flow).map(f => `<tr><td><b>${esc(f.ph)}</b></td><td>${esc(f.min)} د</td><td>${esc(f.tch)}</td><td>${esc(f.stu)}</td></tr>`).join("")}</table>
 <h2>🧠 أسئلة مهارات التفكير العليا</h2><table><tr><th style="width:80px">المهارة</th><th>السؤال</th><th>الإجابة النموذجية</th></tr>${arr(R.hots).map(h => `<tr><td><b>${esc(h.s)}</b></td><td>${esc(h.q)}</td><td>${esc(h.a)}</td></tr>`).join("")}</table>
 <h2>🌍 الربط بواقع الحياة</h2><div class="g2">${arr(R.life).map(l => `<div class="box"><b>${esc(l.t)}</b><br>${esc(l.text)}${l.q ? `<br><b>❓ ${esc(l.q)}</b>` : ""}</div>`).join("")}</div>
@@ -354,7 +374,7 @@ export function SmartLessonTeacher({ me, api }) {
   const [subj, setSubj] = useState(pref.subj || "رياضيات"); const [grade, setGrade] = useState(pref.grade || "الثالث المتوسط"); const [term, setTerm] = useState(pref.term || TERMS[0]);
   const [lid, setLid] = useState(""); const [title, setTitle] = useState(""); const [note, setNote] = useState("");
   const [imgs, setImgs] = useState([]); const [busy, setBusy] = useState(false); const [prog, setProg] = useState(0); const [err, setErr] = useState("");
-  const [R, setR] = useState(null); const [meta, setMeta] = useState(null); const [edit, setEdit] = useState(false); const [pres, setPres] = useState(false); const [ans, setAns] = useState(false);
+  const [R, setR] = useState(null); const [meta, setMeta] = useState(null); const [vis, setVis] = useState(""); const [edit, setEdit] = useState(false); const [pres, setPres] = useState(false); const [ans, setAns] = useState(false);
   const [bank, setBank] = useState({}); const [my, setMy] = useState(null); const [saved, setSaved] = useState(""); const [quota, setQuota] = useState(null);
   const fileRef = useRef(null), camRef = useRef(null);
   const ix = IDX[`${subj}|${grade}|${term}`];
@@ -375,13 +395,21 @@ export function SmartLessonTeacher({ me, api }) {
     const m = { subj, grade, term, lid: L ? L.id : "", lk, title: L ? L.t : title.trim() };
     try {
       const prompt = buildPrompt({ subj, grade, term, L, chap: L && L.chap, title: L ? "" : title.trim(), note: note.trim(), nImg: imgs.length });
+      // الرسوم التوضيحية تُطلب بالتوازي مع التحليل فلا تزيد زمن الانتظار
+      setVis("busy"); const vp = drawVis({ subj, grade, title: m.title || title.trim() || "الدرس المصوّر", objs: L ? L.obj.join(" • ") : "" }, imgs);
       const txt = await callAI({ me, api, prompt, images: imgs, tag: `${subj} • ${grade} • ${m.title || "درس مصوّر"}`, onText: t => setProg(Math.min(97, Math.round(t.length / 55))) });
       const res = parseJSON(txt); if (!res.title) res.title = m.title || "درس"; if (L) res.src = "دليل المعلم";
-      setMeta(m); setR(res); setProg(100);
-    } catch (e) { setErr(e.message || "تعذّر التحليل"); }
+      setMeta(m); setR(p => ({ ...res, vis: p && p.__vis ? p.__vis : res.vis })); setProg(100); vp.then(V => V && setR(p => p ? { ...p, vis: V } : { __vis: V }));
+    } catch (e) { setErr(e.message || "تعذّر التحليل"); setR(null); }
     setBusy(false);
   };
-  const openBank = () => { setMeta({ subj, grade, term, lid: L ? L.id : "", lk, title: L ? L.t : title }); setR(inBank.res); setEdit(false); setSaved("🏦 من بنك دروس المدرسة — إعداد " + (inBank.by || "")); };
+  async function drawVis(o, im) {
+    setVis("busy");
+    try { const t = await callAI({ me, api, prompt: visPrompt(o) + (im && im.length ? "\nاستعن بصور صفحات الدرس المرفقة." : ""), images: im || [], tag: "🎨 " + o.title, schema: VIS_SCHEMA, kind: "vis", max: 3000 }); const j = parseJSON(t); const V = arr(j.vis).filter(v => visSVG(v)); setVis(V.length ? "" : "تعذّر رسم الصور — أعد المحاولة"); return V.length ? V : null; }
+    catch (e) { setVis(e.message || "تعذّر رسم الصور"); return null; }
+  }
+  const visNow = async () => { if (!R) return; const V = await drawVis({ subj: meta.subj, grade: meta.grade, title: R.title, objs: arr(R.obj).map(o => o.t).join(" • ") }, []); if (V) setR(p => ({ ...p, vis: V })); };
+  const openBank = () => { setMeta({ subj, grade, term, lid: L ? L.id : "", lk, title: L ? L.t : title }); setR(inBank.res); setVis(""); setEdit(false); setSaved("🏦 من بنك دروس المدرسة — إعداد " + (inBank.by || "")); };
   const save = async () => {
     if (!R || !meta) return; const id = fk(meta.lk || Date.now().toString(36)) + "_" + fk(meta.subj).slice(0, 12);
     const rec = { res: R, subj: meta.subj, grade: meta.grade, term: meta.term, lid: meta.lid || "", t: R.title, at: Date.now() };
@@ -437,7 +465,7 @@ export function SmartLessonTeacher({ me, api }) {
     </div>
     {tab === "my" ? <div className="sl-card">
       {my === null ? <div style={{ padding: 20, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div> : !Object.keys(my).length ? <div style={{ padding: 20, textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا توجد دروس محفوظة بعد — حلّل درسًا واضغط «💾 حفظ»</div> :
-        <div className="sl-my">{Object.entries(my).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).map(([id, x]) => <div key={id} style={{ position: "relative" }}><button className="c" style={{ width: "100%" }} onClick={() => { setMeta({ subj: x.subj, grade: x.grade, term: x.term, lid: x.lid, lk: x.lid ? fk(x.lid) : fk(x.t), title: x.t }); setR(x.res); setTab("new"); setSaved(""); setEdit(false); }}>
+        <div className="sl-my">{Object.entries(my).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).map(([id, x]) => <div key={id} style={{ position: "relative" }}><button className="c" style={{ width: "100%" }} onClick={() => { setMeta({ subj: x.subj, grade: x.grade, term: x.term, lid: x.lid, lk: x.lid ? fk(x.lid) : fk(x.t), title: x.t }); setR(x.res); setVis(""); setTab("new"); setSaved(""); setEdit(false); }}>
           <b>{x.t}</b><small>{x.subj} • {x.grade}{x.lid ? " • درس " + ar(x.lid) : ""}</small><br /><small>🗓️ {new Date(x.at || 0).toLocaleDateString("ar-SA")}</small></button>
           <button className="sl-b red sm" style={{ position: "absolute", left: 8, top: 8 }} onClick={async () => { if (!confirm("حذف الدرس من دروسي؟")) return; await api.fbPatch({ [`${SL_MY}/${hk}/${id}`]: null }); loadMy(); }}>🗑</button></div>)}</div>}
     </div> : busy ? <div className="sl-card sl-load">
@@ -448,7 +476,7 @@ export function SmartLessonTeacher({ me, api }) {
     </div> : R ? <>
       {saved ? <div className="sl-msg" style={{ background: saved.startsWith("⚠") ? "#fef2f2" : "#f0fdf4", color: saved.startsWith("⚠") ? "#b91c1c" : "#166534", marginBottom: 12 }}>{saved}</div> : null}
       {edit ? <div className="sl-msg" style={{ background: "#eff6ff", color: "#1d4ed8", marginBottom: 12 }}>✏️ وضع التعديل: عدّل أي نص ثم اضغط «💾 حفظ»</div> : null}
-      <Result R={R} setR={setR} meta={meta} edit={edit} showAns={ans} />
+      <Result R={R} setR={setR} meta={meta} edit={edit} showAns={ans} vis={vis} onVis={visNow} />
       <div className="sl-act" style={{ marginTop: 14 }}>
         <button className="sl-b gold" onClick={() => setPres(true)}>🎬 وضع العرض</button>
         <button className="sl-b pri" onClick={save}>💾 حفظ</button>
