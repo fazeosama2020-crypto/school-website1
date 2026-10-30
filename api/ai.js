@@ -45,11 +45,13 @@ module.exports = async function handler(req, res) {
     if (prompt.length < 20) return res.status(400).json({ ok: false, msg: "طلب ناقص" });
     const imgs = (Array.isArray(b.images) ? b.images : []).filter(d => typeof d === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(d)).slice(0, 4);
     const content = [...imgs.map(d => ({ type: "image", source: { type: "base64", media_type: d.slice(5, d.indexOf(";")), data: d.slice(d.indexOf(",") + 1) } })), { type: "text", text: prompt }];
+    // قالب منظَّم يُلزم الذكاء بإخراج بيانات سليمة (بدل نص قد يحتوي علامات تنصيص مكسورة)
+    const tool = b.schema && typeof b.schema === "object" ? { name: "lesson", description: "أعد تحليل الدرس كاملًا وفق القالب", input_schema: b.schema } : null;
     await fbPatch({ [`school-sl-use/${day}/${hk}`]: { ".sv": { increment: 1 } }, [`school-sl-usem/${mon}`]: { ".sv": { increment: 1 } } });
     // ④ الاتصال مع البث التدريجي للنص (يرى المعلم التقدّم ولا تنتهي مهلة الخادم)
     let r = null, model = "", err = "";
     for (const m of MODELS) {
-      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: Math.min(+b.max || 7000, 9000), system: SYSTEM, stream: true, messages: [{ role: "user", content }] }) });
+      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: Math.min(+b.max || 7000, 9000), system: SYSTEM, stream: true, messages: [{ role: "user", content }], ...(tool ? { tools: [tool], tool_choice: { type: "tool", name: tool.name } } : {}) }) });
       if (r.ok) { model = m; break; }
       err = await r.text(); if (!/not_found|model/i.test(err)) break;
     }
@@ -64,6 +66,7 @@ module.exports = async function handler(req, res) {
         if (!line.startsWith("data:")) continue;
         let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
         if (ev.type === "content_block_delta" && ev.delta && ev.delta.text) res.write(ev.delta.text);
+        else if (ev.type === "content_block_delta" && ev.delta && ev.delta.partial_json) res.write(ev.delta.partial_json);
         else if (ev.type === "message_start" && ev.message && ev.message.usage) tin = ev.message.usage.input_tokens || 0;
         else if (ev.type === "message_delta" && ev.usage) tout = ev.usage.output_tokens || 0;
       }
