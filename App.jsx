@@ -20,6 +20,11 @@ const NafsBooksTeacher = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m 
 const NafsBooksAdmin = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksAdmin })));
 const trApi = () => ({ maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src), TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n) });
 const TR_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#78350f" }}>🧭 جارٍ تحميل رحلة الكنز…</div>;
+const SmartLessonTeacher = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonTeacher })));
+const SmartLessonAdmin = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonAdmin })));
+const SL_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#1e3a8a" }}>✨ جارٍ تحميل درسي الذكي…</div>;
+// واجهة «درسي الذكي»: قاعدة البيانات + احتياط مفتاح الجهاز إن لم يُضبط المفتاح في Vercel بعد
+const slApi = () => ({ maGet, maPut, fbPatch, fbRange, directAI: nqKey() ? (p, imgs) => nqAI(p, { images: imgs, max: 6000 }) : null });
 const NB_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#5b21b6" }}>📚 جارٍ تحميل مراجع نافس…</div>;
 // الصور ملفات مستقلة في مجلد img (تُحمَّل عند الحاجة ويحفظها المتصفح) — الرابط مطلق ليعمل في نوافذ الطباعة أيضاً
 const hfxAbs = u => { try { return new URL(u, window.location.href).href; } catch { return u; } };
@@ -34099,6 +34104,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "score") return wrap(["principal", "deputy"].includes(me.role) ? "🏆 ترتيب المعلمين في الانضباط الشامل" : "🏆 بطاقتي الشاملة وترتيبي", <TchScoreView me={me} admin={["principal", "deputy"].includes(me.role)} />);
   if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
   if (view === "circ") return wrap("📜 التعاميم", <CircTeacherView me={me} />);
+  if (view === "smart") return wrap("✨ درسي الذكي", <React.Suspense fallback={SL_WAIT}><SmartLessonTeacher me={me} api={slApi()} /></React.Suspense>);
+  if (view === "smartadm" && ["principal", "deputy"].includes(me.role)) return wrap("✨ درسي الذكي – الإدارة", <React.Suspense fallback={SL_WAIT}><SmartLessonAdmin by={me.name} me={me} api={slApi()} /></React.Suspense>);
   if (view === "circd") return wrap("📨 تعاميمي اليومية", <CdMine me={me} />);
   if (view === "circdadm" && isStaff && ["principal", "deputy", "admin"].includes(me.role)) return wrap("📨 التعاميم اليومية", <CircDailyAdmin by={me.name} />);
   if (view === "circadmin" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("📜 التعاميم", <CircAdminPage by={me.name} />);
@@ -34181,6 +34188,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {ptCan(me, "warn") && ptTile("warn", "🚨", "الإنذار المبكر وملف الطالب", "الطلاب المحتاجون للمتابعة، والملف الشامل لكل طالب، والتقارير الأسبوعية لأولياء الأمور", "#b91c1c", "#f97316", () => setView("warn"))}
               {["principal", "deputy"].includes(me.role) && ptTile("plradm", "🌿", "سجل مجتمعات التعلّم المهنية", "الفرق والاجتماعات والتوصيات واقتراح قضية الاجتماع من نتائج التشخيصي ونافس", "#0b3d2e", "#c9a227", () => setView("plradm"))}
               {["principal", "deputy"].includes(me.role) && ptTile("pgadm", "📗", "سجل النمو المهني", "السجل الرسمي بصفحاته: التحرير والإخفاء واعتماد إدخالات المعلمين والطباعة", "#0f5e57", "#b08d57", () => setView("pgadm"))}
+              {["principal", "deputy"].includes(me.role) && ptTile("smartadm", "✨", "درسي الذكي – الإدارة", "مفتاح الذكاء الاصطناعي وحدود الاستخدام والتكلفة وبنك دروس المدرسة", "#1e3a8a", "#c9a227", () => setView("smartadm"))}
+              {["principal", "deputy"].includes(me.role) && ptTile("smart", "✨", "درسي الذكي", "جرّب تحليل درس كما يراه المعلم", "#0f766e", "#c9a227", () => setView("smart"))}
               {["principal", "deputy", "counselor"].includes(me.role) && ptTile("diagadm", "🧪", "الاختبارات التشخيصية", "نتائج الصف الثالث في المواد الأربع: لوحة قيادة، الفصول والمعلمون، الطلاب، البعدي والمقارنة", "#12305a", "#0d4f3c", () => setView("diagadm"))}
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && ptTile("dplan", "📘", "خطة وسجل الانضباط المدرسي", "الخطة الإجرائية ولجنة الانضباط وتحليل الغياب والتأخر والاجتماعات والبرامج — مع الطباعة", "#007a72", "#009f8e", () => setView("dplan"))}
               {ptCan(me, "inbox") && ptTile("inbox", "📨", "أعذار وملاحظات أولياء الأمور", "مراجعة الأعذار وقبولها أو رفضها والرد على الملاحظات", "#2563eb", "#3b82f6", () => setView("inbox"), sum && sum.exc + sum.notes ? maAr(sum.exc + sum.notes) : "")}
@@ -34223,6 +34232,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("readwk", "📖", "حصر الضعف القرائي", "ضعف شديد / متوسط • المهارات • العلاج • المتابعة", "#c2410c", "#f59e0b", () => setView("readwk"))}
             {ptTile("formative", "📘", "التقويم التكويني", "إعداد سجلك الخاص للدرجات وطباعته", "#2563eb", "#3b82f6", () => setView("formative"))}
             {ptTile("nafes", "🎯", "نتائج نافس لطلابي", "طلاب فصولك في مادتك حسب الجدول: الدرجات وتحليل الإجابات والمهارات ومن بقي", "#1e3a8a", "#0f766e", () => setView("nafes"))}
+            {ptTile("smart", "✨", "درسي الذكي", "صوّر درسك أو اختره من الفهرس: أهداف وفق المنهج، مهارات تفكير عليا، ربط بالحياة، خطة سير الحصة ووضع عرض للسبورة", "#1e3a8a", "#c9a227", () => setView("smart"))}
             {ptTile("nbooks", "📚", "مراجع نافس", "اعرض مرجع مادتك بسبورة ذكية، وسجّل «تم شرح الصفحة»، وتابع تقدّمك ودخول طلابك وحلولهم", "#5b21b6", "#7c3aed", () => setView("nbooks"))}
             {["principal", "deputy", "counselor", "admin"].includes(me.role) && ptTile("absalert", "🚨", "حد الغياب واستدعاء أولياء الأمور", "من بلغ غيابه ٥ أيام فأكثر ومن اقترب • حالة استدعاء ولي الأمر وحجوزاته • استدعاء جماعي بضغطة", "#7f1d1d", "#dc2626", () => setView("absalert"))}
             {["principal", "deputy"].includes(me.role) && ptTile("nbadm", "📊", "مراجع نافس – متابعة الإدارة", "إنجاز المعلمين أسبوعًا بأسبوع • تنبيهات الاختبارات • دخول الطلاب وحلولهم", "#9a3412", "#f59e0b", () => setView("nbadm"))}
