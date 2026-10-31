@@ -28356,7 +28356,7 @@ function pnxCompute(D) {
   const feed = [];
   D.rows.forEach(r => {
     if (r.ti == null || r.ti === "") return; const t0 = tc(r.ti); const base = { dk: r.dk, p: r.p, ck: r.ck, subj: subOf(r), at: r.at || 0, by: r.by || "", r };
-    const push = (o, ti) => { const e = { ...base, ...o, ti: +ti, ack: acked(ti, r) }; tc(ti).ev.push(e); feed.push({ kind: "t", ...e, who: tc(ti).name }); };
+    const push = (o, ti) => { if (r.rt && o.txt && +ti === +r.ti) o = { ...o, txt: o.txt + ` • 🕒 ${ttStampTxt(r)}` }; const e = { ...base, ...o, ti: +ti, ack: acked(ti, r) }; tc(ti).ev.push(e); feed.push({ kind: "t", ...e, who: tc(ti).name }); };
     if (r.st === "ok") t0.ok++;
     if (r.st === "late") { const m = +r.mins || 0; t0.lateMin += m; if (r.rsn) t0.rsn[r.rsn] = (t0.rsn[r.rsn] || 0) + 1; push({ k: "late", m, txt: `تأخر ${m} د${r.tm ? ` — دخل ${r.tm}` : ""}${r.rsn ? ` • ${r.rsn}` : ""}` }, r.ti); }
     if (r.st === "early") { const m = +r.out || 0; t0.earlyMin += m; push({ k: "early", m, txt: `خرج قبل النهاية بـ ${m} د${r.tm ? ` — الساعة ${r.tm}` : ""}${r.rsn ? ` • ${r.rsn}` : ""}` }, r.ti); }
@@ -28364,7 +28364,7 @@ function pnxCompute(D) {
     else if (r.st === "absent" || r.st === "sub") push({ k: "absent", m: 0, txt: r.st === "sub" ? `غاب عن الحصة — البديل: ${ttClean(T.T[r.sub] || "")}` : "لم يدخل الحصة — بدون بديل" }, r.ti);
     if (r.st === "sub" && r.sub != null && r.sub !== "") { const s = tc(r.sub); s.cov++; if (r.so && r.so !== "ok") { const so = (typeof TT_SO !== "undefined" && TT_SO[r.so]) || { l: r.so }; push({ k: "so", m: 0, txt: `${so.l} (بدلاً عن ${ttClean(T.T[r.ti] || "")})${r.act ? ` • الإجراء: ${r.act}` : ""}` }, r.sub); } }
     maArr(r.notes).forEach(n => { if (PNX_NEG(n)) push({ k: "neg", m: 0, txt: n }, r.ti); else { t0.pos++; push({ k: "pos", m: 0, txt: n }, r.ti); } });
-    if (r.note && !ttAutoNote(r.note)) { if (r.st === "late" || r.st === "early") { const e = tc(r.ti).ev[tc(r.ti).ev.length - 1]; if (e) e.txt += ` • ${r.note}`; } else if (r.st !== "note") push({ k: "note", m: 0, txt: r.note }, r.ti); }
+    if (r.note && !ttAutoNote(r.note)) { if (r.st === "late" || r.st === "early") { const e = tc(r.ti).ev[tc(r.ti).ev.length - 1]; if (e) e.txt += ` • ${r.note}`; } else if (r.st !== "note" || TT_TQ.includes(r.note)) push({ k: TT_TQ.includes(r.note) ? "neg" : "note", m: 0, txt: r.note }, r.ti); }
   });
   const tch = Object.values(TC).map(t => { const c = k => t.ev.filter(e => e.k === k).length; const issues = t.ev.filter(e => e.k !== "pos");
     return { ...t, late: c("late"), early: c("early"), absent: c("absent"), so: c("so"), neg: c("neg") + c("note"), issues: issues.length, pts: issues.reduce((a, e) => a + (PNX_EV[e.k].w || 0) + (e.k === "late" && e.m > 10 ? 1 : 0), 0), unread: issues.filter(e => !e.ack).length, obs: t.ok + t.ev.filter(e => ["late", "early", "absent"].includes(e.k)).length };
@@ -36245,7 +36245,7 @@ function PeriodFollowPage({ by = "الإدارة", canEdit = true }) {
   const freeOf = (d, p) => { const busyT = new Set(cks.map(ck => T.C[ck][d][p][1])); const res = new Set(resOf(d, p)); return T.T.map((_, i) => i).filter(i => !busyT.has(i) && !res.has(i)); };
   const lg = (d, p, ck) => log[ttK(d, p, ck)];
   const putLog = async (d, p, ck, v) => {
-    const k = ttK(d, p, ck); const rec = v ? { ...v, by, at: Date.now() } : null;
+    const k = ttK(d, p, ck); const rec = v ? { ...v, ...ttStamp(log[k], times, p, isToday), by, at: Date.now() } : null;
     setLog(o => { const n = { ...o }; if (rec) n[k] = rec; else delete n[k]; return n; });
     const ok = rec ? await maPut(`${TT_LOG}/${dateK}/${k}`, rec) : (await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dateK}/${k}.json`, { method: "DELETE" }).then(() => true).catch(() => false));
     if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال");
@@ -36344,7 +36344,7 @@ table.n{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:8px}tabl
               <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
               <div style={{ fontSize: 24, fontWeight: 900 }}>🗓️ متابعة الحصص اليومية</div>
               <div style={{ fontSize: 14, fontWeight: 800 }}>{maDay(D)} • {maHijri(D)} • {maGreg(D)}</div>
-              <div className="flex gap-2 flex-wrap mt-2">{curP >= 0 ? <span className="tt-now"><i />الآن: الحصة {TT_ORD[curP]} ({mlFmtT(times[curP][0])} – {mlFmtT(times[curP][1])})</span> : isToday ? <span className="tt-now" style={{ opacity: .85 }}>خارج وقت الحصص</span> : null}</div>
+              <div className="flex gap-2 flex-wrap mt-2">{isToday ? <TtClock times={times} /> : null}</div>
             </div>
             <div className="flex gap-2 flex-wrap items-center">
               <input type="date" className="ma-inp" style={{ width: 170, height: 38, color: "#0f172a", background: "#fff", fontWeight: 800 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} />
@@ -40258,7 +40258,42 @@ function ttStats(rows, ti) {
   const wd = [0, 0, 0, 0, 0]; own.filter(r => ["late", "early", "absent", "sub"].includes(r.st)).forEach(r => { const w = maDate(r.dk).getDay(); if (w <= 4) wd[w]++; });
   return { own, cov, c: { late: n("late"), early: n("early"), absent: n("absent"), note: own.filter(r => r.st === "note" || r.note || r.cn).length, ok: n("ok"), cov: cov.length }, lateMin: late.reduce((a, r) => a + (+r.mins || 0), 0), earlyMin: early.reduce((a, r) => a + (+r.out || 0), 0), rsn, wd, issues: n("late") + n("early") + n("absent") };
 }
-const ttDetail = (T, r) => { const x = []; if (r.st === "late") x.push(`تأخر ${maAr(r.mins)} د${r.tm ? ` — دخل ${mlFmtT(r.tm)}` : ""}`); if (r.st === "early") x.push(`خرج قبل النهاية بـ ${maAr(r.out)} د${r.tm ? ` — الساعة ${mlFmtT(r.tm)}` : ""}`); if (r.st === "sub") x.push(`${r.pm ? "استأذن — أمّن الحصة" : "البديل"}: ${ttClean(T.T[r.sub] || "")}${TT_LVC[r.lvl] ? ` (${TT_LVC[r.lvl].l})` : ""}`); if (r.st === "absent") x.push("بدون بديل"); if (r.st === "perm") x.push("استأذن — بدون تأمين"); if (r.rsn) x.push(`السبب: ${r.rsn}`); return x.join(" • "); };
+// ⏱ وقت الرصد: يُحفظ وقت أول رصد للحصة (rt) ودقيقته من بداية الحصة (rm) ولا يتغير عند التعديل
+// ملاحظات سريعة على المعلم (تُحسب على المعلم وتظهر له مع وقت الرصد)
+const TT_TQ = ["🚷 المعلم غير متواجد في الفصل وقت المرور", "👥 الطلاب بلا معلم", "🚪 الطلاب خارج الفصل", "📵 انشغال المعلم بالجوال"];
+const ttHMnow = () => { const n = new Date(); return String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0"); };
+function ttStamp(prev, times, p, today) {
+  if (prev && prev.rt) return { rt: prev.rt, ...(prev.rm ? { rm: prev.rm } : {}) };
+  if (!today) return {};
+  const n = new Date(), m = n.getHours() * 60 + n.getMinutes(), s0 = mlToMin(times && times[p] && times[p][0]), e0 = mlToMin(times && times[p] && times[p][1]);
+  return { rt: ttHMnow(), ...(s0 != null && e0 != null && m >= s0 && m < e0 ? { rm: m - s0 + 1 } : {}) };
+}
+const ttStampTxt = r => r && r.rt ? `رُصد ${mlFmtT(r.rt)}${r.rm ? ` (الدقيقة ${maAr(r.rm)} من الحصة)` : ""}` : "";
+// ⏱ عدّاد الحصة الحية: الوقت المنقضي والمتبقي بالثواني
+function TtClock({ times, dark = true, compact = false, only = null }) {
+  const [t, setT] = useState(Date.now());
+  useEffect(() => { const i = setInterval(() => setT(Date.now()), 1000); return () => clearInterval(i); }, []);
+  if (!times || !times.length) return null;
+  const n = new Date(t), sec = n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds();
+  const P = times.map(([a, b]) => [mlToMin(a) * 60, mlToMin(b) * 60]);
+  const cur = P.findIndex(([a, b]) => sec >= a && sec < b), nxt = cur < 0 ? P.findIndex(([a]) => a > sec) : -1;
+  const f = x => { x = Math.max(0, Math.round(x)); const m = Math.floor(x / 60), s = x % 60; return <bdi dir="ltr" style={{ fontVariantNumeric: "tabular-nums" }}>{maAr(String(m).padStart(2, "0")) + ":" + maAr(String(s).padStart(2, "0"))}</bdi>; };
+  const box = { display: "grid", gap: 6, padding: compact ? "8px 12px" : "10px 14px", borderRadius: 16, background: dark ? "rgba(255,255,255,.14)" : "#f1f5f9", border: dark ? "1px solid rgba(255,255,255,.28)" : "1px solid #e2e8f0", color: dark ? "#fff" : "#0f172a", minWidth: compact ? 0 : 260 };
+  if (only != null && cur !== only) return null;
+  if (cur < 0) return nxt >= 0 ? <div style={box}><div style={{ fontSize: 13.5, fontWeight: 900 }}>⏳ الحصة {TT_ORD[nxt]} تبدأ بعد <span style={{ fontVariantNumeric: "tabular-nums" }}>{f(P[nxt][0] - sec)}</span></div></div> : null;
+  const [a, b] = P[cur], tot = b - a, el = sec - a, pc = Math.min(100, el / tot * 100), left = b - sec, warn = left <= 300;
+  return <div style={box}>
+    <div className="flex items-center gap-2 flex-wrap" style={{ fontWeight: 900 }}>
+      <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 0 4px rgba(239,68,68,.25)" }} />
+      <span style={{ fontSize: 13.5 }}>الحصة {TT_ORD[cur]}</span>
+      <span style={{ fontSize: compact ? 18 : 22, fontVariantNumeric: "tabular-nums", letterSpacing: .5 }}>⏱ {f(el)}</span>
+      <small style={{ fontSize: 12, fontWeight: 800, opacity: .85 }}>من {maAr(Math.round(tot / 60))} دقيقة • الدقيقة {maAr(Math.floor(el / 60) + 1)}</small>
+      <span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 900, padding: "2px 10px", borderRadius: 999, background: warn ? "#fee2e2" : dark ? "rgba(255,255,255,.2)" : "#e2e8f0", color: warn ? "#b91c1c" : "inherit" }}>متبقٍ {f(left)}</span>
+    </div>
+    <div style={{ height: 7, borderRadius: 9, background: dark ? "rgba(255,255,255,.22)" : "#e2e8f0", overflow: "hidden" }}><div style={{ width: pc + "%", height: "100%", borderRadius: 9, background: warn ? "linear-gradient(90deg,#f59e0b,#ef4444)" : "linear-gradient(90deg,#22c55e,#14b8a6)", transition: "width 1s linear" }} /></div>
+  </div>;
+}
+const ttDetail = (T, r) => { const x = []; if (r.st === "late") x.push(`تأخر ${maAr(r.mins)} د${r.tm ? ` — دخل ${mlFmtT(r.tm)}` : ""}`); if (r.st === "early") x.push(`خرج قبل النهاية بـ ${maAr(r.out)} د${r.tm ? ` — الساعة ${mlFmtT(r.tm)}` : ""}`); if (r.st === "sub") x.push(`${r.pm ? "استأذن — أمّن الحصة" : "البديل"}: ${ttClean(T.T[r.sub] || "")}${TT_LVC[r.lvl] ? ` (${TT_LVC[r.lvl].l})` : ""}`); if (r.st === "absent") x.push("بدون بديل"); if (r.st === "perm") x.push("استأذن — بدون تأمين"); if (r.rsn) x.push(`السبب: ${r.rsn}`); if (r.rt) x.push(`🕒 ${ttStampTxt(r)}`); return x.join(" • "); };
 const TTR_CSS = `*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:7mm}.pg{border-color:#4f46e5}.pg::before{background:linear-gradient(90deg,#1e1b4b,#4f46e5,#c2410c,#fbbf24)}th{background:#312e81}
 .tb{border-radius:16px;color:#fff;padding:10px 16px;margin:6px 0 10px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1e1b4b,#4f46e5 60%,#7c3aed)}.tb b{font-size:19px}.tb small{font-size:11px;font-weight:800;opacity:.9}
 .kk{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:6px 0}.kk div{border-radius:14px;padding:8px 4px;text-align:center;font-weight:800;font-size:10px;border:1.5px solid}.kk b{display:block;font-size:22px;line-height:1.2}
@@ -43433,6 +43468,8 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
         <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{T.D[d]} • الحصة {TT_ORD[p]} • {mlFmtT(times[p]?.[0])} إلى {mlFmtT(times[p]?.[1])}</div>
         <div style={{ fontSize: 21, fontWeight: 900, marginTop: 2 }}>{subName(si)} — {maClassName(ck)}</div>
         <div style={{ fontSize: 14, fontWeight: 800, marginTop: 2 }}>👤 {ttClean(T.T[ti])}{abs.includes(ti) ? " • 🚫 غائب اليوم" : ""}</div>
+        {inP && <div style={{ marginTop: 8 }}><TtClock times={times} only={p} compact /></div>}
+        {cur.rt ? <div style={{ marginTop: 6, fontSize: 12.5, fontWeight: 900, background: "rgba(255,255,255,.18)", borderRadius: 10, padding: "4px 10px", display: "inline-block" }}>🕒 {ttStampTxt(cur)}</div> : isToday && !ro ? <div style={{ marginTop: 6, fontSize: 12, fontWeight: 800, opacity: .9 }}>🕒 سيُسجَّل وقت الرصد تلقائيًا عند الحفظ: الساعة {mlFmtT(ttHMnow())}{inP ? ` — الدقيقة ${maAr(nowM - s0 + 1)} من الحصة` : ""}</div> : null}
       </div>
       {ro ? <div className="p-4 grid gap-3">
         {cur.st ? (() => { const x = ST2[ttKindR(cur)] || ST2.note; return <div style={{ padding: "12px 14px", borderRadius: 16, background: x.bg, color: x.c, fontWeight: 900, fontSize: 15 }}>{x.ic} {x.l}{cur.st === "late" ? ` — ${maAr(cur.mins)} دقيقة` : cur.st === "early" ? ` — قبل النهاية بـ ${maAr(cur.out)} دقيقة` : ""}{cur.st === "sub" ? <div style={{ fontSize: 13.5, marginTop: 4 }}>{cur.pm ? "🛡️ أمّن الحصة" : "🔄 البديل"}: {ttClean(T.T[cur.sub])}{cur.so && TT_SO[cur.so] ? <div style={{ marginTop: 4 }}>{TT_SO[cur.so].ic} {ttSoTxt(cur)}</div> : null}</div> : null}</div>; })() : <div style={{ padding: 12, borderRadius: 14, background: "#f1f5f9", fontWeight: 800, color: "#64748b", textAlign: "center" }}>لا توجد متابعة مسجلة لهذه الحصة</div>}
@@ -43472,6 +43509,7 @@ function SttSheet({ T, d, p, ck, cur, times, plan, abs, log, isToday, ro, onSave
             <small style={{ fontWeight: 700, color: "#64748b" }}>تظهر نتيجة المتابعة والإجراء لمعلم الانتظار في صفحته «ملاحظات حصصي».</small>
           </div>}
         </div>}
+        <div className="flex gap-1 flex-wrap">{TT_TQ.map(q => <button key={q} type="button" className={`stt-chip ${f.note === q ? "on" : ""}`} style={{ "--cc": "#0369a1", padding: "5px 10px", fontSize: 12 }} onClick={() => setF({ ...f, note: f.note === q ? "" : q, st: f.st || "note" })}>{q}</button>)}</div>
         <input className="ma-inp" value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder={f.st === "late" ? "✍️ سبب آخر / ملاحظة على التأخر… (تظهر للمعلم)" : "✍️ ملاحظة على المعلم أو الحصة — تظهر للمعلم في صفحته"} />
         <div style={{ background: "#f0f9ff", border: "1.5px solid #bae6fd", borderRadius: 16, padding: 10 }} className="grid gap-2">
           <div style={{ fontSize: 13, fontWeight: 900, color: "#0369a1" }}>📝 ملاحظة على الفصل {f.st !== "note" && <small style={{ color: "#64748b", fontWeight: 700 }}>(اختياري — تُحفظ مع وقت الرصد)</small>}</div>
@@ -43690,7 +43728,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const meIdx = me ? sttFindMe(T, me.name) : -1;
 
   const putLog = async (d, p, ck, v) => {
-    const k = ttK(d, p, ck); const rec = v ? { ...v, by, at: Date.now() } : null;
+    const k = ttK(d, p, ck); const rec = v ? { ...v, ...ttStamp(log[k], times, p, isToday), by, at: Date.now() } : null;
     setLog(o => { const n = { ...o }; if (rec) n[k] = rec; else delete n[k]; return n; });
     const ok = rec ? await maPut(`${TT_LOG}/${dateK}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dateK}/${k}.json`, { method: "DELETE" }).then(r => r.ok).catch(() => false);
     if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok;
@@ -43834,6 +43872,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
                 <div style={{ fontSize: 13.5, fontWeight: 800, opacity: .95 }}>{maDay(D)} • {maHijri(D)}</div></div>
               <div className="flex gap-2 items-center"><input type="date" className="ma-inp" style={{ width: 150, height: 38, color: "#0f172a", background: "#fff", fontWeight: 800 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} />{!isToday && <button className="ma-btn" onClick={() => setDateK(maKey(new Date()))}>اليوم</button>}</div>
             </div>
+            {isToday && <TtClock times={times} />}
             {!ro && <div className="flex gap-2 flex-wrap">{canEdit && <button className="ma-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => setTEd(true)}>⏱ أوقات الحصص</button>}{canEdit && <button className="ma-btn" style={{ background: "#fbbf24", color: "#1e1b4b", borderColor: "#fbbf24" }} onClick={() => setJEd(true)}>✏️ تعديل الجدول والاحتياط</button>}<button className="ma-btn gold" disabled={di < 0} onClick={() => ttDayReport({ T, times, dk: dateK, di, log, absList, plan, by, subName })}>🖨 التقرير اليومي للمدير</button><button className="ma-btn" style={{ background: "#e0e7ff", color: "#1e1b4b", borderColor: "#e0e7ff" }} onClick={() => setCnt(true)}>🧮 حصر الاحتياط والغياب</button><button className="ma-btn" style={{ background: "#fff", color: "#1e1b4b", borderColor: "#fff" }} onClick={() => { const [a, b] = rrRange("w"); let sv = null; try { sv = JSON.parse(localStorage.getItem("rr-secs") || "null"); } catch {} setRr({ k: "w", f: a, t: b, secs: Array.isArray(sv) ? sv : RR_SEC.map(x => x[0]), fs: 1.15, busy: false }); }}>📊 التقرير الأسبوعي والشهري</button></div>}
             {rr && <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.6)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => !rr.busy && setRr(null)}><div className="ma-card" dir="rtl" style={{ width: "min(600px,100%)", maxHeight: "92vh", overflow: "auto", padding: 16, color: "#0f172a", display: "grid", gap: 12 }} onClick={e => e.stopPropagation()}>
               <b style={{ fontSize: 17, color: "#1e1b4b" }}>📊 التقرير الشامل — أسبوعي / شهري / فترة</b>
