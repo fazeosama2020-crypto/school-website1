@@ -1031,9 +1031,9 @@ export function NafsBooksStudent({ api, onBack }) {
   const logout = () => { try { localStorage.removeItem(REMEMBER); } catch {} setSt(null); setOpen(null); };
   return <div className="nb"><style>{CSS + LCSS}</style>
     {!st ? <StudentLogin api={api} onIn={setSt} onBack={onBack} />
-      : lv ? (lv.k === "pre" ? <PreTest api={api} st={st} book={lv.b} onBack={() => setLv(null)} /> : <HwDo api={api} st={st} hw={lv.h} onBack={() => setLv(null)} />)
       : open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} idx={`${NB_IDX}/${st.id}`} tc="show" tcPath={`${NB_TC}/${st.id}`} rel={st.ck}
           boards={`${NB_B}/s_${st.id}`} seenSid={st.id} who={"s_" + st.id} title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} />
+        : lv ? (lv.k === "pre" ? <PreTest api={api} st={st} book={lv.b} onBack={() => setLv(null)} /> : <HwDo api={api} st={st} hw={lv.h} onBack={() => setLv(null)} onOpenPage={p => setOpen({ book: lv.h.book, page: p })} />)
         : <Library api={api} student={st} onOpen={(book, page) => setOpen({ book, page })} onLogout={logout} onBack={onBack} learn={<StudentLearn key={st.id + (lv ? 1 : 0)} api={api} st={st} onPre={b => setLv({ k: "pre", b })} onHw={h => setLv({ k: "hw", h })} />}
             onProfile={() => { lsSet("pam-parent", { ck: st.ck, sid: st.id, name: st.name, nh: st.nh }); window.location.hash = "parent"; window.location.reload(); }} />}
   </div>;
@@ -1348,6 +1348,16 @@ const keyLet = k => { const m = String(k || "").trim().match(/^[أاإبجد]/);
 const keyTF = k => /^\s*خطأ/.test(String(k || "")) ? "خطأ" : /^\s*صواب/.test(String(k || "")) ? "صواب" : "";
 const autoOk = (q, v) => { const kd = qKind(q.ty); if (kd === "mc") { const L = keyLet(q.k); return L && v ? (v === L ? 1 : 0) : null; } if (kd === "tf") { const T = keyTF(q.k); const s = v && typeof v === "object" ? v.s : v; return T && s ? (s === T ? 1 : 0) : null; } return null; };
 const hwScore = (hw, sub) => { const qs = arr(hw.qs); const A = obj(sub && sub.a), FB = obj(sub && sub.fb); let ok = 0, done = 0; qs.forEach((q, i) => { const f = obj(FB[i]); const v = f.ok != null ? f.ok : autoOk(q, A[i]); if (v != null) { done++; if (+v === 1) ok++; } }); return { ok, done, of: qs.length, pct: qs.length ? Math.round(ok / qs.length * 100) : 0, full: done === qs.length }; };
+// عنوان الواجب: عنوان يكتبه المعلم أو اسم الدرس • مادة بنك نافس المقابلة لكل مرجع
+const hwTitle = (h, B) => (h && h.t) || (h && h.u != null && B.titles[h.u]) || "واجب";
+const NQ_OF = { math: "رياضيات", sci: "علوم", ar: "لغة عربية" };
+const unitOfPage = (book, p) => { for (let u = 0; u < BOOKS[book].titles.length; u++) if (unitPages(book, u).includes(p)) return u; return 0; };
+const shrinkImg = file => new Promise((res, rej) => { const fr = new FileReader(); fr.onerror = rej; fr.onload = () => { const im = new Image(); im.onerror = rej; im.onload = () => { const s = Math.min(1, 900 / Math.max(im.width, im.height)); const c = document.createElement("canvas"); c.width = im.width * s; c.height = im.height * s; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", .8)); }; im.src = fr.result; }; fr.readAsDataURL(file); });
+// أنواع أسئلة الواجب: من أسئلة الدرس {p,n,ty,k} • سؤال يكتبه المعلم أو من نماذج نافس {c:1,t,ty,o,k,img} • حل صفحة في الدفتر {pg,ty:"حل صفحة"}
+const TY_MC = "اختيار من متعدد", TY_TF = "صواب وخطأ", TY_OP = "سؤال مقالي", TY_PG = "حل صفحة";
+const ansTxt = v => v == null || v === "" ? "" : typeof v === "object" ? [v.s, v.c, v.w].filter(Boolean).join(" — ") : String(v);
+const ansImg = v => v && typeof v === "object" && v.im ? v.im : "";
+const NQ_EXN = "school-nq-ex";
 const hwQsOf = (K, book, u) => unitPages(book, u).flatMap(p => arr(obj(K[book])[p]).map((x, j) => ({ p, j, n: x[0], ty: x[1], k: x[2] }))).filter(x => /^[0-9٠-٩]+$/.test(String(x.n)) && !/تمهيد|أكمل الحل/.test(x.ty));
 const wkS = (off = 0) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay() - off * 7); return d.getTime(); };
 const wkLbl = t => { const a = new Date(t), b = new Date(t + 4 * 864e5); const f = d => d.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long" }); return `${f(a)} – ${f(b)}`; };
@@ -1463,29 +1473,40 @@ function PreClass({ api, book, cks, ros, by, canToggle = true }) {
 }
 
 // ── 📝 الواجب: حل الطالب ونتيجته والتغذية الراجعة
-function HwDo({ api, st, hw, onBack }) {
-  const B = BOOKS[hw.book]; const qs = arr(hw.qs); const [sub, setSub] = useState(undefined); const [a, setA] = useState({}); const [busy, setBusy] = useState(false); const [showP, setShowP] = useState(true);
-  useEffect(() => { api.maGet(`${NB_HWA}/${hw.id}/${st.id}`).then(r => { setSub(r && r.at ? r : null); if (r && r.a) setA(obj(r.a)); }); }, []);
-  const send = async () => { const n = qs.filter((_, i) => { const v = a[i]; return v != null && v !== "" && !(typeof v === "object" && !v.s); }).length; if (n < qs.length && !window.confirm(`أجبت عن ${n} من ${qs.length}. إرسال الواجب؟`)) return; setBusy(true);
-    const v = { a, at: Date.now(), n: st.name, ck: st.ck }; await api.maPut(`${NB_HWA}/${hw.id}/${st.id}`, v); setSub(v); setBusy(false); const s = hwScore(hw, v); if (s.ok / Math.max(1, s.done) >= .7) confetti(); window.scrollTo(0, 0); };
+function HwDo({ api, st, hw, onBack, onOpenPage }) {
+  const DK = `nb-hwd-${hw.id}-${st.id}`;
+  const B = BOOKS[hw.book]; const qs = arr(hw.qs); const [sub, setSub] = useState(undefined); const [a, setA0] = useState(() => obj(lsGet(DK, {}))); const [busy, setBusy] = useState(false); const [showP, setShowP] = useState(true); const [solved, setSolved] = useState({});
+  const setA = f => setA0(x => { const n = typeof f === "function" ? f(x) : f; lsSet(DK, n); return n; });
+  useEffect(() => { api.maGet(`${NB_HWA}/${hw.id}/${st.id}`).then(r => { setSub(r && r.at ? r : null); if (r && r.a) setA0(obj(r.a)); }); if (qs.some(q => q.pg)) api.maGet(`${NB_IDX}/${st.id}/${hw.book}`).then(d => setSolved(obj(d))); }, []);
+  const send = async () => { qs.forEach((q, i) => { if (q.pg && solved[q.pg] && !a[i]) a[i] = { pg: 1 }; }); const n = qs.filter((_, i) => { const v = a[i]; return v != null && v !== "" && !(typeof v === "object" && !v.s && !v.w && !v.im && !v.pg); }).length; if (n < qs.length && !window.confirm(`أجبت عن ${n} من ${qs.length}. إرسال الواجب؟`)) return; setBusy(true);
+    const v = { a, at: Date.now(), n: st.name, ck: st.ck }; await api.maPut(`${NB_HWA}/${hw.id}/${st.id}`, v); setSub(v); setBusy(false); try { localStorage.removeItem(DK); } catch {} const s = hwScore(hw, v); if (s.ok / Math.max(1, s.done) >= .7) confetti(); window.scrollTo(0, 0); };
   if (sub === undefined) return <div className="nb-msg">⏳</div>;
-  const S = sub ? hwScore(hw, sub) : null; const pages = [...new Set(qs.map(q => q.p))];
+  const S = sub ? hwScore(hw, sub) : null; const pages = [...new Set(qs.filter(q => q.p && !q.c).map(q => q.p))];
   return <div className="nb-home">
-    <div className="lr-hero" style={{ "--c": B.c }}><span style={{ fontSize: 30 }}>📝</span><div style={{ flex: 1 }}><b>واجب {B.name}: {B.titles[hw.u]}</b><small>{hw.due ? `آخر موعد: ${dueTxt(hw.due)}` : ""}{hw.by ? ` • أ. ${hw.by}` : ""}</small></div><button className="nb-b" onClick={onBack}>رجوع</button></div>
+    <div className="lr-hero" style={{ "--c": B.c }}><span style={{ fontSize: 30 }}>📝</span><div style={{ flex: 1 }}><b>واجب {B.name}: {hwTitle(hw, B)}</b><small>{hw.due ? `آخر موعد: ${dueTxt(hw.due)}` : ""}{hw.by ? ` • أ. ${hw.by}` : ""}</small></div><button className="nb-b" onClick={onBack}>رجوع</button></div>
     {hw.note && <div className="lr-card" style={{ background: "#eff6ff" }}>💬 <b>توجيه المعلم:</b> {hw.note}</div>}
     {S && <div className="lr-card lr-score" style={{ "--c": S.full ? PRE_LV(S.pct)[1] : "#7c3aed", "--p": S.done ? Math.round(S.ok / S.done * 100) : 0 }}>
       <div className="rg"><span>{ar(S.ok)}/{ar(S.full ? S.of : S.done)}</span></div>
       <b style={{ fontSize: 17 }}>{S.full ? `نتيجتك النهائية: ${ar(S.ok)} من ${ar(S.of)} (${ar(S.pct)}٪)` : `صُحّح آلياً ${ar(S.done)} من ${ar(S.of)} — أصبت ${ar(S.ok)}`}</b>
       {!S.full && <span className="lr-pill" style={{ background: "#fef3c7", color: "#92400e" }}>⏳ {ar(S.of - S.done)} سؤال بانتظار تصحيح المعلم</span>}{sub.fbAt && <small style={{ fontWeight: 800, color: "#16a34a" }}>✅ صحّح المعلم واجبك</small>}</div>}
-    <div className="lr-card"><button className="nb-b" onClick={() => setShowP(v => !v)}>📖 {showP ? "إخفاء" : "عرض"} صفحات الدرس ({ar(pages.length)})</button>
-      {showP && <div style={{ display: "grid", gap: 8, marginTop: 8 }}>{pages.map(p => <PageImg key={p} book={hw.book} p={p} />)}</div>}</div>
+    {pages.length > 0 && <div className="lr-card"><button className="nb-b" onClick={() => setShowP(v => !v)}>📖 {showP ? "إخفاء" : "عرض"} صفحات الدرس ({ar(pages.length)})</button>
+      {showP && <div style={{ display: "grid", gap: 8, marginTop: 8 }}>{pages.map(p => <PageImg key={p} book={hw.book} p={p} />)}</div>}</div>}
     <div className="lr-card"><b>✍️ ورقة الإجابة</b><div className="lr-ans" style={{ marginTop: 8, "--c": B.c }}>{qs.map((q, i) => { const kd = qKind(q.ty); const v = a[i]; const f = obj(obj(sub && sub.fb)[i]); const au = sub ? autoOk(q, v) : null; const res = f.ok != null ? +f.ok : au;
       return <div key={i} className="lr-aq" style={sub && res != null ? { borderColor: res ? "#86efac" : "#fca5a5" } : null}>
-        <h5>{sub && res != null ? (res ? "✅" : "❌") : sub ? "⏳" : "❓"} السؤال {ar(q.n)} <small>• صفحة {ar(q.p)} • {q.ty}</small></h5>
-        {kd === "mc" && <div className="lr-lets">{LETS.map(L => <button key={L} disabled={!!sub} className={(v === L ? (sub ? (res ? "ok" : "bad") : "on") : sub && keyLet(q.k) === L ? "ok" : "")} onClick={() => setA(x => ({ ...x, [i]: L }))}>{L}</button>)}</div>}
+        <h5>{sub && res != null ? (res ? "✅" : "❌") : sub ? "⏳" : "❓"} {q.pg ? `حل صفحة ${ar(q.pg)} في دفترك` : `السؤال ${ar(q.c ? i + 1 : q.n)}`} <small>{q.p && !q.c ? `• صفحة ${ar(q.p)} ` : ""}• {q.ty}</small></h5>
+        {q.t && <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.9, whiteSpace: "pre-wrap" }}>{q.t}</div>}{q.img && <img src={q.img} alt="" style={{ maxWidth: "100%", borderRadius: 10, border: "1px solid #e2e8f0" }} />}
+        {q.pg ? <div style={{ display: "grid", gap: 6 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>{!sub && onOpenPage && <button className="nb-b on" style={{ "--c": B.c }} onClick={() => onOpenPage(q.pg)}>✍️ افتح الصفحة وحلّ في دفترك</button>}
+            {solved[q.pg] ? <span className="lr-pill" style={{ background: "#dcfce7", color: "#15803d" }}>✓ يوجد حل في هذه الصفحة</span> : <span className="lr-pill" style={{ background: "#fef3c7", color: "#92400e" }}>لم تحل في الصفحة بعد</span>}</div>
+          {!sub && <label className="nb-chk" style={{ justifySelf: "start", cursor: "pointer" }}><input type="checkbox" checked={!!(v && v.pg)} onChange={e => setA(x => ({ ...x, [i]: e.target.checked ? { ...obj(x[i]), pg: 1 } : null }))} /> حللت الصفحة</label>}
+        </div> : null}
+        {kd === "mc" && <div className="lr-lets" style={q.o ? { display: "grid", gridTemplateColumns: "1fr", gap: 6 } : null}>{LETS.slice(0, q.o ? Math.max(2, q.o.filter(Boolean).length) : 4).map((L, j) => <button key={L} disabled={!!sub} style={q.o ? { width: "100%", height: "auto", minHeight: 44, borderRadius: 14, textAlign: "right", padding: "8px 14px", fontSize: 15 } : null} className={(v === L ? (sub ? (res ? "ok" : "bad") : "on") : sub && keyLet(q.k) === L ? "ok" : "")} onClick={() => setA(x => ({ ...x, [i]: L }))}>{L}{q.o ? `) ${q.o[j] || ""}` : ""}</button>)}</div>}
         {kd === "tf" && <><div className="lr-tf">{["صواب", "خطأ"].map(L => <button key={L} disabled={!!sub} className={obj(v).s === L ? "on" : ""} onClick={() => setA(x => ({ ...x, [i]: { ...obj(x[i]), s: L } }))}>{L === "صواب" ? "✔ صواب" : "✘ خطأ"}</button>)}</div>
           {obj(v).s === "خطأ" && <input className="lr-ta" style={{ minHeight: 0 }} disabled={!!sub} placeholder="التصحيح…" value={obj(v).c || ""} onChange={e => setA(x => ({ ...x, [i]: { ...obj(x[i]), c: e.target.value } }))} />}</>}
-        {kd === "open" && <textarea className="lr-ta" disabled={!!sub} placeholder="اكتب إجابتك…" value={v || ""} onChange={e => setA(x => ({ ...x, [i]: e.target.value }))} />}
+        {kd === "open" && !q.pg && <textarea className="lr-ta" disabled={!!sub} placeholder="اكتب إجابتك…" value={typeof v === "object" && v ? v.w || "" : v || ""} onChange={e => setA(x => { const o = x[i]; return { ...x, [i]: o && typeof o === "object" ? { ...o, w: e.target.value } : e.target.value }; })} />}
+        {kd === "open" && q.pg && !sub && <input className="lr-ta" style={{ minHeight: 0 }} placeholder="ملاحظة للمعلم (اختياري)…" value={(v && v.w) || ""} onChange={e => setA(x => ({ ...x, [i]: { ...obj(x[i]), w: e.target.value } }))} />}
+        {kd === "open" && (ansImg(v) ? <img src={ansImg(v)} alt="" style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 10 }} /> : null)}
+        {kd === "open" && !sub && <label className="nb-chk" style={{ justifySelf: "start", cursor: "pointer" }}>📷 {ansImg(v) ? "تغيير صورة الحل" : "أرفق صورة حلّك من الدفتر الورقي"}<input type="file" accept="image/*" capture="environment" hidden onChange={async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return; const im = await shrinkImg(f); setA(x => { const o = x[i]; return { ...x, [i]: { ...(o && typeof o === "object" ? o : o ? { w: o } : {}), im } }; }); }} /></label>}
         {sub && (res != null || f.c) && <div className={"lr-fb " + (res ? "ok" : res === 0 ? "bad" : "wait")}>{res ? "أحسنت! إجابة صحيحة 🌟" : res === 0 ? "إجابة غير صحيحة" : ""}{(res === 0 || f.ok != null) && <div className="lr-key">🔑 الإجابة النموذجية: {q.k}</div>}{f.c && <div>💬 المعلم: {f.c}</div>}</div>}
         {sub && res == null && !f.c && <div className="lr-fb wait">⏳ بانتظار تصحيح المعلم وتغذيته الراجعة</div>}
       </div>; })}</div>
@@ -1500,15 +1521,25 @@ function StudentLearn({ api, st, onPre, onHw }) {
     const L = Object.values(obj(hw)).filter(h => h && h.id && arr(h.cks).includes(st.ck)).sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 12);
     const subs = await Promise.all(L.map(h => api.maGet(`${NB_HWA}/${h.id}/${st.id}`)));
     setD({ hw: L.map((h, i) => ({ h, s: subs[i] && subs[i].at ? subs[i] : null })), pre: Object.fromEntries(BOOK_IDS.map((b, i) => [b, pre[i] && pre[i].at ? pre[i] : null])) }); })(); }, []);
-  if (!D) return null; const pend = D.hw.filter(x => !x.s);
+  const SK = `nb-hw-seen-${st.id}`; const [seen, setSeen] = useState(() => arr(lsGet(SK, [])));
+  if (!D) return null; const pend = D.hw.filter(x => !x.s); const today = new Date().toISOString().slice(0, 10);
+  const fresh = pend.filter(x => !seen.includes(x.h.id) && !(x.h.due && x.h.due < today));
+  const markSeen = () => { const n = [...new Set([...seen, ...pend.map(x => x.h.id)])]; lsSet(SK, n); setSeen(n); };
   return <div className="nb-book" style={{ "--c": "#0f766e", display: "grid", gap: 8 }}>
+    {fresh.length > 0 && <div style={{ position: "fixed", inset: 0, zIndex: 120, background: "rgba(15,23,42,.6)", display: "grid", placeItems: "center", padding: 14 }} onClick={markSeen}><div onClick={e => e.stopPropagation()} style={{ width: "min(440px,100%)", background: "#fff", borderRadius: 24, padding: 18, textAlign: "center", boxShadow: "0 30px 60px -20px #000" }}>
+      <div style={{ fontSize: 46, animation: "nbBell 1s ease-in-out 3" }}>🔔</div>
+      <b style={{ fontSize: 19, display: "block" }}>{fresh.length > 1 ? `لديك ${ar(fresh.length)} واجبات جديدة` : "لديك واجب جديد"}</b>
+      <div style={{ display: "grid", gap: 6, margin: "12px 0" }}>{fresh.slice(0, 4).map(({ h }) => { const B = BOOKS[h.book]; return <div key={h.id} style={{ border: `1.5px solid ${B.c}55`, borderRadius: 14, padding: "8px 10px", textAlign: "right" }}><b style={{ color: B.c }}>📝 {B.name}: {hwTitle(h, B)}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{h.by ? `أ. ${h.by}` : ""}{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}</div></div>; })}</div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}><button className="nb-b on big" style={{ "--c": "#16a34a" }} onClick={() => { markSeen(); onHw(fresh[0].h); }}>✍️ ابدأ الحل الآن</button><button className="nb-b big" onClick={markSeen}>لاحقًا</button></div>
+    </div><style>{"@keyframes nbBell{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}"}</style></div>}
+    {pend.length > 0 && <button onClick={() => onHw(pend[0].h)} style={{ display: "flex", alignItems: "center", gap: 10, border: 0, borderRadius: 16, padding: "12px 14px", background: "linear-gradient(135deg,#f59e0b,#ea580c)", color: "#fff", font: "inherit", cursor: "pointer", textAlign: "right", boxShadow: "0 12px 24px -14px #ea580c" }}><span style={{ fontSize: 26 }}>🔔</span><span style={{ flex: 1 }}><b style={{ fontSize: 16 }}>لديك {ar(pend.length)} {pend.length > 1 ? "واجبات" : "واجب"} لم تُسلَّم بعد</b><small style={{ display: "block", fontWeight: 800, opacity: .95 }}>أقربها: {BOOKS[pend[0].h.book].name} — {hwTitle(pend[0].h, BOOKS[pend[0].h.book])}</small></span><b>حل الآن ←</b></button>}
     <b style={{ fontSize: 16 }}>🎯 اختباراتي القبلية وواجباتي</b>
     <div className="lr-grid">{BOOK_IDS.map(b => { const r = D.pre[b]; const p = r ? Math.round(r.sc / r.of * 100) : 0; return <button key={b} className="lr-k" style={{ "--c": BOOKS[b].c, cursor: "pointer", font: "inherit", textAlign: "right", border: 0 }} onClick={() => onPre(b)}>
       <small style={{ color: BOOKS[b].c }}>🧪 القبلي – {BOOKS[b].name}</small>{r ? <b style={{ color: PRE_LV(p)[1] }}>{ar(r.sc)}/{ar(r.of)} <small style={{ fontSize: 12 }}>{PRE_LV(p)[0]}</small></b> : <b style={{ fontSize: 15, color: "#7c3aed" }}>ابدأ الاختبار ←</b>}</button>; })}</div>
     {D.hw.length > 0 && <div style={{ display: "grid", gap: 6 }}><b style={{ fontSize: 14 }}>📝 الواجبات {pend.length ? <span className="lr-badge">{ar(pend.length)}</span> : null}</b>
       {D.hw.map(({ h, s }) => { const B = BOOKS[h.book]; const S = s ? hwScore(h, s) : null; const late = !s && h.due && h.due < new Date().toISOString().slice(0, 10);
         return <button key={h.id} className="lr-row" style={{ border: `1.5px solid ${s ? "#bbf7d0" : late ? "#fecaca" : "#e2e8f0"}`, borderRadius: 12, background: "#fff", font: "inherit", cursor: "pointer", textAlign: "right" }} onClick={() => onHw(h)}>
-          <span style={{ fontSize: 22 }}>{s ? (S.full ? "✅" : "⏳") : "📝"}</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ color: B.c }}>{B.name}: {B.titles[h.u]}</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{ar(arr(h.qs).length)} أسئلة{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}</div></div>
+          <span style={{ fontSize: 22 }}>{s ? (S.full ? "✅" : "⏳") : "📝"}</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ color: B.c }}>{B.name}: {hwTitle(h, B)}</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{ar(arr(h.qs).length)} أسئلة{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}</div></div>
           {s ? <span className="lr-pill" style={{ background: S.full ? PRE_LV(S.pct)[2] : "#fef3c7", color: S.full ? PRE_LV(S.pct)[1] : "#92400e" }}>{S.full ? `${ar(S.ok)}/${ar(S.of)}` : "بانتظار التصحيح"}</span> : <span className="lr-pill" style={{ background: late ? "#fee2e2" : "#ede9fe", color: late ? "#b91c1c" : "#6d28d9" }}>{late ? "متأخر — حلّه الآن" : "حلّ الواجب ←"}</span>}</button>; })}</div>}
   </div>;
 }
@@ -1516,18 +1547,23 @@ function StudentLearn({ api, st, onPre, onHw }) {
 // ── 📝 واجبات المعلم: إنشاء من أسئلة الدرس • نتائج الفصل • التصحيح والتغذية الراجعة
 function HwTeacher({ api, book, cks, ros, tkey, tname, admin }) {
   const B = BOOKS[book]; const [L, setL] = useState(null); const [K, setK] = useState(null); const [ed, setEd] = useState(null); const [open, setOpen] = useState(null); const [subs, setSubs] = useState({}); const [gr, setGr] = useState(null); const [msg, setMsg] = useState("");
+  const [bv, setBv] = useState(null); const [nq, setNq] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 2600); };
   const load = async () => { const h = obj(await api.maGet(NB_HW)); setL(Object.values(h).filter(x => x && x.id && x.book === book && (admin || x.tkey === tkey) && arr(x.cks).some(c => cks.includes(c))).sort((a, b) => (b.at || 0) - (a.at || 0))); };
   useEffect(() => { load(); loadKeys().then(setK).catch(() => setK({})); }, [book]);
   const loadSubs = async id => { const s = obj(await api.maGet(`${NB_HWA}/${id}`)); setSubs(x => ({ ...x, [id]: s })); };
   if (!L || !K) return <div className="nb-msg">⏳</div>;
-  const startNew = () => { const u = 0; const qs = hwQsOf(K, book, u); setEd({ u, cks: [cks[0]], due: "", note: "", sel: qs.map((_, i) => i) }); };
+  const startNew = () => { const u = 0; setEd({ u, cks: [cks[0]], due: "", note: "", t: "", sel: hwQsOf(K, book, u).map((_, i) => i), src: "book", ex: [], cq: null }); };
   const edQs = ed ? hwQsOf(K, book, ed.u) : [];
-  const save = async () => { if (!ed.cks.length) return toast("اختر فصلاً"); const qs = edQs.filter((_, i) => ed.sel.includes(i)).map(q => ({ p: q.p, n: q.n, ty: q.ty, k: q.k })); if (!qs.length) return toast("اختر سؤالاً واحداً على الأقل");
-    const id = "h" + Date.now().toString(36); const v = { id, book, u: ed.u, qs, cks: ed.cks, due: ed.due, note: ed.note.trim(), at: Date.now(), by: tname, tkey };
+  const loadNq = async () => { setNq("busy"); const d = obj(await api.maGet(NQ_EXN)); const L = Object.values(d).filter(x => x && x.id && arr(x.subjects).length).sort((a, b) => (b.at || 0) - (a.at || 0)); setNq({ L, ex: null, sel: [] }); };
+  const addEx = items => setEd(e => ({ ...e, ex: [...e.ex, ...items] }));
+  const save = async () => { if (!ed.cks.length) return toast("اختر فصلاً"); const qs = [...edQs.filter((_, i) => ed.sel.includes(i)).map(q => ({ p: q.p, n: q.n, ty: q.ty, k: q.k })), ...ed.ex.map((q, i) => ({ ...q, n: q.pg ? q.pg : edQs.filter((_, j) => ed.sel.includes(j)).length + i + 1 }))]; if (!qs.length) return toast("أضف سؤالاً أو صفحة واحدة على الأقل");
+    const id = "h" + Date.now().toString(36); const v = { id, book, u: ed.u, qs, cks: ed.cks, due: ed.due, note: ed.note.trim(), ...(ed.t.trim() ? { t: ed.t.trim() } : {}), at: Date.now(), by: tname, tkey };
     await api.maPut(`${NB_HW}/${id}`, v); setEd(null); await load(); toast("✅ نُشر الواجب للطلاب"); };
   const del = async h => { if (!window.confirm("حذف الواجب وإجابات الطلاب عليه؟")) return; await api.maPut(`${NB_HW}/${h.id}`, null); await api.maPut(`${NB_HWA}/${h.id}`, null); setOpen(null); load(); };
   // التصحيح
+  if (bv) return <BookViewer api={api} book={book} startPage={bv.page} store={`${NB}/${bv.st.id}`} marks={`${NB_IDX}/${bv.st.id}`} readOnly keys tc="edit" tcPath={`${NB_TC}/${bv.st.id}`} by={tname}
+      boards={`${NB_B}/s_${bv.st.id}`} boardsRO who="rv" title={bv.st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setBv(null)} />;
   if (gr) { const h = gr.h, s = gr.s, sid = gr.sid; const qs = arr(h.qs); const fb = gr.fb;
     const setF = (i, k, v) => setGr(g => ({ ...g, fb: { ...g.fb, [i]: { ...obj(g.fb[i]), [k]: v } } }));
     const saveFb = async () => { const v = { ...s, fb: gr.fb, fbAt: Date.now(), fbBy: tname }; await api.maPut(`${NB_HWA}/${h.id}/${sid}`, v); setSubs(x => ({ ...x, [h.id]: { ...obj(x[h.id]), [sid]: v } })); setGr(null); toast("✅ حُفظ التصحيح ووصلت التغذية الراجعة للطالب"); };
@@ -1535,9 +1571,12 @@ function HwTeacher({ api, book, cks, ros, tkey, tname, admin }) {
       <div className="nb-h"><b>✍️ تصحيح واجب {s.n}</b><span className="nb-sp" /><button className="nb-b" onClick={() => setGr(null)}>رجوع</button></div>
       {qs.map((q, i) => { const v = obj(s.a)[i]; const au = autoOk(q, v); const f = obj(fb[i]); const cur = f.ok != null ? +f.ok : au;
         return <div key={i} className="lr-aq" style={{ borderColor: cur === 1 ? "#86efac" : cur === 0 ? "#fca5a5" : "#e2e8f0" }}>
-          <h5>السؤال {ar(q.n)} <small>• صفحة {ar(q.p)} • {q.ty}{au != null ? " • صُحّح آلياً" : ""}</small></h5>
-          <div style={{ fontWeight: 800 }}>إجابة الطالب: <span style={{ color: "#1e3a8a" }}>{v == null || v === "" ? "— لم يُجب —" : typeof v === "object" ? `${v.s || ""}${v.c ? " — " + v.c : ""}` : v}</span></div>
-          <div className="lr-key">🔑 النموذجية: {q.k}</div>
+          <h5>{q.pg ? `📖 حل صفحة ${ar(q.pg)} في الدفتر` : `السؤال ${ar(i + 1)}`} <small>{q.p ? `• صفحة ${ar(q.p)} ` : ""}• {q.ty}{au != null ? " • صُحّح آلياً" : ""}</small></h5>
+          {q.t && <div style={{ fontWeight: 800, whiteSpace: "pre-wrap" }}>{q.t}</div>}{q.img && <img src={q.img} alt="" style={{ maxWidth: "100%", maxHeight: 220, borderRadius: 10 }} />}
+          {q.pg ? <button className="nb-b on" style={{ justifySelf: "start" }} onClick={() => setBv({ st: { id: sid, name: s.n, ck: s.ck }, page: q.pg })}>📖 افتح دفتر الطالب على صفحة {ar(q.pg)}</button> : null}
+          <div style={{ fontWeight: 800 }}>إجابة الطالب: <span style={{ color: "#1e3a8a" }}>{q.pg ? (v ? "✅ أفاد أنه حلّ الصفحة في دفتره" : "— لم يحل —") + (v && v.w ? " • " + v.w : "") : ansTxt(v) || "— لم يُجب —"}{q.o && LETS.indexOf(v) >= 0 ? ` (${q.o[LETS.indexOf(v)]})` : ""}</span></div>
+          {ansImg(v) && <img src={ansImg(v)} alt="حل الطالب" style={{ maxWidth: "100%", maxHeight: 360, borderRadius: 10, border: "1px solid #e2e8f0" }} />}
+          {q.k && <div className="lr-key">🔑 النموذجية: {q.k}</div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}><div className="lr-okb"><button className={cur === 1 ? "y" : ""} onClick={() => setF(i, "ok", 1)}>✔ صحيحة</button><button className={cur === 0 ? "n" : ""} onClick={() => setF(i, "ok", 0)}>✘ خاطئة</button></div>
             <input className="lr-ta" style={{ minHeight: 0, flex: 1, minWidth: 180 }} placeholder="💬 تغذية راجعة للطالب (اختياري)…" value={f.c || ""} onChange={e => setF(i, "c", e.target.value)} />
             <span style={{ display: "flex", gap: 4 }}>{["أحسنت 🌟", "راجع الخطوات", "انتبه للإشارة", "اقرأ السؤال جيداً"].map(t => <button key={t} className="nb-chk" onClick={() => setF(i, "c", t)}>{t}</button>)}</span></div>
@@ -1546,15 +1585,45 @@ function HwTeacher({ api, book, cks, ros, tkey, tname, admin }) {
     </div>; }
   if (ed) return <div className="lr-card" style={{ display: "grid", gap: 10, "--c": B.c }}>
     <div className="nb-h"><b>➕ واجب جديد – {B.name}</b><span className="nb-sp" /><button className="nb-b" onClick={() => setEd(null)}>إلغاء</button></div>
+    <label style={{ fontWeight: 900, fontSize: 13 }}>عنوان الواجب (اختياري)<input className="lr-ta" style={{ minHeight: 0 }} value={ed.t} onChange={e => setEd({ ...ed, t: e.target.value })} placeholder="مثال: واجب حل المعادلات — يُكتب تلقائيًا من اسم الدرس إن تُرك" /></label>
     <label style={{ fontWeight: 900, fontSize: 13 }}>الدرس (من موضوعات المرجع)<select className="lr-ta" style={{ minHeight: 0 }} value={ed.u} onChange={e => { const u = +e.target.value; setEd({ ...ed, u, sel: hwQsOf(K, book, u).map((_, i) => i) }); }}>{B.titles.map((t, u) => <option key={u} value={u}>الأسبوع {ar(Math.floor(u / 2) + 1)} • {t} (ص {ar(unitPages(book, u)[0])}–{ar(unitPages(book, u).slice(-1)[0])})</option>)}</select></label>
     <div><b style={{ fontSize: 13 }}>الفصول:</b> {cks.map(c => <button key={c} className={"nb-chk" + (ed.cks.includes(c) ? " on" : "")} onClick={() => setEd({ ...ed, cks: ed.cks.includes(c) ? ed.cks.filter(x => x !== c) : [...ed.cks, c] })}>{cls(c)}</button>)}</div>
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><label style={{ fontWeight: 900, fontSize: 13 }}>آخر موعد للتسليم<input type="date" className="lr-ta" style={{ minHeight: 0 }} value={ed.due} onChange={e => setEd({ ...ed, due: e.target.value })} /></label>
       <label style={{ fontWeight: 900, fontSize: 13, flex: 1, minWidth: 200 }}>توجيه للطلاب (اختياري)<input className="lr-ta" style={{ minHeight: 0 }} value={ed.note} onChange={e => setEd({ ...ed, note: e.target.value })} placeholder="مثال: حلّ في دفترك أولاً ثم أدخل الإجابات" /></label></div>
-    <div><div className="nb-h"><b style={{ fontSize: 13 }}>أسئلة الدرس ({ar(ed.sel.length)} من {ar(edQs.length)}) — الاختيار من متعدد والصواب والخطأ تُصحّح آلياً</b><span className="nb-sp" /><button className="nb-chk" onClick={() => setEd({ ...ed, sel: edQs.map((_, i) => i) })}>الكل</button><button className="nb-chk" onClick={() => setEd({ ...ed, sel: edQs.map((q, i) => qKind(q.ty) !== "open" ? i : -1).filter(i => i >= 0) })}>الآلية فقط</button></div>
+    <div className="nb-h" style={{ gap: 6 }}>{[["book", "📘 من أسئلة الدرس"], ["page", "📖 صفحات يحلها في دفتره"], ["write", "✍️ أكتب أسئلتي"], ["nq", "🎯 من نماذج نافس"]].map(([k, l]) => <button key={k} className={"nb-chk" + (ed.src === k ? " on" : "")} style={{ padding: "7px 12px", fontSize: 13 }} onClick={() => { setEd({ ...ed, src: k }); if (k === "nq" && !nq) loadNq(); }}>{l}</button>)}</div>
+    {ed.src === "page" && <div style={{ border: "1.5px dashed #cbd5e1", borderRadius: 12, padding: 10, display: "grid", gap: 6 }}>
+      <b style={{ fontSize: 13 }}>اختر الصفحات التي يحلها الطالب في دفتره الإلكتروني (من صفحات هذا الدرس)</b>
+      <div className="nb-h" style={{ gap: 4 }}>{unitPages(book, ed.u).map(p => { const on = ed.ex.some(q => q.pg === p); return <button key={p} className={"nb-chk" + (on ? " on" : "")} onClick={() => setEd(e => ({ ...e, ex: on ? e.ex.filter(q => q.pg !== p) : [...e.ex, { pg: p, ty: TY_PG }] }))}>ص {ar(p)}</button>; })}</div>
+      <small style={{ color: "#64748b", fontWeight: 700 }}>يفتح الطالب الصفحة من الواجب ويحل في فراغاتها، ثم يضغط «إرسال». وتفتح أنت دفتره على الصفحة نفسها للتصحيح والتعليق.</small>
+    </div>}
+    {ed.src === "write" && (() => { const q = ed.cq || { ty: TY_MC, t: "", o: ["", "", "", ""], k: 0, img: "" }; const setQ = o => setEd(e => ({ ...e, cq: { ...q, ...o } }));
+      const addQ = () => { if (!q.t.trim() && !q.img) return toast("اكتب نص السؤال"); if (q.ty === TY_MC && q.o.filter(x => x.trim()).length < 2) return toast("اكتب خيارين على الأقل"); const it = { c: 1, t: q.t.trim(), ty: q.ty, ...(q.img ? { img: q.img } : {}) };
+        if (q.ty === TY_MC) { it.o = q.o.map(x => x.trim()); it.k = `${LETS[q.k]} ${it.o[q.k] || ""}`.trim(); } else if (q.ty === TY_TF) it.k = q.k ? "خطأ" : "صواب"; else if (q.mk && q.mk.trim()) it.k = q.mk.trim();
+        setEd(e => ({ ...e, ex: [...e.ex, it], cq: { ty: q.ty, t: "", o: ["", "", "", ""], k: 0, img: "" } })); toast("✅ أُضيف السؤال"); };
+      return <div style={{ border: "1.5px dashed #cbd5e1", borderRadius: 12, padding: 10, display: "grid", gap: 6 }}>
+        <div className="nb-h" style={{ gap: 4 }}>{[TY_MC, TY_TF, TY_OP].map(t => <button key={t} className={"nb-chk" + (q.ty === t ? " on" : "")} onClick={() => setQ({ ty: t, k: 0 })}>{t}</button>)}</div>
+        <textarea className="lr-ta" value={q.t} onChange={e => setQ({ t: e.target.value })} placeholder="نص السؤال…" />
+        <label className="nb-chk" style={{ justifySelf: "start", cursor: "pointer" }}>🖼️ {q.img ? "تغيير الصورة" : "إضافة صورة أو رسم للسؤال"}<input type="file" accept="image/*" hidden onChange={async e => { const f = e.target.files[0]; e.target.value = ""; if (f) setQ({ img: await shrinkImg(f) }); }} /></label>
+        {q.img && <div style={{ position: "relative", justifySelf: "start" }}><img src={q.img} alt="" style={{ maxHeight: 140, borderRadius: 10 }} /><button className="nb-chk" style={{ position: "absolute", top: 4, left: 4 }} onClick={() => setQ({ img: "" })}>✕</button></div>}
+        {q.ty === TY_MC && <div style={{ display: "grid", gap: 4 }}>{q.o.map((o, j) => <label key={j} className="lr-row" style={{ padding: "2px 0" }}><input type="radio" checked={q.k === j} onChange={() => setQ({ k: j })} title="الإجابة الصحيحة" /><b>{LETS[j]})</b><input className="lr-ta" style={{ minHeight: 0, flex: 1 }} value={o} onChange={e => { const O = [...q.o]; O[j] = e.target.value; setQ({ o: O }); }} placeholder={`الخيار ${LETS[j]}`} /></label>)}<small style={{ color: "#64748b", fontWeight: 700 }}>حدّد الدائرة بجانب الإجابة الصحيحة — يُصحَّح آليًا</small></div>}
+        {q.ty === TY_TF && <div className="nb-h" style={{ gap: 4 }}><b style={{ fontSize: 13 }}>الإجابة الصحيحة:</b><button className={"nb-chk" + (!q.k ? " on" : "")} onClick={() => setQ({ k: 0 })}>✔ صواب</button><button className={"nb-chk" + (q.k ? " on" : "")} onClick={() => setQ({ k: 1 })}>✘ خطأ</button></div>}
+        {q.ty === TY_OP && <input className="lr-ta" style={{ minHeight: 0 }} value={q.mk || ""} onChange={e => setQ({ mk: e.target.value })} placeholder="الإجابة النموذجية (تظهر لك عند التصحيح — اختيارية)" />}
+        <button className="nb-b on" style={{ justifySelf: "start" }} onClick={addQ}>➕ أضف السؤال للواجب</button>
+      </div>; })()}
+    {ed.src === "nq" && <div style={{ border: "1.5px dashed #cbd5e1", borderRadius: 12, padding: 10, display: "grid", gap: 6 }}>
+      {!nq || nq === "busy" ? <div className="nb-msg">⏳ تحميل نماذج نافس…</div> : !nq.L.length ? <div className="nb-msg">لا توجد نماذج في منصة نافس بعد</div> : <>
+        <select className="lr-ta" style={{ minHeight: 0 }} value={nq.ex ? nq.ex.id : ""} onChange={e => setNq({ ...nq, ex: nq.L.find(x => x.id === e.target.value) || null, sel: [] })}><option value="">اختر النموذج…</option>{nq.L.map(x => <option key={x.id} value={x.id}>{x.title || "نموذج"}</option>)}</select>
+        {nq.ex && (() => { const subs = arr(nq.ex.subjects); const sj = subs.find(x => x.name === NQ_OF[book]) || subs[0]; const Q = arr(sj && sj.questions);
+          return <><small style={{ fontWeight: 800, color: "#64748b" }}>مادة {sj ? sj.name : ""} — {ar(Q.length)} سؤالًا • حدّد ما تريد</small>
+            <div style={{ display: "grid", gap: 4, maxHeight: 300, overflow: "auto" }}>{Q.map((x, j) => <label key={j} className="lr-row" style={{ cursor: "pointer", padding: "5px 4px", alignItems: "flex-start" }}><input type="checkbox" checked={nq.sel.includes(j)} onChange={() => setNq({ ...nq, sel: nq.sel.includes(j) ? nq.sel.filter(y => y !== j) : [...nq.sel, j] })} /><b>{ar(j + 1)}</b><span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700 }}>{String(x.text || "").slice(0, 140) || "(سؤال بصورة)"}{x.image ? " 🖼️" : ""}</span></label>)}</div>
+            <button className="nb-b on" style={{ justifySelf: "start" }} disabled={!nq.sel.length} onClick={() => { addEx(nq.sel.sort((a, b) => a - b).map(j => { const x = Q[j]; const o = arr(x.options).map(String); const c = +x.correct || 0; return { c: 1, nq: 1, t: String(x.text || ""), ty: TY_MC, o, k: `${LETS[c]} ${o[c] || ""}`.trim(), ...(x.image ? { img: x.image } : {}) }; })); setNq({ ...nq, sel: [] }); toast("✅ أُضيفت الأسئلة للواجب"); }}>➕ أضف المحدد ({ar(nq.sel.length)})</button></>; })()}</>}
+    </div>}
+    {ed.ex.length > 0 && <div style={{ display: "grid", gap: 4 }}><b style={{ fontSize: 13 }}>🧾 الأسئلة والصفحات المضافة ({ar(ed.ex.length)})</b>{ed.ex.map((q, i) => <div key={i} className="lr-row" style={{ padding: "5px 6px", border: "1px solid #e2e8f0", borderRadius: 10 }}><span className="lr-pill" style={{ background: q.pg ? "#e0f2fe" : q.ty === TY_OP ? "#fef3c7" : "#dcfce7" }}>{q.pg ? "📖 صفحة" : q.nq ? "🎯 نافس" : "✍️"} {q.ty}</span><span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.pg ? `حل صفحة ${ar(q.pg)} في الدفتر` : q.t || "(سؤال بصورة)"}</span><button className="nb-chk" onClick={() => setEd(e => ({ ...e, ex: e.ex.filter((_, j) => j !== i) }))}>✕</button></div>)}</div>}
+    {ed.src === "book" && <div><div className="nb-h"><b style={{ fontSize: 13 }}>أسئلة الدرس ({ar(ed.sel.length)} من {ar(edQs.length)}) — الاختيار من متعدد والصواب والخطأ تُصحّح آلياً</b><span className="nb-sp" /><button className="nb-chk" onClick={() => setEd({ ...ed, sel: edQs.map((_, i) => i) })}>الكل</button><button className="nb-chk" onClick={() => setEd({ ...ed, sel: edQs.map((q, i) => qKind(q.ty) !== "open" ? i : -1).filter(i => i >= 0) })}>الآلية فقط</button></div>
       <div style={{ display: "grid", gap: 4, marginTop: 6, maxHeight: 300, overflow: "auto" }}>{edQs.map((q, i) => <label key={i} className="lr-row" style={{ cursor: "pointer", padding: "5px 4px" }}><input type="checkbox" checked={ed.sel.includes(i)} onChange={() => setEd({ ...ed, sel: ed.sel.includes(i) ? ed.sel.filter(x => x !== i) : [...ed.sel, i] })} />
         <b>س{ar(q.n)}</b><small style={{ color: "#64748b", fontWeight: 800 }}>ص {ar(q.p)}</small><span className="lr-pill" style={{ background: qKind(q.ty) === "open" ? "#fef3c7" : "#dcfce7", color: qKind(q.ty) === "open" ? "#92400e" : "#15803d" }}>{q.ty}{qKind(q.ty) === "open" ? " • يصحّحه المعلم" : " • آلي"}</span><small style={{ color: "#94a3b8", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>🔑 {q.k}</small></label>)}
-        {!edQs.length && <div className="nb-msg">لا توجد أسئلة مرقّمة في هذا الدرس</div>}</div></div>
-    <button className="nb-b on big" style={{ "--c": "#16a34a", padding: 12 }} onClick={save}>📤 نشر الواجب للطلاب</button>
+        {!edQs.length && <div className="nb-msg">لا توجد أسئلة مرقّمة في هذا الدرس</div>}</div></div>}
+    <button className="nb-b on big" style={{ "--c": "#16a34a", padding: 12 }} onClick={save}>📤 نشر الواجب للطلاب ({ar(ed.sel.length + ed.ex.length)}) — يصلهم تنبيه</button>
   </div>;
   const studsOf = c => arr(ros[c] && ros[c].students).filter(s => s && s.id);
   return <div className="lr-card" style={{ display: "grid", gap: 8, "--c": B.c }}>
@@ -1564,13 +1633,15 @@ function HwTeacher({ api, book, cks, ros, tkey, tname, admin }) {
       const got = S ? all.filter(s => S[s.id]) : []; const sc = got.map(s => hwScore(h, S[s.id])); const avg = sc.length ? Math.round(sc.reduce((t, x) => t + (x.done ? x.ok / x.done : 0), 0) / sc.length * 100) : 0; const pend = got.filter((s, i) => !sc[i].full || !S[s.id].fbAt).length;
       return <div key={h.id} style={{ border: "1.5px solid #e2e8f0", borderRadius: 14, padding: 10 }}>
         <div className="nb-h" style={{ gap: 6, cursor: "pointer" }} onClick={() => { setOpen(isO ? null : h.id); if (!S) loadSubs(h.id); }}>
-          <b>{B.titles[h.u]}</b><small style={{ color: "#64748b", fontWeight: 800 }}>{ar(arr(h.qs).length)} أسئلة • {arr(h.cks).map(cls).join("، ")}{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}{admin ? ` • أ. ${h.by}` : ""}</small><span className="nb-sp" />
+          <b>{hwTitle(h, B)}</b><small style={{ color: "#64748b", fontWeight: 800 }}>{ar(arr(h.qs).length)} أسئلة • {arr(h.cks).map(cls).join("، ")}{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}{admin ? ` • أ. ${h.by}` : ""}</small><span className="nb-sp" />
           {S && <><span className="lr-pill" style={{ background: "#ede9fe", color: "#6d28d9" }}>سلّم {ar(got.length)}/{ar(all.length)}</span><span className="lr-pill" style={{ background: PRE_LV(avg)[2], color: PRE_LV(avg)[1] }}>متوسط {ar(avg)}٪</span>{pend > 0 && <span className="lr-pill lr-c0">✍️ {ar(pend)} للتصحيح</span>}</>}<span>{isO ? "▲" : "▼"}</span></div>
         {isO && (!S ? <div className="nb-msg">⏳</div> : <div style={{ marginTop: 8 }}>
           {all.map(s => { const x = S[s.id]; const r = x ? hwScore(h, x) : null; return <div key={s.id} className="lr-row">
             <b style={{ flex: 1, minWidth: 140 }}>{s.name} <small style={{ color: "#94a3b8" }}>{cls(s.ck)}</small></b>
             {x ? <><LBar v={r.done ? r.ok / r.done * 100 : 0} c={PRE_LV(r.pct)[1]} /><span className="lr-pill" style={{ background: "#f1f5f9" }}>{ar(r.ok)}/{ar(r.of)}{!r.full ? ` • ${ar(r.of - r.done)} مفتوح` : ""}</span>{x.fbAt ? <span className="lr-pill lr-c1">✅ صُحّح</span> : null}
               {!admin && <button className="nb-b" onClick={() => setGr({ h, s: x, sid: s.id, fb: obj(x.fb) })}>✍️ تصحيح وتغذية راجعة</button>}</> : <span className="lr-pill lr-c0">لم يسلّم</span>}</div>; })}
+          {got.length > 0 && <div style={{ marginTop: 8, borderTop: "1px dashed #e2e8f0", paddingTop: 8 }}><b style={{ fontSize: 13 }}>📊 إجابات الفصل لكل سؤال</b><div className="nb-h" style={{ gap: 4, marginTop: 4 }}>{arr(h.qs).map((q, i) => { let ok = 0, dn = 0, an = 0; got.forEach(s0 => { const x = S[s0.id]; const v = obj(x.a)[i]; if (v != null && v !== "") an++; const f = obj(obj(x.fb)[i]); const r = f.ok != null ? +f.ok : autoOk(q, v); if (r != null) { dn++; if (r === 1) ok++; } }); const pc = dn ? Math.round(ok / dn * 100) : null;
+            return <span key={i} className="lr-pill" title={q.t || q.k || ""} style={{ background: pc == null ? "#f1f5f9" : PRE_LV(pc)[2], color: pc == null ? "#475569" : PRE_LV(pc)[1] }}>{q.pg ? `ص${ar(q.pg)}` : `س${ar(i + 1)}`}: {pc == null ? `أجاب ${ar(an)}` : `${ar(pc)}٪`}</span>; })}</div></div>}
           {!admin && <div className="nb-h" style={{ marginTop: 6 }}><span className="nb-sp" /><button className="nb-b" style={{ color: "#b91c1c" }} onClick={() => del(h)}>🗑 حذف الواجب</button></div>}
         </div>)}
       </div>; })}
@@ -1625,7 +1696,7 @@ function WeekBoard({ api, D, rows, cks }) {
       <div><b style={{ fontSize: 13 }}>📖 صفحات أسبوع الخطة {ar(S.tw + 1)} ({S.B.titles[S.tw * 2]} • {S.B.titles[S.tw * 2 + 1]}):</b>
         <div className="nb-h" style={{ gap: 4, marginTop: 4 }}>{S.wp.map(p => { const t = obj(obj(obj(D.tp[S.r.key])[S.r.book])[S.ck])["p" + p]; return <span key={p} className="lr-pill" title={t ? new Date(+t).toLocaleString("ar-SA") : "لم تُشرح"} style={{ background: t ? "#dcfce7" : "#f1f5f9", color: t ? "#15803d" : "#94a3b8" }}>{t ? "✓" : "○"} {ar(p)}</span>; })}</div></div>
       {S.idle.length > 0 && <div><b style={{ fontSize: 13, color: "#b91c1c" }}>🚫 لم يشاركوا ({ar(S.idle.length)}):</b> <span style={{ fontWeight: 700, fontSize: 13 }}>{S.idle.map(s => s.name).join("، ")}</span></div>}
-      {S.hws.map(h => { const st = S.st; const got = st.filter(s => obj(X.hwa[h.id])[s.id]); return <div key={h.id} style={{ fontSize: 13, fontWeight: 800 }}>📝 {S.B.titles[h.u]}: سلّم {ar(got.length)}/{ar(st.length)} • لم يسلّم: <span style={{ color: "#b91c1c" }}>{st.filter(s => !got.includes(s)).map(s => s.name.split(" ").slice(0, 2).join(" ")).join("، ") || "—"}</span></div>; })}
+      {S.hws.map(h => { const st = S.st; const got = st.filter(s => obj(X.hwa[h.id])[s.id]); return <div key={h.id} style={{ fontSize: 13, fontWeight: 800 }}>📝 {hwTitle(h, S.B)}: سلّم {ar(got.length)}/{ar(st.length)} • لم يسلّم: <span style={{ color: "#b91c1c" }}>{st.filter(s => !got.includes(s)).map(s => s.name.split(" ").slice(0, 2).join(" ")).join("، ") || "—"}</span></div>; })}
     </div>}
   </div>;
 }
