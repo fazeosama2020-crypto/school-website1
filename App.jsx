@@ -328,7 +328,23 @@ function AbsenceAdminPortal({ onBack }) {
   );
 }
 
+// 🔤 خط الموقع الموحّد: الخط المختار من «الإعدادات ← خط الموقع» يُطبَّق على كل صفحات الموقع وبواباته
+// (ما عدا عناصر لها خط مقصود: تصاميم المطبوعات، النماذج الرسمية، معاينة الخطوط) — data-kf
+const SITE_FONT0 = "'IBM Plex Sans Arabic', sans-serif";
+function siteFontApply(v) {
+  try {
+    v = v || SITE_FONT0; localStorage.setItem("site-font", v);
+    const fam = (String(v).match(/'([^']+)'/) || [])[1];
+    if (fam && !document.getElementById("sf-" + fam)) { const l = document.createElement("link"); l.id = "sf-" + fam; l.rel = "stylesheet"; l.href = `https://fonts.googleapis.com/css2?family=${fam.replace(/ /g, "+")}:wght@400;500;600;700${/Plex|Readex|Kufi|Naskh|Cairo|Tajawal/.test(fam) ? ";800" : ""}&display=swap`; document.head.appendChild(l); }
+    document.documentElement.style.setProperty("--site-font", `${v}, 'Noto Sans Arabic', Tahoma, sans-serif`);
+    if (!document.getElementById("sf-global")) { const st = document.createElement("style"); st.id = "sf-global"; st.textContent = `#root,#root *:not([data-kf]):not([data-kf] *):not([style*="monospace"]):not(code):not(pre):not(kbd):not(font[face]):not(font[face] *):not(.annhtml *):not([contenteditable] *){font-family:var(--site-font)!important}`; document.head.appendChild(st); }
+  } catch {}
+}
+try { if (typeof document !== "undefined") siteFontApply(localStorage.getItem("site-font") || SITE_FONT0); } catch {}
 const FONTS = [
+  { label: "آي بي إم بلكس — رسمي أنيق", value: "'IBM Plex Sans Arabic', sans-serif" },
+  { label: "ريدكس برو — حديث", value: "'Readex Pro', sans-serif" },
+  { label: "المراعي — رسمي", value: "'Almarai', sans-serif" },
   { label: "نوتو نسخ", value: "'Noto Naskh Arabic', serif" },
   { label: "نوتو كوفي", value: "'Noto Kufi Arabic', sans-serif" },
   { label: "القاهرة", value: "'Cairo', sans-serif" },
@@ -770,7 +786,7 @@ function RichEditor({ value, onChange }) {
           {showFonts && (
             <div className="absolute top-10 right-0 bg-white rounded-xl shadow-xl border border-gray-200 p-2 z-50 w-44">
               {FONTS.map(f => (
-                <button key={f.value} onClick={() => { exec("fontName", f.value); setShowFonts(false); }}
+                <button key={f.value} data-kf="" onClick={() => { exec("fontName", f.value); setShowFonts(false); }}
                   className="w-full text-right px-3 py-2 rounded-lg hover:bg-teal-50 text-sm" style={{ fontFamily: f.value }}>{f.label}</button>
               ))}
             </div>
@@ -12216,7 +12232,7 @@ function PosterStudio({ init, onClose, by = "" }) {
     const on = e.id === sel;
     const body = e.t === "img" ? (() => { const b = psImgBox(e, T); return <div style={b.wrap}><img src={e.img.src} alt="" style={b.img} draggable={false} /></div>; })()
       : e.t === "info" ? <div style={{ width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: psInfoHtml(e, T) }} />
-      : <div style={psTextBox(e, T)}>{e.text.s}</div>;
+      : <div data-kf="" style={psTextBox(e, T)}>{e.text.s}</div>;
     return <div key={e.id} className={`ps-el ${on ? "sel" : ""}`} style={psElStyle(e)} onPointerDown={ev => startDrag(ev, e, "move")} onDoubleClick={() => { setSel(e.id); setTimeout(() => { const t = document.getElementById("ps-txt"); if (t) t.focus(); }, 30); }}>
       {body}{on && handles(e)}</div>;
   };
@@ -21823,7 +21839,7 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
         <h3 className="font-bold text-gray-800 mb-4">🔤 خط الموقع</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {FONTS.map(f => (
-            <button key={f.value} onClick={() => { setSiteFont(f.value); saveSiteFont(f.value); }}
+            <button key={f.value} data-kf="" onClick={() => { setSiteFont(f.value); saveSiteFont(f.value); }}
               className={`p-3 rounded-xl border-2 text-sm transition-all text-right ${siteFont === f.value ? "border-teal-500 bg-teal-50 text-teal-800" : "border-gray-200 hover:border-teal-300"}`}
               style={{ fontFamily: f.value }}>
               <div className="font-bold">{f.label}</div>
@@ -40644,7 +40660,7 @@ function HfxSheet({ fk, c, x, style }) {
   const items = hfxItems(fk, c, x); const P = hfxPgs(fk);
   const one = (src, pi) => <div key={pi} style={{ ...HFX_PG, ...style, ...(pi ? { marginTop: 10 } : {}) }} dir="ltr">
     <img src={src} alt={HFX_F[fk].n} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", userSelect: "none", pointerEvents: "none" }} draggable={false} />
-    {items.map((it, i) => (it.pg || 0) !== pi ? null : it.kd === "i" ? <img key={i} src={it.src} alt="توقيع" style={hfxStyle(it)} /> : <div key={i} style={hfxStyle(it)}>{it.kd === "k" ? "✓" : it.s}</div>)}
+    {items.map((it, i) => (it.pg || 0) !== pi ? null : it.kd === "i" ? <img key={i} src={it.src} alt="توقيع" style={hfxStyle(it)} /> : <div key={i} data-kf="" style={hfxStyle(it)}>{it.kd === "k" ? "✓" : it.s}</div>)}
   </div>;
   return P.length > 1 ? <div>{P.map(one)}</div> : one(P[0], 0);
 }
@@ -44380,6 +44396,26 @@ function PrepTeacherView({ me }) {
 // school-adm = { P:{k:{k,n,r,idHash?,id4?,o}}, T:{id:{id,t,d,to:{k:1},fq:"d"|"w"|"o",wd:{0..4:1},due,from,pr,tm,by,at,off}}, O:{id:{pk:{st,why,note,at,dk}}}, ping:{pk:{at,by,m}} }
 // school-adm-log/{YYYY-MM-DD}/{taskId}_{pk} = {st:"d"|"n", why, note, at, n}
 const AT_NODE = "school-adm", AT_LOG = "school-adm-log";
+// تعليقات المدير وردود الإداري: school-adm-cm/{YYYY-MM-DD}/{taskId}_{pk} = {m, by, at, rp, rpat}
+// التقييم الأسبوعي: school-adm-ev/{أول يوم في الأسبوع}/{pk} = {s:1..5, note, by, at}
+const AT_CM = "school-adm-cm", AT_EV = "school-adm-ev";
+const AT_EVL = ["", "يحتاج إلى تحسين", "مقبول", "جيد", "جيد جدًا", "متميز"];
+const AtStars = ({ v = 0, set, size = 22 }) => <span style={{ display: "inline-flex", gap: 2 }}>{[1, 2, 3, 4, 5].map(i => <button key={i} type="button" disabled={!set} onClick={() => set && set(i)} style={{ border: 0, background: "none", padding: 0, cursor: set ? "pointer" : "default", fontSize: size, lineHeight: 1, color: i <= v ? "#d4a017" : "#cbd5e1" }}>★</button>)}</span>;
+const atWeekPrev = () => asmWeek(maKey(new Date(Date.now() - 7 * 864e5)));
+// صندوق التعليق (للمدير) أو الرد (للإداري)
+function AtCmBox({ title, sub, init = "", ph, onSave, onClose }) {
+  const [v, setV] = useState(init);
+  return <div style={{ position: "fixed", inset: 0, zIndex: 850, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}><div style={{ width: "min(520px,100%)", background: "#fff", borderRadius: "24px 24px 0 0", padding: 16 }} onClick={e => e.stopPropagation()} dir="rtl">
+    <b style={{ fontSize: 16 }}>{title}</b>{sub && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b", marginTop: 2 }}>{sub}</div>}
+    <textarea className="ma-inp" rows={3} autoFocus style={{ marginTop: 10, height: "auto" }} value={v} onChange={e => setV(e.target.value)} placeholder={ph} />
+    <div className="flex gap-2 justify-end mt-3"><button className="ma-btn" onClick={onClose}>إلغاء</button><button className="ma-btn pri" onClick={async () => { await onSave(v.trim()); onClose(); }}>حفظ</button></div>
+  </div></div>;
+}
+// عرض التعليق والرد تحت المهمة
+const AtCmView = ({ c }) => !c || (!c.m && !c.rp) ? null : <div style={{ marginTop: 6, display: "grid", gap: 4 }}>
+  {c.m && <div style={{ fontSize: 12.5, fontWeight: 800, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "5px 9px", color: "#1e3a8a" }}>💬 {c.by || "المدير"}: <span style={{ fontWeight: 700, color: "#1e293b" }}>{c.m}</span></div>}
+  {c.rp && <div style={{ fontSize: 12.5, fontWeight: 800, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "5px 9px", color: "#166534" }}>↩ رد الإداري: <span style={{ fontWeight: 700, color: "#1e293b" }}>{c.rp}</span></div>}
+</div>;
 const AT_ROLES = {
   sa: { l: "وكيل شؤون الطلاب", ic: "🧑‍💼", c: "#1d4ed8", bg: "#dbeafe" },
   ea: { l: "وكيل الشؤون التعليمية", ic: "📚", c: "#7c3aed", bg: "#ede9fe" },
@@ -44495,12 +44531,14 @@ function AtHomeBanner({ me, boss, onOpen }) {
 
 // ─── صفحة الإداري: مهامي
 function AtMyTasks({ me }) {
+  const [cm, setCm] = useState({}); const [rpEd, setRpEd] = useState(null); const [own, setOwn] = useState(null); const [ev, setEv] = useState(null);
   const [D, setD] = useState(null); const [log, setLog] = useState({}); const [dk, setDk] = useState(maKey(new Date())); const [why, setWhy] = useState(null); const [msg, setMsg] = useState(""); const [wk, setWk] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
-  const load = async () => { const [d, lg] = await Promise.all([maGet(AT_NODE), maGet(`${AT_LOG}/${dk}`)]); setD(ptObj(d)); setLog(ptObj(lg)); };
+  const load = async () => { const [d, lg, c] = await Promise.all([maGet(AT_NODE), maGet(`${AT_LOG}/${dk}`), maGet(`${AT_CM}/${dk}`)]); setD(ptObj(d)); setLog(ptObj(lg)); setCm(ptObj(c)); };
   useEffect(() => { load(); const t = setInterval(load, 45000); return () => clearInterval(t); }, [dk]);
   useEffect(() => { const W = asmWeek(maKey(new Date())); fbRange(AT_LOG, W[0], W[4]).then(x => setWk({ W, x: ptObj(x) })).catch(() => {}); }, [log]);
   const p = D ? atFindMe(D, me) : null;
+  useEffect(() => { if (!p) return; const W = asmWeek(maKey(new Date())), V = atWeekPrev(); Promise.all([maGet(`${AT_EV}/${W[0]}/${p.k}`), maGet(`${AT_EV}/${V[0]}/${p.k}`)]).then(([a, b]) => setEv({ cur: a, prev: b, W, V })); }, [p && p.k]);
   useEffect(() => { if (p) atSetSeen(me, Date.now()); }, [p && p.k]);
   if (!D) return <div className="p-10 text-center font-bold text-gray-400">⏳</div>;
   if (!p) return <div className="at-card text-center grid gap-2" dir="rtl"><div style={{ fontSize: 42 }}>📌</div><b style={{ fontSize: 16 }}>لست ضمن قائمة الإداريين المكلّفين بالمهام</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>يضيف مدير المدرسة اسمك من «المهام اليومية للإداريين ← الإداريون».</div></div>;
@@ -44513,9 +44551,12 @@ function AtMyTasks({ me }) {
     else { setLog(l => ({ ...l, [`${it.t.id}_${p.k}`]: r })); await maPut(`${AT_LOG}/${dk}/${it.t.id}_${p.k}`, r); }
     toast(st === "d" ? "✅ أحسنت — سُجّلت المهمة «تم التنفيذ» ووصل التنبيه للمدير" : st === "p" ? "⏸️ سُجّل «تأجّلت» مع السبب والموعد الجديد ووصل للمدير" : "📝 سُجّل «لم تُنفذ» مع السبب ووصل للمدير");
   };
+  const saveOwn = async () => { const t = (own.t || "").trim(); if (!t) { alert("اكتب عنوان المهمة"); return; } const id = atId(); const v = { id, t, d: (own.d || "").trim(), to: { [p.k]: 1 }, fq: own.fq, ...(own.fq === "o" ? { due: own.due || dk } : {}), ...(own.fq === "w" ? { wd: { [atWd(own.due || dk)]: 1 } } : {}), from: own.fq === "o" ? (own.due || dk) : dk, by: p.n, own: p.k, at: Date.now() }; await maPut(`${AT_NODE}/T/${id}`, v); setOwn(null); toast("✍️ أُضيفت المهمة إلى قائمتك ويراها المدير"); load(); };
+  const delOwn = async t => { if (!window.confirm("حذف هذه المهمة من قائمتك؟")) return; await maPut(`${AT_NODE}/T/${t.id}/off`, 1); load(); };
+  const saveRp = async (it, v) => { const k = `${it.t.id}_${p.k}`; const c = { ...ptObj(cm[k]), rp: v, rpat: Date.now() }; setCm(x => ({ ...x, [k]: c })); await maPut(`${AT_CM}/${dk}/${k}`, c); toast("↩ أُرسل ردّك للمدير"); };
   const undo = async it => { if (!window.confirm("إلغاء التأشير على هذه المهمة؟")) return; if (it.t.fq === "o") { await maPut(`${AT_NODE}/O/${it.t.id}/${p.k}`, null); } else await maPut(`${AT_LOG}/${dk}/${it.t.id}_${p.k}`, null); load(); };
   const D0 = maDate(dk);
-  return <div className="grid gap-3" dir="rtl"><style>{AT_CSS}</style>
+  return <div className="grid gap-3" dir="rtl"><style>{AT_CSS + ASM_CSS}</style>
     {msg && <div style={{ position: "fixed", top: 14, left: "50%", transform: "translateX(-50%)", zIndex: 900, background: "#0f172a", color: "#fff", borderRadius: 999, padding: "10px 18px", fontWeight: 900, fontSize: 13.5 }}>{msg}</div>}
     <div className="at-hero"><div style={{ position: "relative", zIndex: 1 }} className="grid gap-2">
       <div className="flex items-center gap-2 flex-wrap"><span className="at-chip" style={{ background: "rgba(255,255,255,.18)", color: "#fff" }}>{R.ic} {R.l}</span><b style={{ fontSize: 19 }}>{p.n}</b></div>
@@ -44528,17 +44569,30 @@ function AtMyTasks({ me }) {
       </div>
       {items.length > 0 && <div><div className="at-bar" style={{ background: "rgba(255,255,255,.22)" }}><i style={{ width: pc + "%" }} /></div><small style={{ fontWeight: 800 }}>أنجزت {maAr(dn)} من {maAr(items.length)} ({maAr(pc)}٪){nn ? ` • لم تُنفذ ${maAr(nn)}` : ""}</small></div>}
     </div></div>
+    <div className="flex gap-2 flex-wrap"><button className="ma-btn pri" onClick={() => setOwn({ t: "", d: "", fq: "o", due: dk })}>➕ أضف مهمة لنفسي</button></div>
     {ping.at && dk === today && <div className="at-card" style={{ borderColor: "#fecaca", background: "#fff7f7" }}><b style={{ color: "#b91c1c" }}>🔔 تذكير من {ping.by || "مدير المدرسة"}</b><div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 4 }}>{ping.m || "يرجى إنجاز المهام المتبقية والتأشير عليها"}</div><small style={{ color: "#94a3b8", fontWeight: 800 }}>{new Date(ping.at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</small></div>}
     {!items.length && <div className="at-card text-center" style={{ fontWeight: 900, color: "#64748b", padding: 26 }}>{maOff(dk) ? "🌙 لا دوام في هذا اليوم" : "🌟 لا توجد مهام مسندة إليك في هذا اليوم"}</div>}
     <div className="grid gap-2">{items.map(it => { const late = atLate(it, dk); const S = it.r ? AT_ST[it.r.st] : late ? AT_ST.late : AT_ST.w; return <div key={it.t.id} className="at-task" style={{ borderColor: S.c + "55", background: it.r ? S.bg + "77" : "#fff", borderRightWidth: 5, borderRightColor: S.c }}>
       <div className="tt"><b>{it.t.pr ? "🔴 " : ""}{it.t.t}</b>
         {it.t.d && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", whiteSpace: "pre-wrap" }}>{it.t.d}</div>}
-        <div className="flex gap-1 flex-wrap mt-1"><span className="at-chip" style={{ background: S.bg, color: S.c }}>{S.ic} {S.l}</span><span className="at-chip" style={{ background: "#f1f5f9", color: "#475569" }}>{AT_FQ[it.t.fq] || "يومية"}</span>{it.t.tm && <span className="at-chip" style={{ background: "#eef2ff", color: "#3730a3" }}>⏱ قبل {mlFmtT(it.t.tm)}</span>}{it.t.tg && <span className="at-chip" style={{ background: "#fdf4ff", color: "#a21caf" }}>🎯 المستهدف: {it.t.tg}</span>}{it.carry && <span className="at-chip" style={{ background: "#ffedd5", color: "#c2410c" }}>مُرحّلة من {asmHij(maDate(it.due), false)}</span>}</div>
+        <div className="flex gap-1 flex-wrap mt-1"><span className="at-chip" style={{ background: S.bg, color: S.c }}>{S.ic} {S.l}</span><span className="at-chip" style={{ background: "#f1f5f9", color: "#475569" }}>{AT_FQ[it.t.fq] || "يومية"}</span>{it.t.tm && <span className="at-chip" style={{ background: "#eef2ff", color: "#3730a3" }}>⏱ قبل {mlFmtT(it.t.tm)}</span>}{it.t.tg && <span className="at-chip" style={{ background: "#fdf4ff", color: "#a21caf" }}>🎯 المستهدف: {it.t.tg}</span>}{it.carry && <span className="at-chip" style={{ background: "#ffedd5", color: "#c2410c" }}>مُرحّلة من {asmHij(maDate(it.due), false)}</span>}{it.t.own && <span className="at-chip" style={{ background: "#f0fdfa", color: "#0f766e" }}>✍️ أضفتها بنفسي</span>}</div>
         {it.r && it.r.why && <small style={{ display: "block", marginTop: 4, color: it.r.st === "p" ? "#7c3aed" : "#b91c1c" }}>السبب: {it.r.why}{it.r.to ? ` • مؤجلة إلى ${asmHij(maDate(it.r.to))}` : ""}</small>}{it.r && it.r.note && <small style={{ display: "block", color: "#334155" }}>💬 {it.r.note}</small>}
+        <AtCmView c={cm[`${it.t.id}_${p.k}`]} />
+        <div className="flex gap-1 flex-wrap mt-1">{cm[`${it.t.id}_${p.k}`] && cm[`${it.t.id}_${p.k}`].m && <button className="ma-btn" style={{ height: 30, fontSize: 12 }} onClick={() => setRpEd(it)}>↩ {cm[`${it.t.id}_${p.k}`].rp ? "تعديل الرد" : "رد على المدير"}</button>}{it.t.own && <button className="ma-btn" style={{ height: 30, fontSize: 12, color: "#b91c1c" }} onClick={() => delOwn(it.t)}>🗑 حذف</button>}</div>
       </div>
       {canMark && <div className="at-bt">{!it.r ? <><button style={{ borderColor: "#86efac", color: "#15803d" }} onClick={() => mark(it, "d")}>✅ تم التنفيذ</button><button style={{ borderColor: "#c4b5fd", color: "#7c3aed" }} onClick={() => setWhy({ it, v: "", note: "", m: "p", to: maKey(new Date(Date.now() + 864e5)) })}>⏸️ تأجّلت</button><button style={{ borderColor: "#fecaca", color: "#b91c1c" }} onClick={() => setWhy({ it, v: "", note: "" })}>❌ لم تُنفذ</button></> : <button onClick={() => undo(it)}>↩ تعديل</button>}</div>}
     </div>; })}</div>
+    {ev && (ev.cur || ev.prev) && <div className="at-card" style={{ borderColor: "#fde68a", background: "linear-gradient(135deg,#fffbeb,#fff)" }}>{[["cur", "تقييم المدير لأسبوعك الحالي", ev.W], ["prev", "تقييم المدير للأسبوع الماضي", ev.V]].map(([k, l, W]) => { const e = ev[k]; if (!e || !e.s) return null; return <div key={k} style={{ marginBottom: 6 }}><div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14 }}>🏅 {l}</b><AtStars v={e.s} /><span className="at-chip" style={{ background: "#fef3c7", color: "#92400e" }}>{AT_EVL[e.s]}</span><small style={{ color: "#94a3b8", fontWeight: 800 }}>{asmHij(maDate(W[0]), false)} — {asmHij(maDate(W[4]), false)}</small></div>{e.note && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, color: "#334155" }}>💬 {e.note}</div>}</div>; })}</div>}
     {wk && <div className="at-card"><b style={{ fontSize: 14 }}>📅 أسبوعي</b><div className="asm-days" style={{ marginTop: 8 }}>{wk.W.map(k => { const its = atItems(D, k === dk ? log : ptObj(wk.x[k]), p.k, k); const d = its.filter(x => x.r && x.r.st === "d").length; return <div key={k} style={{ background: !its.length ? "#f8fafc" : d === its.length ? "#dcfce7" : k <= today ? "#fef3c7" : "#f8fafc", border: k === today ? "2px solid #1e3a8a" : "2px solid transparent" }}>{maDay(maDate(k))}<span>{its.length ? `${maAr(d)}/${maAr(its.length)}` : "·"}</span></div>; })}</div></div>}
+    {rpEd && <AtCmBox title={"↩ الرد على تعليق المدير — " + rpEd.t.t} sub={(cm[`${rpEd.t.id}_${p.k}`] || {}).m} init={(cm[`${rpEd.t.id}_${p.k}`] || {}).rp || ""} ph="اكتب ردّك أو ما تمّ…" onSave={v => saveRp(rpEd, v)} onClose={() => setRpEd(null)} />}
+    {own && <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setOwn(null)}><div style={{ width: "min(520px,100%)", background: "#fff", borderRadius: "24px 24px 0 0", padding: 16 }} onClick={e => e.stopPropagation()} dir="rtl">
+      <b style={{ fontSize: 16 }}>➕ مهمة أضيفها لنفسي</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>تظهر في قائمتك ويطّلع عليها المدير ضمن متابعة اليوم والتقرير الأسبوعي</div>
+      <input className="ma-inp" style={{ marginTop: 10 }} value={own.t} onChange={e => setOwn({ ...own, t: e.target.value })} placeholder="عنوان المهمة" autoFocus />
+      <textarea className="ma-inp" rows={2} style={{ marginTop: 8, height: "auto" }} value={own.d} onChange={e => setOwn({ ...own, d: e.target.value })} placeholder="تفاصيل (اختياري)" />
+      <div className="at-pick mt-2">{[["o", "مرة واحدة"], ["d", "يومية"], ["w", "أسبوعية"]].map(([k, l]) => <button key={k} className={own.fq === k ? "on" : ""} onClick={() => setOwn({ ...own, fq: k })}>{l}</button>)}</div>
+      {own.fq !== "d" && <label style={{ display: "block", marginTop: 8, fontSize: 13, fontWeight: 800 }}>{own.fq === "w" ? "📅 تتكرر في يوم" : "📅 موعد التنفيذ"}<input type="date" className="ma-inp" style={{ marginTop: 4 }} value={own.due || ""} onChange={e => setOwn({ ...own, due: e.target.value })} /></label>}
+      <div className="flex gap-2 justify-end mt-3"><button className="ma-btn" onClick={() => setOwn(null)}>إلغاء</button><button className="ma-btn pri" onClick={saveOwn}>حفظ</button></div>
+    </div></div>}
     {why && <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setWhy(null)}><div style={{ width: "min(520px,100%)", background: "#fff", borderRadius: "24px 24px 0 0", padding: 16 }} onClick={e => e.stopPropagation()} dir="rtl">
       <b style={{ fontSize: 16 }}>{why.m === "p" ? "⏸️ تأجّلت" : "❌ لم تُنفذ"} — {why.it.t.t}</b>
       {why.m === "p" && <label style={{ display: "block", marginTop: 8, fontSize: 13, fontWeight: 800 }}>📅 الموعد الجديد للتنفيذ<input type="date" className="ma-inp" style={{ marginTop: 4 }} value={why.to || ""} onChange={e => setWhy({ ...why, to: e.target.value })} /></label>}
@@ -44551,15 +44605,18 @@ function AtMyTasks({ me }) {
 
 // ─── صفحة المدير: إضافة المهام وإسنادها ومتابعتها
 function AdmTasksPage({ by = "مدير المدرسة", me = null }) {
+  const [cm, setCm] = useState({}); const [cmEd, setCmEd] = useState(null); const [ev, setEv] = useState({}); const [evEd, setEvEd] = useState({});
   const [D, setD] = useState(null); const [tab, setTab] = useState("day"); const [dk, setDk] = useState(maKey(new Date())); const [log, setLog] = useState({}); const [msg, setMsg] = useState("");
   const [ed, setEd] = useState(null); const [bank, setBank] = useState(null); const [rk, setRk] = useState("week"); const [rf, setRf] = useState(""); const [rt, setRt] = useState(maKey(new Date())); const [rep, setRep] = useState(null);
   const [addP, setAddP] = useState({ n: "", r: "sa", nid: "" }); const [imp, setImp] = useState(null); const [busy, setBusy] = useState(false); const [seen, setSeen] = useState(atGetSeen(me)); const [fl, setFl] = useState(""); const [q, setQ] = useState("");
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
-  const load = async () => { const [d, lg] = await Promise.all([maGet(AT_NODE), maGet(`${AT_LOG}/${dk}`)]); setD(ptObj(d)); setLog(ptObj(lg)); };
+  const load = async () => { const [d, lg, c] = await Promise.all([maGet(AT_NODE), maGet(`${AT_LOG}/${dk}`), maGet(`${AT_CM}/${dk}`)]); setD(ptObj(d)); setLog(ptObj(lg)); setCm(ptObj(c)); };
   useEffect(() => { load(); const t = setInterval(load, 40000); return () => clearInterval(t); }, [dk]);
   const range = () => { const now = new Date(); if (rk === "week") { const W = asmWeek(maKey(now)); return [W[0], W[4]]; } if (rk === "month") { const s0 = new Date(now); s0.setDate(now.getDate() - 29); return [maKey(s0), maKey(now)]; } return [rf, rt]; };
   const [F0, T0] = range();
-  useEffect(() => { if (tab !== "rep" || !F0 || !T0) return; setRep(null); fbRange(AT_LOG, F0, T0).then(x => setRep(ptObj(x))).catch(() => setRep({})); }, [tab, F0, T0]);
+  useEffect(() => { if (tab !== "rep" || !F0 || !T0) return; setRep(null); fbRange(AT_LOG, F0, T0).then(x => setRep(ptObj(x))).catch(() => setRep({})); if (rk === "week") maGet(`${AT_EV}/${F0}`).then(x => { setEv(ptObj(x)); setEvEd({}); }); }, [tab, F0, T0]);
+  const saveEv = async pk => { const e = { ...ptObj(ev[pk]), ...ptObj(evEd[pk]) }; if (!e.s) { alert("اختر عدد النجوم"); return; } const v = { s: e.s, note: (e.note || "").trim(), by, at: Date.now() }; const ok = await maPut(`${AT_EV}/${F0}/${pk}`, v); if (ok) { setEv(x => ({ ...x, [pk]: v })); setEvEd(x => { const n = { ...x }; delete n[pk]; return n; }); toast("🏅 حُفظ التقييم ويظهر للإداري"); } };
+  const saveCm = async (pk, x, v) => { const k = `${x.t.id}_${pk}`; const c = { ...ptObj(cm[k]), m: v, by, at: Date.now() }; if (!v) { delete c.m; } setCm(o => ({ ...o, [k]: c })); await maPut(`${AT_CM}/${dk}/${k}`, c); toast("💬 وصل تعليقك للإداري"); };
   if (!D) return <div className="p-10 text-center font-bold text-gray-400">⏳</div>;
   const P = atPeople(D); const TK = atTasks(D); const today = maKey(new Date()); const D0 = maDate(dk);
   const save = async (path, v) => { const ok = await maPut(`${AT_NODE}/${path}`, v); if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok; };
@@ -44608,7 +44665,7 @@ function AdmTasksPage({ by = "مدير المدرسة", me = null }) {
     return P.map(p => { const c = { tot: 0, dn: 0, nn: 0, w: 0 }; const miss = []; const byT = {}; days.forEach(k => atItems(D, k === dk ? log : ptObj(rep[k]), p.k, k).forEach(x => { if (x.carry) return; c.tot++; const bt = byT[x.t.id] || (byT[x.t.id] = { t: x.t, tot: 0, dn: 0 }); bt.tot++; if (x.r && x.r.st === "d") { c.dn++; bt.dn++; } else if (x.r) { c.nn++; miss.push({ k, x }); } else { c.w++; if (k < today) miss.push({ k, x }); } })); return { p, c, miss, byT: Object.values(byT), pc: c.tot ? Math.round(c.dn / c.tot * 100) : 0 }; }); };
   const pcC = p => p >= 90 ? "#15803d" : p >= 75 ? "#0f766e" : p >= 50 ? "#b45309" : "#b91c1c";
   const printRep = rows => inOpen(`<section class="pg">${inHdr("تقرير تنفيذ المهام اليومية للإداريين", `من ${asmHij(maDate(F0))}<br>إلى ${asmHij(maDate(T0))}`)}
-    <table><thead><tr><th>م</th><th class="r">الإداري</th><th>الصفة</th><th>المهام</th><th>✅ نُفّذت</th><th>❌ لم تُنفذ</th><th>⏳ لم يُؤشَّر</th><th>نسبة الإنجاز</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(r.p.n)}</b></td><td>${(AT_ROLES[r.p.r] || AT_ROLES.ot).l}</td><td>${maAr(r.c.tot)}</td><td>${maAr(r.c.dn)}</td><td style="color:#b91c1c;font-weight:900">${maAr(r.c.nn)}</td><td>${maAr(r.c.w)}</td><td style="font-weight:900;color:${pcC(r.pc)}">${maAr(r.pc)}٪</td></tr>`).join("")}</tbody></table>
+    <table><thead><tr><th>م</th><th class="r">الإداري</th><th>الصفة</th><th>المهام</th><th>✅ نُفّذت</th><th>❌ لم تُنفذ</th><th>⏳ لم يُؤشَّر</th><th>نسبة الإنجاز</th>${rk === "week" ? "<th>التقييم</th><th class=\"r\">ملاحظة المدير</th>" : ""}</tr></thead><tbody>${rows.map((r, i) => { const e = ptObj(ev[r.p.k]); return `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(r.p.n)}</b></td><td>${(AT_ROLES[r.p.r] || AT_ROLES.ot).l}</td><td>${maAr(r.c.tot)}</td><td>${maAr(r.c.dn)}</td><td style="color:#b91c1c;font-weight:900">${maAr(r.c.nn)}</td><td>${maAr(r.c.w)}</td><td style="font-weight:900;color:${pcC(r.pc)}">${maAr(r.pc)}٪</td>${rk === "week" ? `<td style="color:#b8860b;font-weight:900;white-space:nowrap">${e.s ? "★".repeat(e.s) + "☆".repeat(5 - e.s) + "<br>" + AT_EVL[e.s] : "—"}</td><td class="r">${ptEsc(e.note || "")}</td>` : ""}</tr>`; }).join("")}</tbody></table>
     ${rows.filter(r => r.miss.length).map(r => `<h3 style="margin:10px 0 4px;font-size:13.5px">${ptEsc(r.p.n)} — المهام غير المنفذة</h3><table><thead><tr><th>اليوم</th><th class="r">المهمة</th><th class="r">السبب</th></tr></thead><tbody>${r.miss.map(m => `<tr><td>${maDay(maDate(m.k))} ${asmHij(maDate(m.k), false)}</td><td class="r">${ptEsc(m.x.t.t)}</td><td class="r">${ptEsc(m.x.r ? [m.x.r.why, m.x.r.note].filter(Boolean).join(" — ") : "لم يُؤشَّر عليها")}</td></tr>`).join("")}</tbody></table>`).join("")}${sig}</section>`, "تقرير مهام الإداريين", ASM_PCSS);
 
   const TaskTo = ({ t }) => <span className="flex gap-1 flex-wrap">{atTo(t).map(k => { const p = ptObj(D.P)[k]; if (!p) return null; const R = AT_ROLES[p.r] || AT_ROLES.ot; return <span key={k} className="at-chip" style={{ background: R.bg, color: R.c }}>{R.ic} {p.n.split(" ").slice(0, 2).join(" ")}</span>; })}</span>;
@@ -44618,6 +44675,7 @@ function AdmTasksPage({ by = "مدير المدرسة", me = null }) {
 
   const shownT = TK.filter(t => !t.off && (!fl || ptObj(t.to)[fl]) && (!q || cvNorm(t.t).includes(cvNorm(q))));
   return <div className="grid gap-3" dir="rtl"><style>{AT_CSS + ASM_CSS}</style>
+    {cmEd && <AtCmBox title={"💬 تعليق على: " + cmEd.x.t.t} sub={cmEd.p.n + ((cm[`${cmEd.x.t.id}_${cmEd.p.k}`] || {}).rp ? " • ردّه: " + cm[`${cmEd.x.t.id}_${cmEd.p.k}`].rp : "")} init={(cm[`${cmEd.x.t.id}_${cmEd.p.k}`] || {}).m || ""} ph="اكتب توجيهك أو ملاحظتك على هذه المهمة…" onSave={v => saveCm(cmEd.p.k, cmEd.x, v)} onClose={() => setCmEd(null)} />}
     {msg && <div style={{ position: "fixed", top: 14, left: "50%", transform: "translateX(-50%)", zIndex: 900, background: "#0f172a", color: "#fff", borderRadius: 999, padding: "10px 18px", fontWeight: 900, fontSize: 13.5 }}>{msg}</div>}
     <div className="at-hero"><div style={{ position: "relative", zIndex: 1 }} className="grid gap-2">
       <b style={{ fontSize: 20 }}>📌 المهام اليومية للإداريين</b>
@@ -44641,7 +44699,7 @@ function AdmTasksPage({ by = "مدير المدرسة", me = null }) {
         <div className="flex items-center gap-2 flex-wrap"><span style={{ fontSize: 24 }}>{R.ic}</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 15 }}>{r.p.n}</b><div style={{ fontSize: 12, fontWeight: 800, color: R.c }}>{R.l}</div></div><b style={{ fontSize: 20, color: pcC(r.pc) }}>{r.it.length ? maAr(r.pc) + "٪" : "—"}</b></div>
         {r.it.length > 0 && <div className="at-bar"><i style={{ width: r.pc + "%" }} /></div>}
         <div className="flex gap-1 flex-wrap"><span className="at-chip" style={{ background: "#dcfce7", color: "#15803d" }}>✅ {maAr(r.dn)}</span><span className="at-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>❌ {maAr(r.nn)}</span>{r.pn > 0 && <span className="at-chip" style={{ background: "#ede9fe", color: "#7c3aed" }}>⏸️ {maAr(r.pn)}</span>}<span className="at-chip" style={{ background: "#fef3c7", color: "#b45309" }}>⏳ {maAr(r.w)}</span>{r.lt > 0 && <span className="at-chip" style={{ background: "#ffedd5", color: "#c2410c" }}>⏰ متأخرة {maAr(r.lt)}</span>}</div>
-        <div className="grid gap-1">{r.it.map(x => { const S = x.r ? AT_ST[x.r.st] : atLate(x, dk) ? AT_ST.late : AT_ST.w; return <div key={x.t.id} style={{ fontSize: 13, fontWeight: 800, padding: "6px 9px", borderRadius: 12, background: S.bg + "88", borderRight: `4px solid ${S.c}` }}><span style={{ color: S.c }}>{S.ic}</span> {x.t.pr ? "🔴 " : ""}{x.t.t}{x.t.tg ? <small style={{ color: "#a21caf" }}> 🎯 {x.t.tg}</small> : null}{x.carry ? <small style={{ color: "#c2410c" }}> (مُرحّلة)</small> : null}{x.r && (x.r.why || x.r.note) && <div style={{ fontSize: 12, color: x.r.st === "n" ? "#b91c1c" : "#334155", fontWeight: 700 }}>{[x.r.why, x.r.note].filter(Boolean).join(" — ")}</div>}</div>; })}{!r.it.length && <div style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 800 }}>لا مهام في هذا اليوم</div>}</div>
+        <div className="grid gap-1">{r.it.map(x => { const S = x.r ? AT_ST[x.r.st] : atLate(x, dk) ? AT_ST.late : AT_ST.w; return <div key={x.t.id} style={{ fontSize: 13, fontWeight: 800, padding: "6px 9px", borderRadius: 12, background: S.bg + "88", borderRight: `4px solid ${S.c}` }}><span style={{ color: S.c }}>{S.ic}</span> {x.t.pr ? "🔴 " : ""}{x.t.t}{x.t.tg ? <small style={{ color: "#a21caf" }}> 🎯 {x.t.tg}</small> : null}{x.carry ? <small style={{ color: "#c2410c" }}> (مُرحّلة)</small> : null}{x.t.own ? <small style={{ color: "#0f766e" }}> ✍️ أضافها بنفسه</small> : null}<button title="تعليق" onClick={() => setCmEd({ p: r.p, x })} style={{ float: "left", border: 0, background: "none", cursor: "pointer", fontSize: 14 }}>💬</button>{x.r && (x.r.why || x.r.note) && <div style={{ fontSize: 12, color: x.r.st === "n" ? "#b91c1c" : "#334155", fontWeight: 700 }}>{[x.r.why, x.r.note].filter(Boolean).join(" — ")}</div>}<AtCmView c={cm[`${x.t.id}_${r.p.k}`]} /></div>; })}{!r.it.length && <div style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 800 }}>لا مهام في هذا اليوم</div>}</div>
         {dk === today && r.w > 0 && <button className="ma-btn" style={{ justifySelf: "start" }} onClick={() => ping(r.p, `متبقٍ ${r.w} مهمة لم يُؤشَّر عليها اليوم`)}>🔔 تذكير</button>}
       </div>; })}</div>
     </>}
@@ -44689,6 +44747,10 @@ function AdmTasksPage({ by = "مدير المدرسة", me = null }) {
           <div className="at-bar"><i style={{ width: r.pc + "%" }} /></div>
           <div className="flex gap-1 flex-wrap"><span className="at-chip" style={{ background: "#eef2ff", color: "#3730a3" }}>المهام {maAr(r.c.tot)}</span><span className="at-chip" style={{ background: "#dcfce7", color: "#15803d" }}>✅ {maAr(r.c.dn)}</span><span className="at-chip" style={{ background: "#fee2e2", color: "#b91c1c" }}>❌ {maAr(r.c.nn)}</span><span className="at-chip" style={{ background: "#fef3c7", color: "#b45309" }}>⏳ لم يُؤشَّر {maAr(r.c.w)}</span></div>
           {r.byT.length > 0 && <details><summary style={{ cursor: "pointer", fontWeight: 900, fontSize: 13 }}>نسبة إنجاز كل مهمة</summary><div className="grid gap-1 mt-2">{r.byT.sort((a, b) => a.dn / a.tot - b.dn / b.tot).map(b => { const pc = Math.round(b.dn / b.tot * 100); return <div key={b.t.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr) auto", gap: 8, alignItems: "center", fontSize: 12.5, fontWeight: 800 }}><span>{b.t.t}</span><div className="at-bar"><i style={{ width: pc + "%" }} /></div><b style={{ color: pcC(pc) }}>{maAr(b.dn)}/{maAr(b.tot)}</b></div>; })}</div></details>}
+          {rk === "week" && (() => { const e = { ...ptObj(ev[r.p.k]), ...ptObj(evEd[r.p.k]) }; const dirty = !!evEd[r.p.k]; return <div style={{ background: "#fffbeb", border: "1.5px solid #fde68a", borderRadius: 14, padding: "8px 10px" }} className="grid gap-2">
+            <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 13.5 }}>🏅 تقييم الأسبوع</b><AtStars v={e.s || 0} set={v => setEvEd(x => ({ ...x, [r.p.k]: { ...ptObj(x[r.p.k]), s: v } }))} />{e.s ? <span className="at-chip" style={{ background: "#fef3c7", color: "#92400e" }}>{AT_EVL[e.s]}</span> : <small style={{ color: "#94a3b8", fontWeight: 800 }}>لم يُقيَّم بعد • مقترح حسب الإنجاز: {AT_EVL[r.pc >= 90 ? 5 : r.pc >= 80 ? 4 : r.pc >= 65 ? 3 : r.pc >= 50 ? 2 : 1]}</small>}</div>
+            <div className="flex gap-2 flex-wrap"><input className="ma-inp" style={{ flex: "1 1 220px", height: 38 }} value={e.note || ""} onChange={ev2 => setEvEd(x => ({ ...x, [r.p.k]: { ...ptObj(x[r.p.k]), s: e.s, note: ev2.target.value } }))} placeholder="ملاحظة المدير على أداء الأسبوع…" /><button className="ma-btn pri" disabled={!dirty} onClick={() => saveEv(r.p.k)}>حفظ التقييم</button></div>
+          </div>; })()}
           {r.miss.length > 0 && <details><summary style={{ cursor: "pointer", fontWeight: 900, fontSize: 13, color: "#b91c1c" }}>المهام غير المنفذة وأسبابها ({maAr(r.miss.length)})</summary><div className="grid gap-1 mt-2">{r.miss.map((m, i) => <div key={i} style={{ fontSize: 12.5, fontWeight: 800, padding: "5px 9px", borderRadius: 10, background: "#fff7f7", borderRight: "4px solid #fca5a5" }}>{maDay(maDate(m.k))} {asmHij(maDate(m.k), false)} • {m.x.t.t} — <span style={{ color: "#b91c1c" }}>{m.x.r ? [m.x.r.why, m.x.r.note].filter(Boolean).join(" — ") : "لم يُؤشَّر عليها"}</span></div>)}</div></details>}
         </div>; })}</>; })()}
     </div>}
@@ -50225,7 +50287,8 @@ function SchoolWebsiteInner() {
   const [activities, setActivities] = useState(DEFAULT_ACTIVITIES);
   const [classList, setClassList] = useState([]);
   const [users] = useState(DEFAULT_USERS);
-  const [siteFont, setSiteFont] = useState("'Noto Naskh Arabic', serif");
+  const [siteFont, setSiteFont] = useState(() => { try { return localStorage.getItem("site-font") || SITE_FONT0; } catch { return SITE_FONT0; } });
+  useEffect(() => { siteFontApply(siteFont); }, [siteFont]);
   const [messages, setMessages] = useState([]);
   const [surveys, setSurveys] = useState([]);
   const [weekArchive, setWeekArchive] = useState([]);
