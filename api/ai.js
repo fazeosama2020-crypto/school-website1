@@ -33,12 +33,12 @@ module.exports = async function handler(req, res) {
     if (!who) return res.status(401).json({ ok: false, msg: "الحساب غير مسجّل في المدرسة" });
     const C = cfg || {};
     if (C.off) return res.status(200).json({ ok: false, code: "off", msg: "أوقفت الإدارة خدمة الذكاء الاصطناعي مؤقتًا" });
-    const daily = +C.daily > 0 ? +C.daily : 8, monthly = +C.monthly > 0 ? +C.monthly : 600;
+    const daily = +C.daily > 0 ? +C.daily : 8, monthly = +C.monthly > 0 ? +C.monthly : 1200;
     const now = ksa(), day = now.slice(0, 10), mon = now.slice(0, 7), hk = hash.slice(0, 16);
     if (b.kind === "ping") { const [u, m] = await Promise.all([fbGet(`school-sl-use/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]); return res.status(200).json({ ok: true, name: who.name, left: Math.max(0, daily - (+u || 0)), daily, mUsed: +m || 0, monthly }); }
     // ② الحدود
     // الرسوم التوضيحية لها عدّاد يومي مستقل حتى لا تُنقص تحليلات المعلم
-    const UN = b.kind === "vis" ? "school-sl-usev" : "school-sl-use";
+    const UN = b.kind === "vis" ? "school-sl-usev" : b.kind === "b" ? "school-sl-useb" : "school-sl-use";
     const [used, mUsed] = await Promise.all([fbGet(`${UN}/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]);
     if ((+used || 0) >= daily) return res.status(200).json({ ok: false, code: "daily", msg: `استنفدت حدّك اليومي (${daily} تحليلات) — يتجدد غدًا. يمكنك الاستفادة من بنك الدروس دون حدود.` });
     if ((+mUsed || 0) >= monthly) return res.status(200).json({ ok: false, code: "monthly", msg: "بلغت المدرسة السقف الشهري للتحليلات — راجع الإدارة" });
