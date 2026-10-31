@@ -11,8 +11,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import MATH3 from "./math3.js";
 import { visSVG, VIS_SCHEMA, visPrompt, VIS_NAMES, VFONT } from "./visuals.js";
-// خطوط ودودة للطلاب: «بالو بهيجان» للعناوين والعرض، و«تجوّل» للنصوص
-if (typeof document !== "undefined" && !document.getElementById("sl-fonts")) { const l = document.createElement("link"); l.id = "sl-fonts"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;600;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap"; document.head.appendChild(l); }
+// خطوط رسمية أنيقة: «نوتو كوفي» للعناوين والعرض، و«آي بي إم بلكس» للنصوص
+if (typeof document !== "undefined" && !document.getElementById("sl-fonts")) { const l = document.createElement("link"); l.id = "sl-fonts"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"; document.head.appendChild(l); }
 
 const SL_MY = "school-sl-my", SL_BANK = "school-sl-bank", SL_CFG = "school-sl-cfg", SL_USEM = "school-sl-usem", SL_LOG = "school-sl-log", SL_USE = "school-sl-use";
 const IDX = { [`رياضيات|الثالث المتوسط|الفصل الدراسي الأول`]: MATH3 };
@@ -42,7 +42,8 @@ const shrink = file => new Promise((res, rej) => {
 });
 
 // ── صياغة الطلب
-function buildPrompt({ subj, grade, term, L, chap, title, note, nImg }) {
+// يُقسَّم الطلب إلى جزأين يعملان بالتوازي: (أ) الأهداف والمحتوى، (ب) خطة الحصة والتقويم — أسرع ولا تنقطع الإجابة
+function buildPrompt({ subj, grade, term, L, chap, title, note, nImg, part = "a" }) {
   const nf = grade === "الثالث المتوسط" && NAFES_SUBJ[subj];
   const ref = L ? `\nمرجع الدرس من دليل المعلم الرسمي (التزم به):\n- الفصل: ${chap}\n- عنوان الدرس: ${L.t}\n- فيما سبق: ${L.prior}\n- أهداف الدرس في الكتاب (والآن): ${L.obj.join(" • ")}\n- المفردات: ${(L.vocab || []).join("، ") || "—"}\n- فقرة «لماذا؟» في الكتاب: ${L.why}\n- ما بعد الدرس: ${L.next || "—"}` : `\nلا يتوفر فهرس رسمي لهذا الدرس؛ استنتج الأهداف من ${nImg ? "صور صفحات الكتاب المرفقة" : "عنوان الدرس"} وفق وثيقة منهج المادة للمرحلة المتوسطة في المملكة، واذكر في الحقل src أنها مستنتجة.`;
   return `حلّل درسًا لمعلم سعودي وأعدّ له مادة تدريس متميزة.
@@ -51,20 +52,21 @@ ${title ? "عنوان الدرس كما كتبه المعلم: " + title : ""}${
 ${nImg ? `مرفق ${nImg} صورة لصفحات الدرس من كتاب الطالب: اعتمد على محتواها وأمثلتها.` : ""}
 ${note ? "ملاحظة المعلم: " + note : ""}
 المطلوب: أخرج JSON واحدًا فقط بلا أي نص قبله أو بعده، بالمفاتيح الآتية وبالعربية، موجزًا (كل نص لا يتجاوز ٢٥ كلمة). لا تستعمل علامة التنصيص " داخل النصوص إطلاقًا، واستعمل «» بدلًا منها:
-{
+${part === "b" ? `{
+"flow":[{"ph":"تهيئة|استكشاف|شرح|تطبيق موجّه|تقويم ختامي","min":عدد الدقائق,"tch":"دور المعلم","stu":"نشاط الطالب"}] (٥ مراحل مجموع دقائقها ٤٥),
+"strat":["اسم استراتيجية: سبب اختيارها لهذا الدرس"] (٣),
+"exit":[{"q":"سؤال بطاقة الخروج","a":"الإجابة"}] (٣ أسئلة قصيرة متدرجة من محتوى الدرس),
+"diff":{"low":"دعم الطلاب المتعثرين","high":"إثراء للمتميزين"},
+"values":"قيمة أو ربط برؤية المملكة ٢٠٣٠ بلا تكلّف"${nf ? `,\n"nafes":"المهارة أو المجال المرتبط بالدرس في اختبارات نافس (${nf}) وكيف يُدرَّب عليه"` : ""}
+}` : `{
 "title":"عنوان الدرس","unit":"الفصل/الوحدة","big":"الفكرة الكبرى للدرس في جملة واحدة ملهمة","src":"${L ? "دليل المعلم" : "مستنتج من الكتاب"}",
 "obj":[{"t":"أن + فعل سلوكي قابل للقياس + المحتوى (مثل: أن يحلّ الطالب…)","b":"أحد: تذكر|فهم|تطبيق|تحليل|تقويم|إبداع","d":"معرفي|مهاري|وجداني"}] (٤–٦ أهداف متدرجة تشمل أهداف الكتاب وتصل إلى المستويات العليا، وهدف وجداني واحد),
 "prior":["متطلب سابق"] (٢–٣),
 "vocab":[{"w":"المصطلح","d":"تعريف مختصر دقيق"}],
 "hook":{"t":"عنوان جذاب","text":"تهيئة مثيرة لدقيقتين من واقع الطالب","q":"سؤال يفتح النقاش"},
 "life":[{"t":"عنوان قصير","text":"موقف حقيقي من الحياة في المملكة يظهر فيه مفهوم الدرس","q":"سؤال للطالب على الموقف"}] (٣ مواقف متنوعة),
-"hots":[{"s":"تحليل|تقويم|إبداع|تفكير ناقد|حل مشكلات|استدلال","q":"سؤال تفكير عليا مرتبط بمحتوى الدرس نفسه","a":"إجابة نموذجية أو مؤشر للإجابة"}] (٥ أسئلة بمهارات مختلفة),
-"flow":[{"ph":"تهيئة|استكشاف|شرح|تطبيق موجّه|تقويم ختامي","min":عدد الدقائق,"tch":"دور المعلم","stu":"نشاط الطالب"}] (مجموع الدقائق ٤٥),
-"strat":["اسم استراتيجية: سبب اختيارها لهذا الدرس"] (٣),
-"exit":[{"q":"سؤال بطاقة الخروج","a":"الإجابة"}] (٣ أسئلة قصيرة متدرجة),
-"diff":{"low":"دعم الطلاب المتعثرين","high":"إثراء للمتميزين"},
-"values":"قيمة أو ربط برؤية المملكة ٢٠٣٠ بلا تكلّف"${nf ? `,\n"nafes":"المهارة أو المجال المرتبط بالدرس في اختبارات نافس (${nf}) وكيف يُدرَّب عليه"` : ""}
-}`;
+"hots":[{"s":"تحليل|تقويم|إبداع|تفكير ناقد|حل مشكلات|استدلال","q":"سؤال تفكير عليا مرتبط بمحتوى الدرس نفسه","a":"إجابة نموذجية أو مؤشر للإجابة"}] (٥ أسئلة بمهارات مختلفة)
+}`}`;
 }
 // قالب البيانات المطلوب (يُرسل للخادم فيُلزم الذكاء بإخراج JSON سليم)
 const S_ = { type: "string" }, SA = { type: "array", items: S_ };
@@ -72,9 +74,12 @@ const OA = p => ({ type: "array", items: { type: "object", properties: Object.fr
 const SCHEMA = { type: "object", properties: {
   title: S_, unit: S_, big: S_, src: S_, obj: OA(["t", "b", "d"]), prior: SA, vocab: OA(["w", "d"]),
   hook: { type: "object", properties: { t: S_, text: S_, q: S_ }, required: ["t", "text", "q"] },
-  life: OA(["t", "text", "q"]), hots: OA(["s", "q", "a"]), flow: OA(["ph", "min", "tch", "stu"]), strat: SA, exit: OA(["q", "a"]),
+  life: OA(["t", "text", "q"]), hots: OA(["s", "q", "a"]) },
+  required: ["title", "unit", "big", "obj", "prior", "vocab", "hook", "life", "hots"] };
+const SCHEMA_B = { type: "object", properties: {
+  flow: OA(["ph", "min", "tch", "stu"]), strat: SA, exit: OA(["q", "a"]),
   diff: { type: "object", properties: { low: S_, high: S_ }, required: ["low", "high"] }, values: S_, nafes: S_ },
-  required: ["title", "unit", "big", "obj", "prior", "vocab", "hook", "life", "hots", "flow", "strat", "exit", "diff", "values"] };
+  required: ["flow", "strat", "exit", "diff", "values"] };
 // إصلاح ردود JSON المعيبة: علامات تنصيص غير مهرّبة داخل النصوص، أسطر جديدة، فواصل زائدة، رد مقطوع
 function repairJSON(t) {
   let o = "", inS = false, key = false, st = [];
@@ -128,7 +133,7 @@ async function callAI({ me, api, prompt, images, tag, onText, schema = SCHEMA, k
 }
 
 const CSS = `
-.sl{font-family:'Tajawal',Cairo,Tahoma,sans-serif;color:#0f172a;--ink:#0b1b3a;--gold:#c9a227;--teal:#0f766e}
+.sl{font-family:'IBM Plex Sans Arabic',Cairo,Tahoma,sans-serif;color:#0f172a;--ink:#0b1b3a;--gold:#c9a227;--teal:#0f766e}
 .sl *{box-sizing:border-box}
 .sl-hero{position:relative;overflow:hidden;border-radius:26px;padding:22px 24px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,#1e3a8a 0%,#0b1b3a 55%,#062a2a 100%);box-shadow:0 24px 50px -30px #0b1b3a}
 .sl-hero h2{margin:0;font-size:27px;font-weight:800;font-family:${VFONT}}.sl-h,.sl-top h1,.slp-t,.slp-k,.sl-vis b{font-family:${VFONT}!important}.sl-hero p{margin:6px 0 0;font-size:13.5px;font-weight:700;opacity:.85;line-height:1.9}
@@ -138,16 +143,16 @@ const CSS = `
 .sl-card{background:#fff;border:1px solid #e8edf4;border-radius:22px;padding:16px 18px;box-shadow:0 10px 30px -26px #0b1b3a}
 .sl-h{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:16px;font-weight:900;color:var(--ink)}.sl-h::after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradient(90deg,#e2e8f0,transparent)}
 .sl-h i{font-style:normal;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--c,#1e3a8a),var(--c2,#0f766e));color:#fff;font-size:17px;box-shadow:0 8px 16px -10px var(--c,#1e3a8a)}
-.sl-tabs{display:flex;gap:8px;flex-wrap:wrap}.sl-tab{border:2px solid #e2e8f0;background:#fff;border-radius:999px;padding:7px 16px;font:800 13px Cairo,Tahoma;color:#475569;cursor:pointer}.sl-tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
-.sl-sel{display:flex;gap:8px;flex-wrap:wrap}.sl-chip{border:2px solid #e2e8f0;background:#fff;border-radius:14px;padding:8px 14px;font:800 13.5px Cairo,Tahoma;color:#334155;cursor:pointer;transition:.15s}.sl-chip:hover{border-color:#94a3b8}.sl-chip.on{border-color:#1e3a8a;background:#eef2ff;color:#1e3a8a;box-shadow:0 6px 14px -10px #1e3a8a}
+.sl-tabs{display:flex;gap:8px;flex-wrap:wrap}.sl-tab{border:2px solid #e2e8f0;background:#fff;border-radius:999px;padding:7px 16px;font:700 13px 'IBM Plex Sans Arabic',Cairo,Tahoma;color:#475569;cursor:pointer}.sl-tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.sl-sel{display:flex;gap:8px;flex-wrap:wrap}.sl-chip{border:2px solid #e2e8f0;background:#fff;border-radius:14px;padding:8px 14px;font:800 13.5px 'IBM Plex Sans Arabic',Cairo,Tahoma;color:#334155;cursor:pointer;transition:.15s}.sl-chip:hover{border-color:#94a3b8}.sl-chip.on{border-color:#1e3a8a;background:#eef2ff;color:#1e3a8a;box-shadow:0 6px 14px -10px #1e3a8a}
 .sl-chip small{display:block;font-size:10.5px;color:#16a34a;font-weight:900}
-.sl-b{border:0;border-radius:14px;padding:10px 18px;font:900 14px Cairo,Tahoma;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s}.sl-b:disabled{opacity:.5;cursor:not-allowed}
+.sl-b{border:0;border-radius:14px;padding:10px 18px;font:900 14px 'IBM Plex Sans Arabic',Cairo,Tahoma;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s}.sl-b:disabled{opacity:.5;cursor:not-allowed}
 .sl-b.pri{background:linear-gradient(135deg,#1e3a8a,#0f766e);color:#fff;box-shadow:0 12px 24px -14px #1e3a8a}.sl-b.pri:hover:not(:disabled){transform:translateY(-1px)}
 .sl-b.gold{background:linear-gradient(135deg,#c9a227,#a16207);color:#fff}.sl-b.gh{background:#f1f5f9;color:#334155}.sl-b.red{background:#fee2e2;color:#b91c1c}.sl-b.sm{padding:6px 12px;font-size:12.5px;border-radius:11px}
-.sl-in{width:100%;border:2px solid #e2e8f0;border-radius:12px;padding:9px 12px;font:700 14px Cairo,Tahoma;outline:none;background:#fff}.sl-in:focus{border-color:#1e3a8a}
+.sl-in{width:100%;border:2px solid #e2e8f0;border-radius:12px;padding:9px 12px;font:700 14px 'IBM Plex Sans Arabic',Cairo,Tahoma;outline:none;background:#fff}.sl-in:focus{border-color:#1e3a8a}
 .sl-ch{margin-bottom:12px}.sl-ch>b{display:block;font-size:13px;color:#64748b;font-weight:900;margin:6px 2px}
 .sl-ls{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
-.sl-l{position:relative;text-align:right;border:2px solid #eef2f6;background:#fff;border-radius:14px;padding:10px 12px;cursor:pointer;font:800 13.5px Cairo,Tahoma;color:#1e293b;line-height:1.6}.sl-l:hover{border-color:#94a3b8}.sl-l.on{border-color:#0f766e;background:#f0fdfa}
+.sl-l{position:relative;text-align:right;border:2px solid #eef2f6;background:#fff;border-radius:14px;padding:10px 12px;cursor:pointer;font:800 13.5px 'IBM Plex Sans Arabic',Cairo,Tahoma;color:#1e293b;line-height:1.6}.sl-l:hover{border-color:#94a3b8}.sl-l.on{border-color:#0f766e;background:#f0fdfa}
 .sl-l u{text-decoration:none;display:inline-block;min-width:34px;text-align:center;border-radius:8px;background:#0b1b3a;color:#fff;font-size:11.5px;padding:1px 6px;margin-left:6px}.sl-l .bk{position:absolute;left:8px;top:-8px;background:#c9a227;color:#fff;border-radius:999px;font-size:10.5px;padding:1px 8px}
 .sl-drop{border:2.5px dashed #cbd5e1;border-radius:18px;padding:16px;text-align:center;background:#f8fafc;cursor:pointer;font-weight:800;color:#475569}
 .sl-th{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.sl-th div{position:relative}.sl-th img{width:86px;height:110px;object-fit:cover;border-radius:10px;border:2px solid #e2e8f0}.sl-th button{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;border:0;background:#dc2626;color:#fff;font-weight:900;cursor:pointer}
@@ -175,7 +180,7 @@ const CSS = `
 .sl-fi b{font-size:14px}.sl-fi .m{float:left;background:#0b1b3a;color:#fff;border-radius:999px;font-size:11.5px;font-weight:900;padding:1px 9px}.sl-fi div{font-size:13px;font-weight:700;line-height:1.8;color:#334155;margin-top:4px}
 .sl-ex{display:grid;gap:8px}.sl-ex div{border-radius:14px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;font-size:13.5px;font-weight:800;line-height:1.8}
 .sl-act{position:sticky;bottom:10px;z-index:5;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:#ffffffe6;backdrop-filter:blur(8px);border:1px solid #e2e8f0;border-radius:18px;padding:10px;box-shadow:0 14px 30px -20px #0b1b3a}
-.sl-e{width:100%;border:1.5px solid #93c5fd;border-radius:10px;padding:6px 9px;font:700 13.5px Cairo,Tahoma;background:#eff6ff;resize:vertical}
+.sl-e{width:100%;border:1.5px solid #93c5fd;border-radius:10px;padding:6px 9px;font:700 13.5px 'IBM Plex Sans Arabic',Cairo,Tahoma;background:#eff6ff;resize:vertical}
 .sl-msg{border-radius:14px;padding:10px 14px;font-weight:800;font-size:13.5px}
 .sl-bank{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-radius:16px;padding:12px 14px;background:linear-gradient(135deg,#fffbeb,#fef9c3);border:1.5px solid #facc15;font-weight:800;font-size:13.5px;color:#713f12}
 .sl-my{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}.sl-my button.c{text-align:right;border:1px solid #e2e8f0;background:#fff;border-radius:18px;padding:12px 14px;cursor:pointer;font-family:inherit;position:relative}.sl-my b{display:block;font-size:14.5px;color:#0b1b3a}.sl-my small{font-size:12px;color:#64748b;font-weight:700}
@@ -185,8 +190,8 @@ const CSS = `
 .sl-vwait{display:flex;align-items:center;gap:12px;padding:18px;border-radius:18px;background:linear-gradient(135deg,#f5f3ff,#eef2ff);font-weight:800;color:#5b21b6}.sl-vwait i{width:26px;height:26px;border-radius:50%;border:3px solid #c4b5fd;border-top-color:#7c3aed;animation:slSpin 1s linear infinite}
 .slp-svg{background:#fff;border-radius:24px;padding:14px;max-width:min(980px,100%);margin:6px auto 0;max-height:62vh;display:flex;justify-content:center}.slp-svg svg{max-height:58vh}
 /* وضع العرض */
-.slp{position:fixed;inset:0;z-index:3000;background:radial-gradient(120% 120% at 100% 0%,#1e3a8a,#0b1b3a 50%,#04201f);color:#fff;font-family:'Tajawal',Cairo,Tahoma,sans-serif;display:flex;flex-direction:column}
-.slp-top{display:flex;align-items:center;gap:10px;padding:12px 18px;font-weight:800;font-size:14px;opacity:.9}.slp-top button{border:0;background:#ffffff1f;color:#fff;border-radius:12px;padding:6px 14px;font:800 14px Cairo,Tahoma;cursor:pointer}
+.slp{position:fixed;inset:0;z-index:3000;background:radial-gradient(120% 120% at 100% 0%,#1e3a8a,#0b1b3a 50%,#04201f);color:#fff;font-family:'IBM Plex Sans Arabic',Cairo,Tahoma,sans-serif;display:flex;flex-direction:column}
+.slp-top{display:flex;align-items:center;gap:10px;padding:12px 18px;font-weight:800;font-size:14px;opacity:.9}.slp-top button{border:0;background:#ffffff1f;color:#fff;border-radius:12px;padding:6px 14px;font:800 14px 'IBM Plex Sans Arabic',Cairo,Tahoma;cursor:pointer}
 .slp-body{flex:1;display:grid;place-items:center;padding:10px 6vw;overflow:auto}
 .slp-s{width:min(1100px,100%);animation:slIn .45s ease}@keyframes slIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 .slp-k{display:inline-block;border-radius:999px;background:#c9a227;color:#1c1300;font-weight:900;font-size:clamp(13px,1.6vw,18px);padding:4px 16px;margin-bottom:14px}
@@ -194,7 +199,7 @@ const CSS = `
 .slp-p{font-size:clamp(18px,2.5vw,32px);font-weight:700;line-height:1.9;opacity:.95}
 .slp-li{display:flex;gap:14px;align-items:flex-start;font-size:clamp(17px,2.2vw,28px);font-weight:800;line-height:1.8;margin:10px 0;background:#ffffff12;border-radius:18px;padding:10px 16px}.slp-li i{font-style:normal;flex:none;min-width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#c9a227;color:#1c1300;font-weight:900}
 .slp-ans{margin-top:16px;font-size:clamp(16px,2vw,26px);font-weight:800;background:#16a34a33;border:2px solid #4ade80;border-radius:18px;padding:12px 16px;line-height:1.8}
-.slp-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:14px}.slp-nav button{border:0;border-radius:14px;padding:10px 22px;font:900 16px Cairo,Tahoma;cursor:pointer;background:#ffffff22;color:#fff}.slp-nav button.g{background:#c9a227;color:#1c1300}
+.slp-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:14px}.slp-nav button{border:0;border-radius:14px;padding:10px 22px;font:900 16px 'IBM Plex Sans Arabic',Cairo,Tahoma;cursor:pointer;background:#ffffff22;color:#fff}.slp-nav button.g{background:#c9a227;color:#1c1300}
 .slp-dots{display:flex;gap:5px}.slp-dots i{width:8px;height:8px;border-radius:50%;background:#ffffff44}.slp-dots i.on{background:#c9a227;width:22px;border-radius:5px}
 @media(max-width:640px){.sl-act{gap:5px;padding:7px}.sl-act .sl-b{padding:6px 9px;font-size:12px;border-radius:10px}.sl-hero h2{font-size:20px}.sl-top h1{font-size:21px}.sl-card{padding:14px}}
 `;
@@ -212,7 +217,7 @@ function Visuals({ R, vis, onVis }) {
     {V.length && onVis ? <button className="sl-b gh sm" style={{ marginTop: 10 }} onClick={onVis}>🔄 رسوم أخرى</button> : null}
   </div>;
 }
-function Result({ R, setR, meta, edit, showAns, vis, onVis }) {
+function Result({ R, setR, meta, edit, showAns, vis, onVis, pb, onB }) {
   const up = (k, i, f, v) => setR(p => { const n = { ...p }; const a = [...arr(n[k])]; a[i] = f ? { ...a[i], [f]: v } : v; n[k] = a; return n; });
   const del = (k, i) => setR(p => ({ ...p, [k]: arr(p[k]).filter((_, j) => j !== i) }));
   const add = (k, o) => setR(p => ({ ...p, [k]: [...arr(p[k]), o] }));
@@ -276,6 +281,7 @@ function Result({ R, setR, meta, edit, showAns, vis, onVis }) {
       </div>)}</div>
     </div>
 
+    {fl.length ? <>
     <div className="sl-g2">
       <div className="sl-card"><H ic="🗺️" t={`خطة سير الحصة (${ar(tot || 45)} دقيقة)`} c="#0b1b3a" c2="#123b6b" />
         <div className="sl-fl">{fl.map((f, i) => <div className="sl-fi" key={i}><span className="m">{ar(f.min)} د</span><b>{f.ph}</b>
@@ -301,6 +307,10 @@ function Result({ R, setR, meta, edit, showAns, vis, onVis }) {
         {R.nafes ? <div className="sl-card"><H ic="🎯" t="الربط باختبارات نافس" c="#1d4ed8" c2="#0891b2" /><div style={{ fontSize: 13.5, fontWeight: 800, lineHeight: 1.9 }}><Ed on={edit} area v={R.nafes} set={v => setR(p => ({ ...p, nafes: v }))} /></div></div> : null}
       </div>
     </div>
+    </> : <div className="sl-card"><h3 className="sl-h"><i style={{ "--c": "#0b1b3a", "--c2": "#123b6b" }}>🗺️</i>خطة سير الحصة • الاستراتيجيات • بطاقة الخروج • الفروق الفردية</h3>
+      {pb === "busy" ? <div className="sl-vwait"><i />يُعدّ الذكاء خطة سير الحصة وبطاقة الخروج…</div>
+        : <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>{pb ? <span style={{ color: "#b91c1c", fontWeight: 800, fontSize: 13 }}>⚠️ {pb}</span> : null}{onB && !edit ? <button className="sl-b gold sm" onClick={onB}>🗺️ أعدّ خطة الحصة وبطاقة الخروج</button> : null}</div>}
+    </div>}
   </div>;
 }
 
@@ -331,7 +341,7 @@ function Present({ R, meta, onClose }) {
         {s.svg ? <div className="slp-svg" dangerouslySetInnerHTML={{ __html: s.svg }} /> : null}
         {s.p ? <div className="slp-p" style={s.svg ? { fontSize: "clamp(16px,2vw,24px)", marginTop: 10 } : null}>{s.svg ? "🗣️ " : ""}{s.p}</div> : null}
         {s.li ? s.li.map((x, j) => <div className="slp-li" key={j}><i>{ar(j + 1)}</i><span>{x}</span></div>) : null}
-        {s.ans ? (show ? <div className="slp-ans">{s.ans}</div> : <button onClick={() => setShow(true)} style={{ marginTop: 16, border: "2px dashed #ffffff66", background: "transparent", color: "#fff", borderRadius: 16, padding: "10px 20px", font: "800 18px Cairo,Tahoma", cursor: "pointer" }}>{s.q ? "❓ اعرض السؤال" : "👁 اكشف الإجابة"}</button>) : null}
+        {s.ans ? (show ? <div className="slp-ans">{s.ans}</div> : <button onClick={() => setShow(true)} style={{ marginTop: 16, border: "2px dashed #ffffff66", background: "transparent", color: "#fff", borderRadius: 16, padding: "10px 20px", font: "800 18px 'IBM Plex Sans Arabic',Cairo,Tahoma", cursor: "pointer" }}>{s.q ? "❓ اعرض السؤال" : "👁 اكشف الإجابة"}</button>) : null}
       </div>
     </div>
     <div className="slp-nav"><button onClick={() => go(-1)} disabled={!i}>→ السابق</button><div className="slp-dots">{S.map((_, j) => <i key={j} className={j === i ? "on" : ""} />)}</div><button className="g" onClick={() => go(1)} disabled={i === S.length - 1}>التالي ←</button></div>
@@ -342,8 +352,8 @@ function Present({ R, meta, onClose }) {
 function printLesson(R, meta, by) {
   const li = a => arr(a).map(x => `<li>${esc(x)}</li>`).join("");
   const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(R.title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
-<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Tajawal,Cairo,Tahoma;color:#0f172a;margin:0;font-size:12.5px;line-height:1.75;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:'IBM Plex Sans Arabic',Cairo,Tahoma;color:#0f172a;margin:0;font-size:12.5px;line-height:1.75;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .hd{background:linear-gradient(135deg,#0b1b3a,#123b6b 60%,#0f766e);color:#fff;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .hd h1{margin:2px 0;font-size:21px}.hd small{opacity:.85;font-weight:700}.big{margin-top:6px;border-right:3px solid #c9a227;padding:2px 8px;background:#ffffff18;border-radius:6px;font-weight:700}
 h2{font-size:14px;margin:12px 0 6px;color:#0b1b3a;border-bottom:2px solid #e2e8f0;padding-bottom:3px}
@@ -374,7 +384,7 @@ export function SmartLessonTeacher({ me, api }) {
   const [subj, setSubj] = useState(pref.subj || "رياضيات"); const [grade, setGrade] = useState(pref.grade || "الثالث المتوسط"); const [term, setTerm] = useState(pref.term || TERMS[0]);
   const [lid, setLid] = useState(""); const [title, setTitle] = useState(""); const [note, setNote] = useState("");
   const [imgs, setImgs] = useState([]); const [busy, setBusy] = useState(false); const [prog, setProg] = useState(0); const [err, setErr] = useState("");
-  const [R, setR] = useState(null); const [meta, setMeta] = useState(null); const [vis, setVis] = useState(""); const [edit, setEdit] = useState(false); const [pres, setPres] = useState(false); const [ans, setAns] = useState(false);
+  const [R, setR] = useState(null); const [meta, setMeta] = useState(null); const [vis, setVis] = useState(""); const [pb, setPb] = useState(""); const [edit, setEdit] = useState(false); const [pres, setPres] = useState(false); const [ans, setAns] = useState(false);
   const [bank, setBank] = useState({}); const [my, setMy] = useState(null); const [saved, setSaved] = useState(""); const [quota, setQuota] = useState(null);
   const fileRef = useRef(null), camRef = useRef(null);
   const ix = IDX[`${subj}|${grade}|${term}`];
@@ -394,22 +404,31 @@ export function SmartLessonTeacher({ me, api }) {
     setErr(""); setBusy(true); setProg(2); setR(null); setEdit(false); setSaved("");
     const m = { subj, grade, term, lid: L ? L.id : "", lk, title: L ? L.t : title.trim() };
     try {
-      const prompt = buildPrompt({ subj, grade, term, L, chap: L && L.chap, title: L ? "" : title.trim(), note: note.trim(), nImg: imgs.length });
-      // الرسوم التوضيحية تُطلب بالتوازي مع التحليل فلا تزيد زمن الانتظار
-      setVis("busy"); const vp = drawVis({ subj, grade, title: m.title || title.trim() || "الدرس المصوّر", objs: L ? L.obj.join(" • ") : "" }, imgs);
-      const txt = await callAI({ me, api, prompt, images: imgs, tag: `${subj} • ${grade} • ${m.title || "درس مصوّر"}`, onText: t => setProg(Math.min(97, Math.round(t.length / 55))) });
+      const P = { subj, grade, term, L, chap: L && L.chap, title: L ? "" : title.trim(), note: note.trim(), nImg: imgs.length };
+      // ثلاثة طلبات بالتوازي: المحتوى (أ) • خطة الحصة والتقويم (ب) • الرسوم التوضيحية — فلا يطول الانتظار ولا تنقطع الإجابة
+      const got = { cur: {} }; const push = o => { got.cur = { ...got.cur, ...o }; if (got.cur.title) setR({ ...got.cur }); };
+      const vp = drawVis({ subj, grade, title: m.title || title.trim() || "الدرس المصوّر", objs: L ? L.obj.join(" • ") : "" }, imgs);
+      const bp = drawB(P, imgs);
+      vp.then(V => V && push({ vis: V })); bp.then(B => B && push(B));
+      const txt = await callAI({ me, api, prompt: buildPrompt(P), images: imgs, tag: `${subj} • ${grade} • ${m.title || "درس مصوّر"}`, max: 4500, onText: t => setProg(Math.min(97, Math.round(t.length / 35))) });
       const res = parseJSON(txt); if (!res.title) res.title = m.title || "درس"; if (L) res.src = "دليل المعلم";
-      setMeta(m); setR(p => ({ ...res, vis: p && p.__vis ? p.__vis : res.vis })); setProg(100); vp.then(V => V && setR(p => p ? { ...p, vis: V } : { __vis: V }));
+      setMeta(m); push(res); setProg(100);
     } catch (e) { setErr(e.message || "تعذّر التحليل"); setR(null); }
     setBusy(false);
   };
+  async function drawB(P, im) {
+    setPb("busy");
+    try { const t = await callAI({ me, api, prompt: buildPrompt({ ...P, part: "b" }), images: im || [], tag: "🗺️ " + (P.L ? P.L.t : P.title), schema: SCHEMA_B, kind: "b", max: 3000 }); const j = parseJSON(t); setPb(arr(j.flow).length ? "" : "تعذّر إعداد خطة الحصة"); return j; }
+    catch (e) { setPb(e.message || "تعذّر إعداد خطة الحصة"); return null; }
+  }
+  const bNow = async () => { if (!R || !meta) return; const L0 = flat.find(l => l.id === meta.lid); const B = await drawB({ subj: meta.subj, grade: meta.grade, term: meta.term, L: L0 || null, chap: L0 && L0.chap, title: L0 ? "" : R.title, note: "" }, []); if (B) setR(p => ({ ...p, ...B })); };
   async function drawVis(o, im) {
     setVis("busy");
     try { const t = await callAI({ me, api, prompt: visPrompt(o) + (im && im.length ? "\nاستعن بصور صفحات الدرس المرفقة." : ""), images: im || [], tag: "🎨 " + o.title, schema: VIS_SCHEMA, kind: "vis", max: 3000 }); const j = parseJSON(t); const V = arr(j.vis).filter(v => visSVG(v)); setVis(V.length ? "" : "تعذّر رسم الصور — أعد المحاولة"); return V.length ? V : null; }
     catch (e) { setVis(e.message || "تعذّر رسم الصور"); return null; }
   }
   const visNow = async () => { if (!R) return; const V = await drawVis({ subj: meta.subj, grade: meta.grade, title: R.title, objs: arr(R.obj).map(o => o.t).join(" • ") }, []); if (V) setR(p => ({ ...p, vis: V })); };
-  const openBank = () => { setMeta({ subj, grade, term, lid: L ? L.id : "", lk, title: L ? L.t : title }); setR(inBank.res); setVis(""); setEdit(false); setSaved("🏦 من بنك دروس المدرسة — إعداد " + (inBank.by || "")); };
+  const openBank = () => { setMeta({ subj, grade, term, lid: L ? L.id : "", lk, title: L ? L.t : title }); setR(inBank.res); setVis(""); setPb(""); setEdit(false); setSaved("🏦 من بنك دروس المدرسة — إعداد " + (inBank.by || "")); };
   const save = async () => {
     if (!R || !meta) return; const id = fk(meta.lk || Date.now().toString(36)) + "_" + fk(meta.subj).slice(0, 12);
     const rec = { res: R, subj: meta.subj, grade: meta.grade, term: meta.term, lid: meta.lid || "", t: R.title, at: Date.now() };
@@ -465,7 +484,7 @@ export function SmartLessonTeacher({ me, api }) {
     </div>
     {tab === "my" ? <div className="sl-card">
       {my === null ? <div style={{ padding: 20, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div> : !Object.keys(my).length ? <div style={{ padding: 20, textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا توجد دروس محفوظة بعد — حلّل درسًا واضغط «💾 حفظ»</div> :
-        <div className="sl-my">{Object.entries(my).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).map(([id, x]) => <div key={id} style={{ position: "relative" }}><button className="c" style={{ width: "100%" }} onClick={() => { setMeta({ subj: x.subj, grade: x.grade, term: x.term, lid: x.lid, lk: x.lid ? fk(x.lid) : fk(x.t), title: x.t }); setR(x.res); setVis(""); setTab("new"); setSaved(""); setEdit(false); }}>
+        <div className="sl-my">{Object.entries(my).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).map(([id, x]) => <div key={id} style={{ position: "relative" }}><button className="c" style={{ width: "100%" }} onClick={() => { setMeta({ subj: x.subj, grade: x.grade, term: x.term, lid: x.lid, lk: x.lid ? fk(x.lid) : fk(x.t), title: x.t }); setR(x.res); setVis(""); setPb(""); setTab("new"); setSaved(""); setEdit(false); }}>
           <b>{x.t}</b><small>{x.subj} • {x.grade}{x.lid ? " • درس " + ar(x.lid) : ""}</small><br /><small>🗓️ {new Date(x.at || 0).toLocaleDateString("ar-SA")}</small></button>
           <button className="sl-b red sm" style={{ position: "absolute", left: 8, top: 8 }} onClick={async () => { if (!confirm("حذف الدرس من دروسي؟")) return; await api.fbPatch({ [`${SL_MY}/${hk}/${id}`]: null }); loadMy(); }}>🗑</button></div>)}</div>}
     </div> : busy ? <div className="sl-card sl-load">
@@ -476,7 +495,7 @@ export function SmartLessonTeacher({ me, api }) {
     </div> : R ? <>
       {saved ? <div className="sl-msg" style={{ background: saved.startsWith("⚠") ? "#fef2f2" : "#f0fdf4", color: saved.startsWith("⚠") ? "#b91c1c" : "#166534", marginBottom: 12 }}>{saved}</div> : null}
       {edit ? <div className="sl-msg" style={{ background: "#eff6ff", color: "#1d4ed8", marginBottom: 12 }}>✏️ وضع التعديل: عدّل أي نص ثم اضغط «💾 حفظ»</div> : null}
-      <Result R={R} setR={setR} meta={meta} edit={edit} showAns={ans} vis={vis} onVis={visNow} />
+      <Result R={R} setR={setR} meta={meta} edit={edit} showAns={ans} vis={vis} onVis={visNow} pb={pb} onB={bNow} />
       <div className="sl-act" style={{ marginTop: 14 }}>
         <button className="sl-b gold" onClick={() => setPres(true)}>🎬 وضع العرض</button>
         <button className="sl-b pri" onClick={save}>💾 حفظ</button>
@@ -496,10 +515,10 @@ export function SmartLessonAdmin({ by, api, me }) {
   const mon = today().slice(0, 7);
   const load = async () => {
     const [c, b, m, l] = await Promise.all([api.maGet(SL_CFG), api.maGet(SL_BANK), api.maGet(`${SL_USEM}/${mon}`), api.fbRange ? api.fbRange(SL_LOG, mon + "-01", mon + "-31") : api.maGet(SL_LOG)]);
-    setCfg({ daily: 8, monthly: 600, inR: 3, outR: 15, ...obj(c) }); setBank(obj(b)); setMUsed(+m || 0); setLog(obj(l));
+    setCfg({ daily: 8, monthly: 1200, inR: 3, outR: 15, ...obj(c) }); setBank(obj(b)); setMUsed(+m || 0); setLog(obj(l));
   };
   useEffect(() => { load(); }, []);
-  const saveCfg = async () => { const ok = await api.maPut(SL_CFG, { daily: +cfg.daily || 8, monthly: +cfg.monthly || 600, off: !!cfg.off, inR: +cfg.inR || 3, outR: +cfg.outR || 15, by, at: Date.now() }); setMsg(ok === false ? "⚠️ تعذّر الحفظ" : "✅ حُفظت الإعدادات"); };
+  const saveCfg = async () => { const ok = await api.maPut(SL_CFG, { daily: +cfg.daily || 8, monthly: +cfg.monthly || 1200, off: !!cfg.off, inR: +cfg.inR || 3, outR: +cfg.outR || 15, by, at: Date.now() }); setMsg(ok === false ? "⚠️ تعذّر الحفظ" : "✅ حُفظت الإعدادات"); };
   const test = async () => { setPing("⏳ جارٍ الفحص…"); try { const r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: me && me.hash, kind: "ping" }) }); const ct = r.headers.get("content-type") || ""; if (!ct.includes("json")) { setPing("❌ ملف الخادم api/ai.js غير مرفوع بعد إلى المستودع"); return; } const j = await r.json(); setPing(j.ok ? `✅ الخدمة تعمل — المفتاح مضبوط في Vercel` : j.code === "nokey" ? "❌ الملف مرفوع لكن المفتاح ANTHROPIC_API_KEY غير مضاف في إعدادات Vercel" : "⚠️ " + j.msg); } catch (e) { setPing("❌ " + e.message); } };
   const rows = useMemo(() => { const T = {}; let n = 0, ti = 0, to = 0; Object.values(log).forEach(d => Object.values(obj(d)).forEach(x => { if (!x) return; n++; ti += +x.i || 0; to += +x.o || 0; const k = x.n || "—"; const t = T[k] || (T[k] = { n: k, c: 0, i: 0, o: 0, last: "" }); t.c++; t.i += +x.i || 0; t.o += +x.o || 0; })); return { n, ti, to, T: Object.values(T).sort((a, b) => b.c - a.c) }; }, [log]);
   if (!cfg) return <div className="sl" style={{ padding: 30, textAlign: "center", fontWeight: 800 }}>⏳ جارٍ التحميل…</div>;

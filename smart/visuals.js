@@ -4,7 +4,7 @@ const ar = n => String(n ?? "").replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]).r
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const A = v => Array.isArray(v) ? v.filter(Boolean) : [];
 const N = v => (v === null || v === undefined || v === "" || isNaN(+v)) ? null : +v;
-export const VFONT = "'Baloo Bhaijaan 2','Tajawal',Cairo,Tahoma,sans-serif";
+export const VFONT = "'Noto Kufi Arabic','IBM Plex Sans Arabic',Cairo,Tahoma,sans-serif";
 const C = ["#1e3a8a", "#0f766e", "#c2410c", "#7c3aed", "#be185d", "#0e7490", "#a16207"];
 const L = ["#dbeafe", "#ccfbf1", "#ffedd5", "#ede9fe", "#fce7f3", "#cffafe", "#fef3c7"];
 // تقسيم النص على أسطر
