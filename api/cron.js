@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
     const mon = (D.M || {})[day]; if (mon) slots.push({ id: "mon", l: "المناوبة اليومية", f: (D.cfg && D.cfg.monF) || "06:30", pl: "", tn: [mon] });
     const subs = Object.entries(log || {}).filter(([, v]) => v && v.st === "sub" && v.sub != null && v.sub !== "" && !v.pm).map(([k, v]) => { const [, p, ck] = k.split("_"); return { k, p: +p, ck, ti: +v.sub }; });
     // ① ملخص الصباح (مرة واحدة)
-    if (C.morning && nowM >= toMin(C.mornAt)) await once("morning", async () => {
+    if (C.morning && nowM >= toMin(C.mornAt) && nowM < toMin(C.mornAt) + 120) await once("morning", async () => {
       const by = {}; slots.forEach(s => s.tn.forEach(n => { (by[n] = by[n] || []).push(`${s.l} ${fmt(s.f)}${s.pl ? " (" + s.pl + ")" : ""}`); }));
       let n = 0; for (const [name, L] of Object.entries(by)) { const r = await sendTo({ names: [name] }, { title: "📋 مهامك في الإشراف اليوم", body: L.join(" • "), url: "/#teacher:duty", urlA: "/#staff:duty", tag: "morning-duty" }); n += (r && r.sent) || 0; }
       const bt = {}; subs.forEach(s => { (bt[s.ti] = bt[s.ti] || []).push(`الحصة ${ORD[s.p] || ar(s.p + 1)} ${cls(s.ck)}`); });
