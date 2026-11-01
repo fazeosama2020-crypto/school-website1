@@ -33180,11 +33180,13 @@ function PushBell({ who, compact = false }) {
     try {
       const p = await Notification.requestPermission(); if (p !== "granted") { setSt(p === "denied" ? "denied" : "off"); return; }
       let reg = await navigator.serviceWorker.getRegistration(); if (!reg) reg = await navigator.serviceWorker.register("/sw.js"); reg = await navigator.serviceWorker.ready;
-      let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKey(PUSH_PUB) });
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) { try { sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKey(PUSH_PUB) }); }
+        catch (e1) { const old = await reg.pushManager.getSubscription(); if (old) await old.unsubscribe().catch(() => {}); await new Promise(r => setTimeout(r, 800)); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKey(PUSH_PUB) }); } }
       await pushSave(who, sub); setSt("on");
       const r = await pushSend({ to: { uids: [who.uid] }, title: "✅ تم تفعيل الإشعارات", body: "ستصلك تنبيهات المدرسة على هذا الجهاز حتى لو كان الموقع مغلقًا", url: location.pathname + location.hash, tag: "push-test" });
       setMsg(r && r.ok ? "📨 أُرسل إشعار تجريبي — يفترض أن يظهر الآن" : r && r.code === "nokey" ? "⚠️ فُعّل على جهازك، لكن مفتاح الإرسال لم يُضف بعد في Vercel" : "");
-    } catch (e) { setSt("off"); setMsg("تعذّر التفعيل: " + (e && e.message || "")); }
+    } catch (e) { setSt("off"); const m = String(e && e.message || ""); setMsg(/push service|AbortError|Registration failed/i.test(m) ? "تعذّر التفعيل في هذا المتصفح (خدمة الإشعارات فيه غير متاحة). جرّب من جوالك، أو من متصفح Google Chrome على الكمبيوتر، وفي Edge تأكد أن إشعارات Windows مفعّلة لـ Edge." : "تعذّر التفعيل: " + m); }
   };
   const test = async () => { const r = await pushSend({ to: { uids: [who.uid] }, title: "🔔 تجربة إشعار", body: "الإشعارات تعمل على هذا الجهاز", url: location.pathname + location.hash, tag: "push-test" }); setMsg(r && r.ok ? (r.sent ? "📨 أُرسل — انتظر ثوانيَ" : "لم يُعثر على اشتراك هذا الجهاز — اضغط تفعيل مرة أخرى") : "⚠️ تعذّر الإرسال"); };
   if (!who || !who.uid || st === "…" || st === "unsup") return null;
@@ -33204,8 +33206,10 @@ function PushBell({ who, compact = false }) {
 }
 // صفحة المدير: عدد المفعّلين والإرسال اليدوي وسجل اليوم
 function PushAdmin({ by = "الإدارة" }) {
+  const [rc, setRc] = useState(null);
   const [D, setD] = useState(null); const [log, setLog] = useState({}); const [f, setF] = useState({ t: "", b: "", to: "staff", ck: "", who: "" }); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
-  const load = async () => { const [d, l] = await Promise.all([maGet(PUSH_NODE), maGet(`${PUSH_LOG}/${maKey(new Date())}`)]); setD(ptObj(d)); setLog(ptObj(l)); };
+  const load = async () => { const [d, l, c] = await Promise.all([maGet(PUSH_NODE), maGet(`${PUSH_LOG}/${maKey(new Date())}`), maGet("school-push-cfg")]); setD(ptObj(d)); setLog(ptObj(l)); setRc({ morning: true, duty: true, sub: true, lead: 15, mornAt: "06:05", ...ptObj(c) }); };
+  const saveRc = async o => { const n = { ...rc, ...o }; setRc(n); await maPut("school-push-cfg", n); };
   useEffect(() => { load(); }, []);
   if (!D) return <div className="p-10 text-center font-bold text-gray-400">⏳</div>;
   const devs = Object.entries(D).flatMap(([uid, x]) => Object.values(ptObj(x)).filter(v => v && v.sub).map(v => ({ uid, ...v })));
@@ -33229,8 +33233,14 @@ function PushAdmin({ by = "الإدارة" }) {
       <textarea className="ma-inp" rows={2} style={{ height: "auto" }} maxLength={180} value={f.b} onChange={e => setF({ ...f, b: e.target.value })} placeholder="تفاصيل قصيرة (اختياري)" />
       <button className="ma-btn pri" style={{ justifySelf: "start" }} disabled={busy} onClick={send}>{busy ? "⏳" : "📤 إرسال"}</button>
       {msg && <div style={{ fontWeight: 800, fontSize: 13.5 }}>{msg}</div>}
-      <small style={{ color: "#64748b", fontWeight: 700 }}>تُرسل الإشعارات تلقائيًا أيضًا عند: نشر تعميم، إسناد مهمة أو تذكير لإداري، إسناد حصة احتياط، نشر واجب أو تصحيحه.</small>
+      <small style={{ color: "#64748b", fontWeight: 700 }}>تُرسل الإشعارات تلقائيًا أيضًا عند: نشر تعميم، إسناد مهمة أو تذكير لإداري، إسناد حصة انتظار، نشر واجب أو تصحيحه.</small>
     </div>
+    {rc && <div className="ma-card p-4 grid gap-2"><b style={{ fontSize: 16 }}>⏰ التذكيرات التلقائية</b>
+      {[["morning", "📋 ملخص الصباح لكل معلم: إشرافه ومناوبته وحصص الانتظار المسندة إليه"], ["duty", "⏰ تذكير قبل بداية الإشراف والمناوبة"], ["sub", "🛡️ تذكير قبل بداية حصة الانتظار"]].map(([k, l]) => <label key={k} className="flex items-center gap-2" style={{ fontWeight: 800, fontSize: 13.5, cursor: "pointer" }}><input type="checkbox" checked={!!rc[k] && !rc.off} disabled={!!rc.off} onChange={e => saveRc({ [k]: e.target.checked })} />{l}</label>)}
+      <div className="flex items-center gap-2 flex-wrap" style={{ fontWeight: 800, fontSize: 13.5 }}>التذكير قبل البداية بـ{[5, 10, 15, 20].map(m => <button key={m} className={`ma-btn ${+rc.lead === m ? "pri" : ""}`} style={{ height: 32 }} onClick={() => saveRc({ lead: m })}>{maAr(m)} د</button>)}<span style={{ marginRight: 12 }}>وقت ملخص الصباح</span><input type="time" className="ma-inp" style={{ width: 120, height: 34 }} value={rc.mornAt} onChange={e => saveRc({ mornAt: e.target.value })} /></div>
+      <label className="flex items-center gap-2" style={{ fontWeight: 800, fontSize: 13, color: "#b91c1c", cursor: "pointer" }}><input type="checkbox" checked={!!rc.off} onChange={e => saveRc({ off: e.target.checked })} />إيقاف كل التذكيرات التلقائية مؤقتًا</label>
+      <small style={{ color: "#64748b", fontWeight: 700 }}>تعمل من الأحد إلى الخميس، وتُرسل مرة واحدة لكل مهمة. مصدرها جدول الإشراف والمناوبة، وحصص الانتظار المعتمدة في الجدول المدرسي.</small>
+    </div>}
     <div className="ma-card p-4"><b>🗒️ إشعارات اليوم ({maAr(L.length)})</b>{!L.length ? <div style={{ color: "#94a3b8", fontWeight: 800, marginTop: 6 }}>لم يُرسل شيء اليوم</div> : <div className="grid gap-1 mt-2">{L.map((x, i) => <div key={i} style={{ fontSize: 13, fontWeight: 800, display: "flex", gap: 8, flexWrap: "wrap", borderBottom: "1px dashed #e2e8f0", padding: "4px 0" }}><span style={{ color: "#64748b" }}>{x.at}</span><b>{x.t}</b><span style={{ color: "#475569" }}>{x.b}</span><span style={{ marginRight: "auto", color: "#0f766e" }}>وصل {maAr(x.s)} من {maAr(x.n)}</span></div>)}</div>}</div>
     <div className="ma-card p-4"><b>👥 المفعّلون</b><div className="flex gap-1 flex-wrap mt-2">{P.sort((a, b) => a.n.localeCompare(b.n, "ar")).map(p => <span key={p.uid} className="pt-st" style={{ background: p.r === "s" ? "#ffedd5" : p.r === "a" ? "#ede9fe" : "#ccfbf1", color: "#0f172a" }}>{p.n}{p.ck ? ` • ${maClassName(p.ck)}` : ""}</span>)}</div></div>
   </div>;
