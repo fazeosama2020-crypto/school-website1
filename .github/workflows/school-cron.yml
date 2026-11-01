@@ -1,0 +1,12 @@
+# ⏰ تذكيرات المدرسة: يستدعي /api/cron كل ٥ دقائق من ٥ صباحًا حتى ٢ ظهرًا (بتوقيت الرياض)، من الأحد إلى الخميس
+name: school-reminders
+on:
+  schedule:
+    - cron: "*/5 2-10 * * 0-4"
+  workflow_dispatch:
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sS --max-time 55 "https://school-website1-sigma.vercel.app/api/cron" || true
+
