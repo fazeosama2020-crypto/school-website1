@@ -38993,7 +38993,10 @@ function PxEdit({ D, v, onSave, onClose }) {
   const setP = p => { const ck = hostAt(p); setF(x => ({ ...x, p, ck: ck || x.ck })); };
   const save = async () => { if (!f.vis.length) { alert("اختر زائراً واحداً على الأقل"); return; } if (maOff(f.date)) { if (!confirm("التاريخ إجازة — الحفظ رغم ذلك؟")) return; } setBusy(true);
     const nv = { ...v, date: f.date, di, p: +f.p, ck: f.ck, tm: f.tm.trim() || null, vis: f.vis.map(ti => ({ ti, n: (M[ti] || {}).n || (v.vis.find(x => x.ti === ti) || {}).n || ttClean(T.T[ti]) })), edAt: Date.now() }; if (!nv.tm) delete nv.tm;
-    const ok = await maPut(`${PX_NODE}/plan/${v.id}`, nv); setBusy(false); if (!ok) { alert("تعذّر الحفظ"); return; } onSave(nv); };
+    const ok = await maPut(`${PX_NODE}/plan/${v.id}`, nv); setBusy(false); if (!ok) { alert("تعذّر الحفظ"); return; } onSave(nv);
+    if (nv.date >= maKey(new Date()) && (nv.date !== v.date || nv.p !== v.p || JSON.stringify(nv.vis) !== JSON.stringify(v.vis))) { const when = `${maDay(maDate(nv.date))} ${hfxHijTxt(nv.date)} • الحصة ${TT_ORD[nv.p] || maAr(nv.p + 1)}`;
+      if (nv.host) pushSend({ to: { names: [nv.host.n], ti: nv.host.ti != null ? [nv.host.ti] : [] }, title: "🤝 زيارة تبادلية لحصتك", body: `${when} • الزائرون: ${nv.vis.map(x => x.n).join("، ")}`, url: "/#teacher", tag: "px-" + nv.id, by: "تبادل الزيارات" });
+      pushSend({ to: { names: nv.vis.map(x => x.n), ti: nv.vis.map(x => x.ti).filter(x => x != null) }, title: "🤝 لديك زيارة تبادلية", body: `${when} • لحصة أ. ${nv.host ? nv.host.n : ""}`, url: "/#teacher", tag: "px-" + nv.id, by: "تبادل الزيارات" }); } };
   return <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9000, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}><div onClick={e => e.stopPropagation()} dir="rtl" className="ma-card p-4 grid gap-3" style={{ width: "min(620px,100%)", maxHeight: "90vh", overflowY: "auto" }}>
     <b style={{ fontSize: 16 }}>✏️ تعديل موعد زيارة {v.host.n} — {pxGrpL(v.g)}</b>
     <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
@@ -39014,8 +39017,12 @@ function PeerXAdmin({ by = "الإدارة" }) {
   if (!D) return <div className="ma-card p-8 text-center font-bold text-gray-400">⏳ جارٍ تحميل الجدول المدرسي وتبادل الزيارات…</div>;
   const V = pxVisits(D); const M = pxTeachers(D.T); const anyEv = Object.keys(D.ev).length > 0;
   const gen = async () => { if (V.length && !confirm(anyEv ? "إعادة إنشاء الزيارات القادمة التي لم تُقيَّم (تبقى الزيارات المقيّمة والسابقة بتواريخها)؟" : "إعادة إنشاء الجدول بالكامل؟")) return; setBusy(true);
-    const keep = Object.fromEntries(V.filter(v => (ptObj(D.ev[v.id]) && Object.keys(ptObj(D.ev[v.id])).length) || v.date < maKey(new Date())).map(v => [v.id, v])); // المقيّمة والسابقة تبقى كما هي const r = pxGen(D.T, start, +maxV || 3, keep); const plan = { ...keep, ...r.plan };
-    const ok = await maPut(`${PX_NODE}/plan`, plan); await maPut(`${PX_NODE}/cfg`, { start, max: +maxV || 3, at: Date.now(), by }); setBusy(false); if (!ok) { alert("تعذّر الحفظ"); return; } setD(d => ({ ...d, plan })); alert(`✅ أُنشئ ${maAr(Object.keys(r.plan).length)} زيارة${r.left.length ? `\n⚠️ تعذّر جدولة: ${r.left.map(x => x.n).join("، ")}` : ""}`); };
+    const keep = Object.fromEntries(V.filter(v => (ptObj(D.ev[v.id]) && Object.keys(ptObj(D.ev[v.id])).length) || v.date < maKey(new Date())).map(v => [v.id, v])); // المقيّمة والسابقة تبقى كما هي
+    const r = pxGen(D.T, start, +maxV || 3, keep); const plan = { ...keep, ...r.plan };
+    const ok = await maPut(`${PX_NODE}/plan`, plan); await maPut(`${PX_NODE}/cfg`, { start, max: +maxV || 3, at: Date.now(), by }); setBusy(false); if (!ok) { alert("تعذّر الحفظ"); return; } setD(d => ({ ...d, plan }));
+    { const C = {}; const add = (n, k) => { if (!n) return; (C[n] = C[n] || { h: 0, v: 0, first: "" }); C[n][k]++; }; Object.values(r.plan).forEach(v => { if (!v || !v.host) return; add(v.host.n, "h"); (v.vis || []).forEach(x => add(x.n, "v")); [v.host, ...(v.vis || [])].forEach(x => { if (x && C[x.n] && (!C[x.n].first || v.date < C[x.n].first)) C[x.n].first = v.date; }); });
+      for (const [n, c] of Object.entries(C)) pushSend({ to: { names: [n] }, title: "🤝 جدول تبادل الزيارات", body: `${c.v ? `تزور ${maAr(c.v)} حصة` : ""}${c.v && c.h ? " • " : ""}${c.h ? `يُزار لك ${maAr(c.h)} حصة` : ""}${c.first ? ` • أولها ${maDay(maDate(c.first))} ${hfxHijTxt(c.first)}` : ""}`, url: "/#teacher", tag: "px-gen", by: "تبادل الزيارات" }); }
+    alert(`✅ أُنشئ ${maAr(Object.keys(r.plan).length)} زيارة${r.left.length ? `\n⚠️ تعذّر جدولة: ${r.left.map(x => x.n).join("، ")}` : ""}`); };
   const del = async v => { if (!confirm(`حذف زيارة ${v.host.n}؟`)) return; await maPut(`${PX_NODE}/plan/${v.id}`, null); setD(d => { const p = { ...d.plan }; delete p[v.id]; return { ...d, plan: p }; }); };
   const fins = V.flatMap(v => v.vis.map(x => ({ v, x, e: pxEvOf(D, v, x.ti) })).filter(o => o.e.fin));
   return <div className="ma pt grid gap-3" dir="rtl" style={{ maxWidth: 1180, margin: "0 auto" }}><style>{MA_CSS + PT_CSS}</style>
@@ -39274,7 +39281,9 @@ function CvMove({ D, setD, r, close, toast }) {
   const others = k => Object.values(ptObj(D.plan)).filter(v => v && v.id !== r.id && v.date === k);
   const nowMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })(); const today = maKey(new Date());
   const pickLesson = (k, L) => { const h = hfxHij(k); const f = z => String(z || "").replace(/^0/, ""); const [lv, sec] = L.ck.split("-"); setX({ date: k, hij: h ? `${h.y}/${h.m}/${h.d}` : x.hij, p: TT_ORD[L.p], tm: L.t[0] ? `${f(L.t[0])}-${f(L.t[1])}` : x.tm, c: `${sec}/${lv}` }); };
-  const save = async () => { const v = { ...r, ...x, moved: r.moved || r.date }; const ok = await maPut(`${CV_PLAN}/${r.id}`, v); if (ok) { setD(d => ({ ...d, plan: { ...d.plan, [r.id]: v } })); toast("✅ عُدّل موعد الزيارة"); close(); } else toast("⚠️ تعذّر الحفظ"); };
+  const save = async () => { const v = { ...r, ...x, moved: r.moved || r.date }; const ok = await maPut(`${CV_PLAN}/${r.id}`, v); if (ok) { setD(d => ({ ...d, plan: { ...d.plan, [r.id]: v } })); toast("✅ عُدّل موعد الزيارة"); close();
+      if (v.t && (v.date !== r.date || v.p !== r.p || v.tm !== r.tm)) pushSend({ to: { names: [v.t] }, title: "🎯 موعد زيارتك الصفية", body: `${maDay(maDate(v.date))} ${hfxHijTxt(v.date)}${v.p ? " • الحصة " + v.p : ""}${v.c ? " • فصل " + v.c : ""}`, url: "/#teacher", tag: "cv-" + r.id, by: "الزيارات الصفية" });
+    } else toast("⚠️ تعذّر الحفظ"); };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(15,23,42,.55)", display: "grid", placeItems: "center", padding: 12 }} onClick={close}>
       <div className="ma-card p-4 grid gap-3" style={{ width: "min(560px,100%)", maxHeight: "90vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
@@ -39745,7 +39754,10 @@ function CvResched({ D, setD, toast }) {
   const [start, setStart] = useState(() => { const r = ptObj(D.cfg).resched; return r && r > "2026-10-11" ? r : "2026-10-11"; }); const [prev, setPrev] = useState(null); const [busy, setBusy] = useState(false);
   const [perDay, setPerDay] = useState(4); const [mix, setMix] = useState(true);
   const run = async () => { setBusy(true); const [tt, cfg] = await Promise.all([maGet(TT_NODE).then(ttFresh), maGet(TT_CFG)]); const T = tt && tt.C ? tt : (typeof TT_SAMPLE !== "undefined" ? TT_SAMPLE : null); const times = ttFixTimes(cfg && Array.isArray(cfg.times) ? cfg.times : (T && T.times) || TT_DEF_TIMES); setPrev({ out: cvReflowMix(D.plan, D.ev, start, T, times, perDay, mix), src: tt && tt.C ? "جدول المدرسة المرفوع" : "الجدول المرجعي" }); setBusy(false); };
-  const apply = async () => { if (!window.confirm(`تطبيق الجدولة الجديدة لـ ${maAr(Object.keys(prev.out).length)} زيارة ابتداءً من ${maDay(maDate(start))}؟`)) return; setBusy(true); const np = { ...D.plan, ...prev.out }; const ok = await maPut(CV_PLAN, np); if (ok) { await cvPatch({ [`${CV_CFG}/resched`]: start }); setD(d => ({ ...d, plan: np, cfg: { ...d.cfg, resched: start } })); setPrev(null); } setBusy(false); toast(ok ? "✅ طُبّقت الجدولة الجديدة — يراها المعلمون فوراً" : "⚠️ تعذّر الحفظ"); };
+  const apply = async () => { if (!window.confirm(`تطبيق الجدولة الجديدة لـ ${maAr(Object.keys(prev.out).length)} زيارة ابتداءً من ${maDay(maDate(start))}؟`)) return; setBusy(true); const np = { ...D.plan, ...prev.out }; const ok = await maPut(CV_PLAN, np); if (ok) { await cvPatch({ [`${CV_CFG}/resched`]: start }); setD(d => ({ ...d, plan: np, cfg: { ...d.cfg, resched: start } })); setPrev(null);
+      // 🔔 لكل معلم تغيّر موعد زيارته: إشعار واحد بأقرب موعد
+      const by = {}; Object.values(prev.out).forEach(v => { const o = ptObj(D.plan)[v.id] || {}; if (!v || !v.t || !v.date || v.date === o.date) return; if (!by[v.t] || v.date < by[v.t].date) by[v.t] = v; });
+      for (const [t, v] of Object.entries(by)) pushSend({ to: { names: [t] }, title: "🎯 موعد زيارتك الصفية", body: `${maDay(maDate(v.date))} ${hfxHijTxt(v.date)}${v.p ? " • الحصة " + v.p : ""}${v.c ? " • فصل " + v.c : ""}`, url: "/#teacher", tag: "cv-" + v.id, by: "الزيارات الصفية" }); } setBusy(false); toast(ok ? "✅ طُبّقت الجدولة الجديدة — يراها المعلمون فوراً" : "⚠️ تعذّر الحفظ"); };
   const ch = prev ? Object.values(prev.out).sort((a, b) => a.date.localeCompare(b.date) || a.n - b.n) : [];
   return (
     <div className="ma-card p-4 grid gap-3" style={{ border: "2px solid #7c3aed" }}>
@@ -41104,7 +41116,10 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
   // دمج آمن: لا تُكتب نسخة الإدارة فوق ما أرسله المعلم في الأثناء
   const save = async (patch = {}) => { setBusy(true); const cur = ptObj(await maGet(`${HFX_NODE}/${c.id}`)); let n = { ...c, ...patch, ph, upAt: Date.now() };
     if (cur.id) { if ((cur.repAt || 0) > (c.repAt || 0)) n = { ...n, tv: cur.tv, ts: cur.ts, repAt: cur.repAt }; ["openAt", "ackAt", "faris"].forEach(k => { if (cur[k] && !n[k]) n[k] = cur[k]; }); if (!patch.st && (RK[cur.st] || 0) > (RK[n.st] || 0)) n.st = cur.st; }
-    delete n.hid; const ok = await maPut(`${HFX_NODE}/${n.id}`, n); setBusy(false); if (ok) { setC(n); onSaved(n); } else toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok ? n : null; };
+    delete n.hid; const ok = await maPut(`${HFX_NODE}/${n.id}`, n); setBusy(false); if (ok) { setC(n); onSaved(n);
+      // 🔔 إشعار الجوال للمعلم عند إرسال النموذج أول مرة
+      if (patch.st === "sent" && (!cur.st || cur.st === "draft")) pushSend({ to: { uids: n.h ? ["u_" + String(n.h).slice(0, 16)] : [], names: [n.n] }, title: "📄 " + F.n, body: F.tch === "reply" ? "وصلك نموذج يحتاج إفادتك وتوقيعك" : "وصلك نموذج للاطلاع والتوقيع", url: `/#hfx=${n.id}.${n.tok}`, tag: "hfx-" + n.id, urgent: 1, by: "النماذج" });
+    } else toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok ? n : null; };
   const addNid = async () => { const n = licNormId(nidIn); if (n.length !== 10) return; const h = await licHash(n); const I = hfxIds(); I[h] = n; hfxIdsSet(I); setC(x => ({ ...x, h, n4: n.slice(-4) })); setNidIn(""); toast("✅ حُفظت الهوية على هذا الجهاز"); };
   const waTxt = n => `المكرم الأستاذ/ ${n.n} وفقه الله\nالسلام عليكم ورحمة الله وبركاته\n\nنرفق لكم نموذج «${F.n}» من ${HFX_SCHOOL}.\n${F.optT ? "نأمل الاطلاع عليه وتدوين ملاحظاتكم إن وجدت والتوقيع بالعلم ثم الإرسال" : F.tch === "reply" ? "نأمل الاطلاع عليه وتعبئة الإفادة والتوقيع ثم الإرسال" : F.tch === "sign" ? "نأمل الاطلاع عليه والتوقيع ثم الإرسال" : "نأمل الاطلاع عليه"} عبر الرابط التالي (يُفتح برقم هويتكم):\n${hfxLink(n)}\n\nمع التحية — ${cfg.mgr || "إدارة المدرسة"}`;
   const send = async () => { if (!c.h) { toast("أضف رقم هوية المعلم أولاً — به يفتح المعلم النموذج"); return; }
@@ -41264,11 +41279,35 @@ const hdMin = t => { const m = String(t || "").match(/(\d{1,2}):(\d{2})/); retur
 const hdT24 = v => { const m = String(v || "").match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|ص|م)?/i); if (!m) return ""; let h = +m[1]; const ap = (m[3] || "").toUpperCase(); if ((ap === "PM" || ap === "م") && h < 12) h += 12; if ((ap === "AM" || ap === "ص") && h === 12) h = 0; return `${String(h).padStart(2, "0")}:${m[2]}`; };
 const hdHM = m => m == null ? "—" : `${maAr(Math.floor(m / 60))}:${maAr(String(m % 60).padStart(2, "0"))}`;
 const hdDur = m => !m ? "٠" : m >= 60 ? `${maAr(Math.floor(m / 60))} س${m % 60 ? ` و${maAr(m % 60)} د` : ""}` : `${maAr(m)} د`;
+// 🏠 أيام الدوام عن بعد (منصة مدرستي): school-hd-cfg/rem/{YYYY-MM-DD} = {s:"07:30"} — تُحدَّد بالتاريخ من «⚙️ الإعدادات» أو «📥 رفع ملف حضوري»
+// • يُرفع ملف الصباح فقط • التأخر من وقت بداية الحصة عن بعد • لا انصراف ولا انصراف مبكر
+// • استئذان «مهمة عمل» = حضور كامل • من لم يسجّل حضوره (أو لم يرد في الملف) = غائب
+const hdRem = (cfg, dk) => ptObj(ptObj(cfg).rem)[dk] || null;
+const HD_REM_S = "07:30";
+function HdRemCard({ cfg, setRem }) {
+  const [k, setK] = useState(() => maKey(new Date())); const [s, setS] = useState(HD_REM_S); const [busy, setBusy] = useState(false);
+  const L = Object.entries(ptObj(ptObj(cfg).rem)).sort((a, b) => b[0].localeCompare(a[0]));
+  const go = async (d, on, t) => { setBusy(true); try { await setRem(d, on, t); } finally { setBusy(false); } };
+  return <div className="hd-card" style={{ borderColor: "#a5b4fc", background: "linear-gradient(160deg,#eef2ff,#fff)", gap: 8 }}>
+    <b style={{ fontSize: 16 }}>🏠 دوام عن بعد (منصة مدرستي)</b>
+    <div style={{ fontSize: 13, fontWeight: 800, color: "#475569", lineHeight: 1.9 }}>حدّد اليوم الذي تحوّل فيه الدوام إلى «عن بعد» — يوماً بيوم، بلا تثبيت أسبوع. في هذا اليوم: <b>ارفع ملف الصباح فقط</b> • التأخر يُحسب من وقت بداية الحصة • استئذان «مهمة عمل» يُحسب <b>حضوراً كاملاً</b> • من لم يسجّل حضوره أو لم يرد في الملف يُسجَّل <b>غائباً</b> • لا يُطلب انصراف نهاية الدوام • تتوقف تذكيرات الإشراف والمناوبة والزيارات على الجوال.</div>
+    <div className="flex gap-2 flex-wrap items-center"><input type="date" className="hd-in" value={k} onChange={e => setK(e.target.value)} /><label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 13 }}>بداية الحصة <input type="time" className="hd-in" value={s} onChange={e => setS(e.target.value || HD_REM_S)} /></label>
+      <button className="hd-b pri" disabled={busy || !k} onClick={() => go(k, true, s)}>{busy ? "⏳" : hdRem(cfg, k) ? "💾 تحديث اليوم" : "🏠 اجعله دوام عن بعد"}</button></div>
+    {L.length > 0 && <div className="flex gap-2 flex-wrap">{L.map(([d, v]) => <span key={d} className="hd-pill" style={{ background: "#e0e7ff", color: "#3730a3", fontSize: 13, padding: "4px 10px" }}>{maDay(maDate(d))} {hfxHijTxt(d)} • من {hdHM(hdMin(ptObj(v).s || HD_REM_S))}<button type="button" disabled={busy} title="إلغاء الدوام عن بعد لهذا اليوم" onClick={() => go(d, false)} style={{ marginInlineStart: 6, fontWeight: 900, color: "#b91c1c" }}>✕</button></span>)}</div>}
+  </div>;
+}
 // تصنيف اليوم وحساب التأخر والانصراف المبكر ونسبة الانضباط
 function hdDay(r, cfg) {
   if (!r) return null; const c = hdEff(cfg);
   const st = String(r.st || "").trim(); const S = hdMin(c.start), E = hdMin(c.end), R = Math.max(30, E - S), g = +c.grace || 0;
   const a = hdMin(r.a), d = hdMin(r.d); const fl = [];
+  if (r.rm) { if (/عطلة/.test(st)) return { kind: "off", st }; if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d: null, late: 0, early: 0, lost: 0, pct: null, fl, rm: 1 };
+    const RS = hdMin(r.rs || HD_REM_S), RR = Math.max(30, E - RS);
+    if (r.fx === "task" || /مهمة/.test(st)) return { kind: "work", st, a, d: null, late: 0, early: 0, lost: 0, pct: 100, fl, rm: 1, task: 1 };
+    if (HD_FIXP[r.fx]) { const late = a != null ? Math.max(0, a - RS - g) : 0; return { kind: "work", st, a, d: null, late, early: 0, lost: late, pct: Math.max(0, Math.round((RR - late) / RR * 100)), fl, rm: 1 }; }
+    const perm = /استئذان/.test(st);
+    if (/غياب/.test(st) || (a == null && !perm)) return { kind: "abs", st: st || "غياب", a, d: null, late: 0, early: 0, lost: 0, pct: 0, fl, rm: 1 };
+    const late = a != null ? Math.max(0, a - RS - g) : 0; return { kind: perm ? "perm" : "work", st, a, d: null, late, early: 0, permMin: perm ? late : 0, lost: perm ? 0 : late, pct: Math.max(0, Math.round((RR - (perm ? 0 : late)) / RR * 100)), fl, rm: 1 }; }
   // رفع الصباح: يُحسب التأخر فقط، ولا يُحكم بالغياب أو الانصراف قبل رفع نهاية الدوام
   if (r.ph === "m") { if (/عطلة/.test(st)) return { kind: "off", st }; if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
     if (a == null) return { kind: "pend", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
@@ -42197,18 +42236,19 @@ function HdAdminPage({ by = "الإدارة" }) {
   const nm = hk => (names[hk] && names[hk].n) || "—";
   const isT = hk => { const j = (names[hk] || {}).job || ""; return !tOnly || !j || /معلم/.test(j); };
   const pick = async (e, ph = "e") => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setBusy(true); try { const r = await hdParse(f); const short = r.kind === "notreg" || r.kind === "daily"; r.ph = short ? "m" : ph; r.forced = short && ph === "e";
-      if (r.kind === "dailyFull" && r.ph === "e" && r.rows.length) { const hs = new Set(); for (const x of r.rows) { x.hk = hdK(await licHash(x.nid)); hs.add(x.hk); } const since = (() => { const d = maDate(r.to); d.setDate(d.getDate() - 45); return maKey(d); })();
+      const remD = r.from && r.from === r.to && hdRem(cfg, r.to) && r.kind !== "notreg"; if (remD) { r.ph = "m"; r.forced = false; r.rem = 1; }
+      if (((r.kind === "dailyFull" && r.ph === "e") || remD) && r.rows.length) { const hs = new Set(); for (const x of r.rows) { x.hk = hdK(await licHash(x.nid)); hs.add(x.hk); } const since = (() => { const d = maDate(r.to); d.setDate(d.getDate() - 45); return maKey(d); })();
         r.missing = Object.keys(all).filter(hk => !hs.has(hk) && Object.keys(ptObj(all[hk])).some(k => k >= since && k < r.to) && (!ptObj(names[hk]).job || /معلم/.test(ptObj(names[hk]).job))).map(hk => ({ hk, n: ptObj(names[hk]).n || "—", on: true })).sort((a, b) => a.n.localeCompare(b.n, "ar")); }
       setBusy(false); if (!r.rows.length) { alert("لم أجد في الملف أعمدة «السجل المدني» و«التاريخ» و«حالة التحضير» — تأكد أنه تقرير الحضور والانصراف من «حضوري»"); return; } setImp(r); } catch (err) { setBusy(false); alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
   const doImport = async () => { setBusy(true); const P = {}; const H = {}; let kept = 0; for (const x of imp.rows) { if (!H[x.nid]) H[x.nid] = hdK(await licHash(x.nid)); const hk = H[x.nid]; const ph = imp.ph === "m" && x.dk === imp.to ? "m" : "e";
-      const old = ptObj(ptObj(all[hk])[x.dk]); if (ph === "m" && old.st && old.ph !== "m") { kept++; } else { const nr = { st: x.st, a: x.a, d: ph === "m" ? "" : x.d, pl: x.pl, po: ph === "m" ? "" : x.po, ph, up: Date.now() };
+      const old = ptObj(ptObj(all[hk])[x.dk]); const RM = hdRem(cfg, x.dk); if (ph === "m" && old.st && old.ph !== "m" && !RM) { kept++; } else { const nr = { st: x.st, a: x.a, d: ph === "m" || RM ? "" : x.d, pl: x.pl, po: ph === "m" || RM ? "" : x.po, ph: RM ? "e" : ph, up: Date.now(), ...(RM ? { rm: 1, rs: RM.s || HD_REM_S } : {}) };
         if (old.fx) { Object.assign(nr, { st: old.st, st0: x.st, fx: old.fx }); if (old.acc) nr.acc = 1; if (old.fixBy) nr.fixBy = old.fixBy; if (old.fixAt) nr.fixAt = old.fixAt; if (HD_FIXP[old.fx]) { nr.a0 = nr.a; nr.d0 = nr.d; nr.a = old.a || nr.a; nr.d = old.d || nr.d; if (old.fxn) nr.fxn = old.fxn; } }
         P[`${HD_NODE}/${hk}/${x.dk}`] = nr; } const on = ptObj(names[hk]); P[`${HD_T}/${hk}`] = { n: x.n || on.n || "", job: x.job || on.job || "", n4: x.nid.slice(-4) }; }
     const ks = Object.keys(P); let ok = true; for (let i = 0; i < ks.length; i += 400) { const ch = Object.fromEntries(ks.slice(i, i + 400).map(k => [k, P[k]])); if (!(await fbPatch(ch))) ok = false; }
-    let absN = 0; (imp.missing || []).filter(x => x.on).forEach(x => { const old = ptObj(ptObj(all[x.hk])[imp.to]); if (old.st && old.ph !== "m" && !old.gen) return; P[`${HD_NODE}/${x.hk}/${imp.to}`] = { st: "غياب", a: "", d: "", ph: "e", gen: "notlisted", up: Date.now() }; absN++; });
+    let absN = 0; (imp.missing || []).filter(x => x.on).forEach(x => { const old = ptObj(ptObj(all[x.hk])[imp.to]); if (old.st && old.ph !== "m" && !old.gen) return; const RM = hdRem(cfg, imp.to); P[`${HD_NODE}/${x.hk}/${imp.to}`] = { st: "غياب", a: "", d: "", ph: "e", gen: "notlisted", up: Date.now(), ...(RM ? { rm: 1, rs: RM.s || HD_REM_S } : {}) }; absN++; });
     if (absN) { const ks2 = Object.keys(P).filter(k => /\/gen$|notlisted/.test(JSON.stringify(P[k]))); for (let i = 0; i < ks2.length; i += 400) await fbPatch(Object.fromEntries(ks2.slice(i, i + 400).map(k => [k, P[k]]))); }
     const emp = Object.keys(H).length; await maPut(`${HD_UP}/u${Date.now()}`, { at: Date.now(), by, f: imp.from, t: imp.to, n: imp.rows.length, emp, ph: imp.ph || "e" });
-    setBusy(false); setImp(null); await load(); setDk(imp.to && !maOff(imp.to) ? imp.to : null); toast(ok ? `✅ ${imp.ph === "m" ? "رفع الصباح: " : "رفع نهاية الدوام: "}${maAr(emp)} موظفاً ${imp.from === imp.to ? hfxHijTxt(imp.to) : `من ${hfxHijTxt(imp.from)} إلى ${hfxHijTxt(imp.to)}`}${kept ? ` • لم يُستبدل ${maAr(kept)} سجلاً مكتملاً برفع صباحي` : ""}${absN ? ` • سُجّل ${maAr(absN)} غائباً (لم يردوا في الملف)` : ""}` : "⚠️ رُفع جزء من البيانات — أعد الرفع"); };
+    setBusy(false); setImp(null); await load(); setDk(imp.to && !maOff(imp.to) ? imp.to : null); toast(ok ? `✅ ${imp.rem ? "🏠 دوام عن بعد: " : imp.ph === "m" ? "رفع الصباح: " : "رفع نهاية الدوام: "}${maAr(emp)} موظفاً ${imp.from === imp.to ? hfxHijTxt(imp.to) : `من ${hfxHijTxt(imp.from)} إلى ${hfxHijTxt(imp.to)}`}${kept ? ` • لم يُستبدل ${maAr(kept)} سجلاً مكتملاً برفع صباحي` : ""}${absN ? ` • سُجّل ${maAr(absN)} غائباً (لم يردوا في الملف)` : ""}` : "⚠️ رُفع جزء من البيانات — أعد الرفع"); };
   // تصحيح الإدارة لحالة يوم (استئذان / إجازة / مهمة رسمية / غياب) — يُحفظ الأصل في st0
   const fixSt = async (x, v, tm) => { const r0 = ptObj(all[x.hk])[dk] || {}; const orig = r0.st0 != null ? r0.st0 : r0.st; const L = { perm: "استئذان (تصحيح الإدارة)", task: "استئذان — مهمة رسمية", leave: "إجازة (تصحيح الإدارة)", abs: "غياب", ...Object.fromEntries(Object.entries(HD_FIXP).map(([k, z]) => [k, `حضور (تصحيح: ${z.l})`])) }[v];
     // «حضر ولم يسجّل»: تُحفظ أوقات الحضور والانصراف التي أدخلتها الإدارة مع الإبقاء على الأصلية للرجوع إليها
@@ -42218,6 +42258,12 @@ function HdAdminPage({ by = "الإدارة" }) {
     if (!v) { if (r0.a0 !== undefined) { rec.a = r0.a0; rec.d = r0.d0; } ["st0", "fixBy", "fixAt", "fx", "a0", "d0", "fxn"].forEach(k => delete rec[k]); }
     Object.keys(rec).forEach(k => rec[k] === undefined && delete rec[k]);
     setAll(a => ({ ...a, [x.hk]: { ...ptObj(a[x.hk]), [dk]: rec } })); const ok = await maPut(`${HD_NODE}/${x.hk}/${dk}`, rec); toast(ok ? `✅ ${x.n}: ${v ? L : "أُعيدت حالة «حضوري» الأصلية"}` : "⚠️ تعذّر الحفظ"); };
+  // 🏠 تفعيل/إلغاء يوم دوام عن بعد — يُحدَّث معه كل سجل مرفوع لذلك اليوم
+  const setRem = async (k, on, s0) => { if (!k) return; const s = s0 || HD_REM_S; const rem = { ...ptObj(cfg.rem) }; if (on) rem[k] = { s }; else delete rem[k];
+    const n = { ...cfg, rem }; setCfg(n); const P = { [`${HD_CFG}/rem/${k}`]: on ? { s } : null }; let c = 0;
+    Object.entries(all).forEach(([hk, r]) => { const x = ptObj(r)[k]; if (!x) return; c++; if (on) { P[`${HD_NODE}/${hk}/${k}/rm`] = 1; P[`${HD_NODE}/${hk}/${k}/rs`] = s; } else { P[`${HD_NODE}/${hk}/${k}/rm`] = null; P[`${HD_NODE}/${hk}/${k}/rs`] = null; } });
+    const ok = await fbPatch(P); await load(); toast(ok ? `✅ ${on ? "🏠 دوام عن بعد" : "أُلغي الدوام عن بعد"}: ${maDay(maDate(k))} ${hfxHijTxt(k)}${c ? ` • حُدّث ${maAr(c)} سجلاً` : ""}` : "⚠️ تعذّر الحفظ"); };
+  const remCard = <HdRemCard cfg={cfg} setRem={setRem} />;
   // جدول اليوم
   const dayRows = dk ? Object.entries(all).filter(([hk]) => isT(hk)).map(([hk, r]) => { const rec = ptObj(r)[dk]; if (!rec) return null; const d0 = hdDay(rec, cfg); if (!d0 || d0.kind === "off") return null; const n = nm(hk);
     const am = ext ? hdFindAsm(ext.ac, n) : null; const as = am ? ((ptObj(ext.ad)[am.k] && ptObj(ext.ad)[am.k].st) ? ptObj(ext.ad)[am.k] : asmDP(ext.ac, dk) ? { st: "p", auto: 1 } : null) : null;
@@ -42255,6 +42301,7 @@ function HdAdminPage({ by = "الإدارة" }) {
       <div className="hd-tabs">{[["day", "📅 اليوم"], ["up", "📥 رفع ملف حضوري"], ["rep", "📑 تقرير الفترة"], ["kpi", "📊 المؤشرات والفعالية"], ["stars", "⭐ المميزون"], ["abs", "🚫 الغياب وفارس"], ["asmr", "🎺 مفاضلة الطابور"], ["obj", `🙋 الاستئذانات والاعتراضات${objL.filter(x => x.st === "new").length ? ` (${maAr(objL.filter(x => x.st === "new").length)})` : ""}`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hd-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
 
       {tab === "up" && <div className="grid gap-3">
+        {remCard}
         <div className="hd-card"><b>📥 رفع تقرير «حضوري»</b><div className="hd-note">من نظام «حضوري»: تقرير <b>الحضور والانصراف لجميع الموظفين</b> بصيغة Excel — ليوم واحد بعد نهاية الدوام، أو لفترة كاملة. إعادة رفع نفس اليوم تحدّث بياناته ولا تكررها. رقم الهوية لا يُحفظ؛ تُحفظ بصمته فقط للمطابقة مع دخول المعلم.</div>
           <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}>
             <label className="hd-card" style={{ cursor: busy ? "default" : "pointer", borderColor: "#fcd34d", background: "linear-gradient(160deg,#fffbeb,#fff)", gap: 6 }}><b style={{ fontSize: 16 }}>🌅 الرفع الأول — صباحاً</b><span style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>بعد بداية الدوام: يظهر المتأخرون ومدة تأخر كل معلم، ومن لم يسجّل حضوره بعد. لا يُحكم بالغياب أو الانصراف.</span><span className="hd-b gold" style={{ justifySelf: "start" }}>{busy ? "⏳" : "📂 ملف الصباح"}</span><input type="file" accept=".xlsx,.xls" style={{ display: "none" }} disabled={busy} onChange={e => pick(e, "m")} /></label>
@@ -42279,6 +42326,7 @@ function HdAdminPage({ by = "الإدارة" }) {
           <input className="hd-in" style={{ flex: "1 1 160px", maxWidth: 240 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث بالاسم" />
           <select className="hd-in" value={sortK} onChange={e => setSortK(e.target.value)}><option value="pct">الأقل انضباطاً أولاً</option><option value="late">الأكثر تأخراً</option><option value="name">أبجدياً</option></select>
           <label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 13 }}><input type="checkbox" checked={tOnly} onChange={e => setTOnly(e.target.checked)} /> المعلمون فقط</label><button className="hd-b gold" style={{ marginInlineStart: "auto" }} onClick={printDay}>🖨 تقرير اليوم</button></div>
+        {hdRem(cfg, dk) && <div className="hd-note" style={{ background: "#eef2ff", borderColor: "#a5b4fc", color: "#3730a3" }}>🏠 <b>دوام عن بعد</b> — التأخر محسوب من {hdHM(hdMin(hdRem(cfg, dk).s || HD_REM_S))} • استئذان «مهمة عمل» = حضور كامل • من لم يسجّل حضوره = غائب • لا يُحسب الانصراف.</div>}
         {(() => { const v = dayRows.filter(x => x.d.pct != null); const A = v.length ? Math.round(v.reduce((s, x) => s + x.d.pct, 0) / v.length) : null; return <div className="hd-kp">
           <div style={{ "--c": hdPctC(A) }}><b>{A == null ? "—" : `${maAr(A)}٪`}</b><small>متوسط الانضباط</small></div>
           <div style={{ "--c": "#15803d" }}><b>{maAr(dayRows.filter(x => x.d.kind === "work" && !x.d.late && !x.d.early).length)}</b><small>منضبطون تماماً</small></div>
@@ -42321,6 +42369,7 @@ function HdAdminPage({ by = "الإدارة" }) {
         <div className="flex gap-2 flex-wrap"><button className="hd-b pri" onClick={() => acceptObj(x)}>✅ قبول — دوام كامل دون خصم</button><button className="hd-b" onClick={() => replyObj(x, "no")}>❌ رفض</button><button className="hd-b" onClick={() => replyObj(x, "done")}>✍️ رد فقط</button></div></div>)}</div>}
 
       {tab === "asmr" && <AsmRank by={by} />}
+      {tab === "cfg" && remCard}
       {tab === "cfg" && <HdSeasons cfg={cfg} saveCfg={saveCfg} toast={toast} />}
       {tab === "cfg" && <div className="hd-card" style={{ maxWidth: 640 }}>
         <div className="flex gap-3 flex-wrap items-end">
