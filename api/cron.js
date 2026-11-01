@@ -1,4 +1,4 @@
-// ⏰ التذكيرات المجدولة — يستدعيه GitHub Actions كل ٥ دقائق خلال الدوام (.github/workflows/school-cron.yml)
+// ⏰ التذكيرات المجدولة (ملاحظة: off في مهام الإشراف تعني «من الجدول الرسمي» وليست «معطّلة») — يستدعيه GitHub Actions كل ٥ دقائق خلال الدوام (.github/workflows/school-cron.yml)
 // • ملخص الصباح: مهام الإشراف والمناوبة وحصص الانتظار لكل معلم
 // • قبل البداية بـ ١٥ دقيقة: تذكير بالإشراف/المناوبة وبحصة الانتظار
 // • كل تذكير يُرسل مرة واحدة فقط: school-push-sent/{يوم}/{مفتاح}
@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
     const sent = sentD || {}; const mark = {}; const out = [];
     const once = async (key, fn) => { if (sent[key] || mark[key]) return; mark[`school-push-sent/${day}/${key}`] = 1; mark[key] = 1; out.push([key, await fn()]); };
     // مهام الإشراف اليوم
-    const slots = arr(D.S).filter(s => s && !s.off && days(s.d).includes(wd)).map(s => { const T = DU_TY[s.ty] || DU_TY.oth; return { id: s.id, l: s.lbl || T[0], f: s.f || T[1], pl: s.pl || "", tn: arr(s.tn) }; });
+    const slots = arr(D.S).filter(s => s && days(s.d).includes(wd)).map(s => { const T = DU_TY[s.ty] || DU_TY.oth; return { id: s.id, l: s.lbl || T[0], f: s.f || T[1], pl: s.pl || "", tn: arr(s.tn) }; });
     const mon = (D.M || {})[day]; if (mon) slots.push({ id: "mon", l: "المناوبة اليومية", f: (D.cfg && D.cfg.monF) || "06:30", pl: "", tn: [mon] });
     const subs = Object.entries(log || {}).filter(([, v]) => v && v.st === "sub" && v.sub != null && v.sub !== "" && !v.pm).map(([k, v]) => { const [, p, ck] = k.split("_"); return { k, p: +p, ck, ti: +v.sub }; });
     // ① ملخص الصباح (مرة واحدة)
