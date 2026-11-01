@@ -46,7 +46,8 @@ module.exports = async function handler(req, res) {
       if (left > 0 && left <= C.lead) await once("sb-" + s.k, () => sendTo({ ti: [s.ti] }, { title: `⏰ حصة انتظار الساعة ${fmt(times[s.p][0])}`, body: `الحصة ${ORD[s.p] || ar(s.p + 1)} — فصل ${cls(s.ck)} • بعد ${ar(left)} دقيقة`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sb-" + s.k, urgent: 1 })); }
     const marks = Object.fromEntries(Object.entries(mark).filter(([k]) => k.startsWith("school-push-sent/")));
     if (Object.keys(marks).length) await fbPatch(marks);
-    return res.status(200).json({ ok: true, at: now.slice(11, 16), slots: slots.length, subs: subs.length, done: out });
+    const dbg = (req.query || {}).debug ? { list: slots.map(s => `${s.f || "?"} ${s.l} ← ${s.tn.join("، ")}`), sb: subs.map(s => `ح${s.p + 1} ${s.ck} ← ${s.ti}`), lead: C.lead, now: nowM } : {};
+    return res.status(200).json({ ok: true, at: now.slice(11, 16), slots: slots.length, subs: subs.length, done: out, ...dbg });
   } catch (e) {
     return res.status(500).json({ ok: false, msg: e.message });
   }
