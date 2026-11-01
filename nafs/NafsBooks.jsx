@@ -1532,6 +1532,7 @@ function StudentLearn({ api, st, onPre, onHw }) {
       <div style={{ display: "grid", gap: 6, margin: "12px 0" }}>{fresh.slice(0, 4).map(({ h }) => { const B = BOOKS[h.book]; return <div key={h.id} style={{ border: `1.5px solid ${B.c}55`, borderRadius: 14, padding: "8px 10px", textAlign: "right" }}><b style={{ color: B.c }}>📝 {B.name}: {hwTitle(h, B)}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{h.by ? `أ. ${h.by}` : ""}{h.due ? ` • حتى ${dueTxt(h.due)}` : ""}</div></div>; })}</div>
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}><button className="nb-b on big" style={{ "--c": "#16a34a" }} onClick={() => { markSeen(); onHw(fresh[0].h); }}>✍️ ابدأ الحل الآن</button><button className="nb-b big" onClick={markSeen}>لاحقًا</button></div>
     </div><style>{"@keyframes nbBell{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}"}</style></div>}
+    {api.PushBell ? <api.PushBell who={{ uid: "s_" + st.id, n: st.name, r: "s", ck: st.ck }} /> : null}
     {pend.length > 0 && <button onClick={() => onHw(pend[0].h)} style={{ display: "flex", alignItems: "center", gap: 10, border: 0, borderRadius: 16, padding: "12px 14px", background: "linear-gradient(135deg,#f59e0b,#ea580c)", color: "#fff", font: "inherit", cursor: "pointer", textAlign: "right", boxShadow: "0 12px 24px -14px #ea580c" }}><span style={{ fontSize: 26 }}>🔔</span><span style={{ flex: 1 }}><b style={{ fontSize: 16 }}>لديك {ar(pend.length)} {pend.length > 1 ? "واجبات" : "واجب"} لم تُسلَّم بعد</b><small style={{ display: "block", fontWeight: 800, opacity: .95 }}>أقربها: {BOOKS[pend[0].h.book].name} — {hwTitle(pend[0].h, BOOKS[pend[0].h.book])}</small></span><b>حل الآن ←</b></button>}
     <b style={{ fontSize: 16 }}>🎯 اختباراتي القبلية وواجباتي</b>
     <div className="lr-grid">{BOOK_IDS.map(b => { const r = D.pre[b]; const p = r ? Math.round(r.sc / r.of * 100) : 0; return <button key={b} className="lr-k" style={{ "--c": BOOKS[b].c, cursor: "pointer", font: "inherit", textAlign: "right", border: 0 }} onClick={() => onPre(b)}>
@@ -1559,14 +1560,15 @@ function HwTeacher({ api, book, cks, ros, tkey, tname, admin }) {
   const addEx = items => setEd(e => ({ ...e, ex: [...e.ex, ...items] }));
   const save = async () => { if (!ed.cks.length) return toast("اختر فصلاً"); const qs = [...edQs.filter((_, i) => ed.sel.includes(i)).map(q => ({ p: q.p, n: q.n, ty: q.ty, k: q.k })), ...ed.ex.map((q, i) => ({ ...q, n: q.pg ? q.pg : edQs.filter((_, j) => ed.sel.includes(j)).length + i + 1 }))]; if (!qs.length) return toast("أضف سؤالاً أو صفحة واحدة على الأقل");
     const id = "h" + Date.now().toString(36); const v = { id, book, u: ed.u, qs, cks: ed.cks, due: ed.due, note: ed.note.trim(), ...(ed.t.trim() ? { t: ed.t.trim() } : {}), at: Date.now(), by: tname, tkey };
-    await api.maPut(`${NB_HW}/${id}`, v); setEd(null); await load(); toast("✅ نُشر الواجب للطلاب"); };
+    await api.maPut(`${NB_HW}/${id}`, v); setEd(null); await load(); toast("✅ نُشر الواجب للطلاب");
+    if (api.push) api.push({ to: { cls: ed.cks }, title: "📝 واجب جديد – " + B.name, body: hwTitle(v, B) + (v.due ? " • حتى " + dueTxt(v.due) : ""), url: "/#marji", urlS: "/#marji", tag: "hw-" + id, by: tname }); };
   const del = async h => { if (!window.confirm("حذف الواجب وإجابات الطلاب عليه؟")) return; await api.maPut(`${NB_HW}/${h.id}`, null); await api.maPut(`${NB_HWA}/${h.id}`, null); setOpen(null); load(); };
   // التصحيح
   if (bv) return <BookViewer api={api} book={book} startPage={bv.page} store={`${NB}/${bv.st.id}`} marks={`${NB_IDX}/${bv.st.id}`} readOnly keys tc="edit" tcPath={`${NB_TC}/${bv.st.id}`} by={tname}
       boards={`${NB_B}/s_${bv.st.id}`} boardsRO who="rv" title={bv.st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setBv(null)} />;
   if (gr) { const h = gr.h, s = gr.s, sid = gr.sid; const qs = arr(h.qs); const fb = gr.fb;
     const setF = (i, k, v) => setGr(g => ({ ...g, fb: { ...g.fb, [i]: { ...obj(g.fb[i]), [k]: v } } }));
-    const saveFb = async () => { const v = { ...s, fb: gr.fb, fbAt: Date.now(), fbBy: tname }; await api.maPut(`${NB_HWA}/${h.id}/${sid}`, v); setSubs(x => ({ ...x, [h.id]: { ...obj(x[h.id]), [sid]: v } })); setGr(null); toast("✅ حُفظ التصحيح ووصلت التغذية الراجعة للطالب"); };
+    const saveFb = async () => { const v = { ...s, fb: gr.fb, fbAt: Date.now(), fbBy: tname }; await api.maPut(`${NB_HWA}/${h.id}/${sid}`, v); if (api.push) api.push({ to: { uids: ["s_" + sid] }, title: "✅ صحّح المعلم واجبك", body: B.name + ": " + hwTitle(h, B), url: "/#marji", urlS: "/#marji", tag: "fb-" + h.id, by: tname }); setSubs(x => ({ ...x, [h.id]: { ...obj(x[h.id]), [sid]: v } })); setGr(null); toast("✅ حُفظ التصحيح ووصلت التغذية الراجعة للطالب"); };
     return <div className="lr-card" style={{ display: "grid", gap: 8, "--c": B.c }}>
       <div className="nb-h"><b>✍️ تصحيح واجب {s.n}</b><span className="nb-sp" /><button className="nb-b" onClick={() => setGr(null)}>رجوع</button></div>
       {qs.map((q, i) => { const v = obj(s.a)[i]; const au = autoOk(q, v); const f = obj(fb[i]); const cur = f.ok != null ? +f.ok : au;
