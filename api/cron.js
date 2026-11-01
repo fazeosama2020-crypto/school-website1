@@ -40,7 +40,7 @@ module.exports = async function handler(req, res) {
     });
     // ② قبل بداية الإشراف بدقائق
     if (C.duty) for (const s of slots) { const st = toMin(s.f); if (st == null || !s.tn.length) continue; const left = st - nowM;
-      if (left > 0 && left <= C.lead) await once("du-" + s.id, () => sendTo({ names: s.tn }, { title: `⏰ ${s.l} الساعة ${fmt(s.f)}`, body: `${s.pl ? "المكان: " + s.pl + " • " : ""}بعد ${ar(left)} دقيقة`, url: "/#teacher:duty", urlA: "/#staff:duty", tag: "du-" + s.id, urgent: 1 })); }
+      if (left > 0 && left <= C.lead) await once("du-" + s.id + "-" + String(s.f).replace(":", ""), () => sendTo({ names: s.tn }, { title: `⏰ ${s.l} الساعة ${fmt(s.f)}`, body: `${s.pl ? "المكان: " + s.pl + " • " : ""}بعد ${ar(left)} دقيقة`, url: "/#teacher:duty", urlA: "/#staff:duty", tag: "du-" + s.id, urgent: 1 })); }
     // ③ قبل حصة الانتظار بدقائق
     if (C.sub) for (const s of subs) { const st = toMin(times[s.p] && times[s.p][0]); if (st == null) continue; const left = st - nowM;
       if (left > 0 && left <= C.lead) await once("sb-" + s.k, () => sendTo({ ti: [s.ti] }, { title: `⏰ حصة انتظار الساعة ${fmt(times[s.p][0])}`, body: `الحصة ${ORD[s.p] || ar(s.p + 1)} — فصل ${cls(s.ck)} • بعد ${ar(left)} دقيقة`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sb-" + s.k, urgent: 1 })); }
