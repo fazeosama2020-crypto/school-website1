@@ -18,7 +18,7 @@ const TreasureAdmin = React.lazy(() => import("./treasure/TreasureAdmin.jsx"));
 const NafsBooksStudent = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksStudent })));
 const NafsBooksTeacher = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksTeacher })));
 const NafsBooksAdmin = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksAdmin })));
-const trApi = () => ({ maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src), TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n) });
+const trApi = () => ({ push: o => pushSend(o), PushBell, maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src), TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n) });
 const TR_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#78350f" }}>🧭 جارٍ تحميل رحلة الكنز…</div>;
 const SmartLessonTeacher = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonTeacher })));
 const SmartLessonAdmin = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonAdmin })));
@@ -33142,6 +33142,106 @@ async function ptStaffLogin(nid) {
   return { err: "رقم السجل المدني غير مسجّل — يرجى مراجعة الإدارة" };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🔔 إشعارات الجوال (Web Push): تصل للمعلم والطالب والموقع مغلق
+// • يفعّلها كل شخص مرة واحدة على جهازه (زر «تفعيل الإشعارات»)
+// • الاشتراك يُحفظ في school-push/{uid}/{id} والإرسال من الخادم api/push.js
+// ═══════════════════════════════════════════════════════════════
+const PUSH_PUB = "BJuDAE7GCkbs-9k2aDTf_gIiZzR8cZsEwyUHPalHSoMDRGfer0PdRbAIID5I5MkL1RkJjelx1ZPhz8arUtUSNWQ";
+const PUSH_NODE = "school-push", PUSH_LOG = "school-push-log";
+const pushNorm = s => String(s || "").replace(/^(أ\.|ا\.|الأستاذ|الاستاذ|أ\/)\s*/, "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, "");
+const pushSupported = () => typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const pushIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent || "") || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const pushStandalone = () => { try { return !!(window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches); } catch { return false; } };
+const pushKey = s => { const p = "=".repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
+const pushId = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return "d" + h.toString(36) + s.length.toString(36); };
+// إرسال إشعار (لا يعطّل الصفحة إن فشل)
+async function pushSend(o) { try { const r = await fetch("/api/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }); return await r.json(); } catch { return null; } }
+async function pushSave(who, sub) {
+  const s = sub.toJSON ? sub.toJSON() : sub; const id = pushId(s.endpoint);
+  const v = { sub: { endpoint: s.endpoint, keys: s.keys }, n: who.n || "", nn: pushNorm(who.n), r: who.r || "t", at: Date.now(), ua: String(navigator.userAgent || "").slice(0, 120), ...(who.ck ? { ck: who.ck } : {}), ...(who.ti != null && who.ti >= 0 ? { ti: who.ti } : {}) };
+  return maPut(`${PUSH_NODE}/${who.uid}/${id}`, v);
+}
+const PUSH_CSS = `.pb{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-radius:18px;padding:12px 14px;font-weight:800;font-size:13.5px}
+.pb b{font-size:15px}.pb .bt{border:0;border-radius:12px;padding:9px 16px;font:inherit;font-weight:900;cursor:pointer}
+.pb-ios{display:grid;gap:8px;margin-top:6px;width:100%}.pb-ios div{display:flex;gap:10px;align-items:center;background:#fff;border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px}.pb-ios i{font-style:normal;flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#1e3a8a;color:#fff;font-size:13px}`;
+// زر التفعيل — who = {uid, n, r, ck?, ti?}
+function PushBell({ who, compact = false }) {
+  const [st, setSt] = useState("…"); const [msg, setMsg] = useState("");
+  const check = async () => {
+    if (!pushSupported()) { setSt(pushIOS() && !pushStandalone() ? "ios" : "unsup"); return; }
+    if (pushIOS() && !pushStandalone()) { setSt("ios"); return; }
+    if (Notification.permission === "denied") { setSt("denied"); return; }
+    try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (sub && Notification.permission === "granted") { setSt("on"); pushSave(who, sub); } else setSt("off"); } catch { setSt("off"); }
+  };
+  useEffect(() => { if (who && who.uid) check(); }, [who && who.uid, who && who.ti, who && who.ck]);
+  const enable = async () => {
+    setSt("busy"); setMsg("");
+    try {
+      const p = await Notification.requestPermission(); if (p !== "granted") { setSt(p === "denied" ? "denied" : "off"); return; }
+      let reg = await navigator.serviceWorker.getRegistration(); if (!reg) reg = await navigator.serviceWorker.register("/sw.js"); reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKey(PUSH_PUB) });
+      await pushSave(who, sub); setSt("on");
+      const r = await pushSend({ to: { uids: [who.uid] }, title: "✅ تم تفعيل الإشعارات", body: "ستصلك تنبيهات المدرسة على هذا الجهاز حتى لو كان الموقع مغلقًا", url: location.pathname + location.hash, tag: "push-test" });
+      setMsg(r && r.ok ? "📨 أُرسل إشعار تجريبي — يفترض أن يظهر الآن" : r && r.code === "nokey" ? "⚠️ فُعّل على جهازك، لكن مفتاح الإرسال لم يُضف بعد في Vercel" : "");
+    } catch (e) { setSt("off"); setMsg("تعذّر التفعيل: " + (e && e.message || "")); }
+  };
+  const test = async () => { const r = await pushSend({ to: { uids: [who.uid] }, title: "🔔 تجربة إشعار", body: "الإشعارات تعمل على هذا الجهاز", url: location.pathname + location.hash, tag: "push-test" }); setMsg(r && r.ok ? (r.sent ? "📨 أُرسل — انتظر ثوانيَ" : "لم يُعثر على اشتراك هذا الجهاز — اضغط تفعيل مرة أخرى") : "⚠️ تعذّر الإرسال"); };
+  if (!who || !who.uid || st === "…" || st === "unsup") return null;
+  if (st === "on") return compact ? null : <div className="pb" dir="rtl" style={{ background: "#f0fdf4", border: "1.5px solid #bbf7d0", color: "#166534", padding: "8px 12px" }}><style>{PUSH_CSS}</style>🔔 الإشعارات مفعّلة على هذا الجهاز<button className="bt" style={{ background: "#dcfce7", color: "#166534", padding: "5px 12px", fontSize: 12.5, marginRight: "auto" }} onClick={test}>إرسال تجربة</button>{msg && <small style={{ width: "100%" }}>{msg}</small>}</div>;
+  return <div className="pb" dir="rtl" style={{ background: "linear-gradient(135deg,#fffbeb,#fef3c7)", border: "1.5px solid #fcd34d", color: "#78350f" }}><style>{PUSH_CSS}</style>
+    <span style={{ fontSize: 28 }}>🔔</span>
+    <div style={{ flex: 1, minWidth: 200 }}><b>فعّل الإشعارات على جوالك</b><div style={{ fontWeight: 700, fontSize: 12.5, opacity: .9 }}>تصلك التعاميم والمهام والاحتياط والواجبات فورًا حتى لو لم تفتح الموقع</div></div>
+    {st === "off" && <button className="bt" style={{ background: "#b45309", color: "#fff" }} onClick={enable}>🔔 تفعيل الإشعارات</button>}
+    {st === "busy" && <b>⏳</b>}
+    {st === "denied" && <div style={{ width: "100%", fontSize: 12.5, color: "#b91c1c" }}>الإشعارات محظورة في هذا المتصفح: افتح إعدادات المتصفح ← إعدادات الموقع ← الإشعارات ← «سماح»، ثم أعد تحميل الصفحة.</div>}
+    {st === "ios" && <div className="pb-ios"><div style={{ background: "transparent", padding: 0 }}>في الآيفون تعمل الإشعارات بعد إضافة الموقع للشاشة الرئيسية (مرة واحدة):</div>
+      <div><i>١</i>اضغط زر المشاركة <span style={{ fontSize: 18 }}>⎙</span> أسفل الشاشة في سفاري</div>
+      <div><i>٢</i>اختر «إضافة إلى الشاشة الرئيسية» ثم «إضافة»</div>
+      <div><i>٣</i>افتح الموقع من الأيقونة الجديدة وسجّل دخولك، ثم اضغط «تفعيل الإشعارات»</div></div>}
+    {msg && <small style={{ width: "100%" }}>{msg}</small>}
+  </div>;
+}
+// صفحة المدير: عدد المفعّلين والإرسال اليدوي وسجل اليوم
+function PushAdmin({ by = "الإدارة" }) {
+  const [D, setD] = useState(null); const [log, setLog] = useState({}); const [f, setF] = useState({ t: "", b: "", to: "staff", ck: "", who: "" }); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
+  const load = async () => { const [d, l] = await Promise.all([maGet(PUSH_NODE), maGet(`${PUSH_LOG}/${maKey(new Date())}`)]); setD(ptObj(d)); setLog(ptObj(l)); };
+  useEffect(() => { load(); }, []);
+  if (!D) return <div className="p-10 text-center font-bold text-gray-400">⏳</div>;
+  const devs = Object.entries(D).flatMap(([uid, x]) => Object.values(ptObj(x)).filter(v => v && v.sub).map(v => ({ uid, ...v })));
+  const people = {}; devs.forEach(d => { people[d.uid] = people[d.uid] || d; });
+  const P = Object.values(people); const cnt = r => P.filter(p => p.r === r).length;
+  const cks = [...new Set(P.filter(p => p.r === "s" && p.ck).map(p => p.ck))].sort();
+  const send = async () => { if (!f.t.trim()) { setMsg("⚠️ اكتب عنوان الإشعار"); return; }
+    const to = f.to === "all" ? { all: 1 } : f.to === "staff" ? { roles: ["t", "a"] } : f.to === "t" ? { roles: ["t"] } : f.to === "a" ? { roles: ["a"] } : f.to === "s" ? { roles: ["s"] } : f.to === "ck" ? { cls: [f.ck] } : { uids: [f.who] };
+    if ((f.to === "ck" && !f.ck) || (f.to === "one" && !f.who)) { setMsg("⚠️ اختر الفصل أو الشخص"); return; }
+    setBusy(true); const r = await pushSend({ to, title: f.t.trim(), body: f.b.trim(), url: f.to === "s" || f.to === "ck" ? "/#marji" : "/#" + (f.to === "a" ? "staff" : "teacher"), by, urgent: 1 }); setBusy(false);
+    setMsg(r && r.ok ? `✅ أُرسل إلى ${maAr(r.sent)} جهازًا${r.matched > r.sent ? ` (تعذّر ${maAr(r.matched - r.sent)})` : ""}` : r && r.code === "nokey" ? "⚠️ أضف المفتاح VAPID_PRIVATE_KEY في Vercel ثم أعد النشر" : "⚠️ " + ((r && r.msg) || "تعذّر الإرسال")); if (r && r.ok) { setF({ ...f, t: "", b: "" }); load(); } };
+  const L = Object.values(log).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  return <div className="grid gap-3" dir="rtl">
+    <div className="pt-kpis">{[["#1e3a8a", P.length, "مشتركون (أشخاص)"], ["#0f766e", cnt("t"), "معلمون"], ["#7c3aed", cnt("a"), "إداريون"], ["#c2410c", cnt("s"), "طلاب"], ["#475569", devs.length, "أجهزة"]].map(([c, v, l]) => <div key={l} className="pt-kpi" style={{ "--c": c, cursor: "default" }}><b>{maAr(v)}</b><small>{l}</small></div>)}</div>
+    <div className="ma-card p-4 grid gap-2">
+      <b style={{ fontSize: 16 }}>📣 إرسال إشعار الآن</b>
+      <div className="flex gap-1 flex-wrap">{[["staff", "كل المعلمين والإداريين"], ["t", "المعلمون"], ["a", "الإداريون"], ["s", "كل الطلاب"], ["ck", "فصل"], ["one", "شخص"], ["all", "الجميع"]].map(([k, l]) => <button key={k} className={`ma-btn ${f.to === k ? "pri" : ""}`} style={{ height: 34 }} onClick={() => setF({ ...f, to: k })}>{l}</button>)}</div>
+      {f.to === "ck" && <select className="ma-inp" value={f.ck} onChange={e => setF({ ...f, ck: e.target.value })}><option value="">اختر الفصل…</option>{cks.map(c => <option key={c} value={c}>{maClassName(c)}</option>)}</select>}
+      {f.to === "one" && <select className="ma-inp" value={f.who} onChange={e => setF({ ...f, who: e.target.value })}><option value="">اختر الشخص…</option>{P.sort((a, b) => a.n.localeCompare(b.n, "ar")).map(p => <option key={p.uid} value={p.uid}>{p.n} — {p.r === "s" ? "طالب" : p.r === "a" ? "إداري" : "معلم"}</option>)}</select>}
+      <input className="ma-inp" maxLength={80} value={f.t} onChange={e => setF({ ...f, t: e.target.value })} placeholder="عنوان الإشعار (مثال: اجتماع طارئ بعد الحصة السادسة)" />
+      <textarea className="ma-inp" rows={2} style={{ height: "auto" }} maxLength={180} value={f.b} onChange={e => setF({ ...f, b: e.target.value })} placeholder="تفاصيل قصيرة (اختياري)" />
+      <button className="ma-btn pri" style={{ justifySelf: "start" }} disabled={busy} onClick={send}>{busy ? "⏳" : "📤 إرسال"}</button>
+      {msg && <div style={{ fontWeight: 800, fontSize: 13.5 }}>{msg}</div>}
+      <small style={{ color: "#64748b", fontWeight: 700 }}>تُرسل الإشعارات تلقائيًا أيضًا عند: نشر تعميم، إسناد مهمة أو تذكير لإداري، إسناد حصة احتياط، نشر واجب أو تصحيحه.</small>
+    </div>
+    <div className="ma-card p-4"><b>🗒️ إشعارات اليوم ({maAr(L.length)})</b>{!L.length ? <div style={{ color: "#94a3b8", fontWeight: 800, marginTop: 6 }}>لم يُرسل شيء اليوم</div> : <div className="grid gap-1 mt-2">{L.map((x, i) => <div key={i} style={{ fontSize: 13, fontWeight: 800, display: "flex", gap: 8, flexWrap: "wrap", borderBottom: "1px dashed #e2e8f0", padding: "4px 0" }}><span style={{ color: "#64748b" }}>{x.at}</span><b>{x.t}</b><span style={{ color: "#475569" }}>{x.b}</span><span style={{ marginRight: "auto", color: "#0f766e" }}>وصل {maAr(x.s)} من {maAr(x.n)}</span></div>)}</div>}</div>
+    <div className="ma-card p-4"><b>👥 المفعّلون</b><div className="flex gap-1 flex-wrap mt-2">{P.sort((a, b) => a.n.localeCompare(b.n, "ar")).map(p => <span key={p.uid} className="pt-st" style={{ background: p.r === "s" ? "#ffedd5" : p.r === "a" ? "#ede9fe" : "#ccfbf1", color: "#0f172a" }}>{p.n}{p.ck ? ` • ${maClassName(p.ck)}` : ""}</span>)}</div></div>
+  </div>;
+}
+// هوية المعلم/الإداري للاشتراك (مع رقمه في الجدول ليصله إشعار الاحتياط)
+function PushBellStaff({ me, isStaff }) {
+  const [ti, setTi] = useState(-1);
+  useEffect(() => { (async () => { try { const T = ttFresh(await maGet(TT_NODE)); if (T && T.T) setTi(sttFindMe(T, me.name)); } catch {} })(); }, [me && me.name]);
+  if (!me || !me.hash) return null;
+  return <PushBell who={{ uid: "u_" + String(me.hash).slice(0, 16), n: me.name, r: isStaff ? "a" : "t", ti }} />;
+}
 const PT_CSS = `
 .pt{font-family:Cairo,Tahoma,sans-serif}
 .pt-hero{border-radius:26px;color:#fff;padding:22px 24px;position:relative;overflow:hidden}
@@ -34120,6 +34220,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "score") return wrap(["principal", "deputy"].includes(me.role) ? "🏆 ترتيب المعلمين في الانضباط الشامل" : "🏆 بطاقتي الشاملة وترتيبي", <TchScoreView me={me} admin={["principal", "deputy"].includes(me.role)} />);
   if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
   if (view === "circ") return wrap("📜 التعاميم", <CircTeacherView me={me} />);
+  if (view === "pushadm" && ["principal", "deputy"].includes(me.role)) return wrap("🔔 إشعارات الجوال", <PushAdmin by={me.name} />);
   if (view === "smart") return wrap("✨ درسي الذكي", <React.Suspense fallback={SL_WAIT}><SmartLessonTeacher me={me} api={slApi()} /></React.Suspense>);
   if (view === "smartadm" && ["principal", "deputy"].includes(me.role)) return wrap("✨ درسي الذكي – الإدارة", <React.Suspense fallback={SL_WAIT}><SmartLessonAdmin by={me.name} me={me} api={slApi()} /></React.Suspense>);
   if (view === "circd") return wrap("📨 تعاميمي اليومية", <CdMine me={me} />);
@@ -34157,6 +34258,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             <div className="flex gap-2"><button className="ma-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={logout}>خروج</button>{onBack && <button className="ma-btn" onClick={onBack}>🏠 الرئيسية</button>}</div>
           </div>
         </div>
+        {allowed && <PushBellStaff me={me} isStaff={isStaff} />}
 
         {!allowed ? (
           <div className="ma-card p-6 text-center"><div style={{ fontSize: 40 }}>⛔</div><div style={{ fontWeight: 900, fontSize: 17, margin: "6px 0" }}>هذه البوابة خاصة بالإداريين والمرشد الطلابي</div><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>صلاحيتك المسجّلة: {PT_ROLE_LBL[me.role] || "معلم"} — يمكن للمدير تعديلها من «بوابات الدخول والصلاحيات»</div><button className="ma-btn pri" style={{ marginTop: 14 }} onClick={() => { window.location.hash = "teacher"; window.location.reload(); }}>👨‍🏫 الذهاب لبوابة المعلمين</button></div>
@@ -34204,6 +34306,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {ptCan(me, "warn") && ptTile("warn", "🚨", "الإنذار المبكر وملف الطالب", "الطلاب المحتاجون للمتابعة، والملف الشامل لكل طالب، والتقارير الأسبوعية لأولياء الأمور", "#b91c1c", "#f97316", () => setView("warn"))}
               {["principal", "deputy"].includes(me.role) && ptTile("plradm", "🌿", "سجل مجتمعات التعلّم المهنية", "الفرق والاجتماعات والتوصيات واقتراح قضية الاجتماع من نتائج التشخيصي ونافس", "#0b3d2e", "#c9a227", () => setView("plradm"))}
               {["principal", "deputy"].includes(me.role) && ptTile("pgadm", "📗", "سجل النمو المهني", "السجل الرسمي بصفحاته: التحرير والإخفاء واعتماد إدخالات المعلمين والطباعة", "#0f5e57", "#b08d57", () => setView("pgadm"))}
+              {["principal", "deputy"].includes(me.role) && ptTile("pushadm", "🔔", "إشعارات الجوال", "إرسال إشعار فوري للمعلمين أو الإداريين أو الطلاب، وعدد المفعّلين وسجل الإرسال", "#b45309", "#d4a017", () => setView("pushadm"))}
               {["principal", "deputy"].includes(me.role) && ptTile("smartadm", "✨", "درسي الذكي – الإدارة", "مفتاح الذكاء الاصطناعي وحدود الاستخدام والتكلفة وبنك دروس المدرسة", "#1e3a8a", "#c9a227", () => setView("smartadm"))}
               {["principal", "deputy"].includes(me.role) && ptTile("smart", "✨", "درسي الذكي", "جرّب تحليل درس كما يراه المعلم", "#0f766e", "#c9a227", () => setView("smart"))}
               {["principal", "deputy", "counselor"].includes(me.role) && ptTile("diagadm", "🧪", "الاختبارات التشخيصية", "نتائج الصف الثالث في المواد الأربع: لوحة قيادة، الفصول والمعلمون، الطلاب، البعدي والمقارنة", "#12305a", "#0d4f3c", () => setView("diagadm"))}
@@ -42729,7 +42832,9 @@ function CircDailyAdmin({ by = "الإدارة" }) {
       rc: R.map(p => p.k), rn: Object.fromEntries(R.map(p => [p.k, p.n])), rx: Object.fromEntries(R.filter(p => p.k2).map(p => [p.k2, p.k])), at: old ? old.at : Date.now(), by, raw: String(e.raw || "").slice(0, 20000), ...(old ? { up: Date.now(), rm: old.rm || null } : {}), ...(e.ai ? { ai: 1 } : {}) };
     const ok = await maPut(`${CD_NODE}/${wk2}/${id}`, v);
     if (ok !== false && old && old.wk !== wk2) { const oa = ptObj((W[old.wk] || {}).A)[id]; if (oa) await maPut(`${CD_ACK}/${wk2}/${id}`, oa); await maPut(`${CD_NODE}/${old.wk}/${id}`, null); await maPut(`${CD_ACK}/${old.wk}/${id}`, null); loadWk(old.wk); }
-    setBusy(""); if (ok === false) return toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); await loadWk(wk2); setEd(null); setDay(e.d); toast(old ? "✅ حُدّث التعميم" : `✅ نُشر التعميم ووصل تنبيهه إلى ${maAr(R.length)} من المعنيين`); };
+    setBusy(""); if (ok === false) return toast("⚠️ تعذّر الحفظ — تحقق من الاتصال");
+    if (!old && R.length) pushSend({ to: { names: R.map(p => p.n) }, title: v.prio === "h" ? "🔴 تعميم عاجل" : "📨 تعميم جديد", body: v.title, url: "/#teacher:circd", urlA: "/#staff:circd", tag: "cd-" + id, by, urgent: v.prio === "h" ? 1 : 0 });
+    await loadWk(wk2); setEd(null); setDay(e.d); toast(old ? "✅ حُدّث التعميم" : `✅ نُشر التعميم ووصل تنبيهه إلى ${maAr(R.length)} من المعنيين`); };
   const edit = c => { setEd({ id: c.id, old: c, d: c.d, raw: c.raw || "", no: c.no || "", hd: c.hd || "", src: c.src || "", title: c.title || "", sum: c.sum || "", body: c.body || "", actT: maArr(c.act).join("\n"), due: c.due || "", prio: c.prio || "n", cat: c.cat || "عام", tg: maArr(c.tg), fmt: 1, pp: "" }); setTab("day"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const del = async c => { if (!window.confirm(`حذف التعميم «${c.title}»؟`)) return; await maPut(`${CD_NODE}/${c.wk}/${c.id}`, null); await maPut(`${CD_ACK}/${c.wk}/${c.id}`, null); loadWk(c.wk); toast("🗑 حُذف التعميم"); };
   const remind = async c => { const t = Date.now(); await maPut(`${CD_NODE}/${c.wk}/${c.id}/rm`, t); setW(w => ({ ...w, [c.wk]: { ...w[c.wk], items: w[c.wk].items.map(x => x.id === c.id ? { ...x, rm: t } : x) } })); toast("🔔 سيظهر التنبيه مجدداً لغير المطّلعين"); };
@@ -42863,6 +42968,7 @@ function CircAdminPage({ by = "الإدارة" }) {
   const save = async () => { const e = ed; if (!e.title.trim()) { toast("⚠️ اكتب عنوان التعميم"); return; } if (!String(e.text || "").trim() && !e.pages.length) { toast("⚠️ أضف نص التعميم أو صورته أو ملف PDF"); return; } if (Array.isArray(e.to) && !e.to.length) { toast("⚠️ اختر المعلمين المرسل إليهم"); return; }
     setBusy("⏳ جاري النشر…"); const meta = { id: e.id, title: e.title.trim(), no: e.no || "", date: e.date || maKey(new Date()), src: e.src, text: e.text || "", ...(e.html ? { html: crSan(e.html) } : {}), ...(e.fs ? { fs: e.fs } : {}), ...(e.lh ? { lh: e.lh } : {}), lay: e.lay, size: e.size, to: e.to, need: !!e.need, n: e.pages.length, sec: maArr(e.sec).filter(x => x && String(x.t || "").trim() && x.p >= 0 && x.p < e.pages.length).map(x => ({ t: String(x.t).trim(), p: +x.p })).sort((a, b) => a.p - b.p), at: e.at || Date.now(), by: e.by || by, up: Date.now() };
     const ok1 = await crPutPages(e.id, e.pages, e.n || 0, (i, n) => setBusy(`⏳ رفع الصفحات: ${maAr(i)} من ${maAr(n)} — لا تغلق الصفحة`)); const ok2 = ok1 && await maPut(`${CR_NODE}/${e.id}`, meta); setBusy("");
+    if (ok2 && !e.at) pushSend({ to: Array.isArray(e.to) ? { names: staff.filter(t => e.to.includes(t.hk)).map(t => t.n) } : { roles: ["t", "a"] }, title: "📜 تعميم جديد" + (e.need ? " يحتاج توقيعك" : ""), body: meta.title, url: "/#teacher:circ", urlA: "/#staff:circ", tag: "cr-" + e.id, by });
     if (ok2) { toast("✅ نُشر التعميم — أرسله الآن بالواتساب للمجموعة أو لكل معلم"); setEd(null); setTab("list"); await load(); openC(meta); } else toast(ok1 ? "⚠️ تعذّر حفظ بيانات التعميم — أعد المحاولة" : "⚠️ لم تُرفع بعض الصفحات — تحقق من الاتصال ثم اضغط «نشر» مرة أخرى"); };
   const openC = async c => { setOpen({ c, pages: null }); const [p, sg, se, rd, pr, pn] = await Promise.all([crIsLazy(c) ? Array(+c.n).fill(null) : maGet(`${CR_PG}/${c.id}`), maGet(`${CR_SIG}/${c.id}`), maGet(`${CR_SEEN}/${c.id}`), maGet(`${CR_READ}/${c.id}`), maGet(`${CR_PROG}/${c.id}`), maGet(`${CR_PN}/${c.id}`)]); setProgAll(x => ({ ...x, [c.id]: ptObj(pr) })); setPnAll(x => ({ ...x, [c.id]: ptObj(pn) })); setSigAll(x => ({ ...x, [c.id]: ptObj(sg) })); setSeenAll(x => ({ ...x, [c.id]: ptObj(se) })); setReadAll(x => ({ ...x, [c.id]: ptObj(rd) })); setOpen({ c, pages: crIsLazy(c) ? p : maArr(p) }); };
   const portal = (() => { try { return `${location.origin}${location.pathname}#teacher`; } catch { return "#teacher"; } })();
@@ -43731,6 +43837,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
     const k = ttK(d, p, ck); const rec = v ? { ...v, ...ttStamp(log[k], times, p, isToday), by, at: Date.now() } : null;
     setLog(o => { const n = { ...o }; if (rec) n[k] = rec; else delete n[k]; return n; });
     const ok = rec ? await maPut(`${TT_LOG}/${dateK}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dateK}/${k}.json`, { method: "DELETE" }).then(r => r.ok).catch(() => false);
+    if (ok && rec && rec.st === "sub" && rec.sub != null && isToday && !rec.pm && (!log[k] || log[k].sub !== rec.sub)) pushSend({ to: { ti: [+rec.sub] }, title: "🛡️ حصة احتياط", body: `الحصة ${TT_ORD[p]} (${mlFmtT(times[p] && times[p][0])}) — ${maClassName(ck)}`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sub-" + k, by, urgent: 1 });
     if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok;
   };
   const addAbs = async ti => {
@@ -44686,9 +44793,11 @@ function AdmTasksPage({ by = "مدير المدرسة", me = null }) {
     if (!lines.length) { alert("اكتب عنوان المهمة"); return; } if (!atTo(ed).length) { alert("اختر من سيُنفّذ المهمة"); return; } if (ed.fq === "w" && !Object.values(ptObj(ed.wd)).some(Boolean)) { alert("اختر أيام الأسبوع"); return; }
     const o = {}; const base = { d: ed.d.trim(), to: ed.to, fq: ed.fq, wd: ed.fq === "w" ? ed.wd : null, due: ed.fq === "o" ? (ed.due || today) : null, from: ed.from || today, pr: ed.pr ? 1 : 0, tm: ed.tm || "", tg: (ed.tg || "").trim(), by };
     lines.forEach((t, i) => { const id = ed.id || atId() + i; const old = ptObj(D.T)[id]; o[`${AT_NODE}/T/${id}`] = { ...(old || {}), ...base, id, t, at: old ? old.at : Date.now() + i, ed: old ? Date.now() : null }; });
-    const ok = await fbPatch(o); if (!ok) { toast("⚠️ تعذّر الحفظ"); return; } setEd(null); await load(); toast(ed.id ? "✅ عُدّلت المهمة" : `✅ أُضيفت ${maAr(lines.length)} مهمة وأُرسل التنبيه للمكلّفين`); };
+    const ok = await fbPatch(o); if (!ok) { toast("⚠️ تعذّر الحفظ"); return; }
+    if (!ed.id) pushSend({ to: { names: atTo(ed).map(k => (ptObj(D.P)[k] || {}).n).filter(Boolean) }, title: ed.pr ? "🔴 مهمة جديدة مهمة" : "📌 مهمة جديدة", body: lines.length > 1 ? `${lines[0]} (+${lines.length - 1})` : lines[0], url: "/#staff:mytasks", urlA: "/#staff:mytasks", tag: "at-" + Date.now(), by });
+    setEd(null); await load(); toast(ed.id ? "✅ عُدّلت المهمة" : `✅ أُضيفت ${maAr(lines.length)} مهمة وأُرسل التنبيه للمكلّفين`); };
   const delTask = async t => { if (!window.confirm(`حذف المهمة «${t.t}»؟\n(تبقى سجلات التنفيذ السابقة في التقارير)`)) return; await save(`T/${t.id}/off`, 1); load(); };
-  const ping = async (p, m) => { await save(`ping/${p.k}`, { at: Date.now(), by, m: m || "" }); toast(`🔔 أُرسل تذكير إلى ${p.n}`); };
+  const ping = async (p, m) => { await save(`ping/${p.k}`, { at: Date.now(), by, m: m || "" }); pushSend({ to: { names: [p.n] }, title: "🔔 تذكير من " + by, body: m || "يرجى إنجاز المهام المتبقية والتأشير عليها", url: "/#staff:mytasks", urlA: "/#staff:mytasks", tag: "ping", by, urgent: 1 }); toast(`🔔 أُرسل تذكير إلى ${p.n}`); };
   const addBank = async () => { const sel = Object.entries(bank.sel).filter(([, v]) => v).map(([t]) => t); if (!sel.length) { setBank(null); return; } const to = bank.to; if (!Object.keys(to).length) { alert("اختر المكلّف"); return; } const o = {}; sel.forEach((t, i) => { const id = atId() + i; o[`${AT_NODE}/T/${id}`] = { id, t, d: "", to, fq: "d", from: today, pr: 0, tm: "", by, at: Date.now() + i }; }); await fbPatch(o); setBank(null); await load(); toast(`✅ أُضيفت ${maAr(sel.length)} مهمة يومية`); };
 
   // ── متابعة اليوم
@@ -50340,7 +50449,10 @@ function SchoolWebsiteInner() {
   const [f9Portal, setF9Portal] = useState(() => /^#f9(=|$)/.test(window.location.hash));
   const [attPortal, setAttPortal] = useState(() => ["attend", "absence", "ghiab"].includes(window.location.hash.replace("#", "")));
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
-  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", ""); return ["teacher", "staff", "parent", "weekly", "late", "visits", "duty", "nafes", "treasure", "rwt", "marji"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
+  // رابط مباشر لخدمة داخل البوابة (من الإشعارات): ‎#teacher:circd‎ أو ‎#staff:mytasks‎
+  const [hubView, setHubView] = useState(() => { const h = window.location.hash.replace("#", ""); const m = h.match(/^(teacher|staff):(\w+)$/); return m ? m[2] : null; });
+  useEffect(() => { const f = () => { const h = window.location.hash.replace("#", ""); const m = h.match(/^(teacher|staff)(?::(\w+))?$/); if (m) { setHubPortal(m[1]); setHubView(m[2] || null); } else if (h === "marji") setHubPortal("marji"); }; window.addEventListener("hashchange", f); return () => window.removeEventListener("hashchange", f); }, []);
+  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", "").replace(/^(teacher|staff):\w+$/, "$1"); return ["teacher", "staff", "parent", "weekly", "late", "visits", "duty", "nafes", "treasure", "rwt", "marji"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
   const [directAnnId, setDirectAnnId] = useState(() => {
     const h = window.location.hash.replace("#","");
     return h.startsWith("ann-") ? h.replace("ann-","") : null;
@@ -50678,7 +50790,7 @@ function SchoolWebsiteInner() {
   if (hubPortal.startsWith("termplan")) return <TermPlanPublic onBack={hubBack} id={hubPortal.slice(9)} />;
   if (hubPortal === "parent") return <GuardianPortal onBack={hubBack} />;
   if (hubPortal === "late") return <StaffHub kind="staff" initView="late" onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
-  if (hubPortal) return <StaffHub kind={hubPortal} onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
+  if (hubPortal) return <StaffHub key={hubPortal + ":" + (hubView || "")} kind={hubPortal} initView={hubView} onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
   if (clsPortal) return <div style={{ minHeight: "100vh" }}><StudentClassifyPage mode="teacher" onBack={() => { setClsPortal(false); window.location.hash = ""; }} /></div>;
   if (attPortal) return <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f0fdfa 40%,#f8fafc)" }}><MorningAttendancePage mode="teacher" onBack={() => { setAttPortal(false); window.location.hash = ""; }} /></div>;
   if (licPortal) return <LicenseTeacherPortal siteFont={siteFont} onBack={() => { setLicPortal(false); window.location.hash = ""; }} />;
