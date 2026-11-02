@@ -34231,6 +34231,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
   if (view === "circ") return wrap("📜 التعاميم", <CircTeacherView me={me} />);
   if (view === "pushadm" && ["principal", "deputy"].includes(me.role)) return wrap("🔔 إشعارات الجوال", <PushAdmin by={me.name} />);
+  if (view === "rmtadm") return wrap("🏠 التحضير بالحصص — الدراسة عن بعد", <RmtAdminPage by={me.name} />);
   if (view === "smart") return wrap("✨ درسي الذكي", <React.Suspense fallback={SL_WAIT}><SmartLessonTeacher me={me} api={slApi()} /></React.Suspense>);
   if (view === "smartadm" && ["principal", "deputy"].includes(me.role)) return wrap("✨ درسي الذكي – الإدارة", <React.Suspense fallback={SL_WAIT}><SmartLessonAdmin by={me.name} me={me} api={slApi()} /></React.Suspense>);
   if (view === "circd") return wrap("📨 تعاميمي اليومية", <CdMine me={me} />);
@@ -34282,6 +34283,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               <button className="pt-kpi" style={{ "--c": "#2563eb" }} onClick={() => setView("inbox")}><b>{maAr(sum.notes)}</b><small>ملاحظة بلا رد</small></button>
             </div>}
             <div className="pt-tiles">
+              <div style={{ gridColumn: "1/-1" }}><RmtTeacherCard me={me} quiet /></div>
               <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><PtInboxStrip onOpen={() => setView("inbox")} />{["principal", "deputy"].includes(me.role) && <TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} setView("hdadmin"); }} />}</div>}
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><AbsAlertBanner onOpen={() => setView("absalert")} /></div>}
@@ -34290,6 +34292,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {me.role === "principal" && ptTile("admtasks", "📌", "المهام اليومية للإداريين", "أضف المهام وأسندها للوكلاء والموجهين • تابع «تم التنفيذ / لم تُنفذ» والأسباب مع التنبيهات", "#1e3a8a", "#0f766e", () => setView("admtasks"))}
               {me.role !== "principal" && ptTile("mytasks", "📌", "مهامي اليومية", "مهامك من مدير المدرسة — أشّر «تم التنفيذ» أو «لم تُنفذ» مع السبب", "#1e3a8a", "#0f766e", () => setView("mytasks"))}
               {ptCan(me, "late") && ptTile("late", "🌅", "سجل التأخر الصباحي", "رصد المتأخرين بالفصول — يُحسب وقت الحضور ومدة التأخر تلقائياً، مع التقارير", "#ea580c", "#f59e0b", () => setView("late"))}
+              {(["principal", "deputy"].includes(me.role) || ptCan(me, "stats")) && ptTile("rmtadm", "🏠", "التحضير بالحصص (عن بعد)", "يفعّل في أيام الدراسة عن بعد: كل معلم يحضّر حصته، والمقارنة تلقائية: الحاضرون والغائبون والغياب الجزئي، ثم الاعتماد في سجل الغياب", "#1e1b4b", "#4338ca", () => setView("rmtadm"))}
               {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><DutyChangesAlert onOpen={() => setView("dutyadm")} /></div>}
               {["principal", "deputy"].includes(me.role) && ptTile("dutyadm", "🛡️", "الإشراف والمناوبة", "جدول المهام والملف الرسمي ومتابعة اطلاع المعلمين", "#0c4a6e", "#0f766e", () => setView("dutyadm"))}
               {ptTile("duty", "🛡️", "مهامي في الإشراف والمناوبة", "مهامك اليومية والأسبوعية والملف الرسمي", "#0f766e", "#14b8a6", () => setView("duty"))}
@@ -34329,6 +34332,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           <TchMustSign me={me} onCirc={() => setView("circ")} onCv={() => setView("cv")} />
           <TchStatsBoard me={me} go={setView} />
           <div className="pt-bns">
+            <div className="pt-bn"><RmtTeacherCard me={me} /></div>
             <div className="pt-bn"><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
             <div className="pt-bn"><HdAbsTeacher me={me} compact /></div>
             <div className="pt-bn"><HdBanner me={me} onOpen={() => setView("hd")} /></div>
@@ -41284,6 +41288,210 @@ const hdDur = m => !m ? "٠" : m >= 60 ? `${maAr(Math.floor(m / 60))} س${m % 60
 // • استئذان «مهمة عمل» = حضور كامل • من لم يسجّل حضوره (أو لم يرد في الملف) = غائب
 const hdRem = (cfg, dk) => ptObj(ptObj(cfg).rem)[dk] || null;
 const HD_REM_S = "07:30";
+// ═══════════════════════════════════════════════════════════════
+// 🏠 التحضير بالحصص — الدراسة عن بعد (يعمل فقط في الأيام المحددة «دوام عن بعد» في school-hd-cfg/rem)
+// • school-rmt/cfg = {len:40, gap:0} مدة الحصة والفاصل بالدقائق (بيد الإدارة)
+// • school-rmt/att/{dk}/{ck}/p{p} = {ti, tn, by, at, tm, tot, s, ab:{id:name}, lt:{id:name}} تحضير المعلم لحصته
+// • school-rmt/plan/{dk} = حصص اليوم من الجدول (لتذكيرات الجوال) • school-rmt/ok/{dk} = اعتماد الإدارة {at, by, n, kept}
+// • الاعتماد يكتب في سجل الغياب المعتاد school-mattend/{dk}/{ck}: الغائب = غاب عن كل الحصص المحضَّرة، ومن غاب بعضها «غياب جزئي» (part)
+//   التحضير الصباحي الموجود مسبقاً لا يُستبدل إلا باختيار الإدارة، ويُحفظ نسخة منه داخل السجل (prevRec)
+// ═══════════════════════════════════════════════════════════════
+const RMT = "school-rmt";
+const RMT_DEF = { len: 40, gap: 0 };
+const rmtHM = m => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+const rmtF = t => { const m = hdMin(t); if (m == null) return ""; const h = Math.floor(m / 60); return `${maAr(((h + 11) % 12) + 1)}:${maAr(String(m % 60).padStart(2, "0"))}`; };
+const rmtTimes = (start, n, c) => { const S = hdMin(start || HD_REM_S) ?? 450; const L = Math.max(10, +ptObj(c).len || 40), G = Math.max(0, +ptObj(c).gap || 0); return Array.from({ length: n }, (_, i) => [rmtHM(S + i * (L + G)), rmtHM(S + i * (L + G) + L)]); };
+const rmtNP = T => { let n = T && +T.P || 0; if (T && T.C) Object.values(T.C).forEach(d => maArr(d).forEach(x => { n = Math.max(n, maArr(x).length); })); return n || 7; };
+function rmtPlan(T, dk) { const o = {}; if (!T || !T.C) return o; const di = ttDayIdx(T, maDate(dk)); if (di < 0) return o;
+  Object.keys(T.C).forEach(ck => maArr(T.C[ck][di]).forEach((c, p) => { if (!c || !(c[0] >= 0)) return; const ti = c[1] >= 0 ? c[1] : -1; o[`${p}_${ck}`] = { p, ck, di, ti, si: c[0], tn: ti >= 0 ? ttClean(T.T[ti]) : "", s: (T.SA && T.SA[c[0]]) || (T.S && T.S[c[0]]) || "" }; })); return o; }
+// المعلم الفعلي للحصة (مع الاحتياط المسند في «متابعة الحصص»)
+const rmtEff = (L, log, T) => { const g = ptObj(log)[`${L.di}_${L.p}_${L.ck}`]; if (g && g.st === "sub" && g.sub !== "" && g.sub != null && !g.pm) { const ti = +g.sub; return { ...L, ti, tn: ttClean(T.T[ti]) || L.tn, sub: 1, orig: L.tn }; } return L; };
+const rmtStu = (ros, ck, dk) => maArr(ptObj(ros[ck]).students).filter(s => s && s.id && (!s.add || s.add <= dk));
+const rmtNow = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+const rmtCkSort = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
+// تفعيل/إلغاء يوم دوام عن بعد (مشترك بين «حضوري» و«التحضير بالحصص») — يحدّث سجلات حضوري لذلك اليوم ويحفظ حصص اليوم للتذكيرات
+async function hdRemSet(k, on, s0, all0) { const s = s0 || HD_REM_S; const all = all0 || ptObj(await maGet(HD_NODE)); const P = { [`${HD_CFG}/rem/${k}`]: on ? { s } : null }; let c = 0;
+  Object.entries(all).forEach(([hk, r]) => { const x = ptObj(r)[k]; if (!x || !Object.keys(x).length) return; c++; P[`${HD_NODE}/${hk}/${k}/rm`] = on ? 1 : null; P[`${HD_NODE}/${hk}/${k}/rs`] = on ? s : null; });
+  if (on) { try { P[`${RMT}/plan/${k}`] = rmtPlan(ttFresh(await maGet(TT_NODE)), k); } catch {} }
+  const ok = await fbPatch(P); return { ok, c }; }
+const RMT_CSS = `
+.rmt{font-family:inherit}.rmt-card{background:#fff;border:1.5px solid #c7d2fe;border-radius:20px;padding:14px;display:grid;gap:10px;box-shadow:0 10px 30px -22px rgba(30,27,75,.5)}
+.rmt-hd{background:linear-gradient(135deg,#1e1b4b,#4338ca 60%,#6366f1);color:#fff;border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rmt-l{display:flex;gap:10px;align-items:center;border:1.5px solid #e2e8f0;border-radius:14px;padding:10px 12px;background:#fff;cursor:pointer;text-align:start;width:100%;font:inherit}
+.rmt-l:hover{border-color:#818cf8}.rmt-l.now{border-color:#4338ca;background:#eef2ff;box-shadow:0 0 0 3px #c7d2fe}.rmt-l.ok{border-color:#86efac;background:#f0fdf4}.rmt-l.miss{border-color:#fecaca;background:#fff7f7}
+.rmt-p{min-width:46px;height:46px;border-radius:12px;background:#1e1b4b;color:#fff;display:grid;place-items:center;font-weight:900;font-size:13px;line-height:1.1;text-align:center}
+.rmt-tag{font-size:11.5px;font-weight:900;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.rmt-b{border:1.5px solid #cbd5e1;background:#fff;border-radius:12px;padding:8px 14px;font:inherit;font-weight:900;font-size:13.5px;cursor:pointer;color:#0f172a}.rmt-b:disabled{opacity:.5;cursor:default}
+.rmt-b.pri{background:#4338ca;border-color:#4338ca;color:#fff}.rmt-b.ok{background:#15803d;border-color:#15803d;color:#fff}.rmt-b.red{background:#fff;border-color:#fca5a5;color:#b91c1c}
+.rmt-ov{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
+.rmt-sh{background:#f8fafc;width:min(640px,100%);max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:14px;display:grid;gap:10px}
+.rmt-st{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.rmt-s{display:flex;gap:8px;align-items:center;justify-content:space-between;border:2px solid #bbf7d0;background:#f0fdf4;border-radius:12px;padding:9px 11px;font:inherit;font-weight:800;font-size:13.5px;cursor:pointer;text-align:start;color:#14532d}
+.rmt-s.a{border-color:#fca5a5;background:#fef2f2;color:#991b1b}.rmt-s.l{border-color:#fcd34d;background:#fffbeb;color:#92400e}
+.rmt-g{border-collapse:separate;border-spacing:3px;font-size:12.5px;width:100%}.rmt-g th{font-weight:900;color:#334155;padding:4px;white-space:nowrap}.rmt-g td{border-radius:8px;padding:5px 4px;text-align:center;font-weight:900;white-space:nowrap;cursor:pointer}
+.rmt-kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.rmt-kp>div{background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:10px;text-align:center}.rmt-kp b{display:block;font-size:22px;font-weight:900;color:var(--c,#0f172a)}.rmt-kp small{font-weight:800;color:#64748b;font-size:12px}
+`;
+// ورقة تحضير حصة واحدة
+function RmtSheet({ dk, L, time, ros, rec, me, locked, onClose, onSaved }) {
+  const st = rmtStu(ros, L.ck, dk);
+  const [m, setM] = useState(() => { const o = {}; Object.keys(ptObj(rec && rec.ab)).forEach(id => { o[id] = "a"; }); Object.keys(ptObj(rec && rec.lt)).forEach(id => { o[id] = "l"; }); return o; });
+  const [busy, setBusy] = useState(false); const [q, setQ] = useState("");
+  const cyc = id => { if (locked) return; setM(x => { const v = x[id]; const n = { ...x }; if (!v) n[id] = "a"; else if (v === "a") n[id] = "l"; else delete n[id]; return n; }); };
+  const nA = Object.values(m).filter(v => v === "a").length, nL = Object.values(m).filter(v => v === "l").length;
+  const save = async () => { setBusy(true); const ab = {}, lt = {}; st.forEach(s => { if (m[s.id] === "a") ab[s.id] = s.name; if (m[s.id] === "l") lt[s.id] = s.name; });
+    const d = new Date(); const r = { ti: L.ti != null ? L.ti : -1, tn: L.tn || "", s: L.s || "", by: me.name, at: Date.now(), tm: rmtHM(d.getHours() * 60 + d.getMinutes()), tot: st.length, ab, lt, ...(rec && rec.at ? { ed: (+rec.ed || 0) + 1 } : {}) };
+    const ok = await maPut(`${RMT}/att/${dk}/${L.ck}/p${L.p}`, r); setBusy(false); if (ok) onSaved(r); else alert("⚠️ تعذّر الحفظ — تحقق من الاتصال وأعد المحاولة"); };
+  const shown = st.filter(s => !q || String(s.name).includes(q.trim()));
+  return <div className="rmt-ov" onClick={onClose}><div className="rmt-sh" dir="rtl" onClick={e => e.stopPropagation()}>
+    <div className="rmt-hd"><div className="rmt-p" style={{ background: "rgba(255,255,255,.18)" }}>ح{maAr(L.p + 1)}</div><div style={{ flex: 1 }}><b style={{ fontSize: 16 }}>{maClassName(L.ck)}{L.s ? ` • ${L.s}` : ""}</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>الحصة {TT_ORD[L.p] || maAr(L.p + 1)}{time ? ` • ${rmtF(time[0])} – ${rmtF(time[1])}` : ""}{L.sub ? " • 🛡️ انتظار" : ""}</div></div><button className="rmt-b" onClick={onClose}>✕</button></div>
+    {locked && <div className="rmt-card" style={{ borderColor: "#fde68a", background: "#fffbeb", fontWeight: 800, color: "#92400e" }}>🔒 اعتمدت الإدارة غياب هذا اليوم — للتعديل راجع وكيل المدرسة.</div>}
+    {!st.length ? <div className="rmt-card" style={{ fontWeight: 900, color: "#64748b", textAlign: "center" }}>لا يوجد كشف طلاب لهذا الفصل — راجع الإدارة</div> : <>
+      <div style={{ fontSize: 13, fontWeight: 800, color: "#475569" }}>الجميع «حاضر» — اضغط على الطالب الغائب مرة (🔴 غائب)، ومرة ثانية إن دخل متأخراً (🟠 متأخر)، والثالثة تعيده حاضراً.</div>
+      <div className="flex gap-2 flex-wrap items-center"><span className="rmt-tag" style={{ background: "#dcfce7", color: "#166534" }}>✅ حاضر {maAr(st.length - nA - nL)}</span><span className="rmt-tag" style={{ background: "#fee2e2", color: "#991b1b" }}>🔴 غائب {maAr(nA)}</span><span className="rmt-tag" style={{ background: "#fef3c7", color: "#92400e" }}>🟠 متأخر {maAr(nL)}</span>
+        {st.length > 12 && <input className="hd-in" style={{ flex: "1 1 140px", maxWidth: 220, padding: "4px 10px" }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث" />}
+        {!locked && Object.keys(m).length > 0 && <button className="rmt-b" style={{ marginInlineStart: "auto", padding: "4px 10px", fontSize: 12 }} onClick={() => setM({})}>↺ الكل حاضر</button>}</div>
+      <div className="rmt-st">{shown.map((s, i) => <button key={s.id} type="button" className={`rmt-s ${m[s.id] || ""}`} onClick={() => cyc(s.id)}><span><small style={{ opacity: .6 }}>{maAr(st.indexOf(s) + 1)}. </small>{s.name}</span><span>{m[s.id] === "a" ? "🔴" : m[s.id] === "l" ? "🟠" : "✅"}</span></button>)}</div>
+      {!locked && <button className="rmt-b pri" style={{ position: "sticky", bottom: 0, padding: 13, fontSize: 15 }} disabled={busy} onClick={save}>{busy ? "⏳ جاري الحفظ…" : `💾 ${rec && rec.at ? "حفظ التعديل" : "حفظ التحضير"} — غائب ${maAr(nA)}`}</button>}
+    </>}
+  </div></div>;
+}
+// بطاقة المعلم في بوابته: «حصصي اليوم» — تظهر فقط في يوم الدوام عن بعد
+function RmtTeacherCard({ me, quiet }) {
+  const dk = maKey(new Date());
+  const [X, setX] = useState(null); const [open, setOpen] = useState(null); const [extra, setExtra] = useState(false); const [ex, setEx] = useState({ ck: "", p: "0" }); const [, setTick] = useState(0);
+  const load = async () => { try { const hc = ptObj(await maGet(HD_CFG)); const R = hdRem(hc, dk); if (!R) { setX({ off: 1 }); return; }
+    const [tt, lg, c, att, ros, ok] = await Promise.all([maGet(TT_NODE), maGet(`${TT_LOG}/${dk}`), maGet(`${RMT}/cfg`), maGet(`${RMT}/att/${dk}`), maGet(MA_ROSTER), maGet(`${RMT}/ok/${dk}`)]);
+    const T = ttFresh(tt); setX({ R, T, ti: sttFindMe(T, me.name), plan: rmtPlan(T, dk), log: ptObj(lg), cfg: { ...RMT_DEF, ...ptObj(c) }, att: ptObj(att), ros: ptObj(ros), ok: ptObj(ok).at ? ptObj(ok) : null }); } catch { setX({ off: 1 }); } };
+  useEffect(() => { load(); const t = setInterval(() => setTick(x => x + 1), 30000); return () => clearInterval(t); }, [me && me.name]);
+  if (!X || X.off) return null;
+  const { T, ti, plan, log, cfg, att, ros, ok } = X; const P = rmtNP(T); const times = rmtTimes(X.R.s, P, cfg); const nowM = rmtNow();
+  const recOf = (ck, p) => { const r = ptObj(ptObj(att[ck])[`p${p}`]); return r.at ? r : null; };
+  const mine = Object.values(plan).map(L => rmtEff(L, log, T)).filter(L => ti >= 0 && L.ti === ti);
+  Object.entries(att).forEach(([ck, o]) => Object.entries(ptObj(o)).forEach(([pk, r]) => { const p = +String(pk).slice(1); if (r && r.by === me.name && !mine.some(x => x.ck === ck && x.p === p)) mine.push({ ck, p, ti, tn: me.name, s: r.s || "", x: 1 }); }));
+  mine.sort((a, b) => a.p - b.p || rmtCkSort(a.ck, b.ck));
+  if (quiet && !mine.length) return null;
+  const nDone = mine.filter(L => recOf(L.ck, L.p)).length;
+  const cks = Object.keys(T.C || ros).sort(rmtCkSort);
+  return <div className="rmt" dir="rtl"><style>{HD_CSS + RMT_CSS}</style><div className="rmt-card">
+    <div className="rmt-hd"><span style={{ fontSize: 26 }}>🏠</span><div style={{ flex: 1 }}><b style={{ fontSize: 16 }}>تعليم عن بعد — حضّر طلاب كل حصة</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>تبدأ الحصة الأولى {rmtF(times[0][0])} • مدة الحصة {maAr(cfg.len)} دقيقة{ok ? " • 🔒 اعتُمد غياب اليوم" : ""}</div></div><span className="rmt-tag" style={{ background: "rgba(255,255,255,.2)", color: "#fff", fontSize: 13 }}>{maAr(nDone)} / {maAr(mine.length)} حُضّرت</span></div>
+    {ti < 0 && !mine.length && <div style={{ fontWeight: 800, color: "#92400e", fontSize: 13 }}>لم أجد اسمك في الجدول المدرسي — استعمل «➕ حصة أخرى» لتحضير حصتك.</div>}
+    {mine.length === 0 && ti >= 0 && <div style={{ fontWeight: 800, color: "#64748b", fontSize: 13 }}>لا توجد لك حصص اليوم في الجدول.</div>}
+    <div className="grid gap-2">{mine.map(L => { const r = recOf(L.ck, L.p); const t = times[L.p] || ["", ""]; const a = hdMin(t[0]), b = hdMin(t[1]); const now = nowM >= a && nowM < b, past = nowM >= b;
+      return <button key={L.ck + L.p} type="button" className={`rmt-l ${r ? "ok" : now ? "now" : past ? "miss" : ""}`} onClick={() => setOpen(L)}>
+        <div className="rmt-p">ح{maAr(L.p + 1)}<small style={{ fontSize: 10, opacity: .8 }}>{rmtF(t[0])}</small></div>
+        <div style={{ flex: 1 }}><b style={{ fontSize: 14.5 }}>{maClassName(L.ck)}</b><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{L.s || ""}{L.sub ? " • 🛡️ انتظار بدل " + L.orig : ""}{L.x ? " • أضفتها" : ""}</div></div>
+        {r ? <span className="rmt-tag" style={{ background: "#dcfce7", color: "#166534" }}>✅ غائب {maAr(Object.keys(ptObj(r.ab)).length)}</span> : now ? <span className="rmt-tag" style={{ background: "#4338ca", color: "#fff" }}>● الآن — حضّر</span> : past ? <span className="rmt-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>لم تُحضّر</span> : <span className="rmt-tag" style={{ background: "#f1f5f9", color: "#64748b" }}>لاحقاً</span>}
+      </button>; })}</div>
+    {!ok && (!extra ? <button className="rmt-b" style={{ justifySelf: "start", fontSize: 12.5 }} onClick={() => setExtra(true)}>➕ حصة أخرى (غير ظاهرة في جدولي)</button> :
+      <div className="flex gap-2 flex-wrap items-center"><select className="hd-in" value={ex.ck} onChange={e => setEx({ ...ex, ck: e.target.value })}><option value="">اختر الفصل</option>{cks.map(ck => <option key={ck} value={ck}>{maClassName(ck)}</option>)}</select>
+        <select className="hd-in" value={ex.p} onChange={e => setEx({ ...ex, p: e.target.value })}>{times.map((t, p) => <option key={p} value={p}>الحصة {TT_ORD[p] || maAr(p + 1)} ({rmtF(t[0])})</option>)}</select>
+        <button className="rmt-b pri" disabled={!ex.ck} onClick={() => { const p = +ex.p; const pl = plan[`${p}_${ex.ck}`]; setOpen({ ck: ex.ck, p, ti, tn: me.name, s: pl ? pl.s : "", x: 1 }); setExtra(false); }}>فتح التحضير</button><button className="rmt-b" onClick={() => setExtra(false)}>إلغاء</button></div>)}
+    {open && <RmtSheet dk={dk} L={open} time={times[open.p]} ros={ros} rec={recOf(open.ck, open.p)} me={me} locked={!!ok} onClose={() => setOpen(null)} onSaved={r => { setX(x => ({ ...x, att: { ...x.att, [open.ck]: { ...ptObj(x.att[open.ck]), [`p${open.p}`]: r } } })); setOpen(null); }} />}
+  </div></div>;
+}
+// صفحة الإدارة: المتابعة والمقارنة والاعتماد
+function RmtAdminPage({ by = "الإدارة" }) {
+  const today = maKey(new Date());
+  const [hc, setHc] = useState(null); const [base, setBase] = useState(null); const [dk, setDk] = useState(null); const [D, setD] = useState(null); const [cls, setCls] = useState(""); const [cell, setCell] = useState(null);
+  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false); const [repl, setRepl] = useState(false); const [lenIn, setLenIn] = useState(null);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 4000); };
+  const loadBase = async () => { const [h, tt, c, ros] = await Promise.all([maGet(HD_CFG), maGet(TT_NODE), maGet(`${RMT}/cfg`), maGet(MA_ROSTER)]); const H = { ...HD_DEF, ...ptObj(h) }; setHc(H); const C = { ...RMT_DEF, ...ptObj(c) }; setBase({ T: ttFresh(tt), cfg: C, ros: ptObj(ros) }); setLenIn(l => l || { len: String(C.len), gap: String(C.gap) });
+    const days = Object.keys(ptObj(H.rem)).sort(); setDk(d => d && hdRem(H, d) ? d : (days.includes(today) ? today : days.filter(k => k <= today).pop() || days[0] || null)); };
+  useEffect(() => { loadBase(); }, []);
+  const loadDay = async () => { if (!dk) { setD(null); return; } const [lg, att, ok, ma] = await Promise.all([maGet(`${TT_LOG}/${dk}`), maGet(`${RMT}/att/${dk}`), maGet(`${RMT}/ok/${dk}`), maGet(`${MA_ATT}/${dk}`)]); setD({ dk, log: ptObj(lg), att: ptObj(att), ok: ptObj(ok).at ? ptObj(ok) : null, ma: maNormDay(ma) }); };
+  useEffect(() => { setD(null); loadDay(); if (dk !== today) return; const t = setInterval(loadDay, 30000); return () => clearInterval(t); }, [dk]);
+  useEffect(() => { if (base && dk && dk >= today) fbPatch({ [`${RMT}/plan/${dk}`]: rmtPlan(base.T, dk) }); }, [base, dk]);
+  if (!hc || !base) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
+  const remCard = <HdRemCard cfg={hc} setRem={async (k, on, s) => { const r = await hdRemSet(k, on, s); toast(r.ok ? `✅ ${on ? "🏠 دوام عن بعد" : "أُلغي الدوام عن بعد"}: ${maDay(maDate(k))} ${hfxHijTxt(k)}` : "⚠️ تعذّر الحفظ"); if (on) setDk(k); await loadBase(); }} />;
+  const saveLen = async () => { const n = { len: Math.max(10, Math.min(90, +lenIn.len || 40)), gap: Math.max(0, Math.min(30, +lenIn.gap || 0)) }; const ok = await maPut(`${RMT}/cfg`, n); setBase(b => ({ ...b, cfg: n })); toast(ok ? "✅ حُفظت مدة الحصة — تتغير أوقات الحصص عند المعلمين فوراً" : "⚠️ تعذّر الحفظ"); };
+  const { T, cfg, ros } = base; const P = rmtNP(T); const R = dk ? hdRem(hc, dk) : null; const times = rmtTimes(R && R.s, P, cfg);
+  const lenBox = <div className="rmt-card"><b>⏱️ مدة الحصة عن بعد</b>
+    <div className="flex gap-2 flex-wrap items-center">{[30, 35, 40, 45].map(n => <button key={n} className={`rmt-b ${+lenIn.len === n ? "pri" : ""}`} onClick={() => setLenIn(x => ({ ...x, len: String(n) }))}>{maAr(n)} د</button>)}
+      <label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 13 }}>أخرى <input className="hd-in" type="number" min="10" max="90" style={{ width: 70 }} value={lenIn.len} onChange={e => setLenIn(x => ({ ...x, len: e.target.value }))} /> د</label>
+      <label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 13 }}>فاصل بين الحصص <input className="hd-in" type="number" min="0" max="30" style={{ width: 64 }} value={lenIn.gap} onChange={e => setLenIn(x => ({ ...x, gap: e.target.value }))} /> د</label>
+      <button className="rmt-b ok" disabled={+lenIn.len === +cfg.len && +lenIn.gap === +cfg.gap} onClick={saveLen}>💾 حفظ</button></div>
+    <div className="flex gap-1 flex-wrap">{times.map((t, p) => <span key={p} className="rmt-tag" style={{ background: "#eef2ff", color: "#3730a3", fontSize: 12.5 }}>ح{maAr(p + 1)}: {rmtF(t[0])}–{rmtF(t[1])}</span>)}</div></div>;
+  if (!dk) return <div className="rmt grid gap-3" dir="rtl"><style>{HD_CSS + RMT_CSS}</style>{msg && <div className="rmt-card" style={{ fontWeight: 900 }}>{msg}</div>}<div className="rmt-card" style={{ fontWeight: 800, color: "#475569" }}>التحضير بالحصص يعمل فقط في أيام «الدوام عن بعد». حدّد اليوم من البطاقة التالية، وعند العودة للدراسة الحضورية ألغِه فيعود التحضير الصباحي المعتاد.</div>{remCard}{lenBox}</div>;
+  const days = Object.keys(ptObj(hc.rem)).sort();
+  const nowM = dk === today ? rmtNow() : dk < today ? 99999 : -1;
+  const plan = rmtPlan(T, dk); const lessons = D ? Object.values(plan).map(L => rmtEff(L, D.log, T)) : [];
+  const recOf = (ck, p) => { const r = D ? ptObj(ptObj(D.att[ck])[`p${p}`]) : {}; return r.at ? r : null; };
+  // ⏰ تأخر/غياب المعلم عن حصته عن بعد — يُكتب في «متابعة الحصص» (school-ttlog) بنفس صيغة الحصص الحضورية فيُحتسب في إحصائياته وبطاقته وترتيبه
+  const tlg = L => L && D ? ptObj(D.log)[`${L.di}_${L.p}_${L.ck}`] : null;
+  const setTL = async (L, v) => { const k = `${L.di}_${L.p}_${L.ck}`; const rec = v ? { ...v, ti: L.ti, si: L.si != null ? L.si : -1, note: "🏠 حصة عن بعد", rm: 1, by, at: Date.now() } : null;
+    const ok = rec ? await maPut(`${TT_LOG}/${dk}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dk}/${k}.json`, { method: "DELETE" }).then(() => true).catch(() => false);
+    if (ok) { setD(x => { const lg = { ...x.log }; if (rec) lg[k] = rec; else delete lg[k]; return { ...x, log: lg }; }); toast(rec ? `✅ سُجّل على ${L.tn}: ${rec.st === "late" ? `تأخر ${maAr(rec.mins)} د` : "غياب عن الحصة"} — يظهر في ملاحظات حصصه وإحصائياته` : "↩️ أُزيلت الملاحظة"); } else toast("⚠️ تعذّر الحفظ"); };
+  const cks = [...new Set([...Object.keys(T.C || {}), ...Object.keys(D ? D.att : {})])].filter(ck => ros[ck] || (T.C || {})[ck]).sort(rmtCkSort);
+  const sumCls = ck => { const st = rmtStu(ros, ck, dk); const recs = Array.from({ length: P }, (_, p) => ({ p, r: recOf(ck, p) })).filter(x => x.r);
+    const rows = st.map(s => { const ab = recs.filter(x => ptObj(x.r.ab)[s.id]).length, lt = recs.filter(x => ptObj(x.r.lt)[s.id]).length; return { s, ab, lt, full: recs.length > 0 && ab === recs.length }; });
+    return { st, recs, rows, full: rows.filter(x => x.full), part: rows.filter(x => !x.full && x.ab > 0) }; };
+  const S = Object.fromEntries(cks.map(ck => [ck, sumCls(ck)]));
+  const due = lessons.filter(L => { const t = times[L.p]; return t && hdMin(t[0]) <= nowM; });
+  const missing = due.filter(L => !recOf(L.ck, L.p));
+  const tot = { les: lessons.length, done: lessons.filter(L => recOf(L.ck, L.p)).length, full: cks.reduce((s, ck) => s + S[ck].full.length, 0), part: cks.reduce((s, ck) => s + S[ck].part.length, 0), stu: cks.reduce((s, ck) => s + (S[ck].recs.length ? S[ck].st.length : 0), 0) };
+  const remind = async () => { const by2 = {}; missing.forEach(L => { const k = L.ti >= 0 ? "t" + L.ti : "n" + L.tn; (by2[k] = by2[k] || { L, ps: [] }).ps.push(`ح${maAr(L.p + 1)} ${maClassName(L.ck)}`); }); let n = 0;
+    for (const { L, ps } of Object.values(by2)) { const r = await pushSend({ to: { ti: L.ti >= 0 ? [L.ti] : [], names: L.tn ? [L.tn] : [] }, title: "📋 لم تُحضّر طلاب حصتك", body: ps.join(" • ") + " — افتح بوابة المعلم وحضّر الحصة", url: "/#teacher", tag: "rmt-miss", urgent: 1, by }); n += (r && r.sent) || 0; }
+    toast(`🔔 أُرسل التذكير إلى ${maAr(Object.keys(by2).length)} معلماً${n ? ` (${maAr(n)} جهاز)` : " — لم يفعّل بعضهم إشعارات الجوال"}`); };
+  const writeIdx = async nd => { const vals = Object.values(nd); const Dd = maDate(dk); await maPut(`${MA_IDX}/${dk}`, { date: dk, hijri: maHijri(Dd), dayName: maDay(Dd), classes: vals.length, total: vals.reduce((a, r) => a + (r.total || 0), 0), absent: vals.reduce((a, r) => a + maArr(r.absent).length, 0), names: vals.flatMap(r => maArr(r.absent).map(a => ({ n: a.name, c: r.ck }))) }); };
+  const approve = async () => { const notRec = cks.filter(ck => !S[ck].recs.length && S[ck].st.length).length;
+    if (!window.confirm(`اعتماد غياب ${maDay(maDate(dk))} في سجل الغياب؟\n• الغائب = غاب عن كل الحصص المحضَّرة (${maAr(tot.full)} طالباً)\n• الغياب الجزئي يُحفظ للاطلاع ولا يُعدّ غياباً (${maAr(tot.part)})${missing.length ? `\n⚠️ ${maAr(missing.length)} حصة لم تُحضّر بعد` : ""}${notRec ? `\n⚠️ ${maAr(notRec)} فصلاً بلا أي تحضير لن يُكتب له شيء` : ""}`)) return;
+    setBusy(true); const W = {}; let kept = 0; const ops = []; const now = new Date(); const tm = now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" });
+    for (const ck of cks) { const s = S[ck]; if (!s.recs.length) continue; const prev = D.ma[ck]; if (prev && !prev.rmt && !repl) { kept++; continue; }
+      const absent = s.full.map(x => ({ id: x.s.id, name: x.s.name }));
+      const rec = { ck, date: dk, dayName: maDay(maDate(dk)), hijri: maHijri(maDate(dk)), total: s.st.length, absent, teacher: "تحضير الحصص عن بعد", byId: "", savedAt: now.getTime(), time: tm, rmt: 1, rmtN: s.recs.length, part: s.part.map(x => ({ id: x.s.id, name: x.s.name, n: x.ab })), apBy: by,
+        ...(prev && prev.rmt && prev.prevRec ? { prevRec: prev.prevRec } : prev && !prev.rmt ? { prevRec: prev } : {}) };
+      W[ck] = rec; ops.push([ck, absent.map(a => a.id), prev ? maArr(prev.absent).map(a => a && a.id) : []]); }
+    const ok = await fbPatch(Object.fromEntries(Object.entries(W).map(([ck, r]) => [`${MA_ATT}/${dk}/${ck}`, JSON.parse(JSON.stringify(r))])));
+    if (ok) { for (const [ck, a, p] of ops) await sidxAbs(dk, ck, a, p).catch(() => {}); await writeIdx({ ...D.ma, ...W }); await maPut(`${RMT}/ok/${dk}`, { at: Date.now(), by, n: Object.keys(W).length, kept }); }
+    setBusy(false); await loadDay(); toast(ok ? `✅ اعتُمد غياب ${maAr(Object.keys(W).length)} فصلاً${kept ? ` • بقي التحضير الصباحي السابق في ${maAr(kept)} فصلاً كما هو` : ""}` : "⚠️ تعذّر الحفظ"); };
+  const unapprove = async () => { if (!window.confirm("إلغاء الاعتماد؟ يُحذف ما كُتب في سجل الغياب من التحضير عن بعد، ويعود التحضير الصباحي السابق إن وُجد، ويُفتح التعديل للمعلمين.")) return; setBusy(true);
+    const P2 = {}; const nd = { ...D.ma }; const ops = [];
+    Object.entries(D.ma).forEach(([ck, r]) => { if (!r.rmt) return; const back = r.prevRec || null; P2[`${MA_ATT}/${dk}/${ck}`] = back; if (back) nd[ck] = maNormDay({ x: back }).x; else delete nd[ck]; ops.push([ck, back ? maArr(back.absent).map(a => a && a.id) : [], maArr(r.absent).map(a => a && a.id)]); });
+    P2[`${RMT}/ok/${dk}`] = null; const ok = await fbPatch(P2); if (ok) { for (const [ck, a, p] of ops) await sidxAbs(dk, ck, a, p).catch(() => {}); await writeIdx(nd); }
+    setBusy(false); await loadDay(); toast(ok ? "↩️ أُلغي الاعتماد" : "⚠️ تعذّر الحفظ"); };
+  const printDay = () => { const esc = v => String(v ?? "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    const body = cks.filter(ck => S[ck].recs.length).map(ck => { const s = S[ck]; return `<h3>${esc(maClassName(ck))} — حُضّرت ${maAr(s.recs.length)} حصة • الطلاب ${maAr(s.st.length)}</h3><table><tr><th>م</th><th>الطالب</th>${s.recs.map(x => `<th>ح${maAr(x.p + 1)}</th>`).join("")}<th>النتيجة</th></tr>${s.rows.filter(x => x.ab || x.lt).map((x, i) => `<tr><td>${maAr(i + 1)}</td><td style="text-align:right">${esc(x.s.name)}</td>${s.recs.map(r => `<td>${ptObj(r.r.ab)[x.s.id] ? "غ" : ptObj(r.r.lt)[x.s.id] ? "م" : "✓"}</td>`).join("")}<td><b>${x.full ? "غائب اليوم" : x.ab ? `غياب جزئي (${maAr(x.ab)})` : "متأخر"}</b></td></tr>`).join("") || `<tr><td colspan="${s.recs.length + 3}">لا غياب</td></tr>`}</table>`; }).join("");
+    const w = window.open("", "_blank"); if (!w) return; w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>حضور الحصص عن بعد ${dk}</title><style>body{font-family:'IBM Plex Sans Arabic',Tahoma,sans-serif;padding:18px;color:#0f172a}h2{margin:0 0 4px}h3{margin:16px 0 6px;font-size:15px}table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{border:1px solid #94a3b8;padding:4px 6px;text-align:center}th{background:#e0e7ff}</style></head><body><h2>🏠 تقرير حضور الحصص — الدراسة عن بعد</h2><div>${esc(maDay(maDate(dk)))} ${esc(maHijri(maDate(dk)))} • الحصص المحضَّرة ${maAr(tot.done)} من ${maAr(tot.les)} • غائب اليوم ${maAr(tot.full)} • غياب جزئي ${maAr(tot.part)}</div>${body}<script>setTimeout(()=>print(),300)<\/script></body></html>`); w.document.close(); };
+  const C = cls && S[cls];
+  return <div className="rmt grid gap-3" dir="rtl"><style>{HD_CSS + RMT_CSS}</style>
+    {msg && <div className="rmt-card" style={{ fontWeight: 900, position: "sticky", top: 6, zIndex: 5, borderColor: "#a5b4fc" }}>{msg}</div>}
+    <div className="rmt-hd"><span style={{ fontSize: 28 }}>🏠</span><div style={{ flex: 1 }}><b style={{ fontSize: 17 }}>التحضير بالحصص — الدراسة عن بعد</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>كل معلم يحضّر حصته من بوابته • المقارنة تلقائية • الاعتماد يكتب في سجل الغياب المعتاد</div></div>
+      <select className="hd-in" value={dk} onChange={e => { setDk(e.target.value); setCls(""); }} style={{ color: "#0f172a" }}>{[...days].reverse().map(k => <option key={k} value={k}>{maDay(maDate(k))} {hfxHijTxt(k)}{k === today ? " (اليوم)" : ""}</option>)}</select></div>
+    {!D ? <div className="p-6 text-center font-bold text-gray-400">⏳</div> : <>
+      <div className="rmt-kp"><div style={{ "--c": "#4338ca" }}><b>{maAr(tot.done)} / {maAr(tot.les)}</b><small>حصة حُضّرت</small></div><div style={{ "--c": missing.length ? "#b91c1c" : "#15803d" }}><b>{maAr(missing.length)}</b><small>حصة بدأت ولم تُحضّر</small></div><div style={{ "--c": "#b91c1c" }}><b>{maAr(tot.full)}</b><small>غائب اليوم (كل الحصص)</small></div><div style={{ "--c": "#c2410c" }}><b>{maAr(tot.part)}</b><small>غياب جزئي</small></div><div style={{ "--c": "#15803d" }}><b>{maAr(Math.max(0, tot.stu - tot.full))}</b><small>حاضر</small></div>{(() => { const G = lessons.map(tlg).filter(g => g && (g.st === "late" || g.st === "absent")); return <div style={{ "--c": "#9a3412" }}><b>{maAr(G.filter(g => g.st === "late").length)} • {maAr(G.filter(g => g.st === "absent").length)}</b><small>تأخر • غياب المعلمين عن الحصص</small></div>; })()}</div>
+      <div className="flex gap-2 flex-wrap items-center">
+        {missing.length > 0 && !D.ok && <button className="rmt-b red" onClick={remind}>🔔 تذكير من لم يحضّر ({maAr(new Set(missing.map(L => L.tn || L.ti)).size)})</button>}
+        <button className="rmt-b" onClick={printDay}>🖨 تقرير اليوم</button><button className="rmt-b" onClick={loadDay}>↻ تحديث</button>
+        <span style={{ marginInlineStart: "auto" }} />
+        {D.ok ? <><span className="rmt-tag" style={{ background: "#dcfce7", color: "#166534", fontSize: 13 }}>🔒 معتمد — {D.ok.by} {new Date(D.ok.at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</span><button className="rmt-b" disabled={busy} onClick={approve}>🔄 إعادة الاعتماد</button><button className="rmt-b red" disabled={busy} onClick={unapprove}>↩️ إلغاء الاعتماد</button></>
+          : <><label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 12.5 }}><input type="checkbox" checked={repl} onChange={e => setRepl(e.target.checked)} /> استبدال التحضير الصباحي إن وُجد</label><button className="rmt-b ok" disabled={busy || !tot.done} onClick={approve}>{busy ? "⏳" : "✅ اعتماد غياب اليوم"}</button></>}</div>
+      <div className="rmt-card" style={{ overflowX: "auto" }}><b>📋 متابعة التحضير — كل فصل وكل حصة <small style={{ color: "#64748b", fontWeight: 800 }}>(اضغط الخانة للتفاصيل، واسم الفصل لكشفه)</small></b>
+        <table className="rmt-g"><thead><tr><th>الفصل</th>{times.map((t, p) => <th key={p}>ح{maAr(p + 1)}<div style={{ fontSize: 10, color: "#94a3b8" }}>{rmtF(t[0])}</div></th>)}<th>غائب</th><th>جزئي</th></tr></thead>
+          <tbody>{cks.map(ck => <tr key={ck}><th style={{ cursor: "pointer", color: cls === ck ? "#4338ca" : undefined }} onClick={() => setCls(cls === ck ? "" : ck)}>{maClassName(ck)}</th>{times.map((t, p) => { const L = lessons.find(x => x.ck === ck && x.p === p); const r = recOf(ck, p); const started = hdMin(t[0]) <= nowM;
+            const bg = r ? "#dcfce7" : L ? (started ? "#fee2e2" : "#f1f5f9") : "transparent"; const c = r ? "#166534" : started ? "#b91c1c" : "#94a3b8";
+            return <td key={p} style={{ background: bg, color: c, cursor: L || r ? "pointer" : "default" }} title={L ? L.tn : ""} onClick={() => (L || r) && setCell({ ck, p, L, r })}>{r ? `✓ ${maAr(Object.keys(ptObj(r.ab)).length)}` : L ? (started ? "✗" : "·") : ""}{(() => { const g = tlg(L); return g && g.st === "late" ? <span title="تأخر المعلم" style={{ color: "#c2410c" }}> ⏰</span> : g && (g.st === "absent" || g.st === "sub") ? <span title="غياب المعلم" style={{ color: "#b91c1c" }}> 🚫</span> : null; })()}</td>; })}
+            <td style={{ color: "#b91c1c" }}>{S[ck].recs.length ? maAr(S[ck].full.length) : "—"}</td><td style={{ color: "#c2410c" }}>{S[ck].recs.length ? maAr(S[ck].part.length) : "—"}</td></tr>)}</tbody></table>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>✓ حُضّرت (الرقم = الغائبون) • ✗ بدأت ولم تُحضّر • · لم تبدأ بعد • ⏰ تأخر المعلم • 🚫 غياب المعلم — اضغط الخانة لتسجيل تأخر المعلم أو غيابه</div></div>
+      {cell && <div className="rmt-card" style={{ borderColor: "#818cf8" }}><div className="flex gap-2 items-center"><b style={{ flex: 1 }}>{maClassName(cell.ck)} • الحصة {TT_ORD[cell.p] || maAr(cell.p + 1)}{cell.L && cell.L.s ? ` • ${cell.L.s}` : ""}</b><button className="rmt-b" onClick={() => setCell(null)}>✕</button></div>
+        <div style={{ fontWeight: 800, fontSize: 13, color: "#475569" }}>المعلم: {cell.L ? cell.L.tn || "—" : "—"}{cell.L && cell.L.sub ? ` (انتظار بدل ${cell.L.orig})` : ""}{cell.r ? ` • حضّرها ${cell.r.by} الساعة ${rmtF(cell.r.tm)}${cell.r.ed ? " (عُدّلت)" : ""}` : " • لم تُحضّر"}</div>
+        {cell.r && <div className="flex gap-1 flex-wrap">{Object.values(ptObj(cell.r.ab)).map(n => <span key={n} className="rmt-tag" style={{ background: "#fee2e2", color: "#991b1b" }}>🔴 {n}</span>)}{Object.values(ptObj(cell.r.lt)).map(n => <span key={n} className="rmt-tag" style={{ background: "#fef3c7", color: "#92400e" }}>🟠 {n}</span>)}{!Object.keys(ptObj(cell.r.ab)).length && !Object.keys(ptObj(cell.r.lt)).length && <span className="rmt-tag" style={{ background: "#dcfce7", color: "#166534" }}>✅ الجميع حاضر</span>}</div>}
+        {cell.L && cell.L.ti >= 0 && (() => { const L = cell.L; const g = tlg(L); const t = times[L.p]; const dl = cell.r && t ? hdMin(cell.r.tm) - hdMin(t[0]) : null; const sug = dl > 0 ? Math.min(45, Math.ceil(dl / 5) * 5) : 0;
+          return <div style={{ borderTop: "1.5px dashed #c7d2fe", paddingTop: 10, display: "grid", gap: 8 }}><b style={{ fontSize: 14 }}>👤 حضور المعلم {L.tn} للحصة</b>
+            {dl != null && <div style={{ fontSize: 12.5, fontWeight: 800, color: dl > 5 ? "#c2410c" : "#15803d" }}>{dl > 0 ? `حضّر طلابه بعد بداية الحصة بـ ${maAr(dl)} دقيقة` : "حضّر طلابه في بداية الحصة"}</div>}
+            {g && g.st === "sub" ? <div style={{ fontSize: 13, fontWeight: 800, color: "#b91c1c" }}>🚫 مسجّل غائباً في «متابعة الحصص» والبديل: {L.tn} — يُعدَّل من صفحة الجدول المدرسي</div> : <>
+              {g && (g.st === "late" || g.st === "absent") && <div className="flex gap-2 items-center flex-wrap"><span className="rmt-tag" style={{ background: g.st === "late" ? "#ffedd5" : "#fee2e2", color: g.st === "late" ? "#c2410c" : "#b91c1c", fontSize: 13 }}>{g.st === "late" ? `⏰ مسجّل: تأخر ${maAr(g.mins)} د` : "🚫 مسجّل: غاب عن الحصة"}</span><button className="rmt-b" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => setTL(L, null)}>إزالة</button></div>}
+              <div className="flex gap-1 flex-wrap items-center"><span style={{ fontWeight: 900, fontSize: 13 }}>⏰ تأخر:</span>{[5, 10, 15, 20, 30].map(m => <button key={m} className={`rmt-b ${m === sug ? "pri" : ""}`} style={{ padding: "4px 10px", fontSize: 12.5 }} onClick={() => setTL(L, { st: "late", mins: m })}>{maAr(m)} د</button>)}
+                <button className="rmt-b red" style={{ padding: "4px 10px", fontSize: 12.5, marginInlineStart: 8 }} onClick={() => setTL(L, { st: "absent" })}>🚫 غاب عن الحصة</button></div>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>يُسجَّل في «متابعة الحصص» مثل الحصص الحضورية تماماً: يظهر للمعلم في «ملاحظات متابعة حصصي»، ويُحتسب في حصر ملاحظات الحصص وبطاقته الشاملة وترتيب المعلمين.</div></>}
+          </div>; })()}</div>}
+      {C && <div className="rmt-card" style={{ overflowX: "auto" }}><div className="flex gap-2 items-center"><b style={{ flex: 1 }}>👥 {maClassName(cls)} — {maAr(C.st.length)} طالباً • حُضّرت {maAr(C.recs.length)} حصة</b><button className="rmt-b" onClick={() => setCls("")}>✕</button></div>
+        {!C.recs.length ? <div style={{ fontWeight: 800, color: "#64748b" }}>لم تُحضّر أي حصة لهذا الفصل بعد.</div> : <table className="rmt-g"><thead><tr><th style={{ textAlign: "right" }}>الطالب</th>{C.recs.map(x => <th key={x.p}>ح{maAr(x.p + 1)}</th>)}<th>النتيجة</th></tr></thead>
+          <tbody>{[...C.rows].sort((a, b) => b.ab - a.ab || b.lt - a.lt).map(x => <tr key={x.s.id}><th style={{ textAlign: "right", fontWeight: 800 }}>{x.s.name}</th>{C.recs.map(r => { const a = ptObj(r.r.ab)[x.s.id], l = ptObj(r.r.lt)[x.s.id]; return <td key={r.p} style={{ background: a ? "#fee2e2" : l ? "#fef3c7" : "#f0fdf4", color: a ? "#b91c1c" : l ? "#92400e" : "#15803d", cursor: "default" }}>{a ? "غ" : l ? "م" : "✓"}</td>; })}
+            <td style={{ cursor: "default", color: x.full ? "#b91c1c" : x.ab ? "#c2410c" : "#15803d" }}>{x.full ? "🔴 غائب اليوم" : x.ab ? `🟠 جزئي (${maAr(x.ab)})` : x.lt ? "⏰ متأخر" : "✅ حاضر"}</td></tr>)}</tbody></table>}</div>}
+    </>}
+    <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>{remCard}{lenBox}</div>
+  </div>;
+}
 function HdRemCard({ cfg, setRem }) {
   const [k, setK] = useState(() => maKey(new Date())); const [s, setS] = useState(HD_REM_S); const [busy, setBusy] = useState(false);
   const L = Object.entries(ptObj(ptObj(cfg).rem)).sort((a, b) => b[0].localeCompare(a[0]));
@@ -42260,9 +42468,7 @@ function HdAdminPage({ by = "الإدارة" }) {
     setAll(a => ({ ...a, [x.hk]: { ...ptObj(a[x.hk]), [dk]: rec } })); const ok = await maPut(`${HD_NODE}/${x.hk}/${dk}`, rec); toast(ok ? `✅ ${x.n}: ${v ? L : "أُعيدت حالة «حضوري» الأصلية"}` : "⚠️ تعذّر الحفظ"); };
   // 🏠 تفعيل/إلغاء يوم دوام عن بعد — يُحدَّث معه كل سجل مرفوع لذلك اليوم
   const setRem = async (k, on, s0) => { if (!k) return; const s = s0 || HD_REM_S; const rem = { ...ptObj(cfg.rem) }; if (on) rem[k] = { s }; else delete rem[k];
-    const n = { ...cfg, rem }; setCfg(n); const P = { [`${HD_CFG}/rem/${k}`]: on ? { s } : null }; let c = 0;
-    Object.entries(all).forEach(([hk, r]) => { const x = ptObj(r)[k]; if (!x) return; c++; if (on) { P[`${HD_NODE}/${hk}/${k}/rm`] = 1; P[`${HD_NODE}/${hk}/${k}/rs`] = s; } else { P[`${HD_NODE}/${hk}/${k}/rm`] = null; P[`${HD_NODE}/${hk}/${k}/rs`] = null; } });
-    const ok = await fbPatch(P); await load(); toast(ok ? `✅ ${on ? "🏠 دوام عن بعد" : "أُلغي الدوام عن بعد"}: ${maDay(maDate(k))} ${hfxHijTxt(k)}${c ? ` • حُدّث ${maAr(c)} سجلاً` : ""}` : "⚠️ تعذّر الحفظ"); };
+    setCfg({ ...cfg, rem }); const { ok, c } = await hdRemSet(k, on, s, all); await load(); toast(ok ? `✅ ${on ? "🏠 دوام عن بعد" : "أُلغي الدوام عن بعد"}: ${maDay(maDate(k))} ${hfxHijTxt(k)}${c ? ` • حُدّث ${maAr(c)} سجلاً` : ""}` : "⚠️ تعذّر الحفظ"); };
   const remCard = <HdRemCard cfg={cfg} setRem={setRem} />;
   // جدول اليوم
   const dayRows = dk ? Object.entries(all).filter(([hk]) => isT(hk)).map(([hk, r]) => { const rec = ptObj(r)[dk]; if (!rec) return null; const d0 = hdDay(rec, cfg); if (!d0 || d0.kind === "off") return null; const n = nm(hk);
