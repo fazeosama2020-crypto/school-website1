@@ -2924,7 +2924,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
     // ── ربط الغياب بجدول الحصص: الغائب يظهر في الجدول اليومي ويُطلب له الاحتياط
     if (field === "status") { try { const prevSt = attendance[ti]?.[di]?.status || "حاضر"; const dm = week && week.days && week.days[di] && week.days[di].dateM; const tn = teachers[ti]; const name = typeof tn === "string" ? tn : (tn && (tn.name || tn.n)) || "";
       if (dm && name && (value === "غائب" || prevSt === "غائب")) { const [dd, mm, yy] = String(dm).split("/").map(Number); const dk = `${yy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
-        ttAbsSync(dk, name, value === "غائب", "att", "حضور المعلمين").then(r => { if (r === "added") pamToast(`🗓️ ${name}: سُجّل غائباً في جدول الحصص — يُطلب له الاحتياط`); else if (r === "removed") pamToast(`↩️ ${name}: أُلغي غيابه من جدول الحصص`); else if (r === "nf" && value === "غائب") pamToast(`⚠️ ${name}: لم يُعثر على اسمه في جدول الحصص`); }); } } catch {} }
+        if (!hdRemDay(dk)) ttAbsSync(dk, name, value === "غائب", "att", "حضور المعلمين").then(r => { if (r === "added") pamToast(`🗓️ ${name}: سُجّل غائباً في جدول الحصص — يُطلب له الاحتياط`); else if (r === "removed") pamToast(`↩️ ${name}: أُلغي غيابه من جدول الحصص`); else if (r === "nf" && value === "غائب") pamToast(`⚠️ ${name}: لم يُعثر على اسمه في جدول الحصص`); }); } } catch {} }
   };
 
   // debounce احتياطي — الحفظ الفعلي يتم في updateField مباشرة
@@ -41402,7 +41402,7 @@ function RmtAdminPage({ by = "الإدارة" }) {
   const loadBase = async () => { const [h, tt, c, ros] = await Promise.all([maGet(HD_CFG), maGet(TT_NODE), maGet(`${RMT}/cfg`), maGet(MA_ROSTER)]); const H = { ...HD_DEF, ...ptObj(h) }; setHc(H); const C = { ...RMT_DEF, ...ptObj(c) }; setBase({ T: ttFresh(tt), cfg: C, ros: ptObj(ros) }); setLenIn(l => l || { len: String(C.len), gap: String(C.gap) });
     const days = Object.keys(ptObj(H.rem)).sort(); setDk(d => d && hdRem(H, d) ? d : (days.includes(today) ? today : days.filter(k => k <= today).pop() || days[0] || null)); };
   useEffect(() => { loadBase(); }, []);
-  const loadDay = async () => { if (!dk) { setD(null); return; } const [lg, att, ok, ma, ab] = await Promise.all([maGet(`${TT_LOG}/${dk}`), maGet(`${RMT}/att/${dk}`), maGet(`${RMT}/ok/${dk}`), maGet(`${MA_ATT}/${dk}`), maGet(`${TT_ABS}/${dk}`)]); setD({ dk, log: ptObj(lg), att: ptObj(att), ok: ptObj(ok).at ? ptObj(ok) : null, ma: maNormDay(ma), abs: ptObj(ab) }); };
+  const loadDay = async () => { if (!dk) { setD(null); return; } const [lg, att, ok, ma, ab] = await Promise.all([maGet(`${TT_LOG}/${dk}`), maGet(`${RMT}/att/${dk}`), maGet(`${RMT}/ok/${dk}`), maGet(`${MA_ATT}/${dk}`), maGet(`${RMT}/abs/${dk}`)]); setD({ dk, log: ptObj(lg), att: ptObj(att), ok: ptObj(ok).at ? ptObj(ok) : null, ma: maNormDay(ma), abs: ptObj(ab) }); };
   useEffect(() => { setD(null); loadDay(); if (dk !== today) return; const t = setInterval(loadDay, 30000); return () => clearInterval(t); }, [dk]);
   useEffect(() => { if (base && dk && dk >= today) fbPatch({ [`${RMT}/plan/${dk}`]: rmtPlan(base.T, dk) }); }, [base, dk]);
   if (!hc || !base) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
@@ -41422,15 +41422,16 @@ function RmtAdminPage({ by = "الإدارة" }) {
   const recOf = (ck, p) => { const r = D ? ptObj(ptObj(D.att[ck])[`p${p}`]) : {}; return r.at ? r : null; };
   // ⏰ تأخر/غياب المعلم عن حصته عن بعد — يُكتب في «متابعة الحصص» (school-ttlog) بنفس صيغة الحصص الحضورية فيُحتسب في إحصائياته وبطاقته وترتيبه
   const tlg = L => L && D ? ptObj(D.log)[`${L.di}_${L.p}_${L.ck}`] : null;
-  const absDay = ti => !!(D && ti >= 0 && Object.values(ptObj(D.abs)).some(x => x && +x.ti === +ti && x.fromP == null && x.toP == null));
+  const absDay = ti => !!(D && ti >= 0 && ptObj(ptObj(D.abs)[`t${ti}`]).ti != null);
   // 🚫 غياب المعلم يوماً كاملاً: «غياب» في سجل الانضباط (حضوري) + غائب في الجدول المدرسي — يُحتسب مرة واحدة كغياب يوم
-  const dayAbs = async (L, on) => { if (!window.confirm(on ? `تسجيل ${L.tn} غائباً اليوم كاملاً؟\n• يُسجَّل «غياب» في سجل الانضباط (حضوري) لهذا اليوم\n• ويظهر غائباً في الجدول المدرسي لتوزيع حصصه` : `إلغاء غياب ${L.tn} لهذا اليوم؟`)) return; setBusy(true); let hdOk = false;
+  const dayAbs = async (L, on) => { if (!window.confirm(on ? `تسجيل ${L.tn} غائباً اليوم كاملاً؟\n• يُسجَّل «غياب» في سجل الانضباط (حضوري) وفي سجل متابعته\n• يظهر في تنبيه «الإدخال في فارس» حتى تؤشّر عليه\n• لا يُطلب له احتياط (دوام عن بعد)` : `إلغاء غياب ${L.tn} لهذا اليوم؟`)) return; setBusy(true); let hdOk = false;
     try { const N = ptObj(await maGet(HD_T)); const hs = Object.keys(N).filter(hk => N[hk] && duEq(N[hk].n, L.tn)); if (hs.length === 1) { const hk = hs[0]; const r0 = ptObj(await maGet(`${HD_NODE}/${hk}/${dk}`)); let rec;
       if (on) rec = r0.st ? { ...r0, st: "غياب", st0: r0.st0 != null ? r0.st0 : r0.st, fx: "abs", fixBy: by, fixAt: Date.now(), rm: 1, rs: (R && R.s) || HD_REM_S } : { st: "غياب", a: "", d: "", ph: "e", rm: 1, rs: (R && R.s) || HD_REM_S, fx: "abs", gen: "rmt", fixBy: by, fixAt: Date.now() };
       else if (r0.gen === "rmt") rec = null; else if (r0.fx === "abs") { rec = { ...r0, st: r0.st0 != null ? r0.st0 : r0.st }; ["st0", "fx", "fixBy", "fixAt"].forEach(k => delete rec[k]); } else rec = r0.st ? r0 : null;
       hdOk = await maPut(`${HD_NODE}/${hk}/${dk}`, rec || { void: 1, gen: "rmt-x", at: Date.now() }); } } catch {}
-    await ttAbsSync(dk, L.tn, on, "rmt", by); setBusy(false); await loadDay();
-    toast(on ? `🚫 ${L.tn}: غائب اليوم${hdOk ? " — سُجّل في حضوري والجدول" : " — سُجّل في الجدول (لم أجد سجله في حضوري؛ يُحتسب من ملف الصباح)"}` : `↩️ أُلغي غياب ${L.tn}`); };
+    // عن بعد: لا يُسجَّل غائباً في الجدول المدرسي حتى لا يُطلب له احتياط — يُحفظ في سجل التحضير بالحصص فقط
+    await maPut(`${RMT}/abs/${dk}/t${L.ti}`, on ? { ti: L.ti, n: L.tn, by, at: Date.now() } : { off: 1, by, at: Date.now() }); setBusy(false); await loadDay();
+    toast(on ? `🚫 ${L.tn}: غائب اليوم${hdOk ? " — سُجّل في سجل الانضباط (حضوري) • ⚠️ تذكير: أدخل الغياب في «فارس»" : " — لم أجد سجله في حضوري، يُحتسب عند رفع ملف الصباح"}` : `↩️ أُلغي غياب ${L.tn}`); };
   const setTL = async (L, v) => { const k = `${L.di}_${L.p}_${L.ck}`; const rec = v ? { ...v, ti: L.ti, si: L.si != null ? L.si : -1, note: "🏠 حصة عن بعد", rm: 1, by, at: Date.now() } : null;
     const ok = rec ? await maPut(`${TT_LOG}/${dk}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dk}/${k}.json`, { method: "DELETE" }).then(() => true).catch(() => false);
     if (ok) { setD(x => { const lg = { ...x.log }; if (rec) lg[k] = rec; else delete lg[k]; return { ...x, log: lg }; }); toast(rec ? `✅ سُجّل على ${L.tn}: ${rec.st === "late" ? `تأخر ${maAr(rec.mins)} د` : "غياب عن الحصة"} — يظهر في ملاحظات حصصه وإحصائياته` : "↩️ أُزيلت الملاحظة"); } else toast("⚠️ تعذّر الحفظ"); };
@@ -41494,7 +41495,7 @@ function RmtAdminPage({ by = "الإدارة" }) {
             <div className="grid gap-1">{rows.filter(t => !tq || String(t.L.tn).includes(tq.trim())).map(t => { const ab = absDay(t.L.ti); return <div key={t.L.ti} className="flex gap-2 items-center flex-wrap" style={{ border: "1.5px solid " + (ab ? "#fecaca" : "#e2e8f0"), background: ab ? "#fef2f2" : "#fff", borderRadius: 12, padding: "7px 10px" }}>
               <b style={{ flex: "1 1 150px", fontSize: 13.5 }}>{t.L.tn}</b><span className="rmt-tag" style={{ background: "#eef2ff", color: "#3730a3" }}>حُضّرت {maAr(t.done)}/{maAr(t.n)}</span>{t.late > 0 && <span className="rmt-tag" style={{ background: "#ffedd5", color: "#c2410c" }}>⏰ {maAr(t.late)}</span>}{t.ab > 0 && <span className="rmt-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 حصص {maAr(t.ab)}</span>}
               {ab ? <><span className="rmt-tag" style={{ background: "#b91c1c", color: "#fff" }}>🚫 غائب اليوم</span><button className="rmt-b" style={{ padding: "3px 10px", fontSize: 12 }} disabled={busy} onClick={() => dayAbs(t.L, false)}>إلغاء</button></> : <button className="rmt-b red" style={{ padding: "3px 10px", fontSize: 12 }} disabled={busy} onClick={() => dayAbs(t.L, true)}>🚫 غائب اليوم كاملاً</button>}</div>; })}</div>
-            <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>غياب اليوم الكامل يُسجَّل في سجل الانضباط (حضوري) ويظهر في الجدول المدرسي، فيُحتسب في إحصائيات المعلم كغياب يوم واحد. ومن لم يسجّل حضوره في ملف الصباح يُسجَّل غائباً تلقائياً عند رفعه.</div></>}
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>غياب اليوم الكامل يُسجَّل في سجل الانضباط (حضوري) ويُحتسب في إحصائيات المعلم كغياب يوم واحد، ويظهر في تنبيه «الإدخال في فارس» حتى تؤشّر عليه — ولا يُطلب له احتياط في الدوام عن بعد. ومن لم يسجّل حضوره في ملف الصباح يُسجَّل غائباً تلقائياً عند رفعه.</div></>}
         </div>; })()}
       <div className="rmt-card" style={{ overflowX: "auto" }}><b>📋 متابعة التحضير — كل فصل وكل حصة <small style={{ color: "#64748b", fontWeight: 800 }}>(اضغط الخانة للتفاصيل، واسم الفصل لكشفه)</small></b>
         <table className="rmt-g"><thead><tr><th>الفصل</th>{times.map((t, p) => <th key={p}>ح{maAr(p + 1)}<div style={{ fontSize: 10, color: "#94a3b8" }}>{rmtF(t[0])}</div></th>)}<th>غائب</th><th>جزئي</th></tr></thead>
@@ -42034,7 +42035,7 @@ const HD_FT = [["abs", "غياب"], ["sick", "إجازة مرضية"], ["emg", "
 function hdAbsList(all, names, faris, cfg) {
   const from = ptObj(cfg).farisFrom || ""; const out = [];
   Object.entries(ptObj(all)).forEach(([hk, r]) => Object.entries(ptObj(r)).forEach(([dk, rec]) => {
-    if (maOff(dk) || !rec || rec.ph === "m" || !/غياب/.test(String(rec.st || ""))) return;
+    if (maOff(dk) || !rec || rec.void) return; const remAbs = rec.rm && (hdDay(rec, cfg) || {}).kind === "abs"; if (!remAbs && (rec.ph === "m" || !/غياب/.test(String(rec.st || "")))) return;
     const f = ptObj(ptObj(faris)[hk])[dk]; out.push({ hk, dk, n: (ptObj(names[hk]).n) || "—", job: ptObj(names[hk]).job || "", f: f && f.at ? f : null, old: !!(from && dk < from) });
   }));
   return out.sort((a, b) => b.dk.localeCompare(a.dk) || a.n.localeCompare(b.n, "ar"));
@@ -44129,7 +44130,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
     const k = ttK(d, p, ck); const rec = v ? { ...v, ...ttStamp(log[k], times, p, isToday), by, at: Date.now() } : null;
     setLog(o => { const n = { ...o }; if (rec) n[k] = rec; else delete n[k]; return n; });
     const ok = rec ? await maPut(`${TT_LOG}/${dateK}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dateK}/${k}.json`, { method: "DELETE" }).then(r => r.ok).catch(() => false);
-    if (ok && rec && rec.st === "sub" && rec.sub != null && isToday && !rec.pm && (!log[k] || log[k].sub !== rec.sub)) pushSend({ to: { ti: [+rec.sub] }, title: "🛡️ حصة احتياط", body: `الحصة ${TT_ORD[p]} (${mlFmtT(times[p] && times[p][0])}) — ${maClassName(ck)}`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sub-" + k, by, urgent: 1 });
+    if (ok && rec && rec.st === "sub" && rec.sub != null && isToday && !rec.pm && !hdRemDay(dateK) && (!log[k] || log[k].sub !== rec.sub)) pushSend({ to: { ti: [+rec.sub] }, title: "🛡️ حصة احتياط", body: `الحصة ${TT_ORD[p]} (${mlFmtT(times[p] && times[p][0])}) — ${maClassName(ck)}`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sub-" + k, by, urgent: 1 });
     if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok;
   };
   const addAbs = async ti => {
@@ -44396,9 +44397,11 @@ const asmCut = (cfg, day) => (day && day._cut) || (cfg && cfg.cut) || "07:05";
 const asmHas = day => Object.entries(ptObj(day)).some(([k, v]) => k[0] !== "_" && v && v.st);
 const asmPast = (k, cut) => { const t = maKey(new Date()); if (k < t) return true; if (k > t) return false; return asmNowHM() >= cut; };
 // «الجميع حاضر افتراضياً»: من تاريخ dpFrom يُعدّ كل معلم غير مرصود حاضراً في أيام الدوام، والإدارة تعدّل الاستثناءات فقط
-const asmDP = (cfg, k) => !!(cfg && cfg.dp !== 0 && cfg.dpFrom && k >= cfg.dpFrom && k <= maKey(new Date()) && !maOff(k));
+// قاعدة المدرسة (من ٢/١١/٢٠٢٦): كل المعلمين «حاضرون» في الطابور ما لم تُدخل الإدارة تأخره أو عدم حضوره يدوياً — ولا طابور في أيام الدوام عن بعد
+const ASM_DP_RULE = "2026-11-02";
+const asmDP = (cfg, k) => !!(k <= maKey(new Date()) && !maOff(k) && !hdRemDay(k) && (k >= ASM_DP_RULE || (cfg && cfg.dp !== 0 && cfg.dpFrom && k >= cfg.dpFrom)));
 // أيام الحصر في فترة: الأيام التي فيها رصد + كل أيام الدوام منذ تفعيل الحضور الافتراضي
-const asmDays = (cfg, data, f, t) => { const S = new Set(Object.keys(ptObj(data)).filter(k => !maOff(k) && asmHas(ptObj(data)[k]))); if (cfg && cfg.dp !== 0 && cfg.dpFrom && f && t) { let d = maDate(f > cfg.dpFrom ? f : cfg.dpFrom); const e = t < maKey(new Date()) ? t : maKey(new Date()); for (let i = 0; i < 400; i++) { const k = maKey(d); if (k > e) break; if (asmDP(cfg, k)) S.add(k); d = new Date(d.getTime() + 864e5); } } return [...S].sort(); };
+const asmDays = (cfg, data, f, t) => { const S = new Set(Object.keys(ptObj(data)).filter(k => !maOff(k) && asmHas(ptObj(data)[k]))); const f0 = [cfg && cfg.dp !== 0 && cfg.dpFrom, ASM_DP_RULE].filter(Boolean).sort()[0]; if (f0 && f && t) { let d = maDate(f > f0 ? f : f0); const e = t < maKey(new Date()) ? t : maKey(new Date()); for (let i = 0; i < 400; i++) { const k = maKey(d); if (k > e) break; if (asmDP(cfg, k)) S.add(k); d = new Date(d.getTime() + 864e5); } } return [...S].sort(); };
 // دقائق التأخر عن وقت انتهاء الطابور
 const asmLateM = (r, cut) => { if (!r || !r.t || !(r.st === "l" || r.st === "lx")) return 0; const m = mlToMin(r.t) - mlToMin(cut || "07:05"); return m > 0 ? m : 0; };
 // الحالة الفعلية للمعلم في يوم
@@ -45284,7 +45287,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
   const cut = asmCut(cfg, day); const past = asmPast(dateK, cut);
   const nowHM = maPad(now.getHours()) + ":" + maPad(now.getMinutes());
   const left = isToday ? mlToMin(cut) - (now.getHours() * 60 + now.getMinutes()) : null;
-  const dpOn = asmDP(cfg, dateK) || (cfg.dp !== 0 && cfg.dpFrom && dateK >= cfg.dpFrom && dateK <= maKey(new Date()) && work);
+  const dpOn = asmDP(cfg, dateK) || (dateK >= ASM_DP_RULE && dateK <= maKey(new Date()) && work) || (cfg.dp !== 0 && cfg.dpFrom && dateK >= cfg.dpFrom && dateK <= maKey(new Date()) && work);
   const locked = !canEdit ? (!isToday || past) : dpOn ? (!isToday && !unlock) : (!isToday && !unlock) || (past && !unlock);
   const wkDay = k => k === dateK ? day : ptObj(wk && wk[k]);
   const wkAbs = tk => W.filter(k => asmEff(cfg, wkDay(k), k, tk).st === "a").length;
