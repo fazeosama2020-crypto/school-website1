@@ -43,7 +43,8 @@ module.exports = async function handler(req, res) {
         visits.push({ id: "pxh" + v.id, names: [v.host.n], l: "🤝 يزور حصتك زملاء", f, d: `${per} • ${arr(v.vis).map(x => x.n).join("، ")}` });
         const vn = arr(v.vis).map(x => x.n).filter(Boolean); if (vn.length) visits.push({ id: "pxv" + v.id, names: vn, l: "🤝 زيارة تبادلية لحصة أ. " + v.host.n, f, d: per }); });
     }
-    const subs = Object.entries(log || {}).filter(([, v]) => v && v.st === "sub" && v.sub != null && v.sub !== "" && !v.pm).map(([k, v]) => { const [, p, ck] = k.split("_"); return { k, p: +p, ck, ti: +v.sub }; });
+    // عن بعد: لا تنبيهات احتياط
+    const subs = remote ? [] : Object.entries(log || {}).filter(([, v]) => v && v.st === "sub" && v.sub != null && v.sub !== "" && !v.pm).map(([k, v]) => { const [, p, ck] = k.split("_"); return { k, p: +p, ck, ti: +v.sub }; });
     // ① ملخص الصباح (مرة واحدة)
     if (C.morning && nowM >= toMin(C.mornAt) && nowM < toMin(C.mornAt) + 120) await once("morning", async () => {
       const by = {}; slots.forEach(s => s.tn.forEach(n => { (by[n] = by[n] || []).push(`${s.l} ${fmt(s.f)}${s.pl ? " (" + s.pl + ")" : ""}`); }));
