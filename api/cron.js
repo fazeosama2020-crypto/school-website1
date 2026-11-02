@@ -21,7 +21,9 @@ module.exports = async function handler(req, res) {
     if (wd > 4) return res.status(200).json({ ok: true, skip: "weekend" });
     const [cfg0, duty, log, ttc, sentD, hdc, cvp, pxp] = await Promise.all([fbGet("school-push-cfg"), fbGet("school-duty"), fbGet(`school-ttlog/${day}`), fbGet("school-tt-cfg"), fbGet(`school-push-sent/${day}`), fbGet("school-hd-cfg"), fbGet("school-cv-plan"), fbGet("school-px/plan")]);
     // يوم دوام عن بعد (من صفحة «حضوري»): لا تذكير بالإشراف والمناوبة والزيارات
-    const remote = !!((hdc && hdc.rem) || {})[day];
+    const remD = ((hdc && hdc.rem) || {})[day]; const remote = !!remD;
+    // التحضير بالحصص عن بعد: حصص اليوم (يحفظها الموقع عند تحديد اليوم) + مدة الحصة + ما حُضّر
+    const [rplan, rcfg, ratt] = remote ? await Promise.all([fbGet(`school-rmt/plan/${day}`), fbGet("school-rmt/cfg"), fbGet(`school-rmt/att/${day}`)]) : [null, null, null];
     const C = { morning: true, duty: true, sub: true, lead: 15, mornAt: "06:05", ...(cfg0 || {}) };
     if (C.off) return res.status(200).json({ ok: true, skip: "off" });
     const D = duty || {}; if ((D.H || {})[day]) return res.status(200).json({ ok: true, skip: "holiday" });
@@ -60,9 +62,18 @@ module.exports = async function handler(req, res) {
     // ③ قبل حصة الانتظار بدقائق
     if (C.sub) for (const s of subs) { const st = toMin(times[s.p] && times[s.p][0]); if (st == null) continue; const left = st - nowM;
       if (left > 0 && left <= C.lead) await once("sb-" + s.k, () => sendTo({ ti: [s.ti] }, { title: `⏰ حصة انتظار الساعة ${fmt(times[s.p][0])}`, body: `الحصة ${ORD[s.p] || ar(s.p + 1)} — فصل ${cls(s.ck)} • بعد ${ar(left)} دقيقة`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sb-" + s.k, urgent: 1 })); }
+    // ④ الدوام عن بعد: تذكير المعلم عند بداية حصته بتحضير طلابه، وتنبيه بعد نهايتها إن لم يحضّر
+    if (remote && rplan) { const L0 = Math.max(10, +(rcfg || {}).len || 40), G0 = Math.max(0, +(rcfg || {}).gap || 0), S0 = toMin(remD.s || "07:30") ?? 450;
+      const rt = p => [S0 + p * (L0 + G0), S0 + p * (L0 + G0) + L0]; const hm2 = m => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+      const les = Object.values(rplan).filter(Boolean).map(L => { const g = (log || {})[`${L.di}_${L.p}_${L.ck}`]; return g && g.st === "sub" && g.sub != null && g.sub !== "" && !g.pm ? { ...L, ti: +g.sub, tn: "" } : L; });
+      const grp = (arr2) => { const o = {}; arr2.forEach(L => { const k = L.ti >= 0 ? "t" + L.ti : "n" + L.tn; (o[k] = o[k] || []).push(L); }); return Object.values(o); };
+      const ps = [...new Set(les.map(L => +L.p))];
+      for (const p of ps) { const [a, b] = rt(p); const atP = les.filter(L => +L.p === p);
+        if (nowM >= a - 3 && nowM < a + 5) for (const G of grp(atP)) { const L = G[0]; await once(`rp-${p}-${L.ti >= 0 ? L.ti : L.tn}`, () => sendTo({ ti: L.ti >= 0 ? [L.ti] : [], names: L.tn ? [L.tn] : [] }, { title: `📋 حضّر طلاب الحصة ${ORD[p] || ar(p + 1)}`, body: `${G.map(x => "فصل " + cls(x.ck) + (x.s ? " • " + x.s : "")).join(" ، ")} • ${fmt(hm2(a))}–${fmt(hm2(b))}`, url: "/#teacher", tag: "rp-" + p, urgent: 1 })); }
+        if (nowM >= b + 5 && nowM < b + 15) { const miss = atP.filter(L => !(((ratt || {})[L.ck] || {})["p" + p] || {}).at); for (const G of grp(miss)) { const L = G[0]; await once(`rm-${p}-${L.ti >= 0 ? L.ti : L.tn}`, () => sendTo({ ti: L.ti >= 0 ? [L.ti] : [], names: L.tn ? [L.tn] : [] }, { title: `⚠️ لم تُحضّر الحصة ${ORD[p] || ar(p + 1)}`, body: G.map(x => "فصل " + cls(x.ck)).join(" ، ") + " — افتح بوابة المعلم وحضّرها الآن", url: "/#teacher", tag: "rm-" + p, urgent: 1 })); } } } }
     const marks = Object.fromEntries(Object.entries(mark).filter(([k]) => k.startsWith("school-push-sent/")));
     if (Object.keys(marks).length) await fbPatch(marks);
-    const dbg = (req.query || {}).debug ? { remote, list: slots.map(s => `${s.f || "?"} ${s.l} ← ${s.tn.join("، ")}`), visits: visits.map(v => `${v.f || "?"} ${v.l} ← ${v.names.join("، ")}`), sb: subs.map(s => `ح${s.p + 1} ${s.ck} ← ${s.ti}`), lead: C.lead, now: nowM } : {};
+    const dbg = (req.query || {}).debug ? { remote, rmtLessons: rplan ? Object.keys(rplan).length : 0, list: slots.map(s => `${s.f || "?"} ${s.l} ← ${s.tn.join("، ")}`), visits: visits.map(v => `${v.f || "?"} ${v.l} ← ${v.names.join("، ")}`), sb: subs.map(s => `ح${s.p + 1} ${s.ck} ← ${s.ti}`), lead: C.lead, now: nowM } : {};
     return res.status(200).json({ ok: true, at: now.slice(11, 16), slots: slots.length, subs: subs.length, done: out, ...dbg });
   } catch (e) {
     return res.status(500).json({ ok: false, msg: e.message });
