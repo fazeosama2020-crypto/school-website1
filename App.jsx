@@ -41287,6 +41287,10 @@ const hdDur = m => !m ? "٠" : m >= 60 ? `${maAr(Math.floor(m / 60))} س${m % 60
 // • يُرفع ملف الصباح فقط • التأخر من وقت بداية الحصة عن بعد • لا انصراف ولا انصراف مبكر
 // • استئذان «مهمة عمل» = حضور كامل • من لم يسجّل حضوره (أو لم يرد في الملف) = غائب
 const hdRem = (cfg, dk) => ptObj(ptObj(cfg).rem)[dk] || null;
+// ذاكرة أيام الدوام عن بعد للموقع كله (تُحمَّل عند فتح الموقع) — بها يتوقف الإشراف والمناوبة في الشاشات والتقارير
+let _hdRemC = {};
+const hdRemDay = k => !!(k && _hdRemC[k]);
+async function hdRemLoad() { try { const r = await fetch(`${FIREBASE_URL}/school/${HD_CFG}/rem.json`); const v = await r.json(); _hdRemC = v && typeof v === "object" ? v : {}; } catch {} return _hdRemC; }
 const HD_REM_S = "07:30";
 // ═══════════════════════════════════════════════════════════════
 // 🏠 التحضير بالحصص — الدراسة عن بعد (يعمل فقط في الأيام المحددة «دوام عن بعد» في school-hd-cfg/rem)
@@ -41313,7 +41317,7 @@ const rmtCkSort = (a, b) => String(a).localeCompare(String(b), undefined, { nume
 async function hdRemSet(k, on, s0, all0) { const s = s0 || HD_REM_S; const all = all0 || ptObj(await maGet(HD_NODE)); const P = { [`${HD_CFG}/rem/${k}`]: on ? { s } : null }; let c = 0;
   Object.entries(all).forEach(([hk, r]) => { const x = ptObj(r)[k]; if (!x || !Object.keys(x).length) return; c++; P[`${HD_NODE}/${hk}/${k}/rm`] = on ? 1 : null; P[`${HD_NODE}/${hk}/${k}/rs`] = on ? s : null; });
   if (on) { try { P[`${RMT}/plan/${k}`] = rmtPlan(ttFresh(await maGet(TT_NODE)), k); } catch {} }
-  const ok = await fbPatch(P); return { ok, c }; }
+  const ok = await fbPatch(P); if (ok) { if (on) _hdRemC = { ..._hdRemC, [k]: { s } }; else { const n = { ..._hdRemC }; delete n[k]; _hdRemC = n; } } return { ok, c }; }
 const RMT_CSS = `
 .rmt{font-family:inherit}.rmt-card{background:#fff;border:1.5px solid #c7d2fe;border-radius:20px;padding:14px;display:grid;gap:10px;box-shadow:0 10px 30px -22px rgba(30,27,75,.5)}
 .rmt-hd{background:linear-gradient(135deg,#1e1b4b,#4338ca 60%,#6366f1);color:#fff;border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -41393,12 +41397,12 @@ function RmtTeacherCard({ me, quiet }) {
 function RmtAdminPage({ by = "الإدارة" }) {
   const today = maKey(new Date());
   const [hc, setHc] = useState(null); const [base, setBase] = useState(null); const [dk, setDk] = useState(null); const [D, setD] = useState(null); const [cls, setCls] = useState(""); const [cell, setCell] = useState(null);
-  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false); const [repl, setRepl] = useState(false); const [lenIn, setLenIn] = useState(null);
+  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false); const [repl, setRepl] = useState(false); const [lenIn, setLenIn] = useState(null); const [showT, setShowT] = useState(false); const [tq, setTq] = useState("");
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 4000); };
   const loadBase = async () => { const [h, tt, c, ros] = await Promise.all([maGet(HD_CFG), maGet(TT_NODE), maGet(`${RMT}/cfg`), maGet(MA_ROSTER)]); const H = { ...HD_DEF, ...ptObj(h) }; setHc(H); const C = { ...RMT_DEF, ...ptObj(c) }; setBase({ T: ttFresh(tt), cfg: C, ros: ptObj(ros) }); setLenIn(l => l || { len: String(C.len), gap: String(C.gap) });
     const days = Object.keys(ptObj(H.rem)).sort(); setDk(d => d && hdRem(H, d) ? d : (days.includes(today) ? today : days.filter(k => k <= today).pop() || days[0] || null)); };
   useEffect(() => { loadBase(); }, []);
-  const loadDay = async () => { if (!dk) { setD(null); return; } const [lg, att, ok, ma] = await Promise.all([maGet(`${TT_LOG}/${dk}`), maGet(`${RMT}/att/${dk}`), maGet(`${RMT}/ok/${dk}`), maGet(`${MA_ATT}/${dk}`)]); setD({ dk, log: ptObj(lg), att: ptObj(att), ok: ptObj(ok).at ? ptObj(ok) : null, ma: maNormDay(ma) }); };
+  const loadDay = async () => { if (!dk) { setD(null); return; } const [lg, att, ok, ma, ab] = await Promise.all([maGet(`${TT_LOG}/${dk}`), maGet(`${RMT}/att/${dk}`), maGet(`${RMT}/ok/${dk}`), maGet(`${MA_ATT}/${dk}`), maGet(`${TT_ABS}/${dk}`)]); setD({ dk, log: ptObj(lg), att: ptObj(att), ok: ptObj(ok).at ? ptObj(ok) : null, ma: maNormDay(ma), abs: ptObj(ab) }); };
   useEffect(() => { setD(null); loadDay(); if (dk !== today) return; const t = setInterval(loadDay, 30000); return () => clearInterval(t); }, [dk]);
   useEffect(() => { if (base && dk && dk >= today) fbPatch({ [`${RMT}/plan/${dk}`]: rmtPlan(base.T, dk) }); }, [base, dk]);
   if (!hc || !base) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
@@ -41418,6 +41422,15 @@ function RmtAdminPage({ by = "الإدارة" }) {
   const recOf = (ck, p) => { const r = D ? ptObj(ptObj(D.att[ck])[`p${p}`]) : {}; return r.at ? r : null; };
   // ⏰ تأخر/غياب المعلم عن حصته عن بعد — يُكتب في «متابعة الحصص» (school-ttlog) بنفس صيغة الحصص الحضورية فيُحتسب في إحصائياته وبطاقته وترتيبه
   const tlg = L => L && D ? ptObj(D.log)[`${L.di}_${L.p}_${L.ck}`] : null;
+  const absDay = ti => !!(D && ti >= 0 && Object.values(ptObj(D.abs)).some(x => x && +x.ti === +ti && x.fromP == null && x.toP == null));
+  // 🚫 غياب المعلم يوماً كاملاً: «غياب» في سجل الانضباط (حضوري) + غائب في الجدول المدرسي — يُحتسب مرة واحدة كغياب يوم
+  const dayAbs = async (L, on) => { if (!window.confirm(on ? `تسجيل ${L.tn} غائباً اليوم كاملاً؟\n• يُسجَّل «غياب» في سجل الانضباط (حضوري) لهذا اليوم\n• ويظهر غائباً في الجدول المدرسي لتوزيع حصصه` : `إلغاء غياب ${L.tn} لهذا اليوم؟`)) return; setBusy(true); let hdOk = false;
+    try { const N = ptObj(await maGet(HD_T)); const hs = Object.keys(N).filter(hk => N[hk] && duEq(N[hk].n, L.tn)); if (hs.length === 1) { const hk = hs[0]; const r0 = ptObj(await maGet(`${HD_NODE}/${hk}/${dk}`)); let rec;
+      if (on) rec = r0.st ? { ...r0, st: "غياب", st0: r0.st0 != null ? r0.st0 : r0.st, fx: "abs", fixBy: by, fixAt: Date.now(), rm: 1, rs: (R && R.s) || HD_REM_S } : { st: "غياب", a: "", d: "", ph: "e", rm: 1, rs: (R && R.s) || HD_REM_S, fx: "abs", gen: "rmt", fixBy: by, fixAt: Date.now() };
+      else if (r0.gen === "rmt") rec = null; else if (r0.fx === "abs") { rec = { ...r0, st: r0.st0 != null ? r0.st0 : r0.st }; ["st0", "fx", "fixBy", "fixAt"].forEach(k => delete rec[k]); } else rec = r0.st ? r0 : null;
+      hdOk = await maPut(`${HD_NODE}/${hk}/${dk}`, rec || { void: 1, gen: "rmt-x", at: Date.now() }); } } catch {}
+    await ttAbsSync(dk, L.tn, on, "rmt", by); setBusy(false); await loadDay();
+    toast(on ? `🚫 ${L.tn}: غائب اليوم${hdOk ? " — سُجّل في حضوري والجدول" : " — سُجّل في الجدول (لم أجد سجله في حضوري؛ يُحتسب من ملف الصباح)"}` : `↩️ أُلغي غياب ${L.tn}`); };
   const setTL = async (L, v) => { const k = `${L.di}_${L.p}_${L.ck}`; const rec = v ? { ...v, ti: L.ti, si: L.si != null ? L.si : -1, note: "🏠 حصة عن بعد", rm: 1, by, at: Date.now() } : null;
     const ok = rec ? await maPut(`${TT_LOG}/${dk}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dk}/${k}.json`, { method: "DELETE" }).then(() => true).catch(() => false);
     if (ok) { setD(x => { const lg = { ...x.log }; if (rec) lg[k] = rec; else delete lg[k]; return { ...x, log: lg }; }); toast(rec ? `✅ سُجّل على ${L.tn}: ${rec.st === "late" ? `تأخر ${maAr(rec.mins)} د` : "غياب عن الحصة"} — يظهر في ملاحظات حصصه وإحصائياته` : "↩️ أُزيلت الملاحظة"); } else toast("⚠️ تعذّر الحفظ"); };
@@ -41427,7 +41440,7 @@ function RmtAdminPage({ by = "الإدارة" }) {
     return { st, recs, rows, full: rows.filter(x => x.full), part: rows.filter(x => !x.full && x.ab > 0) }; };
   const S = Object.fromEntries(cks.map(ck => [ck, sumCls(ck)]));
   const due = lessons.filter(L => { const t = times[L.p]; return t && hdMin(t[0]) <= nowM; });
-  const missing = due.filter(L => !recOf(L.ck, L.p));
+  const missing = due.filter(L => !recOf(L.ck, L.p) && !absDay(L.ti));
   const tot = { les: lessons.length, done: lessons.filter(L => recOf(L.ck, L.p)).length, full: cks.reduce((s, ck) => s + S[ck].full.length, 0), part: cks.reduce((s, ck) => s + S[ck].part.length, 0), stu: cks.reduce((s, ck) => s + (S[ck].recs.length ? S[ck].st.length : 0), 0) };
   const remind = async () => { const by2 = {}; missing.forEach(L => { const k = L.ti >= 0 ? "t" + L.ti : "n" + L.tn; (by2[k] = by2[k] || { L, ps: [] }).ps.push(`ح${maAr(L.p + 1)} ${maClassName(L.ck)}`); }); let n = 0;
     for (const { L, ps } of Object.values(by2)) { const r = await pushSend({ to: { ti: L.ti >= 0 ? [L.ti] : [], names: L.tn ? [L.tn] : [] }, title: "📋 لم تُحضّر طلاب حصتك", body: ps.join(" • ") + " — افتح بوابة المعلم وحضّر الحصة", url: "/#teacher", tag: "rmt-miss", urgent: 1, by }); n += (r && r.sent) || 0; }
@@ -41449,8 +41462,8 @@ function RmtAdminPage({ by = "الإدارة" }) {
     Object.entries(D.ma).forEach(([ck, r]) => { if (!r.rmt) return; const back = r.prevRec || null; P2[`${MA_ATT}/${dk}/${ck}`] = back; if (back) nd[ck] = maNormDay({ x: back }).x; else delete nd[ck]; ops.push([ck, back ? maArr(back.absent).map(a => a && a.id) : [], maArr(r.absent).map(a => a && a.id)]); });
     P2[`${RMT}/ok/${dk}`] = null; const ok = await fbPatch(P2); if (ok) { for (const [ck, a, p] of ops) await sidxAbs(dk, ck, a, p).catch(() => {}); await writeIdx(nd); }
     setBusy(false); await loadDay(); toast(ok ? "↩️ أُلغي الاعتماد" : "⚠️ تعذّر الحفظ"); };
-  const printDay = () => { const esc = v => String(v ?? "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-    const body = cks.filter(ck => S[ck].recs.length).map(ck => { const s = S[ck]; return `<h3>${esc(maClassName(ck))} — حُضّرت ${maAr(s.recs.length)} حصة • الطلاب ${maAr(s.st.length)}</h3><table><tr><th>م</th><th>الطالب</th>${s.recs.map(x => `<th>ح${maAr(x.p + 1)}</th>`).join("")}<th>النتيجة</th></tr>${s.rows.filter(x => x.ab || x.lt).map((x, i) => `<tr><td>${maAr(i + 1)}</td><td style="text-align:right">${esc(x.s.name)}</td>${s.recs.map(r => `<td>${ptObj(r.r.ab)[x.s.id] ? "غ" : ptObj(r.r.lt)[x.s.id] ? "م" : "✓"}</td>`).join("")}<td><b>${x.full ? "غائب اليوم" : x.ab ? `غياب جزئي (${maAr(x.ab)})` : "متأخر"}</b></td></tr>`).join("") || `<tr><td colspan="${s.recs.length + 3}">لا غياب</td></tr>`}</table>`; }).join("");
+  const printDay = only => { only = typeof only === "string" ? only : ""; const esc = v => String(v ?? "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    const body = cks.filter(ck => S[ck].recs.length && (!only || ck === only)).map(ck => { const s = S[ck]; return `<h3>${esc(maClassName(ck))} — حُضّرت ${maAr(s.recs.length)} حصة • الطلاب ${maAr(s.st.length)}</h3><table><tr><th>م</th><th>الطالب</th>${s.recs.map(x => `<th>ح${maAr(x.p + 1)}</th>`).join("")}<th>النتيجة</th></tr>${s.rows.filter(x => x.ab || x.lt).map((x, i) => `<tr><td>${maAr(i + 1)}</td><td style="text-align:right">${esc(x.s.name)}</td>${s.recs.map(r => `<td>${ptObj(r.r.ab)[x.s.id] ? "غ" : ptObj(r.r.lt)[x.s.id] ? "م" : "✓"}</td>`).join("")}<td><b>${x.full ? "غائب اليوم" : x.ab ? `غياب جزئي (${maAr(x.ab)})` : "متأخر"}</b></td></tr>`).join("") || `<tr><td colspan="${s.recs.length + 3}">لا غياب</td></tr>`}</table>`; }).join("");
     const w = window.open("", "_blank"); if (!w) return; w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>حضور الحصص عن بعد ${dk}</title><style>body{font-family:'IBM Plex Sans Arabic',Tahoma,sans-serif;padding:18px;color:#0f172a}h2{margin:0 0 4px}h3{margin:16px 0 6px;font-size:15px}table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{border:1px solid #94a3b8;padding:4px 6px;text-align:center}th{background:#e0e7ff}</style></head><body><h2>🏠 تقرير حضور الحصص — الدراسة عن بعد</h2><div>${esc(maDay(maDate(dk)))} ${esc(maHijri(maDate(dk)))} • الحصص المحضَّرة ${maAr(tot.done)} من ${maAr(tot.les)} • غائب اليوم ${maAr(tot.full)} • غياب جزئي ${maAr(tot.part)}</div>${body}<script>setTimeout(()=>print(),300)<\/script></body></html>`); w.document.close(); };
   const C = cls && S[cls];
   return <div className="rmt grid gap-3" dir="rtl"><style>{HD_CSS + RMT_CSS}</style>
@@ -41465,11 +41478,29 @@ function RmtAdminPage({ by = "الإدارة" }) {
         <span style={{ marginInlineStart: "auto" }} />
         {D.ok ? <><span className="rmt-tag" style={{ background: "#dcfce7", color: "#166534", fontSize: 13 }}>🔒 معتمد — {D.ok.by} {new Date(D.ok.at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</span><button className="rmt-b" disabled={busy} onClick={approve}>🔄 إعادة الاعتماد</button><button className="rmt-b red" disabled={busy} onClick={unapprove}>↩️ إلغاء الاعتماد</button></>
           : <><label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 12.5 }}><input type="checkbox" checked={repl} onChange={e => setRepl(e.target.checked)} /> استبدال التحضير الصباحي إن وُجد</label><button className="rmt-b ok" disabled={busy || !tot.done} onClick={approve}>{busy ? "⏳" : "✅ اعتماد غياب اليوم"}</button></>}</div>
+      <div className="rmt-card"><b>👥 تحضير الطلاب حسب الفصول <small style={{ color: "#64748b", fontWeight: 800 }}>— اضغط الفصل لعرض كشفه: الحاضر والغائب والغياب الجزئي في كل حصة</small></b>
+        {[1, 2, 3].map(lv => { const L0 = cks.filter(ck => String(ck).split("-")[0] === String(lv)); if (!L0.length) return null; return <div key={lv} className="flex gap-2 flex-wrap items-center"><b style={{ fontSize: 13, minWidth: 92, color: (MA_LV[lv - 1] || {}).c }}>{(MA_LV[lv - 1] || {}).n}</b>
+          {L0.map(ck => { const x = S[ck]; const pl = lessons.filter(L => L.ck === ck).length; const on = cls === ck; return <button key={ck} type="button" className="rmt-b" style={{ padding: "6px 10px", fontSize: 12.5, borderColor: on ? "#4338ca" : x.recs.length ? "#86efac" : "#e2e8f0", background: on ? "#eef2ff" : "#fff", display: "inline-flex", gap: 6, alignItems: "center" }} onClick={() => setCls(on ? "" : ck)}>
+            <span>{maClassName(ck).replace(" متوسط", "")}</span><span style={{ color: "#64748b" }}>{maAr(x.recs.length)}/{maAr(pl)}</span>{x.full.length > 0 && <span style={{ color: "#b91c1c" }}>🔴{maAr(x.full.length)}</span>}{x.part.length > 0 && <span style={{ color: "#c2410c" }}>🟠{maAr(x.part.length)}</span>}</button>; })}</div>; })}
+        <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>الرقم = الحصص المحضَّرة / حصص الفصل اليوم • 🔴 غائب اليوم • 🟠 غياب جزئي</div></div>
+      {C && <div className="rmt-card" style={{ overflowX: "auto" }}><div className="flex gap-2 items-center"><b style={{ flex: 1 }}>👥 {maClassName(cls)} — {maAr(C.st.length)} طالباً • حُضّرت {maAr(C.recs.length)} حصة</b><button className="rmt-b" onClick={() => printDay(cls)}>🖨 طباعة الفصل</button><button className="rmt-b" onClick={() => setCls("")}>✕</button></div>
+        {!C.recs.length ? <div style={{ fontWeight: 800, color: "#64748b" }}>لم تُحضّر أي حصة لهذا الفصل بعد.</div> : <table className="rmt-g"><thead><tr><th style={{ textAlign: "right" }}>الطالب</th>{C.recs.map(x => <th key={x.p}>ح{maAr(x.p + 1)}</th>)}<th>النتيجة</th></tr></thead>
+          <tbody>{[...C.rows].sort((a, b) => b.ab - a.ab || b.lt - a.lt).map(x => <tr key={x.s.id}><th style={{ textAlign: "right", fontWeight: 800 }}>{x.s.name}</th>{C.recs.map(r => { const a = ptObj(r.r.ab)[x.s.id], l = ptObj(r.r.lt)[x.s.id]; return <td key={r.p} style={{ background: a ? "#fee2e2" : l ? "#fef3c7" : "#f0fdf4", color: a ? "#b91c1c" : l ? "#92400e" : "#15803d", cursor: "default" }}>{a ? "غ" : l ? "م" : "✓"}</td>; })}
+            <td style={{ cursor: "default", color: x.full ? "#b91c1c" : x.ab ? "#c2410c" : "#15803d" }}>{x.full ? "🔴 غائب اليوم" : x.ab ? `🟠 جزئي (${maAr(x.ab)})` : x.lt ? "⏰ متأخر" : "✅ حاضر"}</td></tr>)}</tbody></table>}</div>}
+      {(() => { const TL = {}; lessons.forEach(L => { if (L.ti < 0) return; const t = TL[L.ti] = TL[L.ti] || { L, n: 0, done: 0, late: 0, ab: 0 }; t.n++; if (recOf(L.ck, L.p)) t.done++; const g = tlg(L); if (g && g.st === "late") t.late++; if (g && g.st === "absent") t.ab++; });
+        const rows = Object.values(TL).sort((a, b) => absDay(b.L.ti) - absDay(a.L.ti) || (b.n - b.done) - (a.n - a.done) || String(a.L.tn).localeCompare(String(b.L.tn), "ar")); const nAbs = rows.filter(t => absDay(t.L.ti)).length;
+        return <div className="rmt-card"><button type="button" className="flex gap-2 items-center" style={{ background: "none", border: 0, font: "inherit", cursor: "pointer", textAlign: "start", padding: 0 }} onClick={() => setShowT(v => !v)}><b style={{ flex: 1 }}>👤 حضور المعلمين اليوم ({maAr(rows.length)}) {nAbs > 0 && <span className="rmt-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 غائب {maAr(nAbs)}</span>}</b><span style={{ fontWeight: 900, color: "#4338ca" }}>{showT ? "▲ إخفاء" : "▼ عرض — تسجيل غياب يوم كامل"}</span></button>
+          {showT && <><input className="hd-in" style={{ maxWidth: 260 }} value={tq} onChange={e => setTq(e.target.value)} placeholder="🔎 بحث بالاسم" />
+            <div className="grid gap-1">{rows.filter(t => !tq || String(t.L.tn).includes(tq.trim())).map(t => { const ab = absDay(t.L.ti); return <div key={t.L.ti} className="flex gap-2 items-center flex-wrap" style={{ border: "1.5px solid " + (ab ? "#fecaca" : "#e2e8f0"), background: ab ? "#fef2f2" : "#fff", borderRadius: 12, padding: "7px 10px" }}>
+              <b style={{ flex: "1 1 150px", fontSize: 13.5 }}>{t.L.tn}</b><span className="rmt-tag" style={{ background: "#eef2ff", color: "#3730a3" }}>حُضّرت {maAr(t.done)}/{maAr(t.n)}</span>{t.late > 0 && <span className="rmt-tag" style={{ background: "#ffedd5", color: "#c2410c" }}>⏰ {maAr(t.late)}</span>}{t.ab > 0 && <span className="rmt-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 حصص {maAr(t.ab)}</span>}
+              {ab ? <><span className="rmt-tag" style={{ background: "#b91c1c", color: "#fff" }}>🚫 غائب اليوم</span><button className="rmt-b" style={{ padding: "3px 10px", fontSize: 12 }} disabled={busy} onClick={() => dayAbs(t.L, false)}>إلغاء</button></> : <button className="rmt-b red" style={{ padding: "3px 10px", fontSize: 12 }} disabled={busy} onClick={() => dayAbs(t.L, true)}>🚫 غائب اليوم كاملاً</button>}</div>; })}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>غياب اليوم الكامل يُسجَّل في سجل الانضباط (حضوري) ويظهر في الجدول المدرسي، فيُحتسب في إحصائيات المعلم كغياب يوم واحد. ومن لم يسجّل حضوره في ملف الصباح يُسجَّل غائباً تلقائياً عند رفعه.</div></>}
+        </div>; })()}
       <div className="rmt-card" style={{ overflowX: "auto" }}><b>📋 متابعة التحضير — كل فصل وكل حصة <small style={{ color: "#64748b", fontWeight: 800 }}>(اضغط الخانة للتفاصيل، واسم الفصل لكشفه)</small></b>
         <table className="rmt-g"><thead><tr><th>الفصل</th>{times.map((t, p) => <th key={p}>ح{maAr(p + 1)}<div style={{ fontSize: 10, color: "#94a3b8" }}>{rmtF(t[0])}</div></th>)}<th>غائب</th><th>جزئي</th></tr></thead>
           <tbody>{cks.map(ck => <tr key={ck}><th style={{ cursor: "pointer", color: cls === ck ? "#4338ca" : undefined }} onClick={() => setCls(cls === ck ? "" : ck)}>{maClassName(ck)}</th>{times.map((t, p) => { const L = lessons.find(x => x.ck === ck && x.p === p); const r = recOf(ck, p); const started = hdMin(t[0]) <= nowM;
             const bg = r ? "#dcfce7" : L ? (started ? "#fee2e2" : "#f1f5f9") : "transparent"; const c = r ? "#166534" : started ? "#b91c1c" : "#94a3b8";
-            return <td key={p} style={{ background: bg, color: c, cursor: L || r ? "pointer" : "default" }} title={L ? L.tn : ""} onClick={() => (L || r) && setCell({ ck, p, L, r })}>{r ? `✓ ${maAr(Object.keys(ptObj(r.ab)).length)}` : L ? (started ? "✗" : "·") : ""}{(() => { const g = tlg(L); return g && g.st === "late" ? <span title="تأخر المعلم" style={{ color: "#c2410c" }}> ⏰</span> : g && (g.st === "absent" || g.st === "sub") ? <span title="غياب المعلم" style={{ color: "#b91c1c" }}> 🚫</span> : null; })()}</td>; })}
+            return <td key={p} style={{ background: bg, color: c, cursor: L || r ? "pointer" : "default" }} title={L ? L.tn : ""} onClick={() => (L || r) && setCell({ ck, p, L, r })}>{r ? `✓ ${maAr(Object.keys(ptObj(r.ab)).length)}` : L ? (started ? "✗" : "·") : ""}{(() => { const g = tlg(L); return L && absDay(L.ti) && !g ? <span title="المعلم غائب اليوم" style={{ color: "#b91c1c" }}> 🚫</span> : g && g.st === "late" ? <span title="تأخر المعلم" style={{ color: "#c2410c" }}> ⏰</span> : g && (g.st === "absent" || g.st === "sub") ? <span title="غياب المعلم" style={{ color: "#b91c1c" }}> 🚫</span> : null; })()}</td>; })}
             <td style={{ color: "#b91c1c" }}>{S[ck].recs.length ? maAr(S[ck].full.length) : "—"}</td><td style={{ color: "#c2410c" }}>{S[ck].recs.length ? maAr(S[ck].part.length) : "—"}</td></tr>)}</tbody></table>
         <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>✓ حُضّرت (الرقم = الغائبون) • ✗ بدأت ولم تُحضّر • · لم تبدأ بعد • ⏰ تأخر المعلم • 🚫 غياب المعلم — اضغط الخانة لتسجيل تأخر المعلم أو غيابه</div></div>
       {cell && <div className="rmt-card" style={{ borderColor: "#818cf8" }}><div className="flex gap-2 items-center"><b style={{ flex: 1 }}>{maClassName(cell.ck)} • الحصة {TT_ORD[cell.p] || maAr(cell.p + 1)}{cell.L && cell.L.s ? ` • ${cell.L.s}` : ""}</b><button className="rmt-b" onClick={() => setCell(null)}>✕</button></div>
@@ -41484,10 +41515,6 @@ function RmtAdminPage({ by = "الإدارة" }) {
                 <button className="rmt-b red" style={{ padding: "4px 10px", fontSize: 12.5, marginInlineStart: 8 }} onClick={() => setTL(L, { st: "absent" })}>🚫 غاب عن الحصة</button></div>
               <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>يُسجَّل في «متابعة الحصص» مثل الحصص الحضورية تماماً: يظهر للمعلم في «ملاحظات متابعة حصصي»، ويُحتسب في حصر ملاحظات الحصص وبطاقته الشاملة وترتيب المعلمين.</div></>}
           </div>; })()}</div>}
-      {C && <div className="rmt-card" style={{ overflowX: "auto" }}><div className="flex gap-2 items-center"><b style={{ flex: 1 }}>👥 {maClassName(cls)} — {maAr(C.st.length)} طالباً • حُضّرت {maAr(C.recs.length)} حصة</b><button className="rmt-b" onClick={() => setCls("")}>✕</button></div>
-        {!C.recs.length ? <div style={{ fontWeight: 800, color: "#64748b" }}>لم تُحضّر أي حصة لهذا الفصل بعد.</div> : <table className="rmt-g"><thead><tr><th style={{ textAlign: "right" }}>الطالب</th>{C.recs.map(x => <th key={x.p}>ح{maAr(x.p + 1)}</th>)}<th>النتيجة</th></tr></thead>
-          <tbody>{[...C.rows].sort((a, b) => b.ab - a.ab || b.lt - a.lt).map(x => <tr key={x.s.id}><th style={{ textAlign: "right", fontWeight: 800 }}>{x.s.name}</th>{C.recs.map(r => { const a = ptObj(r.r.ab)[x.s.id], l = ptObj(r.r.lt)[x.s.id]; return <td key={r.p} style={{ background: a ? "#fee2e2" : l ? "#fef3c7" : "#f0fdf4", color: a ? "#b91c1c" : l ? "#92400e" : "#15803d", cursor: "default" }}>{a ? "غ" : l ? "م" : "✓"}</td>; })}
-            <td style={{ cursor: "default", color: x.full ? "#b91c1c" : x.ab ? "#c2410c" : "#15803d" }}>{x.full ? "🔴 غائب اليوم" : x.ab ? `🟠 جزئي (${maAr(x.ab)})` : x.lt ? "⏰ متأخر" : "✅ حاضر"}</td></tr>)}</tbody></table>}</div>}
     </>}
     <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>{remCard}{lenBox}</div>
   </div>;
@@ -41506,7 +41533,7 @@ function HdRemCard({ cfg, setRem }) {
 }
 // تصنيف اليوم وحساب التأخر والانصراف المبكر ونسبة الانضباط
 function hdDay(r, cfg) {
-  if (!r) return null; const c = hdEff(cfg);
+  if (!r || r.void) return null; const c = hdEff(cfg);
   const st = String(r.st || "").trim(); const S = hdMin(c.start), E = hdMin(c.end), R = Math.max(30, E - S), g = +c.grace || 0;
   const a = hdMin(r.a), d = hdMin(r.d); const fl = [];
   if (r.rm) { if (/عطلة/.test(st)) return { kind: "off", st }; if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d: null, late: 0, early: 0, lost: 0, pct: null, fl, rm: 1 };
@@ -45580,7 +45607,7 @@ const duEq = (a, b) => { if (!a || !b) return false; if (cvNorm(a) === cvNorm(b)
 const duMine = (S, name) => Object.values(ptObj(S)).filter(s => s && maArr(s.tn).some(n => duEq(n, name)));
 const duMonSlot = (dk, n, cfg) => ({ id: "m" + dk, ty: "mon", d: [maDate(dk).getDay()], f: (cfg && cfg.monF) || "06:30", t: (cfg && cfg.monT) || "13:00", pl: "المدرسة — من الدخول حتى الانصراف", tn: [n], dk, note: "", lbl: "" });
 const duSlot = (D, sid) => { if (!sid) return null; if (D.S[sid]) return D.S[sid]; if (ptObj(D.SX)[sid]) return D.SX[sid]; if (sid[0] === "m") { const dk = sid.slice(1); const n = ptObj(D.M)[dk]; return n ? duMonSlot(dk, n, D.cfg) : null; } return null; };
-const duDue = (D, dk) => { const wd = maDate(dk).getDay(); if (wd > 4 || ptObj(D.H)[dk]) return []; const L = Object.values(ptObj(D.S)).filter(s => s && duD(s.d).includes(wd)); const n = ptObj(D.M)[dk]; if (n) L.push(duMonSlot(dk, n, D.cfg)); return L.sort(duSort); };
+const duDue = (D, dk) => { const wd = maDate(dk).getDay(); if (wd > 4 || ptObj(D.H)[dk] || hdRemDay(dk)) return []; const L = Object.values(ptObj(D.S)).filter(s => s && duD(s.d).includes(wd)); const n = ptObj(D.M)[dk]; if (n) L.push(duMonSlot(dk, n, D.cfg)); return L.sort(duSort); };
 const duSort = (a, b) => String(a.f || "99").localeCompare(String(b.f || "99")) || String(a.ty).localeCompare(String(b.ty));
 const DU_CSS = `
 .du-hero{border-radius:26px;color:#fff;padding:18px;position:relative;overflow:hidden;background:radial-gradient(520px 240px at 100% -40%,rgba(250,204,21,.32),transparent 60%),radial-gradient(420px 240px at 0% 130%,rgba(56,189,248,.35),transparent 60%),linear-gradient(135deg,#0c4a6e,#0f766e 55%,#065f46)}
@@ -45628,7 +45655,7 @@ function DutyTeacherView({ me }) {
   if (!D) return <div className="ma-card p-10 text-center font-bold text-gray-400">⏳</div>;
   const wd = now.getDay(); const td = wd <= 4 ? wd : -1; const day = sel ?? (td >= 0 ? td : 0);
   const mine = duMine(D.S, me.name).sort(duSort); const wk = asmWeek(maKey(now));
-  const mineD = i => { const L = mine.filter(s => duD(s.d).includes(i) && !ptObj(D.H)[wk[i]]); const n = ptObj(D.M)[wk[i]]; if (n && duEq(n, me.name)) L.push(duMonSlot(wk[i], n, D.cfg)); return L.sort(duSort); };
+  const mineD = i => { const L = mine.filter(s => duD(s.d).includes(i) && !ptObj(D.H)[wk[i]] && !hdRemDay(wk[i])); const n = hdRemDay(wk[i]) ? null : ptObj(D.M)[wk[i]]; if (n && duEq(n, me.name)) L.push(duMonSlot(wk[i], n, D.cfg)); return L.sort(duSort); };
   const myMon = Object.entries(ptObj(D.M)).filter(([, n]) => duEq(n, me.name)).map(([k]) => k).sort(); const upMon = myMon.filter(k => k >= maKey(now)); const ak = duAkOf(me); const acked = duAckOk(D.ack[ak]) ? D.ack[ak] : null;
   const nowM = now.getHours() * 60 + now.getMinutes();
   const todayL = td >= 0 ? mineD(td) : [];
@@ -45721,13 +45748,13 @@ async function duAutoAck(me, D) {
   const v = { n: me.name, at: Date.now(), ver: DU_OFF_MVER, auto: 1, via: "الدخول برقم الهوية", rid: me.rid || "" };
   const ok = await maPut(`${DU_ACK}/${ak}`, v); return ok ? v : null;
 }
-const duNextDay = (D, t) => { const d = maDate(t); for (let i = 0; i < 20; i++) { d.setDate(d.getDate() + 1); const k = maKey(d); if (d.getDay() <= 4 && !ptObj(D.H)[k]) return k; } return null; };
+const duNextDay = (D, t) => { const d = maDate(t); for (let i = 0; i < 20; i++) { d.setDate(d.getDate() + 1); const k = maKey(d); if (d.getDay() <= 4 && !ptObj(D.H)[k] && !hdRemDay(k)) return k; } return null; };
 const duDays = (a, b) => Math.round((maDate(b) - maDate(a)) / 864e5);
 const duG = k => maAr(k.split("-").map(Number).reverse().join("/"));
 async function duShallow(path) { try { const r = await fetch(`${FIREBASE_URL}/school/${path}.json?shallow=true`); const j = await r.json(); return ptObj(j); } catch { return {}; } }
 function duRegRows(D) {
   const M = ptObj(D.M), H = ptObj(D.H); const ks = [...new Set([...Object.keys(M), ...Object.keys(H)])].sort();
-  let n = 0; return ks.map(k => { const h = H[k] || (maOff(k) && maDate(k).getDay() < 5 ? maOffName(k) : ""); return h ? { k, hol: h + (M[k] ? ` — مناوبة أ. ${M[k]} بحاجة إلى ترحيل` : "") } : { k, n: M[k], i: ++n, cy: DU_OFF_CY[k] || 0 }; });
+  let n = 0; return ks.map(k => { const h = H[k] || (maOff(k) && maDate(k).getDay() < 5 ? maOffName(k) : "") || (hdRemDay(k) ? "🏠 دوام عن بعد" : ""); return h ? { k, hol: h + (M[k] ? ` — مناوبة أ. ${M[k]} بحاجة إلى ترحيل` : "") } : { k, n: M[k], i: ++n, cy: DU_OFF_CY[k] || 0 }; });
 }
 function duPrintRegister(D, by, onlyName) {
   const R = duRegRows(D).filter(r => !onlyName || r.hol || duEq(r.n, onlyName)); const wk = {}; R.forEach(r => (wk[wkStart(r.k)] = wk[wkStart(r.k)] || []).push(r));
@@ -46086,7 +46113,7 @@ function DuSignWatcher({ me, onOpen }) {
 const DU_EVL = [[90, "ممتاز", "#15803d", "#dcfce7"], [80, "جيد جداً", "#0d9488", "#ccfbf1"], [70, "جيد", "#b45309", "#fef3c7"], [60, "مقبول", "#c2410c", "#ffedd5"], [0, "يحتاج متابعة", "#b91c1c", "#fee2e2"]];
 const duEvLv = p => p == null ? ["—", "#64748b", "#f1f5f9"] : (DU_EVL.find(x => p >= x[0]) || DU_EVL[4]).slice(1);
 async function duEvalCalc(D, f, t) {
-  const days = []; const e = t < maKey(new Date()) ? t : maKey(new Date()); for (let d = maDate(f), i = 0; maKey(d) <= e && i < 400; d.setDate(d.getDate() + 1), i++) { const k = maKey(d); if (d.getDay() <= 4 && !maOff(k) && !ptObj(D.H)[k]) days.push(k); }
+  const days = []; const e = t < maKey(new Date()) ? t : maKey(new Date()); for (let d = maDate(f), i = 0; maKey(d) <= e && i < 400; d.setDate(d.getDate() + 1), i++) { const k = maKey(d); if (d.getDay() <= 4 && !maOff(k) && !ptObj(D.H)[k] && !hdRemDay(k)) days.push(k); }
   const R = {}; const add = n => (R[n] = R[n] || { n, due: 0, sup: 0, mon: 0, sg: 0, ab: 0, rp: 0, rpNeed: 0, st: [], days: [] });
   for (let i = 0; i < days.length; i += 8) { const ch = days.slice(i, i + 8); const got = await Promise.all(ch.map(dk => Promise.all([duShallow(`${DU_SIG}/${dk}`), maGet(`${DU_AT}/${dk}`), maGet(`${DU_REP}/${dk}`)])));
     ch.forEach((dk, j) => { const [G, A0, P0] = got[j]; const A = ptObj(A0), P = Object.values(ptObj(P0)).filter(Boolean);
@@ -46355,7 +46382,7 @@ function DutyReportsTab({ S, DD, by }) {
     <div className="grid gap-3">
       <div className="ma-card p-3 flex gap-2 flex-wrap items-center"><input type="date" className="ma-inp" style={{ width: 160 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} /><b style={{ fontSize: 13.5 }}>{maDay(D)} • {asmHij(D)}</b><button className="ma-btn gold" style={{ marginRight: "auto" }} disabled={!day} onClick={print}>🖨 تقرير اليوم</button></div>
       <div className="asm-kp" style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>{[["#0f766e", `${maAr(reps.length)} / ${maAr(due.reduce((a, s) => a + maArr(s.tn).length, 0))}`, "تقارير مرفوعة"], ["#d97706", avgStar ? maAr(avgStar.toFixed(1)) + " ⭐" : "—", "متوسط التقييم"], ["#b91c1c", maAr(allSt.filter(x => x.k === "v").length), "مخالفات"], ["#c2410c", maAr(allSt.filter(x => x.k === "l").length), "متأخرون"]].map(([c, v, l]) => <div key={l} className="ma-card" style={{ padding: "10px 4px", textAlign: "center", borderBottom: `4px solid ${c}` }}><b style={{ display: "block", fontSize: 20, color: c }}>{v}</b><small style={{ fontWeight: 800, color: "#64748b" }}>{l}</small></div>)}</div>
-      {day === null ? <div className="p-8 text-center text-gray-400 font-bold">⏳</div> : !due.length ? <div className="ma-card p-6 text-center font-bold" style={{ color: "#94a3b8" }}>لا توجد مهام في هذا اليوم</div> :
+      {day === null ? <div className="p-8 text-center text-gray-400 font-bold">⏳</div> : !due.length ? <div className="ma-card p-6 text-center font-bold" style={{ color: hdRemDay(dateK) ? "#3730a3" : "#94a3b8" }}>{hdRemDay(dateK) ? "🏠 دوام عن بعد — لا إشراف ولا مناوبة ولا تقارير في هذا اليوم" : "لا توجد مهام في هذا اليوم"}</div> :
         <div className="grid gap-2">{due.flatMap(s => maArr(s.tn).map(n => ({ s, n, r: repOf(s, n) }))).map(({ s, n, r }) => { const T = DU_TY[s.ty] || DU_TY.oth; return (
           <div key={s.id + n} className="ma-card" style={{ padding: 0, overflow: "hidden", borderRight: `5px solid ${T.c}` }}>
             <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 12px", background: T.bg }}><b style={{ color: T.c }}>{T.ic} {s.ty === "oth" && s.lbl ? s.lbl : T.l}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>📍 {s.pl} • {s.f ? mlFmtT(s.f) : ""}</span><b style={{ marginRight: "auto" }}>👤 {n}</b>{r ? duStars(+r.star || 0, null, 15) : <span className="du-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>⏳ لم يُرفع التقرير</span>}</div>
@@ -46459,7 +46486,7 @@ function DutyBoard({ S, DD, names, by }) {
       {due.length > 0 && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#166534", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 14, padding: "8px 12px" }}>✅ الجميع حاضر افتراضياً — ارصد فقط الحالات: ❌ غائب • 🚫 لم يحضر • 📝 أخرى، واختر البديل إن لزم</div>}
       {due.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>{[["#15803d", all.length - marked.length, "حاضرون"], ["#b91c1c", cnt("a"), "غائبون"], ["#c2410c", cnt("n") + cnt("o"), "لم يحضر/أخرى"], ["#0369a1", marked.filter(x => recOf(x.s, x.n).sub).length, "بدلاء"]].map(([c, v, l]) => <div key={l} className="ma-card" style={{ padding: "8px 4px", textAlign: "center", borderBottom: `4px solid ${c}` }}><b style={{ display: "block", fontSize: 21, color: c }}>{maAr(v)}</b><small style={{ fontWeight: 800, color: "#64748b" }}>{l}</small></div>)}</div>}
       {logL.length > 0 && <div className="ma-card p-3" style={{ borderColor: "#fcd34d", background: "#fffbeb" }}><div className="flex items-center gap-2 flex-wrap"><b style={{ color: "#92400e" }}>🔔 تعديلات اليوم ({maAr(logL.length)})</b><span style={{ marginRight: "auto" }}><WaBtn small ph={phOf(P, "فازع القرني")} txt={toPrincipal} label="إبلاغ المدير" /></span></div><div className="grid gap-1 mt-2">{logL.slice(0, 8).map((x, i) => <div key={i} style={{ fontSize: 12.5, fontWeight: 700, color: "#78350f" }}>• {x.txt} <small style={{ color: "#a16207" }}>({x.by} — {ptWhen(x.at)})</small></div>)}</div></div>}
-      {!due.length ? <div className="ma-card p-6 text-center font-bold" style={{ color: "#94a3b8" }}>لا توجد مهام إشراف في هذا اليوم</div> : due.map(s => { const T = DU_TY[s.ty] || DU_TY.oth; return (
+      {!due.length ? <div className="ma-card p-6 text-center font-bold" style={{ color: hdRemDay(dateK) ? "#3730a3" : "#94a3b8" }}>{hdRemDay(dateK) ? "🏠 دوام عن بعد — لا إشراف ولا مناوبة في هذا اليوم" : "لا توجد مهام إشراف في هذا اليوم"}</div> : due.map(s => { const T = DU_TY[s.ty] || DU_TY.oth; return (
         <div key={s.id} className="ma-card" style={{ padding: 0, overflow: "hidden", borderRight: `6px solid ${T.c}` }}>
           <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 12px", background: T.bg }}><b style={{ color: T.c, fontSize: 14.5 }}>{T.ic} {s.ty === "oth" && s.lbl ? s.lbl : T.l}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>📍 {s.pl} • 🕒 {s.f ? mlFmtT(s.f) : ""}{s.t ? " – " + mlFmtT(s.t) : ""}</span><span className="du-tag" style={{ marginRight: "auto", background: "#fff", color: T.c }}>{maArr(s.tn).length > 1 ? `👥 فريق من ${maAr(maArr(s.tn).length)}` : "👤 مكلّف واحد"}</span></div>
           <div className="grid gap-1" style={{ padding: 8 }}>{maArr(s.tn).map((n, i) => { const r = recOf(s, n); const st = r ? (r.st === "x" ? "o" : r.st) : null; const A = st && DU_AST[st]; const k30 = n30(n); return (
@@ -46505,7 +46532,7 @@ function DutyChangesAlert({ onOpen }) {
 function DutyMonRoster({ D, names, by, onChange }) {
   const [open, setOpen] = useState(false); const t = maKey(new Date()); const [P, setP] = useState({}); const [mv, setMv] = useState(null); const [add, setAdd] = useState(null); const [busy, setBusy] = useState(false);
   useEffect(() => { (async () => setP(ptObj(await maGet(PH_NODE))))(); }, []);
-  const off = k => maOff(k) || !!ptObj(D.H)[k];
+  const off = k => maOff(k) || !!ptObj(D.H)[k] || hdRemDay(k);
   const L = Object.entries(ptObj(D.M)).filter(([, n]) => n).sort((a, b) => a[0].localeCompare(b[0])); const H = Object.entries(ptObj(D.H));
   const cnt = {}; L.forEach(([, n]) => { cnt[n] = (cnt[n] || 0) + 1; });
   const next = L.filter(([k]) => k >= t); const shown = open ? L : next.slice(0, 12);
@@ -46596,6 +46623,7 @@ function DuDayPanel({ D, dk, me, P, sig, att, admin }) {
     </div>); };
   const Tasks = ({ ty, c }) => DU_TASKS[ty] ? <details style={{ marginTop: 8 }}><summary style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 900, color: c }}>📋 مهام {ty === "mon" ? "المعلم المناوب" : "المعلم المشرف"} ({maAr(DU_TASKS[ty].length)})</summary><ol style={{ margin: "6px 0 0", paddingRight: 18, fontSize: 12.5, fontWeight: 700, lineHeight: 1.9, color: ty === "mon" ? "#e0f2fe" : "#334155" }}>{DU_TASKS[ty].map((t, i) => <li key={i}>{t}</li>)}</ol></details> : null;
   if (hol) return <div className="ma-card p-5 text-center"><div style={{ fontSize: 36 }}>🌴</div><b>{hol}</b></div>;
+  if (hdRemDay(dk)) return <div className="ma-card p-5 text-center"><div style={{ fontSize: 36 }}>🏠</div><b>دوام عن بعد — لا إشراف ولا مناوبة في هذا اليوم</b></div>;
   if (wd > 4) return <div className="ma-card p-5 text-center font-bold" style={{ color: "#94a3b8" }}>🌙 لا دوام</div>;
   const locs = {}; brk.forEach(s => { (locs[s.pl] = locs[s.pl] || []).push(s); });
   return <div className="grid gap-3"><style>{DUP_CSS}</style>
@@ -46617,6 +46645,7 @@ function DutyTodayHome({ navigate }) {
   const load = async () => { const [D, att, sig, P, rep] = await Promise.all([duLoad(), maGet(`${DU_AT}/${dk}`), maGet(`${DU_SIG}/${dk}`), maGet(PH_NODE), maGet(`${DU_REP}/${dk}`)]); setX({ D, att: ptObj(att), sig: ptObj(sig), P: ptObj(P), rep: ptObj(rep) }); };
   useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); }, []);
   if (!X) return null; const due = duDue(X.D, dk);
+  if (hdRemDay(dk)) return <div className="ma ma-card" style={{ padding: "12px 16px", margin: "0 0 18px", borderRadius: 22, border: "2px solid #c7d2fe", background: "linear-gradient(90deg,#eef2ff,#fff)" }} dir="rtl"><style>{MA_CSS}</style><b style={{ color: "#3730a3" }}>🏠 دوام عن بعد اليوم — الإشراف والمناوبة متوقفان، ولا تُرسل تذكيراتهما</b></div>;
   const nxM = Object.keys(ptObj(X.D.M)).sort().find(k => k > dk); const nxN = nxM ? X.D.M[nxM] : "";
   if (!due.length) return nxM ? <div className="ma ma-card" style={{ padding: "12px 16px", margin: "0 0 18px", borderRadius: 22, border: "2px solid #bfdbfe", background: "linear-gradient(90deg,#eff6ff,#fff)" }} dir="rtl"><style>{MA_CSS}</style><b style={{ color: "#1e3a8a" }}>⏱️ المناوب القادم: {nxN}</b> <span style={{ fontSize: 13, fontWeight: 800, color: "#475569" }}>— {maDay(maDate(nxM))} {asmHij(maDate(nxM))} • {duG(nxM)}م</span>{navigate && <button className="ma-btn" style={{ marginRight: 8, padding: "3px 10px" }} onClick={() => navigate("duty")}>السجل</button>}</div> : null;
   const monS = due.find(s => s.ty === "mon"); const monR = monS ? Object.entries(X.rep).find(([k]) => k.startsWith(monS.id + "_")) : null; const mr = monR ? monR[1] : null; const lateS = mr ? maArr(mr.st).filter(x => x.k === "l") : []; const violS = mr ? maArr(mr.st).filter(x => x.k === "v") : [];
@@ -50354,7 +50383,7 @@ class PamSafe extends React.Component {
 
 export default function SchoolWebsite(props) {
   const [hok, setHok] = useState(false);
-  useEffect(() => { let d = false; const done = () => { if (!d) { d = true; setHok(true); } }; maHolXLoad().finally(done); const t = setTimeout(done, 2500); return () => clearTimeout(t); }, []);
+  useEffect(() => { let d = false; const done = () => { if (!d) { d = true; setHok(true); } }; Promise.all([maHolXLoad(), hdRemLoad()]).finally(done); const t = setTimeout(done, 2500); return () => clearTimeout(t); }, []);
   if (!hok) return <div dir="rtl" style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#f0fdfa,#ecfdf5 50%,#f5f5f4)", fontFamily: "Cairo,Tahoma,sans-serif" }}><div style={{ textAlign: "center", fontWeight: 900, color: "#0f766e" }}><div style={{ fontSize: 54 }}>🏫</div>جارٍ التحميل…</div></div>;
   return <><PamSafe><PamGuard /></PamSafe><SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary></>;
 }
