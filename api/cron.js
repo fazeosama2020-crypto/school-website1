@@ -72,6 +72,18 @@ module.exports = async function handler(req, res) {
       for (const p of ps) { const [a, b] = rt(p); const atP = les.filter(L => +L.p === p);
         if (nowM >= a - 3 && nowM < a + 5) for (const G of grp(atP)) { const L = G[0]; await once(`rp-${p}-${L.ti >= 0 ? L.ti : L.tn}`, () => sendTo({ ti: L.ti >= 0 ? [L.ti] : [], names: L.tn ? [L.tn] : [] }, { title: `📋 حضّر طلاب الحصة ${ORD[p] || ar(p + 1)}`, body: `${G.map(x => "فصل " + cls(x.ck) + (x.s ? " • " + x.s : "")).join(" ، ")} • ${fmt(hm2(a))}–${fmt(hm2(b))}`, url: "/#teacher", tag: "rp-" + p, urgent: 1 })); }
         if (nowM >= b + 5 && nowM < b + 15) { const miss = atP.filter(L => !(((ratt || {})[L.ck] || {})["p" + p] || {}).at); for (const G of grp(miss)) { const L = G[0]; await once(`rm-${p}-${L.ti >= 0 ? L.ti : L.tn}`, () => sendTo({ ti: L.ti >= 0 ? [L.ti] : [], names: L.tn ? [L.tn] : [] }, { title: `⚠️ لم تُحضّر الحصة ${ORD[p] || ar(p + 1)}`, body: G.map(x => "فصل " + cls(x.ck)).join(" ، ") + " — افتح بوابة المعلم وحضّرها الآن", url: "/#teacher", tag: "rm-" + p, urgent: 1 })); } } } }
+    // ⑤ ملخص الأسبوع للقائد — الخميس بعد ١٢:٢٠ (مرة واحدة)
+    if (wd === 4 && nowM >= 740 && nowM < 860) await once("weekly", async () => {
+      const dayK = (n) => { const d = new Date(day + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+      const W = [-4, -3, -2, -1, 0].map(dayK), P = [-11, -10, -9, -8, -7].map(dayK);
+      const [ix, ixP, hd, far, staff, ...lgs] = await Promise.all([Promise.all(W.map(k => fbGet(`school-mattend-index/${k}`))), Promise.all(P.map(k => fbGet(`school-mattend-index/${k}`))), fbGet("school-hd"), fbGet("school-hd-faris"), fbGet("school-staff2"), ...W.map(k => fbGet(`school-ttlog/${k}`))]);
+      const sAbs = L => L.reduce((t, x) => t + (+((x || {}).absent) || 0), 0); const a1 = sAbs(ix), a0 = sAbs(ixP);
+      let tAbs = 0, fPend = 0; Object.entries(hd || {}).forEach(([hk, r]) => Object.entries(r || {}).forEach(([dk, x]) => { if (!W.includes(dk) || !x || x.void) return; const ab = x.fx === "abs" || (/غياب/.test(String(x.st || "")) && x.ph !== "m") || (x.rm && !x.a && !/استئذان|مهمة|انتداب|إجازة|اجازة/.test(String(x.st || "")) && !x.fx); if (ab) { tAbs++; if (!(((far || {})[hk] || {})[dk] || {}).at) fPend++; } }));
+      let nL = 0, nA = 0; lgs.forEach(o => Object.values(o || {}).forEach(v => { if (v && v.st === "late") nL++; if (v && v.st === "absent") nA++; }));
+      const pr = Object.values(staff || {}).filter(x => x && x.role === "principal").map(x => x.name).filter(Boolean);
+      const tr = a0 ? (a1 > a0 ? `↑ ${ar(Math.round((a1 - a0) / a0 * 100))}٪` : a1 < a0 ? `↓ ${ar(Math.round((a0 - a1) / a0 * 100))}٪` : "=") : "";
+      const body = `غياب الطلاب ${ar(a1)}${tr ? ` (${tr} عن الأسبوع الماضي)` : ""} • غياب المعلمين ${ar(tAbs)} يوم${fPend ? ` (${ar(fPend)} لم يُدخل في فارس)` : ""} • ملاحظات الحصص: تأخر ${ar(nL)} وغياب ${ar(nA)}`;
+      const r = await sendTo(pr.length ? { names: pr } : { roles: ["a"] }, { title: "🧭 ملخص الأسبوع — لوحة القائد", body, url: "/#staff:lead", tag: "weekly" }); return r; });
     const marks = Object.fromEntries(Object.entries(mark).filter(([k]) => k.startsWith("school-push-sent/")));
     if (Object.keys(marks).length) await fbPatch(marks);
     const dbg = (req.query || {}).debug ? { remote, rmtLessons: rplan ? Object.keys(rplan).length : 0, list: slots.map(s => `${s.f || "?"} ${s.l} ← ${s.tn.join("، ")}`), visits: visits.map(v => `${v.f || "?"} ${v.l} ← ${v.names.join("، ")}`), sb: subs.map(s => `ح${s.p + 1} ${s.ck} ← ${s.ti}`), lead: C.lead, now: nowM } : {};
