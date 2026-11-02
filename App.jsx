@@ -34201,6 +34201,124 @@ function PlrTeacher({ me }) {
   </div>;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🧭 لوحة القائد اليومية — تجمع من كل أقسام الموقع ما يحتاج قرار القائد اليوم، مرتباً بالأهمية، مع زر الإجراء
+// لا تُدخل بيانات جديدة: تقرأ حضوري والغياب والتعاميم ومهام الإداريين والحصص والدوام عن بعد وأولياء الأمور
+// ═══════════════════════════════════════════════════════════════
+const LDR_CSS = `
+.ld{display:grid;gap:12px}.ld-hero{border-radius:24px;padding:18px 20px;color:#fff;background:radial-gradient(420px 220px at 90% 0%,rgba(201,162,39,.35),transparent 60%),linear-gradient(135deg,#0b1730,#12305a 55%,#0f766e);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.ld-hero h2{margin:0;font-size:22px;font-weight:900}.ld-hero p{margin:2px 0 0;font-size:13px;font-weight:700;opacity:.88}
+.ld-ring{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),rgba(255,255,255,.18) 0);flex:none}.ld-ring>div{width:66px;height:66px;border-radius:50%;background:#0f2346;display:grid;place-items:center;text-align:center;line-height:1.05}.ld-ring b{font-size:22px}.ld-ring small{font-size:10px;font-weight:800;opacity:.8}
+.ld-kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.ld-kp button{background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:10px 8px;text-align:center;cursor:pointer;font:inherit;border-bottom:4px solid var(--c)}.ld-kp b{display:block;font-size:22px;font-weight:900;color:var(--c)}.ld-kp small{font-weight:800;color:#64748b;font-size:11.5px}
+.ld-it{background:#fff;border:1.5px solid #e2e8f0;border-inline-start:6px solid var(--c);border-radius:16px;padding:12px 14px;display:grid;gap:6px}
+.ld-it h4{margin:0;font-size:15px;font-weight:900;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ld-it p{margin:0;font-size:12.5px;font-weight:700;color:#475569;line-height:1.8}
+.ld-tag{font-size:11px;font-weight:900;border-radius:999px;padding:2px 9px;background:var(--bg);color:var(--c)}
+.ld-chips{display:flex;gap:4px;flex-wrap:wrap}.ld-chips span{font-size:11.5px;font-weight:800;background:#f1f5f9;color:#334155;border-radius:8px;padding:2px 8px}
+.ld-acts{display:flex;gap:6px;flex-wrap:wrap}.ld-b{border:1.5px solid #cbd5e1;background:#fff;border-radius:11px;padding:6px 12px;font:inherit;font-weight:900;font-size:12.5px;cursor:pointer;color:#0f172a}.ld-b.pri{background:#12305a;border-color:#12305a;color:#fff}.ld-b:disabled{opacity:.5}
+.ld-ok{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:16px;padding:12px 14px;font-weight:800;color:#166534;font-size:13px}
+`;
+const LDR_SEV = { 3: ["عاجل", "#b91c1c", "#fee2e2"], 2: ["مهم", "#c2410c", "#ffedd5"], 1: ["للمتابعة", "#1d4ed8", "#dbeafe"] };
+async function ldLoad() {
+  const today = maKey(new Date()); const wd = new Date().getDay(); const wk = cdWk(today);
+  const wStart = (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); return maKey(d); })();
+  const back = (() => { const d = new Date(); d.setDate(d.getDate() - 14); return maKey(d); })();
+  const [hd, hdt, far, hc, sidx, ros, idx, inbox, at, alog, cdi, cda, lg, rplan, ratt, rabs, rcfg, cvp, hfx] = await Promise.all([
+    maGet(HD_NODE), maGet(HD_T), maGet(HD_FARIS), maGet(HD_CFG), maGet(SIDX), maGet(MA_ROSTER), fbRange(MA_IDX, back, today), maGet(PT_IDX), maGet(AT_NODE), maGet(`${AT_LOG}/${today}`),
+    maGet(`${CD_NODE}/${wk}`), maGet(`${CD_ACK}/${wk}`), maGet(`${TT_LOG}/${today}`), maGet(`${RMT}/plan/${today}`), maGet(`${RMT}/att/${today}`), maGet(`${RMT}/abs/${today}`), maGet(`${RMT}/cfg`), maGet(CV_PLAN), maGet(HFX_NODE)].map(p => p.catch(() => null)));
+  const cfg = { ...HD_DEF, ...ptObj(hc) }; const names = ptObj(hdt); const N = hk => ptObj(names[hk]).n || "—"; const isT = hk => { const j = ptObj(names[hk]).job || ""; return !j || /معلم/.test(j); };
+  const work = !maOff(today) && wd <= 4; const rem = hdRem(cfg, today);
+  // حضوري: اليوم + الأسبوع + فارس
+  const tday = { abs: [], late: [], up: false };
+  const wkLate = {};
+  Object.entries(ptObj(hd)).forEach(([hk, r]) => { if (!isT(hk)) return; Object.entries(ptObj(r)).forEach(([dk, rec]) => { if (dk < wStart || dk > today || maOff(dk)) return; const d = hdDay(rec, cfg); if (!d) return;
+    if (dk === today) { tday.up = true; if (d.kind === "abs") tday.abs.push(N(hk)); else if (d.late > 0) tday.late.push(`${N(hk)} (${maAr(d.late)} د)`); }
+    if (d.kind === "work" && d.late > 0) { const w = wkLate[hk] = wkLate[hk] || { n: N(hk), c: 0, m: 0 }; w.c++; w.m += d.late; } }); });
+  const faris = hdAbsList(hd, names, far, cfg).filter(x => !x.f && !x.old);
+  const lateRep = Object.values(wkLate).filter(w => w.c >= 3).sort((a, b) => b.c - a.c || b.m - a.m);
+  // غياب الطلاب: اليوم + المتتالي
+  const IX = ptObj(idx); const ixDays = Object.keys(IX).filter(k => !maOff(k)).sort(); const lastDay = ixDays[ixDays.length - 1] || "";
+  const stu = {}; Object.entries(ptObj(ros)).forEach(([ck, r]) => maArr(r && r.students).forEach(s => { if (s && s.id) stu[s.id] = { n: s.name, ck }; }));
+  const allCls = Object.keys(ptObj(ros)).length; const ti = ptObj(IX[today]);
+  const last3 = ixDays.slice(-3); const consec = last3.length === 3 ? Object.entries(ptObj(sidx)).filter(([sid, x]) => stu[sid] && last3.every(k => ptObj(ptObj(x).a)[k])).map(([sid]) => stu[sid]) : [];
+  // أولياء الأمور
+  const inb = ptVals(inbox).filter(x => x && x.k);
+  // مهام الإداريين
+  const D = ptObj(at), L = ptObj(alog); const atLateL = []; let atTot = 0, atDone = 0;
+  atPeople(D).forEach(p => atItems(D, L, p.k, today).forEach(it => { atTot++; if (it.r && it.r.st === "d") atDone++; else if (atLate(it, today)) atLateL.push({ p: p.n, t: it.t.t }); }));
+  // التعاميم اليومية: من لم يطّلع
+  const A = ptObj(cda); const circ = Object.values(ptObj(cdi)).filter(c => c && c.id && (c.at || 0) < Date.now() - 3 * 3600e3).map(c => { const pend = maArr(c.rc).filter(k => k !== "principal" && !ptObj(ptObj(A[c.id])[k]).at); return { c, pend, names: pend.map(k => ptObj(c.rn)[k]).filter(Boolean) }; }).filter(x => x.pend.length);
+  // ملاحظات الحصص اليوم
+  const notes = Object.values(ptObj(lg)).filter(v => v && ["late", "absent", "early"].includes(v.st));
+  // الدوام عن بعد: حصص بدأت ولم تُحضّر
+  let rmt = null; if (rem && rplan) { const C = { ...RMT_DEF, ...ptObj(rcfg) }; const times = rmtTimes(rem.s, 9, C); const nowM = rmtNow(); const AB = ptObj(rabs);
+    const les = Object.values(ptObj(rplan)).filter(Boolean); const due = les.filter(l => times[l.p] && hdMin(times[l.p][0]) <= nowM);
+    const miss = due.filter(l => !ptObj(ptObj(ptObj(ratt)[l.ck])["p" + l.p]).at && !(AB["t" + l.ti] && AB["t" + l.ti].ti != null));
+    rmt = { tot: les.length, due: due.length, miss, done: les.filter(l => ptObj(ptObj(ptObj(ratt)[l.ck])["p" + l.p]).at).length }; }
+  // زيارات اليوم + نماذج بانتظار المعلم
+  const visits = Object.values(ptObj(cvp)).filter(v => v && v.date === today && !v.done);
+  const hfxW = Object.values(ptObj(hfx)).filter(c => c && ["sent", "opened"].includes(c.st) && (c.sentAt || c.at || 0) < Date.now() - 2 * 864e5);
+  return { today, work, rem, tday, faris, lateRep, ixToday: ti, allCls, lastDay, last3, consec, inb, atLateL, atTot, atDone, circ, notes, rmt, visits, hfxW, cfg };
+}
+function LeaderBoard({ me, go }) {
+  const [X, setX] = useState(null); const [busy, setBusy] = useState(""); const [msg, setMsg] = useState(""); const [at, setAt] = useState(0);
+  const load = async () => { try { setX(await ldLoad()); setAt(Date.now()); } catch (e) { setX({ err: String(e && e.message || e) }); } };
+  useEffect(() => { load(); const t = setInterval(load, 180000); return () => clearInterval(t); }, []);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  const run = async (k, fn) => { setBusy(k); try { await fn(); } finally { setBusy(""); } };
+  if (!X) return <div className="ma-card p-10 text-center font-bold" style={{ color: "#94a3b8" }}>⏳ جارٍ تجميع ما يحتاج قرارك اليوم…</div>;
+  if (X.err) return <div className="ma-card p-6 text-center font-bold" style={{ color: "#b91c1c" }}>تعذّر التحميل — {X.err} <button className="ld-b" onClick={load}>إعادة</button></div>;
+  const by = me.name; const can = v => !v || ["principal", "deputy"].includes(me.role) || ptCan(me, v);
+  const chips = (L, n = 8) => <div className="ld-chips">{L.slice(0, n).map((x, i) => <span key={i}>{x}</span>)}{L.length > n && <span>+{maAr(L.length - n)}</span>}</div>;
+  const push = async (names, title, body, url) => { const r = await pushSend({ to: { names }, title, body, url, by, urgent: 1 }); toast(r && r.sent ? `🔔 وصل إلى ${maAr(r.sent)} جهاز` : "🔔 أُرسل — من لم يفعّل الإشعارات لن يصله"); };
+  const I = [];
+  if (X.rem && X.rmt && X.rmt.miss.length) I.push({ sev: 3, ic: "🏠", t: `${maAr(X.rmt.miss.length)} حصة عن بعد بدأت ولم يُحضَّر طلابها`, d: `حُضّرت ${maAr(X.rmt.done)} من ${maAr(X.rmt.tot)} حصة اليوم`, L: [...new Set(X.rmt.miss.map(l => l.tn).filter(Boolean))],
+    acts: [{ l: "🔔 تذكير المعلمين", k: "rmt", fn: () => push([...new Set(X.rmt.miss.map(l => l.tn).filter(Boolean))], "📋 لم تُحضّر طلاب حصتك", "افتح بوابة المعلم وحضّر الحصة", "/#teacher") }, { l: "فتح المتابعة", v: "rmtadm" }] });
+  if (X.faris.length) I.push({ sev: 3, ic: "🚫", t: `${maAr(X.faris.length)} غياب لم يُدخل في «فارس»`, d: "يبقى التنبيه حتى تؤشّر على كل غياب بعد إدخاله", L: X.faris.map(x => `${x.n} — ${maDay(maDate(x.dk))} ${asmHij(maDate(x.dk))}`),
+    acts: [{ l: "✅ أُدخلت كلها في فارس", k: "far", fn: async () => { if (!window.confirm(`تأكيد إدخال ${maAr(X.faris.length)} غياب في فارس؟`)) return; for (const x of X.faris) await hdFarisMark(x, by); toast("✅ سُجّل الإدخال في فارس"); await load(); } }, { l: "فتح الغياب وفارس", v: "hdadmin", tab: "abs" }] });
+  if (X.consec.length) I.push({ sev: 3, ic: "👨‍🎓", t: `${maAr(X.consec.length)} طالباً غابوا ٣ أيام متتالية`, d: `آخر ثلاثة أيام دراسة: ${X.last3.map(k => maDay(maDate(k))).join("، ")}`, L: X.consec.map(s => `${s.n} (${maClassName(s.ck)})`), acts: [{ l: "الإنذار المبكر ورسائل أولياء الأمور", v: "absalert" }] });
+  if (X.circ.length) { const all = [...new Set(X.circ.flatMap(c => c.names))]; I.push({ sev: 2, ic: "📨", t: `${maAr(all.length)} لم يطّلعوا على تعاميم هذا الأسبوع`, d: X.circ.map(c => `«${c.c.title}»: ${maAr(c.pend.length)}`).join(" • "), L: all,
+    acts: [{ l: "🔔 تنبيههم", k: "cd", fn: () => push(all, "📨 تعميم بانتظار اطلاعك", "افتح «تعاميمي» للاطلاع والتوقيع", "/#teacher:circd") }, { l: "فتح التعاميم", v: "circdadm" }] }); }
+  if (X.lateRep.length) I.push({ sev: 2, ic: "⏰", t: `${maAr(X.lateRep.length)} معلمين تكرر تأخرهم ٣ مرات فأكثر هذا الأسبوع`, d: "مرشّحون للتوجيه أو نموذج المساءلة", L: X.lateRep.map(w => `${w.n}: ${maAr(w.c)} مرات • ${maAr(w.m)} د`), acts: [{ l: "سجل الانضباط", v: "hdadmin" }] });
+  if (X.atLateL.length) I.push({ sev: 2, ic: "📌", t: `${maAr(X.atLateL.length)} مهام إدارية متأخرة اليوم`, d: `أُنجز ${maAr(X.atDone)} من ${maAr(X.atTot)} مهمة`, L: X.atLateL.map(x => `${x.p}: ${x.t}`), acts: [{ l: "فتح المهام", v: "admtasks" }, { l: "🔔 تذكيرهم", k: "at", fn: () => push([...new Set(X.atLateL.map(x => x.p))], "📌 مهام متأخرة", "لديك مهام اليوم لم تُنجز — افتح «مهامي اليومية»", "/#staff:mytasks") }] });
+  if (X.inb.length) I.push({ sev: 2, ic: "📝", t: `${maAr(X.inb.length)} عذر وملاحظة من أولياء الأمور بانتظار الرد`, L: X.inb.slice(0, 20).map(x => `${x.k === "exc" ? "عذر" : "ملاحظة"}: ${x.sname || ""}`), acts: [{ l: "فتح الوارد", v: "inbox" }] });
+  if (X.work && !X.rem && X.ixToday.classes != null && X.ixToday.classes < X.allCls && new Date().getHours() >= 9) I.push({ sev: 2, ic: "📋", t: `${maAr(X.allCls - X.ixToday.classes)} فصلاً لم يُرصد غيابها اليوم`, d: `رصد ${maAr(X.ixToday.classes)} من ${maAr(X.allCls)}`, acts: [{ l: "إحصائية الغياب", v: "stats" }] });
+  if (X.notes.length) I.push({ sev: 1, ic: "📡", t: `${maAr(X.notes.length)} ملاحظة على المعلمين في الحصص اليوم`, d: `تأخر ${maAr(X.notes.filter(n => n.st === "late").length)} • غياب ${maAr(X.notes.filter(n => n.st === "absent").length)} • خروج مبكر ${maAr(X.notes.filter(n => n.st === "early").length)}`, acts: [{ l: "حصر ملاحظات الحصص", v: "pnotes" }] });
+  if (X.hfxW.length) I.push({ sev: 1, ic: "📄", t: `${maAr(X.hfxW.length)} نموذج مُرسل لم يرد عليه المعلم منذ يومين`, L: X.hfxW.map(c => c.n || "—"), acts: [] });
+  if (X.visits.length) I.push({ sev: 1, ic: "🎯", t: `${maAr(X.visits.length)} زيارة صفية مجدولة اليوم`, L: X.visits.map(v => `${v.t}${v.p ? " • الحصة " + v.p : ""}`), acts: [{ l: "الزيارات الصفية", v: "cvadm" }] });
+  I.sort((a, b) => b.sev - a.sev);
+  const urgent = I.filter(x => x.sev === 3).length; const score = Math.max(0, 100 - I.reduce((s, x) => s + (x.sev === 3 ? 20 : x.sev === 2 ? 8 : 2), 0));
+  const first = String(me.name || "").split(" ")[0]; const h = new Date().getHours();
+  const K = [
+    ["#b91c1c", X.rem ? (X.rmt ? `${maAr(X.rmt.done)}/${maAr(X.rmt.tot)}` : "—") : maAr(maArr(X.ixToday.names).length || X.ixToday.absent || 0), X.rem ? "حصص عن بعد حُضّرت" : "طالب غائب اليوم", X.rem ? "rmtadm" : "stats"],
+    ["#7c2d12", X.tday.up ? maAr(X.tday.abs.length) : "—", X.tday.up ? "معلم غائب اليوم" : "لم يُرفع حضوري اليوم", "hdadmin"],
+    ["#c2410c", X.tday.up ? maAr(X.tday.late.length) : "—", "معلم متأخر اليوم", "hdadmin"],
+    ["#4338ca", maAr(X.notes.length), "ملاحظة حصص اليوم", "pnotes"],
+    ["#0f766e", X.atTot ? `${maAr(X.atDone)}/${maAr(X.atTot)}` : "—", "مهام الإداريين اليوم", "admtasks"]];
+  return <div className="ld ma" dir="rtl"><style>{LDR_CSS}</style>
+    <div className="ld-hero"><div className="ld-ring" style={{ "--p": score, "--c": score >= 80 ? "#4ade80" : score >= 55 ? "#facc15" : "#f87171" }}><div><b>{maAr(score)}</b><small>جاهزية اليوم</small></div></div>
+      <div style={{ flex: 1, minWidth: 220 }}><h2>{h < 12 ? "صباح الخير" : "مساء الخير"} أ. {first} 🧭</h2><p>{maDay(new Date())} {asmHij(new Date())}{X.rem ? " • 🏠 دوام عن بعد" : !X.work ? " • لا دوام اليوم" : ""}</p>
+        <p style={{ marginTop: 6, fontSize: 14, opacity: 1 }}>{I.length ? `لديك ${maAr(I.length)} بنود تحتاج قرارك${urgent ? ` — منها ${maAr(urgent)} عاجلة` : ""}` : "✨ لا شيء ينتظر قرارك الآن — كل الأقسام منضبطة"}</p></div>
+      <button className="ld-b" style={{ background: "rgba(255,255,255,.12)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={load}>↻ تحديث {at ? new Date(at).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }) : ""}</button></div>
+    <div className="ld-kp">{K.map(([c, v, l, view], i) => <button key={i} style={{ "--c": c }} onClick={() => can(view) && go(view)}><b>{v}</b><small>{l}</small></button>)}</div>
+    {X.tday.up && (X.tday.abs.length > 0 || X.tday.late.length > 0) && <div className="ld-it" style={{ "--c": "#64748b" }}><h4>👤 المعلمون اليوم من «حضوري»</h4>{X.tday.abs.length > 0 && <div><b style={{ fontSize: 12.5, color: "#b91c1c" }}>غائب: </b>{chips(X.tday.abs, 12)}</div>}{X.tday.late.length > 0 && <div><b style={{ fontSize: 12.5, color: "#c2410c" }}>متأخر: </b>{chips(X.tday.late, 12)}</div>}</div>}
+    {!I.length && <div className="ld-ok">✅ لا توجد بنود معلّقة. ستظهر هنا تلقائياً: غياب لم يُدخل في فارس، طلاب غابوا ٣ أيام، تعاميم لم يُطّلع عليها، مهام متأخرة، أعذار أولياء الأمور، وتكرار تأخر المعلمين.</div>}
+    {I.map((x, i) => { const S = LDR_SEV[x.sev]; return <div key={i} className="ld-it" style={{ "--c": S[1] }}>
+      <h4><span>{x.ic}</span><span style={{ flex: 1 }}>{x.t}</span><span className="ld-tag" style={{ "--c": S[1], "--bg": S[2] }}>{S[0]}</span></h4>
+      {x.d && <p>{x.d}</p>}{x.L && x.L.length > 0 && chips(x.L)}
+      {x.acts.length > 0 && <div className="ld-acts">{x.acts.filter(a => a.fn || can(a.v)).map((a, j) => <button key={j} className={`ld-b ${j === 0 ? "pri" : ""}`} disabled={!!busy} onClick={() => a.fn ? run(a.k, a.fn) : (a.tab && (() => { try { localStorage.setItem("hd-tab", a.tab); } catch {} })(), go(a.v))}>{busy && busy === a.k ? "⏳" : a.l}</button>)}</div>}
+    </div>; })}
+    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#94a3b8", textAlign: "center" }}>تتحدث اللوحة كل ٣ دقائق • ويصلك كل خميس ملخص الأسبوع على جوالك إن فعّلت إشعارات الجوال</div>
+    {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 900, background: "#0f172a", color: "#fff", padding: "10px 18px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+  </div>;
+}
+// شريط مختصر أعلى بوابة القائد
+function LeaderStrip({ onOpen }) {
+  const [n, setN] = useState(null);
+  useEffect(() => { let a = true; ldLoad().then(X => { if (!a) return; const c = [X.rmt && X.rmt.miss.length, X.faris.length, X.consec.length, X.circ.length, X.lateRep.length, X.atLateL.length, X.inb.length].filter(Boolean).length; const u = [X.rmt && X.rmt.miss.length, X.faris.length, X.consec.length].filter(Boolean).length; setN({ c, u }); }).catch(() => {}); return () => { a = false; }; }, []);
+  return <button type="button" onClick={onOpen} style={{ width: "100%", display: "flex", gap: 12, alignItems: "center", border: 0, borderRadius: 20, padding: "14px 18px", cursor: "pointer", font: "inherit", color: "#fff", textAlign: "start", background: "linear-gradient(135deg,#0b1730,#12305a 55%,#0f766e)", boxShadow: "0 14px 30px -18px rgba(11,23,48,.7)" }}>
+    <span style={{ fontSize: 30 }}>🧭</span><span style={{ flex: 1 }}><b style={{ fontSize: 17, display: "block" }}>لوحة القائد اليومية</b><small style={{ fontWeight: 700, opacity: .85, fontSize: 12.5 }}>كل ما يحتاج قرارك اليوم في شاشة واحدة مع زر الإجراء</small></span>
+    {n && <span style={{ background: n.u ? "#dc2626" : n.c ? "#f59e0b" : "#16a34a", borderRadius: 999, padding: "4px 12px", fontWeight: 900, fontSize: 13 }}>{n.c ? `${maAr(n.c)} بنود مهمة${n.u ? ` • ${maAr(n.u)} عاجلة` : ""}` : "✓ لا شيء معلّق"}</span>}<span style={{ fontWeight: 900 }}>←</span></button>;
+}
 function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], setClassList, saveClass, messages = [], onSendNote }) {
   const isStaff = kind === "staff";
   const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-staff") || "null"); return m && m.day === maKey(new Date()) && m.name ? m : null; } catch { return null; } });
@@ -34271,6 +34389,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
   if (view === "circ") return wrap("📜 التعاميم", <CircTeacherView me={me} />);
   if (view === "pushadm" && ["principal", "deputy"].includes(me.role)) return wrap("🔔 إشعارات الجوال", <PushAdmin by={me.name} />);
+  if (view === "lead" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🧭 لوحة القائد اليومية", <LeaderBoard me={me} go={setView} />);
   if (view === "rmtadm") return wrap("🏠 التحضير بالحصص — الدراسة عن بعد", <RmtAdminPage by={me.name} />);
   if (view === "smart") return wrap("✨ درسي الذكي", <React.Suspense fallback={SL_WAIT}><SmartLessonTeacher me={me} api={slApi()} /></React.Suspense>);
   if (view === "smartadm" && ["principal", "deputy"].includes(me.role)) return wrap("✨ درسي الذكي – الإدارة", <React.Suspense fallback={SL_WAIT}><SmartLessonAdmin by={me.name} me={me} api={slApi()} /></React.Suspense>);
@@ -34323,6 +34442,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               <button className="pt-kpi" style={{ "--c": "#2563eb" }} onClick={() => setView("inbox")}><b>{maAr(sum.notes)}</b><small>ملاحظة بلا رد</small></button>
             </div>}
             <div className="pt-tiles">
+              {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><LeaderStrip onOpen={() => setView("lead")} /></div>}
               <div style={{ gridColumn: "1/-1" }}><RmtTeacherCard me={me} quiet /></div>
               <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><PtInboxStrip onOpen={() => setView("inbox")} />{["principal", "deputy"].includes(me.role) && <TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} setView("hdadmin"); }} />}</div>}
