@@ -41520,13 +41520,30 @@ function RmtAdminPage({ by = "الإدارة" }) {
     <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>{remCard}{lenBox}</div>
   </div>;
 }
+// شريط التغيير الجماعي أعلى جدول اليوم (يظهر في أيام الدوام عن بعد)
+function HdBulkBar({ rows, onApply }) {
+  const [g, setG] = useState("auto"); const [v, setV] = useState("rmp"); const [busy, setBusy] = useState(false);
+  const G = { auto: ["الجميع عدا ما صحّحته يدوياً", x => !x.rec.fx], all: ["الجميع (المعروضون)", () => true], leave: ["من حالتهم «إجازة»", x => x.d.kind === "leave"], abs: ["الغائبون / لم يسجّلوا", x => x.d.kind === "abs"], perm: ["أصحاب الاستئذان ومهمة العمل", x => !!x.d.task || x.d.kind === "perm"], late: ["المتأخرون", x => x.d.late > 0] };
+  const A = { rmp: "✅ حاضر", task: "🏛️ مهمة عمل", perm: "🙋 استئذان (حاضر)", leave: "🌴 إجازة", abs: "🚫 غياب", "": "↩ إعادة حالة «حضوري» الأصلية" };
+  const sel = rows.filter(G[g][1]);
+  const go = async (gg, vv) => { const L = rows.filter(G[gg][1]); if (!L.length) return; if (!window.confirm(`${A[vv]} ← ${G[gg][0]} (${maAr(L.length)} معلماً)؟\nيمكن الرجوع لكل معلم من «✎ تصحيح…» أو بإعادة حالة حضوري.`)) return; setBusy(true); try { await onApply(L, vv); } finally { setBusy(false); } };
+  return <div className="hd-card" style={{ borderColor: "#a5b4fc", background: "linear-gradient(160deg,#eef2ff,#fff)", gap: 8 }}>
+    <div className="flex gap-2 flex-wrap items-center"><b style={{ fontSize: 15 }}>⚡ تغيير جماعي لهذا اليوم</b>
+      <button className="hd-b pri" disabled={busy || !rows.some(G.auto[1])} onClick={() => go("auto", "rmp")}>{busy ? "⏳" : `✅ حاضر للجميع (${maAr(rows.filter(G.auto[1]).length)})`}</button>
+      <span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>لا يغيّر من صحّحته يدوياً</span></div>
+    <div className="flex gap-2 flex-wrap items-center"><span style={{ fontWeight: 800, fontSize: 13 }}>أو:</span>
+      <select className="hd-in" value={g} onChange={e => setG(e.target.value)}>{Object.entries(G).map(([k, [l, f]]) => <option key={k} value={k}>{l} ({maAr(rows.filter(f).length)})</option>)}</select><span style={{ fontWeight: 900 }}>←</span>
+      <select className="hd-in" value={v} onChange={e => setV(e.target.value)}>{Object.entries(A).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+      <button className="hd-b" disabled={busy || !sel.length} onClick={() => go(g, v)}>تطبيق على {maAr(sel.length)}</button></div>
+  </div>;
+}
 function HdRemCard({ cfg, setRem }) {
   const [k, setK] = useState(() => maKey(new Date())); const [s, setS] = useState(HD_REM_S); const [busy, setBusy] = useState(false);
   const L = Object.entries(ptObj(ptObj(cfg).rem)).sort((a, b) => b[0].localeCompare(a[0]));
   const go = async (d, on, t) => { setBusy(true); try { await setRem(d, on, t); } finally { setBusy(false); } };
   return <div className="hd-card" style={{ borderColor: "#a5b4fc", background: "linear-gradient(160deg,#eef2ff,#fff)", gap: 8 }}>
     <b style={{ fontSize: 16 }}>🏠 دوام عن بعد (منصة مدرستي)</b>
-    <div style={{ fontSize: 13, fontWeight: 800, color: "#475569", lineHeight: 1.9 }}>حدّد اليوم الذي تحوّل فيه الدوام إلى «عن بعد» — يوماً بيوم، بلا تثبيت أسبوع. في هذا اليوم: <b>ارفع ملف الصباح فقط</b> • التأخر يُحسب من وقت بداية الحصة • استئذان «مهمة عمل» يُحسب <b>حضوراً كاملاً</b> • من لم يسجّل حضوره أو لم يرد في الملف يُسجَّل <b>غائباً</b> • لا يُطلب انصراف نهاية الدوام • تتوقف تذكيرات الإشراف والمناوبة والزيارات على الجوال.</div>
+    <div style={{ fontSize: 13, fontWeight: 800, color: "#475569", lineHeight: 1.9 }}>حدّد اليوم الذي تحوّل فيه الدوام إلى «عن بعد» — يوماً بيوم، بلا تثبيت أسبوع. في هذا اليوم: <b>ارفع ملف الصباح فقط</b> • التأخر يُحسب من وقت بداية الحصة • أي استئذان أو «مهمة عمل» يُحسب <b>حضوراً كاملاً</b> • من لم يسجّل حضوره أو لم يرد في الملف يُسجَّل <b>غائباً</b> • لا يُطلب انصراف نهاية الدوام • تتوقف تذكيرات الإشراف والمناوبة والزيارات على الجوال.</div>
     <div className="flex gap-2 flex-wrap items-center"><input type="date" className="hd-in" value={k} onChange={e => setK(e.target.value)} /><label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 13 }}>بداية الحصة <input type="time" className="hd-in" value={s} onChange={e => setS(e.target.value || HD_REM_S)} /></label>
       <button className="hd-b pri" disabled={busy || !k} onClick={() => go(k, true, s)}>{busy ? "⏳" : hdRem(cfg, k) ? "💾 تحديث اليوم" : "🏠 اجعله دوام عن بعد"}</button></div>
     {L.length > 0 && <div className="flex gap-2 flex-wrap">{L.map(([d, v]) => <span key={d} className="hd-pill" style={{ background: "#e0e7ff", color: "#3730a3", fontSize: 13, padding: "4px 10px" }}>{maDay(maDate(d))} {hfxHijTxt(d)} • من {hdHM(hdMin(ptObj(v).s || HD_REM_S))}<button type="button" disabled={busy} title="إلغاء الدوام عن بعد لهذا اليوم" onClick={() => go(d, false)} style={{ marginInlineStart: 6, fontWeight: 900, color: "#b91c1c" }}>✕</button></span>)}</div>}
@@ -41537,13 +41554,17 @@ function hdDay(r, cfg) {
   if (!r || r.void) return null; const c = hdEff(cfg);
   const st = String(r.st || "").trim(); const S = hdMin(c.start), E = hdMin(c.end), R = Math.max(30, E - S), g = +c.grace || 0;
   const a = hdMin(r.a), d = hdMin(r.d); const fl = [];
-  if (r.rm) { if (/عطلة/.test(st)) return { kind: "off", st }; if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d: null, late: 0, early: 0, lost: 0, pct: null, fl, rm: 1 };
-    const RS = hdMin(r.rs || HD_REM_S), RR = Math.max(30, E - RS);
-    if (r.fx === "task" || /مهمة/.test(st)) return { kind: "work", st, a, d: null, late: 0, early: 0, lost: 0, pct: 100, fl, rm: 1, task: 1 };
-    if (HD_FIXP[r.fx]) { const late = a != null ? Math.max(0, a - RS - g) : 0; return { kind: "work", st, a, d: null, late, early: 0, lost: late, pct: Math.max(0, Math.round((RR - late) / RR * 100)), fl, rm: 1 }; }
-    const perm = /استئذان/.test(st);
-    if (/غياب/.test(st) || (a == null && !perm)) return { kind: "abs", st: st || "غياب", a, d: null, late: 0, early: 0, lost: 0, pct: 0, fl, rm: 1 };
-    const late = a != null ? Math.max(0, a - RS - g) : 0; return { kind: perm ? "perm" : "work", st, a, d: null, late, early: 0, permMin: perm ? late : 0, lost: perm ? 0 : late, pct: Math.max(0, Math.round((RR - (perm ? 0 : late)) / RR * 100)), fl, rm: 1 }; }
+  // 🏠 الدوام عن بعد: الاستئذان بأنواعه (مهمة عمل/انتداب/استئذان) = حضور كامل • لا انصراف • الغياب فقط لمن لم يسجّل بعد رفع الملف أو بتغيير الإدارة
+  if (r.rm) { if (/عطلة/.test(st)) return { kind: "off", st };
+    const RS = hdMin(r.rs || HD_REM_S), RR = Math.max(30, E - RS); const W = (o = {}) => ({ kind: "work", st, a, d: null, late: 0, early: 0, lost: 0, pct: 100, fl, rm: 1, ...o });
+    if (r.fx === "abs") return { kind: "abs", st, a, d: null, late: 0, early: 0, lost: 0, pct: 0, fl, rm: 1 };
+    if (r.fx === "leave") return { kind: "leave", st, a, d: null, late: 0, early: 0, lost: 0, pct: null, fl, rm: 1 };
+    if (r.fx === "rmp") { const late = a != null ? Math.max(0, a - RS - g) : 0; return W({ late, lost: late, pct: Math.max(0, Math.round((RR - late) / RR * 100)), rmp: 1 }); }
+    if (r.fx === "task" || r.fx === "perm" || /مهمة|انتداب|استئذان/.test(st)) return W({ task: 1 });
+    if (HD_FIXP[r.fx]) { const late = a != null ? Math.max(0, a - RS - g) : 0; return W({ late, lost: late, pct: Math.max(0, Math.round((RR - late) / RR * 100)) }); }
+    if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d: null, late: 0, early: 0, lost: 0, pct: null, fl, rm: 1 };
+    if (/غياب/.test(st) || a == null) return { kind: "abs", st: st || "غياب", a, d: null, late: 0, early: 0, lost: 0, pct: 0, fl, rm: 1 };
+    const late = Math.max(0, a - RS - g); return W({ late, lost: late, pct: Math.max(0, Math.round((RR - late) / RR * 100)) }); }
   // رفع الصباح: يُحسب التأخر فقط، ولا يُحكم بالغياب أو الانصراف قبل رفع نهاية الدوام
   if (r.ph === "m") { if (/عطلة/.test(st)) return { kind: "off", st }; if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
     if (a == null) return { kind: "pend", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
@@ -41561,6 +41582,7 @@ function hdDay(r, cfg) {
 // أسباب «حضر ولم يسجّل في حضوري» — تُحسب حضورًا بالأوقات التي تدخلها الإدارة
 const HD_OBK = { perm: { l: "استئذان", ic: "🙋" }, task: { l: "مهمة رسمية", ic: "🏛️" }, obj: { l: "اعتراض / توضيح", ic: "💬" } };
 const HD_FIXP = { phone: { l: "نسي الجوال", ic: "📵" }, down: { l: "الموقع/النظام معطّل", ic: "🌐" }, fault: { l: "خلل في جواله", ic: "🔧" } };
+const HD_FXL = { rmp: "حضور (دوام عن بعد)", perm: "استئذان (تصحيح الإدارة)", task: "استئذان — مهمة رسمية", leave: "إجازة (تصحيح الإدارة)", abs: "غياب" };
 const HD_KIND = { pend: { l: "لم يسجّل حضوره بعد", c: "#64748b", bg: "#f1f5f9" }, work: { l: "حضور", c: "#15803d", bg: "#dcfce7" }, perm: { l: "مستأذن", c: "#0369a1", bg: "#e0f2fe" }, abs: { l: "غياب", c: "#b91c1c", bg: "#fee2e2" }, leave: { l: "إجازة", c: "#7c3aed", bg: "#ede9fe" } };
 const hdPctC = p => p == null ? "#64748b" : p >= 95 ? "#15803d" : p >= 85 ? "#0f766e" : p >= 70 ? "#b45309" : "#b91c1c";
 // تجميع فترة
@@ -42432,7 +42454,7 @@ function hdUpState(ups, cfg) {
   const now = new Date(), today = maKey(now), E = hdEff(cfg), mins = now.getHours() * 60 + now.getMinutes();
   const st = hdMin(E.start) ?? 420, en = hdMin(E.end) ?? 760, work = !maOff(today), out = [];
   if (work && mins >= st + 20 && !morUp(today)) out.push({ k: "m", t: "🌅 لم يُرفع تقرير «حضوري» الصباحي لليوم", s: "ارفعه لمعرفة المتأخرين ومن لم يسجّل حضوره حتى الآن" });
-  if (work && mins >= en + 10 && !endUp(today)) out.push({ k: "e", t: "🏁 لم يُرفع تقرير نهاية الدوام لليوم", s: "ارفعه لحصر الغياب والتأخر والانصراف المبكر وإكمال واقع اليوم" });
+  if (work && mins >= en + 10 && !endUp(today) && !hdRem(cfg, today)) out.push({ k: "e", t: "🏁 لم يُرفع تقرير نهاية الدوام لليوم", s: "ارفعه لحصر الغياب والتأخر والانصراف المبكر وإكمال واقع اليوم" });
   const first = U.length ? U.map(u => u.f).sort()[0] : null; const miss = [];
   if (first) { const d = maDate(today); for (let i = 0; i < 45 && miss.length < 10; i++) { d.setDate(d.getDate() - 1); const k = maKey(d); if (k < first) break; if (!maOff(k) && !endUp(k)) miss.push(k); } }
   return { out, miss };
@@ -42486,7 +42508,7 @@ function HdAdminPage({ by = "الإدارة" }) {
     const emp = Object.keys(H).length; await maPut(`${HD_UP}/u${Date.now()}`, { at: Date.now(), by, f: imp.from, t: imp.to, n: imp.rows.length, emp, ph: imp.ph || "e" });
     setBusy(false); setImp(null); await load(); setDk(imp.to && !maOff(imp.to) ? imp.to : null); toast(ok ? `✅ ${imp.rem ? "🏠 دوام عن بعد: " : imp.ph === "m" ? "رفع الصباح: " : "رفع نهاية الدوام: "}${maAr(emp)} موظفاً ${imp.from === imp.to ? hfxHijTxt(imp.to) : `من ${hfxHijTxt(imp.from)} إلى ${hfxHijTxt(imp.to)}`}${kept ? ` • لم يُستبدل ${maAr(kept)} سجلاً مكتملاً برفع صباحي` : ""}${absN ? ` • سُجّل ${maAr(absN)} غائباً (لم يردوا في الملف)` : ""}` : "⚠️ رُفع جزء من البيانات — أعد الرفع"); };
   // تصحيح الإدارة لحالة يوم (استئذان / إجازة / مهمة رسمية / غياب) — يُحفظ الأصل في st0
-  const fixSt = async (x, v, tm) => { const r0 = ptObj(all[x.hk])[dk] || {}; const orig = r0.st0 != null ? r0.st0 : r0.st; const L = { perm: "استئذان (تصحيح الإدارة)", task: "استئذان — مهمة رسمية", leave: "إجازة (تصحيح الإدارة)", abs: "غياب", ...Object.fromEntries(Object.entries(HD_FIXP).map(([k, z]) => [k, `حضور (تصحيح: ${z.l})`])) }[v];
+  const fixSt = async (x, v, tm) => { const r0 = ptObj(all[x.hk])[dk] || {}; const orig = r0.st0 != null ? r0.st0 : r0.st; const L = { ...HD_FXL, ...Object.fromEntries(Object.entries(HD_FIXP).map(([k, z]) => [k, `حضور (تصحيح: ${z.l})`])) }[v];
     // «حضر ولم يسجّل»: تُحفظ أوقات الحضور والانصراف التي أدخلتها الإدارة مع الإبقاء على الأصلية للرجوع إليها
     const keepT = { ...(r0.a0 !== undefined ? { a0: r0.a0 } : { a0: r0.a == null ? null : r0.a }), ...(r0.d0 !== undefined ? { d0: r0.d0 } : { d0: r0.d == null ? null : r0.d }) };
     let rec = v ? { ...r0, st: L, st0: orig, fx: v, fixBy: by, fixAt: Date.now(), ...(HD_FIXP[v] && tm ? { ...keepT, a: tm.a || null, d: tm.d || null, fxn: tm.n || "" } : {}) } : { ...r0, st: orig };
@@ -42494,6 +42516,14 @@ function HdAdminPage({ by = "الإدارة" }) {
     if (!v) { if (r0.a0 !== undefined) { rec.a = r0.a0; rec.d = r0.d0; } ["st0", "fixBy", "fixAt", "fx", "a0", "d0", "fxn"].forEach(k => delete rec[k]); }
     Object.keys(rec).forEach(k => rec[k] === undefined && delete rec[k]);
     setAll(a => ({ ...a, [x.hk]: { ...ptObj(a[x.hk]), [dk]: rec } })); const ok = await maPut(`${HD_NODE}/${x.hk}/${dk}`, rec); toast(ok ? `✅ ${x.n}: ${v ? L : "أُعيدت حالة «حضوري» الأصلية"}` : "⚠️ تعذّر الحفظ"); };
+  // ⚡ تغيير جماعي لحالة اليوم (أيام الدوام عن بعد): حاضر / مهمة عمل / استئذان / إجازة / غياب / إعادة حالة حضوري
+  const bulkFix = async (rows, v) => { const P = {}; const A = { ...all }; const now = Date.now();
+    rows.forEach(x => { const r0 = ptObj(ptObj(all[x.hk])[dk]); if (!r0.st && !r0.rm) return; const orig = r0.st0 != null ? r0.st0 : r0.st; const rec = { ...r0 };
+      if (rec.a0 !== undefined) { rec.a = rec.a0; rec.d = rec.d0; delete rec.a0; delete rec.d0; delete rec.fxn; }
+      if (v) Object.assign(rec, { st: HD_FXL[v], st0: orig, fx: v, fixBy: by, fixAt: now }); else { rec.st = orig; ["st0", "fixBy", "fixAt", "fx", "acc"].forEach(k => delete rec[k]); }
+      Object.keys(rec).forEach(k => rec[k] === undefined && delete rec[k]); P[`${HD_NODE}/${x.hk}/${dk}`] = rec; A[x.hk] = { ...ptObj(A[x.hk]), [dk]: rec }; });
+    const ks = Object.keys(P); if (!ks.length) return; let ok = true; for (let i = 0; i < ks.length; i += 300) if (!(await fbPatch(Object.fromEntries(ks.slice(i, i + 300).map(k => [k, P[k]]))))) ok = false;
+    setAll(A); toast(ok ? `✅ ${v ? HD_FXL[v] : "أُعيدت حالة «حضوري» الأصلية"} — ${maAr(ks.length)} معلماً` : "⚠️ تعذّر حفظ بعض السجلات — أعد المحاولة"); };
   // 🏠 تفعيل/إلغاء يوم دوام عن بعد — يُحدَّث معه كل سجل مرفوع لذلك اليوم
   const setRem = async (k, on, s0) => { if (!k) return; const s = s0 || HD_REM_S; const rem = { ...ptObj(cfg.rem) }; if (on) rem[k] = { s }; else delete rem[k];
     setCfg({ ...cfg, rem }); const { ok, c } = await hdRemSet(k, on, s, all); await load(); toast(ok ? `✅ ${on ? "🏠 دوام عن بعد" : "أُلغي الدوام عن بعد"}: ${maDay(maDate(k))} ${hfxHijTxt(k)}${c ? ` • حُدّث ${maAr(c)} سجلاً` : ""}` : "⚠️ تعذّر الحفظ"); };
@@ -42560,7 +42590,7 @@ function HdAdminPage({ by = "الإدارة" }) {
           <input className="hd-in" style={{ flex: "1 1 160px", maxWidth: 240 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث بالاسم" />
           <select className="hd-in" value={sortK} onChange={e => setSortK(e.target.value)}><option value="pct">الأقل انضباطاً أولاً</option><option value="late">الأكثر تأخراً</option><option value="name">أبجدياً</option></select>
           <label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 13 }}><input type="checkbox" checked={tOnly} onChange={e => setTOnly(e.target.checked)} /> المعلمون فقط</label><button className="hd-b gold" style={{ marginInlineStart: "auto" }} onClick={printDay}>🖨 تقرير اليوم</button></div>
-        {hdRem(cfg, dk) && <div className="hd-note" style={{ background: "#eef2ff", borderColor: "#a5b4fc", color: "#3730a3" }}>🏠 <b>دوام عن بعد</b> — التأخر محسوب من {hdHM(hdMin(hdRem(cfg, dk).s || HD_REM_S))} • استئذان «مهمة عمل» = حضور كامل • من لم يسجّل حضوره = غائب • لا يُحسب الانصراف.</div>}
+        {hdRem(cfg, dk) && <div className="hd-note" style={{ background: "#eef2ff", borderColor: "#a5b4fc", color: "#3730a3" }}>🏠 <b>دوام عن بعد</b> — التأخر محسوب من {hdHM(hdMin(hdRem(cfg, dk).s || HD_REM_S))} • أي استئذان أو مهمة عمل = حضور كامل • من لم يسجّل حضوره = غائب • لا يُحسب الانصراف • للتغيير الجماعي استعمل «⚡ تغيير جماعي» أسفل.</div>}
         {(() => { const v = dayRows.filter(x => x.d.pct != null); const A = v.length ? Math.round(v.reduce((s, x) => s + x.d.pct, 0) / v.length) : null; return <div className="hd-kp">
           <div style={{ "--c": hdPctC(A) }}><b>{A == null ? "—" : `${maAr(A)}٪`}</b><small>متوسط الانضباط</small></div>
           <div style={{ "--c": "#15803d" }}><b>{maAr(dayRows.filter(x => x.d.kind === "work" && !x.d.late && !x.d.early).length)}</b><small>منضبطون تماماً</small></div>
@@ -42572,9 +42602,10 @@ function HdAdminPage({ by = "الإدارة" }) {
           <div style={{ "--c": "#9a3412" }}><b>{hdDur(dayRows.filter(x => x.d.kind === "work").reduce((a, x) => a + x.d.late, 0))}</b><small>مجموع دقائق التأخر</small></div></div>; })()}
         {dayRows.length > 0 && dayRows.every(x => x.rec.st === "لم يسجّل حضوره") && <div className="hd-note" style={{ background: "#fef2f2", borderColor: "#fecaca" }}>⚠️ <b>هذا اليوم مرفوع له تقرير «غير المسجلين» فقط</b> — فيه من لم يسجّل حضوره دون أوقات، لذلك لا يظهر الحاضرون ولا المتأخرون. لعرضهم ارفع تقرير <b>«الحضور والانصراف لجميع الموظفين»</b> لتاريخ اليوم (من اليوم إلى اليوم) في «🌅 ملف الصباح».</div>}
         {dayRows.some(x => x.d.morning) && <div className="hd-note" style={{ background: "#fffbeb", borderColor: "#fde68a" }}>🌅 <b>بيانات رفع الصباح</b> — يظهر التأخر ومدته فقط. يكتمل حساب الاستئذان والانصراف والانصراف المبكر والغياب بعد «🏁 رفع نهاية الدوام» لنفس اليوم.</div>}
+        {hdRem(cfg, dk) && dayRows.length > 0 && <HdBulkBar rows={dayRows} onApply={bulkFix} />}
         <div className="hd-card" style={{ padding: 0, overflow: "auto", maxHeight: "65vh" }}><table className="hd-tbl" style={{ minWidth: 820 }}><thead><tr><th>الاسم</th><th>الحالة</th><th>الحضور</th><th>الانصراف</th><th>التأخر</th><th>المبكر</th><th>الطابور</th><th>الحصص</th><th>النسبة</th><th>المعلم</th></tr></thead>
-          <tbody>{dayRows.map(x => { const K = HD_KIND[x.d.kind]; return <tr key={x.hk}><td className="n">{x.n}<div style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 700 }}>{x.job}{x.rec.pl && !/عبدالمجيد/.test(x.rec.pl) ? ` • سُجّل من: ${x.rec.pl}` : ""}</div></td><td><span className="hd-pill" style={{ background: K.bg, color: K.c }}>{K.l}</span>{x.d.kind === "perm" && <div style={{ fontSize: 10.5, color: "#0369a1" }}>{x.d.st}</div>}{x.rec.gen === "notlisted" && <div style={{ fontSize: 10.5, color: "#b91c1c" }}>لم يرد في تقرير الحضور</div>}{x.d.fl.map(f => <div key={f} style={{ fontSize: 10.5, color: "#b45309" }}>⚠️ {f}</div>)}
-            <select className="hd-in" style={{ marginTop: 4, padding: "2px 6px", fontSize: 11.5 }} value={x.rec.st0 != null ? (x.rec.fx || { "استئذان (تصحيح الإدارة)": "perm", "استئذان — مهمة رسمية": "task", "إجازة (تصحيح الإدارة)": "leave", "غياب": "abs" }[x.rec.st] || "") : ""} onChange={e => { const v = e.target.value; if (HD_FIXP[v]) { const E = hdEff(cfg); const r0 = x.rec; const a0 = r0.a0 !== undefined ? r0.a0 : r0.a, d0 = r0.d0 !== undefined ? r0.d0 : r0.d; setFixM({ x, v, a: (r0.fx === v && r0.a) || a0 || E.start || "", d: (r0.fx === v && r0.d) || d0 || E.end || "", n: (r0.fx === v && r0.fxn) || "" }); } else fixSt(x, v); }} title="تصحيح الحالة"><option value="">{x.rec.st0 != null ? "↩ حالة حضوري" : "✎ تصحيح…"}</option><optgroup label="حضر ولم يُسجَّل في «حضوري»">{Object.entries(HD_FIXP).map(([k, z]) => <option key={k} value={k}>{z.ic} {z.l}</option>)}</optgroup><optgroup label="تغيير الحالة"><option value="perm">مستأذن</option><option value="task">مهمة رسمية</option><option value="leave">إجازة</option><option value="abs">غياب</option></optgroup></select>{x.rec.fx && HD_FIXP[x.rec.fx] && <div style={{ fontSize: 10.5, fontWeight: 800, color: "#0369a1", marginTop: 2 }}>{HD_FIXP[x.rec.fx].ic} {HD_FIXP[x.rec.fx].l}{x.rec.fxn ? ` — ${x.rec.fxn}` : ""}</div>}</td><td>{hdHM(x.d.a)}</td><td>{hdHM(x.d.d)}</td><td style={{ color: x.d.late ? "#c2410c" : "#cbd5e1" }}>{x.d.late ? maAr(x.d.late) : "—"}</td><td style={{ color: x.d.early ? "#7c3aed" : "#cbd5e1" }}>{x.d.early ? maAr(x.d.early) : "—"}</td><td>{x.as && ASMS[x.as.st] ? ASMS[x.as.st] : "·"}</td><td style={{ color: x.cl.length ? "#4338ca" : "#cbd5e1" }}>{x.cl.length ? maAr(x.cl.length) : "—"}</td><td><b style={{ color: hdPctC(x.d.pct) }}>{x.d.pct == null ? "—" : `${maAr(x.d.pct)}٪`}</b></td><td>{x.ob ? <span className="hd-pill" style={{ background: "#fef3c7", color: "#92400e" }}>💬 اعتراض</span> : x.ack ? <span style={{ color: "#15803d" }}>✓ اطّلع</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td></tr>; })}</tbody></table></div>
+          <tbody>{dayRows.map(x => { const K = HD_KIND[x.d.kind]; return <tr key={x.hk}><td className="n">{x.n}<div style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 700 }}>{x.job}{x.rec.pl && !/عبدالمجيد/.test(x.rec.pl) ? ` • سُجّل من: ${x.rec.pl}` : ""}</div></td><td><span className="hd-pill" style={{ background: K.bg, color: K.c }}>{K.l}</span>{(x.d.kind === "perm" || x.d.kind === "leave" || x.d.task) && x.d.st && <div style={{ fontSize: 10.5, color: x.d.kind === "leave" ? "#7c3aed" : "#0369a1" }}>{x.d.task && !x.rec.fx ? "🏛️ " : ""}{x.d.st}</div>}{x.rec.gen === "notlisted" && <div style={{ fontSize: 10.5, color: "#b91c1c" }}>لم يرد في تقرير الحضور</div>}{x.d.fl.map(f => <div key={f} style={{ fontSize: 10.5, color: "#b45309" }}>⚠️ {f}</div>)}
+            <select className="hd-in" style={{ marginTop: 4, padding: "2px 6px", fontSize: 11.5 }} value={x.rec.st0 != null ? (x.rec.fx || { "استئذان (تصحيح الإدارة)": "perm", "استئذان — مهمة رسمية": "task", "إجازة (تصحيح الإدارة)": "leave", "غياب": "abs" }[x.rec.st] || "") : ""} onChange={e => { const v = e.target.value; if (HD_FIXP[v]) { const E = hdEff(cfg); const r0 = x.rec; const a0 = r0.a0 !== undefined ? r0.a0 : r0.a, d0 = r0.d0 !== undefined ? r0.d0 : r0.d; setFixM({ x, v, a: (r0.fx === v && r0.a) || a0 || E.start || "", d: (r0.fx === v && r0.d) || d0 || E.end || "", n: (r0.fx === v && r0.fxn) || "" }); } else fixSt(x, v); }} title="تصحيح الحالة"><option value="">{x.rec.st0 != null ? "↩ حالة حضوري" : "✎ تصحيح…"}</option><optgroup label="حضر ولم يُسجَّل في «حضوري»">{Object.entries(HD_FIXP).map(([k, z]) => <option key={k} value={k}>{z.ic} {z.l}</option>)}</optgroup><optgroup label="تغيير الحالة">{hdRem(cfg, dk) && <option value="rmp">✅ حاضر (عن بعد)</option>}<option value="perm">مستأذن</option><option value="task">مهمة رسمية</option><option value="leave">إجازة</option><option value="abs">غياب</option></optgroup></select>{x.rec.fx && HD_FIXP[x.rec.fx] && <div style={{ fontSize: 10.5, fontWeight: 800, color: "#0369a1", marginTop: 2 }}>{HD_FIXP[x.rec.fx].ic} {HD_FIXP[x.rec.fx].l}{x.rec.fxn ? ` — ${x.rec.fxn}` : ""}</div>}</td><td>{hdHM(x.d.a)}</td><td>{hdHM(x.d.d)}</td><td style={{ color: x.d.late ? "#c2410c" : "#cbd5e1" }}>{x.d.late ? maAr(x.d.late) : "—"}</td><td style={{ color: x.d.early ? "#7c3aed" : "#cbd5e1" }}>{x.d.early ? maAr(x.d.early) : "—"}</td><td>{x.as && ASMS[x.as.st] ? ASMS[x.as.st] : "·"}</td><td style={{ color: x.cl.length ? "#4338ca" : "#cbd5e1" }}>{x.cl.length ? maAr(x.cl.length) : "—"}</td><td><b style={{ color: hdPctC(x.d.pct) }}>{x.d.pct == null ? "—" : `${maAr(x.d.pct)}٪`}</b></td><td>{x.ob ? <span className="hd-pill" style={{ background: "#fef3c7", color: "#92400e" }}>💬 اعتراض</span> : x.ack ? <span style={{ color: "#15803d" }}>✓ اطّلع</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td></tr>; })}</tbody></table></div>
       </div>)}
 
       {tab === "kpi" && <div className="grid gap-3">
