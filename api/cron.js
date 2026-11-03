@@ -64,7 +64,7 @@ module.exports = async function handler(req, res) {
     if (C.sub) for (const s of subs) { const st = toMin(times[s.p] && times[s.p][0]); if (st == null) continue; const left = st - nowM;
       if (left > 0 && left <= C.lead) await once("sb-" + s.k, () => sendTo({ ti: [s.ti] }, { title: `⏰ حصة انتظار الساعة ${fmt(times[s.p][0])}`, body: `الحصة ${ORD[s.p] || ar(s.p + 1)} — فصل ${cls(s.ck)} • بعد ${ar(left)} دقيقة`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sb-" + s.k, urgent: 1 })); }
     // ④ الدوام عن بعد: تذكير المعلم عند بداية حصته بتحضير طلابه، وتنبيه بعد نهايتها إن لم يحضّر
-    if (remote && rplan) { const L0 = Math.max(10, +(rcfg || {}).len || 40), G0 = Math.max(0, +(rcfg || {}).gap || 0), S0 = toMin(remD.s || "07:30") ?? 450;
+    if (remote && rplan) { const L0 = Math.max(10, +(rcfg || {}).len || 35), G0 = Math.max(0, +(rcfg || {}).gap || 0), S0 = toMin(remD.s || "07:30") ?? 450;
       const rt = p => [S0 + p * (L0 + G0), S0 + p * (L0 + G0) + L0]; const hm2 = m => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
       const les = Object.values(rplan).filter(Boolean).map(L => { const g = (log || {})[`${L.di}_${L.p}_${L.ck}`]; return g && g.st === "sub" && g.sub != null && g.sub !== "" && !g.pm ? { ...L, ti: +g.sub, tn: "" } : L; });
       const grp = (arr2) => { const o = {}; arr2.forEach(L => { const k = L.ti >= 0 ? "t" + L.ti : "n" + L.tn; (o[k] = o[k] || []).push(L); }); return Object.values(o); };
