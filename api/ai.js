@@ -8,6 +8,8 @@ const FB = "https://school-faza-default-rtdb.firebaseio.com/school";
 const MODELS = (process.env.AI_MODEL ? [process.env.AI_MODEL] : []).concat(["claude-sonnet-5-5", "claude-sonnet-4-5"]);
 const SYSTEM = "أنت خبير مناهج وطرق تدريس في المملكة العربية السعودية، ملمّ بوثائق مناهج وزارة التعليم وإطار معايير مجالات التعلم وتصنيف بلوم المعدّل ومهارات التفكير العليا واختبارات نافس. تكتب بعربية فصيحة دقيقة موجزة، وتلتزم بالمحتوى العلمي للدرس كما في الكتاب المدرسي، وتربط بالحياة من البيئة السعودية والقيم الإسلامية ورؤية المملكة ٢٠٣٠ دون تكلّف. تُخرج JSON صالحًا فقط عند طلبه.";
 
+// خطة التحسين المدرسي (kind: "ip"): تعليمات مستقلة وعدّاد يومي مستقل (school-sl-usei) حتى لا تُنقص تحليلات المعلمين
+const SYSTEM_IP = "أنت خبير في التخطيط المدرسي وتحسين الأداء وفق إطار التقويم المدرسي لهيئة تقويم التعليم والتدريب في المملكة العربية السعودية، وتعرف استمارتي وزارة التعليم: (1) بناء خطة التحسين و(2) تنفيذ خطة التحسين في مجالات الممارسات الإشرافية، واختبارات نافس. تكتب خططاً عملية واقعية قابلة للتنفيذ والقياس في مدرسة حكومية، بعربية فصيحة إجرائية موجزة، وتلتزم بالبيانات المعطاة دون اختلاق أرقام، وتعيد الناتج كاملاً وفق القالب المطلوب.";
 const fbGet = async p => { try { const r = await fetch(`${FB}/${p}.json`); return await r.json(); } catch { return null; } };
 const fbPatch = async o => { try { await fetch(`${FB}.json`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }); } catch {} };
 const vals = v => (v && typeof v === "object" ? Object.values(v) : []);
@@ -38,12 +40,14 @@ module.exports = async function handler(req, res) {
     if (b.kind === "ping") { const [u, m] = await Promise.all([fbGet(`school-sl-use/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]); return res.status(200).json({ ok: true, name: who.name, left: Math.max(0, daily - (+u || 0)), daily, mUsed: +m || 0, monthly }); }
     // ② الحدود
     // الرسوم التوضيحية لها عدّاد يومي مستقل حتى لا تُنقص تحليلات المعلم
-    const UN = b.kind === "vis" ? "school-sl-usev" : b.kind === "b" ? "school-sl-useb" : "school-sl-use";
+    const isIP = b.kind === "ip";
+    const UN = isIP ? "school-sl-usei" : b.kind === "vis" ? "school-sl-usev" : b.kind === "b" ? "school-sl-useb" : "school-sl-use";
+    const lim = isIP ? (+C.ipDaily > 0 ? +C.ipDaily : 40) : daily;
     const [used, mUsed] = await Promise.all([fbGet(`${UN}/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]);
-    if ((+used || 0) >= daily) return res.status(200).json({ ok: false, code: "daily", msg: `استنفدت حدّك اليومي (${daily} تحليلات) — يتجدد غدًا. يمكنك الاستفادة من بنك الدروس دون حدود.` });
+    if ((+used || 0) >= lim) return res.status(200).json({ ok: false, code: "daily", msg: isIP ? `بلغت حد توليد خطة التحسين اليومي (${lim}) — يتجدد غدًا` : `استنفدت حدّك اليومي (${daily} تحليلات) — يتجدد غدًا. يمكنك الاستفادة من بنك الدروس دون حدود.` });
     if ((+mUsed || 0) >= monthly) return res.status(200).json({ ok: false, code: "monthly", msg: "بلغت المدرسة السقف الشهري للتحليلات — راجع الإدارة" });
     // ③ تجهيز الطلب
-    const prompt = String(b.prompt || "").slice(0, 16000);
+    const prompt = String(b.prompt || "").slice(0, isIP ? 32000 : 16000);
     if (prompt.length < 20) return res.status(400).json({ ok: false, msg: "طلب ناقص" });
     const imgs = (Array.isArray(b.images) ? b.images : []).filter(d => typeof d === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(d)).slice(0, 4);
     const content = [...imgs.map(d => ({ type: "image", source: { type: "base64", media_type: d.slice(5, d.indexOf(";")), data: d.slice(d.indexOf(",") + 1) } })), { type: "text", text: prompt }];
@@ -53,7 +57,7 @@ module.exports = async function handler(req, res) {
     // ④ الاتصال مع البث التدريجي للنص (يرى المعلم التقدّم ولا تنتهي مهلة الخادم)
     let r = null, model = "", err = "";
     for (const m of MODELS) {
-      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: Math.min(+b.max || 7000, 9000), system: SYSTEM, stream: true, messages: [{ role: "user", content }], ...(tool ? { tools: [tool], tool_choice: { type: "tool", name: tool.name } } : {}) }) });
+      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: Math.min(+b.max || 7000, 9000), system: isIP ? SYSTEM_IP : SYSTEM, stream: true, messages: [{ role: "user", content }], ...(tool ? { tools: [tool], tool_choice: { type: "tool", name: tool.name } } : {}) }) });
       if (r.ok) { model = m; break; }
       err = await r.text(); if (!/not_found|model/i.test(err)) break;
     }

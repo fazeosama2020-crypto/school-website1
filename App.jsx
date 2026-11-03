@@ -22,6 +22,7 @@ const trApi = () => ({ push: o => pushSend(o), PushBell, maGet, maPut, stuHash, 
 const TR_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#78350f" }}>🧭 جارٍ تحميل رحلة الكنز…</div>;
 const SmartLessonTeacher = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonTeacher })));
 const SmartLessonAdmin = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonAdmin })));
+const ImprovePlanAdmin = React.lazy(() => import("./smart/ImprovePlan.jsx").then(m => ({ default: m.ImprovePlanAdmin })));
 const SL_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#1e3a8a" }}>✨ جارٍ تحميل درسي الذكي…</div>;
 // واجهة «درسي الذكي»: قاعدة البيانات + احتياط مفتاح الجهاز إن لم يُضبط المفتاح في Vercel بعد
 const slApi = () => ({ maGet, maPut, fbPatch, fbRange, directAI: nqKey() ? (p, imgs) => nqAI(p, { images: imgs, max: 6000 }) : null });
@@ -34321,6 +34322,30 @@ function LeaderStrip({ onOpen }) {
     <span style={{ fontSize: 30 }}>🧭</span><span style={{ flex: 1 }}><b style={{ fontSize: 17, display: "block" }}>لوحة القائد اليومية</b><small style={{ fontWeight: 700, opacity: .85, fontSize: 12.5 }}>كل ما يحتاج قرارك اليوم في شاشة واحدة مع زر الإجراء</small></span>
     {n && <span style={{ background: n.u ? "#dc2626" : n.c ? "#f59e0b" : "#16a34a", borderRadius: 999, padding: "4px 12px", fontWeight: 900, fontSize: 13 }}>{n.c ? `${maAr(n.c)} بنود مهمة${n.u ? ` • ${maAr(n.u)} عاجلة` : ""}` : "✓ لا شيء معلّق"}</span>}<span style={{ fontWeight: 900 }}>←</span></button>;
 }
+// 🎯 خطة التحسين: «واقع المدرسة» من بيانات الموقع (آخر ٣٠ يوماً) + احتياجات مقترحة للاستمارة (2)
+async function ipSnap() {
+  const t = maKey(new Date()); const d = new Date(); d.setDate(d.getDate() - 30); const f = maKey(d); const d14 = new Date(); d14.setDate(d14.getDate() - 14); const f14 = maKey(d14);
+  const L = [], N = []; const pc = v => v == null ? "—" : `${Math.round(v * 10) / 10}%`;
+  try { const X = spxCompute(await spxLoad(f, t)); const T = X.T; const cls = X.classes.filter(c => c.attPct != null);
+    const att = cls.length ? cls.reduce((a, c) => a + c.attPct, 0) / cls.length : null; L.push(`غياب الطلاب (${T.days} يوماً دراسياً): ${T.abs} يوم غياب، منها ${T.absU ?? T.abs} بدون عذر — متوسط نسبة الحضور ${pc(att)}`);
+    const lowC = cls.slice().sort((a, b) => a.attPct - b.attPct).slice(0, 3); if (lowC.length) L.push(`أقل الفصول حضوراً: ${lowC.map(c => `${maClassName(c.ck)} ${pc(c.attPct)}`).join("، ")}`);
+    lowC.filter(c => c.attPct < 92).forEach(c => N.push({ t: `انخفاض نسبة الحضور في فصل ${maClassName(c.ck)} (${pc(c.attPct)}) خلال آخر ٣٠ يوماً`, dom: "مجال التوجيه الطلابي", src: "واقع الموقع — الغياب" }));
+    const rep = T.byAtt.filter(s => (s.absU ?? s.abs) >= 3).length; if (rep) { L.push(`${rep} طالباً غابوا ٣ أيام فأكثر بدون عذر`); N.push({ t: `${rep} طالباً تكرر غيابهم بدون عذر (٣ أيام فأكثر) — يحتاجون متابعة وتواصلاً مع أولياء الأمور`, dom: "مجال التوجيه الطلابي", src: "واقع الموقع — الغياب" }); }
+    L.push(`التأخر الصباحي: ${T.late} حالة لـ ${T.lateStu} طالباً${T.lateReasons.length ? ` — أبرز الأسباب: ${T.lateReasons.slice(0, 3).map(x => `${x.t} (${x.n})`).join("، ")}` : ""}`);
+    if (T.lateStu >= 10) N.push({ t: `تكرر التأخر الصباحي (${T.late} حالة لـ ${T.lateStu} طالباً) — أبرز سبب: ${T.lateReasons[0] ? T.lateReasons[0].t : "—"}`, dom: "مجال التوجيه الطلابي", src: "واقع الموقع — التأخر" });
+    if (T.neg) { L.push(`الملاحظات السلوكية السلبية: ${T.neg} على ${T.negStu} طالباً${T.behTop.length ? ` — الأكثر: ${T.behTop.slice(0, 3).map(x => `${x.t} (${x.n})`).join("، ")}` : ""}`); if (T.behTop[0] && T.behTop[0].n >= 5) N.push({ t: `تكرار مخالفة «${T.behTop[0].t}» (${T.behTop[0].n} مرة)`, dom: "مجال التوجيه الطلابي", src: "واقع الموقع — السلوك" }); }
+  } catch {}
+  try { const E = await plrEvidence(); DG_SUB.forEach(s => { const e = ptObj(E[s.k]); const g = ptObj(e.dg); if (g.pct == null && !e.nq) return;
+      L.push(`التشخيصي (ثالث متوسط) — ${s.l}: متوسط ${pc(g.pct)} • اجتياز ${pc(g.pass)} • ${g.vl || 0} طالباً «ضعيف جداً»${maArr(g.weak).length ? ` • أضعف الأسئلة: ${maArr(g.weak).map(x => `س${x.i} (${pc(x.p)})`).join("، ")}` : ""}${g.post ? ` • البعدي: ${pc(g.post.pre)} ← ${pc(g.post.post)}` : ""}${e.nq && e.nq.pct != null ? ` • نماذج نافس في الموقع: ${pc(e.nq.pct)}${maArr(e.nq.q).length ? ` (أضعف سؤال: «${e.nq.q[0].t}» ${e.nq.q[0].p}%)` : ""}` : ""}`);
+      if (g.pct != null && g.pct < 50) N.push({ t: `ضعف نتائج ${s.l} في التشخيصي (متوسط ${pc(g.pct)}${g.vl ? `، ${g.vl} طالباً ضعيف جداً` : ""})`, dom: "مجال نواتج التعلم", src: "واقع الموقع — التشخيصي" }); }); } catch {}
+  try { const [hd, ht, hc] = await Promise.all([maGet(HD_NODE), maGet(HD_T), maGet(HD_CFG)]); const cfg = { ...HD_DEF, ...ptObj(hc) }; const nm = ptObj(ht); let n = 0, sum = 0, lateT = 0, absD = 0;
+    Object.entries(ptObj(hd)).forEach(([hk, r]) => { const j = ptObj(nm[hk]).job || ""; if (j && !/معلم/.test(j)) return; const a = hdAgg(r, cfg, f, t); if (a.avg == null) return; n++; sum += a.avg; if (a.lateDays >= 3) lateT++; absD += a.abs; });
+    if (n) { L.push(`انضباط المعلمين (حضوري): متوسط ${pc(sum / n)} لـ ${n} معلماً • ${lateT} معلمين تأخروا ٣ أيام فأكثر • ${absD} يوم غياب`); if (lateT >= 3) N.push({ t: `تكرر تأخر ${lateT} معلمين عن بداية الدوام`, dom: "مجال التطوير المهني", src: "واقع الموقع — حضوري" }); } } catch {}
+  try { const lg = await fbRange(TT_LOG, f14, t); let la = 0, ab = 0, ea = 0, no = 0; Object.values(ptObj(lg)).forEach(dy => Object.values(ptObj(dy)).forEach(v => { if (!v) return; if (v.st === "late") la++; else if (v.st === "absent") ab++; else if (v.st === "early") ea++; if (maArr(v.notes).length) no++; }));
+    if (la + ab + ea + no) { L.push(`متابعة الحصص (آخر ١٤ يوماً): تأخر معلم عن الحصة ${la} • عدم دخول ${ab} • خروج مبكر ${ea} • ملاحظات صفية ${no}`); if (la + ab >= 6) N.push({ t: `تكرار تأخر المعلمين عن الحصص أو عدم دخولها (${la + ab} حالة في أسبوعين)`, dom: "مجال التدريس", src: "واقع الموقع — متابعة الحصص" }); } } catch {}
+  return { lines: L, needs: N };
+}
+const ipApi = () => ({ maGet, maPut, fbPatch, snap: ipSnap });
 function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], setClassList, saveClass, messages = [], onSendNote }) {
   const isStaff = kind === "staff";
   const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-staff") || "null"); return m && m.day === maKey(new Date()) && m.name ? m : null; } catch { return null; } });
@@ -34394,6 +34419,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "absx" && isStaff && allowed && (["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox"))) return wrap("📋 تصنيف الغياب — بعذر / بدون عذر", <AbsExcPage by={me.name} />);
   if (view === "lead" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🧭 لوحة القائد اليومية", <LeaderBoard me={me} go={setView} />);
   if (view === "rmtadm") return wrap("🏠 التحضير بالحصص — الدراسة عن بعد", <RmtAdminPage by={me.name} />);
+  if (view === "ipadm" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🎯 خطة التحسين المدرسي", <React.Suspense fallback={SL_WAIT}><ImprovePlanAdmin by={me.name} me={me} api={ipApi()} /></React.Suspense>);
   if (view === "smart") return wrap("✨ درسي الذكي", <React.Suspense fallback={SL_WAIT}><SmartLessonTeacher me={me} api={slApi()} /></React.Suspense>);
   if (view === "smartadm" && ["principal", "deputy"].includes(me.role)) return wrap("✨ درسي الذكي – الإدارة", <React.Suspense fallback={SL_WAIT}><SmartLessonAdmin by={me.name} me={me} api={slApi()} /></React.Suspense>);
   if (view === "circd") return wrap("📨 تعاميمي اليومية", <CdMine me={me} />);
@@ -34446,6 +34472,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             </div>}
             <div className="pt-tiles">
               {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><LeaderStrip onOpen={() => setView("lead")} /></div>}
+              {["principal", "deputy"].includes(me.role) && ptTile("ipadm", "🎯", "خطة التحسين المدرسي", "الاستمارة (1) بناء الخطة والاستمارة (2) الأسبوعية — من التقويم الذاتي ونافس وواقع المدرسة، بالذكاء الاصطناعي وبنفس شكل الاستمارتين", "#1f6b34", "#54A021", () => setView("ipadm"))}
               <div style={{ gridColumn: "1/-1" }}><RmtTeacherCard me={me} quiet /></div>
               <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><PtInboxStrip onOpen={() => setView("inbox")} />{["principal", "deputy"].includes(me.role) && <TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} setView("hdadmin"); }} />}</div>}
