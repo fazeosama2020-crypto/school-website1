@@ -48022,13 +48022,21 @@ function NafesAdminPage({ by = "الإدارة" }) {
 // ══════════ سجل تصنيف مستويات الطلاب + سجل حصر الضعف القرائي ══════════
 const LV_NODE = "school-stlv", RW_NODE = "school-readwk";
 const LV_DEF = [
-  { t: "مميز", ic: "🌟", c: "#15803d", bg: "#dcfce7", act: "برنامج إثرائي، مسابقات، وتكليفه بقيادة مجموعة" },
-  { t: "جيد", ic: "👍", c: "#2563eb", bg: "#dbeafe", act: "تعزيز وتحفيز وأنشطة تحدٍّ إضافية" },
-  { t: "متوسط", ic: "📘", c: "#d97706", bg: "#fef3c7", act: "تدريبات إضافية وتعلّم بالأقران ومتابعة الواجبات" },
-  { t: "متدنٍ يحتاج متابعة", ic: "⚠️", c: "#dc2626", bg: "#fee2e2", act: "خطة علاجية فردية، حصص تقوية، والتواصل مع ولي الأمر" },
+  { t: "مميز", ic: "🌟", c: "#15803d", bg: "#dcfce7", min: 90, rg: "٩٠٪ فأكثر", d: "يتقن مهارات المادة كلها تقريباً، ويطبقها في مواقف جديدة، ويحل أسئلة التفكير العليا، ويبادر ويشارك بفاعلية", act: "برنامج إثرائي، مسابقات، وتكليفه بقيادة مجموعة" },
+  { t: "جيد", ic: "👍", c: "#2563eb", bg: "#dbeafe", min: 75, rg: "٧٥٪ – أقل من ٩٠٪", d: "يتقن معظم المهارات مع أخطاء بسيطة، ويحتاج تعزيزاً في مهارات قليلة محددة", act: "تعزيز وتحفيز وأنشطة تحدٍّ إضافية" },
+  { t: "متوسط", ic: "📘", c: "#d97706", bg: "#fef3c7", min: 50, rg: "٥٠٪ – أقل من ٧٥٪", d: "يتقن المهارات الأساسية جزئياً، ويتعثر في التطبيق والمسائل المركّبة، ويحتاج تدريباً ومتابعة منتظمة", act: "تدريبات إضافية وتعلّم بالأقران ومتابعة الواجبات" },
+  { t: "متدنٍ يحتاج متابعة", ic: "⚠️", c: "#dc2626", bg: "#fee2e2", min: 0, rg: "أقل من ٥٠٪", d: "لم يتقن المهارات الأساسية (المتطلبات السابقة)، ويحتاج خطة علاجية فردية وتواصلاً مع ولي الأمر", act: "خطة علاجية فردية، حصص تقوية، والتواصل مع ولي الأمر" },
 ];
 const LV_TAGS = ["مشاركة فاعلة", "ينجز واجباته", "سريع الفهم", "مبدع ومبادر", "يحتاج تأسيساً", "ضعف في القراءة", "ضعف في الكتابة", "قلة التركيز", "لا ينجز الواجبات", "غياب متكرر", "يحتاج تحفيزاً", "يحتاج تواصلاً مع ولي الأمر"];
 const LV_TERMS = ["الفصل الدراسي الأول", "الفصل الدراسي الثاني", "الفصل الدراسي الثالث"];
+// المستوى من نسبة الإتقان (درجة الطالب ÷ الدرجة الكاملة في التقويم أو التشخيصي أو الاختبار القصير)
+const lvOfPct = p => { const v = +String(p).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)); if (!isFinite(v) || String(p).trim() === "") return null; return LV_DEF.findIndex(L => v >= L.min); };
+// بطاقة معايير التصنيف
+function LvLegend({ open: o0 = false }) { const [o, setO] = useState(o0);
+  return <div className="tr-card" style={{ padding: 12 }}><button type="button" onClick={() => setO(!o)} style={{ background: "none", border: 0, font: "inherit", cursor: "pointer", width: "100%", textAlign: "start", display: "flex", gap: 8, alignItems: "center" }}><b style={{ fontSize: 15, flex: 1 }}>📏 معايير التصنيف — متى يكون الطالب مميزاً أو جيداً أو متوسطاً أو متدنياً؟</b><span style={{ fontWeight: 900, color: "#7c3aed" }}>{o ? "▲ إخفاء" : "▼ عرض"}</span></button>
+    {o && <><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 8, marginTop: 10 }}>{LV_DEF.map((L, i) => <div key={i} style={{ background: L.bg, border: `2px solid ${L.c}`, borderRadius: 14, padding: 10 }}><b style={{ color: L.c, fontSize: 15 }}>{L.ic} {L.t}</b><div style={{ fontWeight: 900, fontSize: 13, margin: "3px 0", color: "#0f172a" }}>نسبة الإتقان: {L.rg}</div><div style={{ fontSize: 12.5, fontWeight: 700, color: "#334155", lineHeight: 1.8 }}>{L.d}</div><div style={{ fontSize: 12, fontWeight: 800, color: L.c, marginTop: 4 }}>🎯 الإجراء: {L.act}</div></div>)}</div>
+      <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b", marginTop: 8, lineHeight: 1.9 }}>نسبة الإتقان = درجة الطالب ÷ الدرجة الكاملة في أداة التقويم المعتمدة (الاختبار التشخيصي أو التقويم التكويني أو اختبار الفترة). اكتب النسبة في خانة «٪» عند الطالب فيُحدَّد المستوى تلقائياً، أو اختره يدوياً بالحكم المهني وفق الوصف أعلاه.</div></>}
+  </div>; }
 const RW_LV = [
   { k: "s", t: "ضعف شديد", ic: "🔴", c: "#dc2626", bg: "#fee2e2", d: "المرحلة ١–٢: لا يميّز الحروف وأصواتها أو يتعثّر في المقاطع والحركات" },
   { k: "m", t: "ضعف متوسط", ic: "🟠", c: "#d97706", bg: "#fef3c7", d: "المرحلة ٣–٤: يتهجّى الكلمات أو يتعثّر في قراءة الجمل والنصوص (دقة أقل من ٨٠٪)" },
@@ -48182,7 +48190,7 @@ const trUseSaver = () => {
 function StudentLevelsPage({ by = "", admin = false }) {
   const { classes, studentsOf, ready } = trUseRoster(); const { put, st } = trUseSaver();
   const [ck, setCk] = useState(""); const [teacher, setTeacher] = useState(by || ""); const [subject, setSubject] = useState(""); const [term, setTerm] = useState(LV_TERMS[0]);
-  const [rec, setRec] = useState(null); const [others, setOthers] = useState([]); const [flt, setFlt] = useState("all"); const [q, setQ] = useState("");
+  const [rec, setRec] = useState(null); const [others, setOthers] = useState([]); const [flt, setFlt] = useState("all"); const [q, setQ] = useState(""); const [ptab, setPtab] = useState("cls");
   useEffect(() => { if (!ck && classes.length) setCk(classes[0].ck); }, [classes.length]);
   const skey = asmK(`${teacher.trim()}|${subject.trim()}|${term}`);
   useEffect(() => { if (!ck) return; let on = true; setRec(null); (async () => { const all = ptObj(await maGet(`${LV_NODE}/${ck}`)); if (!on) return; setOthers(Object.entries(all).map(([k, v]) => ({ k, ...v })).filter(v => v.teacher)); setRec(all[skey] || { teacher: teacher.trim(), subject: subject.trim(), term, ck, r: {} }); })(); return () => { on = false; }; }, [ck, skey]);
@@ -48193,7 +48201,7 @@ function StudentLevelsPage({ by = "", admin = false }) {
   const shown = S.filter(s => (flt === "all" || (flt === "u" ? !(R[s.id] && R[s.id].l != null) : R[s.id] && R[s.id].l === +flt)) && (!q || s.name.includes(q)));
   const print = (grouped) => {
     const pct = n => S.length ? Math.round(n / S.length * 100) : 0;
-    const row = (s, i) => { const x = R[s.id] || {}; const L = LV_DEF[x.l]; return `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(s.name)}</b></td><td>${L ? `<span class="lvb" style="background:${L.bg};color:${L.c}">${L.ic} ${L.t}</span>` : "—"}</td><td class="note">${maArr(x.tg).map(ptEsc).join("، ")}${x.n ? `${maArr(x.tg).length ? "<br>" : ""}${ptEsc(x.n)}` : ""}</td><td class="note">${ptEsc(x.a || (L ? L.act : ""))}</td></tr>`; };
+    const row = (s, i) => { const x = R[s.id] || {}; const L = LV_DEF[x.l]; return `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(s.name)}</b></td><td>${L ? `<span class="lvb" style="background:${L.bg};color:${L.c}">${L.ic} ${L.t}</span>${x.p ? `<br><small>${ptEsc(x.p)}٪</small>` : ""}` : "—"}</td><td class="note">${maArr(x.tg).map(ptEsc).join("، ")}${x.n ? `${maArr(x.tg).length ? "<br>" : ""}${ptEsc(x.n)}` : ""}</td><td class="note">${ptEsc(x.a || (L ? L.act : ""))}</td></tr>`; };
     const thead = `<thead><tr><th style="width:28px">م</th><th class="r" style="width:26%">اسم الطالب</th><th style="width:15%">المستوى</th><th>الملاحظات والاحتياجات</th><th style="width:24%">الإجراء / الخطة</th></tr></thead>`;
     const body = grouped ? LV_DEF.map((L, li) => { const G = S.filter(s => R[s.id] && R[s.id].l === li); return G.length ? `<h3 style="color:${L.c}">${L.ic} ${L.t} (${maAr(G.length)})</h3><table>${thead}<tbody>${G.map(row).join("")}</tbody></table>` : ""; }).join("") : `<table>${thead}<tbody>${S.map(row).join("")}</tbody></table>`;
     inOpen(`<section class="pg">${inHdr("سجل تصنيف مستويات الطلاب", `${term}<br>${maDay(new Date())}<br>${asmHij(new Date())}`)}
@@ -48201,11 +48209,15 @@ function StudentLevelsPage({ by = "", admin = false }) {
       <div class="kp4">${LV_DEF.map((L, i) => `<div style="background:${L.bg};border-color:${L.c};color:${L.c}"><b>${maAr(cnt[i])}</b>${L.ic} ${L.t}<br><small>${maAr(pct(cnt[i]))}٪</small></div>`).join("")}</div>
       <div class="stk">${LV_DEF.map((L, i) => `<i style="width:${pct(cnt[i])}%;background:${L.c}"></i>`).join("")}</div>
       ${body}
+      <div class="note" style="margin:4px 0">معايير التصنيف: ${LV_DEF.map(L => `${L.ic} ${L.t}: ${L.rg}`).join(" • ")}</div>
       ${cnt[3] ? `<h3 style="color:#dc2626">⚠️ خطة متابعة الطلاب المتدنين</h3><div style="font-size:10.5px;line-height:1.9;border:1.5px dashed #fca5a5;border-radius:10px;padding:6px 10px;background:#fff7f7">${S.filter(s => R[s.id] && R[s.id].l === 3).map(s => `• <b>${ptEsc(s.name)}</b>: ${ptEsc(R[s.id].a || LV_DEF[3].act)}`).join("<br>")}</div>` : ""}
       ${inSig(teacher, "وكيل الشؤون التعليمية")}</section>`, "سجل تصنيف مستويات الطلاب", trPrintCss("#6d28d9"));
   };
   return <div className="tr grid gap-3" dir="rtl"><style>{TR_CSS}</style>
-    <div className="tr-hero" style={{ background: "linear-gradient(135deg,#4c1d95,#7c3aed 55%,#db2777)" }}><h2>📊 سجل تصنيف مستويات الطلاب</h2><p>تصنيف الطالب في مادتك إلى: مميز • جيد • متوسط • متدنٍ يحتاج متابعة — مع الملاحظات والإجراء المقترح وطباعة سجل ملوّن باسم المعلم</p></div>
+    <div className="tr-hero" style={{ background: "linear-gradient(135deg,#4c1d95,#7c3aed 55%,#db2777)" }}><h2>📊 سجل تصنيف مستويات الطلاب</h2><p>تصنيف الطالب في مادتك وفق نسبة الإتقان: مميز (٩٠٪ فأكثر) • جيد (٧٥–٨٩٪) • متوسط (٥٠–٧٤٪) • متدنٍ (أقل من ٥٠٪) — مع الملاحظات والإجراء، والحصر الشامل والطباعة</p></div>
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{[["cls", "✏️ تصنيف الطلاب"], ["rep", admin ? "📑 الحصر والتقرير (كل الفصول)" : "📑 حصر تصنيفاتي"]].map(([k, l]) => <button key={k} className={`tr-chip ${ptab === k ? "on" : ""}`} style={{ padding: "8px 16px", fontSize: 13 }} onClick={() => setPtab(k)}>{l}</button>)}</div>
+    <LvLegend open={ptab === "cls" && !Object.keys(R).length} />
+    {ptab === "rep" ? <LvReport by={by} admin={admin} classes={classes} studentsOf={studentsOf} /> : <>
     <div className="tr-card"><div className="tr-f">
       <label>👤 المعلم<input className="tr-inp" value={teacher} readOnly={!!by && !admin} onChange={e => setTeacher(e.target.value)} placeholder="اسم المعلم" list="lv-teachers" /></label>
       <datalist id="lv-teachers">{[...new Set(others.map(o => o.teacher))].map(t => <option key={t} value={t} />)}</datalist>
@@ -48227,11 +48239,55 @@ function StudentLevelsPage({ by = "", admin = false }) {
       </div>
       <div className="tr-grid">{shown.map(s => { const x = R[s.id] || {}; const L = LV_DEF[x.l]; return <div key={s.id} className={`tr-stu ${L ? "set" : ""}`} style={{ "--c": L ? L.c : "#e2e8f0" }}>
         <div className="tr-nm"><i>{maAr(S.indexOf(s) + 1)}</i><span style={{ flex: 1 }}>{s.name}</span>{L && <span style={{ fontSize: 18 }}>{L.ic}</span>}</div>
-        <div className="tr-lvs">{LV_DEF.map((D, i) => <button key={i} className={`tr-lv ${x.l === i ? "on" : ""}`} style={x.l === i ? { background: D.c } : { borderColor: D.bg }} onClick={() => setR(s.id, { l: x.l === i ? null : i })}>{D.ic}<br />{i === 3 ? "متدنٍ" : D.t}</button>)}</div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}><small style={{ fontWeight: 900, color: "#64748b" }}>نسبة الإتقان</small><input className="tr-inp" inputMode="decimal" style={{ width: 74, height: 32, textAlign: "center", fontSize: 13 }} value={x.p ?? ""} onChange={e => { const v = e.target.value.slice(0, 5); const l = lvOfPct(v); setR(s.id, l == null ? { p: v } : { p: v, l }); }} placeholder="٪" /><small style={{ fontWeight: 800, color: L ? L.c : "#94a3b8", flex: 1 }}>{L ? `${L.ic} ${L.t} (${L.rg})` : "اكتب النسبة أو اختر المستوى"}</small></div>
+        <div className="tr-lvs">{LV_DEF.map((D, i) => <button key={i} title={`${D.t}: ${D.rg} — ${D.d}`} className={`tr-lv ${x.l === i ? "on" : ""}`} style={x.l === i ? { background: D.c } : { borderColor: D.bg }} onClick={() => setR(s.id, { l: x.l === i ? null : i })}>{D.ic}<br />{i === 3 ? "متدنٍ" : D.t}<br /><small style={{ fontSize: 9.5, opacity: .85 }}>{D.rg}</small></button>)}</div>
         <div className="tr-tags">{LV_TAGS.map(t => { const on = maArr(x.tg).includes(t); return <button key={t} className={`tr-tag ${on ? "on" : ""}`} onClick={() => setR(s.id, { tg: on ? maArr(x.tg).filter(z => z !== t) : [...maArr(x.tg), t] })}>{t}</button>; })}</div>
         <textarea className="tr-ta" value={x.n || ""} onChange={e => setR(s.id, { n: e.target.value })} placeholder="📝 ملاحظات المعلم بعد التقييم…" />
         {L && <input className="tr-inp" style={{ height: 34, marginTop: 6, fontSize: 12.5 }} value={x.a || ""} onChange={e => setR(s.id, { a: e.target.value })} placeholder={`🎯 الإجراء: ${L.act}`} />}
       </div>; })}</div>
+    </>}
+    </>}
+  </div>;
+}
+// 📑 الحصر الشامل لتصنيف المستويات: حسب الفصل والمادة، والمتدنون في أكثر من مادة، ونسبة الإنجاز
+function LvReport({ by = "", admin = false, classes, studentsOf }) {
+  const [all, setAll] = useState(null); const [term, setTerm] = useState(LV_TERMS[0]); const [subj, setSubj] = useState(""); const [view, setView] = useState("sum");
+  useEffect(() => { maGet(LV_NODE).then(v => setAll(ptObj(v))).catch(() => setAll({})); }, []);
+  if (!all) return <div className="tr-card" style={{ textAlign: "center", color: "#94a3b8" }}>⏳ جارٍ تجميع التصنيفات…</div>;
+  const recs = []; Object.entries(all).forEach(([ck, o]) => Object.values(ptObj(o)).forEach(r => { if (!r || !r.teacher || (r.term || LV_TERMS[0]) !== term) return; if (!admin && by && r.teacher !== by) return; recs.push({ ...r, ck }); }));
+  const subjects = [...new Set(recs.map(r => r.subject).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ar"));
+  const R = recs.filter(r => !subj || r.subject === subj);
+  const nm = {}; classes.forEach(c => studentsOf(c.ck).forEach(s => { nm[s.id] = s.name; }));
+  const rows = R.map(r => { const S = studentsOf(r.ck); const c = LV_DEF.map((_, i) => S.filter(s => ptObj(ptObj(r.r)[s.id]).l === i).length); const done = c.reduce((a, b) => a + b, 0); return { ...r, n: S.length, c, done }; }).sort((a, b) => a.ck.localeCompare(b.ck, undefined, { numeric: true }) || String(a.subject).localeCompare(String(b.subject), "ar"));
+  const T = LV_DEF.map((_, i) => rows.reduce((a, r) => a + r.c[i], 0)); const tot = T.reduce((a, b) => a + b, 0); const pc = n => tot ? Math.round(n / tot * 100) : 0;
+  const low = {}; R.forEach(r => Object.entries(ptObj(r.r)).forEach(([sid, x]) => { if (x && x.l === 3) (low[sid] = low[sid] || { sid, ck: r.ck, n: nm[sid] || "—", L: [] }).L.push({ s: r.subject, t: r.teacher, a: x.a || LV_DEF[3].act, p: x.p }); }));
+  const lowL = Object.values(low).sort((a, b) => b.L.length - a.L.length || a.ck.localeCompare(b.ck, undefined, { numeric: true }));
+  const top = {}; R.forEach(r => Object.entries(ptObj(r.r)).forEach(([sid, x]) => { if (x && x.l === 0) (top[sid] = top[sid] || { ck: r.ck, n: nm[sid] || "—", L: [] }).L.push(r.subject); }));
+  const topL = Object.values(top).sort((a, b) => b.L.length - a.L.length);
+  const bar = c => <div style={{ display: "flex", height: 10, borderRadius: 8, overflow: "hidden", background: "#f1f5f9", minWidth: 120 }}>{LV_DEF.map((L, i) => { const t = c.reduce((a, b) => a + b, 0); return <i key={i} style={{ display: "block", width: `${t ? c[i] / t * 100 : 0}%`, background: L.c }} />; })}</div>;
+  const print = () => { const lvb = i => `<span class="lvb" style="background:${LV_DEF[i].bg};color:${LV_DEF[i].c}">${LV_DEF[i].ic} ${LV_DEF[i].t}</span>`;
+    inOpen(`<section class="pg">${inHdr("حصر تصنيف مستويات الطلاب", `${term}<br>${maDay(new Date())}<br>${asmHij(new Date())}`)}
+      <div class="info"><span>🗓️ ${ptEsc(term)}</span><span>📚 ${ptEsc(subj || "جميع المواد")}</span><span>📋 ${maAr(rows.length)} سجلاً</span><span>👥 ${maAr(tot)} تصنيفاً</span>${!admin && by ? `<span>👤 ${ptEsc(by)}</span>` : ""}</div>
+      <div class="kp4">${LV_DEF.map((L, i) => `<div style="background:${L.bg};border-color:${L.c};color:${L.c}"><b>${maAr(T[i])}</b>${L.ic} ${L.t}<br><small>${maAr(pc(T[i]))}٪ • ${L.rg}</small></div>`).join("")}</div>
+      <div class="stk">${LV_DEF.map((L, i) => `<i style="width:${pc(T[i])}%;background:${L.c}"></i>`).join("")}</div>
+      <h3>📊 الحصر حسب الفصل والمادة</h3><table><thead><tr><th>الفصل</th><th>المادة</th><th>المعلم</th><th>الطلاب</th>${LV_DEF.map(L => `<th>${L.ic} ${L.t.split(" ")[0]}</th>`).join("")}<th>لم يُصنَّف</th></tr></thead><tbody>${rows.map(r => `<tr><td>${maClassName(r.ck)}</td><td>${ptEsc(r.subject)}</td><td>${ptEsc(r.teacher)}</td><td>${maAr(r.n)}</td>${r.c.map((n, i) => `<td style="color:${LV_DEF[i].c};font-weight:900">${maAr(n)}</td>`).join("")}<td>${maAr(Math.max(0, r.n - r.done))}</td></tr>`).join("")}</tbody></table>
+      ${lowL.length ? `<h3 style="color:#dc2626">⚠️ الطلاب المتدنون (${maAr(lowL.length)}) — الأولوية لمن تدنّى في أكثر من مادة</h3><table><thead><tr><th>م</th><th class="r">الطالب</th><th>الفصل</th><th>عدد المواد</th><th>المواد والمعلمون</th><th>الإجراء</th></tr></thead><tbody>${lowL.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(x.n)}</b></td><td>${maClassName(x.ck)}</td><td style="color:#dc2626;font-weight:900">${maAr(x.L.length)}</td><td class="note">${x.L.map(y => `${ptEsc(y.s)} (${ptEsc(y.t)})`).join("، ")}</td><td class="note">${x.L.map(y => ptEsc(y.a)).filter((v, j, a) => a.indexOf(v) === j).join(" • ")}</td></tr>`).join("")}</tbody></table>` : ""}
+      ${topL.length ? `<h3 style="color:#15803d">🌟 الطلاب المميزون (${maAr(topL.length)})</h3><div class="note" style="line-height:2">${topL.map(x => `<b>${ptEsc(x.n)}</b> (${maClassName(x.ck)}: ${x.L.map(ptEsc).join("، ")})`).join(" • ")}</div>` : ""}
+      <div class="note" style="margin-top:6px">معايير التصنيف: ${LV_DEF.map(L => `${L.t} ${L.rg}`).join(" • ")} — نسبة الإتقان = درجة الطالب ÷ الدرجة الكاملة في أداة التقويم المعتمدة.</div>
+      ${inSig(admin ? "وكيل الشؤون التعليمية" : by, "مدير المدرسة")}</section>`, "حصر تصنيف مستويات الطلاب", trPrintCss("#6d28d9")); };
+  return <div className="grid gap-3">
+    <div className="tr-card"><div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <select className="tr-inp" style={{ width: 190 }} value={term} onChange={e => setTerm(e.target.value)}>{LV_TERMS.map(t => <option key={t}>{t}</option>)}</select>
+      <select className="tr-inp" style={{ width: 190 }} value={subj} onChange={e => setSubj(e.target.value)}><option value="">📚 جميع المواد</option>{subjects.map(x => <option key={x}>{x}</option>)}</select>
+      {[["sum", "📊 الحصر"], ["low", `⚠️ المتدنون (${maAr(lowL.length)})`], ["top", `🌟 المميزون (${maAr(topL.length)})`]].map(([k, l]) => <button key={k} className={`tr-chip ${view === k ? "on" : ""}`} onClick={() => setView(k)}>{l}</button>)}
+      <button className="tr-btn p" style={{ marginInlineStart: "auto" }} disabled={!rows.length} onClick={print}>🖨️ طباعة تقرير الحصر</button></div></div>
+    {!rows.length ? <div className="tr-card" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا توجد تصنيفات في {term}{subj ? ` لمادة ${subj}` : ""} بعد.</div> : <>
+      <div className="tr-stats">{LV_DEF.map((L, i) => <div key={i} className="tr-stat" style={{ background: L.bg, color: L.c, cursor: "default" }}><small>{L.ic} {L.t}</small><b>{maAr(T[i])}</b><small style={{ opacity: .85 }}>{maAr(pc(T[i]))}٪ • {L.rg}</small></div>)}<div className="tr-stat" style={{ background: "#f1f5f9", color: "#475569", cursor: "default" }}><small>📋 السجلات</small><b>{maAr(rows.length)}</b><small>{maAr(tot)} تصنيفاً</small></div></div>
+      {view === "sum" && <div className="tr-card" style={{ overflowX: "auto" }}><table className="nq-tbl"><thead><tr><th>الفصل</th><th>المادة</th><th>المعلم</th><th>الطلاب</th>{LV_DEF.map((L, i) => <th key={i}>{L.ic} {L.t.split(" ")[0]}</th>)}<th>لم يُصنَّف</th><th>التوزيع</th></tr></thead>
+        <tbody>{rows.map((r, i) => <tr key={i}><td style={{ fontWeight: 900 }}>{maClassName(r.ck)}</td><td>{r.subject}</td><td>{r.teacher}</td><td>{maAr(r.n)}</td>{r.c.map((n, j) => <td key={j} style={{ color: LV_DEF[j].c, fontWeight: 900 }}>{maAr(n)}</td>)}<td style={{ color: r.n - r.done ? "#b45309" : "#94a3b8" }}>{maAr(Math.max(0, r.n - r.done))}</td><td>{bar(r.c)}</td></tr>)}</tbody></table></div>}
+      {view === "low" && <div className="tr-card" style={{ overflowX: "auto" }}>{!lowL.length ? <div style={{ textAlign: "center", color: "#15803d", fontWeight: 900 }}>✅ لا يوجد طلاب متدنون</div> : <table className="nq-tbl"><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>عدد المواد</th><th>المواد (المعلم)</th><th>الإجراء</th></tr></thead>
+        <tbody>{lowL.map((x, i) => <tr key={x.sid} style={x.L.length > 1 ? { background: "#fff7f7" } : null}><td>{maAr(i + 1)}</td><td style={{ fontWeight: 900, textAlign: "right" }}>{x.n}</td><td>{maClassName(x.ck)}</td><td><span className="nq-badge" style={{ background: x.L.length > 1 ? "#dc2626" : "#fee2e2", color: x.L.length > 1 ? "#fff" : "#b91c1c" }}>{maAr(x.L.length)}</span></td><td style={{ textAlign: "right", fontSize: 12.5 }}>{x.L.map(y => `${y.s} (${y.t})${y.p ? ` ${y.p}٪` : ""}`).join("، ")}</td><td style={{ textAlign: "right", fontSize: 12 }}>{[...new Set(x.L.map(y => y.a))].join(" • ")}</td></tr>)}</tbody></table>}</div>}
+      {view === "top" && <div className="tr-card" style={{ overflowX: "auto" }}>{!topL.length ? <div style={{ textAlign: "center", color: "#64748b", fontWeight: 900 }}>لا يوجد طلاب مصنفون «مميز» بعد</div> : <table className="nq-tbl"><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>المواد</th></tr></thead><tbody>{topL.map((x, i) => <tr key={i}><td>{maAr(i + 1)}</td><td style={{ fontWeight: 900, textAlign: "right" }}>{x.n}</td><td>{maClassName(x.ck)}</td><td>{x.L.join("، ")}</td></tr>)}</tbody></table>}</div>}
     </>}
   </div>;
 }
