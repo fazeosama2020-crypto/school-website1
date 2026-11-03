@@ -27816,13 +27816,13 @@ const SPX_SEC = {
 
 // ── التحميل ──
 async function spxLoad(f, t, onlyCk) {
-  const [meta, ros, att, late, bn, bc, dc, sc, lc] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t), fbRange(BN_NODE, f, t), maGet(BN_CFG), fbRange(DC_NODE, f, t), maGet(onlyCk ? `${SC_NODE}/${onlyCk}` : SC_NODE), maGet(ML_CFG)]);
+  const [meta, ros, att, late, bn, bc, dc, sc, lc, ax] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t), fbRange(BN_NODE, f, t), maGet(BN_CFG), fbRange(DC_NODE, f, t), maGet(onlyCk ? `${SC_NODE}/${onlyCk}` : SC_NODE), maGet(ML_CFG), fbRange(ABSX, f, t).catch(() => ({}))]);
   const lcfg = { lineup: (lc && lc.lineup) || (meta && meta.lateStart) || "06:45", p1: (lc && lc.p1) || "07:00" };
   const R = ptObj(ros); const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [];
   const cks = onlyCk ? [onlyCk] : [...new Set([...maClasses(counts).map(c => c.ck), ...Object.keys(R)])].sort(spxCkSort);
   const sdA = await Promise.all(cks.map(ck => sdRange(ck, f, t)));
   const sd = {}; cks.forEach((ck, i) => { sd[ck] = sdIn(sdA[i], f, t); });
-  return { f, t, lcfg, onlyCk: onlyCk || "", ros: R, cks, att: ptObj(att), late: ptObj(late), bn: ptObj(bn), bcats: bc && Array.isArray(bc.cats) && bc.cats.length ? bc.cats : BN_DEF, dc: ptObj(dc), sc: onlyCk ? { [onlyCk]: ptObj(sc) } : ptObj(sc), sd };
+  return { f, t, lcfg, onlyCk: onlyCk || "", ros: R, cks, att: ptObj(att), late: ptObj(late), bn: ptObj(bn), bcats: bc && Array.isArray(bc.cats) && bc.cats.length ? bc.cats : BN_DEF, dc: ptObj(dc), sc: onlyCk ? { [onlyCk]: ptObj(sc) } : ptObj(sc), sd, absx: ptObj(ax) };
 }
 
 // ── الحساب ──
@@ -27852,7 +27852,9 @@ function spxCompute(D) {
     const absD = [...s.absD].sort(); const daysSet = new Set([...cd, ...absD]);
     const lateL = Object.values(s.lateM).sort((a, b) => a.dk.localeCompare(b.dk));
     const o = { ...s, absD, abs: absD.length, lateL, late: lateL.length, lateMins: lateL.reduce((a, x) => a + x.mins, 0), days: daysSet.size, calDays: [...daysSet].sort() };
-    o.attPct = o.days ? Math.round(1000 * (o.days - o.abs) / o.days) / 10 : null;
+    // الغياب بعذر لا يُنقص نسبة الحضور ولا يُحتسب في الإنذار والاستدعاء
+    o.absED = absD.filter(dk => absxS(D.absx, dk, s.sid) === "e"); o.absXU = absD.filter(dk => absxRec(D.absx, dk, s.sid).src === "man" && absxRec(D.absx, dk, s.sid).s === "u"); o.absE = o.absED.length; o.absU = o.abs - o.absE;
+    o.attPct = o.days ? Math.round(1000 * (o.days - o.absU) / o.days) / 10 : null;
     o.lateP1 = lateL.filter(x => x.p1).length; o.lateAvg = o.late ? Math.round(10 * o.lateMins / o.late) / 10 : 0; o.lateMax = o.late ? Math.max(...lateL.map(x => x.mins)) : 0;
     o.pres = Math.max(0, o.days - o.abs); o.punct = o.pres ? Math.round(1000 * (o.pres - o.late) / o.pres) / 10 : null; o.onTime = o.pres > 0 && !o.late;
     o.perfect = o.days > 0 && !o.abs && !o.late;
@@ -27863,25 +27865,25 @@ function spxCompute(D) {
     return o;
   }).filter(s => s.inRos || s.abs || s.late || s.neg || s.pos);
   const firstDk = dates.length ? dates.reduce((a, b) => a < b ? a : b) : "", lastDk = dates.length ? dates.reduce((a, b) => a > b ? a : b) : "";
-  const attKey = (a, b) => b.abs - a.abs || b.late - a.late || b.lateMins - a.lateMins || String(a.name).localeCompare(String(b.name), "ar");
+  const attKey = (a, b) => (b.absU ?? b.abs) - (a.absU ?? a.abs) || b.abs - a.abs || b.late - a.late || b.lateMins - a.lateMins || String(a.name).localeCompare(String(b.name), "ar");
   const lateKey = (a, b) => b.late - a.late || b.lateMins - a.lateMins || b.lateP1 - a.lateP1 || String(a.name).localeCompare(String(b.name), "ar");
   const behKey = (a, b) => b.neg - a.neg || a.pos - b.pos || String(a.name).localeCompare(String(b.name), "ar");
   const evKey = (a, b) => (b.ev ?? -1) - (a.ev ?? -1) || b.evN - a.evN || String(a.name).localeCompare(String(b.name), "ar");
   const cks = [...new Set([...D.cks.filter(ck => !D.onlyCk || ck === D.onlyCk), ...list.map(s => s.ck)])].filter(Boolean).sort(spxCkSort);
   const classes = cks.map(ck => { const L = list.filter(s => s.ck === ck); const R = L.filter(s => s.inRos); const seats = R.reduce((a, s) => a + s.days, 0);
     const ev = L.filter(s => s.ev !== null);
-    return { ck, name: spxCN(ck), n: R.length, L, days: (clsDays[ck] || new Set()).size, abs: L.reduce((a, s) => a + s.abs, 0), late: L.reduce((a, s) => a + s.late, 0), lateMins: L.reduce((a, s) => a + s.lateMins, 0), attPct: seats ? Math.round(1000 * (seats - R.reduce((a, s) => a + s.abs, 0)) / seats) / 10 : null, perfect: R.filter(s => s.perfect).length, absStu: L.filter(s => s.abs > 0).length,
+    return { ck, name: spxCN(ck), n: R.length, L, days: (clsDays[ck] || new Set()).size, abs: L.reduce((a, s) => a + s.abs, 0), late: L.reduce((a, s) => a + s.late, 0), lateMins: L.reduce((a, s) => a + s.lateMins, 0), attPct: seats ? Math.round(1000 * (seats - R.reduce((a, s) => a + (s.absU ?? s.abs), 0)) / seats) / 10 : null, absE: L.reduce((a, s) => a + (s.absE || 0), 0), perfect: R.filter(s => s.perfect).length, absStu: L.filter(s => s.abs > 0).length,
       neg: L.reduce((a, s) => a + s.neg, 0), pos: L.reduce((a, s) => a + s.pos, 0), negStu: L.filter(s => s.neg > 0).length, dcCls: dcCls[ck] || [], ev: ev.length ? Math.round(10 * ev.reduce((a, s) => a + s.ev, 0) / ev.length) / 10 : null, evN: ev.reduce((a, s) => a + s.evN, 0),
       lateStu: L.filter(s => s.late > 0).length, lateP1: L.reduce((a, s) => a + s.lateP1, 0), lateAvg: (() => { const n = L.reduce((a, s) => a + s.late, 0); return n ? Math.round(10 * L.reduce((a, s) => a + s.lateMins, 0) / n) / 10 : 0; })(), onTime: R.filter(s => s.onTime).length,
       punct: (() => { const pr = R.reduce((a, s) => a + s.pres, 0); return pr ? Math.round(1000 * (pr - R.reduce((a, s) => a + s.late, 0)) / pr) / 10 : null; })(), byLate: L.slice().sort(lateKey),
       byAtt: L.slice().sort(attKey), byBeh: L.slice().sort(behKey), byEv: L.slice().sort(evKey) };
   }).filter(c => c.L.length);
-  classes.forEach(c => { c.L.forEach(s => { s.cn = c.L.length; }); c.L.slice().sort((a, b) => a.abs - b.abs || a.late - b.late || a.lateMins - b.lateMins).forEach((s, i) => { s.rD = i + 1; }); });
+  classes.forEach(c => { c.L.forEach(s => { s.cn = c.L.length; }); c.L.slice().sort((a, b) => (a.absU ?? a.abs) - (b.absU ?? b.abs) || a.abs - b.abs || a.late - b.late || a.lateMins - b.lateMins).forEach((s, i) => { s.rD = i + 1; }); });
   const cnt = (arr, f) => { const o = {}; arr.forEach(x => { const k = f(x); o[k.t] = o[k.t] || { ...k, n: 0 }; o[k.t].n++; }); return Object.values(o).sort((a, b) => b.n - a.n); };
   const daily = [...allDays].sort().map(dk => { let n = 0, l = 0; list.forEach(s => { if (s.absD.includes(dk)) n++; if (s.lateM[dk]) l++; }); return { dk, n, l }; });
   const wd = [0, 0, 0, 0, 0]; list.forEach(s => s.absD.forEach(dk => { const w = sdxDate(dk).getDay(); if (w < 5) wd[w]++; }));
   const T = { n: list.filter(s => s.inRos).length, extra: list.filter(s => !s.inRos).length, days: allDays.size, first: firstDk, last: lastDk, daily, wd,
-    abs: list.reduce((a, s) => a + s.abs, 0), late: list.reduce((a, s) => a + s.late, 0), lateMins: list.reduce((a, s) => a + s.lateMins, 0), absStu: list.filter(s => s.abs > 0).length, lateStu: list.filter(s => s.late > 0).length, perfect: list.filter(s => s.perfect),
+    abs: list.reduce((a, s) => a + s.abs, 0), absE: list.reduce((a, s) => a + (s.absE || 0), 0), absU: list.reduce((a, s) => a + (s.absU ?? s.abs), 0), late: list.reduce((a, s) => a + s.late, 0), lateMins: list.reduce((a, s) => a + s.lateMins, 0), absStu: list.filter(s => s.abs > 0).length, lateStu: list.filter(s => s.late > 0).length, perfect: list.filter(s => s.perfect),
     neg: list.reduce((a, s) => a + s.neg, 0), pos: list.reduce((a, s) => a + s.pos, 0), negStu: list.filter(s => s.neg > 0).length, bnN: list.reduce((a, s) => a + s.bnNeg.length, 0), dcN: list.reduce((a, s) => a + s.dc.length, 0), dcClsN: Object.values(dcCls).reduce((a, x) => a + x.length, 0),
     byAtt: list.slice().sort(attKey), byBeh: list.filter(s => s.neg).sort(behKey), byPos: list.filter(s => s.pos).sort((a, b) => b.pos - a.pos), byEv: list.filter(s => s.ev !== null).sort(evKey),
     lateReasons: cnt(list.flatMap(s => s.lateL), x => ({ t: x.reason || "بدون سبب", ic: "⏰", c: "#ea580c" })),
@@ -34389,6 +34391,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
   if (view === "circ") return wrap("📜 التعاميم", <CircTeacherView me={me} />);
   if (view === "pushadm" && ["principal", "deputy"].includes(me.role)) return wrap("🔔 إشعارات الجوال", <PushAdmin by={me.name} />);
+  if (view === "absx" && isStaff && allowed && (["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox"))) return wrap("📋 تصنيف الغياب — بعذر / بدون عذر", <AbsExcPage by={me.name} />);
   if (view === "lead" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🧭 لوحة القائد اليومية", <LeaderBoard me={me} go={setView} />);
   if (view === "rmtadm") return wrap("🏠 التحضير بالحصص — الدراسة عن بعد", <RmtAdminPage by={me.name} />);
   if (view === "smart") return wrap("✨ درسي الذكي", <React.Suspense fallback={SL_WAIT}><SmartLessonTeacher me={me} api={slApi()} /></React.Suspense>);
@@ -34484,6 +34487,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {["principal", "deputy"].includes(me.role) && ptTile("smart", "✨", "درسي الذكي", "جرّب تحليل درس كما يراه المعلم", "#0f766e", "#c9a227", () => setView("smart"))}
               {["principal", "deputy", "counselor"].includes(me.role) && ptTile("diagadm", "🧪", "الاختبارات التشخيصية", "نتائج الصف الثالث في المواد الأربع: لوحة قيادة، الفصول والمعلمون، الطلاب، البعدي والمقارنة", "#12305a", "#0d4f3c", () => setView("diagadm"))}
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && ptTile("dplan", "📘", "خطة وسجل الانضباط المدرسي", "الخطة الإجرائية ولجنة الانضباط وتحليل الغياب والتأخر والاجتماعات والبرامج — مع الطباعة", "#007a72", "#009f8e", () => setView("dplan"))}
+              {(["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox")) && ptTile("absx", "📋", "تصنيف الغياب: بعذر / بدون عذر", "قبول عذر ولي الأمر يحوّل الغياب «بعذر» تلقائياً، وتعديل أي يوم لأي طالب يدوياً — ينعكس على نسبة الطالب والإنذار", "#0f766e", "#1e3a8a", () => setView("absx"))}
               {ptCan(me, "inbox") && ptTile("inbox", "📨", "أعذار وملاحظات أولياء الأمور", "مراجعة الأعذار وقبولها أو رفضها والرد على الملاحظات", "#2563eb", "#3b82f6", () => setView("inbox"), sum && sum.exc + sum.notes ? maAr(sum.exc + sum.notes) : "")}
             </div>
           </>
@@ -34588,12 +34592,12 @@ function GuardianPortal({ onBack }) {
     const X = await spxLoad("2000-01-01", maKey(new Date()), me.ck).then(spxCompute).catch(() => null);
     const sx = X ? X.list.find(x => x.sid === me.sid) || null : null;
     const cls = ptVals(sc).filter(r => r.items && r.items[me.sid]).map(r => ({ ...r, it: r.items[me.sid] })).sort((a, b) => (b.at || 0) - (a.at || 0));
-    const abs = sx ? [...sx.absD].reverse() : [];
+    const abs = sx ? [...sx.absD].reverse() : []; const exL = ptVals(ex).filter(x => x.nh === me.nh); const exS = absExcSet(sx, exL.filter(x => !x.sid || x.sid === me.sid)); const absU = abs.filter(k => !exS.has(k));
     const lat = sx ? [...sx.lateL].reverse().map(x => ({ dk: x.dk, time: x.time, mins: x.mins, reason: x.reason, note: x.note, p1: x.p1 })) : [];
     if (sx) sx.dc.forEach(x => bn.push({ dk: x.dk, ct: `${x.c.ic ? x.c.ic + " " : ""}${x.c.t}`, note: x.note, by: x.by, neg: true, dc: 1 }));
     bn.sort((a, b) => b.dk.localeCompare(a.dk));
     const anns = ptVals(ann).filter(a => a.title).sort((a, b) => String(b.date || b.createdAt || b.id).localeCompare(String(a.date || a.createdAt || a.id)));
-    setD({ X, sx, bn, cls, abs, lat, anns, comm: ptObj(comm), exc: ptVals(ex).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at), notes: ptVals(nt).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at), per: pm || {}, reps: ptVals(prep).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at) });
+    setD({ X, sx, bn, cls, abs, absU, lat, anns, comm: ptObj(comm), exc: ptVals(ex).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at), notes: ptVals(nt).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at), per: pm || {}, reps: ptVals(prep).filter(x => x.nh === me.nh).sort((a, b) => b.at - a.at) });
   };
   useEffect(() => { load(); }, [me]);
   useEffect(() => { if (!me) return; const iv = setInterval(() => { if (document.visibilityState === "visible") load(); }, 180000); return () => clearInterval(iv); }, [me]);
@@ -34651,7 +34655,7 @@ function GuardianPortal({ onBack }) {
     <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eff6ff,#f8fafc)" }}>
       <style>{MA_CSS + PT_CSS + GD_CSS + (typeof scCSS !== "undefined" ? scCSS : "")}</style>
       <div style={{ maxWidth: 980, margin: "0 auto" }} className="grid gap-4">
-        {(() => { const excS = d ? gdExcSet(d.exc) : new Set(); const excN = d ? d.abs.filter(k => excS.has(k)).length : 0; const negN = d ? maArr(d.bn).filter(r => r.neg).length : 0; const posN = d ? maArr(d.bn).filter(r => !r.neg).length : 0; const sx = d && d.sx;
+        {(() => { const excS = d ? absExcSet(d.sx, d.exc) : new Set(); const excN = d ? d.abs.filter(k => excS.has(k)).length : 0; const negN = d ? maArr(d.bn).filter(r => r.neg).length : 0; const posN = d ? maArr(d.bn).filter(r => !r.neg).length : 0; const sx = d && d.sx;
           const go = h => { window.location.hash = h; window.location.reload(); };
           return <div className="gd-hero">
           <div className="gd-hero-top">
@@ -34707,10 +34711,10 @@ function GuardianPortal({ onBack }) {
             {tab === "tt" && <GuardianTT me={me} />}
             {tab === "week" && <GuardianWeek me={me} reps={d.reps} />}
             {tab === "grades" && <GuardianGrades me={me} />}
-            {tab === "abs" && (() => { const excS = gdExcSet(d.exc); const n = d.abs.length, en = d.abs.filter(k => excS.has(k)).length; const sx = d.sx; return <div className="pt-item grid gap-2">
+            {tab === "abs" && (() => { const excS = absExcSet(d.sx, d.exc); const n = d.abs.length, en = d.abs.filter(k => excS.has(k)).length; const sx = d.sx; return <div className="pt-item grid gap-2">
               <div className="flex items-center gap-2 flex-wrap"><span className="gd-ch" style={{ background: "#fee2e2", color: "#b91c1c" }}><GdIco n="ban" /></span><b style={{ fontSize: 16 }}>الغياب: {maAr(n)} {n === 1 ? "يوم" : "أيام"}</b>{sx && sx.days ? <span className="gd-tag" style={{ background: "#f1f5f9", color: "#334155" }}>{maAr(Math.round(1000 * n / sx.days) / 10)}٪ من {maAr(sx.days)} يوم دراسي مرصود</span> : null}{en > 0 && <span className="gd-tag" style={{ background: "#dcfce7", color: "#15803d" }}>بعذر مقبول: {maAr(en)}</span>}{n - en > 0 && <span className="gd-tag" style={{ background: "#fee2e2", color: "#b91c1c" }}>بدون عذر: {maAr(n - en)}</span>}</div>
               {n ? d.abs.map((k, i) => { const ex = d.exc.filter(x => x.from <= k && (x.to || x.from) >= k).sort((a, b) => b.at - a.at)[0]; const st = ex ? (ex.status || "new") : ""; const ok = st === "ok";
-                const tag = ok ? ["بعذر مقبول", "#dcfce7", "#15803d"] : st === "new" ? ["العذر قيد المراجعة", "#fef3c7", "#92400e"] : st === "no" ? ["لم يُقبل العذر", "#fee2e2", "#b91c1c"] : ["بدون عذر", "#fef2f2", "#b91c1c"];
+                const xs = excS.has(k); const tag = xs && !ok ? ["بعذر (اعتمدته المدرسة)", "#dcfce7", "#15803d"] : ok && !xs ? ["بدون عذر (قرار المدرسة)", "#fef2f2", "#b91c1c"] : ok ? ["بعذر مقبول", "#dcfce7", "#15803d"] : st === "new" ? ["العذر قيد المراجعة", "#fef3c7", "#92400e"] : st === "no" ? ["لم يُقبل العذر", "#fee2e2", "#b91c1c"] : ["بدون عذر", "#fef2f2", "#b91c1c"];
                 const nM = ex ? (() => { const M = Object.values(ptObj(ex.msgs)); return M.length + (ex.reply && !M.some(m => m && m.who === "s" && m.t === ex.reply) ? 1 : 0); })() : 0; const canUp = !ex || st === "no";
                 return <div key={k} className="grid gap-2"><div className="gd-row" style={{ borderRight: `4px solid ${tag[2]}` }}><span className="h" style={{ minWidth: 18 }}>{maAr(n - i)}</span><span className="d">{maDay(maDate(k))}</span><span className="h">{maHijri(maDate(k))} • {maGreg(maDate(k))}</span>
                   <span className="flex gap-2 flex-wrap items-center" style={{ marginInlineStart: "auto" }}><span className="gd-tag" style={{ background: tag[1], color: tag[2] }}>{tag[0]}</span>
@@ -34823,8 +34827,8 @@ function ParentInbox({ by = "الإدارة" }) {
             {x.img && <img src={x.img} alt="" onClick={() => setImg(x.img)} style={{ height: 80, borderRadius: 10, marginTop: 8, cursor: "zoom-in", border: "1px solid #e2e8f0" }} />}
             <GdThread x={x} path={`${PT_EXC}/${x.id}`} who="s" by={by} k="exc" onUpd={updL("exc")} />
             <div className="flex gap-2 flex-wrap mt-2">
-              <button className="ma-btn grn" onClick={() => upd(`${PT_EXC}/${x.id}`, { status: "ok", by, reply: (rep[x.id] || "").trim() || x.reply || "تم قبول العذر", replyBy: by }, "exc", x.id)}>✅ قبول</button>
-              <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => upd(`${PT_EXC}/${x.id}`, { status: "no", by, reply: (rep[x.id] || "").trim() || x.reply || "لم يُقبل العذر", replyBy: by }, "exc", x.id)}>❌ رفض</button>
+              <button className="ma-btn grn" onClick={() => { upd(`${PT_EXC}/${x.id}`, { status: "ok", by, reply: (rep[x.id] || "").trim() || x.reply || "تم قبول العذر", replyBy: by }, "exc", x.id); absxSyncExc({ ...x, status: "ok" }, by); }}>✅ قبول</button>
+              <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => { upd(`${PT_EXC}/${x.id}`, { status: "no", by, reply: (rep[x.id] || "").trim() || x.reply || "لم يُقبل العذر", replyBy: by }, "exc", x.id); absxSyncExc({ ...x, status: "no" }, by); }}>❌ رفض</button>
               <input className="ma-inp" style={{ flex: "1 1 200px" }} value={rep[x.id] || ""} onChange={e => setRep({ ...rep, [x.id]: e.target.value })} placeholder="✍️ رد لولي الأمر (اختياري)…" />
               <button className="ma-btn" onClick={() => del(`${PT_EXC}/${x.id}`, "exc", x.id)}>🗑</button>
             </div>
@@ -38031,7 +38035,21 @@ class SiteErrorBoundary extends React.Component {
 //   التقرير الشهري • التقارير الأسبوعية والأوسمة • الأدوات (الفهرس والنسخ الاحتياطي)
 // ══════════════════════════════════════════════════════════════════════
 const IN_CFG = "school-insight-cfg";
-const SIDX = "school-sidx";            // فهرس الطالب: {sid:{a:{dk:ck}, l:{dk:{t,m,r,n}}}} — يخفف التحميل على بوابة ولي الأمر
+const SIDX = "school-sidx";
+// 📋 تصنيف أيام غياب الطلاب: بعذر / بدون عذر — school-absx/{YYYY-MM-DD}/{sid} = {s:"e"|"u", src:"exc"|"man"|"exc-x", eid, r, by, at}
+//    • يوم غياب بلا تصنيف = بدون عذر • قبول عذر ولي الأمر يكتب «بعذر» لأيام العذر تلقائياً • الإدارة تعدّل أي يوم يدوياً (اليدوي لا يغيّره عذر لاحق)
+//    • نسبة حضور الطالب والإنذارات والاستدعاء تُحسب من الغياب بدون عذر
+const ABSX = "school-absx";
+const absxRec = (X, dk, sid) => ptObj(ptObj(ptObj(X)[dk])[sid]);
+const absxS = (X, dk, sid) => absxRec(X, dk, sid).s === "e" ? "e" : "u";
+const excDayKeys = x => { const o = []; if (!x || !x.from) return o; let d = maDate(x.from); const e = x.to || x.from; for (let i = 0; i < 60; i++) { const k = maKey(d); if (k > e) break; if (!maOff(k)) o.push(k); d.setDate(d.getDate() + 1); } return o; };
+// مزامنة أعذار أولياء الأمور مع التصنيف (عند القبول أو الرفض، أو دفعة واحدة لكل الأعذار) — لا يمس التصنيف اليدوي
+function absxExcPatch(list, X) { const P = {}; maArr(list).forEach(x => { if (!x || !x.sid || !x.from) return; const ok = x.status === "ok";
+  excDayKeys(x).forEach(k => { const c = absxRec(X, k, x.sid); if (c.src === "man") return; if (ok && !(c.s === "e" && c.eid === x.id)) P[`${ABSX}/${k}/${x.sid}`] = { s: "e", src: "exc", eid: x.id, by: x.by || x.replyBy || "عذر ولي الأمر", at: Date.now() };
+    else if (!ok && c.src === "exc" && c.eid === x.id) P[`${ABSX}/${k}/${x.sid}`] = { s: "u", src: "exc-x", eid: x.id, by: x.by || "", at: Date.now() }; }); }); return P; }
+async function absxSyncExc(x, by) { try { const ks = excDayKeys(x); const cur = await Promise.all(ks.map(k => maGet(`${ABSX}/${k}/${x.sid}`))); const X = {}; ks.forEach((k, i) => { X[k] = { [x.sid]: cur[i] }; }); const P = absxExcPatch([{ ...x, by }], X); if (Object.keys(P).length) await fbPatch(P); return Object.keys(P).length; } catch { return 0; } }
+// أيام الغياب بعذر لطالب: (أعذار مقبولة ∪ «بعذر» يدوياً) − «بدون عذر» يدوياً
+const absExcSet = (sx, exc) => { const U = new Set(maArr(sx && sx.absXU)); return new Set([...gdExcSet(exc), ...maArr(sx && sx.absED)].filter(k => !U.has(k))); };            // فهرس الطالب: {sid:{a:{dk:ck}, l:{dk:{t,m,r,n}}}} — يخفف التحميل على بوابة ولي الأمر
 const SIDX_META = "school-sidx-meta";
 const BK2 = "school-bk2", BK2_META = "school-bk2-meta";
 const IN_DEF = { abs: 3, late: 3, neg: 3, beh: 3 };
@@ -38112,12 +38130,12 @@ const inPeriod = (kind, from, to) => {
 };
 const IN_PERS = [["week", "هذا الأسبوع"], ["lastweek", "الأسبوع الماضي"], ["30", "آخر ٣٠ يوماً"], ["month", "هذا الشهر"], ["lastmonth", "الشهر الماضي"], ["year", "العام الدراسي"], ["custom", "فترة مخصصة"]];
 async function inLoad(f, t) {
-  const [ros, meta, att, late, sc, cfg, bn, bc] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t), maGet(SC_NODE), maGet(IN_CFG), fbRange(BN_NODE, f, t), maGet(BN_CFG)]);
+  const [ros, meta, att, late, sc, cfg, bn, bc, ax] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t), maGet(SC_NODE), maGet(IN_CFG), fbRange(BN_NODE, f, t), maGet(BN_CFG), fbRange(ABSX, f, t).catch(() => ({}))]);
   const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4];
   const classes = maClasses(counts);
   const sdA = await Promise.all(classes.map(c => sdRange(c.ck, f, t)));
   const sd = {}; classes.forEach((c, i) => { const o = {}; Object.entries(ptObj(sdA[i])).forEach(([k, v]) => { if (k.slice(0, 10) >= f && k.slice(0, 10) <= t) o[k] = v; }); sd[c.ck] = o; });
-  return { f, t, ros: ptObj(ros), classes, att, late, sc: ptObj(sc), sd, bn, bcats: bc && Array.isArray(bc.cats) && bc.cats.length ? bc.cats : BN_DEF, cfg: { ...IN_DEF, ...ptObj(cfg) } };
+  return { f, t, ros: ptObj(ros), classes, att, late, sc: ptObj(sc), sd, bn, absx: ptObj(ax), bcats: bc && Array.isArray(bc.cats) && bc.cats.length ? bc.cats : BN_DEF, cfg: { ...IN_DEF, ...ptObj(cfg) } };
 }
 const sdIn = (o, f, t) => { const r = {}; Object.entries(ptObj(o)).forEach(([k, v]) => { const d = k.slice(0, 10); if (d >= f && d <= t) r[k] = v; }); return r; };
 const SD_NEG = { p: v => v === 2, h: v => v >= 1, t: v => v === 1, b: v => v === 2 };
@@ -38129,7 +38147,7 @@ function inCompute(D) {
     maArr(D.ros[c.ck] && D.ros[c.ck].students).filter(x => x && x.id && x.name).forEach(s => { C[c.ck].n++; S[s.id] = { sid: s.id, name: s.name, ck: c.ck, nh: s.nh || "", n4: s.n4 || "", add: s.add || "", newIn: rosNewIn(s, D.f), abs: [], late: [], lateMins: 0, sd: { n: 0, pos: 0, neg: 0, k: { p: [], h: [], t: [], b: [] }, notes: [] }, bn: [], bnNeg: 0, sc: null, flags: [], pts: 0, lvl: "g" }; });
   });
   const days = new Set();
-  Object.entries(ptObj(D.att)).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([ck, r]) => { if (!C[ck] || !r) return; days.add(dk); C[ck].attDays++; C[ck].seats += +r.total || 0; maArr(r.absent).forEach(a => { if (a && S[a.id]) { S[a.id].abs.push(dk); C[ck].absN++; } }); }));
+  Object.entries(ptObj(D.att)).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([ck, r]) => { if (!C[ck] || !r) return; days.add(dk); C[ck].attDays++; C[ck].seats += +r.total || 0; maArr(r.absent).forEach(a => { if (a && S[a.id]) { S[a.id].abs.push(dk); C[ck].absN++; if (absxS(D.absx, dk, a.id) === "e") (S[a.id].absE = S[a.id].absE || []).push(dk); } }); }));
   Object.entries(ptObj(D.late)).forEach(([dk, day]) => { const L = Object.values(ptObj(day)); if (L.length) days.add(dk); L.forEach(r => { const s = r && S[r.id]; if (!s) return; s.late.push({ dk, ...r }); s.lateMins += +r.mins || 0; C[s.ck].lateN++; C[s.ck].lateMins += +r.mins || 0; }); });
   Object.entries(D.sd || {}).forEach(([ck, byD]) => Object.entries(ptObj(byD)).forEach(([dk, recs]) => Object.values(ptObj(recs)).forEach(rec => Object.entries(ptObj(rec && rec.items)).forEach(([sid, it]) => {
     const s = S[sid]; if (!s || !it) return; let pos = 0, neg = 0;
@@ -38146,7 +38164,7 @@ function inCompute(D) {
   Object.values(ptObj(D.bn)).forEach(d => Object.values(ptObj(d)).forEach(r => { const s = r && S[r.sid]; if (!s) return; s.bn.push(r); if (!bnCat(bcats, r.cat).pos) { s.bnNeg++; if (C[s.ck]) C[s.ck].bnN = (C[s.ck].bnN || 0) + 1; } }));
   const cfg = D.cfg || IN_DEF;
   Object.values(S).forEach(s => {
-    const f = []; let p = 0; const na = s.abs.length, nl = s.late.length;
+    const f = []; let p = 0; const na = s.abs.length - maArr(s.absE).length, nl = s.late.length; // الغياب بعذر لا يدخل في الإنذار
     if (na >= cfg.abs * 2) { p += 3; f.push(["🚫", `غياب ${maAr(na)} أيام`, "r"]); } else if (na >= cfg.abs) { p += 2; f.push(["🚫", `غياب ${maAr(na)} أيام`, "y"]); }
     if (nl >= cfg.late * 2) { p += 3; f.push(["⏰", `تأخر صباحي ${maAr(nl)} مرات`, "r"]); } else if (nl >= cfg.late) { p += 2; f.push(["⏰", `تأخر صباحي ${maAr(nl)} مرات`, "y"]); }
     if (s.sd.neg >= cfg.neg * 2) { p += 2; f.push(["📒", `${maAr(s.sd.neg)} ملاحظة تحتاج اهتماماً في المتابعة اليومية`, "r"]); } else if (s.sd.neg >= cfg.neg) { p += 1; f.push(["📒", `${maAr(s.sd.neg)} ملاحظة تحتاج اهتماماً`, "y"]); }
@@ -38179,7 +38197,7 @@ const inPortal = () => { try { return location.origin + location.pathname + "#pa
 function inWeekText(s, f, t, B) {
   const na = s.abs.length, nl = s.late.length;
   const L = [`📊 *التقرير الأسبوعي* — مدرسة الأمير عبدالمجيد المتوسطة الأولى`, `👦 ${s.name} — ${maClassName(s.ck)}`, `🗓️ من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))}`, ``,
-    `🚫 الغياب: ${na ? maAr(na) + " يوم" : "لا يوجد ✅"}`, `⏰ التأخر الصباحي: ${nl ? maAr(nl) + " مرة" : "لا يوجد ✅"}`,
+    `🚫 الغياب: ${na ? maAr(na) + " يوم" + (maArr(s.absE).length ? ` (منها ${maAr(maArr(s.absE).length)} بعذر)` : "") : "لا يوجد ✅"}`, `⏰ التأخر الصباحي: ${nl ? maAr(nl) + " مرة" : "لا يوجد ✅"}`,
     s.sd.pos + s.sd.neg ? `📒 المتابعة اليومية: ${maAr(s.sd.pos)} إيجابية • ${maAr(s.sd.neg)} تحتاج اهتماماً` : "",
     s.bn && s.bn.filter(r => r.pv).length ? `🧭 السلوك: ${s.bn.filter(r => r.pv).map(r => bnCat(BN_DEF, r.cat).t + (r.note ? " (" + r.note + ")" : "")).join("، ")}` : ""];
   if (B.length) L.push(``, `🏅 أوسمة الأسبوع: ${B.map(b => b[0] + " " + b[1]).join(" • ")}`);
@@ -48349,7 +48367,7 @@ function NbPinSet({ by = "الإدارة" }) {
     <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>يُطلب من المعلم عند فتح «مراجع نافس» من حسابه، ويبقى مفتوحاً حتى يغلق المتصفح. دخول الطلاب والإدارة لا يتأثر.</div>
   </div>;
 }
-const GATE_EXEMPT = ["school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -49630,7 +49648,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
     setDb(obj(d)); setEV(obj(ev));
     const E = {}; vals(ex).filter(x => x.status === "ok" && x.sid && x.from).forEach(x => { const S = E[x.sid] = E[x.sid] || new Set(); let dt = A.maDate(x.from); const e = x.to || x.from; for (let i = 0; i < 60; i++) { const k = A.maKey(dt); if (k > e) break; S.add(k); dt.setDate(dt.getDate() + 1); } });
     setExc(E); setExtra({ excN: vals(ex).length, excOk: vals(ex).filter(x => x.status === "ok").length, reps: vals(pr).length, warn: vals(pr).filter(r => r.type === "warn").length, inv: vals(pr).filter(r => r.type === "invite").length });
-    try { setX(A.spxCompute(await A.spxLoad(obj(d && d.cfg).from || "2000-01-01", today))); } catch (e) { setX({ list: [], classes: [], T: { days: 0 } }); }
+    try { const X0 = A.spxCompute(await A.spxLoad(obj(d && d.cfg).from || "2000-01-01", today)); const E2 = { ...E }; X0.list.forEach(st => { if (!st.sid) return; const S0 = new Set(E2[st.sid] || []); (st.absED || []).forEach(k => S0.add(k)); (st.absXU || []).forEach(k => S0.delete(k)); E2[st.sid] = S0; }); setExc(E2); setX(X0); } catch (e) { setX({ list: [], classes: [], T: { days: 0 } }); }
     try { setStaff(await A.loadStaff()); } catch {}
     setBusy("");
   };
@@ -49965,7 +49983,7 @@ const gdHijM = dk => { try { const p = {}; new Intl.DateTimeFormat("ar-SA-u-ca-i
 
 // 🔴 استدعاء ولي الأمر عند بلوغ ٥ أيام غياب — مع حجز الموعد من البوابة
 function GdSummons({ me, d, onRep, compact }) {
-  const abs = maArr(d && d.abs); const [form, setForm] = useState(null); const [busy, setBusy] = useState(false);
+  const abs = maArr(d && (d.absU || d.abs)); const [form, setForm] = useState(null); const [busy, setBusy] = useState(false);
   if (abs.length < GD_ABS_SUMMON) return null;
   const inv = gdInviteAfter(d.reps, abs); const L = gdLvl(abs.length) || GD_LADDER[1];
   const first = String(me.name || "").split(" ")[0];
@@ -50030,7 +50048,7 @@ function GuardianDossier({ me, d, setTab, onRep }) {
   const nbPages = nb ? Object.values(nb.i).reduce((t, b) => t + Object.keys(ptObj(b)).length, 0) : 0; const nbOpen = nb ? Object.values(nb.o).reduce((t, b) => t + Object.keys(ptObj(b)).length, 0) : 0;
   const IC = { "🚫": "ban", "⏰": "clock", "📅": "calendar", "👨‍🏫": "users", "📝": "pen", "📚": "book" };
   const card = (ic, t, ch, bc = "#64748b") => <div className="pt-item" style={{ borderTop: `4px solid ${bc}` }}><div className="flex items-center gap-2"><span className="gd-ch" style={{ background: bc + "1a", color: bc }}><GdIco n={IC[ic] || "file"} /></span><b style={{ fontSize: 15.5 }}>{t}</b></div><div style={{ marginTop: 10 }}>{ch}</div></div>;
-  const excS = gdExcSet(d.exc); const excN = absD.filter(k => excS.has(k)).length;
+  const excS = absExcSet(s, d.exc); const excN = absD.filter(k => excS.has(k)).length;
   const goNafs = () => { try { localStorage.setItem("nafsbook-stu-v1", JSON.stringify({ id: me.sid, name: me.name, ck: me.ck, nh: me.nh, until: Date.now() + 30 * 864e5 })); } catch {} window.location.hash = "marji"; window.location.reload(); };
   return <div className="grid gap-3"><style>{GD_CSS}</style>
     <div className="pt-item" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a8a)", color: "#fff" }}>
@@ -50095,6 +50113,57 @@ function GuardianDossier({ me, d, setTab, onRep }) {
   </div>;
 }
 
+// ══════════ 📋 تصنيف الغياب: بعذر / بدون عذر (الإدارة) ══════════
+const ABX_SRC = { exc: "عذر ولي الأمر (مقبول)", man: "تعديل الإدارة", "exc-x": "رُفض عذر ولي الأمر" };
+function AbsExcPage({ by = "الإدارة" }) {
+  const today = maKey(new Date());
+  const [tab, setTab] = useState("day"); const [dk, setDk] = useState(() => maOff(today) ? (typeof maWorkDay === "function" ? maWorkDay() : today) : today);
+  const [ros, setRos] = useState(null); const [X, setX] = useState(null); const [day, setDay] = useState(null); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false); const [sync, setSync] = useState(null);
+  const [q, setQ] = useState(""); const [sel, setSel] = useState(null); const [sa, setSa] = useState(null); const [why, setWhy] = useState(""); const [ckF, setCkF] = useState("");
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  // تحميل + مزامنة الأعذار المقبولة سابقاً (مرة عند الفتح)
+  useEffect(() => { (async () => { const [r, ax, ex] = await Promise.all([maGet(MA_ROSTER), maGet(ABSX), maGet(PT_EXC)]); setRos(ptObj(r)); const A = ptObj(ax);
+    const P = absxExcPatch(ptVals(ex).filter(x => x.status === "ok" || x.status === "no").map(x => ({ ...x, by: x.replyBy || x.by || "عذر ولي الأمر" })), A); const n = Object.keys(P).length;
+    if (n) { await fbPatch(P); Object.entries(P).forEach(([p, v]) => { const [, k, sid] = p.split("/"); A[k] = { ...ptObj(A[k]), [sid]: v }; }); } setX(A); setSync(n); })().catch(() => { setX({}); setRos({}); }); }, []);
+  useEffect(() => { setDay(null); maGet(`${MA_ATT}/${dk}`).then(d => setDay(maNormDay(d))).catch(() => setDay({})); }, [dk]);
+  const setK = async (k, sid, s, nm) => { const v = s ? { s, src: "man", r: why.trim(), by, at: Date.now() } : null; const ok = await maPut(`${ABSX}/${k}/${sid}`, v);
+    if (ok) { setX(x => { const d = { ...ptObj(x[k]) }; if (v) d[sid] = v; else delete d[sid]; return { ...x, [k]: d }; }); toast(`✅ ${nm || ""}: ${s === "e" ? "بعذر" : s === "u" ? "بدون عذر" : "أُعيد للتصنيف التلقائي"}`); } else toast("⚠️ تعذّر الحفظ"); };
+  const bulk = async (L, s) => { if (!L.length || !window.confirm(`تصنيف ${maAr(L.length)} يوم/طالب «${s === "e" ? "بعذر" : "بدون عذر"}»؟${why.trim() ? `\nالسبب: ${why.trim()}` : ""}`)) return; setBusy(true);
+    const P = {}; L.forEach(({ k, sid }) => { P[`${ABSX}/${k}/${sid}`] = { s, src: "man", r: why.trim(), by, at: Date.now() }; }); const ok = await fbPatch(P); setBusy(false);
+    if (ok) { setX(x => { const n = { ...x }; L.forEach(({ k, sid }) => { n[k] = { ...ptObj(n[k]), [sid]: P[`${ABSX}/${k}/${sid}`] }; }); return n; }); toast(`✅ صُنّف ${maAr(L.length)}`); } else toast("⚠️ تعذّر الحفظ"); };
+  const openStu = async s => { setSel(s); setSa(null); const a = ptObj(await maGet(`${SIDX}/${s.id}/a`)); setSa(Object.keys(a).filter(k => !maOff(k)).sort().reverse()); };
+  if (!X || !ros) return <div className="ma-card p-10 text-center font-bold" style={{ color: "#94a3b8" }}>⏳ جارٍ التحميل ومزامنة أعذار أولياء الأمور…</div>;
+  const Chip = ({ k, sid }) => { const r = absxRec(X, k, sid); const e = r.s === "e"; return <span className="pt-st" title={r.src ? `${ABX_SRC[r.src] || ""}${r.by ? " — " + r.by : ""}${r.r ? " • " + r.r : ""}` : "لم يُرفع عذر"} style={{ background: e ? "#dcfce7" : "#fee2e2", color: e ? "#15803d" : "#b91c1c", fontWeight: 900 }}>{e ? "✅ بعذر" : "❌ بدون عذر"}{r.src === "man" ? " ✎" : r.src === "exc" ? " 📝" : ""}</span>; };
+  const Btns = ({ k, sid, nm }) => { const r = absxRec(X, k, sid); return <span className="flex gap-1 flex-wrap">{r.s !== "e" && <button className="ma-btn grn" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => setK(k, sid, "e", nm)}>✅ بعذر</button>}{r.s === "e" && <button className="ma-btn" style={{ padding: "3px 10px", fontSize: 12, color: "#b91c1c" }} onClick={() => setK(k, sid, "u", nm)}>❌ بدون عذر</button>}{r.src === "man" && <button className="ma-btn" style={{ padding: "3px 10px", fontSize: 12 }} title="إلغاء التعديل اليدوي والعودة لعذر ولي الأمر إن وُجد" onClick={() => setK(k, sid, null, nm)}>↺</button>}</span>; };
+  const absToday = day ? Object.entries(day).flatMap(([ck, r]) => maArr(r.absent).filter(a => a && a.id).map(a => ({ ck, id: a.id, name: a.name }))).filter(x => !ckF || x.ck === ckF).sort((a, b) => a.ck.localeCompare(b.ck, undefined, { numeric: true }) || String(a.name).localeCompare(String(b.name), "ar")) : [];
+  const nE = absToday.filter(x => absxS(X, dk, x.id) === "e").length;
+  const allStu = Object.entries(ros).flatMap(([ck, r]) => maArr(r && r.students).filter(s => s && s.id && s.name).map(s => ({ ...s, ck })));
+  const found = q.trim().length >= 2 ? allStu.filter(s => cvNorm(s.name).includes(cvNorm(q))).slice(0, 12) : [];
+  return <div className="ma grid gap-3" dir="rtl" style={{ maxWidth: 1000, margin: "0 auto" }}><style>{MA_CSS}</style>
+    <div className="ma-card p-4" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a8a)", color: "#fff" }}><b style={{ fontSize: 18 }}>📋 تصنيف الغياب — بعذر / بدون عذر</b>
+      <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9, marginTop: 4, lineHeight: 1.9 }}>كل غياب «بدون عذر» حتى يُقبل عذر ولي الأمر فيتحول تلقائياً «بعذر» 📝 — أو تعدّله أنت يدوياً ✎ لأي طالب في أي يوم. الغياب بعذر لا يُنقص نسبة حضور الطالب ولا يدخل في الإنذار واستدعاء ولي الأمر.{sync ? ` • زُامِن الآن ${maAr(sync)} يوم من أعذار مقبولة سابقاً.` : ""}</div></div>
+    <div className="ma-tabs">{[["day", "📅 حسب اليوم"], ["stu", "🔎 حسب الطالب"]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div className="ma-card p-3 flex gap-2 items-center flex-wrap"><span style={{ fontWeight: 800, fontSize: 13 }}>سبب التعديل (اختياري):</span><input className="ma-inp" style={{ flex: "1 1 220px" }} value={why} onChange={e => setWhy(e.target.value)} placeholder="مثال: تقرير طبي سُلّم للوكيل • ظرف عام (أمطار)" /></div>
+    {tab === "day" && <div className="ma-card p-3 grid gap-2">
+      <div className="flex gap-2 items-center flex-wrap"><input type="date" className="ma-inp" style={{ width: 170 }} value={dk} onChange={e => e.target.value && setDk(e.target.value)} /><b>{maDay(maDate(dk))} {maHijri(maDate(dk))}</b>
+        <select className="ma-inp" style={{ width: 160 }} value={ckF} onChange={e => setCkF(e.target.value)}><option value="">كل الفصول</option>{Object.keys(day || {}).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(ck => <option key={ck} value={ck}>{maClassName(ck)}</option>)}</select>
+        {absToday.length > 0 && <span style={{ fontWeight: 900, fontSize: 13 }}>غائب {maAr(absToday.length)} • ✅ بعذر {maAr(nE)} • ❌ بدون عذر {maAr(absToday.length - nE)}</span>}
+        {absToday.length > 0 && <span style={{ marginInlineStart: "auto" }} className="flex gap-1"><button className="ma-btn grn" disabled={busy} onClick={() => bulk(absToday.filter(x => absxS(X, dk, x.id) !== "e").map(x => ({ k: dk, sid: x.id })), "e")}>✅ الكل بعذر</button><button className="ma-btn" disabled={busy} style={{ color: "#b91c1c" }} onClick={() => bulk(absToday.filter(x => absxS(X, dk, x.id) === "e").map(x => ({ k: dk, sid: x.id })), "u")}>❌ الكل بدون عذر</button></span>}</div>
+      {day === null ? <div className="p-6 text-center text-gray-400 font-bold">⏳</div> : !absToday.length ? <div className="p-6 text-center font-bold" style={{ color: "#94a3b8" }}>لا يوجد غياب مرصود في هذا اليوم</div> :
+        <div className="grid gap-1">{absToday.map(x => <div key={x.ck + x.id} className="flex gap-2 items-center flex-wrap" style={{ border: "1px solid #e5eaf0", borderRadius: 12, padding: "7px 10px" }}><b style={{ flex: "1 1 180px", fontSize: 13.5 }}>{x.name}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maClassName(x.ck)}</span><Chip k={dk} sid={x.id} /><Btns k={dk} sid={x.id} nm={x.name} /></div>)}</div>}
+      <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>📝 = من عذر ولي الأمر المقبول • ✎ = تعديل الإدارة (لا يغيّره عذر لاحق) • ↺ يلغي التعديل اليدوي</div></div>}
+    {tab === "stu" && <div className="ma-card p-3 grid gap-2">
+      <input className="ma-inp" value={q} onChange={e => { setQ(e.target.value); setSel(null); }} placeholder="🔎 اكتب اسم الطالب (حرفان على الأقل)" />
+      {!sel && found.length > 0 && <div className="grid gap-1">{found.map(s => <button key={s.id} className="ma-btn" style={{ justifyContent: "space-between", display: "flex" }} onClick={() => openStu(s)}><b>{s.name}</b><span style={{ color: "#64748b" }}>{maClassName(s.ck)}</span></button>)}</div>}
+      {sel && <div className="grid gap-2"><div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 16 }}>👦 {sel.name}</b><span style={{ color: "#64748b", fontWeight: 800 }}>{maClassName(sel.ck)}</span><button className="ma-btn" style={{ marginInlineStart: "auto" }} onClick={() => setSel(null)}>✕</button></div>
+        {sa === null ? <div className="p-4 text-center text-gray-400 font-bold">⏳</div> : !sa.length ? <div className="p-4 text-center font-bold" style={{ color: "#15803d" }}>✅ لا يوجد غياب مسجّل</div> : (() => { const e = sa.filter(k => absxS(X, k, sel.id) === "e").length; return <>
+          <div className="flex gap-2 flex-wrap"><span className="pt-st" style={{ background: "#f1f5f9", color: "#334155", fontWeight: 900 }}>أيام الغياب {maAr(sa.length)}</span><span className="pt-st" style={{ background: "#dcfce7", color: "#15803d", fontWeight: 900 }}>✅ بعذر {maAr(e)}</span><span className="pt-st" style={{ background: "#fee2e2", color: "#b91c1c", fontWeight: 900 }}>❌ بدون عذر {maAr(sa.length - e)} — تُحتسب في النسبة والإنذار</span>
+            <span style={{ marginInlineStart: "auto" }} className="flex gap-1"><button className="ma-btn grn" disabled={busy} onClick={() => bulk(sa.filter(k => absxS(X, k, sel.id) !== "e").map(k => ({ k, sid: sel.id })), "e")}>✅ كلها بعذر</button></span></div>
+          <div className="grid gap-1">{sa.map(k => <div key={k} className="flex gap-2 items-center flex-wrap" style={{ border: "1px solid #e5eaf0", borderRadius: 12, padding: "7px 10px" }}><b style={{ flex: "1 1 180px", fontSize: 13.5 }}>{maDay(maDate(k))} {maHijri(maDate(k))}</b><Chip k={k} sid={sel.id} /><Btns k={k} sid={sel.id} nm={sel.name} /></div>)}</div></>; })()}</div>}
+    </div>}
+    {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 900, background: "#0f172a", color: "#fff", padding: "10px 18px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
+  </div>;
+}
 // ══════════ 🚨 حد الغياب: قائمة الإدارة — من بلغ ٥ أيام ومن استُدعي ولي أمره ══════════
 function AbsAlertPage({ by = "الإدارة" }) {
   const [X, setX] = useState(null); const [reps, setReps] = useState([]); const [f, setF] = useState("red"); const [open, setOpen] = useState(""); const [bulk, setBulk] = useState(null); const [busy, setBusy] = useState(false); const [q, setQ] = useState("");
@@ -50102,7 +50171,8 @@ function AbsAlertPage({ by = "الإدارة" }) {
   const load = async () => { setX(null); const [r, p] = await Promise.all([spxLoad("2000-01-01", today), maGet(PT_PREP)]); setX(spxCompute(r)); setReps(ptVals(p)); };
   useEffect(() => { load(); }, []);
   if (!X) return <div className="ma-card p-8 text-center font-bold text-gray-400">⏳ جارٍ حساب غياب كل الطلاب…</div>;
-  const L = X.list.filter(s => s.inRos);
+  // حد الغياب يُحسب بالأيام بدون عذر — الغياب بعذر يظهر للاطلاع فقط
+  const L = X.list.filter(s => s.inRos).map(s => { const E = new Set(maArr(s.absED)); return { ...s, absAll: s.abs, absEx: E.size, abs: s.absU ?? s.abs, absD: s.absD.filter(k => !E.has(k)) }; });
   const invOf = s => s.nh ? gdInviteAfter(reps.filter(r => r.nh === s.nh), s.absD) : null;
   const red = L.filter(s => s.abs >= GD_ABS_SUMMON).sort((a, b) => b.abs - a.abs), amber = L.filter(s => s.abs >= 3 && s.abs < GD_ABS_SUMMON).sort((a, b) => b.abs - a.abs), late = L.filter(s => s.late >= GD_LATE_WARN).sort((a, b) => b.late - a.late);
   const noInv = red.filter(s => !invOf(s));
@@ -50137,9 +50207,9 @@ function AbsAlertPage({ by = "الإدارة" }) {
 // شريط الصفحة الرئيسية للإدارة: عدد من بلغوا حد الغياب ولم يُستدعَ ولي أمرهم
 function AbsAlertBanner({ onOpen }) {
   const [S, setS] = useState(null);
-  useEffect(() => { let a = true; (async () => { const [ix, ros, p] = await Promise.all([maGet(SIDX), maGet(MA_ROSTER), maGet(PT_PREP)]); if (!a || !ix) return;
+  useEffect(() => { let a = true; (async () => { const [ix, ros, p, ax] = await Promise.all([maGet(SIDX), maGet(MA_ROSTER), maGet(PT_PREP), maGet(ABSX)]); if (!a || !ix) return;
     const nh = {}; Object.values(ptObj(ros)).forEach(r => maArr(r && r.students).forEach(s => { if (s && s.id) nh[s.id] = s.nh || ""; }));
-    const R = ptVals(p); const red = Object.entries(ptObj(ix)).map(([sid, x]) => ({ sid, abs: Object.keys(ptObj(x && x.a)) })).filter(x => x.abs.length >= GD_ABS_SUMMON && nh[x.sid] !== undefined);
+    const R = ptVals(p); const red = Object.entries(ptObj(ix)).map(([sid, x]) => ({ sid, abs: Object.keys(ptObj(x && x.a)).filter(k => absxS(ax, k, sid) !== "e") })).filter(x => x.abs.length >= GD_ABS_SUMMON && nh[x.sid] !== undefined);
     const no = red.filter(x => !(nh[x.sid] && gdInviteAfter(R.filter(r => r.nh === nh[x.sid]), x.abs)));
     setS({ n: red.length, no: no.length }); })().catch(() => {}); return () => { a = false; }; }, []);
   if (!S || !S.n) return null;
