@@ -34286,7 +34286,7 @@ function LeaderBoard({ me, go }) {
   if (X.work && !X.rem && X.ixToday.classes != null && X.ixToday.classes < X.allCls && new Date().getHours() >= 9) I.push({ sev: 2, ic: "📋", t: `${maAr(X.allCls - X.ixToday.classes)} فصلاً لم يُرصد غيابها اليوم`, d: `رصد ${maAr(X.ixToday.classes)} من ${maAr(X.allCls)}`, acts: [{ l: "إحصائية الغياب", v: "stats" }] });
   if (X.notes.length) I.push({ sev: 1, ic: "📡", t: `${maAr(X.notes.length)} ملاحظة على المعلمين في الحصص اليوم`, d: `تأخر ${maAr(X.notes.filter(n => n.st === "late").length)} • غياب ${maAr(X.notes.filter(n => n.st === "absent").length)} • خروج مبكر ${maAr(X.notes.filter(n => n.st === "early").length)}`, acts: [{ l: "حصر ملاحظات الحصص", v: "pnotes" }] });
   if (X.hfxW.length) I.push({ sev: 1, ic: "📄", t: `${maAr(X.hfxW.length)} نموذج مُرسل لم يرد عليه المعلم منذ يومين`, L: X.hfxW.map(c => c.n || "—"), acts: [] });
-  if (X.visits.length) I.push({ sev: 1, ic: "🎯", t: `${maAr(X.visits.length)} زيارة صفية مجدولة اليوم`, L: X.visits.map(v => `${v.t}${v.p ? " • الحصة " + v.p : ""}`), acts: [{ l: "الزيارات الصفية", v: "cvadm" }] });
+  if (X.visits.length && !X.rem) I.push({ sev: 1, ic: "🎯", t: `${maAr(X.visits.length)} زيارة صفية مجدولة اليوم`, L: X.visits.map(v => `${v.t}${v.p ? " • الحصة " + v.p : ""}`), acts: [{ l: "الزيارات الصفية", v: "cvadm" }] });
   I.sort((a, b) => b.sev - a.sev);
   const urgent = I.filter(x => x.sev === 3).length; const score = Math.max(0, 100 - I.reduce((s, x) => s + (x.sev === 3 ? 20 : x.sev === 2 ? 8 : 2), 0));
   const first = String(me.name || "").split(" ")[0]; const h = new Date().getHours();
@@ -34354,7 +34354,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
       <span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span>
     </div>
   );
-  const pxAll = isStaff && ["principal", "deputy"].includes(me.role); const pxW = <>{view !== "circd" && <CdWatcher me={me} onOpen={() => setView("circd")} />}<PxWatcher me={me} all={pxAll} onOpen={() => setView(pxAll ? "pxadm" : "px")} /><DuSignWatcher me={me} onOpen={() => setView("duty")} />{!isStaff && <CvTeacherWatcher me={me} onOpen={() => setView("cv")} />}{pxAll && <AdmOpsWatcher navigate={p => setView(p === "periodfollow" ? "tt" : p === "duty" ? "dutyadm" : p)} />}</>;
+  const pxAll = isStaff && ["principal", "deputy"].includes(me.role); const pxW = <>{view !== "circd" && <CdWatcher me={me} onOpen={() => setView("circd")} />}{!hdRemDay(maKey(new Date())) && <PxWatcher me={me} all={pxAll} onOpen={() => setView(pxAll ? "pxadm" : "px")} />}<DuSignWatcher me={me} onOpen={() => setView("duty")} />{!isStaff && <CvTeacherWatcher me={me} onOpen={() => setView("cv")} />}{pxAll && <AdmOpsWatcher navigate={p => setView(p === "periodfollow" ? "tt" : p === "duty" ? "dutyadm" : p)} />}</>;
   const wrap = (t, node) => <div className="pt px-2 md:px-5 py-4" dir="rtl" style={{ minHeight: "100vh", background: "#f8fafc" }}><style>{MA_CSS + PT_CSS}</style><Bar t={t} />{node}{pxW}</div>;
   if (view === "attend") return wrap("📋 غياب الحصة الثانية", <MorningAttendancePage mode="teacher" />);
   if (view === "classify") return wrap("🏷️ تصنيف الطلاب", <StudentClassifyPage mode="teacher" />);
@@ -34501,8 +34501,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             <div className="pt-bn"><HdAbsTeacher me={me} compact /></div>
             <div className="pt-bn"><HdBanner me={me} onOpen={() => setView("hd")} /></div>
             <div className="pt-bn"><TtNotesBanner me={me} onOpen={() => setView("ttnotes")} /></div>
-            <div className="pt-bn"><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>
-            <div className="pt-bn"><PxHomeBanner me={me} onOpen={() => setView("px")} /></div>
+            {!hdRemDay(maKey(new Date())) && <div className="pt-bn"><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>}
+            {!hdRemDay(maKey(new Date())) && <div className="pt-bn"><PxHomeBanner me={me} onOpen={() => setView("px")} /></div>}
           </div>
           <div className="pt-sec"><h3>⏱️ دوامي وانضباطي</h3><div className="pt-tiles">
             {ptTile("score", "🏆", "بطاقتي الشاملة وترتيبي", "نسبة انضباطي في الحضور والطابور والحصص والتحضير، وتفاصيل حضوري وملاحظاتي، وترتيبي بين زملائي", "#0f1e3d", "#d4a017", () => setView("score"))}
@@ -36513,7 +36513,7 @@ function PeriodFollowPage({ by = "الإدارة", canEdit = true }) {
   const T = ed || tt;
   const cks = Object.keys(T.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
   const di = ttDayIdx(T, D);
-  const times = cfg.times.slice(0, T.P);
+  const times = ttTimesOn(maKey(D), cfg.times.slice(0, T.P), T.P);
   const work = cfg.work || ["06:30", "13:30"];
   const nowM = now.getHours() * 60 + now.getMinutes();
   const workOpen = isToday && di >= 0 && nowM >= mlToMin(work[0]) && nowM <= mlToMin(work[1]);
@@ -41468,7 +41468,11 @@ const hdRem = (cfg, dk) => ptObj(ptObj(cfg).rem)[dk] || null;
 // ذاكرة أيام الدوام عن بعد للموقع كله (تُحمَّل عند فتح الموقع) — بها يتوقف الإشراف والمناوبة في الشاشات والتقارير
 let _hdRemC = {};
 const hdRemDay = k => !!(k && _hdRemC[k]);
-async function hdRemLoad() { try { const r = await fetch(`${FIREBASE_URL}/school/${HD_CFG}/rem.json`); const v = await r.json(); _hdRemC = v && typeof v === "object" ? v : {}; } catch {} return _hdRemC; }
+let _rmtCfgC = null;
+async function hdRemLoad() { try { const [r, c] = await Promise.all([fetch(`${FIREBASE_URL}/school/${HD_CFG}/rem.json`).then(x => x.json()), fetch(`${FIREBASE_URL}/school/school-rmt/cfg.json`).then(x => x.json()).catch(() => null)]); _hdRemC = r && typeof r === "object" ? r : {}; _rmtCfgC = c && typeof c === "object" ? c : null; } catch {} return _hdRemC; }
+// ⏱ أوقات الحصص ليوم معيّن: في الدوام عن بعد تُبرمج تلقائياً من بداية اليوم ومدة الحصة عن بعد (٣٥ دقيقة افتراضياً)
+const ttRemTimes = (dk, n) => rmtTimes(ptObj(_hdRemC[dk]).s, n || 7, { ...RMT_DEF, ...ptObj(_rmtCfgC) });
+const ttTimesOn = (dk, times, n) => hdRemDay(dk) ? ttRemTimes(dk, n || maArr(times).length || 7) : times;
 const HD_REM_S = "07:30";
 // ═══════════════════════════════════════════════════════════════
 // 🏠 التحضير بالحصص — الدراسة عن بعد (يعمل فقط في الأيام المحددة «دوام عن بعد» في school-hd-cfg/rem)
@@ -41479,10 +41483,10 @@ const HD_REM_S = "07:30";
 //   التحضير الصباحي الموجود مسبقاً لا يُستبدل إلا باختيار الإدارة، ويُحفظ نسخة منه داخل السجل (prevRec)
 // ═══════════════════════════════════════════════════════════════
 const RMT = "school-rmt";
-const RMT_DEF = { len: 40, gap: 0 };
+const RMT_DEF = { len: 35, gap: 0 };
 const rmtHM = m => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 const rmtF = t => { const m = hdMin(t); if (m == null) return ""; const h = Math.floor(m / 60); return `${maAr(((h + 11) % 12) + 1)}:${maAr(String(m % 60).padStart(2, "0"))}`; };
-const rmtTimes = (start, n, c) => { const S = hdMin(start || HD_REM_S) ?? 450; const L = Math.max(10, +ptObj(c).len || 40), G = Math.max(0, +ptObj(c).gap || 0); return Array.from({ length: n }, (_, i) => [rmtHM(S + i * (L + G)), rmtHM(S + i * (L + G) + L)]); };
+const rmtTimes = (start, n, c) => { const S = hdMin(start || HD_REM_S) ?? 450; const L = Math.max(10, +ptObj(c).len || 35), G = Math.max(0, +ptObj(c).gap || 0); return Array.from({ length: n }, (_, i) => [rmtHM(S + i * (L + G)), rmtHM(S + i * (L + G) + L)]); };
 const rmtNP = T => { let n = T && +T.P || 0; if (T && T.C) Object.values(T.C).forEach(d => maArr(d).forEach(x => { n = Math.max(n, maArr(x).length); })); return n || 7; };
 function rmtPlan(T, dk) { const o = {}; if (!T || !T.C) return o; const di = ttDayIdx(T, maDate(dk)); if (di < 0) return o;
   Object.keys(T.C).forEach(ck => maArr(T.C[ck][di]).forEach((c, p) => { if (!c || !(c[0] >= 0)) return; const ti = c[1] >= 0 ? c[1] : -1; o[`${p}_${ck}`] = { p, ck, di, ti, si: c[0], tn: ti >= 0 ? ttClean(T.T[ti]) : "", s: (T.SA && T.SA[c[0]]) || (T.S && T.S[c[0]]) || "" }; })); return o; }
@@ -41585,7 +41589,7 @@ function RmtAdminPage({ by = "الإدارة" }) {
   useEffect(() => { if (base && dk && dk >= today) fbPatch({ [`${RMT}/plan/${dk}`]: rmtPlan(base.T, dk) }); }, [base, dk]);
   if (!hc || !base) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
   const remCard = <HdRemCard cfg={hc} setRem={async (k, on, s) => { const r = await hdRemSet(k, on, s); toast(r.ok ? `✅ ${on ? "🏠 دوام عن بعد" : "أُلغي الدوام عن بعد"}: ${maDay(maDate(k))} ${hfxHijTxt(k)}` : "⚠️ تعذّر الحفظ"); if (on) setDk(k); await loadBase(); }} />;
-  const saveLen = async () => { const n = { len: Math.max(10, Math.min(90, +lenIn.len || 40)), gap: Math.max(0, Math.min(30, +lenIn.gap || 0)) }; const ok = await maPut(`${RMT}/cfg`, n); setBase(b => ({ ...b, cfg: n })); toast(ok ? "✅ حُفظت مدة الحصة — تتغير أوقات الحصص عند المعلمين فوراً" : "⚠️ تعذّر الحفظ"); };
+  const saveLen = async () => { const n = { len: Math.max(10, Math.min(90, +lenIn.len || 40)), gap: Math.max(0, Math.min(30, +lenIn.gap || 0)) }; const ok = await maPut(`${RMT}/cfg`, n); _rmtCfgC = n; setBase(b => ({ ...b, cfg: n })); toast(ok ? "✅ حُفظت مدة الحصة — تتغير أوقات الحصص عند المعلمين فوراً" : "⚠️ تعذّر الحفظ"); };
   const { T, cfg, ros } = base; const P = rmtNP(T); const R = dk ? hdRem(hc, dk) : null; const times = rmtTimes(R && R.s, P, cfg);
   const lenBox = <div className="rmt-card"><b>⏱️ مدة الحصة عن بعد</b>
     <div className="flex gap-2 flex-wrap items-center">{[30, 35, 40, 45].map(n => <button key={n} className={`rmt-b ${+lenIn.len === n ? "pri" : ""}`} onClick={() => setLenIn(x => ({ ...x, len: String(n) }))}>{maAr(n)} د</button>)}
@@ -43816,7 +43820,7 @@ async function ttRangeReport({ T, times, f, t, by, subName, secs, fs = 1.15 }) {
 }
 function TtNowBoard({ navigate, big = false }) {
   const [S, setS] = useState(null); const [now, setNow] = useState(new Date()); const [sel, setSel] = useState(null);
-  const load = async () => { const t = maKey(new Date()); const [a, c, l, ab, cvp] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(`${TT_ABS}/${t}`), maGet(CV_PLAN)]); const T = ttFresh(a); const tm = ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : (T.times || TT_PDF.times)); ttFixCfg(c); setS({ T, times: tm.slice(0, T.P), log: ptObj(l), cv: cvDayMap(cvp, T, t), absR: ttAbsRng(ptObj(ab)), abs: Object.values(ptObj(ab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti) }); };
+  const load = async () => { const t = maKey(new Date()); const [a, c, l, ab, cvp] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`), maGet(`${TT_ABS}/${t}`), maGet(CV_PLAN)]); const T = ttFresh(a); const tm = ttFixTimes(c && Array.isArray(c.times) && c.times.length ? c.times : (T.times || TT_PDF.times)); ttFixCfg(c); setS({ T, times: ttTimesOn(t, tm.slice(0, T.P), T.P), log: ptObj(l), cv: hdRemDay(t) ? {} : cvDayMap(cvp, T, t), absR: ttAbsRng(ptObj(ab)), abs: hdRemDay(t) ? [] : Object.values(ptObj(ab)).filter(x => x && x.ti != null).sort((x, y) => (x.o || 0) - (y.o || 0)).map(x => +x.ti) }); };
   useEffect(() => { load(); const a = setInterval(() => setNow(new Date()), 15000); const b = setInterval(load, 60000); return () => { clearInterval(a); clearInterval(b); }; }, []);
   // الرجوع تلقائياً للحصة الحالية بعد ٣ دقائق من التصفح
   useEffect(() => { if (sel == null) return; const t = setTimeout(() => setSel(null), 180000); return () => clearTimeout(t); }, [sel]);
@@ -43891,7 +43895,7 @@ function TtNowBoard({ navigate, big = false }) {
 // جدول الطالب في بوابة ولي الأمر/الطالب
 function GuardianTT({ me }) {
   const [S, setS] = useState(null);
-  useEffect(() => { (async () => { const t = maKey(new Date()); const [a, c, l] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`)]); setS({ T: ttFresh(a), times: ttFixTimes(c && Array.isArray(c.times) ? c.times : TT_PDF.times), log: ptObj(l) }); })(); }, []);
+  useEffect(() => { (async () => { const t = maKey(new Date()); const [a, c, l] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${t}`)]); setS({ T: ttFresh(a), times: ttTimesOn(t, ttFixTimes(c && Array.isArray(c.times) ? c.times : TT_PDF.times)), log: ptObj(l) }); })(); }, []);
   if (!S) return <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8" }}>⏳</div>;
   const { T, log } = S; const times = S.times.slice(0, T.P); const G = T.C[me.ck];
   if (!G) return <div className="pt-item" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لا يوجد جدول لفصل {maClassName(me.ck)}</div>;
@@ -44324,10 +44328,10 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const T = tt; const D = maDate(dateK); const isToday = dateK === maKey(new Date());
   const cks = Object.keys(T.C).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
   const di = ttDayIdx(T, D);
-  const times = (times0 || TT_PDF.times).slice(0, T.P);
+  const remD = hdRemDay(dateK); const times = remD ? ttRemTimes(dateK, T.P) : (times0 || TT_PDF.times).slice(0, T.P);
   const nowM = now.getHours() * 60 + now.getMinutes();
   const curP = isToday ? times.findIndex(([a, b]) => nowM >= mlToMin(a) && nowM < mlToMin(b)) : -1;
-  const absList = Object.values(absO).filter(x => x && x.ti != null).sort((a, b) => (a.o || 0) - (b.o || 0)).map(x => +x.ti);
+  const absList = remD ? [] : Object.values(absO).filter(x => x && x.ti != null).sort((a, b) => (a.o || 0) - (b.o || 0)).map(x => +x.ti);
   const absRng = ttAbsRng(absO);
   const plan = sttPlan(T, di, absList, log, absRng);
   const subName = si => si >= 0 ? (T.SA && T.SA[si]) || T.S[si] : "—";
@@ -44510,7 +44514,8 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
           </div>; })()}
         {ro && meIdx < 0 && <div className="ma-card p-3" style={{ fontWeight: 800, color: "#b45309", background: "#fffbeb" }}>🔎 لم أجد اسمك في الجدول تلقائياً — اختر اسمك من قائمة المعلمين بالأسفل</div>}
 
-        {!ro && di >= 0 && <div className="ma-card p-3 grid gap-2" style={{ border: absList.length ? "2px solid #fecaca" : undefined }}>
+        {remD && di >= 0 && <div className="ma-card p-3" style={{ border: "2px solid #c7d2fe", background: "#eef2ff", fontWeight: 800, color: "#3730a3", fontSize: 13.5 }}>🏠 <b>دوام عن بعد</b> — أوقات الحصص مبرمجة تلقائياً ({maAr((ptObj(_rmtCfgC).len) || RMT_DEF.len)} دقيقة تبدأ {mlFmtT(times[0] ? times[0][0] : "")}) • لا انتظار ولا احتياط ولا إشراف ولا مناوبة ولا زيارات اليوم.</div>}
+        {!ro && di >= 0 && !remD && <div className="ma-card p-3 grid gap-2" style={{ border: absList.length ? "2px solid #fecaca" : undefined }}>
           <div className="flex items-center gap-2 flex-wrap">
             <b style={{ fontSize: 15 }}>🚫 المعلمون الغائبون {isToday ? "اليوم" : ""}</b>
             {absList.map((t, i) => { const ax = absO["t" + t]; const lb = ttAbsLbl(ax, times); return <span key={t} className="stt-abs"><em style={{ background: TT_LVC[Math.min(i + 1, 3)].c }}>{maAr(i + 1)}</em>{ttClean(T.T[t])}{ax && ax.src === "asm" ? <small style={{ fontSize: 10.5, opacity: .75, marginInlineStart: 4 }}>🎺</small> : null}{lb && <small style={{ fontSize: 11, fontWeight: 800, color: "#7c2d12", marginInlineStart: 4 }}>({lb})</small>}{canRec && isToday && !(ax && ax.toP != null && ax.toP < 99) && <button onClick={() => retAbs(t)} title="عاد المعلم" style={{ width: "auto", padding: "0 6px", fontSize: 11 }}>↩️ عاد</button>}{canRec && <button onClick={() => delAbs(t)} title="إلغاء">×</button>}</span>; })}
@@ -44534,7 +44539,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
           </>}
         </div>}
 
-        <div className="stt-seg">{[["cls", "🚪 الفصول"], ["tch", "👤 المعلمون"], ["res", "🛡️ الاحتياط"], ...(ro ? [] : [["log", "📒 سجل المتابعة"]])].map(([k, l]) => <button key={k} className={view === k ? "on" : ""} onClick={() => { setView(k); setSel(k === "tch" && ro && meIdx >= 0 ? String(meIdx) : ""); }}>{l}</button>)}</div>
+        <div className="stt-seg">{[["cls", "🚪 الفصول"], ["tch", "👤 المعلمون"], ...(remD ? [] : [["res", "🛡️ الاحتياط"]]), ...(ro ? [] : [["log", "📒 سجل المتابعة"]])].map(([k, l]) => <button key={k} className={view === k ? "on" : ""} onClick={() => { setView(k); setSel(k === "tch" && ro && meIdx >= 0 ? String(meIdx) : ""); }}>{l}</button>)}</div>
 
         {view !== "res" && view !== "log" && <div className="grid gap-2">
           {view === "cls" ? <div className="stt-sc"><button className={`stt-chip ${sel === "" ? "on" : ""}`} onClick={() => setSel("")}>الكل</button>{cks.map(ck => <button key={ck} className={`stt-chip ${sel === ck ? "on" : ""}`} style={{ "--cc": MA_LV[+ck[0] - 1]?.c, color: sel === ck ? "#fff" : MA_LV[+ck[0] - 1]?.c }} onClick={() => setSel(ck)}>{maClassName(ck)}</button>)}</div>
@@ -49011,7 +49016,7 @@ function DailyConductPage({ by = "الإدارة", me = null, admin = false, sta
   useEffect(() => { (async () => {
     const [m, r, tc] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), maGet(TT_CFG)]);
     setClasses(maClasses(m && Array.isArray(m.counts) ? m.counts.map(n => +n || 0) : [6, 4, 4])); setRos(ptObj(r));
-    const tm = tc && Array.isArray(tc.times) && tc.times.length ? tc.times : TT_DEF_TIMES; setTimes(tm); setPer(p => p || dcNowPer(tm));
+    const tm = ttTimesOn(maKey(new Date()), tc && Array.isArray(tc.times) && tc.times.length ? tc.times : TT_DEF_TIMES); setTimes(tm); setPer(p => p || dcNowPer(tm));
   })(); const f = async () => setPend(await dcFlush()); f(); const t = setInterval(f, 20000); window.addEventListener("online", f); return () => { clearInterval(t); window.removeEventListener("online", f); }; }, []);
   const loadDay = async () => { const d = ptObj(await maGet(`${DC_NODE}/${dateK}`)); const qq = await dcQGet(); qq.forEach(x => { if (x.v && x.v.dk === dateK && x.v.id && x.path.startsWith(DC_NODE + "/")) d[x.v.id] = x.v; }); setDay(d); };
   useEffect(() => { loadDay(); }, [dateK]);
