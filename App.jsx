@@ -34437,6 +34437,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "nbadm" && ["principal", "deputy"].includes(me.role)) return wrap("📚 مراجع نافس – متابعة الإدارة", <React.Suspense fallback={NB_WAIT}><NbPinSet by={me.name} /><NafsBooksAdmin by={me.name} api={trApi()} tab0="alerts" /></React.Suspense>);
   if (view === "nbooks") return wrap("📚 مراجع نافس – موادي وطلابي", <NbPinGate><React.Suspense fallback={NB_WAIT}><NafsBooksTeacher by={me.name} api={trApi()} /></React.Suspense></NbPinGate>);
   if (view === "hd") return wrap("📈 انضباطي اليومي", <HdTeacherView me={me} />);
+  if (view === "trep") return wrap("📑 التقارير الدورية — الأداء والإنجاز", isStaff && ["principal", "deputy"].includes(me.role) ? <TrepAdmin me={me} /> : <TrepMine me={me} />);
   if (view === "asmrank" && ["principal", "deputy"].includes(me.role)) return wrap("🎺 مفاضلة الطابور", <AsmRank by={me.name} />);
   if (view === "score") return wrap(["principal", "deputy"].includes(me.role) ? "🏆 ترتيب المعلمين في الانضباط الشامل" : "🏆 بطاقتي الشاملة وترتيبي", <TchScoreView me={me} admin={["principal", "deputy"].includes(me.role)} />);
   if (view === "hdrep") return wrap("📑 تقريري للفترة", <HdRepTeacherPage me={me} />);
@@ -34499,6 +34500,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             </div>}
             <div className="pt-tiles">
               {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><LeaderStrip onOpen={() => setView("lead")} /></div>}
+              {["principal", "deputy"].includes(me.role) && ptTile("trep", "📑", "التقارير الدورية للمعلمين", "تقرير أداء وإنجاز شهري لكل معلم من بيانات الموقع ومنصة مدرستي — يُعتمد ويُنشر لحساب المعلم PDF", "#0f3b5f", "#1e3a8a", () => setView("trep"))}
               {["principal", "deputy"].includes(me.role) && ptTile("ipadm", "🎯", "خطة التحسين المدرسي", "الاستمارة (1) بناء الخطة والاستمارة (2) الأسبوعية — من التقويم الذاتي ونافس وواقع المدرسة، بالذكاء الاصطناعي وبنفس شكل الاستمارتين", "#1f6b34", "#54A021", () => setView("ipadm"))}
               <div style={{ gridColumn: "1/-1" }}><RmtTeacherCard me={me} quiet /></div>
               <div style={{ gridColumn: "1/-1" }}><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
@@ -34562,6 +34564,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           <div className="pt-sec"><h3>⏱️ دوامي وانضباطي</h3><div className="pt-tiles">
             {ptTile("score", "🏆", "بطاقتي الشاملة وترتيبي", "نسبة انضباطي في الحضور والطابور والحصص والتحضير، وتفاصيل حضوري وملاحظاتي، وترتيبي بين زملائي", "#0f1e3d", "#d4a017", () => setView("score"))}
             {ptTile("hd", "📈", "انضباطي اليومي", "نسبة انضباطك ودقائق التأخر والانصراف المبكر والاستئذان من «حضوري» مع الطابور وملاحظات الحصص", "#0f1e3d", "#0f766e", () => setView("hd"))}
+            {ptTile("trep", "📑", "تقاريري الدورية (الأداء والإنجاز)", "تقرير شهري معتمد من مدير المدرسة: الانضباط والحصص والطابور والتحضير ومنصة مدرستي والزيارات — مع تنزيل PDF", "#0f3b5f", "#c9a227", () => setView("trep"))}
             {ptTile("hdrep", "📑", "تقريري للفترة", "تقرير حضورك للفترة التي اعتمدتها الإدارة: التأخر والغياب والانصراف المبكر مع الطباعة", "#78350f", "#d4a017", () => setView("hdrep"))}
             {ptTile("asm", "🎺", "حضوري للطابور", "حضورك للطابور الصباحي خلال الأسبوع وعدد مرات عدم الحضور", "#6d28d9", "#be185d", () => setView("asm"))}
             {ptTile("prep", "📘", "تحضيري", "نسبة إنجازي في التحضير الأسبوعي، وأيامي غير المحضّرة، وملاحظات الإدارة", "#123b6b", "#0f766e", () => setView("prep"))}
@@ -41917,7 +41920,7 @@ const hdFindAsm = (cfg, n) => asmTeachers(cfg).find(t => cvNorm(t.n) === cvNorm(
 const SCW = { hd: 30, tt: 30, asm: 20, pr: 20 };
 const scRange = (k, acfg) => { const t = maWorkDay(); const d0 = maDate(t); if (k === "w") return [asmWeek(t)[0], t]; if (k === "m") return [maKey(new Date(d0.getFullYear(), d0.getMonth(), 1)), t]; return [acfg && acfg.term ? acfg.term : `${d0.getMonth() >= 7 ? d0.getFullYear() : d0.getFullYear() - 1}-08-01`, t]; };
 async function tchScores(k) {
-  const acfg = await maGet(ASM_CFG); const [f, t] = scRange(k, acfg);
+  const acfg = await maGet(ASM_CFG); const [f, t] = Array.isArray(k) ? k : scRange(k, acfg);
   const [tt, tc, LOG, ABS, ASM, hdA, hdN, hdC, PR] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), fbRange(TT_LOG, f, t), fbRange(TT_ABS, f, t), fbRange(ASM_NODE, f, t), maGet(HD_NODE), maGet(HD_T), maGet(HD_CFG), maGet(PR_NODE)]);
   const T = ttFresh(tt); const times = (tc && Array.isArray(tc.times) ? ttFixTimes(tc.times) : TT_PDF.times).slice(0, T.P);
   const cks = Object.keys(T.C); const auto = n => /^غياب المعلم/.test(String(n || "")); const POS = /^(⭐|👍|💻|🎯)/;
@@ -41969,6 +41972,314 @@ function AsmRank({ by = "الإدارة" }) {
       <tbody>{R.map(x => { const L = scLvl(x.a.pct); return <tr key={x.r.ti}><td><b>{x.rank <= 3 ? medal[x.rank - 1] : maAr(x.rank)}</b></td><td style={{ textAlign: "right", fontWeight: 800 }}>{x.r.n}</td><td>{maAr(x.a.base)}</td><td>{maAr(x.a.p)}</td><td style={{ color: x.late ? "#c2410c" : "#94a3b8" }}>{maAr(x.late)}</td><td>{maAr(x.a.lm)}</td><td style={{ color: x.miss ? "#b91c1c" : "#94a3b8" }}>{maAr(x.miss)}</td><td>{maAr(x.a.x)}</td><td><span className="sc-badge" style={{ background: L[2], color: L[1] }}>{maAr(x.a.pct)}٪</span></td></tr>; })}</tbody></table></div>
     <small style={{ color: "#64748b", fontWeight: 700 }}>النسبة = أيام حضور الطابور في وقته ÷ أيام الحصر بعد استبعاد الاستئذان والغياب. التأخر عن الطابور وعدم حضوره يُضافان أيضاً كتقصير في نسبة الدوام اليومية.</small>
   </div>;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// 📑 التقرير الدوري للمعلم — الأداء والإنجاز والمتابعة (شهري أو أقل) + بيانات منصة مدرستي (PDF نقار)
+//   school-mdr/{date}         = {date, at, by, cols[], rows[{raw, n, g, s, v[]}]}   (تقرير البيانات التراكمية)
+//   school-trep/idx/{pk}      = {f, t, at, by, n, pub}
+//   school-trep/r/{pk}/{key}  = لقطة تقرير المعلم (key = hk أو n+asmK(name))
+// ═══════════════════════════════════════════════════════════════════════
+const MDR_NODE = "school-mdr", TREP = "school-trep";
+const MDR_COLS = ["الطلاب", "الإثراءات", "الأسئلة", "المسارات المنشأة", "المسارات المنشورة", "المسارات المعتمدة", "الفصول", "الدروس المتزامنة", "الدروس غير المتزامنة", "إثراءات الدروس الافتراضية", "مواضيع النقاش", "الواجبات", "الواجبات المنشورة", "واجبات الحصص", "الاختبارات", "الاختبارات المنشورة", "الاختبارات القصيرة", "التقييمات", "الحضور", "الملفات"];
+const MDR_SUBJ = ["اللغة العربية", "اللغة الإنجليزية", "الرياضيات", "العلوم", "الدراسات الاجتماعية", "القرآن الكريم والدراسات الإسلامية", "المهارات الرقمية", "التربية الفنية", "التربية البدنية والدفاع عن النفس", "المهارات الحياتية والأسرية", "التفكير الناقد", "الدراسات الإسلامية", "القرآن الكريم"];
+const MDR_KEY = ["الدروس المتزامنة", "الدروس غير المتزامنة", "الواجبات", "واجبات الحصص", "الإثراءات", "الأسئلة"]; // المؤشرات الأبرز في التقرير
+const mdrTxt = s => String(s || "").normalize("NFKC").replace(/\u0000/g, "").replace(/[ً-ٰٟ]/g, "").replace(/ی/g, "ي").replace(/ٮ/g, "ب").replace(/ە/g, "ه").replace(/ک/g, "ك");
+const mdrSk = s => mdrTxt(s).replace(/[إأآٱا]/g, "ا").replace(/[بتثنيىئ]/g, "ب").replace(/[جحخ]/g, "ح").replace(/[دذ]/g, "د").replace(/[رز]/g, "ر").replace(/[سش]/g, "س").replace(/[صض]/g, "ص").replace(/[طظ]/g, "ط").replace(/[عغ]/g, "ع").replace(/[فق]/g, "ف").replace(/[هةۀ]/g, "ه").replace(/ؤ/g, "و").replace(/[^ء-ي]/g, "");
+const mdrSim = (a, b) => { a = mdrSk(a); b = mdrSk(b); if (!a || !b) return 0; if (a === b) return 1; const c = {}; for (const ch of a) c[ch] = (c[ch] || 0) + 1; let m = 0; for (const ch of b) if (c[ch] > 0) { c[ch]--; m++; } const bag = 2 * m / (a.length + b.length);
+  let lcs = 0; const P = Array(b.length + 1).fill(0); for (let i = 1; i <= a.length; i++) { let prev = 0; for (let j = 1; j <= b.length; j++) { const tmp = P[j]; P[j] = a[i - 1] === b[j - 1] ? prev + 1 : Math.max(P[j], P[j - 1]); prev = tmp; } } lcs = P[b.length]; return (bag + 2 * lcs / (a.length + b.length)) / 2; };
+const mdrBest = (s, L, min = .7) => { let b = null, bs = 0; L.forEach(x => { const v = mdrSim(s, x); if (v > bs) { bs = v; b = x; } }); return bs >= min ? b : null; };
+const mdrGrade = g => { const k = mdrSk(g); return /اول/.test(k) ? "الأول المتوسط" : /^الاب|^الابا|ابال/.test(k) && !/الال/.test(k.slice(0, 4)) ? "الثاني المتوسط" : /الال|بالب/.test(k) ? "الثالث المتوسط" : mdrTxt(g); };
+const mdrMul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+const mdrPt = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+const mdrClu = (v, tol) => { const s = [...v].sort((a, b) => a - b); const o = []; s.forEach(x => { if (o.length && x - o[o.length - 1][o[o.length - 1].length - 1] <= tol) o[o.length - 1].push(x); else o.push([x]); }); return o.map(g => g.reduce((a, b) => a + b, 0) / g.length); };
+const mdrJoin = (G, rot) => { if (!G.length) return ""; if (rot) return mdrTxt([...G].sort((a, b) => a.y - b.y).map(g => g.s).join(""));
+  const lines = []; [...G].sort((a, b) => b.y - a.y).forEach(g => { const l = lines.find(l => Math.abs(l.y - g.y) < 4); if (l) l.g.push(g); else lines.push({ y: g.y, g: [g] }); });
+  return lines.map(l => mdrTxt(l.g.sort((a, b) => b.x - a.x).map(g => g.s).join(""))).join(" ").replace(/\s+/g, " ").trim(); };
+async function mdrPage(L, pg) {
+  const tc = await pg.getTextContent(); const ops = await pg.getOperatorList(); const O = L.OPS;
+  let M = [1, 0, 0, 1, 0, 0]; const st = []; const H = [], V = [];
+  ops.fnArray.forEach((f, k) => { const a = ops.argsArray[k];
+    if (f === O.save) st.push(M); else if (f === O.restore) M = st.pop() || M; else if (f === O.transform) M = mdrMul(M, a);
+    else if (f === O.constructPath) { const [os, c] = a; let j = 0; os.forEach(op => { if (op === O.rectangle) { const [x, y, w, h] = c.slice(j, j + 4); j += 4; const P = [mdrPt(M, x, y), mdrPt(M, x + w, y + h)]; const x0 = Math.min(P[0][0], P[1][0]), x1 = Math.max(P[0][0], P[1][0]), y0 = Math.min(P[0][1], P[1][1]), y1 = Math.max(P[0][1], P[1][1]);
+          if (y1 - y0 <= 2 && x1 - x0 > 6) H.push({ y: (y0 + y1) / 2, x0, x1 }); else if (x1 - x0 <= 2 && y1 - y0 > 6) V.push({ x: (x0 + x1) / 2, y0, y1 }); } else if (op === O.moveTo || op === O.lineTo) j += 2; else if (op === O.curveTo) j += 6; else if (op === O.curveTo2 || op === O.curveTo3) j += 4; }); } });
+  const T = tc.items.filter(i => i.str && i.str.replace(/\u0000/g, "").trim()).map(i => { const t = i.transform; const rot = Math.abs(t[1]) > .1; const w = i.width || 0; return { s: i.str, rot, x: rot ? t[4] : t[4] + w / 2, y: rot ? t[5] : t[5] + Math.abs(t[3]) * .35 }; });
+  return { T, H, V };
+}
+async function mdrParse(L, data, onP) {
+  const pdf = await L.getDocument({ data }).promise; const rows = []; let cols = null, date = "", last = null;
+  for (let pi = 1; pi <= pdf.numPages; pi++) { onP && onP(pi, pdf.numPages);
+    const pg = await pdf.getPage(pi); const { T, H, V } = await mdrPage(L, pg);
+    if (!date) { const d = T.find(t => /\d{2}-\d{2}-\d{4}/.test(t.s)); if (d) { const m = d.s.match(/(\d{2})-(\d{2})-(\d{4})/); date = `${m[3]}-${m[2]}-${m[1]}`; } }
+    const xs = mdrClu(V.map(v => v.x), 2.5); if (xs.length < 6) continue;
+    const cells = []; for (let i = xs.length - 1; i > 0; i--) cells.push([xs[i - 1], xs[i]]);
+    const ci = x => cells.findIndex(([a, b]) => x >= a - .5 && x <= b + .5);
+    const hy = (T.find(t => t.s.trim() === "#") || {}).y;
+    if (!cols) { const rot = T.filter(t => t.rot); cols = cells.slice(4).map(([a, b], i) => { const l = mdrJoin(rot.filter(t => t.x >= a && t.x <= b), true); return mdrBest(l, MDR_COLS, .72) || (l ? l : `عمود ${i + 1}`); }); }
+    const bodyTop = hy != null ? hy - 6 : 1e9;
+    const Hs = mdrClu(H.filter(h => h.y < bodyTop).map(h => h.y), 1.5).sort((a, b) => b - a);
+    const span = (y, [a, b]) => H.some(h => Math.abs(h.y - y) < 1.6 && h.x0 <= a + 2 && h.x1 >= b - 2);
+    const rB = Hs.filter(y => span(y, cells[3])); const tB = Hs.filter(y => span(y, cells[1]));
+    const bandT = y => { let top = null, bot = null; for (const b of tB) { if (b > y) top = b; else { bot = b; break; } } return [bot, top]; };
+    for (let i = 0; i + 1 < rB.length; i++) { const top = rB[i], bot = rB[i + 1]; if (top - bot < 5) continue; const inR = t => t.y < top && t.y > bot && !t.rot;
+      const g = mdrJoin(T.filter(t => inR(t) && ci(t.x) === 2)); const s = mdrJoin(T.filter(t => inR(t) && ci(t.x) === 3)); if (!g && !s) continue;
+      if (mdrSim(s, "مجموع بيانات التقرير") > .7 || /محموع|مجموع/.test(s)) continue;
+      const v = cols.map((_, k) => { const it = T.filter(t => inR(t) && ci(t.x) === 4 + k && /^\d+$/.test(t.s.trim())); return it.length ? +it.sort((a, b) => a.x - b.x).map(x => x.s.trim()).join("") : null; });
+      const [tb, tt] = bandT((top + bot) / 2); let raw = "";
+      if (tb != null && tt != null) raw = mdrJoin(T.filter(t => !t.rot && t.y < tt && t.y > tb && ci(t.x) === 1));
+      if (!raw && last) raw = last; last = raw || last;
+      rows.push({ raw, g: mdrGrade(g), s: mdrBest(s, MDR_SUBJ, .6) || mdrTxt(s), v }); }
+  }
+  return { date, cols: cols || [], rows };
+}
+async function mdrRead(file, onP) { const L = await nqPdfLib(); return mdrParse(L, new Uint8Array(await file.arrayBuffer()), onP); }
+// مطابقة المعلم: الاسم (النص في ملف مدرستي تسقط منه بعض الحروف) + ما يدرّسه فعلاً في الجدول (المادة والصف)
+const mdrSkW = s => mdrTxt(s).replace(/[إأآٱا]/g, "ا").replace(/[بتثنيىئںٯ]/g, "ب").replace(/[جحخ]/g, "ح").replace(/[دذ]/g, "د").replace(/[رز]/g, "ر").replace(/[سش]/g, "س").replace(/[صض]/g, "ص").replace(/[طظ]/g, "ط").replace(/[عغ]/g, "ع").replace(/[فق]/g, "ف").replace(/[هةۀ]/g, "ه").replace(/ؤ/g, "و").replace(/[^\u0621-\u064A ]/g, "");
+const mdrLcs = (a, b) => { const P = Array(b.length + 1).fill(0); for (let i = 1; i <= a.length; i++) { let prev = 0; for (let j = 1; j <= b.length; j++) { const t = P[j]; P[j] = a[i - 1] === b[j - 1] ? prev + 1 : Math.max(P[j], P[j - 1]); prev = t; } } return P[b.length]; };
+// كل كلمة من الاسم تُبحث في نافذة متصلة (يُسمح بحرف ساقط) بعد موضع الكلمة السابقة؛ الاسم الأول والأخير أثقل وزناً
+const mdrNm = (raw, name) => { const R = mdrSkW(raw).replace(/ /g, ""); const toks = mdrSkW(String(name).replace(/\(.*?\)/g, "")).split(" ").filter(w => w.length >= 2 && w !== "بن").map(w => w.replace(/^ال(?=..)/, "")); if (!toks.length || !R) return 0;
+  const W = i => i === 0 || i === toks.length - 1 ? 1.3 : 1; let pos = 0, s = 0;
+  toks.forEach((w, ti) => { let best = 0, bi = -1; for (let i = pos; i < R.length; i++) { const win = R.slice(i, i + w.length); const v = mdrLcs(w, win) / w.length - (win[0] === w[0] ? 0 : .15); if (v > best + 1e-9) { best = v; bi = i; } } s += Math.max(0, best) * W(ti); if (bi >= 0) pos = bi + Math.max(1, w.length - 1); });
+  return s / toks.reduce((acc, _, i) => acc + W(i), 0); };
+const MDR_SK = [[/لغتي|عرب|اللعهالعر/, "ar"], [/انجليز|إنجليز|احلر|انحل/, "en"], [/رياض|راصاب/, "ma"], [/علوم/, "sc"], [/اجتماع|احماع/, "so"], [/اسلام|قرآن|قران|الرںال/, "is"], [/رقمي|رمه/, "dg"], [/فني|الرهاله/, "fa"], [/بدني|بده|الداع/, "pe"], [/حيات|حاه|أسري|اسره/, "lf"], [/ناقد|الاد|تفكير|الكر/, "ct"]];
+const mdrGN = g => /الأول/.test(g) ? 1 : /الثاني/.test(g) ? 2 : /الثالث/.test(g) ? 3 : 0;
+const mdrSubK = s => { const x = MDR_SK.find(([r]) => r.test(String(s || ""))); return x ? x[1] : mdrSk(s); };
+// cands: [{n, full, it:[{g, s}]}] — blocks: [{raw, it:[{g, s}]}]
+function mdrAutoMatch(blocks, cands) {
+  const P = []; blocks.forEach((b, bi) => cands.forEach((c, ci) => { const nm = Math.max(mdrNm(b.raw, c.n), c.full ? mdrNm(b.raw, c.full) : 0);
+    const ov = b.it.length && c.it.length ? b.it.filter(x => c.it.some(y => (!mdrGN(x.g) || y.g === mdrGN(x.g)) && mdrSubK(y.s) === mdrSubK(x.s))).length / b.it.length : 0;
+    P.push({ bi, ci, sc: nm * .7 + ov * .3, nm }); }));
+  P.sort((a, b) => b.sc - a.sc); const uB = {}, uC = {}, out = {}; P.forEach(p => { if (p.sc < .55 || p.nm < .6 || uB[p.bi] || uC[p.ci]) return; uB[p.bi] = uC[p.ci] = 1; out[blocks[p.bi].raw] = cands[p.ci].n; }); return out;
+}
+// متجه أرقام يحافظ على الأصفار وترتيب الأعمدة (maArr يُسقط الأصفار)
+const mdrVec = (v, n) => { const o = Array(n).fill(null); if (Array.isArray(v)) v.forEach((x, i) => { if (i < n) o[i] = x; }); else Object.entries(ptObj(v)).forEach(([i, x]) => { if (+i < n) o[+i] = x; }); return o; };
+const mdrSum = (rows, cols) => { const o = {}; cols.forEach((c, k) => { const vs = rows.map(r => r.v[k]).filter(x => x != null); o[c] = vs.length ? vs.reduce((a, b) => a + b, 0) : null; }); return o; };
+// ── أدوات التقرير ──
+const trPk = (f, t) => `${f}_${t}`;
+const trKey = (hk, n) => hk || ("n" + asmK(n));
+const trLv = v => scLvl(v);
+const trHij = k => { try { return maHijri(maDate(k)); } catch { return k; } };
+async function trBuild(f, t, onP) {
+  onP && onP("⏳ حساب الانضباط والحصص والطابور وتحضير الدروس…");
+  const S = await tchScores([f, t]);
+  onP && onP("⏳ قراءة الزيارات والتعاميم والإشراف ومنصة مدرستي…");
+  const [cv, px, cr, crs, hfx, du, mdrAll, hdN, tt, lic] = await Promise.all([cvLoad().catch(() => null), maGet(PX_NODE), maGet(CR_NODE), maGet(CR_SIG), maGet(HFX_NODE), fbRange(DU_AT, f, t), maGet(MDR_NODE), maGet(HD_T), maGet(TT_NODE), maGet(LIC_NODE)].map(p => p.catch ? p.catch(() => null) : p));
+  const T = ttFresh(tt); const HN = ptObj(hdN);
+  // مدرستي: آخر رفع حتى نهاية الفترة، ورفعٌ قبل بدايتها للمقارنة
+  const MD = Object.values(ptObj(mdrAll)).filter(x => x && x.date && Array.isArray(x.rows)).map(x => ({ ...x, cols: maArr(x.cols), rows: (Array.isArray(x.rows) ? x.rows : Object.values(ptObj(x.rows))).filter(Boolean).map(r => ({ ...r, v: mdrVec(r.v, maArr(x.cols).length).map(z => z == null || z < 0 ? null : z) })) })).sort((a, b) => a.date.localeCompare(b.date));
+  const tMax = (() => { const x = maDate(t); x.setDate(x.getDate() + 10); return maKey(x); })(); const mCur = [...MD].reverse().find(x => x.date <= tMax) || null; const mPrev = mCur ? [...MD].reverse().find(x => x.date < mCur.date && x.date <= f) || null : null;
+  const mdrOf = (M, n) => M ? M.rows.filter(r => r.n && cvNorm(r.n) === cvNorm(n)) : [];
+  // متوسط المدرسة لكل مؤشر مدرستي (لكل فصل)
+  const schoolAvg = {}; if (mCur) MDR_KEY.forEach(c => { const k = mCur.cols.indexOf(c); if (k < 0) return; const byT = {}; mCur.rows.forEach(r => { if (!r.n || r.v[k] == null) return; const o = byT[r.n] = byT[r.n] || { v: 0, c: 0 }; o.v += r.v[k]; const ck = mCur.cols.indexOf("الفصول"); o.c += ck >= 0 && r.v[ck] ? r.v[ck] : 1; }); const L = Object.values(byT).filter(o => o.c); schoolAvg[c] = L.length ? L.reduce((s, o) => s + o.v / o.c, 0) / L.length : null; });
+  // الزيارات الصفية
+  const cvN = {}; if (cv) Object.values(cv.plan).forEach(r => { if (r && r.tk && r.t) cvN[r.tk] = { name: r.t }; });
+  const P = ptObj(px); const pxPlan = Object.values(ptObj(P.plan)).filter(v => v && v.id && v.date >= f && v.date <= t); const pxEv = ptObj(P.ev);
+  const circ = Object.values(ptObj(cr)).filter(c => c && c.id && !c.hid && c.need && (c.at || 0) >= maDate(f).getTime() && (c.at || 0) <= maDate(t).getTime() + 864e5);
+  const lic2 = Object.values(ptObj(lic)).filter(x => x && x.name && x.idHash);
+  const out = [];
+  for (const o of S.L) {
+    const n = o.n; const hk = (o.hd && o.hd.hk) || (() => { const l = lic2.find(x => cvNorm(x.name) === cvNorm(n)); return l ? hdK(l.idHash) : ""; })() || cvMatch(n, Object.fromEntries(Object.entries(HN).map(([k, v]) => [k, { name: ptObj(v).n || "" }]))) || "";
+    // الجدول
+    const cls = new Set(), subj = new Set(); let wk = 0; Object.entries(T.C || {}).forEach(([ck, D]) => maArr(D).forEach(day => maArr(day).forEach(c => { if (c && c[1] === o.ti) { wk++; cls.add(ck); subj.add(ttClean(T.S[c[0]] || "")); } })));
+    // الزيارات
+    const ctk = cv ? cvMatch(n, cvN) : null; const cvV = ctk ? Object.entries(ptObj(cv.ev[ctk])).map(([vn, e]) => ({ vn, ...ptObj(e) })).filter(e => e.fin && (e.date || "") >= f && (e.date || "") <= t).map(e => ({ d: e.date, vn: e.vn, str: String(e.str || "").slice(0, 600), imp: String(e.imp || "").slice(0, 600), rec: String(e.rec || "").slice(0, 600), by: e.by || "" })) : [];
+    const pxH = pxPlan.filter(v => v.host && v.host.ti === o.ti).map(v => { const R = maArr(v.vis).map(x => pxRes(ptObj(ptObj(pxEv[v.id])[x.ti]))).filter(r => r.pct != null); return { d: v.date, ck: v.ck, n: R.length, pct: R.length ? Math.round(R.reduce((s, r) => s + r.pct, 0) / R.length) : null }; });
+    const pxVis = pxPlan.filter(v => maArr(v.vis).some(x => x.ti === o.ti)); const pxVisDone = pxVis.filter(v => ptObj(ptObj(pxEv[v.id])[o.ti]).fin).length;
+    // التعاميم والمساءلات
+    const myC = circ.filter(c => c.to === "all" || (Array.isArray(c.to) && hk && c.to.includes(hk))); const signed = myC.filter(c => hk && ptObj(ptObj(crs)[c.id])[hk] && ptObj(ptObj(crs)[c.id])[hk].at).length;
+    const hf = Object.values(ptObj(hfx)).filter(x => x && x.id && !x.hid && (x.n && cvNorm(x.n) === cvNorm(n) || (hk && x.h && hdK(x.h) === hk)) && ((x.sentAt || x.at || 0) >= maDate(f).getTime()) && ((x.sentAt || x.at || 0) <= maDate(t).getTime() + 864e5) && x.st !== "draft");
+    const hfRep = hf.filter(x => !["sent", "opened"].includes(x.st)).length;
+    // الإشراف والمناوبة
+    const duL = []; Object.entries(ptObj(du)).forEach(([dk, D]) => Object.values(ptObj(D)).forEach(r => { if (r && r.n && cvNorm(r.n) === cvNorm(n)) duL.push({ dk, st: r.st, note: r.note || "" }); }));
+    // مدرستي
+    const mc = mdrOf(mCur, n), mp = mdrOf(mPrev, n);
+    const mdr = mCur && mc.length ? { date: mCur.date, prev: mPrev ? mPrev.date : "", cols: mCur.cols, rows: mc.map(r => ({ g: r.g, s: r.s, v: r.v.map(z => z == null ? -1 : z) })), sum: mdrSum(mc, mCur.cols), psum: mp.length ? mdrSum(mp, mPrev.cols) : null, avg: schoolAvg } : null;
+    out.push({ key: trKey(hk, n), hk, n, ti: o.ti, f, t, cls: [...cls].sort(), subj: [...subj].filter(Boolean), wk,
+      score: o.score, rank: o.rank, C: o.C, sch: o.sch, late: o.late, lm: o.lm, early: o.early, em: o.em, ab: o.ab, abD: o.abD, sub: o.sub, pos: o.pos, neg: o.neg, notes: maArr(o.notes).slice(0, 14).map(x => ({ k: x.k, p: x.p, ck: x.ck, st: x.st, kd: x.kd || "", nt: x.nt || "" })),
+      hd: o.hd ? { days: o.hd.days, avg: o.hd.avg, late: o.hd.late, lateDays: o.hd.lateDays, early: o.hd.early, abs: o.hd.abs, perm: o.hd.perm, ip: o.hd.ip || null, rmt: o.hd.rmt || null } : null,
+      asm: o.asm ? { pct: o.asm.pct, base: o.asm.base, p: o.asm.p, l: (o.asm.l || 0) + (o.asm.lx || 0), lm: o.asm.lm, a: (o.asm.a || 0) + (o.asm.o || 0), x: o.asm.x } : null,
+      pr: o.pr ? { mean: o.pr.mean != null ? Math.round(o.pr.mean) : null, N: o.pr.N, comp: o.pr.comp } : null,
+      cv: cvV, pxH, pxVis: pxVis.length, pxVisDone, circ: { n: myC.length, s: signed }, hfx: { n: hf.length, r: hfRep }, du: duL.slice(0, 20), mdr });
+  }
+  return { f, t, list: out.sort((a, b) => (b.score ?? -1) - (a.score ?? -1)), mdrDate: mCur ? mCur.date : "", mdrPrev: mPrev ? mPrev.date : "" };
+}
+// نقاط القوة وفرص التحسين (آلية — يراجعها المدير)
+const trNorm = r => r ? { ...r, subj: maArr(r.subj), cls: maArr(r.cls), cv: maArr(r.cv), pxH: maArr(r.pxH), du: maArr(r.du), notes: maArr(r.notes), circ: { n: 0, s: 0, ...ptObj(r.circ) }, hfx: { n: 0, r: 0, ...ptObj(r.hfx) }, C: ptObj(r.C), sch: r.sch || 0, late: r.late || 0, lm: r.lm || 0, early: r.early || 0, ab: r.ab || 0, sub: r.sub || 0, pos: r.pos || 0, neg: r.neg || 0, wk: r.wk || 0 } : r;
+function trAuto(r) { r = trNorm(r); const S = [], I = [];
+  const h = r.hd; if (h && h.avg != null) { if (h.avg >= 97) S.push(`انضباط عالٍ في الدوام الرسمي (${maAr(h.avg)}٪)`); else if (h.avg < 90) I.push(`رفع نسبة الانضباط في الدوام (${maAr(h.avg)}٪) ومعالجة التأخر الصباحي`); if (h.lateDays >= 3) I.push(`تكرر التأخر الصباحي ${maAr(h.lateDays)} أيام بإجمالي ${maAr(h.late)} دقيقة`); if (!h.abs && h.days >= 10) S.push("لا غياب خلال الفترة"); }
+  if (r.C && r.C.tt != null) { if (r.C.tt >= 98) S.push("التزام تام بالحصص الدراسية دخولاً وخروجاً"); else if (r.late + r.early + r.ab > 0) I.push(`الالتزام بوقت الحصة: ${[r.late && `تأخر ${maAr(r.late)}`, r.early && `خروج مبكر ${maAr(r.early)}`, r.ab && `عدم حضور ${maAr(r.ab)}`].filter(Boolean).join("، ")}`); }
+  if (r.sub >= 3) S.push(`التعاون في حصص الانتظار (${maAr(r.sub)} حصة)`);
+  if (r.asm && r.asm.pct != null) { if (r.asm.pct >= 95) S.push("انتظام في حضور الطابور الصباحي"); else if (r.asm.pct < 80) I.push(`حضور الطابور الصباحي (${maAr(r.asm.pct)}٪)`); }
+  if (r.pr && r.pr.mean != null) { if (r.pr.mean >= 95) S.push(`انتظام تحضير الدروس (${maAr(r.pr.mean)}٪)`); else if (r.pr.mean < 85) I.push(`استكمال تحضير الدروس على المنصة (${maAr(r.pr.mean)}٪)`); }
+  if (r.mdr) { const cls = r.mdr.sum["الفصول"] || r.mdr.rows.length || 1; [["الواجبات", "إسناد الواجبات"], ["الدروس غير المتزامنة", "الدروس غير المتزامنة"], ["الإثراءات", "الإثراءات"]].forEach(([c, l]) => { const v = r.mdr.sum[c], av = r.mdr.avg[c]; if (v == null || av == null) return; const per = v / cls; if (per >= av * 1.25 && per > 0) S.push(`تفعيل متميز لـ«${l}» في منصة مدرستي`); else if (per < av * .5) I.push(`تفعيل «${l}» في منصة مدرستي (أقل من متوسط المدرسة)`); }); }
+  if (r.circ.n && r.circ.s < r.circ.n) I.push(`التوقيع على التعاميم (${maAr(r.circ.s)} من ${maAr(r.circ.n)})`); else if (r.circ.n >= 2) S.push("الاطلاع والتوقيع على جميع التعاميم");
+  if (r.hfx.n && r.hfx.r < r.hfx.n) I.push("الرد على النماذج والمساءلات المرسلة");
+  if (r.du.some(x => x.st === "o" || x.st === "a")) I.push(`الالتزام بالإشراف والمناوبة (${maAr(r.du.length)} ملاحظة)`);
+  r.cv.forEach(v => { if (v.str) S.push(`من الزيارة الصفية: ${v.str.split(/[\n،.]/)[0].slice(0, 90)}`); if (v.imp) I.push(`من الزيارة الصفية: ${v.imp.split(/[\n،.]/)[0].slice(0, 90)}`); });
+  if (r.pos >= 2) S.push(`ملاحظات إيجابية في متابعة الحصص (${maAr(r.pos)})`);
+  return { S: [...new Set(S)].slice(0, 8), I: [...new Set(I)].slice(0, 8) };
+}
+const TR_PCSS = `@page{size:A4;margin:0}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a;background:#e2e8f0}
+.tr{width:210mm;min-height:297mm;margin:0 auto 8mm;background:#fff;padding:10mm 11mm 12mm;position:relative;page-break-after:always;overflow:hidden}
+.tr:last-child{page-break-after:auto}
+.tr::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;background:linear-gradient(90deg,#0f3b5f,#c9a227,#0f3b5f)}
+.trh{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;border-bottom:2px solid #0f3b5f;padding-bottom:6px}
+.trh .r{font-size:11px;line-height:1.7;font-weight:700}.trh .l{text-align:left;font-size:11px;line-height:1.7;font-weight:700;color:#334155}.trh img{height:62px}
+.ttl{margin:8px 0 4px;text-align:center}.ttl b{display:inline-block;background:linear-gradient(135deg,#0f3b5f,#1e293b);color:#fff;border-radius:999px;padding:6px 26px;font-size:17px;font-weight:900}
+.ttl small{display:block;margin-top:4px;color:#475569;font-weight:800;font-size:11.5px}
+.who{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border:1.5px solid #cbd5e1;border-radius:12px;overflow:hidden;margin:8px 0;font-size:11.5px}
+.who div{padding:6px 8px;border-left:1px solid #e2e8f0}.who div:last-child{border-left:0}.who i{display:block;font-style:normal;color:#64748b;font-weight:800;font-size:10px}.who b{font-size:13px}
+.kp{display:grid;grid-template-columns:1.25fr repeat(4,1fr);gap:6px;margin:6px 0 4px}
+.kp>div{border-radius:12px;padding:7px 6px;text-align:center;border:1.5px solid #e2e8f0;background:#f8fafc}
+.kp>div b{display:block;font-size:20px;font-weight:900;line-height:1.2}.kp>div i{font-style:normal;font-size:10.5px;font-weight:800;color:#475569}.kp>div small{display:block;font-size:10px;font-weight:900;margin-top:1px}
+.kp .main{background:linear-gradient(160deg,#0f3b5f,#1e3a8a);color:#fff;border:0}.kp .main i{color:#e2e8f0}.kp .main b{font-size:26px}
+h3{margin:9px 0 4px;font-size:13.5px;color:#0f3b5f;display:flex;align-items:center;gap:6px}h3::after{content:"";flex:1;height:1.5px;background:linear-gradient(90deg,#cbd5e1,transparent)}
+table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f3b5f;color:#fff;padding:4px 3px;font-weight:900}td{border:1px solid #e2e8f0;padding:3px 4px;text-align:center}tr:nth-child(even) td{background:#f8fafc}td.r,th.r{text-align:right}
+.bars{display:grid;gap:4px;font-size:11px;font-weight:800}.bar{display:grid;grid-template-columns:120px 1fr 42px;gap:6px;align-items:center}.bar>span{height:9px;border-radius:999px;background:#e2e8f0;overflow:hidden}.bar>span>i{display:block;height:100%;border-radius:999px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.box{border:1.5px solid #e2e8f0;border-radius:12px;padding:6px 9px;font-size:11.5px;line-height:1.85}.box ul{margin:2px 0;padding-inline-start:16px}
+.g{border-color:#bbf7d0;background:#f0fdf4}.y{border-color:#fde68a;background:#fffbeb}.b{border-color:#bfdbfe;background:#eff6ff}
+.mini{display:flex;gap:5px;flex-wrap:wrap}.mini span{border:1px solid #e2e8f0;border-radius:8px;padding:2px 7px;font-size:10.5px;font-weight:800;background:#fff}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;text-align:center;font-size:11.5px;font-weight:800}.sg span{display:block;margin-top:16px;color:#94a3b8}
+.ft{position:absolute;bottom:5mm;inset-inline:11mm;display:flex;justify-content:space-between;font-size:9.5px;color:#94a3b8;font-weight:700}
+.up{color:#15803d}.dn{color:#b91c1c}
+@media print{body{background:#fff}.tr{margin:0}}`;
+function trHtml(r, o = {}) {
+  r = trNorm(r);
+  const L = trLv(r.score); const A = r.ai || trAuto(r); const hd = r.hd || {};
+  const kp = (l, v, sub, c) => `<div><i>${l}</i><b style="color:${c || "#0f172a"}">${v == null ? "—" : maAr(v) + "٪"}</b>${sub ? `<small style="color:${c || "#64748b"}">${sub}</small>` : ""}</div>`;
+  const bar = (l, v) => { const c = trLv(v)[1]; return `<div class="bar"><b>${l}</b><span><i style="width:${v == null ? 0 : Math.max(2, Math.min(100, v))}%;background:${c}"></i></span><b style="color:${c}">${v == null ? "—" : maAr(v) + "٪"}</b></div>`; };
+  const per = `من ${trHij(r.f)} إلى ${trHij(r.t)}`;
+  let h = `<section class="tr"><div class="trh"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><img src="${SCHOOL_LOGO}"><div class="l">التقرير الدوري للأداء<br>${per}<br>تاريخ الإصدار: ${maHijri(new Date(o.at || Date.now()))}</div></div>
+  <div class="ttl"><b>تقرير الأداء والإنجاز والمتابعة</b><small>${per} • يُستخرج آلياً من بيانات الموقع ومنصة مدرستي ويُعتمد من مدير المدرسة</small></div>
+  <div class="who"><div><i>اسم المعلم</i><b>${ptEsc(r.n)}</b></div><div><i>المواد</i><b style="font-size:11px">${ptEsc(r.subj.join("، ") || "—")}</b></div><div><i>الفصول</i><b style="font-size:11px">${r.cls.map(c => maClassName(c)).join("، ") || "—"}</b></div><div><i>النصاب الأسبوعي</i><b>${maAr(r.wk)} حصة</b></div></div>
+  <div class="kp"><div class="main"><i>مؤشر الأداء العام</i><b>${r.score == null ? "—" : maAr(r.score)}</b><small style="color:#fde68a">${L[0]}${o.rank && r.rank ? ` • الترتيب ${maAr(r.rank)}` : ""}</small></div>
+    ${kp("الانضباط اليومي", r.C && r.C.hd, hd.days ? `${maAr(hd.days)} يوم` : "", trLv(r.C && r.C.hd)[1])}${kp("الالتزام بالحصص", r.C && r.C.tt, r.sch ? `${maAr(r.sch)} حصة` : "", trLv(r.C && r.C.tt)[1])}${kp("الطابور الصباحي", r.C && r.C.asm, r.asm && r.asm.base ? `${maAr(r.asm.base)} يوم` : "", trLv(r.C && r.C.asm)[1])}${kp("تحضير الدروس", r.C && r.C.pr, r.pr && r.pr.N ? `${maAr(r.pr.N)} أسبوع` : "", trLv(r.C && r.C.pr)[1])}</div>
+  <div class="bars">${bar("الانضباط اليومي (٣٠٪)", r.C && r.C.hd)}${bar("الالتزام بالحصص (٣٠٪)", r.C && r.C.tt)}${bar("الطابور الصباحي (٢٠٪)", r.C && r.C.asm)}${bar("تحضير الدروس (٢٠٪)", r.C && r.C.pr)}</div>`;
+  // الانضباط
+  const sp = x => x ? `${maAr(x.days)} يوم • ${x.avg == null ? "—" : maAr(x.avg) + "٪"} • تأخر ${maAr(x.late)} د` : "—";
+  h += `<h3>⏰ الانضباط في الدوام والحصص</h3><table><thead><tr><th>أيام الحصر</th><th>نسبة الانضباط</th><th>تأخر صباحي</th><th>انصراف مبكر</th><th>غياب</th><th>استئذان/مهمة</th><th>حصص مجدولة</th><th>تأخر عن الحصة</th><th>خروج مبكر</th><th>عدم حضور حصة</th><th>حصص انتظار</th></tr></thead><tbody><tr>
+    <td>${maAr(hd.days || 0)}</td><td><b>${hd.avg == null ? "—" : maAr(hd.avg) + "٪"}</b></td><td>${hd.late ? `${maAr(hd.late)} د / ${maAr(hd.lateDays)} يوم` : "—"}</td><td>${hd.early ? maAr(hd.early) + " د" : "—"}</td><td>${maAr(hd.abs || 0)}</td><td>${maAr(hd.perm || 0)}</td><td>${maAr(r.sch)}</td><td>${r.late ? `${maAr(r.late)} (${maAr(r.lm)} د)` : "—"}</td><td>${r.early ? maAr(r.early) : "—"}</td><td>${r.ab ? maAr(r.ab) : "—"}</td><td>${maAr(r.sub)}</td></tr></tbody></table>
+    ${hd.rmt && hd.rmt.days ? `<div class="mini" style="margin-top:4px"><span>🏫 الحضوري: ${sp(hd.ip)}</span><span>🏠 عن بعد: ${sp(hd.rmt)}</span></div>` : ""}
+    ${r.asm && r.asm.base ? `<div class="mini" style="margin-top:4px"><span>🎺 الطابور: حضر ${maAr(r.asm.p || 0)} من ${maAr(r.asm.base)}</span>${r.asm.l ? `<span>تأخر ${maAr(r.asm.l)} (${maAr(r.asm.lm || 0)} د)</span>` : ""}${r.asm.a ? `<span>لم يحضر ${maAr(r.asm.a)}</span>` : ""}${r.asm.x ? `<span>مستأذن ${maAr(r.asm.x)}</span>` : ""}</div>` : ""}`;
+  // مدرستي
+  if (r.mdr) { const M0 = r.mdr; const nC = maArr(M0.cols).length; const M = { ...M0, cols: maArr(M0.cols), rows: (Array.isArray(M0.rows) ? M0.rows : Object.values(ptObj(M0.rows))).filter(Boolean).map(x => ({ ...x, v: mdrVec(x.v, nC).map(z => z == null || z < 0 ? null : z) })), sum: ptObj(M0.sum), psum: M0.psum ? ptObj(M0.psum) : null, avg: ptObj(M0.avg) }; const show = M.cols.map((c, k) => [c, k]).filter(([c, k]) => !["الطلاب", "الفصول"].includes(c) && M.rows.some(x => x.v[k])).slice(0, 9); const ix = c => M.cols.indexOf(c);
+    h += `<h3>💻 الإنجاز على منصة مدرستي <small style="font-size:10.5px;color:#64748b;font-weight:800">(تراكمي حتى ${trHij(M.date)}${M.prev ? ` • الزيادة منذ ${trHij(M.prev)}` : ""})</small></h3>
+    <table><thead><tr><th>الصف</th><th class="r">المادة</th><th>الطلاب</th><th>الفصول</th>${show.map(([c]) => `<th style="font-size:9.5px">${c}</th>`).join("")}</tr></thead><tbody>${M.rows.map(x => `<tr><td>${ptEsc(x.g)}</td><td class="r">${ptEsc(x.s)}</td><td>${x.v[ix("الطلاب")] == null ? "—" : maAr(x.v[ix("الطلاب")])}</td><td>${x.v[ix("الفصول")] == null ? "—" : maAr(x.v[ix("الفصول")])}</td>${show.map(([, k]) => `<td>${x.v[k] == null ? "—" : maAr(x.v[k])}</td>`).join("")}</tr>`).join("")}
+    <tr style="font-weight:900;background:#eef2ff"><td colspan="2">المجموع</td><td>${maAr(M.sum["الطلاب"] || 0)}</td><td>${maAr(M.sum["الفصول"] || 0)}</td>${show.map(([c]) => { const d = M.psum && M.psum[c] != null && M.sum[c] != null ? M.sum[c] - M.psum[c] : null; return `<td>${maAr(M.sum[c] || 0)}${d ? `<br><small class="${d > 0 ? "up" : "dn"}">${d > 0 ? "▲" : "▼"} ${maAr(Math.abs(d))}</small>` : ""}</td>`; }).join("")}</tr></tbody></table>
+    <div class="mini" style="margin-top:4px">${MDR_KEY.filter(c => M.sum[c] != null && M.avg[c] > 0).map(c => { const per = M.sum[c] / (M.sum["الفصول"] || M.rows.length || 1); const av = M.avg[c]; const up = per >= av; return `<span>${c}: ${maAr(Math.round(per * 10) / 10)} لكل فصل <b class="${up ? "up" : "dn"}">${up ? "▲ أعلى" : "▼ أقل"} من متوسط المدرسة (${maAr(Math.round(av * 10) / 10)})</b></span>`; }).join("")}</div>`; }
+  // الزيارات والمتابعة
+  const cvH = r.cv.length ? r.cv.map(v => `<tr><td>${trHij(v.d)}</td><td class="r">${ptEsc(v.str) || "—"}</td><td class="r">${ptEsc(v.imp) || "—"}</td><td class="r">${ptEsc(v.rec) || "—"}</td></tr>`).join("") : "";
+  h += `<h3>👁 الزيارات الصفية وتبادل الزيارات</h3>${cvH ? `<table><thead><tr><th>التاريخ</th><th class="r">نقاط القوة</th><th class="r">فرص التحسين</th><th class="r">التوصيات</th></tr></thead><tbody>${cvH}</tbody></table>` : `<div class="mini"><span>لا توجد زيارة صفية معتمدة في هذه الفترة</span></div>`}
+    <div class="mini" style="margin-top:4px">${r.pxH.length ? r.pxH.map(x => `<span>🤝 زيارة تبادلية لحصته ${trHij(x.d)} ${x.pct != null ? `— ${maAr(x.pct)}٪ (${pxLvl(x.pct)[0]})` : ""}</span>`).join("") : ""}${r.pxVis ? `<span>🚶 زار زملاءه: ${maAr(r.pxVisDone)} من ${maAr(r.pxVis)}</span>` : ""}</div>`;
+  h += `<h3>📋 المتابعة الإدارية</h3><div class="mini"><span>📜 التعاميم: وقّع ${maAr(r.circ.s)} من ${maAr(r.circ.n)}</span><span>📨 النماذج والمساءلات: ${maAr(r.hfx.n)}${r.hfx.n ? ` • ردّ على ${maAr(r.hfx.r)}` : ""}</span><span>🛡️ الإشراف والمناوبة: ${r.du.length ? `${maAr(r.du.length)} ملاحظة` : "منتظم ✅"}</span><span>📝 ملاحظات الحصص: إيجابية ${maAr(r.pos)} • تحتاج متابعة ${maAr(r.neg)}</span></div>
+    ${r.notes.length ? `<table style="margin-top:4px"><thead><tr><th>التاريخ</th><th>الحصة</th><th>الفصل</th><th class="r">الملاحظة</th></tr></thead><tbody>${r.notes.slice(0, 8).map(x => `<tr><td>${trHij(x.k)}</td><td>${TT_ORD[x.p] || maAr(x.p + 1)}</td><td>${maClassName(x.ck)}</td><td class="r">${ptEsc(x.nt || (x.st === "late" ? "تأخر عن الحصة" : x.st === "early" ? "خروج مبكر" : x.kd === "absent" ? "عدم حضور الحصة" : x.st))}</td></tr>`).join("")}</tbody></table>` : ""}`;
+  h += `<h3>⭐ نقاط القوة وفرص التحسين</h3><div class="two"><div class="box g"><b>نقاط القوة</b><ul>${A.S.length ? A.S.map(x => `<li>${ptEsc(x)}</li>`).join("") : "<li>—</li>"}</ul></div><div class="box y"><b>فرص التحسين</b><ul>${A.I.length ? A.I.map(x => `<li>${ptEsc(x)}</li>`).join("") : "<li>لا توجد ملاحظات جوهرية — استمر على هذا التميز</li>"}</ul></div></div>
+    <div class="box b" style="margin-top:6px"><b>📝 ملاحظات وتوصيات مدير المدرسة</b><div style="min-height:36px;white-space:pre-wrap">${ptEsc(r.note || "")}</div></div>
+    <div class="sg"><div>المعلم<br><b>${ptEsc(r.n)}</b><span>.....................</span></div><div>وكيل الشؤون التعليمية<span>.....................</span></div><div>مدير المدرسة<br><b>فازع القرني</b><span>.....................</span></div></div>
+    <div class="ft"><span>مؤشر الأداء = الانضباط ٣٠٪ + الحصص ٣٠٪ + الطابور ٢٠٪ + التحضير ٢٠٪ (يُستبعد ما لا بيانات له)</span><span>منصة المدرسة الذكية</span></div></section>`;
+  return h;
+}
+const trOpen = (pages, title) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet"><style>${TR_PCSS}</style></head><body>${pages}<script>setTimeout(()=>print(),1100)</script></body></html>`);
+// ── رفع ملف منصة مدرستي ──
+function MdrUpload({ by, names, cands, onSaved }) {
+  const [st, setSt] = useState(""); const [D, setD] = useState(null); const [busy, setBusy] = useState(false); const [ups, setUps] = useState(null);
+  const loadUps = () => maGet(MDR_NODE).then(v => setUps(Object.values(ptObj(v)).filter(x => x && x.date).sort((a, b) => b.date.localeCompare(a.date)))).catch(() => setUps([]));
+  useEffect(() => { loadUps(); }, []);
+  const pick = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setSt("⏳ قراءة الملف…"); setD(null);
+    try { const R = await mdrRead(f, (i, n) => setSt(`⏳ قراءة الصفحة ${maAr(i)} من ${maAr(n)}…`)); if (!R.rows.length) { setSt("⚠️ لم يُتعرّف على جدول «تقارير البيانات التراكمية» في الملف"); return; }
+      const B = []; R.rows.forEach(r => { let b = B.find(x => x.raw === r.raw); if (!b) B.push(b = { raw: r.raw, it: [] }); b.it.push({ g: r.g, s: r.s }); });
+      const nm = mdrAutoMatch(B, cands && cands.length ? cands : names.map(n => ({ n, full: "", it: [] }))); B.forEach(b => { if (!nm[b.raw]) nm[b.raw] = ""; });
+      setD({ ...R, nm, date: R.date || maKey(new Date()) }); setSt(""); } catch (er) { setSt("⚠️ تعذّرت القراءة: " + (er && er.message || er)); } };
+  const save = async () => { setBusy(true); const rows = D.rows.map(r => ({ raw: r.raw, n: D.nm[r.raw] || "", g: r.g, s: r.s, v: r.v.map(x => x == null ? -1 : x) }));
+    const ok = await maPut(`${MDR_NODE}/${D.date}`, { date: D.date, at: Date.now(), by, cols: D.cols, rows }); setBusy(false); if (ok) { setD(null); setSt(`✅ حُفظ تقرير مدرستي بتاريخ ${trHij(D.date)}`); loadUps(); onSaved && onSaved(); } else setSt("⚠️ تعذّر الحفظ"); };
+  const T = D ? [...new Set(D.rows.map(r => r.raw))] : [];
+  return <div className="ma-card p-3 grid gap-2">
+    <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 15 }}>💻 بيانات منصة مدرستي (تقارير البيانات التراكمية)</b>
+      <label className="ma-btn" style={{ marginRight: "auto", background: "#0f3b5f", color: "#fff", borderColor: "#0f3b5f", cursor: "pointer" }}>📥 رفع ملف PDF<input type="file" accept="application/pdf,.pdf" hidden onChange={pick} /></label></div>
+    <small style={{ color: "#64748b", fontWeight: 700, lineHeight: 1.8 }}>ارفع ملف «تقارير البيانات التراكمية» كما يُصدَّر من نقار — يُقرأ آلياً ويُطابَق كل معلم باسمه. يُفضّل رفعه نهاية كل شهر؛ التقرير يعرض الإجمالي التراكمي والزيادة منذ الرفع السابق. للحصول على كل الأعمدة اطبع الملف بوضع أفقي/ملاءمة الصفحة.</small>
+    {st && <div style={{ fontWeight: 900, fontSize: 13, color: /⚠️/.test(st) ? "#b91c1c" : "#0f3b5f" }}>{st}</div>}
+    {D && <div className="grid gap-2" style={{ border: "1.5px solid #c7d2fe", borderRadius: 14, padding: 10, background: "#f8faff" }}>
+      <div className="flex gap-2 items-center flex-wrap"><b>معاينة: {maAr(D.rows.length)} صفاً • {maAr(T.length)} معلماً • {maAr(D.cols.length)} عموداً</b><span style={{ fontSize: 12.5, fontWeight: 800 }}>تاريخ البيانات: <input type="date" className="ma-inp" style={{ width: 150, display: "inline-block", padding: "2px 6px" }} value={D.date} onChange={e => setD({ ...D, date: e.target.value })} /></span>
+        <span style={{ fontSize: 12.5, fontWeight: 900, color: T.some(x => !D.nm[x]) ? "#b45309" : "#15803d" }}>{T.some(x => !D.nm[x]) ? `⚠️ ${maAr(T.filter(x => !D.nm[x]).length)} بلا مطابقة — اخترهم يدوياً` : "✅ طوبق جميع المعلمين"}</span>
+        <button className="ma-btn" disabled={busy} style={{ marginRight: "auto", background: "#15803d", color: "#fff", borderColor: "#15803d" }} onClick={save}>{busy ? "⏳" : "💾 اعتماد وحفظ"}</button><button className="ma-btn" onClick={() => setD(null)}>إلغاء</button></div>
+      <div className="exr-tw" style={{ maxHeight: "55vh" }}><table className="exr-t" style={{ minWidth: 900 }}><thead><tr><th>المعلم (كما في الملف ← في الموقع)</th><th>الصف</th><th>المادة</th>{D.cols.map(c => <th key={c} style={{ fontSize: 11 }}>{c}</th>)}</tr></thead><tbody>
+        {D.rows.map((r, i) => { const first = i === 0 || D.rows[i - 1].raw !== r.raw; return <tr key={i}><td className="r" style={{ minWidth: 210 }}>{first ? <select className="ma-inp" style={{ padding: "2px 6px", fontSize: 12.5, borderColor: D.nm[r.raw] ? "#86efac" : "#fca5a5" }} value={D.nm[r.raw] || ""} onChange={e => setD({ ...D, nm: { ...D.nm, [r.raw]: e.target.value } })}><option value="">— اختر المعلم —</option>{names.map(n => <option key={n} value={n}>{n}</option>)}</select> : <small style={{ color: "#94a3b8" }}>〃</small>}</td><td style={{ whiteSpace: "nowrap" }}>{r.g}</td><td style={{ fontSize: 12 }}>{r.s}</td>{r.v.map((v, k) => <td key={k}>{v == null ? "—" : maAr(v)}</td>)}</tr>; })}
+      </tbody></table></div></div>}
+    {ups && ups.length > 0 && <div className="flex gap-1 flex-wrap items-center" style={{ fontSize: 12.5, fontWeight: 800 }}><span style={{ color: "#64748b" }}>الملفات المرفوعة:</span>{ups.slice(0, 12).map(u => <span key={u.date} className="exr-p" style={{ background: "#eef2ff", color: "#3730a3" }}>{trHij(u.date)} • {maAr(new Set(u.rows.map(r => r.n).filter(Boolean)).size)} معلماً<button title="حذف" onClick={async () => { if (!window.confirm("حذف هذا الرفع؟")) return; await maPut(`${MDR_NODE}/${u.date}`, null); loadUps(); }} style={{ border: 0, background: "none", color: "#b91c1c", cursor: "pointer", fontWeight: 900 }}>×</button></span>)}</div>}
+  </div>;
+}
+// ── صفحة الإدارة ──
+function TrepAdmin({ me }) {
+  const by = me.name; const t0 = maWorkDay(); const d0 = maDate(t0);
+  const pres = [["هذا الشهر", maKey(new Date(d0.getFullYear(), d0.getMonth(), 1)), t0], ["الشهر الماضي", maKey(new Date(d0.getFullYear(), d0.getMonth() - 1, 1)), maKey(new Date(d0.getFullYear(), d0.getMonth(), 0))], ["آخر أسبوعين", (() => { const x = maDate(t0); x.setDate(x.getDate() - 13); return maKey(x); })(), t0]];
+  const [f, setF] = useState(pres[0][1]); const [t, setT] = useState(pres[0][2]); const [idx, setIdx] = useState({}); const [pk, setPk] = useState(""); const [R, setR] = useState(null); const [st, setSt] = useState(""); const [names, setNames] = useState([]); const [ed, setEd] = useState(null); const [vw, setVw] = useState(null);
+  const loadIdx = () => maGet(`${TREP}/idx`).then(v => setIdx(ptObj(v))).catch(() => {});
+  const [cands, setCands] = useState([]);
+  useEffect(() => { loadIdx(); Promise.all([maGet(TT_NODE), maGet(LIC_NODE), maGet(HD_T)]).then(([tt, lic, hn]) => { const T = ttFresh(tt); const nm = T.T.map(ttClean).filter(Boolean); setNames([...nm].sort((a, b) => a.localeCompare(b, "ar")));
+    const full = {}; Object.values(ptObj(lic)).forEach(x => { if (x && x.name) full["l" + asmK(x.name)] = { name: x.name }; }); Object.values(ptObj(hn)).forEach(x => { if (x && x.n) full["h" + asmK(x.n)] = { name: x.n }; });
+    setCands(T.T.map((n0, ti) => { const n = ttClean(n0); if (!n) return null; const it = []; Object.entries(T.C || {}).forEach(([ck, D]) => maArr(D).forEach(day => maArr(day).forEach(c => { if (c && c[1] === ti) { const g = +String(ck).split("-")[0] || 0; const s = ttClean(T.S[c[0]] || ""); if (!it.some(x => x.g === g && x.s === s)) it.push({ g, s }); } })));
+      const fk = cvMatch(n, full); return { n, full: fk ? full[fk].name : "", it }; }).filter(Boolean)); }).catch(() => {}); }, []);
+  const open = async k => { setPk(k); setR(null); const v = ptObj(await maGet(`${TREP}/r/${k}`)); setR(Object.values(v).filter(x => x && x.n).map(trNorm).sort((a, b) => (b.score ?? -1) - (a.score ?? -1))); };
+  const gen = async () => { if (f > t) return; const k = trPk(f, t); if (idx[k] && !window.confirm("يوجد تقرير لهذه الفترة — إعادة التوليد تُحدّث الأرقام وتحتفظ بملاحظاتك وحالة النشر. متابعة؟")) return;
+    try { const B = await trBuild(f, t, setSt); setSt("⏳ حفظ التقارير…"); const old = ptObj(await maGet(`${TREP}/r/${k}`)); const P = {};
+      B.list.forEach(r => { const o = ptObj(old[r.key]); P[`${TREP}/r/${k}/${r.key}`] = { ...r, note: o.note || "", pub: o.pub || 0, at: Date.now(), by }; });
+      P[`${TREP}/idx/${k}`] = { f, t, at: Date.now(), by, n: B.list.length, pub: ptObj(idx[k]).pub || 0, mdr: B.mdrDate || "" }; const ok = await fbPatch(P); setSt(ok ? `✅ أُعدّت ${maAr(B.list.length)} تقريراً${B.mdrDate ? ` • بيانات مدرستي حتى ${trHij(B.mdrDate)}` : " • لا توجد بيانات مدرستي مرفوعة للفترة"}` : "⚠️ تعذّر الحفظ"); await loadIdx(); open(k); } catch (e) { setSt("⚠️ " + (e && e.message || e)); } };
+  const setOne = async (r, o) => { const n = { ...r, ...o }; await maPut(`${TREP}/r/${pk}/${r.key}`, n); setR(L => L.map(x => x.key === r.key ? n : x)); };
+  const pubAll = async v => { if (!R) return; if (v && !window.confirm(`نشر ${maAr(R.length)} تقريراً للمعلمين؟ سيصل كل معلم إشعار بتقريره.`)) return; const P = {}; R.forEach(r => { P[`${TREP}/r/${pk}/${r.key}/pub`] = v ? Date.now() : 0; }); P[`${TREP}/idx/${pk}/pub`] = v ? Date.now() : 0; await fbPatch(P); setR(L => L.map(x => ({ ...x, pub: v ? Date.now() : 0 }))); loadIdx();
+    if (v) pushSend({ to: { names: R.map(r => r.n) }, title: "📑 تقريرك الدوري جاهز", body: `تقرير الأداء والإنجاز ${trHij(R[0].f)} – ${trHij(R[0].t)} — اطّلع عليه ونزّله PDF`, url: "/#teacher:trep", tag: "trep-" + pk, by }); };
+  const printAll = (L, rk) => trOpen(L.map(r => trHtml(r, { rank: rk, at: r.at })).join(""), "التقارير الدورية للمعلمين");
+  const keys = Object.entries(idx).sort((a, b) => b[0].localeCompare(a[0]));
+  return <div className="grid gap-3" dir="rtl">
+    <MdrUpload by={by} names={names} cands={cands} />
+    <div className="ma-card p-3 grid gap-2" style={{ borderTop: "5px solid #0f3b5f" }}>
+      <b style={{ fontSize: 15 }}>📑 إعداد التقارير الدورية</b>
+      <div className="flex gap-2 items-center flex-wrap">{pres.map(([l, a, b]) => <button key={l} className="exr-b" style={f === a && t === b ? { background: "#0f3b5f", color: "#fff", borderColor: "#0f3b5f" } : null} onClick={() => { setF(a); setT(b); }}>{l}</button>)}
+        <input type="date" className="ma-inp" style={{ width: 150 }} value={f} onChange={e => setF(e.target.value)} /><span>←</span><input type="date" className="ma-inp" style={{ width: 150 }} value={t} onChange={e => setT(e.target.value)} />
+        <button className="ma-btn" style={{ background: "#c9a227", color: "#1e293b", borderColor: "#c9a227", fontWeight: 900 }} onClick={gen}>⚙️ توليد التقارير للفترة</button></div>
+      {st && <div style={{ fontWeight: 900, fontSize: 13, color: /⚠️/.test(st) ? "#b91c1c" : "#0f3b5f" }}>{st}</div>}
+      {keys.length > 0 && <div className="flex gap-1 flex-wrap items-center" style={{ fontSize: 12.5, fontWeight: 800 }}><span style={{ color: "#64748b" }}>التقارير المُعدّة:</span>{keys.map(([k, x]) => <button key={k} className="exr-b" style={pk === k ? { background: "#1e1b4b", color: "#fff", borderColor: "#1e1b4b" } : null} onClick={() => open(k)}>{trHij(x.f)} – {trHij(x.t)} {x.pub ? "• 📤 منشور" : "• مسودة"}</button>)}</div>}
+    </div>
+    {pk && !R && <div className="ma-card p-8 text-center font-bold" style={{ color: "#94a3b8" }}>⏳</div>}
+    {R && <div className="ma-card p-3 grid gap-2">
+      <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 15 }}>👥 تقارير المعلمين ({maAr(R.length)})</b><small style={{ fontWeight: 800, color: "#64748b" }}>{trHij(R[0] && R[0].f)} – {trHij(R[0] && R[0].t)}</small>
+        <span style={{ marginRight: "auto" }} className="flex gap-1 flex-wrap"><button className="exr-b" onClick={() => printAll(R, true)}>🖨 طباعة الكل PDF</button>{R.every(r => r.pub) ? <button className="exr-b" onClick={() => pubAll(false)}>↩️ إلغاء النشر</button> : <button className="exr-b red" style={{ background: "#15803d", borderColor: "#15803d" }} onClick={() => pubAll(true)}>📤 نشر للمعلمين + إشعار</button>}</span></div>
+      <div className="exr-tw"><table className="exr-t" style={{ minWidth: 980 }}><thead><tr><th>الترتيب</th><th>المعلم</th><th>المؤشر العام</th><th>الانضباط</th><th>الحصص</th><th>الطابور</th><th>التحضير</th><th>مدرستي (واجبات/دروس)</th><th>زيارات</th><th>التعاميم</th><th>ملاحظة المدير</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
+        {R.map(r => { const L = trLv(r.score); const c = v => v == null ? "—" : <b style={{ color: trLv(v)[1] }}>{maAr(v)}٪</b>; const M = r.mdr && r.mdr.sum; return <tr key={r.key}><td>{r.rank ? maAr(r.rank) : "—"}</td><td className="r"><b>{r.n}</b></td><td><span className="exr-p" style={{ background: L[2], color: L[1] }}>{r.score == null ? "—" : maAr(r.score)} • {L[0]}</span></td><td>{c(r.C && r.C.hd)}</td><td>{c(r.C && r.C.tt)}</td><td>{c(r.C && r.C.asm)}</td><td>{c(r.C && r.C.pr)}</td>
+          <td style={{ fontSize: 12 }}>{M ? `${maAr(M["الواجبات"] || 0)} / ${maAr((M["الدروس المتزامنة"] || 0) + (M["الدروس غير المتزامنة"] || 0))}` : <span style={{ color: "#94a3b8" }}>—</span>}</td><td>{maAr(r.cv.length + r.pxH.length)}</td><td>{r.circ.n ? `${maAr(r.circ.s)}/${maAr(r.circ.n)}` : "—"}</td>
+          <td style={{ maxWidth: 180, fontSize: 12 }} className="r">{r.note ? r.note.slice(0, 50) + (r.note.length > 50 ? "…" : "") : <span style={{ color: "#94a3b8" }}>—</span>}</td><td>{r.pub ? <span className="exr-p" style={{ background: "#dcfce7", color: "#15803d" }}>📤 منشور</span> : <span className="exr-p" style={{ background: "#f1f5f9", color: "#64748b" }}>مسودة</span>}</td>
+          <td style={{ whiteSpace: "nowrap" }}><button className="exr-b" onClick={() => setVw(r)}>👁 عرض</button> <button className="exr-b" onClick={() => setEd({ r, note: r.note || "" })}>✍️ ملاحظة</button> <button className="exr-b" onClick={() => setOne(r, { pub: r.pub ? 0 : Date.now() })}>{r.pub ? "↩️" : "📤"}</button></td></tr>; })}
+      </tbody></table></div></div>}
+    {ed && <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }} onClick={() => setEd(null)}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ background: "#fff", borderRadius: 20, width: "min(640px,100%)", padding: 16, display: "grid", gap: 8 }}>
+      <b>📝 ملاحظات وتوصيات مدير المدرسة — {ed.r.n}</b>
+      <div className="flex gap-1 flex-wrap">{(() => { const A = trAuto(ed.r); return [...A.S.slice(0, 2).map(x => "نشكر لكم " + x), ...A.I.slice(0, 3).map(x => "نأمل " + x)].map(x => <button key={x} className="exr-b" style={{ fontSize: 11.5 }} onClick={() => setEd({ ...ed, note: (ed.note ? ed.note + "\n" : "") + "• " + x })}>+ {x.slice(0, 48)}</button>); })()}</div>
+      <textarea className="ma-inp" rows={6} value={ed.note} onChange={e => setEd({ ...ed, note: e.target.value })} placeholder="اكتب ملاحظاتك وتوصياتك للمعلم…" />
+      <div className="flex gap-2"><button className="ma-btn" style={{ background: "#0f3b5f", color: "#fff", borderColor: "#0f3b5f" }} onClick={async () => { await setOne(ed.r, { note: ed.note.trim() }); setEd(null); }}>💾 حفظ</button><button className="ma-btn" onClick={() => setEd(null)}>إلغاء</button></div></div></div>}
+    {vw && <TrepView r={vw} rank onClose={() => setVw(null)} />}
+  </div>;
+}
+function TrepView({ r, rank, onClose }) {
+  const doc = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet"><style>${TR_PCSS}body{padding:8px 0}.tr{box-shadow:0 4px 20px rgba(0,0,0,.12)}</style></head><body>${trHtml(r, { rank, at: r.at })}</body></html>`;
+  return <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 8 }} onClick={onClose}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ background: "#fff", borderRadius: 18, width: "min(900px,100%)", height: "94vh", display: "grid", gridTemplateRows: "auto 1fr", overflow: "hidden" }}>
+    <div className="flex items-center gap-2" style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}><b style={{ flex: 1 }}>📑 {r.n} — {trHij(r.f)} – {trHij(r.t)}</b><button className="ma-btn" style={{ background: "#0f3b5f", color: "#fff", borderColor: "#0f3b5f" }} onClick={() => trOpen(trHtml(r, { rank, at: r.at }), `تقرير ${r.n}`)}>⬇ تنزيل PDF / طباعة</button><button className="ma-btn" onClick={onClose}>✕</button></div>
+    <iframe title="report" srcDoc={doc} style={{ width: "100%", height: "100%", border: 0, background: "#e2e8f0" }} /></div></div>;
+}
+// ── قسم المعلم: تقاريري الدورية ──
+function TrepMine({ me }) {
+  const [L, setL] = useState(null); const [vw, setVw] = useState(null);
+  useEffect(() => { (async () => { const idx = ptObj(await maGet(`${TREP}/idx`)); const keys = [hdK(me.hash), "n" + asmK(me.name)].filter(Boolean); const out = [];
+    for (const [pk, x] of Object.entries(idx).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 18)) { if (!x) continue; for (const k of keys) { const r = ptObj(await maGet(`${TREP}/r/${pk}/${k}`).catch(() => null)); if (r.n && r.pub) { out.push(trNorm(r)); break; } } }
+    if (!out.length) { for (const [pk] of Object.entries(idx)) { const all = ptObj(await maGet(`${TREP}/r/${pk}`).catch(() => null)); const r = Object.values(all).find(x => x && x.pub && cvNorm(x.n) === cvNorm(me.name)); if (r) out.push(trNorm(r)); } }
+    setL(out); })().catch(() => setL([])); }, [me && me.name]);
+  if (!L) return <div className="ma-card p-8 text-center font-bold" style={{ color: "#94a3b8" }}>⏳</div>;
+  if (!L.length) return <div className="ma-card p-6 text-center font-bold" style={{ color: "#64748b" }}>لا توجد تقارير منشورة لك بعد — ستصلك عند اعتمادها من مدير المدرسة 🔔</div>;
+  return <div className="grid gap-3" dir="rtl">{L.map(r => { const Lv = trLv(r.score); return <div key={r.f + r.t} className="ma-card p-4 grid gap-2" style={{ borderRight: `6px solid ${Lv[1]}` }}>
+    <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 16 }}>📑 تقرير الأداء والإنجاز</b><span style={{ fontWeight: 800, color: "#475569" }}>{trHij(r.f)} – {trHij(r.t)}</span><span className="exr-p" style={{ marginRight: "auto", background: Lv[2], color: Lv[1], fontSize: 14 }}>{r.score == null ? "—" : maAr(r.score)} • {Lv[0]}</span></div>
+    <div className="flex gap-1 flex-wrap">{[["الانضباط", r.C && r.C.hd], ["الحصص", r.C && r.C.tt], ["الطابور", r.C && r.C.asm], ["التحضير", r.C && r.C.pr]].map(([l, v]) => <span key={l} className="exr-p" style={{ background: "#f8fafc", color: trLv(v)[1], border: "1px solid #e2e8f0" }}>{l}: {v == null ? "—" : maAr(v) + "٪"}</span>)}</div>
+    {r.note && <div style={{ background: "#eff6ff", border: "1px dashed #93c5fd", borderRadius: 12, padding: "6px 10px", fontSize: 13, fontWeight: 700, whiteSpace: "pre-wrap" }}>📝 {r.note}</div>}
+    <div className="flex gap-2"><button className="ma-btn" style={{ background: "#0f3b5f", color: "#fff", borderColor: "#0f3b5f" }} onClick={() => setVw(r)}>👁 عرض التقرير</button><button className="ma-btn" onClick={() => trOpen(trHtml(r, { at: r.at }), `تقرير ${r.n}`)}>⬇ تنزيل PDF</button></div>
+  </div>; })}{vw && <TrepView r={vw} onClose={() => setVw(null)} />}</div>;
 }
 
 // ══════════ 🔴 تنبيه المعلم الدائم: تعاميم ومساءلات بانتظار التوقيع والإرسال ══════════
