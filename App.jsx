@@ -5362,6 +5362,25 @@ function printAllExcuses(excusesList) {
   win.document.close();
 }
 
+// ── بوابة الأعذار (#excuses): مزامنة القرار مع تصنيف الغياب والإحصائيات + إشعار الطالب/ولي الأمر ──
+const lgIso = s => { const m = String(s || "").match(/(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})/); if (!m) return ""; let [, a, b, c] = m; if (a.length === 4) return `${a}-${b.padStart(2, "0")}-${c.padStart(2, "0")}`; if (c.length === 4) return `${c}-${b.padStart(2, "0")}-${a.padStart(2, "0")}`; return ""; };
+async function lgExcDecide(x, quiet) { if (!x || !x.studentId) return; const dk = lgIso(x.absenceDateM); const ok = x.status === "مقبول", no = x.status === "مرفوض"; if (!ok && !no) return;
+  if (dk) await absxSyncExc({ sid: x.studentId, from: dk, to: dk, status: ok ? "ok" : "no", id: "L" + x.id }, "الإدارة");
+  if (quiet) return; pushSend({ to: { uids: ["s_" + x.studentId] }, title: ok ? "✅ قُبل عذر الغياب" : "❌ لم يُقبل عذر الغياب", body: `${x.studentName} — غياب ${x.absenceDay || ""} ${x.absenceDateH || x.absenceDateM || ""}${x.adminReply ? ` • ${x.adminReply}` : ""}${ok ? " • احتُسب الغياب بعذر" : ""}`, url: "/#excuses", urlS: "/#excuses", tag: "exc-" + x.id, by: "الإدارة" }); }
+function LgExcHistory({ student, year }) {
+  const [L, setL] = useState(null);
+  useEffect(() => { (async () => { const [a, b] = await Promise.all([maGet(`school-excuses-${year}`), maGet(`school-excuses-${year - 1}`)]); const all = [...Object.values(ptObj(a)), ...Object.values(ptObj(b))].filter(x => x && (String(x.studentId) === String(student.id) || (x.studentName === student.name && x.className === student.className))); setL(all.sort((p, q) => q.id - p.id).slice(0, 20)); })().catch(() => setL([])); }, [student && student.id]);
+  const C = { "مقبول": ["✅ مقبول — احتُسب الغياب بعذر", "#d1fae5", "#065f46"], "مرفوض": ["❌ لم يُقبل — يبقى الغياب بدون عذر", "#fee2e2", "#991b1b"] };
+  return <div style={{ background: "#fff", borderRadius: 16, border: "1.5px solid #e2e8f0", padding: "12px 14px", marginBottom: 12, display: "grid", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 14, color: "#1e293b", flex: 1 }}>📋 أعذاري السابقة وقرار الإدارة</b></div>
+    <PushBell who={{ uid: "s_" + student.id, n: student.name, r: "s", ck: student.ck }} />
+    {L == null ? <div style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 700 }}>⏳</div> : !L.length ? <div style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 700 }}>لا توجد أعذار سابقة</div> : L.map(x => { const c = C[x.status] || ["⏳ قيد المراجعة", "#fef3c7", "#92400e"];
+      return <div key={x.id} style={{ border: `1.5px solid ${c[1]}`, borderRight: `5px solid ${c[2]}`, borderRadius: 12, padding: "8px 10px", display: "grid", gap: 4 }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}><b style={{ fontSize: 13 }}>📅 {x.absenceDay} {x.absenceDateH ? `${x.absenceDateH} هـ` : x.absenceDateM}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>{x.reasonCat}</span><span style={{ marginRight: "auto", background: c[1], color: c[2], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 900 }}>{c[0]}</span></div>
+        {x.adminReply ? <div style={{ background: "#f0fdf4", border: "1px dashed #86efac", borderRadius: 10, padding: "6px 10px", fontSize: 13, fontWeight: 800, color: "#14532d" }}>💬 رد الإدارة: {x.adminReply}{x.adminReplyAt ? <small style={{ color: "#64748b", fontWeight: 700 }}> — {x.adminReplyAt}</small> : null}</div> : x.status && x.status !== "قيد المراجعة" ? null : <div style={{ fontSize: 12, color: "#92400e", fontWeight: 700 }}>سيظهر قرار الإدارة وردّها هنا، ويصلك إشعار عند تفعيله</div>}
+      </div>; })}
+  </div>;
+}
 function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
   const YEAR_KEY = new Date().getFullYear();
   const SITE_URL = window.location.origin + window.location.pathname;
@@ -5447,7 +5466,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
     setLoading(true);
     const data = await DB.get(`school-excuses-${year}`, {});
     const arr = Object.values(data || {}).sort((a, b) => b.id - a.id);
-    if (year === YEAR_KEY) { setExcuses(arr); setArchiveYear(null); }
+    if (year === YEAR_KEY) { setExcuses(arr); setArchiveYear(null); if (isAdmin) (async () => { for (const x of arr) if (x && (x.status === "مقبول" || x.status === "مرفوض")) await lgExcDecide(x, true); })(); }
     else { setArchiveData(arr); setArchiveYear(year); }
     setLoading(false);
   };
@@ -5609,6 +5628,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
       existing[excuseId].adminReply   = txt;
       existing[excuseId].adminReplyAt = new Date().toLocaleDateString("ar-SA");
       await DB.set(key, existing);
+      const x = existing[excuseId]; if (x.studentId) pushSend({ to: { uids: ["s_" + x.studentId] }, title: "💬 رد الإدارة على عذر الغياب", body: `${x.studentName}: ${txt}`, url: "/#excuses", urlS: "/#excuses", tag: "exc-" + x.id, by: "الإدارة" });
     }
     const upd = ex => ex.id === excuseId ? { ...ex, adminReply: txt, adminReplyAt: new Date().toLocaleDateString("ar-SA") } : ex;
     if (archiveYear) setArchiveData(prev => prev.map(upd));
@@ -5630,8 +5650,8 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
   const updateStatus = async (excuseId, newStatus) => {
     const key = `school-excuses-${archiveYear || YEAR_KEY}`;
     const existing = await DB.get(key, {});
-    if (existing[excuseId]) { existing[excuseId].status = newStatus; await DB.set(key, existing); }
-    const update = ex => ex.id === excuseId ? { ...ex, status: newStatus } : ex;
+    if (existing[excuseId]) { existing[excuseId].status = newStatus; existing[excuseId].decidedAt = Date.now(); await DB.set(key, existing); lgExcDecide(existing[excuseId]); }
+    const update = ex => ex.id === excuseId ? { ...ex, status: newStatus, decidedAt: Date.now() } : ex;
     if (archiveYear) setArchiveData(prev => prev.map(update));
     else setExcuses(prev => prev.map(update));
   };
@@ -6133,15 +6153,15 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
                             background:sc.bg, color:sc.color, border:`1px solid ${sc.border}` }}>
                             {ex.status}
                           </span>
-                          {ex.status === "قيد المراجعة" && (<>
-                            <button onClick={()=>updateStatus(ex.id,"مقبول")}
+                          {(<>
+                            {ex.status !== "مقبول" && <button onClick={()=>updateStatus(ex.id,"مقبول")}
                               style={{ padding:"4px 10px", borderRadius:8, border:"none",
                                        background:"#d1fae5", color:"#065f46", fontWeight:800,
-                                       fontSize:11.5, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>✅ قبول</button>
-                            <button onClick={()=>updateStatus(ex.id,"مرفوض")}
+                                       fontSize:11.5, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>✅ قبول</button>}
+                            {ex.status !== "مرفوض" && <button onClick={()=>updateStatus(ex.id,"مرفوض")}
                               style={{ padding:"4px 10px", borderRadius:8, border:"none",
                                        background:"#fee2e2", color:"#991b1b", fontWeight:800,
-                                       fontSize:11.5, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>❌ رفض</button>
+                                       fontSize:11.5, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>❌ رفض</button>}
                           </>)}
                           <button onClick={()=>printExcuse(ex)}
                             style={{ padding:"4px 10px", borderRadius:8, border:"1px solid #e2e8f0",
@@ -6333,6 +6353,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
             </div>
           </div>
 
+          <LgExcHistory student={student} year={YEAR_KEY} />
           {/* ── اليوم والتاريخ ── */}
           <div style={{ ...S.card, padding:"16px", marginBottom:12 }}>
             <div style={{ fontWeight:900, color:"#1e3a5f", fontSize:13.5, marginBottom:12,
@@ -33239,7 +33260,7 @@ function PushAdmin({ by = "الإدارة" }) {
       <small style={{ color: "#64748b", fontWeight: 700 }}>تُرسل الإشعارات تلقائيًا أيضًا عند: نشر تعميم، إسناد مهمة أو تذكير لإداري، إسناد حصة انتظار، نشر واجب أو تصحيحه.</small>
     </div>
     {rc && <div className="ma-card p-4 grid gap-2"><b style={{ fontSize: 16 }}>⏰ التذكيرات التلقائية</b>
-      {[["morning", "📋 ملخص الصباح لكل معلم: إشرافه ومناوبته وحصص الانتظار المسندة إليه"], ["duty", "⏰ تذكير قبل بداية الإشراف والمناوبة"], ["sub", "🛡️ تذكير قبل بداية حصة الانتظار"]].map(([k, l]) => <label key={k} className="flex items-center gap-2" style={{ fontWeight: 800, fontSize: 13.5, cursor: "pointer" }}><input type="checkbox" checked={!!rc[k] && !rc.off} disabled={!!rc.off} onChange={e => saveRc({ [k]: e.target.checked })} />{l}</label>)}
+      {[["morning", "📋 ملخص الصباح لكل معلم: إشرافه ومناوبته وحصص الانتظار المسندة إليه"], ["duty", "⏰ تذكير قبل بداية الإشراف والمناوبة"], ["sub", "🛡️ تذكير قبل بداية حصة الانتظار"], ["pend", "📌 تذكير يومي (٧:٢٠ ص) لكل معلم: التعاميم التي لم يوقّعها والمساءلات التي لم يرد عليها"]].map(([k, l]) => <label key={k} className="flex items-center gap-2" style={{ fontWeight: 800, fontSize: 13.5, cursor: "pointer" }}><input type="checkbox" checked={(k === "pend" ? rc.pend !== false : !!rc[k]) && !rc.off} disabled={!!rc.off} onChange={e => saveRc({ [k]: e.target.checked })} />{l}</label>)}
       <div className="flex items-center gap-2 flex-wrap" style={{ fontWeight: 800, fontSize: 13.5 }}>التذكير قبل البداية بـ{[5, 10, 15, 20].map(m => <button key={m} className={`ma-btn ${+rc.lead === m ? "pri" : ""}`} style={{ height: 32 }} onClick={() => saveRc({ lead: m })}>{maAr(m)} د</button>)}<span style={{ marginRight: 12 }}>وقت ملخص الصباح</span><input type="time" className="ma-inp" style={{ width: 120, height: 34 }} value={rc.mornAt} onChange={e => saveRc({ mornAt: e.target.value })} /></div>
       <label className="flex items-center gap-2" style={{ fontWeight: 800, fontSize: 13, color: "#b91c1c", cursor: "pointer" }}><input type="checkbox" checked={!!rc.off} onChange={e => saveRc({ off: e.target.checked })} />إيقاف كل التذكيرات التلقائية مؤقتًا</label>
       <small style={{ color: "#64748b", fontWeight: 700 }}>تعمل من الأحد إلى الخميس، وتُرسل مرة واحدة لكل مهمة. مصدرها جدول الإشراف والمناوبة، وحصص الانتظار المعتمدة في الجدول المدرسي.</small>
@@ -34431,6 +34452,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "dutyadm" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🛡️ الإشراف والمناوبة", <DutyAdminPage by={me.name} />);
   if (view === "admtasks" && isStaff && me.role === "principal") return wrap("📌 المهام اليومية للإداريين", <AdmTasksPage by={me.name} me={me} />);
   if (view === "mytasks") return wrap("📌 مهامي اليومية", <AtMyTasks me={me} />);
+  if (view === "sb") return wrap("🛡️ حصص الاحتياط المسندة إليك", <SbTeacherCard me={me} full />);
   if (view === "asm" && allowed) return wrap("🎺 الطابور الصباحي", isStaff ? <AssemblyPage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} /> : <AssemblyPage by={me.name} canEdit={false} ro me={me} />);
   if (view === "sched" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("🗓️ الجدول المدرسي", isStaff ? <SchoolTimetablePage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} /> : <SchoolTimetablePage by={me.name} canEdit={false} ro me={me} />);
   if (view === "cvadm" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🎯 الزيارات الصفية", <ClassVisitsPage by={me.name} />);
@@ -34523,6 +34545,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           <TchMustSign me={me} onCirc={() => setView("circ")} onCv={() => setView("cv")} />
           <TchStatsBoard me={me} go={setView} />
           <div className="pt-bns">
+            <div className="pt-bn"><SbTeacherCard me={me} quiet /></div>
             <div className="pt-bn"><RmtTeacherCard me={me} /></div>
             <div className="pt-bn"><DutyHomeBanner me={me} onOpen={() => setView("duty")} /></div>
             <div className="pt-bn"><HdAbsTeacher me={me} compact /></div>
@@ -34716,6 +34739,7 @@ function GuardianPortal({ onBack }) {
               : <div className="gd-ok" style={{ flex: "1 1 260px" }}><GdIco n="star" s={24} /><div><b>وضع منتظم — بارك الله فيه</b>لا توجد تنبيهات على الغياب أو التأخر أو السلوك</div></div>}
             <button type="button" className={"gd-bell" + (fresh.length ? " on" : "")} onClick={() => { setBell(!bell); if (!bell) markSeen(); }}><GdIco n="bell" s={24} /><span>{fresh.length ? `${maAr(fresh.length)} جديد` : "آخر المستجدات"}</span></button>
           </div>
+          {me.sid && <PushBell who={{ uid: "s_" + me.sid, n: me.name, r: "s", ck: me.ck }} />}
           {typeof Notification !== "undefined" && Notification.permission === "default" && <button type="button" className="ma-btn" style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => Notification.requestPermission().then(() => setBell(b => b))}><GdIco n="bell" s={16} /> تفعيل الإشعارات على الجهاز</button>}
           {bell && <div className="pt-item" style={{ border: "1.5px solid #e2e8f0" }}><div className="flex items-center gap-2"><b style={{ fontSize: 15, flex: 1, display: "flex", alignItems: "center", gap: 8 }}><GdIco n="bell" s={18} /> آخر ما سُجّل لابنكم</b><button className="ma-btn" onClick={() => setBell(false)}>إغلاق</button></div>{EV.length ? <div className="grid gap-1 mt-2">{EV.slice(0, 25).map(e => <div key={e.id} className="gd-row" style={{ borderRight: `4px solid ${e.c}` }}><span className="gd-tli" style={{ "--c": e.c }}><GdIco n={e.ic === "🚫" ? "ban" : e.ic === "⏰" ? "clock" : "shield"} s={16} /></span><b style={{ flex: 1, color: e.c, fontSize: 13.5 }}>{e.t}</b><span className="h">{maDay(maDate(e.k))} {asmHij(maDate(e.k), false)}</span>{!seen.includes(e.id) && fresh.some(f => f.id === e.id) && <span className="gd-tag" style={{ background: "#dc2626", color: "#fff" }}>جديد</span>}</div>)}</div> : <div style={{ color: "#15803d", fontWeight: 900, marginTop: 6 }}>لا يوجد غياب أو تأخر أو ملاحظات</div>}</div>}
         </div>; })()}
@@ -34754,6 +34778,7 @@ function GuardianPortal({ onBack }) {
                     <div className="flex gap-2 flex-wrap items-center"><label className="gd-btn" style={{ cursor: "pointer" }}><GdIco n="file" s={14} /> إرفاق تقرير أو صورة<input type="file" accept="image/*" hidden onChange={async e => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; const u = await licCompressImage(f); setDayExc(x => ({ ...x, img: u })); }} /></label>{dayExc.img && <img src={dayExc.img} alt="" style={{ height: 44, borderRadius: 8, border: "1px solid #e2e8f0" }} />}
                       <span style={{ marginInlineStart: "auto" }} className="flex gap-2"><button className="ma-btn pri" disabled={busy} onClick={sendDayExc}>{busy ? "⏳" : "إرسال العذر للمدرسة"}</button><button className="ma-btn" onClick={() => setDayExc(null)}>إلغاء</button></span></div>
                   </div>}
+                  {ex && ex.reply && st !== "new" && thr !== ex.id && <div style={{ marginInlineStart: 14, background: ok ? "#f0fdf4" : "#fef2f2", border: `1px dashed ${ok ? "#86efac" : "#fca5a5"}`, borderRadius: 10, padding: "6px 10px", fontSize: 13, fontWeight: 800, color: ok ? "#14532d" : "#7f1d1d" }}>💬 رد الإدارة: {ex.reply}{ex.replyBy ? <small style={{ color: "#64748b", fontWeight: 700 }}> — {ex.replyBy}</small> : null}</div>}
                   {ex && thr === ex.id && <div style={{ paddingInlineStart: 14 }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>عذر: {ex.type}{ex.text ? ` — ${ex.text}` : ""}</div><GdThread x={ex} path={`${PT_EXC}/${ex.id}`} who="p" by={`ولي أمر ${String(me.name).split(" ")[0]}`} k="exc" onUpd={updExc} /></div>}
                 </div>; }) : <div className="gd-ok"><GdIco n="star" s={22} /><div><b>لا يوجد غياب مسجّل</b>بارك الله فيه</div></div>}
               <div className="gd-how">المصدر: كشف الحضور اليومي لفصل الطالب كما رصده المعلم أو وكيل شؤون الطلاب. يمكنكم رفع عذر لأي يوم من أمامه مباشرة، فيصل لإدارة المدرسة فورًا، وتظهر حالته هنا (قيد المراجعة / مقبول / لم يُقبل) مع ردود المدرسة وتعليقاتكم.</div>
@@ -34854,8 +34879,8 @@ function ParentInbox({ by = "الإدارة" }) {
             {x.img && <img src={x.img} alt="" onClick={() => setImg(x.img)} style={{ height: 80, borderRadius: 10, marginTop: 8, cursor: "zoom-in", border: "1px solid #e2e8f0" }} />}
             <GdThread x={x} path={`${PT_EXC}/${x.id}`} who="s" by={by} k="exc" onUpd={updL("exc")} />
             <div className="flex gap-2 flex-wrap mt-2">
-              <button className="ma-btn grn" onClick={() => { upd(`${PT_EXC}/${x.id}`, { status: "ok", by, reply: (rep[x.id] || "").trim() || x.reply || "تم قبول العذر", replyBy: by }, "exc", x.id); absxSyncExc({ ...x, status: "ok" }, by); }}>✅ قبول</button>
-              <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => { upd(`${PT_EXC}/${x.id}`, { status: "no", by, reply: (rep[x.id] || "").trim() || x.reply || "لم يُقبل العذر", replyBy: by }, "exc", x.id); absxSyncExc({ ...x, status: "no" }, by); }}>❌ رفض</button>
+              <button className="ma-btn grn" onClick={() => { upd(`${PT_EXC}/${x.id}`, { status: "ok", by, reply: (rep[x.id] || "").trim() || x.reply || "تم قبول العذر", replyBy: by }, "exc", x.id); absxSyncExc({ ...x, status: "ok" }, by); ptExcPush(x, "ok", (rep[x.id] || "").trim() || x.reply); }}>✅ قبول</button>
+              <button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => { upd(`${PT_EXC}/${x.id}`, { status: "no", by, reply: (rep[x.id] || "").trim() || x.reply || "لم يُقبل العذر", replyBy: by }, "exc", x.id); absxSyncExc({ ...x, status: "no" }, by); ptExcPush(x, "no", (rep[x.id] || "").trim() || x.reply); }}>❌ رفض</button>
               <input className="ma-inp" style={{ flex: "1 1 200px" }} value={rep[x.id] || ""} onChange={e => setRep({ ...rep, [x.id]: e.target.value })} placeholder="✍️ رد لولي الأمر (اختياري)…" />
               <button className="ma-btn" onClick={() => del(`${PT_EXC}/${x.id}`, "exc", x.id)}>🗑</button>
             </div>
@@ -41774,6 +41799,15 @@ function hdDay(r, cfg) {
     if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d: null, late: 0, early: 0, lost: 0, pct: null, fl, rm: 1 };
     if (/غياب/.test(st) || a == null) return { kind: "abs", st: st || "غياب", a, d: null, late: 0, early: 0, lost: 0, pct: 0, fl, rm: 1 };
     const late = Math.max(0, a - RS - g); return W({ late, lost: late, pct: Math.max(0, Math.round((RR - late) / RR * 100)) }); }
+  // 🧮 الاحتساب المبسّط (خيار الإدارة عند رفع نهاية الدوام): لا انصراف • الاستئذان ومهمة العمل حضور كامل • التأخر الصباحي فقط بعد وقت محدد
+  if (r.sm && r.ph !== "m") { const SM = hdMin(typeof r.sm === "string" ? r.sm : HD_REM_S), RR = Math.max(30, E - SM); const W = (o = {}) => ({ kind: "work", st, a, d: null, late: 0, early: 0, lost: 0, pct: 100, fl, sm: 1, ...o });
+    if (/عطلة/.test(st)) return { kind: "off", st };
+    if (r.fx === "abs") return { kind: "abs", st, a, d: null, late: 0, early: 0, lost: 0, pct: 0, fl, sm: 1 };
+    if (r.fx === "leave" || (!r.fx && /اجازة|إجازة/.test(st))) return { kind: "leave", st, a, d: null, late: 0, early: 0, lost: 0, pct: null, fl, sm: 1 };
+    if (r.fx === "task" || r.fx === "perm" || /مهمة|انتداب|استئذان/.test(st)) return W({ task: 1 });
+    if (!r.fx && /غياب/.test(st)) return { kind: "abs", st, a, d: null, late: 0, early: 0, lost: 0, pct: 0, fl, sm: 1 };
+    if (a == null) { fl.push("لم يُسجَّل حضور"); return W(); }
+    const late = Math.max(0, a - SM - g); return W({ late, lost: late, pct: Math.max(0, Math.round((RR - late) / RR * 100)) }); }
   // رفع الصباح: يُحسب التأخر فقط، ولا يُحكم بالغياب أو الانصراف قبل رفع نهاية الدوام
   if (r.ph === "m") { if (/عطلة/.test(st)) return { kind: "off", st }; if (/اجازة|إجازة/.test(st)) return { kind: "leave", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
     if (a == null) return { kind: "pend", st, a, d, late: 0, early: 0, lost: 0, pct: null, fl, morning: 1 };
@@ -41803,7 +41837,8 @@ function hdAsmMap(acfg, adata, name) { const t = hdFindAsm(acfg, name); if (!t) 
 function hdAgg(recs, cfg, f, t, am) {
   const L = Object.entries(ptObj(recs)).filter(([k]) => (!f || k >= f) && (!t || k <= t) && !maOff(k)).map(([k, r]) => ({ k, ...hdAddAsm(hdDay(r, cfg), am && am[k], cfg) })).filter(x => x.kind && x.kind !== "off");
   const W = L.filter(x => x.kind === "work"), P = L.filter(x => x.kind === "perm"), A = L.filter(x => x.kind === "abs"), cnt = L.filter(x => x.pct != null);
-  return { L, days: cnt.length, avg: cnt.length ? Math.round(cnt.reduce((s, x) => s + x.pct, 0) / cnt.length) : null, late: W.reduce((s, x) => s + x.late, 0), early: W.reduce((s, x) => s + x.early, 0), lateDays: W.filter(x => x.late > 0).length, earlyDays: W.filter(x => x.early > 0).length, onTime: W.filter(x => x.late === 0).length, work: W.length, perm: P.length, abs: A.length, lost: W.reduce((s, x) => s + x.lost, 0), asmDays: W.filter(x => x.asmL).length, asmL: W.reduce((s, x) => s + (x.asmL || 0), 0) };
+  const sub = Q => { const c = Q.filter(x => x.pct != null), w = Q.filter(x => x.kind === "work"); return { days: c.length, avg: c.length ? Math.round(c.reduce((s, x) => s + x.pct, 0) / c.length) : null, late: w.reduce((s, x) => s + x.late, 0), lateDays: w.filter(x => x.late > 0).length, early: w.reduce((s, x) => s + (x.early || 0), 0), abs: Q.filter(x => x.kind === "abs").length, perm: Q.filter(x => x.kind === "perm" || x.task).length }; };
+  return { ip: sub(L.filter(x => !x.rm)), rmt: sub(L.filter(x => x.rm)), L, days: cnt.length, avg: cnt.length ? Math.round(cnt.reduce((s, x) => s + x.pct, 0) / cnt.length) : null, late: W.reduce((s, x) => s + x.late, 0), early: W.reduce((s, x) => s + x.early, 0), lateDays: W.filter(x => x.late > 0).length, earlyDays: W.filter(x => x.early > 0).length, onTime: W.filter(x => x.late === 0).length, work: W.length, perm: P.length, abs: A.length, lost: W.reduce((s, x) => s + x.lost, 0), asmDays: W.filter(x => x.asmL).length, asmL: W.reduce((s, x) => s + (x.asmL || 0), 0) };
 }
 // قراءة تقرير «حضوري»
 async function hdParse(file) {
@@ -42223,6 +42258,7 @@ function HdTeacherView({ me }) {
         <div style={{ "--c": "#0369a1" }}><b>{maAr(G.perm)}</b><small>أيام استئذان</small></div>
         <div style={{ "--c": "#b91c1c" }}><b>{maAr(G.abs)}</b><small>أيام غياب</small></div>
       </div>
+      <HdSplit G={G} />
       <HdRepMine me={me} cfg={cfg} recs={recs} f={F0} t={T0} />
       <div className="hd-card"><b style={{ fontSize: 14 }}>⏳ دقائق التأخر والانصراف المبكر غير المستأذن في الفترة: {maAr(cum)} دقيقة</b>
         <div className="hd-bar"><i style={{ width: `${Math.min(100, cycle / lim * 100)}%`, background: cycle / lim > .8 ? "#b91c1c" : cycle / lim > .5 ? "#d97706" : "#0f766e" }} /></div>
@@ -42465,6 +42501,9 @@ function hdSvgBars(items, max) {
     return `<g><title>${alEsc(x.tip || `${x.l}: ${x.t}`)}</title><text x="${W - 4}" y="${y + 11}" font-size="11.5" font-weight="800" fill="${AL_INK}" text-anchor="end">${alEsc(String(x.l).length > 26 ? String(x.l).slice(0, 25) + "…" : x.l)}</text><rect x="${x0 - w}" y="${y + 2}" width="${w}" height="11" rx="4" fill="${x.c}"/><text x="${x0 - w - 6}" y="${y + 12}" font-size="11" font-weight="800" fill="${AL_INK}" text-anchor="end">${alEsc(x.t)}</text></g>`; }).join("")}</svg>`;
 }
 
+// 🏫 الحضوري و🏠 عن بعد — كلٌّ يُحسب في بنده
+function HdSplit({ G }) { if (!G || !G.rmt || !G.rmt.days) return null; const row = (ic, l, x, c) => <div style={{ flex: "1 1 230px", border: `1.5px solid ${c}33`, borderRight: `5px solid ${c}`, borderRadius: 14, padding: "8px 12px", background: "#fff", display: "grid", gap: 2 }}><b style={{ color: c, fontSize: 13.5 }}>{ic} {l} — {maAr(x.days)} يوم {x.avg != null && <span style={{ color: hdPctC(x.avg) }}>• {maAr(x.avg)}٪</span>}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>تأخر {hdDur(x.late)} ({maAr(x.lateDays)} يوم){x.early ? ` • انصراف مبكر ${hdDur(x.early)}` : ""} • غياب {maAr(x.abs)} • استئذان/مهمة {maAr(x.perm)}</span></div>;
+  return <div className="flex gap-2 flex-wrap">{row("🏫", "التعليم الحضوري", G.ip, "#0f766e")}{row("🏠", "الدوام عن بعد", G.rmt, "#4338ca")}</div>; }
 function HdPeriodReport({ cfg, all, names, by, saveCfg }) {
   const saved = hdRepOf(cfg);
   const allDates = React.useMemo(() => [...new Set(Object.values(ptObj(all)).flatMap(r => Object.keys(ptObj(r))))].filter(k => !maOff(k)).sort(), [all]);
@@ -42702,19 +42741,20 @@ function HdAdminPage({ by = "الإدارة" }) {
   const saveCfg = async p => { const n = { ...cfg, ...p }; setCfg(n); const ok = await maPut(HD_CFG, n); toast(ok ? "✅ حُفظت الإعدادات" : "⚠️ تعذّر الحفظ"); };
   const nm = hk => (names[hk] && names[hk].n) || "—";
   const isT = hk => { const j = (names[hk] || {}).job || ""; return !tOnly || !j || /معلم/.test(j); };
-  const pick = async (e, ph = "e") => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setBusy(true); try { const r = await hdParse(f); const short = r.kind === "notreg" || r.kind === "daily"; r.ph = short ? "m" : ph; r.forced = short && ph === "e";
+  const pick = async (e, ph = "e") => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; setBusy(true); try { const r = await hdParse(f); const short = r.kind === "notreg" || r.kind === "daily"; r.ph = short ? "m" : ph; r.forced = short && ph === "e"; r.sm = !!cfg.smDef; r.smAt = cfg.smAt || HD_REM_S;
       const remD = r.from && r.from === r.to && hdRem(cfg, r.to) && r.kind !== "notreg"; if (remD) { r.ph = "m"; r.forced = false; r.rem = 1; }
       if (((r.kind === "dailyFull" && r.ph === "e") || remD) && r.rows.length) { const hs = new Set(); for (const x of r.rows) { x.hk = hdK(await licHash(x.nid)); hs.add(x.hk); } const since = (() => { const d = maDate(r.to); d.setDate(d.getDate() - 45); return maKey(d); })();
         r.missing = Object.keys(all).filter(hk => !hs.has(hk) && Object.keys(ptObj(all[hk])).some(k => k >= since && k < r.to) && (!ptObj(names[hk]).job || /معلم/.test(ptObj(names[hk]).job))).map(hk => ({ hk, n: ptObj(names[hk]).n || "—", on: true })).sort((a, b) => a.n.localeCompare(b.n, "ar")); }
       setBusy(false); if (!r.rows.length) { alert("لم أجد في الملف أعمدة «السجل المدني» و«التاريخ» و«حالة التحضير» — تأكد أنه تقرير الحضور والانصراف من «حضوري»"); return; } setImp(r); } catch (err) { setBusy(false); alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
   const doImport = async () => { setBusy(true); const P = {}; const H = {}; let kept = 0; for (const x of imp.rows) { if (!H[x.nid]) H[x.nid] = hdK(await licHash(x.nid)); const hk = H[x.nid]; const ph = imp.ph === "m" && x.dk === imp.to ? "m" : "e";
-      const old = ptObj(ptObj(all[hk])[x.dk]); const RM = hdRem(cfg, x.dk); if (ph === "m" && old.st && old.ph !== "m" && !RM) { kept++; } else { const nr = { st: x.st, a: x.a, d: ph === "m" || RM ? "" : x.d, pl: x.pl, po: ph === "m" || RM ? "" : x.po, ph: RM ? "e" : ph, up: Date.now(), ...(RM ? { rm: 1, rs: RM.s || HD_REM_S } : {}) };
+      const old = ptObj(ptObj(all[hk])[x.dk]); const RM = hdRem(cfg, x.dk); if (ph === "m" && old.st && old.ph !== "m" && !RM) { kept++; } else { const nr = { st: x.st, a: x.a, d: ph === "m" || RM ? "" : x.d, pl: x.pl, po: ph === "m" || RM ? "" : x.po, ph: RM ? "e" : ph, up: Date.now(), ...(RM ? { rm: 1, rs: RM.s || HD_REM_S } : imp.sm && ph === "e" ? { sm: imp.smAt || cfg.smAt || HD_REM_S } : {}) };
         if (old.fx) { Object.assign(nr, { st: old.st, st0: x.st, fx: old.fx }); if (old.acc) nr.acc = 1; if (old.fixBy) nr.fixBy = old.fixBy; if (old.fixAt) nr.fixAt = old.fixAt; if (HD_FIXP[old.fx]) { nr.a0 = nr.a; nr.d0 = nr.d; nr.a = old.a || nr.a; nr.d = old.d || nr.d; if (old.fxn) nr.fxn = old.fxn; } }
         P[`${HD_NODE}/${hk}/${x.dk}`] = nr; } const on = ptObj(names[hk]); P[`${HD_T}/${hk}`] = { n: x.n || on.n || "", job: x.job || on.job || "", n4: x.nid.slice(-4) }; }
     const ks = Object.keys(P); let ok = true; for (let i = 0; i < ks.length; i += 400) { const ch = Object.fromEntries(ks.slice(i, i + 400).map(k => [k, P[k]])); if (!(await fbPatch(ch))) ok = false; }
     let absN = 0; (imp.missing || []).filter(x => x.on).forEach(x => { const old = ptObj(ptObj(all[x.hk])[imp.to]); if (old.st && old.ph !== "m" && !old.gen) return; const RM = hdRem(cfg, imp.to); P[`${HD_NODE}/${x.hk}/${imp.to}`] = { st: "غياب", a: "", d: "", ph: "e", gen: "notlisted", up: Date.now(), ...(RM ? { rm: 1, rs: RM.s || HD_REM_S } : {}) }; absN++; });
     if (absN) { const ks2 = Object.keys(P).filter(k => /\/gen$|notlisted/.test(JSON.stringify(P[k]))); for (let i = 0; i < ks2.length; i += 400) await fbPatch(Object.fromEntries(ks2.slice(i, i + 400).map(k => [k, P[k]]))); }
-    const emp = Object.keys(H).length; await maPut(`${HD_UP}/u${Date.now()}`, { at: Date.now(), by, f: imp.from, t: imp.to, n: imp.rows.length, emp, ph: imp.ph || "e" });
+    const emp = Object.keys(H).length; await maPut(`${HD_UP}/u${Date.now()}`, { at: Date.now(), by, f: imp.from, t: imp.to, n: imp.rows.length, emp, ph: imp.ph || "e", ...(imp.sm ? { sm: 1 } : {}) });
+    if (imp.ph === "e" && !imp.rem && (!!cfg.smDef !== !!imp.sm || (imp.sm && imp.smAt && imp.smAt !== cfg.smAt))) { const n = { ...cfg, smDef: !!imp.sm, ...(imp.smAt ? { smAt: imp.smAt } : {}) }; setCfg(n); maPut(HD_CFG, n); }
     setBusy(false); setImp(null); await load(); setDk(imp.to && !maOff(imp.to) ? imp.to : null); toast(ok ? `✅ ${imp.rem ? "🏠 دوام عن بعد: " : imp.ph === "m" ? "رفع الصباح: " : "رفع نهاية الدوام: "}${maAr(emp)} موظفاً ${imp.from === imp.to ? hfxHijTxt(imp.to) : `من ${hfxHijTxt(imp.from)} إلى ${hfxHijTxt(imp.to)}`}${kept ? ` • لم يُستبدل ${maAr(kept)} سجلاً مكتملاً برفع صباحي` : ""}${absN ? ` • سُجّل ${maAr(absN)} غائباً (لم يردوا في الملف)` : ""}` : "⚠️ رُفع جزء من البيانات — أعد الرفع"); };
   // تصحيح الإدارة لحالة يوم (استئذان / إجازة / مهمة رسمية / غياب) — يُحفظ الأصل في st0
   const fixSt = async (x, v, tm) => { const r0 = ptObj(all[x.hk])[dk] || {}; const orig = r0.st0 != null ? r0.st0 : r0.st; const L = { ...HD_FXL, ...Object.fromEntries(Object.entries(HD_FIXP).map(([k, z]) => [k, `حضور (تصحيح: ${z.l})`])) }[v];
@@ -42788,6 +42828,10 @@ function HdAdminPage({ by = "الإدارة" }) {
           {imp.forced && <div className="hd-note" style={{ background: "#fef2f2", borderColor: "#fecaca" }}>التقرير اليومي المختصر لا يصلح لحساب نهاية الدوام (لا يحوي الانصراف)، فسيُرفع كـ«رفع صباح». لنهاية الدوام ارفع «الحضور والانصراف لجميع الموظفين».</div>}
           <div className="hd-kp"><div style={{ "--c": "#0f1e3d" }}><b>{maAr(emp)}</b><small>موظفاً</small></div><div style={{ "--c": "#0f766e" }}><b>{maAr(imp.rows.length)}</b><small>سجلاً يومياً</small></div><div style={{ "--c": "#b45309" }}><b style={{ fontSize: 15 }}>{hfxHijTxt(imp.from)}<br />{hfxHijTxt(imp.to)}</b><small>الفترة</small></div></div>
           <div className="flex gap-1 flex-wrap">{Object.entries(St).sort((a, b) => b[1] - a[1]).map(([s, n]) => <span key={s} className="hd-pill" style={{ background: "#f1f5f9", color: "#334155" }}>{s}: {maAr(n)}</span>)}</div>
+          {imp.ph === "e" && !imp.rem && <div className="hd-card" style={{ borderColor: imp.sm ? "#0f766e" : "#e2e8f0", background: imp.sm ? "#f0fdfa" : "#fff", gap: 6 }}>
+            <label className="flex gap-2 items-center" style={{ fontWeight: 900, fontSize: 14, cursor: "pointer" }}><input type="checkbox" checked={!!imp.sm} onChange={e => setImp(m => ({ ...m, sm: e.target.checked }))} />🧮 احتساب مبسّط لهذا الرفع (اختياري)</label>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", lineHeight: 1.8 }}>• لا يُحسب الانصراف المبكر ولا «لم يسجّل انصرافاً» • كل <b>استئذان ومهمة عمل = حضور كامل</b> • يُحسب <b>التأخر الصباحي فقط</b> بعد الساعة <input type="time" className="hd-in" style={{ padding: "1px 6px", width: 110 }} value={imp.smAt || cfg.smAt || HD_REM_S} onChange={e => setImp(m => ({ ...m, smAt: e.target.value }))} /> • يمكن إلغاؤه لاحقاً لأي يوم من «📅 اليوم».</div></div>}
+          {imp.rem && <div className="hd-note" style={{ background: "#eef2ff", borderColor: "#a5b4fc", color: "#3730a3" }}>🏠 يوم دوام عن بعد — يُحسب في بند «الدوام عن بعد» منفصلاً عن الحضوري.</div>}
           <div className="flex gap-2"><button className="hd-b pri" disabled={busy} onClick={doImport}>{busy ? "⏳ جاري الرفع…" : "✅ اعتماد ورفع"}</button><button className="hd-b" onClick={() => setImp(null)}>إلغاء</button></div></div>; })()}
         {ups.length > 0 && <div className="hd-card"><b>🗂 سجل الرفع</b>{ups.slice(0, 12).map((u, i) => <div key={i} style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>{new Date(u.at).toLocaleString("ar-SA")} — {u.by} • {hfxHijTxt(u.f)} ← {hfxHijTxt(u.t)} • {maAr(u.emp || 0)} موظف</div>)}</div>}
       </div>}
@@ -42799,6 +42843,10 @@ function HdAdminPage({ by = "الإدارة" }) {
           <input className="hd-in" style={{ flex: "1 1 160px", maxWidth: 240 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث بالاسم" />
           <select className="hd-in" value={sortK} onChange={e => setSortK(e.target.value)}><option value="pct">الأقل انضباطاً أولاً</option><option value="late">الأكثر تأخراً</option><option value="name">أبجدياً</option></select>
           <label className="flex gap-1 items-center" style={{ fontWeight: 800, fontSize: 13 }}><input type="checkbox" checked={tOnly} onChange={e => setTOnly(e.target.checked)} /> المعلمون فقط</label><button className="hd-b gold" style={{ marginInlineStart: "auto" }} onClick={printDay}>🖨 تقرير اليوم</button></div>
+        {!hdRem(cfg, dk) && (() => { const R = Object.entries(all).map(([hk, r]) => ({ hk, rec: ptObj(r)[dk] })).filter(x => x.rec && x.rec.st && !x.rec.void && x.rec.ph !== "m" && !x.rec.rm); if (!R.length) return null; const on = R.some(x => x.rec.sm); const at = (R.find(x => x.rec.sm) || {}).rec; const tm = (at && typeof at.sm === "string" && at.sm) || cfg.smAt || HD_REM_S;
+          const setSm = async v => { if (v === false && !window.confirm("إلغاء الاحتساب المبسّط لهذا اليوم والعودة للاحتساب الكامل (التأخر من بداية الدوام + الانصراف)؟")) return; const P = {}; R.forEach(x => { P[`${HD_NODE}/${x.hk}/${dk}/sm`] = v === false ? 0 : v; }); const ok = await fbPatch(P); await load(); toast(ok ? (v === false ? "↺ أُعيد الاحتساب الكامل لهذا اليوم" : "🧮 طُبّق الاحتساب المبسّط على هذا اليوم") : "⚠️ تعذّر الحفظ"); };
+          return <div className="hd-note flex gap-2 items-center flex-wrap" style={{ background: on ? "#f0fdfa" : "#f8fafc", borderColor: on ? "#5eead4" : "#e2e8f0", color: "#134e4a" }}>🧮 <b>{on ? `احتساب مبسّط مفعّل لهذا اليوم: تأخر صباحي فقط بعد ${hdHM(hdMin(tm))} • الاستئذان ومهمة العمل حضور • بلا انصراف` : "احتساب كامل لهذا اليوم (التأخر من بداية الدوام + الانصراف المبكر)"}</b>
+            <span style={{ marginInlineStart: "auto" }} className="flex gap-1">{on ? <button className="hd-b" onClick={() => setSm(false)}>↺ احتساب كامل</button> : <button className="hd-b" onClick={() => { const v = window.prompt("التأخر الصباحي يُحسب بعد الساعة (مثال 07:30):", tm); if (v && /^\d{1,2}:\d{2}$/.test(v.trim())) setSm(v.trim().padStart(5, "0")); }}>🧮 تطبيق الاحتساب المبسّط</button>}</span></div>; })()}
         {hdRem(cfg, dk) && <div className="hd-note" style={{ background: "#eef2ff", borderColor: "#a5b4fc", color: "#3730a3" }}>🏠 <b>دوام عن بعد</b> — التأخر محسوب من {hdHM(hdMin(hdRem(cfg, dk).s || HD_REM_S))} • أي استئذان أو مهمة عمل = حضور كامل • من لم يسجّل حضوره = غائب • لا يُحسب الانصراف • للتغيير الجماعي استعمل «⚡ تغيير جماعي» أسفل.</div>}
         {(() => { const v = dayRows.filter(x => x.d.pct != null); const A = v.length ? Math.round(v.reduce((s, x) => s + x.d.pct, 0) / v.length) : null; return <div className="hd-kp">
           <div style={{ "--c": hdPctC(A) }}><b>{A == null ? "—" : `${maAr(A)}٪`}</b><small>متوسط الانضباط</small></div>
@@ -43482,6 +43530,35 @@ function CdWatcher({ me, onOpen }) {
     <div className="b"><button className="go" onClick={() => { hide(); onOpen && onOpen(); }}>📨 اطّلع الآن</button><button className="x" onClick={hide}>لاحقاً</button></div></div>;
 }
 
+// ── فئات المرسل إليهم: حسب التخصص (من الجدول) وحسب الصف الذي يدرّسه، ومجموعات محفوظة (لجان/فرق) ──
+const CR_GRP = "school-circ-grp";
+async function crCatsLoad(staff) {
+  const [tt, g] = await Promise.all([maGet(TT_NODE), maGet(CR_GRP)]); const T = ttFresh(tt); const subj = {}, grade = {};
+  if (T && T.T) staff.forEach(t => { const ti = sttFindMe(T, t.n); if (ti < 0) return; const ss = new Set(), gs = new Set();
+    Object.entries(T.C || {}).forEach(([ck, D]) => (D || []).forEach(day => (day || []).forEach(x => { if (x && +x[1] === ti) { const s = ttClean(T.S[x[0]] || ""); if (s) ss.add(s); gs.add(String(maClassName(ck)).split("/")[0].trim()); } })));
+    ss.forEach(s => (subj[s] = subj[s] || []).push(t.hk)); gs.forEach(s => (grade[s] = grade[s] || []).push(t.hk)); });
+  return { subj, grade, grp: ptObj(g) };
+}
+function CrCatPicker({ staff, ed, setEd }) {
+  const [C, setC] = useState(null); const [nm, setNm] = useState("");
+  useEffect(() => { if (staff.length) crCatsLoad(staff).then(setC).catch(() => setC({ subj: {}, grade: {}, grp: {} })); }, [staff.length]);
+  if (!C) return <div style={{ fontSize: 12.5, color: "#64748b", fontWeight: 800 }}>⏳ تجهيز الفئات…</div>;
+  const to = Array.isArray(ed.to) ? ed.to : [];
+  const on = L => L.length > 0 && L.every(h => to.includes(h));
+  const tog = (lbl, L) => { const was = on(L); const n = was ? to.filter(h => !L.includes(h)) : [...new Set([...to, ...L])]; const lb = String(ed.toLbl || "").split("، ").filter(Boolean); setEd({ ...ed, to: n, toLbl: (was ? lb.filter(x => x !== lbl) : [...lb.filter(x => x !== lbl), lbl]).join("، ") }); };
+  const chip = (lbl, L, k) => <button key={k} type="button" className={`cr-chip ${on(L) ? "on" : ""}`} onClick={() => tog(lbl, L)}>{lbl} <small style={{ opacity: .7 }}>({maAr(L.length)})</small></button>;
+  const grp = Object.entries(C.grp).filter(([, g]) => g && g.n && Array.isArray(g.hks));
+  const save = async () => { const n = nm.trim(); if (!n || !to.length) return; const id = "g" + Date.now().toString(36); await maPut(`${CR_GRP}/${id}`, { n, hks: to, at: Date.now() }); setC({ ...C, grp: { ...C.grp, [id]: { n, hks: to } } }); setNm(""); };
+  const del = async id => { if (!window.confirm("حذف هذه المجموعة؟ (لا يؤثر على التعاميم المرسلة)")) return; await maPut(`${CR_GRP}/${id}`, null); const g = { ...C.grp }; delete g[id]; setC({ ...C, grp: g }); };
+  const sec = (t, x) => <div style={{ display: "grid", gap: 4 }}><div style={{ fontSize: 12, fontWeight: 900, color: "#475569" }}>{t}</div><div className="cr-chips">{x}</div></div>;
+  return <div style={{ border: "1.5px solid #c7d2fe", background: "#f8faff", borderRadius: 14, padding: 10, display: "grid", gap: 8 }}>
+    <b style={{ fontSize: 13.5, color: "#3730a3" }}>🏷️ اختر فئة (أو أكثر) — يُضاف أعضاؤها تلقائياً، ويمكنك التعديل بالأسفل</b>
+    {Object.keys(C.subj).length > 0 && sec("📚 حسب التخصص (من الجدول)", Object.entries(C.subj).sort((a, b) => b[1].length - a[1].length).map(([s, L]) => chip("معلمو " + s, L, "s" + s)))}
+    {Object.keys(C.grade).length > 0 && sec("🎓 حسب الصف الذي يدرّسه", Object.entries(C.grade).sort((a, b) => a[0].localeCompare(b[0], "ar")).map(([s, L]) => chip("معلمو " + s, L, "g" + s)))}
+    {sec("👥 مجموعاتي (لجان، فرق، رواد نشاط…)", <>{grp.map(([id, g]) => <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>{chip(g.n, g.hks.filter(h => staff.some(t => t.hk === h)), id)}<button type="button" title="حذف المجموعة" onClick={() => del(id)} style={{ border: 0, background: "none", color: "#b91c1c", cursor: "pointer", fontWeight: 900 }}>×</button></span>)}{!grp.length && <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700 }}>لا توجد مجموعات — حدّد المعلمين ثم احفظهم كمجموعة</span>}</>)}
+    <div className="flex gap-2 items-center flex-wrap"><input className="ma-inp" style={{ height: 34, flex: "1 1 180px" }} value={nm} onChange={e => setNm(e.target.value)} placeholder="اسم مجموعة جديدة من المحددين حالياً (مثال: لجنة التحصيل)" /><button type="button" className="cr-chip" disabled={!nm.trim() || !to.length} onClick={save}>💾 حفظ كمجموعة ({maAr(to.length)})</button></div>
+  </div>;
+}
 function CircAdminPage({ by = "الإدارة" }) {
   const [tab, setTab] = useState("list"); const [list, setList] = useState(null); const [staff, setStaff] = useState([]); const [sigAll, setSigAll] = useState({}); const [seenAll, setSeenAll] = useState({}); const [cfg, setCfg] = useState({});
   const [ed, setEd] = useState(null); const [open, setOpen] = useState(null); const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(""); const [q, setQ] = useState(""); const [phones, setPhones] = useState({});
@@ -43499,13 +43576,13 @@ function CircAdminPage({ by = "الإدارة" }) {
   if (!list) return <div className="p-10 text-center font-bold text-gray-400">⏳ جاري التحميل…</div>;
   const recOf = c => crRecips(c, staff);
   const save = async () => { const e = ed; if (!e.title.trim()) { toast("⚠️ اكتب عنوان التعميم"); return; } if (!String(e.text || "").trim() && !e.pages.length) { toast("⚠️ أضف نص التعميم أو صورته أو ملف PDF"); return; } if (Array.isArray(e.to) && !e.to.length) { toast("⚠️ اختر المعلمين المرسل إليهم"); return; }
-    setBusy("⏳ جاري النشر…"); const meta = { id: e.id, title: e.title.trim(), no: e.no || "", date: e.date || maKey(new Date()), src: e.src, text: e.text || "", ...(e.html ? { html: crSan(e.html) } : {}), ...(e.fs ? { fs: e.fs } : {}), ...(e.lh ? { lh: e.lh } : {}), lay: e.lay, size: e.size, to: e.to, need: !!e.need, n: e.pages.length, sec: maArr(e.sec).filter(x => x && String(x.t || "").trim() && x.p >= 0 && x.p < e.pages.length).map(x => ({ t: String(x.t).trim(), p: +x.p })).sort((a, b) => a.p - b.p), at: e.at || Date.now(), by: e.by || by, up: Date.now() };
+    setBusy("⏳ جاري النشر…"); const meta = { id: e.id, title: e.title.trim(), no: e.no || "", date: e.date || maKey(new Date()), src: e.src, text: e.text || "", ...(e.html ? { html: crSan(e.html) } : {}), ...(e.fs ? { fs: e.fs } : {}), ...(e.lh ? { lh: e.lh } : {}), lay: e.lay, size: e.size, to: e.to, toLbl: Array.isArray(e.to) ? String(e.toLbl || "") : "", need: !!e.need, n: e.pages.length, sec: maArr(e.sec).filter(x => x && String(x.t || "").trim() && x.p >= 0 && x.p < e.pages.length).map(x => ({ t: String(x.t).trim(), p: +x.p })).sort((a, b) => a.p - b.p), at: e.at || Date.now(), by: e.by || by, up: Date.now() };
     const ok1 = await crPutPages(e.id, e.pages, e.n || 0, (i, n) => setBusy(`⏳ رفع الصفحات: ${maAr(i)} من ${maAr(n)} — لا تغلق الصفحة`)); const ok2 = ok1 && await maPut(`${CR_NODE}/${e.id}`, meta); setBusy("");
     if (ok2 && !e.at) pushSend({ to: Array.isArray(e.to) ? { names: staff.filter(t => e.to.includes(t.hk)).map(t => t.n) } : { roles: ["t", "a"] }, title: "📜 تعميم جديد" + (e.need ? " يحتاج توقيعك" : ""), body: meta.title, url: "/#teacher:circ", urlA: "/#staff:circ", tag: "cr-" + e.id, by });
     if (ok2) { toast("✅ نُشر التعميم — أرسله الآن بالواتساب للمجموعة أو لكل معلم"); setEd(null); setTab("list"); await load(); openC(meta); } else toast(ok1 ? "⚠️ تعذّر حفظ بيانات التعميم — أعد المحاولة" : "⚠️ لم تُرفع بعض الصفحات — تحقق من الاتصال ثم اضغط «نشر» مرة أخرى"); };
   const openC = async c => { setOpen({ c, pages: null }); const [p, sg, se, rd, pr, pn] = await Promise.all([crIsLazy(c) ? Array(+c.n).fill(null) : maGet(`${CR_PG}/${c.id}`), maGet(`${CR_SIG}/${c.id}`), maGet(`${CR_SEEN}/${c.id}`), maGet(`${CR_READ}/${c.id}`), maGet(`${CR_PROG}/${c.id}`), maGet(`${CR_PN}/${c.id}`)]); setProgAll(x => ({ ...x, [c.id]: ptObj(pr) })); setPnAll(x => ({ ...x, [c.id]: ptObj(pn) })); setSigAll(x => ({ ...x, [c.id]: ptObj(sg) })); setSeenAll(x => ({ ...x, [c.id]: ptObj(se) })); setReadAll(x => ({ ...x, [c.id]: ptObj(rd) })); setOpen({ c, pages: crIsLazy(c) ? p : maArr(p) }); };
   const portal = (() => { try { return `${location.origin}${location.pathname}#teacher`; } catch { return "#teacher"; } })();
-  const waAll = c => window.open(`https://wa.me/?text=${encodeURIComponent(`📜 تعميم: ${c.title}\n${HFX_SCHOOL}\n${c.need ? "نأمل الاطلاع والتوقيع" : "نأمل الاطلاع"} من الرابط التالي (يُفتح برقم الهوية، وفيه مكان التوقيع والملاحظات):\n${crLink(c.id)}`)}`, "_blank");
+  const waAll = c => window.open(`https://wa.me/?text=${encodeURIComponent(`${c.toLbl ? `المكرمون / ${c.toLbl}\n` : ""}📜 تعميم: ${c.title}\n${HFX_SCHOOL}\n${c.need ? "نأمل الاطلاع والتوقيع" : "نأمل الاطلاع"} من الرابط التالي (يُفتح برقم الهوية، وفيه مكان التوقيع والملاحظات):\n${crLink(c.id)}`)}`, "_blank");
   const waOne = (c, t, again) => { const ph = phOf(phones, t.n); window.open(waUrl(ph, `المكرم الأستاذ/ ${t.n}\n${again ? "نذكّركم بالاطلاع على" : "نأمل الاطلاع على"} التعميم «${c.title}»${c.need ? " والتوقيع عليه" : ""} من الرابط:\n${crLink(c.id)}`), "_blank"); };
   const hide = async c => { if (!window.confirm(c.keep ? `«${c.title}» مثبّت كمرجع دائم يتصفحه المعلمون.\nأرشفته تخفيه عنهم (تبقى صفحاته ولا تُحذف). هل تريد الأرشفة؟` : `أرشفة وإخفاء «${c.title}» من القائمة؟ (يبقى محفوظاً بتوقيعاته في الخادم)`)) return; await maPut(`${CR_NODE}/${c.id}/hid`, Date.now()); load(); };
   const keepT = async c => { await maPut(`${CR_NODE}/${c.id}/keep`, c.keep ? null : 1); toast(c.keep ? "أُلغي التثبيت" : "📌 ثُبّت مرجعًا دائمًا: يبقى للاطلاع والتصفح ولا تُحذف صفحاته"); load(); };
@@ -43521,7 +43598,7 @@ function CircAdminPage({ by = "الإدارة" }) {
   if (open) { const c = open.c; const rec = recOf(c); const S = ptObj(sigAll[c.id]), V = ptObj(seenAll[c.id]); const done = rec.filter(t => S[t.hk] && S[t.hk].at);
     return <div className="cr px-2 md:px-6 py-3" dir="rtl"><style>{CR_CSS}</style><div className="grid gap-3" style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div className="flex gap-2 flex-wrap items-center"><button className="cr-b" onClick={() => { setOpen(null); load(); }}>→ التعاميم</button><b style={{ fontSize: 17 }}>📜 {c.title}</b><button className="cr-b" onClick={() => openC(c)} title="تحديث">↻</button>
-        <span style={{ marginInlineStart: "auto" }} className="flex gap-2 flex-wrap"><button className="cr-b gold" disabled={!open.pages || !!busy} onClick={async () => circPrint(c, await fullPages(c), S, rec, cfg.logo, { seen: V, read: ptObj(readAll[c.id]), pn: ptObj(pnAll[c.id]) })}>🖨 طباعة احترافية</button><button className="cr-b" onClick={() => circPrint(c, [], S, rec, cfg.logo, { seen: V, read: ptObj(readAll[c.id]), pn: ptObj(pnAll[c.id]), only: 1 })}>🖨 سجل التوقيع والملاحظات فقط</button><button className="cr-b" onClick={() => { try { navigator.clipboard.writeText(crLink(c.id)); toast("📋 نُسخ رابط التعميم"); } catch {} }}>🔗 نسخ الرابط</button><button className="cr-b wa" onClick={() => waAll(c)}>📲 إشعار المجموعة</button><button className="cr-b" disabled={!!busy} onClick={async () => { const p = await crGetAll(c, (i, n) => setBusy(`⏳ تجهيز الصفحات للتعديل ${maAr(i)} من ${maAr(n)}`)); setBusy(""); setOpen(null); setEd({ ...c, pages: p, sec: maArr(c.sec) }); setTab("new"); }}>✎ تعديل</button></span></div>
+        <span style={{ marginInlineStart: "auto" }} className="flex gap-2 flex-wrap"><button className="cr-b gold" disabled={!open.pages || !!busy} onClick={async () => circPrint(c, await fullPages(c), S, rec, cfg.logo, { seen: V, read: ptObj(readAll[c.id]), pn: ptObj(pnAll[c.id]) })}>🖨 طباعة احترافية</button><button className="cr-b" onClick={() => circPrint(c, [], S, rec, cfg.logo, { seen: V, read: ptObj(readAll[c.id]), pn: ptObj(pnAll[c.id]), only: 1 })}>🖨 سجل التوقيع والملاحظات فقط</button><button className="cr-b" onClick={() => { try { navigator.clipboard.writeText(crLink(c.id)); toast("📋 نُسخ رابط التعميم"); } catch {} }}>🔗 نسخ الرابط</button><button className="cr-b wa" onClick={() => waAll(c)}>📲 {c.toLbl ? "إرسال الرابط للفئة" : "إشعار المجموعة"}</button>{rec.some(t => !(S[t.hk] && S[t.hk].at)) && <button className="cr-b" onClick={async () => { const L = rec.filter(t => !(S[t.hk] && S[t.hk].at)); const r = await pushSend({ to: { names: L.map(t => t.n) }, title: `⏰ تذكير: تعميم ${c.need ? "بانتظار توقيعك" : "بانتظار اطلاعك"}`, body: c.title, url: "/#teacher:circ", tag: "cr-" + c.id, by }); toast(`🔔 تذكير لـ ${maAr(L.length)} معلماً${r && r.sent ? ` • وصل ${maAr(r.sent)} جهاز` : " — من لم يفعّل الإشعارات أرسل له بالواتساب"}`); }}>🔔 تذكير غير الموقّعين</button>}<button className="cr-b" disabled={!!busy} onClick={async () => { const p = await crGetAll(c, (i, n) => setBusy(`⏳ تجهيز الصفحات للتعديل ${maAr(i)} من ${maAr(n)}`)); setBusy(""); setOpen(null); setEd({ ...c, pages: p, sec: maArr(c.sec) }); setTab("new"); }}>✎ تعديل</button></span></div>
       <div className="cr-card"><div className="flex items-center gap-2 flex-wrap"><b>✍️ {c.need ? "التوقيع" : "الاطلاع"}: {maAr(done.length)} من {maAr(rec.length)}</b><div className="cr-bar" style={{ flex: "1 1 200px" }}><i style={{ width: `${rec.length ? done.length / rec.length * 100 : 0}%` }} /></div></div>
         <div style={{ maxHeight: 340, overflow: "auto", display: "grid", gap: 6 }}>{rec.map(t => { const s = S[t.hk], v = V[t.hk]; return <div key={t.hk} className="flex items-center gap-2 flex-wrap" style={{ padding: "6px 10px", borderRadius: 12, background: s && s.at ? "#f0fdf4" : v ? "#fffbeb" : "#fff", border: "1px solid #eef2f6" }}>
           <b style={{ fontSize: 13.5, flex: "1 1 160px" }}>{t.n}</b>
@@ -43542,7 +43619,7 @@ function CircAdminPage({ by = "الإدارة" }) {
       {tab === "list" && <div className="grid gap-2"><input className="cr-in" style={{ maxWidth: 340 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث بالعنوان أو الرقم…" />
         {!L.length ? <div className="cr-card" style={{ textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا توجد تعاميم بعد — ابدأ من «➕ تعميم جديد».</div> : L.map(c => { const rec = recOf(c); const S = ptObj(sigAll[c.id]); const d = rec.filter(t => S[t.hk] && S[t.hk].at).length; return <div key={c.id} className="cr-row">
           <div style={{ width: 46, height: 46, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: "#ecfdf5" }}>{c.src === "pdf" ? "📕" : c.src === "text" ? "📝" : "🖼️"}</div>
-          <div style={{ minWidth: 0 }}><b style={{ fontSize: 15 }}>{c.title}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{c.no ? `رقم ${maAr(c.no)} • ` : ""}{asmHij(maDate(c.date))} • {c.to === "all" ? "كل المعلمين" : `${maAr(rec.length)} معلماً`}{c.n ? ` • ${maAr(c.n)} صفحة` : ""}{c.keep ? <span className="cr-pill" style={{ background: "#ede9fe", color: "#5b21b6", marginInlineStart: 6 }}>📌 مرجع دائم</span> : null}</div>
+          <div style={{ minWidth: 0 }}><b style={{ fontSize: 15 }}>{c.title}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{c.no ? `رقم ${maAr(c.no)} • ` : ""}{asmHij(maDate(c.date))} • {c.to === "all" ? "كل المعلمين" : `${c.toLbl ? `🏷️ ${c.toLbl} — ` : ""}${maAr(rec.length)} معلماً`}{c.n ? ` • ${maAr(c.n)} صفحة` : ""}{c.keep ? <span className="cr-pill" style={{ background: "#ede9fe", color: "#5b21b6", marginInlineStart: 6 }}>📌 مرجع دائم</span> : null}</div>
             <div className="flex items-center gap-2 mt-1"><div className="cr-bar" style={{ width: 160 }}><i style={{ width: `${rec.length ? d / rec.length * 100 : 0}%` }} /></div><span className="cr-pill" style={{ background: d === rec.length && rec.length ? "#dcfce7" : "#fef3c7", color: d === rec.length && rec.length ? "#15803d" : "#92400e" }}>{c.need ? "وقّع" : "اطّلع"} {maAr(d)} من {maAr(rec.length)}</span></div></div>
           <div className="flex gap-1 flex-wrap justify-end"><button className="cr-b pri" onClick={() => openC(c)}>فتح</button><button className="cr-b" style={c.keep ? { background: "#ede9fe", borderColor: "#c4b5fd" } : null} onClick={() => keepT(c)} title={c.keep ? "إلغاء التثبيت" : "تثبيت مرجعًا دائمًا (مثل الخطة): يبقى للتصفح ولا تُحذف صفحاته"}>📌</button><button className="cr-b red" onClick={() => hide(c)} title="أرشفة">🗄</button></div></div>; })}
         <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>📌 = مرجع دائم (كالخطة التشغيلية): يبقى ظاهرًا للمعلمين للاطلاع والتصفح حتى بعد التوقيع، ولا تشمله «إزالة الصفحات» أبدًا.</div></div>}
@@ -43575,9 +43652,10 @@ function CircAdminPage({ by = "الإدارة" }) {
           <CrEditor key={ed.id} html={ed.html || (ed.text ? ptEsc(ed.text).replace(/\n/g, "<br>") : "")} base={ed.fs || 16} lh={ed.lh || 2} onChange={h => setEd(x => ({ ...x, html: h, text: crPlain(h), src: x.pages.length ? x.src : "text" }))} />
           <div className="flex gap-2 flex-wrap items-center" style={{ fontSize: 12.5, fontWeight: 800 }}><span>حجم النص كله:</span>{[[14, "صغير"], [16, "عادي"], [18, "كبير"], [21, "أكبر"]].map(([v, l]) => <button key={v} className={`cr-chip ${(ed.fs || 16) === v ? "on" : ""}`} onClick={() => setEd({ ...ed, fs: v })}>{l}</button>)}<span style={{ marginInlineStart: 8 }}>تباعد الأسطر:</span>{[[1.6, "ضيق"], [2, "عادي"], [2.5, "واسع"]].map(([v, l]) => <button key={v} className={`cr-chip ${(ed.lh || 2) === v ? "on" : ""}`} onClick={() => setEd({ ...ed, lh: v })}>{l}</button>)}</div>
           <div style={{ fontWeight: 900, fontSize: 13 }}>المرسل إليهم</div>
-          <div className="cr-chips"><button className={`cr-chip ${ed.to === "all" ? "on" : ""}`} onClick={() => setEd({ ...ed, to: "all" })}>👥 كل المعلمين ({maAr(staff.length)})</button><button className={`cr-chip ${Array.isArray(ed.to) ? "on" : ""}`} onClick={() => setEd({ ...ed, to: Array.isArray(ed.to) ? ed.to : [] })}>☑️ معلمون محددون{Array.isArray(ed.to) ? ` (${maAr(ed.to.length)})` : ""}</button></div>
+          <div className="cr-chips"><button className={`cr-chip ${ed.to === "all" ? "on" : ""}`} onClick={() => setEd({ ...ed, to: "all", toLbl: "" })}>👥 كل المعلمين ({maAr(staff.length)})</button><button className={`cr-chip ${Array.isArray(ed.to) ? "on" : ""}`} onClick={() => setEd({ ...ed, to: Array.isArray(ed.to) ? ed.to : [] })}>☑️ فئة / معلمون محددون{Array.isArray(ed.to) ? ` (${maAr(ed.to.length)})` : ""}</button></div>
+          {Array.isArray(ed.to) && <CrCatPicker staff={staff} ed={ed} setEd={setEd} />}
           {Array.isArray(ed.to) && <div style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: 8, maxHeight: 260, overflow: "auto", display: "grid", gap: 4 }}>
-            <div className="flex gap-2"><button className="cr-chip" onClick={() => setEd({ ...ed, to: staff.map(t => t.hk) })}>تحديد الكل</button><button className="cr-chip" onClick={() => setEd({ ...ed, to: [] })}>إلغاء الكل</button></div>
+            <div className="flex gap-2"><button className="cr-chip" onClick={() => setEd({ ...ed, to: staff.map(t => t.hk) })}>تحديد الكل</button><button className="cr-chip" onClick={() => setEd({ ...ed, to: [], toLbl: "" })}>إلغاء الكل</button></div>
             {staff.map(t => <label key={t.hk} className="flex items-center gap-2" style={{ fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}><input type="checkbox" checked={ed.to.includes(t.hk)} onChange={e => setEd({ ...ed, to: e.target.checked ? [...ed.to, t.hk] : ed.to.filter(x => x !== t.hk) })} />{t.n}</label>)}</div>}
           <label className="flex items-center gap-2" style={{ fontWeight: 900, fontSize: 13.5 }}><input type="checkbox" checked={!!ed.need} onChange={e => setEd({ ...ed, need: e.target.checked })} /> طلب توقيع المعلم (يبقى التعميم معلّقاً عنده حتى يوقّع)</label>
           <div className="flex gap-2 flex-wrap"><button className="cr-b pri" disabled={!!busy} onClick={save}>📤 نشر التعميم</button><button className="cr-b" onClick={() => { setEd(null); setTab("list"); }}>إلغاء</button></div>
@@ -44370,7 +44448,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
     const k = ttK(d, p, ck); const rec = v ? { ...v, ...ttStamp(log[k], times, p, isToday), by, at: Date.now() } : null;
     setLog(o => { const n = { ...o }; if (rec) n[k] = rec; else delete n[k]; return n; });
     const ok = rec ? await maPut(`${TT_LOG}/${dateK}/${k}`, rec) : await fetch(`${FIREBASE_URL}/school/${TT_LOG}/${dateK}/${k}.json`, { method: "DELETE" }).then(r => r.ok).catch(() => false);
-    if (ok && rec && rec.st === "sub" && rec.sub != null && isToday && !rec.pm && !hdRemDay(dateK) && (!log[k] || log[k].sub !== rec.sub)) pushSend({ to: { ti: [+rec.sub] }, title: "🛡️ حصة احتياط", body: `الحصة ${TT_ORD[p]} (${mlFmtT(times[p] && times[p][0])}) — ${maClassName(ck)}`, url: "/#teacher:sched", urlA: "/#staff:tt", tag: "sub-" + k, by, urgent: 1 });
+    if (ok && rec && rec.st === "sub" && rec.sub != null && isToday && !rec.pm && !hdRemDay(dateK) && (!log[k] || log[k].sub !== rec.sub)) { pushSend({ to: { ti: [+rec.sub] }, title: "🛡️ حصة احتياط", body: `الحصة ${TT_ORD[p]} (${mlFmtT(times[p] && times[p][0])}) — ${maClassName(ck)}`, url: "/#teacher:sb", urlA: "/#staff:sched", tag: "sub-" + k, by, urgent: 1 }); fbPatch({ [`${SB_NODE}/${dateK}/${k}`]: { sub: +rec.sub, sent: { at: Date.now(), by, ch: "push", n: 1 } } }); }
     if (!ok) toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return ok;
   };
   const addAbs = async ti => {
@@ -44562,7 +44640,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
               <span style={{ marginRight: "auto", display: "flex", gap: 6, alignItems: "center" }}>{L ? <><span className="stt-lv" style={{ background: L.c, color: "#fff" }}>{L.l}</span><b style={{ fontSize: 14 }}>{ttClean(T.T[x.sub])}</b></> : <b style={{ color: "#b91c1c" }}>⚠️ لا يوجد بديل متاح</b>}{x.done ? <span title="معتمد">✅</span> : <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 800 }}>مقترح</span>}{canRec && <span className="stt-lv" style={{ background: "#eef2ff", color: "#3730a3" }}>✏️ تغيير البديل</span>}</span>
             </button>; })}{!planRows.length && <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>لا توجد حصص للغائبين في هذا اليوم</div>}</div>}
             {openPlan && canRec && planRows.length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>💡 اضغط أي حصة لتغيير معلم الاحتياط أو جعلها بلا بديل — حتى بعد الاعتماد، ويُحفظ التعديل فوراً.</div>}
-            {openPlan && planRows.some(x => x.sub != null) && <SttWaPanel T={T} rows={planRows} di={di} times={times} D={D} subName={subName} />}
+            {!ro && planRows.some(x => x.sub != null && x.done) ? <SbTrackPanel T={T} rows={planRows} di={di} times={times} D={D} subName={subName} by={by} isToday={isToday} onEdit={x => setCell({ d: di, p: x.p, ck: x.ck })} /> : openPlan && planRows.some(x => x.sub != null) && <SttWaPanel T={T} rows={planRows} di={di} times={times} D={D} subName={subName} />}
           </>}
         </div>}
 
@@ -46917,6 +46995,89 @@ function DutyTodayHome({ navigate }) {
   </div>;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🛡️ دورة حصة الاحتياط: إسناد ← إرسال ← اطّلاع ← قبول/اعتذار ← دخول الفصل (بالوقت) ← تقرير
+// school-sb/{dk}/{d_p_ck} = {sub, sent:{at,by,ch,n}, seen, ack:{st:"ok"|"no",at,r}, inn:{at,by,self,late}, miss:{at,by}}
+// تُربط الحالة بالمعلم المسند (sub)؛ إن أُعيد الإسناد لمعلم آخر تبدأ الدورة من جديد
+// ═══════════════════════════════════════════════════════════════
+const SB_NODE = "school-sb";
+const SB_PL = { display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 900, whiteSpace: "nowrap" };
+const sbHM = ms => { const d = new Date(ms); return maPad(d.getHours()) + ":" + maPad(d.getMinutes()); };
+const sbMin = hm => { const m = String(hm || "").match(/(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; };
+const sbOf = (S, k, sub) => { const r = ptObj(ptObj(S)[k]); return r.sub != null && +r.sub === +sub ? r : {}; };
+// المرحلة الحالية للحصة
+const sbStage = (r, endPassed) => r.miss ? ["miss", "🚫 لم يحضر", "#b91c1c", "#fee2e2"] : r.inn ? ["in", `🚪 حضر${r.inn.late ? ` (تأخر ${maAr(r.inn.late)} د)` : ""}`, "#15803d", "#dcfce7"] : r.seen ? ["seen", "👁 اطّلع", "#0f766e", "#ccfbf1"] : r.sent ? ["sent", "📨 أُرسل", "#1d4ed8", "#dbeafe"] : ["new", "✍️ أُسند — لم يُرسل", "#64748b", "#f1f5f9"];
+async function sbSend(T, di, times, D, subName, rows, by, S) {
+  const byT = {}; rows.forEach(x => (byT[x.sub] = byT[x.sub] || []).push(x)); const P = {}; let n = 0; const dk = maKey(D);
+  for (const [ti, L] of Object.entries(byT)) { const body = L.sort((a, b) => a.p - b.p).map(x => { const [si] = T.C[x.ck][di][x.p]; return `الحصة ${TT_ORD[x.p]} (${mlFmtT(times[x.p] ? times[x.p][0] : "")}) ${maClassName(x.ck)} — ${subName(si)}`; }).join(" • ");
+    const r = await pushSend({ to: { ti: [+ti], names: [ttClean(T.T[+ti])] }, title: `🛡️ حصة احتياط${L.length > 1 ? ` (${maAr(L.length)})` : ""}`, body, url: "/#teacher:sb", urlA: "/#staff:sched", tag: "sb-asg-" + dk, urgent: 1, by }); n += (r && r.sent) || 0;
+    L.forEach(x => { const k = ttK(di, x.p, x.ck); const old = sbOf(S, k, x.sub); P[`${SB_NODE}/${dk}/${k}/sub`] = +x.sub; P[`${SB_NODE}/${dk}/${k}/sent`] = { at: Date.now(), by, ch: "push", n: ((old.sent && old.sent.n) || 0) + 1 }; }); }
+  await fbPatch(P); return n; }
+// لوحة الإدارة: متابعة دورة الاحتياط لكل حصة
+function SbTrackPanel({ T, rows, di, times, D, subName, by, isToday, onEdit }) {
+  const dk = maKey(D); const [S, setS] = useState({}); const [P, setP] = useState({}); const [pb, setPb] = useState(false); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(""); const [, setTk] = useState(0);
+  const load = async () => setS(ptObj(await maGet(`${SB_NODE}/${dk}`)));
+  useEffect(() => { load(); maGet(PH_NODE).then(v => setP(ptObj(v))).catch(() => {}); if (!isToday) return; const t = setInterval(() => { load(); setTk(x => x + 1); }, 20000); return () => clearInterval(t); }, [dk]);
+  const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3500); };
+  const R = rows.filter(x => x.sub != null && x.done).sort((a, b) => a.p - b.p || a.ck.localeCompare(b.ck, undefined, { numeric: true }));
+  if (!R.length) return null;
+  const nowM = new Date().getHours() * 60 + new Date().getMinutes();
+  const info = x => { const k = ttK(di, x.p, x.ck); const r = sbOf(S, k, x.sub); const t = times[x.p] || ["", ""]; const end = isToday ? nowM >= sbMin(t[1]) : true; return { k, r, t, st: sbStage(r, end), end, live: isToday && nowM >= sbMin(t[0]) - 10 && nowM < sbMin(t[1]) }; };
+  const I = R.map(x => ({ x, ...info(x) }));
+  const cnt = k => I.filter(i => i.st[0] === k).length; const unsent = I.filter(i => !i.r.sent);
+  const send = async L => { setBusy(true); try { const n = await sbSend(T, di, times, D, subName, L.map(i => i.x), by, S); await load(); toast(`📨 أُرسل لـ ${maAr(new Set(L.map(i => i.x.sub)).size)} معلماً${n ? ` (وصل ${maAr(n)} جهاز)` : " — من لم يفعّل الإشعارات أرسل له بالواتساب"}`); } finally { setBusy(false); } };
+  const mark = async (i, kind) => { const base = `${SB_NODE}/${dk}/${i.k}`; const o = { [`${base}/sub`]: +i.x.sub };
+    if (kind === "in") { const late = Math.max(0, Math.min(nowM - (sbMin(i.t[0]) || nowM), (sbMin(i.t[1]) || nowM) - (sbMin(i.t[0]) || nowM))); o[`${base}/inn`] = { at: Date.now(), by, self: 0, late: isToday ? late : 0 }; o[`${base}/miss`] = null; }
+    if (kind === "miss") { if (!window.confirm(`تسجيل أن ${ttClean(T.T[i.x.sub])} لم يحضر حصة الاحتياط؟`)) return; o[`${base}/miss`] = { at: Date.now(), by }; o[`${base}/inn`] = null; }
+    if (kind === "undo") { o[`${base}/miss`] = null; o[`${base}/inn`] = null; }
+    await fbPatch(o); await load(); };
+  const waTxt = (ti, L) => `🛡️ حصة احتياط — ${maDay(D)} ${asmHij(D)}\nالأستاذ الفاضل / ${ttClean(T.T[ti])}\n` + L.map(i => { const [si] = T.C[i.x.ck][di][i.x.p]; return `• الحصة ${TT_ORD[i.x.p]} (${mlFmtT(i.t[0])}) — ${maClassName(i.x.ck)} — ${subName(si)} بدل أ. ${ttClean(T.T[i.x.a])}`; }).join("\n") + `\n\nنأمل الحضور للفصل في وقت الحصة — التفاصيل: ${location.origin}/#teacher:sb\nشاكرين تعاونكم`;
+  const print = () => { const rowsH = I.map((i, n) => { const [si] = T.C[i.x.ck][di][i.x.p]; const r = i.r; return `<tr><td>${maAr(n + 1)}</td><td>${TT_ORD[i.x.p]}<br><small>${mlFmtT(i.t[0])}</small></td><td>${maClassName(i.x.ck)}</td><td>${ptEsc(subName(si))}</td><td>${ptEsc(ttClean(T.T[i.x.a]))}</td><td class="r"><b>${ptEsc(ttClean(T.T[i.x.sub]))}</b></td><td>${r.sent ? mlFmtT(sbHM(r.sent.at)) : "—"}</td><td>${r.seen ? `👁 ${mlFmtT(sbHM(r.seen))}` : "—"}</td><td>${r.inn ? `${mlFmtT(sbHM(r.inn.at))}${r.inn.late ? `<br><small>تأخر ${maAr(r.inn.late)} د</small>` : ""}` : r.miss ? "لم يحضر" : "—"}</td><td style="color:${i.st[2]};font-weight:900">${i.st[1]}</td><td style="width:60px"></td></tr>`; }).join("");
+    inOpen(`<section class="pg">${inHdr("سجل حصص الاحتياط (الانتظار)", `${maDay(D)}<br>${asmHij(D)}`)}
+      <div class="kp4" style="--n:5">${[["أُسندت", I.length, "#1e1b4b"], ["أُرسلت", I.filter(i => i.r.sent).length, "#1d4ed8"], ["اطّلع", I.filter(i => i.r.seen).length, "#0f766e"], ["حضر", cnt("in"), "#15803d"], ["لم يحضر", cnt("miss"), "#b91c1c"]].map(([l, v, c]) => `<div style="border-color:${c};color:${c}"><b>${maAr(v)}</b>${l}</div>`).join("")}</div>
+      <table><thead><tr><th>م</th><th>الحصة</th><th>الفصل</th><th>المادة</th><th>بدل</th><th class="r">معلم الاحتياط</th><th>أُرسلت</th><th>اطّلاع المعلم</th><th>الحضور</th><th>الحالة</th><th>التوقيع</th></tr></thead><tbody>${rowsH}</tbody></table>
+      ${inSig("وكيل الشؤون التعليمية", "مدير المدرسة")}</section>`, "سجل حصص الاحتياط", trPrintCss("#1e1b4b")); };
+  const byT = {}; I.forEach(i => (byT[i.x.sub] = byT[i.x.sub] || []).push(i));
+  return <div style={{ border: "2px solid #c7d2fe", background: "linear-gradient(160deg,#eef2ff,#fff)", borderRadius: 18, padding: 12 }} className="grid gap-2">
+    <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15, color: "#1e1b4b" }}>🛡️ متابعة حصص الاحتياط</b>
+      {[["أُسندت", I.length, "#1e1b4b"], ["أُرسلت", I.length - unsent.length, "#1d4ed8"], ["اطّلع", I.filter(i => i.r.seen).length, "#0f766e"], ["حضر", cnt("in"), "#15803d"], ["لم يحضر", cnt("miss"), "#b91c1c"]].map(([l, v, c]) => <span key={l} className="stt-lv" style={{ background: "#fff", color: c, border: `1.5px solid ${c}33` }}>{l} {maAr(v)}</span>)}
+      <span style={{ marginRight: "auto" }} className="flex gap-1 flex-wrap">{unsent.length > 0 && <button className="ma-btn" disabled={busy} style={{ background: "#1d4ed8", color: "#fff", borderColor: "#1d4ed8", padding: "4px 12px", fontSize: 12.5 }} onClick={() => send(unsent)}>{busy ? "⏳" : `📨 إرسال للجميع (${maAr(unsent.length)})`}</button>}<button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => setPb(true)}>📱 الجوالات</button><button className="ma-btn" style={{ padding: "4px 10px", fontSize: 12 }} onClick={print}>🖨 سجل الاحتياط</button></span></div>
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", fontSize: 11.5, fontWeight: 800, color: "#64748b" }}>الدورة: ✍️ إسناد ← 📨 إشعار على جوال المعلم ← 👁 اطّلاعه ← ⏰ تذكير قبل الحصة ← 🚪 رصد الإدارة لحضوره</div>
+    {Object.entries(byT).map(([ti, L]) => <div key={ti} style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "8px 10px" }} className="grid gap-1">
+      <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 14 }}>👤 {ttClean(T.T[+ti])}</b><span style={{ fontSize: 12, color: "#64748b", fontWeight: 800 }}>{maAr(L.length)} حصة</span><span style={{ marginRight: "auto" }} className="flex gap-1"><button className="ma-btn" disabled={busy} style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => send(L)}>{L.every(i => i.r.sent) ? "🔔 تذكير" : "📨 إرسال"}</button><WaBtn small ph={phOf(P, ttClean(T.T[+ti]))} txt={waTxt(+ti, L)} label="واتساب" /></span></div>
+      {L.map(i => { const [si] = T.C[i.x.ck][di][i.x.p]; const r = i.r; return <div key={i.k} className="flex items-center gap-2 flex-wrap" style={{ borderTop: "1px dashed #e2e8f0", paddingTop: 5, background: i.live ? "#fffbeb" : undefined, borderRadius: 8 }}>
+        <span className="stt-lv" style={{ background: "#1e1b4b", color: "#fff" }}>ح{maAr(i.x.p + 1)} {mlFmtT(i.t[0])}</span><b style={{ fontSize: 13 }}>{maClassName(i.x.ck)}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>{subName(si)} • بدل {ttClean(T.T[i.x.a])}</span>
+        <span className="stt-lv" style={{ background: i.st[3], color: i.st[2] }}>{i.st[1]}</span>
+        <span style={{ marginRight: "auto" }} className="flex gap-1 flex-wrap">
+          {!r.inn && !r.miss && <button className="ma-btn" style={{ padding: "2px 9px", fontSize: 11.5, color: "#15803d" }} title="رصد الإدارة لحضوره في الفصل" onClick={() => mark(i, "in")}>🚪 حضر</button>}{!r.inn && !r.miss && i.end && <button className="ma-btn" style={{ padding: "2px 9px", fontSize: 11.5, color: "#b91c1c" }} onClick={() => mark(i, "miss")}>🚫 لم يحضر</button>}{(r.inn || r.miss) && <button className="ma-btn" style={{ padding: "2px 9px", fontSize: 11.5 }} onClick={() => mark(i, "undo")}>↺</button>}</span>
+        <div style={{ width: "100%", fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>{[r.sent && `📨 ${mlFmtT(sbHM(r.sent.at))}${r.sent.n > 1 ? ` (×${maAr(r.sent.n)})` : ""}`, r.seen && `👁 ${mlFmtT(sbHM(r.seen))}`, r.inn && `🚪 ${mlFmtT(sbHM(r.inn.at))} (رصد ${r.inn.by || "الإدارة"})`].filter(Boolean).join("  ←  ")}</div>
+      </div>; })}
+    </div>)}
+    {msg && <div style={{ fontWeight: 900, fontSize: 13, color: "#1e1b4b" }}>{msg}</div>}
+    {pb && <PhoneBook names={T.T.map(ttClean).sort((a, b) => a.localeCompare(b, "ar"))} P={P} setP={setP} onClose={() => setPb(false)} />}
+  </div>;
+}
+// بطاقة المعلم: حصص الاحتياط المسندة إليه اليوم — استلام/اعتذار وتأكيد دخول الفصل
+function SbTeacherCard({ me, quiet, full }) {
+  const dk = maKey(new Date()); const [X, setX] = useState(null); const [, setTk] = useState(0);
+  const load = async () => { try { if (hdRemDay(dk)) { setX({ off: 1 }); return; } const [tt, c, lg, sb] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet(`${TT_LOG}/${dk}`), maGet(`${SB_NODE}/${dk}`)]); const T = ttFresh(tt); const ti = sttFindMe(T, me.name); const di = ttDayIdx(T, new Date());
+      const times = ttTimesOn(dk, ttFixTimes(c && Array.isArray(c.times) ? c.times : TT_PDF.times)); const L = ti < 0 ? [] : Object.entries(ptObj(lg)).filter(([k, v]) => v && v.st === "sub" && !v.pm && +v.sub === ti && +k.split("_")[0] === di).map(([k, v]) => { const [, p, ck] = k.split("_"); return { k, p: +p, ck, v }; }).sort((a, b) => a.p - b.p);
+      setX({ T, ti, di, times, L });
+      const unseen = L.filter(x => !sbOf(sb, x.k, ti).seen); if (unseen.length) { const P = {}; unseen.forEach(x => { P[`${SB_NODE}/${dk}/${x.k}/sub`] = ti; P[`${SB_NODE}/${dk}/${x.k}/seen`] = Date.now(); }); fbPatch(P); } } catch { setX({ off: 1 }); } };
+  useEffect(() => { load(); const t = setInterval(() => { load(); setTk(x => x + 1); }, 60000); return () => clearInterval(t); }, [me && me.name]);
+  if (!X || X.off) return null;
+  const { T, times, L } = X; if (!L.length) return quiet ? null : full ? <div className="ma-card p-6 text-center font-bold" style={{ color: "#15803d" }}>✅ لا توجد حصص احتياط مسندة إليك اليوم</div> : null;
+  const nowM = new Date().getHours() * 60 + new Date().getMinutes();
+  const subName = si => ttClean((T.SA && T.SA[si]) || T.S[si] || "");
+  return <div style={{ borderRadius: 20, overflow: "hidden", border: "2px solid #a5b4fc", background: "#fff" }} dir="rtl">
+    <div style={{ padding: "11px 14px", color: "#fff", background: "linear-gradient(135deg,#1e1b4b,#4338ca)", display: "flex", gap: 8, alignItems: "center" }}><span style={{ fontSize: 24 }}>🛡️</span><b style={{ fontSize: 16, flex: 1 }}>لديك {maAr(L.length)} حصة احتياط اليوم</b><small style={{ fontWeight: 800, opacity: .85 }}>يصلك تذكير قبل الحصة</small></div>
+    <div className="grid gap-2" style={{ padding: 10 }}>{L.map(x => { const t = times[x.p] || ["", ""]; const st = sbMin(t[0]), en = sbMin(t[1]); const now = nowM >= st - 10 && nowM < en; const past = nowM >= en; const [si] = T.C[x.ck] ? T.C[x.ck][X.di][x.p] : [-1];
+      return <div key={x.k} style={{ border: `2px solid ${now ? "#f59e0b" : "#e2e8f0"}`, background: now ? "#fffbeb" : "#fff", borderRadius: 14, padding: 10, opacity: past ? .6 : 1 }} className="grid gap-1">
+        <div className="flex items-center gap-2 flex-wrap"><span style={{ ...SB_PL, background: "#1e1b4b", color: "#fff", fontSize: 13 }}>الحصة {TT_ORD[x.p]} • {mlFmtT(t[0])} – {mlFmtT(t[1])}</span><b style={{ fontSize: 15 }}>{maClassName(x.ck)}</b>{now && <span style={{ ...SB_PL, background: "#f59e0b", color: "#fff" }}>● الآن — توجّه للفصل</span>}{past && <span style={{ ...SB_PL, background: "#f1f5f9", color: "#64748b" }}>انتهت</span>}</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#475569" }}>{subName(si)} • بدل أ. {ttClean(T.T[x.v.ti])}</div>
+      </div>; })}</div>
+  </div>;
+}
 function SttWaPanel({ T, rows, di, times, D, subName }) {
   const [P, setP] = useState({}); const [pb, setPb] = useState(false);
   useEffect(() => { (async () => setP(ptObj(await maGet(PH_NODE))))(); }, []);
@@ -48455,7 +48616,7 @@ function NbPinSet({ by = "الإدارة" }) {
     <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>يُطلب من المعلم عند فتح «مراجع نافس» من حسابه، ويبقى مفتوحاً حتى يغلق المتصفح. دخول الطلاب والإدارة لا يتأثر.</div>
   </div>;
 }
-const GATE_EXEMPT = ["school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -49362,6 +49523,7 @@ const ptPend = (x, k) => !x ? false : k === "exc" ? (!x.status || x.status === "
 const ptIdxVal = (k, x) => ptPend(x, k) ? { k, sname: x.sname || "", ck: x.ck || "", at: x.pAt || x.at || Date.now(), d: k === "exc" ? (x.from || "") : "", st: k === "exc" ? (x.status || "new") : "" } : null;
 const ptIdxSet = (k, x) => x && x.id ? maPut(`${PT_IDX}/${x.id}`, ptIdxVal(k, x)).catch(() => {}) : null;
 // محادثة (تعليقات وردود) على العذر أو الملاحظة — who: "p" ولي الأمر • "s" المدرسة
+const ptExcPush = (x, st, reply) => { if (!x || !x.sid) return; pushSend({ to: { uids: ["s_" + x.sid] }, title: st === "ok" ? "✅ قُبل عذر الغياب" : "❌ لم يُقبل عذر الغياب", body: `${x.type || "عذر"} — ${maHijri(maDate(x.from))}${reply ? ` • ${reply}` : ""}${st === "ok" ? " • احتُسب الغياب بعذر" : ""}`, url: "/#parent", urlS: "/#parent", tag: "exc-" + x.id, by: "الإدارة" }); };
 function GdThread({ x, path, who, by, k, onUpd }) {
   const [t, setT] = useState(""); const [busy, setBusy] = useState(false);
   const M = Object.values(ptObj(x.msgs)).filter(m => m && m.t).sort((a, b) => a.at - b.at);
