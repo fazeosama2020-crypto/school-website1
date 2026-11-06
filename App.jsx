@@ -51746,7 +51746,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -52132,6 +52132,8 @@ function SchoolWebsiteInner() {
     { id: "staffdisc", label: "متابعة أداء انضباط المعلمين والإداريين", icon: "🏅" },
     { id: "hfx",            label: "نماذج متابعة الدوام (حضوري)", icon: "📑" },
     { id: "hdisc",          label: "سجل الانضباط اليومي (حضوري)", icon: "📈" },
+    { id: "trepadm",        label: "التقارير الدورية للمعلمين", icon: "📑" },
+    { id: "absxadm",        label: "تصنيف الغياب وتقرير الأعذار", icon: "📋" },
     { id: "circulars",      label: "التعاميم", icon: "📜" },
     { id: "circdaily",      label: "التعاميم اليومية", icon: "📨" },
     { id: "meetings",       label: "الاجتماعات",           icon: "🤝" },
@@ -52161,7 +52163,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","timetable","ttnow","trash","audit","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","trepadm","absxadm","timetable","ttnow","trash","audit","settings"] },
   ];
 
   return (
@@ -52491,6 +52493,8 @@ function SchoolWebsiteInner() {
                 {page === "dailyquiz"      && <DailyQuizPage classList={classList} />}
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
+                {page === "trepadm" && <div className="px-2 md:px-6 py-4"><TrepAdmin me={{ name: user?.name || "الإدارة", role: "principal" }} /></div>}
+                {page === "absxadm" && <div className="px-2 md:px-6 py-4"><AbsExcPage by={user?.name || "الإدارة"} /></div>}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}{page === "circdaily" && <div className="px-2 md:px-6 py-4"><CircDailyAdmin by={user?.name || "الإدارة"} /></div>}
                 {page === "meetings"       && <MeetingsPage teachers={teachers} />}
                 {page === "committeemeeting"&& <CommitteeMeetingPage teachers={teachers} />}
@@ -52679,6 +52683,8 @@ function SchoolWebsiteInner() {
         {page === "dailyquiz"      && <DailyQuizPage classList={classList} />}
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
+                {page === "trepadm" && <div className="px-2 md:px-6 py-4"><TrepAdmin me={{ name: user?.name || "الإدارة", role: "principal" }} /></div>}
+                {page === "absxadm" && <div className="px-2 md:px-6 py-4"><AbsExcPage by={user?.name || "الإدارة"} /></div>}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}{page === "circdaily" && <div className="px-2 md:px-6 py-4"><CircDailyAdmin by={user?.name || "الإدارة"} /></div>}
         {page === "meetings"       && <MeetingsPage teachers={teachers} />}
         {page === "committeemeeting" && <CommitteeMeetingPage teachers={teachers} />}
