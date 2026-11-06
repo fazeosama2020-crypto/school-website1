@@ -5367,12 +5367,16 @@ const lgIso = s => { const m = String(s || "").match(/(\d{1,4})[\/\-.](\d{1,2})[
 async function lgExcDecide(x, quiet) { if (!x || !x.studentId) return; const dk = lgIso(x.absenceDateM); const ok = x.status === "مقبول", no = x.status === "مرفوض"; if (!ok && !no) return;
   if (dk) await absxSyncExc({ sid: x.studentId, from: dk, to: dk, status: ok ? "ok" : "no", id: "L" + x.id }, "الإدارة");
   if (quiet) return; pushSend({ to: { uids: ["s_" + x.studentId] }, title: ok ? "✅ قُبل عذر الغياب" : "❌ لم يُقبل عذر الغياب", body: `${x.studentName} — غياب ${x.absenceDay || ""} ${x.absenceDateH || x.absenceDateM || ""}${x.adminReply ? ` • ${x.adminReply}` : ""}${ok ? " • احتُسب الغياب بعذر" : ""}`, url: "/#excuses", urlS: "/#excuses", tag: "exc-" + x.id, by: "الإدارة" }); }
+function ExwBanner({ sid }) { const [W, setW] = useState([]); useEffect(() => { if (sid) maGet(`school-excw/${sid}`).then(v => setW(Object.values(ptObj(v)).filter(w => w && w.at).sort((a, b) => b.at - a.at))).catch(() => {}); }, [sid]);
+  if (!W.length) return null; const w = W[0];
+  return <div dir="rtl" style={{ borderRadius: 16, padding: "10px 14px", background: "linear-gradient(135deg,#7f1d1d,#b91c1c)", color: "#fff", display: "grid", gap: 3 }}><b style={{ fontSize: 15 }}>⚠️ تنبيه من إدارة المدرسة: تكرار أعذار الغياب</b><span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.8 }}>رُصد لابنكم {maAr(w.n)} أعذار غياب ({maHijri(maDate(w.f))} – {maHijri(maDate(w.t))}). نأمل متابعته والحد من الغياب؛ تكرار الأعذار يستوجب تقديم ما يثبتها رسمياً.</span><small style={{ opacity: .85, fontWeight: 700 }}>صدر في {maHijri(new Date(w.at))}{W.length > 1 ? ` • عدد التنبيهات: ${maAr(W.length)}` : ""}</small></div>; }
 function LgExcHistory({ student, year }) {
   const [L, setL] = useState(null);
   useEffect(() => { (async () => { const [a, b] = await Promise.all([maGet(`school-excuses-${year}`), maGet(`school-excuses-${year - 1}`)]); const all = [...Object.values(ptObj(a)), ...Object.values(ptObj(b))].filter(x => x && (String(x.studentId) === String(student.id) || (x.studentName === student.name && x.className === student.className))); setL(all.sort((p, q) => q.id - p.id).slice(0, 20)); })().catch(() => setL([])); }, [student && student.id]);
   const C = { "مقبول": ["✅ مقبول — احتُسب الغياب بعذر", "#d1fae5", "#065f46"], "مرفوض": ["❌ لم يُقبل — يبقى الغياب بدون عذر", "#fee2e2", "#991b1b"] };
   return <div style={{ background: "#fff", borderRadius: 16, border: "1.5px solid #e2e8f0", padding: "12px 14px", marginBottom: 12, display: "grid", gap: 8 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 14, color: "#1e293b", flex: 1 }}>📋 أعذاري السابقة وقرار الإدارة</b></div>
+    <ExwBanner sid={student.id} />
     <PushBell who={{ uid: "s_" + student.id, n: student.name, r: "s", ck: student.ck }} />
     {L == null ? <div style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 700 }}>⏳</div> : !L.length ? <div style={{ fontSize: 12.5, color: "#94a3b8", fontWeight: 700 }}>لا توجد أعذار سابقة</div> : L.map(x => { const c = C[x.status] || ["⏳ قيد المراجعة", "#fef3c7", "#92400e"];
       return <div key={x.id} style={{ border: `1.5px solid ${c[1]}`, borderRight: `5px solid ${c[2]}`, borderRadius: 12, padding: "8px 10px", display: "grid", gap: 4 }}>
@@ -5515,6 +5519,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
     if (excuseType === "text" && !reason.trim()) { alert("أدخل نص العذر"); return; }
     if (excuseType !== "text" && !fileData) { alert("يرجى إرفاق الملف"); return; }
     setSaving(true);
+    { const dk0 = lgIso(absenceDateM); const dupM = await excDupCheck(student.id || student.nationalId, student.name, dk0 ? [dk0] : []).catch(() => ""); if (dupM) { setSaving(false); alert("⚠️ " + dupM); return; } }
     const id = Date.now();
     const rec = {
       id,
@@ -34675,7 +34680,7 @@ function GuardianPortal({ onBack }) {
   const sendExc = async () => {
     if (!exc.text.trim() && exc.type === "أخرى") { alert("اكتب تفاصيل العذر"); return; }
     if (exc.to < exc.from) { alert("تاريخ النهاية قبل البداية"); return; }
-    setBusy(true); const id = ptId();
+    setBusy(true); const dupM = await excDupCheck(me.sid, me.name, excDaysOf(exc.from, exc.to)).catch(() => ""); if (dupM) { setBusy(false); alert("⚠️ " + dupM); return; } const id = ptId();
     const v = { id, nh: me.nh, sname: me.name, ck: me.ck, sid: me.sid, from: exc.from, to: exc.to, type: exc.type, text: exc.text.trim().slice(0, 800), img: exc.img || "", status: "new", at: Date.now() };
     const ok = await maPut(`${PT_EXC}/${id}`, v); setBusy(false);
     if (!ok) { alert("⚠️ تعذّر الإرسال — قد يكون المرفق كبيراً"); return; }
@@ -34691,7 +34696,7 @@ function GuardianPortal({ onBack }) {
   // رفع عذر ليوم غياب بعينه من قائمة الغياب
   const sendDayExc = async () => {
     const f = dayExc; if (!f) return; if (!f.text.trim() && f.type === "أخرى") { alert("اكتب تفاصيل العذر"); return; }
-    setBusy(true); const id = ptId(); const now = Date.now();
+    setBusy(true); const dupM = await excDupCheck(me.sid, me.name, [f.dk]).catch(() => ""); if (dupM) { setBusy(false); alert("⚠️ " + dupM); return; } const id = ptId(); const now = Date.now();
     const v = { id, nh: me.nh, sname: me.name, ck: me.ck, sid: me.sid, from: f.dk, to: f.dk, type: f.type, text: f.text.trim().slice(0, 800), img: f.img || "", status: "new", src: "day", at: now, pAt: now };
     const ok = await maPut(`${PT_EXC}/${id}`, v); setBusy(false);
     if (!ok) { alert("⚠️ تعذّر الإرسال — قد يكون المرفق كبيراً"); return; }
@@ -34739,6 +34744,7 @@ function GuardianPortal({ onBack }) {
               : <div className="gd-ok" style={{ flex: "1 1 260px" }}><GdIco n="star" s={24} /><div><b>وضع منتظم — بارك الله فيه</b>لا توجد تنبيهات على الغياب أو التأخر أو السلوك</div></div>}
             <button type="button" className={"gd-bell" + (fresh.length ? " on" : "")} onClick={() => { setBell(!bell); if (!bell) markSeen(); }}><GdIco n="bell" s={24} /><span>{fresh.length ? `${maAr(fresh.length)} جديد` : "آخر المستجدات"}</span></button>
           </div>
+          {me.sid && <ExwBanner sid={me.sid} />}
           {me.sid && <PushBell who={{ uid: "s_" + me.sid, n: me.name, r: "s", ck: me.ck }} />}
           {typeof Notification !== "undefined" && Notification.permission === "default" && <button type="button" className="ma-btn" style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => Notification.requestPermission().then(() => setBell(b => b))}><GdIco n="bell" s={16} /> تفعيل الإشعارات على الجهاز</button>}
           {bell && <div className="pt-item" style={{ border: "1.5px solid #e2e8f0" }}><div className="flex items-center gap-2"><b style={{ fontSize: 15, flex: 1, display: "flex", alignItems: "center", gap: 8 }}><GdIco n="bell" s={18} /> آخر ما سُجّل لابنكم</b><button className="ma-btn" onClick={() => setBell(false)}>إغلاق</button></div>{EV.length ? <div className="grid gap-1 mt-2">{EV.slice(0, 25).map(e => <div key={e.id} className="gd-row" style={{ borderRight: `4px solid ${e.c}` }}><span className="gd-tli" style={{ "--c": e.c }}><GdIco n={e.ic === "🚫" ? "ban" : e.ic === "⏰" ? "clock" : "shield"} s={16} /></span><b style={{ flex: 1, color: e.c, fontSize: 13.5 }}>{e.t}</b><span className="h">{maDay(maDate(e.k))} {asmHij(maDate(e.k), false)}</span>{!seen.includes(e.id) && fresh.some(f => f.id === e.id) && <span className="gd-tag" style={{ background: "#dc2626", color: "#fff" }}>جديد</span>}</div>)}</div> : <div style={{ color: "#15803d", fontWeight: 900, marginTop: 6 }}>لا يوجد غياب أو تأخر أو ملاحظات</div>}</div>}
@@ -47036,7 +47042,7 @@ function SbTrackPanel({ T, rows, di, times, D, subName, by, isToday, onEdit }) {
     inOpen(`<section class="pg">${inHdr("سجل حصص الاحتياط (الانتظار)", `${maDay(D)}<br>${asmHij(D)}`)}
       <div class="kp4" style="--n:5">${[["أُسندت", I.length, "#1e1b4b"], ["أُرسلت", I.filter(i => i.r.sent).length, "#1d4ed8"], ["اطّلع", I.filter(i => i.r.seen).length, "#0f766e"], ["حضر", cnt("in"), "#15803d"], ["لم يحضر", cnt("miss"), "#b91c1c"]].map(([l, v, c]) => `<div style="border-color:${c};color:${c}"><b>${maAr(v)}</b>${l}</div>`).join("")}</div>
       <table><thead><tr><th>م</th><th>الحصة</th><th>الفصل</th><th>المادة</th><th>بدل</th><th class="r">معلم الاحتياط</th><th>أُرسلت</th><th>اطّلاع المعلم</th><th>الحضور</th><th>الحالة</th><th>التوقيع</th></tr></thead><tbody>${rowsH}</tbody></table>
-      ${inSig("وكيل الشؤون التعليمية", "مدير المدرسة")}</section>`, "سجل حصص الاحتياط", trPrintCss("#1e1b4b")); };
+      ${inSig("وكيل الشؤون التعليمية", "وكيل المدرسة")}</section>`, "سجل حصص الاحتياط", trPrintCss("#1e1b4b")); };
   const byT = {}; I.forEach(i => (byT[i.x.sub] = byT[i.x.sub] || []).push(i));
   return <div style={{ border: "2px solid #c7d2fe", background: "linear-gradient(160deg,#eef2ff,#fff)", borderRadius: 18, padding: 12 }} className="grid gap-2">
     <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15, color: "#1e1b4b" }}>🛡️ متابعة حصص الاحتياط</b>
@@ -48616,7 +48622,7 @@ function NbPinSet({ by = "الإدارة" }) {
     <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>يُطلب من المعلم عند فتح «مراجع نافس» من حسابه، ويبقى مفتوحاً حتى يغلق المتصفح. دخول الطلاب والإدارة لا يتأثر.</div>
   </div>;
 }
-const GATE_EXEMPT = ["school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-excw", "school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -50365,6 +50371,114 @@ function GuardianDossier({ me, d, setTab, onRep }) {
 
 // ══════════ 📋 تصنيف الغياب: بعذر / بدون عذر (الإدارة) ══════════
 const ABX_SRC = { exc: "عذر ولي الأمر (مقبول)", man: "تعديل الإدارة", "exc-x": "رُفض عذر ولي الأمر" };
+// ═══════════════════════════════════════════════════════════════
+// 📊 تقرير الأعذار والغياب — يجمع أعذار بوابة ولي الأمر وبوابة الأعذار (#excuses) في قائمة واحدة
+// ═══════════════════════════════════════════════════════════════
+const excDaysOf = (f, t) => { const out = []; if (!f) return out; const d = maDate(f), e = maDate(t || f); let n = 0; while (d <= e && n++ < 60) { const k = maKey(d); if (!maOff(k)) out.push(k); d.setDate(d.getDate() + 1); } return out.length ? out : [f]; };
+const excAttKind = s => { s = String(s || ""); return /^data:image\//.test(s) ? "img" : /^data:application\/pdf/.test(s) ? "pdf" : /^https?:/.test(s) ? (/\.pdf(\?|$)/i.test(s) ? "pdf" : "img") : ""; };
+async function excAll() {
+  const Y = new Date().getFullYear(); const [px, l1, l2] = await Promise.all([maGet(PT_EXC), maGet(`school-excuses-${Y}`), maGet(`school-excuses-${Y - 1}`)]);
+  const A = Object.values(ptObj(px)).filter(x => x && x.id && x.from).map(x => ({ src: "p", key: "p" + x.id, id: x.id, sid: x.sid || "", name: x.sname || "—", ck: x.ck || "", cls: x.ck ? maClassName(x.ck) : "", from: x.from, to: x.to || x.from, type: x.type || "", text: x.text || "", st: x.status === "ok" ? "ok" : x.status === "no" ? "no" : "new", reply: x.reply || "", att: x.img || "", at: x.at || 0, by: "بوابة ولي الأمر" }));
+  const B = [...Object.values(ptObj(l1)), ...Object.values(ptObj(l2))].filter(x => x && x.id).map(x => { const dk = lgIso(x.absenceDateM); return { src: "l", key: "l" + x.id, id: x.id, sid: x.studentId || "", name: x.studentName || "—", ck: "", cls: x.className || "", from: dk, to: dk, type: x.reasonCat || "", text: x.reason || "", st: x.status === "مقبول" ? "ok" : x.status === "مرفوض" ? "no" : "new", reply: x.adminReply || "", att: x.fileData || "", attN: x.fileName || "", at: +x.id || 0, by: `بوابة الأعذار${x.parentName ? " — " + x.parentName : ""}` }; }).filter(x => x.from);
+  return [...A, ...B].sort((a, b) => b.at - a.at);
+}
+// منع التكرار: عذر واحد لكل يوم غياب، وإرسال واحد في اليوم لكل طالب
+async function excDupCheck(sid, name, days) {
+  const L = await excAll(); const today = maKey(new Date()); const mine = L.filter(x => (sid && String(x.sid) === String(sid)) || (!sid && x.name === name));
+  const sameDay = mine.find(x => x.at && maKey(new Date(x.at)) === today); if (sameDay) return `سبق إرسال عذر اليوم لهذا الطالب (${sameDay.type || "عذر"}) — يُقبل إرسال واحد في اليوم. للإضافة اكتب في محادثة العذر السابق أو تواصل مع المدرسة.`;
+  const D = new Set(days); const hit = mine.find(x => x.st !== "no" && excDaysOf(x.from, x.to).some(k => D.has(k))); if (hit) return `سبق رفع عذر ليوم ${maHijri(maDate(excDaysOf(hit.from, hit.to).find(k => D.has(k))))} (${hit.st === "ok" ? "مقبول" : "قيد المراجعة"}) — لا يُقبل أكثر من عذر لنفس اليوم.`;
+  return "";
+}
+function ExcAttView({ x, onClose }) {
+  const [u, setU] = useState(""); const k = excAttKind(x.att);
+  useEffect(() => { if (k !== "pdf" || !/^data:/.test(x.att)) { setU(x.att); return; } let url = ""; fetch(x.att).then(r => r.blob()).then(b => { url = URL.createObjectURL(b); setU(url); }).catch(() => setU(x.att)); return () => url && URL.revokeObjectURL(url); }, [x.key]);
+  return <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 10 }} onClick={onClose}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ background: "#fff", borderRadius: 18, width: "min(900px,100%)", maxHeight: "94vh", display: "grid", gridTemplateRows: "auto 1fr", overflow: "hidden" }}>
+    <div className="flex items-center gap-2" style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0" }}><b style={{ flex: 1 }}>📎 {x.name} — {maHijri(maDate(x.from))} • {x.type}</b>{u && <a className="ma-btn" href={u} target="_blank" rel="noreferrer" download={x.attN || (k === "pdf" ? "عذر.pdf" : "عذر.jpg")}>⬇ تنزيل</a>}<button className="ma-btn" onClick={onClose}>✕</button></div>
+    <div style={{ overflow: "auto", background: "#f1f5f9", minHeight: 300 }}>{!u ? <div className="p-10 text-center">⏳</div> : k === "pdf" ? <iframe title="pdf" src={u} style={{ width: "100%", height: "80vh", border: 0 }} /> : <img alt="" src={u} style={{ display: "block", maxWidth: "100%", margin: "0 auto" }} />}</div></div></div>;
+}
+const EXW = "school-excw"; // تحذيرات تكرار الأعذار: {sid}/{id} = {name, cls, n, f, t, at, by, ty}
+const exwLetter = (s, by) => `<section class="pg">${inHdr("تنبيه ولي أمر — تكرار أعذار الغياب", `${maDay(new Date())}<br>${maHijri(new Date())}`)}
+  <div style="font-size:15px;line-height:2.2;margin-top:10px">المكرم ولي أمر الطالب / <b>${ptEsc(s.name)}</b> &nbsp; الصف: <b>${ptEsc(s.cls || "")}</b> &nbsp; وفقه الله<br>السلام عليكم ورحمة الله وبركاته، وبعد:<br>
+  نحيطكم علماً بأنه رُصد لابنكم <b>${maAr(s.n)}</b> أعذار غياب خلال الفترة من ${maHijri(maDate(s.f))} إلى ${maHijri(maDate(s.t))}${s.ty ? ` — الأسباب: ${ptEsc(s.ty)}` : ""}${s.dup && s.dup.length ? `، منها أكثر من عذر لنفس اليوم (${s.dup.map(k => maHijri(maDate(k))).join("، ")})` : ""}.
+  وحرصاً على انتظامه الدراسي وتحصيله، نأمل متابعته والحد من الغياب، علماً بأن تكرار الأعذار يستوجب تقديم ما يثبتها رسمياً، وأن استمرار ذلك يُحال للجنة التوجيه الطلابي وفق قواعد السلوك والمواظبة.</div>
+  <div style="margin-top:18px;font-size:14px;line-height:2.2">اطلعت على ما ورد أعلاه وألتزم بمتابعة انتظام ابني.<br>اسم ولي الأمر: .................................... التوقيع: .................... التاريخ: ......../......../ ١٤٤هـ</div>
+  ${inSig(by || "وكيل شؤون الطلاب", "الموجه الطلابي")}</section>`;
+function ExcReport({ ros }) {
+  const t0 = maKey(new Date()); const [f, setF] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return maKey(d); }); const [t, setT] = useState(t0);
+  const [L, setL] = useState(null); const [AB, setAB] = useState(null); const [AX, setAX] = useState({}); const [q, setQ] = useState(""); const [stF, setStF] = useState(""); const [av, setAv] = useState(null);
+  const [po, setPo] = useState({ list: true, day: true, rep: true, stu: true, wr: true, img: false, pdf: false }); const [busy, setBusy] = useState("");
+  const [WR, setWR] = useState({}); const [lim, setLim] = useState(() => { try { return +localStorage.getItem("exw-lim") || 3; } catch { return 3; } });
+  useEffect(() => { excAll().then(setL).catch(() => setL([])); maGet(ABSX).then(v => setAX(ptObj(v))).catch(() => {}); maGet(EXW).then(v => setWR(ptObj(v))).catch(() => {}); }, []);
+  const days = React.useMemo(() => { const o = []; const d = maDate(f), e = maDate(t); let n = 0; while (d <= e && n++ < 120) { const k = maKey(d); if (!maOff(k)) o.push(k); d.setDate(d.getDate() + 1); } return o; }, [f, t]);
+  useEffect(() => { let alive = true; setAB(null); Promise.all(days.map(k => maGet(`${MA_ATT}/${k}`).then(v => [k, maNormDay(v)]).catch(() => [k, {}]))).then(r => alive && setAB(Object.fromEntries(r))); return () => { alive = false; }; }, [days.join()]);
+  if (!L) return <div className="ma-card p-8 text-center font-bold" style={{ color: "#94a3b8" }}>⏳ قراءة الأعذار من البوابتين…</div>;
+  const inR = x => x.to >= f && x.from <= t; const R = L.filter(inR);
+  const V = R.filter(x => (!stF || x.st === stF) && (!q || (x.name + x.cls + x.type).includes(q.trim())));
+  // تكرار
+  const byS = {}; R.forEach(x => { const k = x.sid ? "s" + x.sid : "n" + x.name; (byS[k] = byS[k] || { name: x.name, cls: x.cls, sid: x.sid, L: [] }).L.push(x); });
+  const rep = Object.values(byS).map(s => { const dc = {}; s.L.forEach(x => excDaysOf(x.from, x.to).forEach(k => (dc[k] = (dc[k] || 0) + 1))); const dup = Object.entries(dc).filter(([, n]) => n > 1).map(([k]) => k); const ty = {}; s.L.forEach(x => (ty[x.type || "—"] = (ty[x.type || "—"] || 0) + 1)); return { ...s, n: s.L.length, dup, ty }; }).filter(s => s.n > 1 || s.dup.length).sort((a, b) => b.n - a.n || b.dup.length - a.dup.length);
+  const ty = {}; R.forEach(x => (ty[x.type || "—"] = (ty[x.type || "—"] || 0) + 1));
+  const wOf = s => Object.values(ptObj(WR[s.sid || ("n" + s.name)])).filter(w => w && w.at).sort((a, b) => b.at - a.at);
+  rep.forEach(s => { s.warn = s.n >= lim || s.dup.length > 0; s.W = wOf(s); s.tyS = Object.entries(s.ty).map(([k, n]) => `${k} (${maAr(n)})`).join("، "); });
+  const needW = rep.filter(s => s.warn); const WL = Object.entries(WR).flatMap(([k, o]) => Object.values(ptObj(o)).filter(w => w && w.at && w.at >= maDate(f).getTime() && w.at <= maDate(t).getTime() + 864e5).map(w => ({ k, ...w }))).sort((a, b) => b.at - a.at);
+  const warn = async (s, pr) => { const k = s.sid || ("n" + s.name); const id = "w" + Date.now().toString(36); const v = { name: s.name, cls: s.cls, n: s.n, f, t, ty: s.tyS, dup: s.dup, at: Date.now(), by: "الإدارة" };
+    const ok = await maPut(`${EXW}/${k}/${id}`, v); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; } setWR(o => ({ ...o, [k]: { ...ptObj(o[k]), [id]: v } }));
+    if (s.sid) pushSend({ to: { uids: ["s_" + s.sid] }, title: "⚠️ تنبيه: تكرار أعذار الغياب", body: `رُصد للطالب ${s.name} ${maAr(s.n)} أعذار غياب خلال الفترة — نأمل المتابعة والحد من الغياب.`, url: "/#parent", urlS: "/#parent", tag: "exw-" + k, urgent: 1, by: "الإدارة" });
+    if (pr) inOpen(exwLetter({ ...s, f, t, ty: s.tyS }), "تنبيه ولي أمر", trPrintCss("#b91c1c")); };
+  // مجمل الغياب
+  const isE = (k, sid) => (ptObj(ptObj(AX[k])[sid]).s === "e");
+  const D = AB ? days.map(k => { const ab = Object.entries(ptObj(AB[k])).flatMap(([ck, r]) => maArr(r.absent).filter(a => a && a.id).map(a => ({ ck, id: a.id, name: a.name }))); const e = ab.filter(a => isE(k, a.id)).length; const ex = R.filter(x => excDaysOf(x.from, x.to).includes(k)).length; return { k, n: ab.length, e, u: ab.length - e, ex, ab }; }).filter(x => x.n || x.ex) : [];
+  const SA = {}; D.forEach(d => d.ab.forEach(a => { const s = SA[a.id] = SA[a.id] || { name: a.name, ck: a.ck, n: 0, e: 0, ex: 0 }; s.n++; if (isE(d.k, a.id)) s.e++; })); R.forEach(x => { if (x.sid && SA[x.sid]) SA[x.sid].ex++; });
+  const SAL = Object.entries(SA).map(([id, s]) => ({ id, ...s })).sort((a, b) => (b.n - b.e) - (a.n - a.e) || b.n - a.n);
+  const tot = { n: D.reduce((s, x) => s + x.n, 0), e: D.reduce((s, x) => s + x.e, 0) };
+  const stL = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
+  const dtx = x => x.from === x.to ? maHijri(maDate(x.from)) : `${maHijri(maDate(x.from))} ← ${maHijri(maDate(x.to))}`;
+  const print = async () => { setBusy("⏳ تجهيز التقرير…");
+    try { const att = []; if (po.img || po.pdf) { const W = V.filter(x => x.att && ((po.img && excAttKind(x.att) === "img") || (po.pdf && excAttKind(x.att) === "pdf"))); let i = 0;
+        for (const x of W) { i++; setBusy(`⏳ تجهيز المرفقات ${maAr(i)} / ${maAr(W.length)}…`); if (excAttKind(x.att) === "img") att.push({ x, imgs: [x.att] }); else { try { const b = /^data:/.test(x.att) ? await (await fetch(x.att)).blob() : x.att; att.push({ x, imgs: await wpPdfToImages(b, null, { max: 4, w: 900, q: .7 }) }); } catch { att.push({ x, imgs: [], err: 1 }); } } } }
+      const per = f === t ? `يوم ${maDay(maDate(f))} ${maHijri(maDate(f))}` : `من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))}`;
+      const kp = `<div class="kp4" style="--n:6">${[["الأعذار", R.length, "#1e1b4b"], ["مقبولة", R.filter(x => x.st === "ok").length, "#15803d"], ["مرفوضة", R.filter(x => x.st === "no").length, "#b91c1c"], ["قيد المراجعة", R.filter(x => x.st === "new").length, "#b45309"], ["حالات الغياب", tot.n, "#0f172a"], ["غياب بعذر", tot.e, "#0f766e"]].map(([l, v, c]) => `<div style="border-color:${c};color:${c}"><b>${maAr(v)}</b>${l}</div>`).join("")}</div>`;
+      const sec = (h, b) => `<h3 style="margin:14px 0 6px;font-size:15px;color:#1e1b4b">${h}</h3>${b}`;
+      let body = kp + `<div style="font-size:12px;margin:6px 0">أسباب الأعذار: ${Object.entries(ty).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<b>${ptEsc(k)}</b> ${maAr(n)}`).join(" • ")}</div>`;
+      if (po.day) body += sec("📅 مجمل الغياب حسب اليوم", `<table><thead><tr><th>اليوم</th><th>التاريخ</th><th>الغائبون</th><th>بعذر</th><th>بدون عذر</th><th>أعذار مرفوعة</th></tr></thead><tbody>${D.map(d => `<tr><td>${maDay(maDate(d.k))}</td><td>${maHijri(maDate(d.k))}</td><td><b>${maAr(d.n)}</b></td><td>${maAr(d.e)}</td><td>${maAr(d.u)}</td><td>${maAr(d.ex)}</td></tr>`).join("")}<tr style="font-weight:900;background:#f1f5f9"><td colspan="2">المجموع</td><td>${maAr(tot.n)}</td><td>${maAr(tot.e)}</td><td>${maAr(tot.n - tot.e)}</td><td>${maAr(D.reduce((s, x) => s + x.ex, 0))}</td></tr></tbody></table>`);
+      if (po.stu) body += sec("👤 الطلاب الأكثر غياباً في الفترة", `<table><thead><tr><th>م</th><th class="r">الطالب</th><th>الفصل</th><th>أيام الغياب</th><th>بعذر</th><th>بدون عذر</th><th>أعذار مرفوعة</th></tr></thead><tbody>${SAL.slice(0, 40).map((s, i) => `<tr><td>${maAr(i + 1)}</td><td class="r">${ptEsc(s.name)}</td><td>${maClassName(s.ck)}</td><td><b>${maAr(s.n)}</b></td><td>${maAr(s.e)}</td><td style="color:#b91c1c;font-weight:900">${maAr(s.n - s.e)}</td><td>${maAr(s.ex)}</td></tr>`).join("")}</tbody></table>`);
+      if (po.rep) body += sec("🔁 الأعذار المتكررة", rep.length ? `<table><thead><tr><th class="r">الطالب</th><th>الفصل</th><th>عدد الأعذار</th><th>الأسباب</th><th>عذر مكرر لنفس اليوم</th></tr></thead><tbody>${rep.map(s => `<tr><td class="r">${ptEsc(s.name)}</td><td>${ptEsc(s.cls)}</td><td><b>${maAr(s.n)}</b></td><td>${Object.entries(s.ty).map(([k, n]) => `${ptEsc(k)} (${maAr(n)})`).join("، ")}</td><td>${s.dup.length ? s.dup.map(k => maHijri(maDate(k))).join("، ") : "—"}</td></tr>`).join("")}</tbody></table>` : "<p>لا توجد أعذار متكررة في الفترة.</p>");
+      if (po.wr) body += sec(`⚠️ حصر الطلاب الذين تكررت أعذارهم (${maAr(lim)} أعذار فأكثر أو عذران لنفس اليوم)`, needW.length ? `<table><thead><tr><th>م</th><th class="r">الطالب</th><th>الفصل</th><th>عدد الأعذار</th><th>الأسباب</th><th>عذر لنفس اليوم</th><th>التحذير</th></tr></thead><tbody>${needW.map((s, i) => `<tr><td>${maAr(i + 1)}</td><td class="r">${ptEsc(s.name)}</td><td>${ptEsc(s.cls)}</td><td><b style="color:#b91c1c">${maAr(s.n)}</b></td><td>${ptEsc(s.tyS)}</td><td>${s.dup.length ? s.dup.map(k => maHijri(maDate(k))).join("، ") : "—"}</td><td>${s.W.length ? `✅ نُبّه ${maAr(s.W.length)} مرة — آخرها ${maHijri(new Date(s.W[0].at))}` : "⚠️ لم يُنبَّه بعد"}</td></tr>`).join("")}</tbody></table>` : "<p>لا يوجد طلاب تجاوزوا حد التكرار.</p>");
+      if (po.list) body += sec("📝 تفاصيل الأعذار", `<table><thead><tr><th>م</th><th class="r">الطالب</th><th>الفصل</th><th>يوم الغياب</th><th>السبب</th><th class="r">نص العذر</th><th>مرفق</th><th>القرار</th><th class="r">رد الإدارة</th></tr></thead><tbody>${V.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="r">${ptEsc(x.name)}</td><td>${ptEsc(x.cls)}</td><td>${dtx(x)}</td><td>${ptEsc(x.type)}</td><td class="r" style="font-size:11px">${ptEsc(String(x.text).slice(0, 140))}</td><td>${x.att ? (excAttKind(x.att) === "pdf" ? "PDF" : "صورة") : "—"}</td><td>${stL(x.st)[0]}</td><td class="r" style="font-size:11px">${ptEsc(x.reply)}</td></tr>`).join("")}</tbody></table>`);
+      let attH = ""; att.forEach(({ x, imgs, err }) => { attH += `<section class="pg" style="page-break-before:always">${inHdr("مرفق عذر غياب", `${ptEsc(x.name)}<br>${ptEsc(x.cls)}`)}<div style="font-size:13px;margin:6px 0"><b>يوم الغياب:</b> ${dtx(x)} • <b>السبب:</b> ${ptEsc(x.type)} • <b>القرار:</b> ${stL(x.st)[0]}${x.reply ? ` • <b>رد الإدارة:</b> ${ptEsc(x.reply)}` : ""}</div>${err ? "<p>تعذّر قراءة ملف PDF</p>" : imgs.map(s => `<img src="${s}" style="display:block;max-width:100%;max-height:235mm;margin:6px auto;border:1px solid #ccc">`).join("")}</section>`; });
+      inOpen(`<section class="pg">${inHdr("تقرير الأعذار والغياب", per)}${body}${inSig("وكيل شؤون الطلاب", "الموجه الطلابي")}</section>${attH}`, "تقرير الأعذار والغياب", trPrintCss("#1e1b4b"));
+    } finally { setBusy(""); } };
+  const nAtt = V.filter(x => x.att).length;
+  return <div className="grid gap-3">
+    <div className="ma-card p-3 grid gap-2">
+      <div className="flex gap-2 items-center flex-wrap"><b>الفترة:</b><input type="date" className="ma-inp" style={{ width: 150 }} value={f} max={t} onChange={e => setF(e.target.value)} /><span>←</span><input type="date" className="ma-inp" style={{ width: 150 }} value={t} min={f} onChange={e => setT(e.target.value)} />
+        {[["اليوم", 0], ["أسبوع", 7], ["شهر", 30], ["الفصل", 120]].map(([l, n]) => <button key={l} className="ma-btn" style={{ padding: "4px 10px", fontSize: 12.5 }} onClick={() => { const d = new Date(); d.setDate(d.getDate() - n); setF(maKey(d)); setT(t0); }}>{l}</button>)}</div>
+      <div className="flex gap-2 items-center flex-wrap"><input className="ma-inp" style={{ flex: "1 1 180px" }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 اسم الطالب أو الفصل أو السبب" /><select className="ma-inp" style={{ width: 160 }} value={stF} onChange={e => setStF(e.target.value)}><option value="">كل الحالات</option><option value="new">قيد المراجعة</option><option value="ok">مقبولة</option><option value="no">مرفوضة</option></select></div>
+    </div>
+    <div className="ma-kpis" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8 }}>{[["📝 الأعذار", R.length, "#1e1b4b"], ["✅ مقبولة", R.filter(x => x.st === "ok").length, "#15803d"], ["❌ مرفوضة", R.filter(x => x.st === "no").length, "#b91c1c"], ["⏳ بانتظار القرار", R.filter(x => x.st === "new").length, "#b45309"], ["🔁 طلاب متكررون", rep.length, "#7c3aed"], ["⚠️ يستحقون تحذيراً", needW.length, "#b91c1c"], ["📨 تحذيرات صدرت", WL.length, "#9f1239"], ["🚫 حالات الغياب", AB ? tot.n : "…", "#0f172a"], ["🟢 منها بعذر", AB ? tot.e : "…", "#0f766e"]].map(([l, v, c]) => <div key={l} className="ma-card" style={{ padding: "10px 8px", textAlign: "center", borderBottom: `4px solid ${c}` }}><b style={{ display: "block", fontSize: 22, color: c }}>{typeof v === "number" ? maAr(v) : v}</b><small style={{ fontWeight: 800, color: "#64748b" }}>{l}</small></div>)}</div>
+    <div className="ma-card p-3 grid gap-2" style={{ border: "2px solid #c7d2fe" }}><b>🖨 طباعة التقرير — اختر المحتوى</b>
+      <div className="flex gap-3 flex-wrap" style={{ fontWeight: 800, fontSize: 13.5 }}>{[["day", "📅 مجمل الغياب حسب اليوم"], ["stu", "👤 الأكثر غياباً"], ["wr", "⚠️ حصر المحذّرين"], ["rep", "🔁 المتكرر"], ["list", "📝 تفاصيل الأعذار"], ["img", "🖼 صور المرفقات"], ["pdf", "📄 ملفات PDF"]].map(([k, l]) => <label key={k} className="flex gap-1 items-center" style={{ cursor: "pointer" }}><input type="checkbox" checked={!!po[k]} onChange={e => setPo({ ...po, [k]: e.target.checked })} />{l}</label>)}</div>
+      <div className="flex gap-2 items-center flex-wrap"><button className="ma-btn" disabled={!!busy || !AB} style={{ background: "#1e1b4b", color: "#fff", borderColor: "#1e1b4b" }} onClick={print}>{busy || "🖨 طباعة التقرير"}</button><small style={{ color: "#64748b", fontWeight: 700 }}>تُطبع الأعذار الظاهرة حسب البحث والحالة • المرفقات: {maAr(nAtt)} (كل مرفق في صفحة، وPDF حتى ٤ صفحات)</small></div></div>
+    <div className="ma-card p-3 grid gap-2"><b>🧾 أسباب الأعذار</b><div className="flex gap-1 flex-wrap">{Object.entries(ty).sort((a, b) => b[1] - a[1]).map(([k, n]) => <span key={k} className="ma-pill" style={{ background: "#eef2ff", color: "#3730a3", fontWeight: 900, borderRadius: 999, padding: "3px 10px", fontSize: 12.5 }}>{k}: {maAr(n)}</span>)}{!R.length && <span style={{ color: "#94a3b8", fontWeight: 700 }}>لا أعذار في الفترة</span>}</div></div>
+    <div className="ma-card p-3 grid gap-2" style={{ borderRight: "5px solid #b91c1c", background: needW.length ? "#fffafa" : undefined }}>
+      <div className="flex gap-2 items-center flex-wrap"><b style={{ color: "#b91c1c", fontSize: 15 }}>⚠️ التحذير من تكرار الأعذار ({maAr(needW.length)})</b><span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 800 }}>حد التحذير: <input type="number" min="2" max="10" className="ma-inp" style={{ width: 64, padding: "2px 6px", display: "inline-block" }} value={lim} onChange={e => { const v = Math.max(2, Math.min(10, +e.target.value || 3)); setLim(v); try { localStorage.setItem("exw-lim", v); } catch {} }} /> أعذار في الفترة (أو عذران لنفس اليوم)</span></div>
+      {!needW.length ? <div style={{ color: "#15803d", fontWeight: 800, fontSize: 13 }}>✅ لا يوجد طالب تجاوز حد التكرار في هذه الفترة</div> : needW.map(s => <div key={"w" + (s.sid || s.name)} className="flex gap-2 items-center flex-wrap" style={{ borderTop: "1px dashed #fecaca", paddingTop: 6 }}>
+        <b>{s.name}</b><small style={{ color: "#64748b", fontWeight: 800 }}>{s.cls}</small><span style={{ background: "#fee2e2", color: "#b91c1c", borderRadius: 999, padding: "2px 9px", fontWeight: 900, fontSize: 12 }}>{maAr(s.n)} أعذار</span>{s.dup.length > 0 && <span style={{ background: "#fee2e2", color: "#b91c1c", borderRadius: 999, padding: "2px 9px", fontWeight: 900, fontSize: 12 }}>عذر مكرر لنفس اليوم</span>}<small style={{ fontWeight: 800, color: "#475569" }}>{s.tyS}</small>
+        {s.W.length > 0 && <span style={{ background: "#dcfce7", color: "#15803d", borderRadius: 999, padding: "2px 9px", fontWeight: 900, fontSize: 12 }}>✅ نُبّه {maAr(s.W.length)} مرة — {maHijri(new Date(s.W[0].at))}</span>}
+        <span style={{ marginRight: "auto" }} className="flex gap-1"><button className="ma-btn" style={{ padding: "3px 10px", fontSize: 12, background: "#b91c1c", color: "#fff", borderColor: "#b91c1c" }} onClick={() => warn(s, true)}>⚠️ تحذير + طباعة خطاب</button><button className="ma-btn" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => warn(s, false)}>📨 تحذير بالإشعار فقط</button></span></div>)}
+      {WL.length > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>📨 صدر في الفترة {maAr(WL.length)} تحذيراً: {WL.slice(0, 12).map(w => `${w.name} (${maHijri(new Date(w.at))})`).join("، ")}</div>}
+    </div>
+    {rep.length > 0 && <div className="ma-card p-3 grid gap-2" style={{ borderRight: "5px solid #7c3aed" }}><b style={{ color: "#5b21b6" }}>🔁 أعذار متكررة ({maAr(rep.length)} طالباً)</b>
+      {rep.slice(0, 30).map(s => <div key={s.sid || s.name} className="flex gap-2 items-center flex-wrap" style={{ borderTop: "1px dashed #e2e8f0", paddingTop: 5 }}><b>{s.name}</b><small style={{ color: "#64748b", fontWeight: 800 }}>{s.cls}</small><span className="ma-pill" style={{ background: "#ede9fe", color: "#5b21b6", borderRadius: 999, padding: "2px 9px", fontWeight: 900, fontSize: 12 }}>{maAr(s.n)} أعذار</span><small style={{ fontWeight: 800, color: "#475569" }}>{Object.entries(s.ty).map(([k, n]) => `${k} (${maAr(n)})`).join("، ")}</small>{s.dup.length > 0 && <span className="ma-pill" style={{ background: "#fee2e2", color: "#b91c1c", borderRadius: 999, padding: "2px 9px", fontWeight: 900, fontSize: 12 }}>⚠️ أكثر من عذر لنفس اليوم: {s.dup.map(k => maHijri(maDate(k))).join("، ")}</span>}</div>)}</div>}
+    <div className="ma-card p-3 grid gap-1"><b>📝 الأعذار ({maAr(V.length)})</b>
+      {V.slice(0, 200).map(x => { const S = stL(x.st); const k = excAttKind(x.att); return <div key={x.key} className="flex gap-2 items-center flex-wrap" style={{ borderTop: "1px dashed #e2e8f0", padding: "6px 0" }}>
+        <b style={{ fontSize: 13.5 }}>{x.name}</b><small style={{ color: "#64748b", fontWeight: 800 }}>{x.cls}</small><span style={{ fontSize: 12.5, fontWeight: 800 }}>📅 {dtx(x)}</span><span style={{ fontSize: 12.5, fontWeight: 800, color: "#3730a3" }}>{x.type}</span>
+        <span style={{ background: S[1], color: S[2], borderRadius: 999, padding: "2px 9px", fontWeight: 900, fontSize: 12 }}>{S[0]}</span>{k && <button className="ma-btn" style={{ padding: "2px 9px", fontSize: 12 }} onClick={() => setAv(x)}>{k === "pdf" ? "📄 قراءة PDF" : "🖼 عرض الصورة"}</button>}<small style={{ color: "#94a3b8", fontWeight: 700, marginRight: "auto" }}>{x.by}</small>
+        {(x.text || x.reply) && <div style={{ width: "100%", fontSize: 12.5, fontWeight: 700, color: "#475569" }}>{x.text && <>«{x.text}» </>}{x.reply && <span style={{ color: "#0f766e" }}>💬 {x.reply}</span>}</div>}</div>; })}
+      {!V.length && <div style={{ color: "#94a3b8", fontWeight: 700 }}>لا أعذار مطابقة</div>}</div>
+    {av && <ExcAttView x={av} onClose={() => setAv(null)} />}
+  </div>;
+}
 function AbsExcPage({ by = "الإدارة" }) {
   const today = maKey(new Date());
   const [tab, setTab] = useState("day"); const [dk, setDk] = useState(() => maOff(today) ? (typeof maWorkDay === "function" ? maWorkDay() : today) : today);
@@ -50392,8 +50506,9 @@ function AbsExcPage({ by = "الإدارة" }) {
   return <div className="ma grid gap-3" dir="rtl" style={{ maxWidth: 1000, margin: "0 auto" }}><style>{MA_CSS}</style>
     <div className="ma-card p-4" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a8a)", color: "#fff" }}><b style={{ fontSize: 18 }}>📋 تصنيف الغياب — بعذر / بدون عذر</b>
       <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .9, marginTop: 4, lineHeight: 1.9 }}>كل غياب «بدون عذر» حتى يُقبل عذر ولي الأمر فيتحول تلقائياً «بعذر» 📝 — أو تعدّله أنت يدوياً ✎ لأي طالب في أي يوم. الغياب بعذر لا يُنقص نسبة حضور الطالب ولا يدخل في الإنذار واستدعاء ولي الأمر.{sync ? ` • زُامِن الآن ${maAr(sync)} يوم من أعذار مقبولة سابقاً.` : ""}</div></div>
-    <div className="ma-tabs">{[["day", "📅 حسب اليوم"], ["stu", "🔎 حسب الطالب"]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
-    <div className="ma-card p-3 flex gap-2 items-center flex-wrap"><span style={{ fontWeight: 800, fontSize: 13 }}>سبب التعديل (اختياري):</span><input className="ma-inp" style={{ flex: "1 1 220px" }} value={why} onChange={e => setWhy(e.target.value)} placeholder="مثال: تقرير طبي سُلّم للوكيل • ظرف عام (أمطار)" /></div>
+    <div className="ma-tabs">{[["day", "📅 حسب اليوم"], ["stu", "🔎 حسب الطالب"], ["rep", "📊 تقرير الأعذار والغياب"]].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
+    {tab === "rep" && <ExcReport ros={ros} />}
+    {tab !== "rep" && <div className="ma-card p-3 flex gap-2 items-center flex-wrap"><span style={{ fontWeight: 800, fontSize: 13 }}>سبب التعديل (اختياري):</span><input className="ma-inp" style={{ flex: "1 1 220px" }} value={why} onChange={e => setWhy(e.target.value)} placeholder="مثال: تقرير طبي سُلّم للوكيل • ظرف عام (أمطار)" /></div>}
     {tab === "day" && <div className="ma-card p-3 grid gap-2">
       <div className="flex gap-2 items-center flex-wrap"><input type="date" className="ma-inp" style={{ width: 170 }} value={dk} onChange={e => e.target.value && setDk(e.target.value)} /><b>{maDay(maDate(dk))} {maHijri(maDate(dk))}</b>
         <select className="ma-inp" style={{ width: 160 }} value={ckF} onChange={e => setCkF(e.target.value)}><option value="">كل الفصول</option>{Object.keys(day || {}).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(ck => <option key={ck} value={ck}>{maClassName(ck)}</option>)}</select>
