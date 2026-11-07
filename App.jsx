@@ -34160,6 +34160,105 @@ function PlrMemSign({ D, s, me, myName, onSaved }) {
     {pad && <HfxSigPad title="توقيع عضوية فريق المادة" onCancel={() => setPad(false)} onDone={img => save(img)} />}
   </div>;
 }
+// ═══════════════════════════════════════════════════════════════════════
+// 🔗 الرابط الموحّد لتوقيع مجتمعات التعلّم المهنية (#plrs) — يُرسل بالواتساب للجميع
+// يدخل المعلم أو الإداري برقم هويته ← تظهر له البنود المطلوب توقيعه عليها (عضوية فريق مادته / الفريق المنظّم / الاطلاع على السجل)
+// قبل الإرسال يُسأل: هل تريد كتابة ملاحظة أو إضافة أحد البنود؟ ← يوقّع ← يصل للإدارة
+//   school-plcr/msig/{k|_team|_gen}/{asmK(name)} = {img, at, n, role, hk, note, add:[{t, x, ok}]}
+// ═══════════════════════════════════════════════════════════════════════
+const PLRS_ADD_T = [["topic", "🗓️ قضية مقترحة لاجتماع قادم"], ["goal", "🎯 هدف"], ["rule", "⚖️ ضابط للاجتماع"], ["rec", "✅ توصية"], ["other", "💡 مقترح آخر"]];
+const plrsLink = () => { try { return location.origin + "/#plrs"; } catch { return "/#plrs"; } };
+const plrsGroupMsg = () => `الزملاء الكرام في مدرسة الأمير عبدالمجيد المتوسطة الأولى\nالسلام عليكم ورحمة الله وبركاته\n\nنأمل التكرم بالدخول برقم الهوية والتوقيع على سجل «مجتمعات التعلّم المهنية» (تشكيل الفرق وخريطة الاجتماعات)، ويمكنكم إضافة ملاحظة أو اقتراح بند جديد.\n\n🔗 ${plrsLink()}\n\nشاكرين تعاونكم`;
+const plrNm = s => cvNorm(String(s || "").replace(/\(.*?\)/g, ""));
+const plrSameName = (a, b) => { const x = plrNm(a), y = plrNm(b); if (!x || !y) return false; if (x === y) return true; const A = x.split(" "), B = y.split(" "); return A[0] === B[0] && A[A.length - 1] === B[B.length - 1]; };
+// البنود التي يوقّع عليها الشخص
+function plrsItems(D, n) {
+  const out = [];
+  PLR_SUB.forEach(s => { const m = plrMem(D, s.k).find(x => x && plrSameName(x.n, n)); if (m) out.push({ k: s.k, key: m.n, role: m.role || "عضو", t: `عضوية فريق «مجتمع تعلم ${D.sub[s.k].label}»`, ic: s.ic, c: s.c }); });
+  const tm = maArr(D.team).find(x => x && plrSameName(x.n, n)); if (tm) out.push({ k: "_team", key: tm.n, role: [tm.s, tm.r].filter(Boolean).join(" — ") || "عضو الفريق المنظّم", t: "عضوية الفريق المنظّم لمجتمعات التعلّم", ic: "👥", c: "#0f766e" });
+  if (!out.length) out.push({ k: "_gen", key: n, role: "منسوب المدرسة", t: "الاطلاع على سجل مجتمعات التعلّم المهنية", ic: "📘", c: "#475569" });
+  return out;
+}
+const plrsSigOf = (D, it) => ptObj(ptObj(ptObj(ptObj(D.G).msig)[it.k])[asmK(it.key)]);
+function PlrsDirect({ onBack }) {
+  const [D, setD] = useState(null); const [nid, setNid] = useState(""); const [err, setErr] = useState(""); const [me, setMe] = useState(null);
+  const [ask, setAsk] = useState(null); const [pad, setPad] = useState(null); const [busy, setBusy] = useState(false); const [ok, setOk] = useState("");
+  useEffect(() => { plrLoad().then(d => { setD(d); try { const m = JSON.parse(localStorage.getItem("plrs-me") || "null"); if (m && m.n) setMe(m); } catch {} }).catch(() => setD({ err: 1 })); }, []);
+  const verify = async () => { setErr(""); const n = licNormId(nid); if (n.length !== 10) { setErr("أدخل رقم الهوية كاملاً (١٠ أرقام)"); return; } setBusy(true);
+    try { const hk = hdK(await licHash(n)); const [st, hn] = await Promise.all([crStaff(), maGet(HD_T)]); let t = st.find(x => x.hk === hk); if (!t) { const h = ptObj(ptObj(hn)[hk]); if (h.n) t = { hk, n: h.n }; }
+      if (!t) { setErr("رقم الهوية غير مسجل في بيانات منسوبي المدرسة — تواصل مع الإدارة"); return; } const m = { hk, n: t.n }; try { localStorage.setItem("plrs-me", JSON.stringify(m)); } catch {} setMe(m); } finally { setBusy(false); } };
+  const wrap = ch => <div className="plr ma" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(160deg,#f6f1e1,#f8fafc 55%,#ecfdf5)", padding: "14px 10px 40px" }}><style>{MA_CSS + PLR_CSS}</style><div style={{ maxWidth: 720, margin: "0 auto" }} className="grid gap-3">
+    <div className="plr-hero" style={{ padding: "16px 18px" }}><h1 style={{ fontSize: 21 }}>✍️ توقيع سجل مجتمعات <em>التعلّم المهنية</em></h1><p style={{ margin: 0 }}>{HFX_SCHOOL}</p></div>{ch}</div></div>;
+  if (!D) return wrap(<div className="plr-card text-center font-bold">⏳ جاري التحميل…</div>);
+  if (D.err) return wrap(<div className="plr-card text-center font-bold" style={{ color: "#b91c1c" }}>تعذّر الاتصال — حاول مرة أخرى</div>);
+  if (!me) return wrap(<div className="plr-card grid gap-2" style={{ maxWidth: 460, justifySelf: "center", width: "100%" }}><b style={{ fontSize: 16 }}>🔐 أدخل رقم هويتك (معلم أو إداري)</b>
+    <input className="ma-inp" style={{ fontSize: 20, textAlign: "center", letterSpacing: 3, height: 50 }} inputMode="numeric" maxLength={10} value={nid} onChange={e => setNid(e.target.value.replace(/\D/g, ""))} onKeyDown={e => e.key === "Enter" && verify()} placeholder="رقم الهوية" />
+    {err && <div style={{ color: "#b91c1c", fontWeight: 900, fontSize: 13.5 }}>⚠️ {err}</div>}<button className="ma-btn pri" style={{ background: PLR_G, borderColor: PLR_G, justifyContent: "center", padding: 12, fontSize: 15 }} disabled={busy} onClick={verify}>{busy ? "⏳" : "دخول"}</button>
+    <small style={{ color: "#64748b", fontWeight: 700 }}>يُستخدم رقم الهوية للتحقق فقط ولا يُحفظ.</small></div>);
+  const IT = plrsItems(D, me.n);
+  const save = async (it, img) => { setBusy(true); const g = plrsSigOf(D, it); const a = ask || {}; const add = [...maArr(g.add), ...(a.addX && a.addX.trim() ? [{ t: a.addT || "other", x: a.addX.trim(), at: Date.now() }] : [])];
+    const v = { ...g, n: it.key, role: it.role, hk: me.hk, img: img || g.img, at: g.at || Date.now(), ...(a.note && a.note.trim() ? { note: [g.note, a.note.trim()].filter(Boolean).join("\n") } : {}), ...(add.length ? { add } : {}), up: Date.now() };
+    const r = await maPut(`${PLR_NODE}/msig/${it.k}/${asmK(it.key)}`, v); setBusy(false); setPad(null);
+    if (!r) { setOk("⚠️ تعذّر الحفظ — حاول مرة أخرى"); return; }
+    setD(x => { const ms = { ...ptObj(ptObj(x.G).msig) }; ms[it.k] = { ...ptObj(ms[it.k]), [asmK(it.key)]: v }; return { ...x, G: { ...x.G, msig: ms } }; });
+    if ((a.note && a.note.trim()) || (a.addX && a.addX.trim())) pushSend({ to: { roles: ["a"] }, title: `🌿 ${me.n} — ${a.addX ? "اقتراح بند" : "ملاحظة"} على مجتمعات التعلّم`, body: (a.addX || a.note || "").slice(0, 120), url: "/#plcr", tag: "plrs-" + asmK(it.key), by: me.n });
+    setAsk(null); setOk(img ? "✅ تم التوقيع والإرسال — شكراً لك" : "✅ أُرسلت إضافتك للإدارة"); setTimeout(() => setOk(""), 4000); };
+  return wrap(<>
+    <div className="plr-card flex gap-2 items-center flex-wrap"><b style={{ fontSize: 15.5 }}>👤 {me.n}</b><button className="ma-btn" style={{ marginInlineStart: "auto", padding: "4px 12px", fontSize: 12.5 }} onClick={() => { try { localStorage.removeItem("plrs-me"); } catch {} setMe(null); setNid(""); }}>لست أنا</button></div>
+    {ok && <div className="plr-card" style={{ background: /⚠️/.test(ok) ? "#fef2f2" : "#f0fdf4", color: /⚠️/.test(ok) ? "#b91c1c" : "#15803d", fontWeight: 900, textAlign: "center", fontSize: 15 }}>{ok}</div>}
+    {IT.map(it => { const g = plrsSigOf(D, it); return <div key={it.k} className="plr-card grid gap-2" style={{ borderRight: `6px solid ${g.img ? "#16a34a" : it.c}` }}>
+      <div className="flex gap-2 items-center flex-wrap"><span style={{ fontSize: 22 }}>{it.ic}</span><b style={{ fontSize: 15 }}>{it.t}</b><span className="plr-st" style={{ background: "#f1f5f9", color: "#475569" }}>صفتك: {it.role}</span>
+        {g.img ? <span className="plr-st" style={{ marginInlineStart: "auto", background: "#dcfce7", color: "#15803d" }}>✓ وقّعت {ptWhen(g.at)}</span> : <span className="plr-st" style={{ marginInlineStart: "auto", background: "#fef3c7", color: "#92400e" }}>⏳ بانتظار توقيعك</span>}</div>
+      {it.k !== "_gen" && it.k !== "_team" && (() => { const M = plrMeets(D, it.k); return M.length ? <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.9 }}>🗓️ خريطة الاجتماعات: {M.slice(0, 6).map(m => `${maAr(m.no || "")}) ${m.t || "—"}`).join(" • ")}</div> : null; })()}
+      {it.k === "_gen" && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.9 }}>{D.txt.idea}</div>}
+      {(g.note || maArr(g.add).length > 0) && <div className="grid gap-1" style={{ fontSize: 12.5, fontWeight: 700, background: "#f8fafc", borderRadius: 10, padding: "6px 10px" }}>{g.note && <div style={{ whiteSpace: "pre-wrap" }}>📝 {g.note}</div>}{maArr(g.add).map((a, i) => <div key={i}>➕ {(PLRS_ADD_T.find(x => x[0] === a.t) || ["", "بند"])[1]}: {a.x} {a.ok ? <b style={{ color: "#15803d" }}>✓ اعتُمد</b> : <span style={{ color: "#94a3b8" }}>(قيد المراجعة)</span>}</div>)}</div>}
+      <div className="flex gap-2 flex-wrap">{!g.img ? <button className="ma-btn pri" style={{ background: PLR_G, borderColor: PLR_G, fontSize: 15, padding: "10px 18px" }} onClick={() => setAsk({ it, step: "q", note: "", addT: "topic", addX: "" })}>✍️ وقّع الآن</button>
+        : <button className="ma-btn" onClick={() => setAsk({ it, step: "f", only: 1, note: "", addT: "topic", addX: "" })}>➕ إضافة ملاحظة أو بند</button>}</div>
+    </div>; })}
+    {ask && !pad && <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }} onClick={() => !busy && setAsk(null)}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ background: "#fff", borderRadius: 22, width: "min(520px,100%)", padding: 18, display: "grid", gap: 10 }}>
+      {ask.step === "q" ? <><div style={{ fontSize: 34, textAlign: "center" }}>💬</div><b style={{ fontSize: 17, textAlign: "center" }}>قبل التوقيع: هل تريد كتابة ملاحظة أو إضافة أحد البنود؟</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, textAlign: "center" }}>ما تكتبه يصل للإدارة مع توقيعك، ويمكن اعتماد البند المقترح في السجل.</div>
+        <button className="ma-btn" style={{ justifyContent: "center", padding: 12, fontSize: 15 }} onClick={() => setAsk({ ...ask, step: "f", mode: "note" })}>📝 نعم، أكتب ملاحظة</button>
+        <button className="ma-btn" style={{ justifyContent: "center", padding: 12, fontSize: 15 }} onClick={() => setAsk({ ...ask, step: "f", mode: "add" })}>➕ نعم، أضيف بنداً</button>
+        <button className="ma-btn pri" style={{ justifyContent: "center", padding: 12, fontSize: 15, background: PLR_G, borderColor: PLR_G }} onClick={() => setPad(ask.it)}>✍️ لا، أوقّع مباشرة</button></>
+      : <><b style={{ fontSize: 16 }}>{ask.only ? "➕ إضافة ملاحظة أو بند" : "📝 ملاحظتك / ➕ البند المقترح"}</b>
+        {(ask.only || ask.mode !== "add") && <label className="grid gap-1" style={{ fontWeight: 900, fontSize: 13 }}>📝 ملاحظة<textarea className="ma-inp" rows={3} style={{ height: "auto", padding: 8 }} value={ask.note} onChange={e => setAsk({ ...ask, note: e.target.value })} placeholder="اكتب ملاحظتك…" /></label>}
+        {(ask.only || ask.mode === "add") && <div className="grid gap-1"><b style={{ fontSize: 13 }}>➕ البند المقترح</b><div className="flex gap-1 flex-wrap">{PLRS_ADD_T.map(([k, l]) => <button key={k} className="ma-btn" style={{ padding: "4px 10px", fontSize: 12.5, ...(ask.addT === k ? { background: PLR_G, color: "#fff", borderColor: PLR_G } : {}) }} onClick={() => setAsk({ ...ask, addT: k })}>{l}</button>)}</div>
+          <textarea className="ma-inp" rows={3} style={{ height: "auto", padding: 8 }} value={ask.addX} onChange={e => setAsk({ ...ask, addX: e.target.value })} placeholder="نص البند…" /></div>}
+        {!ask.only && ask.mode !== "add" && <button className="ma-btn" style={{ justifySelf: "start", padding: "3px 10px", fontSize: 12 }} onClick={() => setAsk({ ...ask, mode: "add" })}>＋ إضافة بند أيضاً</button>}
+        <div className="flex gap-2 flex-wrap">{ask.only ? <button className="ma-btn pri" style={{ background: PLR_G, borderColor: PLR_G }} disabled={busy || (!ask.note.trim() && !ask.addX.trim())} onClick={() => save(ask.it, null)}>📤 إرسال</button>
+          : <button className="ma-btn pri" style={{ background: PLR_G, borderColor: PLR_G }} disabled={!ask.note.trim() && !ask.addX.trim()} onClick={() => setPad(ask.it)}>✍️ التالي: التوقيع والإرسال</button>}<button className="ma-btn" onClick={() => setAsk(ask.only ? null : { ...ask, step: "q" })}>رجوع</button></div></>}
+    </div></div>}
+    {pad && <HfxSigPad title={pad.t} onCancel={() => setPad(null)} onDone={img => save(pad, img)} />}
+    {onBack && <button className="ma-btn" style={{ justifySelf: "center" }} onClick={onBack}>الصفحة الرئيسية</button>}
+  </>);
+}
+// لوحة الإدارة: الرابط الموحّد + كل التوقيعات والملاحظات والبنود المقترحة
+function PlrsAdminCard({ D, setD, toast }) {
+  const [open, setOpen] = useState(false); const [st, setSt] = useState(null);
+  useEffect(() => { crStaff().then(setSt).catch(() => setSt([])); }, []);
+  const MS = ptObj(ptObj(D.G).msig); const rows = []; Object.entries(MS).forEach(([k, o]) => Object.entries(ptObj(o)).forEach(([nk, v]) => { if (v && (v.img || v.note || maArr(v.add).length)) rows.push({ k, nk, v }); }));
+  const lbl = k => k === "_team" ? "الفريق المنظّم" : k === "_gen" ? "اطلاع عام" : `مجتمع ${(D.sub[k] || {}).label || k}`;
+  const signedN = new Set(rows.filter(r => r.v.img).map(r => plrNm(r.v.n))); const notSigned = st ? st.filter(s => !rows.some(r => r.v.img && (r.v.hk === s.hk || plrSameName(r.v.n, s.n)))) : [];
+  const adds = rows.flatMap(r => maArr(r.v.add).map((a, i) => ({ ...r, a, i })));
+  const approve = async x => { const t = x.a.t; if (t === "goal") { const g = [...maArr(D.goals), { g: x.a.x, h: "" }]; setD(d => ({ ...d, goals: g })); await maPut(`${PLR_NODE}/goals`, g); }
+    else if (t === "rule") { const g = [...maArr(D.rules), { k: x.a.x.slice(0, 40), v: x.a.x }]; setD(d => ({ ...d, rules: g })); await maPut(`${PLR_NODE}/rules`, g); }
+    const add = maArr(x.v.add).map((a, i) => i === x.i ? { ...a, ok: Date.now() } : a); await maPut(`${PLR_NODE}/msig/${x.k}/${x.nk}/add`, add);
+    setD(d => { const ms = { ...ptObj(ptObj(d.G).msig) }; ms[x.k] = { ...ptObj(ms[x.k]), [x.nk]: { ...x.v, add } }; return { ...d, G: { ...d.G, msig: ms } }; }); toast(t === "goal" || t === "rule" ? "✅ اعتُمد وأُضيف للسجل" : "✅ اعتُمد"); };
+  const copy = async () => { try { await navigator.clipboard.writeText(plrsGroupMsg()); toast("📋 نُسخت الرسالة مع الرابط"); } catch { window.prompt("انسخ:", plrsGroupMsg()); } };
+  return <div className="plr-card grid gap-2" style={{ border: `2px solid ${PLR_GD}`, background: "linear-gradient(160deg,#fffbeb,#fff)" }}><style>{EXR_CSS}</style>
+    <div className="flex gap-2 items-center flex-wrap"><b style={{ fontSize: 16, color: PLR_G }}>🔗 رابط التوقيع الموحّد لجميع المنسوبين</b><span className="plr-st" style={{ background: "#dcfce7", color: "#15803d" }}>وقّع {maAr(signedN.size)}{st ? ` من ${maAr(st.length)}` : ""}</span>{adds.filter(x => !x.a.ok).length > 0 && <span className="plr-st" style={{ background: "#fef3c7", color: "#92400e" }}>➕ {maAr(adds.filter(x => !x.a.ok).length)} بند بانتظار الاعتماد</span>}</div>
+    <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>أرسله لقروب المعلمين والإداريين: يدخل كلٌّ برقم هويته، فتظهر له البنود الخاصة به (فريق مادته أو الفريق المنظّم أو الاطلاع على السجل)، ويُسأل قبل التوقيع إن كان يريد كتابة ملاحظة أو إضافة بند.</div>
+    <div className="flex gap-2 flex-wrap items-center"><code style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "4px 10px", fontSize: 12.5, direction: "ltr" }}>{plrsLink()}</code>
+      <a className="ma-btn" style={{ background: "#16a34a", color: "#fff", borderColor: "#16a34a" }} href={`https://wa.me/?text=${encodeURIComponent(plrsGroupMsg())}`} target="_blank" rel="noreferrer">📲 إرسال للقروب بالواتساب</a><button className="ma-btn" onClick={copy}>📋 نسخ الرسالة</button>
+      {notSigned.length > 0 && <button className="ma-btn" onClick={async () => { const r = await pushSend({ to: { names: notSigned.map(s => s.n) }, title: "✍️ توقيع سجل مجتمعات التعلّم", body: "نأمل الدخول برقم الهوية والتوقيع — ويمكنك إضافة ملاحظة أو بند", url: "/#plrs", tag: "plrs" }); toast(r && r.sent ? `🔔 وصل ${maAr(r.sent)} جهاز` : "🔔 أُرسل — من لم يفعّل الإشعارات أرسل له بالواتساب"); }}>🔔 تنبيه من لم يوقّع ({maAr(notSigned.length)})</button>}
+      <button className="ma-btn" style={{ marginInlineStart: "auto" }} onClick={() => setOpen(o => !o)}>{open ? "▲ إخفاء" : "▼ التوقيعات والملاحظات"}</button></div>
+    {open && <div className="grid gap-2">
+      {adds.length > 0 && <div className="exr-tw" style={{ maxHeight: "40vh" }}><table className="exr-t" style={{ minWidth: 640 }}><thead><tr><th>المقترِح</th><th>المجتمع</th><th>نوع البند</th><th>النص</th><th>الحالة</th></tr></thead><tbody>{adds.map(x => <tr key={x.k + x.nk + x.i}><td className="r"><b>{x.v.n}</b></td><td>{lbl(x.k)}</td><td>{(PLRS_ADD_T.find(y => y[0] === x.a.t) || ["", "بند"])[1]}</td><td className="r" style={{ maxWidth: 320 }}>{x.a.x}</td><td>{x.a.ok ? <span className="exr-p" style={{ background: "#dcfce7", color: "#15803d" }}>✓ اعتُمد</span> : <button className="exr-b" style={{ background: PLR_G, color: "#fff", borderColor: PLR_G }} onClick={() => approve(x)}>✅ اعتماد{x.a.t === "goal" ? " وإضافة للأهداف" : x.a.t === "rule" ? " وإضافة للضوابط" : ""}</button>}</td></tr>)}</tbody></table></div>}
+      <div className="exr-tw" style={{ maxHeight: "45vh" }}><table className="exr-t" style={{ minWidth: 640 }}><thead><tr><th>الاسم</th><th>البند الموقَّع</th><th>الصفة</th><th>التوقيع</th><th>الملاحظة</th></tr></thead><tbody>{rows.sort((a, b) => (b.v.at || 0) - (a.v.at || 0)).map(r => <tr key={r.k + r.nk}><td className="r"><b>{r.v.n}</b></td><td>{lbl(r.k)}</td><td style={{ fontSize: 12 }}>{r.v.role || "—"}</td><td>{r.v.img ? <><img src={r.v.img} alt="" style={{ height: 28, verticalAlign: "middle" }} /> <small style={{ color: "#64748b" }}>{ptWhen(r.v.at)}</small></> : "—"}</td><td className="r" style={{ fontSize: 12, maxWidth: 260, whiteSpace: "pre-wrap" }}>{r.v.note || r.v.cm || r.v.sg || "—"}</td></tr>)}</tbody></table></div>
+      {st && notSigned.length > 0 && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#92400e" }}>⏳ لم يوقّع بعد ({maAr(notSigned.length)}): {notSigned.map(s => s.n).join("، ")}</div>}
+    </div>}
+  </div>;
+}
 function PlrAdmin({ by = "الإدارة" }) {
   const [D, setD] = useState(null); const [tab, setTab] = useState("rec"); const [ed, setEd] = useState(null); const [E, setE] = useState(null); const [busyE, setBusyE] = useState(false); const [msg, setMsg] = useState("");
   useEffect(() => { plrLoad().then(setD); vsLoad().catch(() => {}); }, []);
@@ -34176,6 +34275,7 @@ function PlrAdmin({ by = "الإدارة" }) {
     <div className="plr-hero"><h1>سجل مجتمعات <em>التعلّم المهنية</em></h1><p>{D.txt.idea}</p><div className="plr-cy">{["تشخيص بداية العام", "تجربة ممارسة تدريسية", "فحص أعمال الطلاب", "تعديل الدعم", "إعادة القياس والقرار"].map((x, i) => <span key={x}><b>{maAr(i + 1)}</b>{x}</span>)}</div>
       <div className="flex gap-2 flex-wrap mt-3"><button className="ma-btn gold" onClick={() => plrPrint(D)}>🖨 طباعة السجل كاملاً</button><button className="ma-btn" style={{ background: "rgba(255,255,255,.12)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => plrPrint(D, { intro: 1, k: "__" })}>🖨 الغلاف والمقدمة والفريق</button>
         <label className="flex items-center gap-2" style={{ fontWeight: 800, fontSize: 12.5 }}>منسق المجتمعات المهنية <input className="ma-inp" style={{ width: 200, height: 34 }} defaultValue={D.cfg.coord || ""} onBlur={e => { const c = { ...D.cfg, coord: e.target.value }; setD(x => ({ ...x, cfg: c })); put("cfg/coord", e.target.value); }} /></label></div></div>
+    <PlrsAdminCard D={D} setD={setD} toast={toast} />
     <div className="plr-tabs"><button className={`plr-tab ${tab === "rec" ? "on" : ""}`} onClick={() => setTab("rec")}>📘 المقدمة والفريق والضوابط</button>{PLR_SUB.map(s => <button key={s.k} className={`plr-tab ${tab === s.k ? "on" : ""}`} onClick={() => setTab(s.k)}><span style={{ color: tab === s.k ? "#f3d77a" : s.c }}>{s.ic}</span>{s.k === "ar" ? "اللغة العربية" : s.l} <small>({maAr(plrMeets(D, s.k).length)})</small></button>)}<button className={`plr-tab ${tab === "sum" ? "on" : ""}`} onClick={() => setTab("sum")}>🏁 الملخص والاعتماد</button></div>
     {tab === "rec" && <div className="grid gap-3">
       <div className="plr-card grid gap-2">{[["idea", "فكرة السجل"], ["intro", "المقدمة"], ["res", "استعراض النتائج"], ["time", "زمن الاجتماع"]].map(([k, l]) => <label key={k} className="grid gap-1" style={{ fontWeight: 900, fontSize: 13 }}>{l}<textarea className="ma-inp" style={{ minHeight: 60, height: "auto", padding: 8, lineHeight: 1.9 }} defaultValue={D.txt[k]} onBlur={e => { const t = { ...D.txt, [k]: e.target.value }; setD(x => ({ ...x, txt: t })); put(`txt/${k}`, e.target.value); }} /></label>)}</div>
@@ -42231,7 +42331,7 @@ function TrepAdmin({ me }) {
     if (v) pushSend({ to: { names: R.map(r => r.n) }, title: "📑 تقريرك الدوري جاهز", body: `تقرير الأداء والإنجاز ${trHij(R[0].f)} – ${trHij(R[0].t)} — اطّلع عليه ونزّله PDF`, url: "/#teacher:trep", tag: "trep-" + pk, by }); };
   const printAll = (L, rk) => trOpen(L.map(r => trHtml(r, { rank: rk, at: r.at })).join(""), "التقارير الدورية للمعلمين");
   const keys = Object.entries(idx).sort((a, b) => b[0].localeCompare(a[0]));
-  return <div className="grid gap-3" dir="rtl">
+  return <div className="grid gap-3" dir="rtl"><style>{EXR_CSS}</style>
     <MdrUpload by={by} names={names} cands={cands} />
     <div className="ma-card p-3 grid gap-2" style={{ borderTop: "5px solid #0f3b5f" }}>
       <b style={{ fontSize: 15 }}>📑 إعداد التقارير الدورية</b>
@@ -50714,6 +50814,14 @@ const exwLetter = (s, by) => `<section class="pg">${inHdr("تنبيه ولي أ�
   وحرصاً على انتظامه الدراسي وتحصيله، نأمل متابعته والحد من الغياب، علماً بأن تكرار الأعذار يستوجب تقديم ما يثبتها رسمياً، وأن استمرار ذلك يُحال للجنة التوجيه الطلابي وفق قواعد السلوك والمواظبة.</div>
   <div style="margin-top:18px;font-size:14px;line-height:2.2">اطلعت على ما ورد أعلاه وألتزم بمتابعة انتظام ابني.<br>اسم ولي الأمر: .................................... التوقيع: .................... التاريخ: ......../......../ ١٤٤هـ</div>
   ${inSig(by || "وكيل شؤون الطلاب", "الموجه الطلابي")}</section>`;
+const EXR_CSS = `.exr-tw{overflow:auto;max-height:70vh;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+.exr-t{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:860px}
+.exr-t th{position:sticky;top:0;z-index:1;background:#1e1b4b;color:#fff;padding:8px 6px;font-weight:900;font-size:12.5px;white-space:nowrap}
+.exr-t td{padding:7px 6px;border-bottom:1px solid #eef2f7;text-align:center;vertical-align:middle;font-weight:700}
+.exr-t td.r{text-align:right}.exr-t tr:nth-child(even) td{background:#fafbff}.exr-t tr:hover td{background:#eef2ff}
+.exr-p{display:inline-block;border-radius:999px;padding:2px 9px;font-weight:900;font-size:12px;white-space:nowrap}
+.exr-b{font-family:inherit;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;border-radius:9px;padding:3px 8px;font-weight:900;font-size:12px;white-space:nowrap}
+.exr-b.red{background:#b91c1c;color:#fff;border-color:#b91c1c}`;
 function ExcReport({ ros }) {
   const t0 = maKey(new Date()); const [f, setF] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return maKey(d); }); const [t, setT] = useState(t0);
   const [L, setL] = useState(null); const [AB, setAB] = useState(null); const [AX, setAX] = useState({}); const [q, setQ] = useState(""); const [stF, setStF] = useState(""); const [av, setAv] = useState(null);
@@ -50771,14 +50879,7 @@ function ExcReport({ ros }) {
       <div className="flex gap-3 flex-wrap" style={{ fontWeight: 800, fontSize: 13.5 }}>{[["day", "📅 مجمل الغياب حسب اليوم"], ["stu", "👤 الأكثر غياباً"], ["wr", "⚠️ حصر المحذّرين"], ["rep", "🔁 المتكرر"], ["list", "📝 تفاصيل الأعذار"], ["img", "🖼 صور المرفقات"], ["pdf", "📄 ملفات PDF"]].map(([k, l]) => <label key={k} className="flex gap-1 items-center" style={{ cursor: "pointer" }}><input type="checkbox" checked={!!po[k]} onChange={e => setPo({ ...po, [k]: e.target.checked })} />{l}</label>)}</div>
       <div className="flex gap-2 items-center flex-wrap"><button className="ma-btn" disabled={!!busy || !AB} style={{ background: "#1e1b4b", color: "#fff", borderColor: "#1e1b4b" }} onClick={print}>{busy || "🖨 طباعة التقرير"}</button><small style={{ color: "#64748b", fontWeight: 700 }}>تُطبع الأعذار الظاهرة حسب البحث والحالة • المرفقات: {maAr(nAtt)} (كل مرفق في صفحة، وPDF حتى ٤ صفحات)</small></div></div>
     <div className="ma-card p-3 grid gap-2"><b>🧾 أسباب الأعذار</b><div className="flex gap-1 flex-wrap">{Object.entries(ty).sort((a, b) => b[1] - a[1]).map(([k, n]) => <span key={k} className="ma-pill" style={{ background: "#eef2ff", color: "#3730a3", fontWeight: 900, borderRadius: 999, padding: "3px 10px", fontSize: 12.5 }}>{k}: {maAr(n)}</span>)}{!R.length && <span style={{ color: "#94a3b8", fontWeight: 700 }}>لا أعذار في الفترة</span>}</div></div>
-    <style>{`.exr-tw{overflow:auto;max-height:70vh;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
-.exr-t{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:860px}
-.exr-t th{position:sticky;top:0;z-index:1;background:#1e1b4b;color:#fff;padding:8px 6px;font-weight:900;font-size:12.5px;white-space:nowrap}
-.exr-t td{padding:7px 6px;border-bottom:1px solid #eef2f7;text-align:center;vertical-align:middle;font-weight:700}
-.exr-t td.r{text-align:right}.exr-t tr:nth-child(even) td{background:#fafbff}.exr-t tr:hover td{background:#eef2ff}
-.exr-p{display:inline-block;border-radius:999px;padding:2px 9px;font-weight:900;font-size:12px;white-space:nowrap}
-.exr-b{font-family:inherit;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;border-radius:9px;padding:3px 8px;font-weight:900;font-size:12px;white-space:nowrap}
-.exr-b.red{background:#b91c1c;color:#fff;border-color:#b91c1c}`}</style>
+    <style>{EXR_CSS}</style>
     {(() => { const rows = wMode === "all" ? rep : needW; const sorted = [...rows].sort((x, y) => wSort === "cls" ? String(x.cls).localeCompare(String(y.cls), "ar", { numeric: true }) || y.n - x.n : wSort === "name" ? x.name.localeCompare(y.name, "ar") : y.n - x.n || y.dup.length - x.dup.length);
       const printW = () => inOpen(`<section class="pg">${inHdr(wMode === "all" ? "حصر الطلاب المتكررة أعذارهم" : "حصر الطلاب المستحقين للتحذير لتكرار الأعذار", f === t ? maHijri(maDate(f)) : `من ${maHijri(maDate(f))}<br>إلى ${maHijri(maDate(t))}`)}<p style="font-size:12px">حد التحذير: ${maAr(lim)} أعذار فأكثر في الفترة، أو أكثر من عذر لنفس اليوم • العدد: ${maAr(sorted.length)}</p><table><thead><tr><th>م</th><th class="r">الطالب</th><th>الفصل</th><th>عدد الأعذار</th><th>الأسباب</th><th>عذر مكرر لنفس اليوم</th><th>حالة التحذير</th><th>ملاحظات</th></tr></thead><tbody>${sorted.map((s, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(s.name)}</b></td><td>${ptEsc(s.cls)}</td><td><b style="color:${s.warn ? "#b91c1c" : "#1e1b4b"}">${maAr(s.n)}</b></td><td style="font-size:11px">${ptEsc(s.tyS)}</td><td style="font-size:11px">${s.dup.length ? s.dup.map(k => maHijri(maDate(k))).join("<br>") : "—"}</td><td style="font-size:11px">${s.W.length ? `نُبّه ${maAr(s.W.length)} مرة<br>${maHijri(new Date(s.W[0].at))}` : s.warn ? "لم يُنبَّه" : "—"}</td><td style="width:90px"></td></tr>`).join("")}</tbody></table>${inSig("وكيل شؤون الطلاب", "الموجه الطلابي")}</section>`, "حصر تكرار الأعذار", trPrintCss("#b91c1c"));
       return <div className="ma-card p-3 grid gap-2" style={{ borderTop: "5px solid #b91c1c" }}>
@@ -51696,6 +51797,7 @@ function SchoolWebsiteInner() {
   const [licPortal, setLicPortal] = useState(() => window.location.hash.replace("#", "") === "license");
   const [hfxPortal, setHfxPortal] = useState(() => /^#hfx=/.test(window.location.hash));
   const [circPortal, setCircPortal] = useState(() => /^#circ=/.test(window.location.hash));
+  const [plrsPortal, setPlrsPortal] = useState(() => /^#plrs\b/.test(window.location.hash));
   const [f9Portal, setF9Portal] = useState(() => /^#f9(=|$)/.test(window.location.hash));
   const [attPortal, setAttPortal] = useState(() => ["attend", "absence", "ghiab"].includes(window.location.hash.replace("#", "")));
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
@@ -52028,6 +52130,7 @@ function SchoolWebsiteInner() {
 
   if (hfxPortal) return <HfxTeacherPortal onBack={() => { setHfxPortal(false); window.location.hash = ""; }} />;
   if (circPortal) return <CircDirect onBack={() => { setCircPortal(false); window.location.hash = ""; }} />;
+  if (plrsPortal) return <PlrsDirect onBack={() => { setPlrsPortal(false); window.location.hash = ""; }} />;
   if (f9Portal) return <DuF9Portal key={window.location.hash} onBack={() => { setF9Portal(false); window.location.hash = ""; }} />;
   const hubBack = () => { setHubPortal(""); window.location.hash = ""; };
   if (hubPortal === "weekly") return <WeeklyPlanPublic onBack={hubBack} />;
