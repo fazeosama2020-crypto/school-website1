@@ -22,6 +22,7 @@ const trApi = () => ({ push: o => pushSend(o), PushBell, maGet, maPut, stuHash, 
 const TR_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#78350f" }}>🧭 جارٍ تحميل رحلة الكنز…</div>;
 const SmartLessonTeacher = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonTeacher })));
 const SmartLessonAdmin = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonAdmin })));
+const ExtEvalPage = React.lazy(() => import("./smart/ExtEval.jsx").then(m => ({ default: m.ExtEvalPage })));
 const ImprovePlanAdmin = React.lazy(() => import("./smart/ImprovePlan.jsx").then(m => ({ default: m.ImprovePlanAdmin })));
 const SL_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#1e3a8a" }}>✨ جارٍ تحميل درسي الذكي…</div>;
 // واجهة «درسي الذكي»: قاعدة البيانات + احتياط مفتاح الجهاز إن لم يُضبط المفتاح في Vercel بعد
@@ -34472,6 +34473,7 @@ async function ipSnap() {
   return { lines: L, needs: N };
 }
 const ipApi = () => ({ maGet, maPut, fbPatch, snap: ipSnap });
+const extApi = () => ({ maGet, maPut, fb: FIREBASE_URL, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, print: printWindow, pdfImgs: (b, o) => wpPdfToImages(b, null, o), go: p => { if (p) window.location.hash = "#" + p; } });
 function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], setClassList, saveClass, messages = [], onSendNote }) {
   const isStaff = kind === "staff";
   const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-staff") || "null"); return m && m.day === maKey(new Date()) && m.name ? m : null; } catch { return null; } });
@@ -34537,6 +34539,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "nbadm" && ["principal", "deputy"].includes(me.role)) return wrap("📚 مراجع نافس – متابعة الإدارة", <React.Suspense fallback={NB_WAIT}><NbPinSet by={me.name} /><NafsBooksAdmin by={me.name} api={trApi()} tab0="alerts" /></React.Suspense>);
   if (view === "nbooks") return wrap("📚 مراجع نافس – موادي وطلابي", <NbPinGate><React.Suspense fallback={NB_WAIT}><NafsBooksTeacher by={me.name} api={trApi()} /></React.Suspense></NbPinGate>);
   if (view === "hd") return wrap("📈 انضباطي اليومي", <HdTeacherView me={me} />);
+  if (view === "ext" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("📋 ملف شواهد التقويم الخارجي", <React.Suspense fallback={SL_WAIT}><ExtEvalPage me={me} api={extApi()} /></React.Suspense>);
   if (view === "trep") return wrap("📑 التقارير الدورية — الأداء والإنجاز", isStaff && ["principal", "deputy"].includes(me.role) ? <TrepAdmin me={me} /> : <TrepMine me={me} />);
   if (view === "asmrank" && ["principal", "deputy"].includes(me.role)) return wrap("🎺 مفاضلة الطابور", <AsmRank by={me.name} />);
   if (view === "score") return wrap(["principal", "deputy"].includes(me.role) ? "🏆 ترتيب المعلمين في الانضباط الشامل" : "🏆 بطاقتي الشاملة وترتيبي", <TchScoreView me={me} admin={["principal", "deputy"].includes(me.role)} />);
@@ -34600,6 +34603,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             </div>}
             <div className="pt-tiles">
               {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><LeaderStrip onOpen={() => setView("lead")} /></div>}
+              {["principal", "deputy"].includes(me.role) && ptTile("ext", "📋", "ملف شواهد التقويم الخارجي", "المؤشرات ودلالات التحقق والشواهد — متحقق/جزئي/غير متحقق، رفع الشواهد، وطباعة الملف بغلاف المدرسة", "#0b2545", "#c9a227", () => setView("ext"))}
               {["principal", "deputy"].includes(me.role) && ptTile("trep", "📑", "التقارير الدورية للمعلمين", "تقرير أداء وإنجاز شهري لكل معلم من بيانات الموقع ومنصة مدرستي — يُعتمد ويُنشر لحساب المعلم PDF", "#0f3b5f", "#1e3a8a", () => setView("trep"))}
               {["principal", "deputy"].includes(me.role) && ptTile("ipadm", "🎯", "خطة التحسين المدرسي", "الاستمارة (1) بناء الخطة والاستمارة (2) الأسبوعية — من التقويم الذاتي ونافس وواقع المدرسة، بالذكاء الاصطناعي وبنفس شكل الاستمارتين", "#1f6b34", "#54A021", () => setView("ipadm"))}
               <div style={{ gridColumn: "1/-1" }}><RmtTeacherCard me={me} quiet /></div>
@@ -49033,7 +49037,7 @@ function NbPinSet({ by = "الإدارة" }) {
     <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>يُطلب من المعلم عند فتح «مراجع نافس» من حسابه، ويبقى مفتوحاً حتى يغلق المتصفح. دخول الطلاب والإدارة لا يتأثر.</div>
   </div>;
 }
-const GATE_EXEMPT = ["school-excw", "school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-ext", "school-excw", "school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -51848,7 +51852,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","ipadmin"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -52236,6 +52240,8 @@ function SchoolWebsiteInner() {
     { id: "hfx",            label: "نماذج متابعة الدوام (حضوري)", icon: "📑" },
     { id: "hdisc",          label: "سجل الانضباط اليومي (حضوري)", icon: "📈" },
     { id: "trepadm",        label: "التقارير الدورية للمعلمين", icon: "📑" },
+    { id: "exteval",        label: "ملف شواهد التقويم الخارجي", icon: "📋" },
+    { id: "ipadmin",        label: "خطة التحسين المدرسي", icon: "🎯" },
     { id: "absxadm",        label: "تصنيف الغياب وتقرير الأعذار", icon: "📋" },
     { id: "circulars",      label: "التعاميم", icon: "📜" },
     { id: "circdaily",      label: "التعاميم اليومية", icon: "📨" },
@@ -52266,7 +52272,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","trepadm","absxadm","timetable","ttnow","trash","audit","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","ipadmin","trepadm","absxadm","timetable","ttnow","trash","audit","settings"] },
   ];
 
   return (
@@ -52597,6 +52603,8 @@ function SchoolWebsiteInner() {
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
                 {page === "trepadm" && <div className="px-2 md:px-6 py-4"><TrepAdmin me={{ name: user?.name || "الإدارة", role: "principal" }} /></div>}
+                {page === "ipadmin" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ImprovePlanAdmin by={user?.name || "الإدارة"} me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={ipApi()} /></React.Suspense></div>}
+                {page === "exteval" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ExtEvalPage me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={extApi()} /></React.Suspense></div>}
                 {page === "absxadm" && <div className="px-2 md:px-6 py-4"><AbsExcPage by={user?.name || "الإدارة"} /></div>}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}{page === "circdaily" && <div className="px-2 md:px-6 py-4"><CircDailyAdmin by={user?.name || "الإدارة"} /></div>}
                 {page === "meetings"       && <MeetingsPage teachers={teachers} />}
@@ -52787,6 +52795,8 @@ function SchoolWebsiteInner() {
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
                 {page === "trepadm" && <div className="px-2 md:px-6 py-4"><TrepAdmin me={{ name: user?.name || "الإدارة", role: "principal" }} /></div>}
+                {page === "ipadmin" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ImprovePlanAdmin by={user?.name || "الإدارة"} me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={ipApi()} /></React.Suspense></div>}
+                {page === "exteval" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ExtEvalPage me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={extApi()} /></React.Suspense></div>}
                 {page === "absxadm" && <div className="px-2 md:px-6 py-4"><AbsExcPage by={user?.name || "الإدارة"} /></div>}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}{page === "circdaily" && <div className="px-2 md:px-6 py-4"><CircDailyAdmin by={user?.name || "الإدارة"} /></div>}
         {page === "meetings"       && <MeetingsPage teachers={teachers} />}
