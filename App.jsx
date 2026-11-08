@@ -38291,16 +38291,17 @@ const inPeriod = (kind, from, to) => {
   if (kind === "month") return [k.slice(0, 8) + "01", k];
   if (kind === "lastmonth") { const d = new Date(t.getFullYear(), t.getMonth() - 1, 1); const e = new Date(t.getFullYear(), t.getMonth(), 0); return [maKey(d), maKey(e)]; }
   if (kind === "year") { const y = t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1; return [`${y}-08-01`, k]; }
+  if (kind === "all") return ["2024-08-01", k];
   return [from || k, to || k];
 };
-const IN_PERS = [["week", "هذا الأسبوع"], ["lastweek", "الأسبوع الماضي"], ["30", "آخر ٣٠ يوماً"], ["month", "هذا الشهر"], ["lastmonth", "الشهر الماضي"], ["year", "العام الدراسي"], ["custom", "فترة مخصصة"]];
+const IN_PERS = [["week", "هذا الأسبوع"], ["lastweek", "الأسبوع الماضي"], ["30", "آخر ٣٠ يوماً"], ["month", "هذا الشهر"], ["lastmonth", "الشهر الماضي"], ["year", "العام الدراسي"], ["all", "كل التواريخ"], ["custom", "فترة مخصصة"]];
 async function inLoad(f, t) {
-  const [ros, meta, att, late, sc, cfg, bn, bc, ax] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t), maGet(SC_NODE), maGet(IN_CFG), fbRange(BN_NODE, f, t), maGet(BN_CFG), fbRange(ABSX, f, t).catch(() => ({}))]);
+  const [ros, meta, att, late, sc, cfg, bn, bc, ax, dc] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(MA_LATE, f, t), maGet(SC_NODE), maGet(IN_CFG), fbRange(BN_NODE, f, t), maGet(BN_CFG), fbRange(ABSX, f, t).catch(() => ({})), fbRange("school-dconduct", f, t).catch(() => ({}))]);
   const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4];
   const classes = maClasses(counts);
   const sdA = await Promise.all(classes.map(c => sdRange(c.ck, f, t)));
   const sd = {}; classes.forEach((c, i) => { const o = {}; Object.entries(ptObj(sdA[i])).forEach(([k, v]) => { if (k.slice(0, 10) >= f && k.slice(0, 10) <= t) o[k] = v; }); sd[c.ck] = o; });
-  return { f, t, ros: ptObj(ros), classes, att, late, sc: ptObj(sc), sd, bn, absx: ptObj(ax), bcats: bc && Array.isArray(bc.cats) && bc.cats.length ? bc.cats : BN_DEF, cfg: { ...IN_DEF, ...ptObj(cfg) } };
+  return { f, t, ros: ptObj(ros), classes, att, late, sc: ptObj(sc), sd, bn, absx: ptObj(ax), dc: ptObj(dc), bcats: bc && Array.isArray(bc.cats) && bc.cats.length ? bc.cats : BN_DEF, cfg: { ...IN_DEF, ...ptObj(cfg) } };
 }
 const sdIn = (o, f, t) => { const r = {}; Object.entries(ptObj(o)).forEach(([k, v]) => { const d = k.slice(0, 10); if (d >= f && d <= t) r[k] = v; }); return r; };
 const SD_NEG = { p: v => v === 2, h: v => v >= 1, t: v => v === 1, b: v => v === 2 };
@@ -38422,11 +38423,11 @@ const inLvChip = l => { const [ic, t, c, bg] = IN_LV[l]; return <span className=
 const inAvC = ["#0d9488", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#0891b2"];
 
 // ══════════ الصفحة الرئيسية لمركز المؤشرات ══════════
-function InsightsPage({ by = "الإدارة", initTab = "morning", tabs = null, staff = false }) {
+function InsightsPage({ by = "الإدارة", initTab = "morning", tabs = null, staff = false, initPer = "30" }) {
   const ALL = [["morning", "🌅 شاشة الصباح"], ["warn", "🚨 الإنذار المبكر"], ["student", "👤 ملف الطالب"], ["week", "📨 التقارير الأسبوعية"], ["rank", "🏆 مقارنة الفصول"], ["month", "📑 التقرير الشهري"], ["tools", "🔧 الأدوات"]];
   const T = tabs ? ALL.filter(([k]) => tabs.includes(k)) : ALL;
   const [tab, setTab] = useState(initTab);
-  const [per, setPer] = useState({ kind: "30", from: maKey(new Date()), to: maKey(new Date()) });
+  const [per, setPer] = useState({ kind: initPer, from: maKey(new Date()), to: maKey(new Date()) });
   const [D, setD] = useState(null); const [loading, setLoading] = useState(false);
   const [sid, setSid] = useState(null);
   const needData = ["warn", "student", "rank", "month"].includes(tab);
@@ -38544,6 +38545,9 @@ function InStudent({ D, sid, setSid, by }) {
     </div>
   );
   const B = inBadges(s, days.length); const [ic, lt, lc, lbg] = IN_LV[s.lvl];
+  const isE = k => ptObj(ptObj(ptObj(D.absx)[k])[s.sid]).s === "e"; const absE = s.abs.filter(isE).length;
+  const dcCat = r => { const c = (typeof DC_STU !== "undefined" ? DC_STU : []).find(x => x.k === r.cat); return c ? `${c.ic} ${c.t}` : r.other ? `✍️ ${r.other}` : `📌 ${r.cat || "ملاحظة"}`; };
+  const dcL = Object.values(ptObj(D.dc)).flatMap(o => Object.values(ptObj(o))).filter(r => r && r.k !== "c" && String(r.sid) === String(s.sid)).sort((a, b) => (b.at || 0) - (a.at || 0));
   const lastLate = [...s.late].sort((a, b) => b.dk.localeCompare(a.dk));
   const print = () => {
     const sc = s.sc ? SC_DIMS.map(dm => { const v = s.sc[dm.k]; const L = v != null ? dm.lv[v] : null; return `<td>${dm.ic} ${dm.t}<br>${L ? `<span class="lv" style="background:${L[2]};color:${L[1]}">${L[0]}</span>` : "—"}</td>`; }).join("") : `<td colspan="3">لا يوجد تصنيف</td>`;
@@ -38553,7 +38557,8 @@ function InStudent({ D, sid, setSid, by }) {
       <h3>🏷️ تصنيف المعلمين</h3><table><tr>${sc}</tr></table>
       ${s.flags.length ? `<h3>🚨 المؤشرات</h3><table>${s.flags.map(x => `<tr><td class="r">${x[0]} ${ptEsc(x[1])}</td></tr>`).join("")}</table>` : ""}
       ${B.length ? `<h3>🏅 الأوسمة</h3><div>${B.map(b => `<span class="lv" style="background:${b[3]};color:#fff;margin:2px">${b[0]} ${b[1]}</span>`).join(" ")}</div>` : ""}
-      <h3>🚫 الغياب</h3><table><tr><td class="r">${s.abs.length ? [...s.abs].sort().map(k => `${maDay(maDate(k))} ${maHijri(maDate(k))}`).join(" • ") : "لا يوجد غياب 🌟"}</td></tr></table>
+      <h3>🚫 الغياب (${maAr(s.abs.length)} يوماً: بعذر ${maAr(absE)} • بدون عذر ${maAr(s.abs.length - absE)})</h3><table><tr><td class="r">${s.abs.length ? [...s.abs].sort().map(k => `${maDay(maDate(k))} ${maHijri(maDate(k))}${isE(k) ? " (بعذر)" : ""}`).join(" • ") : "لا يوجد غياب 🌟"}</td></tr></table>
+      ${dcL.length ? `<h3>🏫 المخالفات داخل الفصل (${maAr(dcL.length)})</h3><table><thead><tr><th>التاريخ</th><th>الحصة</th><th class="r">المخالفة</th><th>المعلم</th></tr></thead><tbody>${dcL.map(r => `<tr><td>${maDay(maDate(r.dk))} ${maHijri(maDate(r.dk))}</td><td>${r.per ? maAr(r.per) : "—"}</td><td class="r">${ptEsc(dcCat(r))}${r.note ? " — " + ptEsc(r.note) : ""}</td><td>${ptEsc(r.by || "")}</td></tr>`).join("")}</tbody></table>` : ""}
       <h3>⏰ التأخر الصباحي</h3><table><thead><tr><th>التاريخ</th><th>الحضور</th><th>المدة</th><th>السبب</th></tr></thead><tbody>${lastLate.map(r => `<tr><td>${maDay(maDate(r.dk))} ${maHijri(maDate(r.dk))}</td><td>${ptEsc(r.time || "")}</td><td>${maAr(+r.mins || 0)} د</td><td>${ptEsc(r.reason || "")}</td></tr>`).join("") || `<tr><td colspan="4">لا يوجد تأخر 🌟</td></tr>`}</tbody></table>
       ${s.bn.length ? `<h3>📝 الملاحظات السلوكية</h3><table>${s.bn.map(r => `<tr><td>${maHijri(maDate(r.dk))}</td><td class="r">${bnCat(D.bcats || BN_DEF, r.cat).ic} ${ptEsc(bnCat(D.bcats || BN_DEF, r.cat).t)}${r.note ? " — " + ptEsc(r.note) : ""}</td><td>${ptEsc(r.by || "")}</td></tr>`).join("")}</table>` : ""}
       ${s.sd.notes.length ? `<h3>📒 ملاحظات المعلمين</h3><table><thead><tr><th>التاريخ</th><th>المادة</th><th>الملاحظة</th></tr></thead><tbody>${s.sd.notes.slice(-15).map(n => `<tr><td>${maHijri(sdDate(n.dk))}</td><td>${ptEsc(n.subject)}</td><td class="r">${ptEsc(n.txt)}</td></tr>`).join("")}</tbody></table>` : ""}
@@ -38570,7 +38575,8 @@ function InStudent({ D, sid, setSid, by }) {
           <div className="flex gap-1 flex-wrap"><button className="ma-btn" onClick={() => setSid(null)}>🔍 طالب آخر</button><button className="ma-btn pri" onClick={print}>🖨️ طباعة الملف</button>{B.length > 0 && <button className="ma-btn gold" onClick={cert}>🏅 شهادة تميّز</button>}</div>
         </div>
         <div className="pt-kpis mt-3">
-          <div className="pt-kpi" style={{ "--c": "#dc2626" }}><b>{maAr(s.abs.length)}</b><small>🚫 أيام الغياب</small></div>
+          <div className="pt-kpi" style={{ "--c": "#dc2626" }}><b>{maAr(s.abs.length)}</b><small>🚫 أيام الغياب{s.abs.length ? ` (بعذر ${maAr(absE)})` : ""}</small></div>
+          <div className="pt-kpi" style={{ "--c": "#7c3aed" }}><b>{maAr(dcL.length + s.bn.length)}</b><small>📝 مخالفات وملاحظات سلوكية</small></div>
           <div className="pt-kpi" style={{ "--c": "#ea580c" }}><b>{maAr(s.late.length)}</b><small>⏰ مرات التأخر ({maAr(s.lateMins)} د)</small></div>
           <div className="pt-kpi" style={{ "--c": "#15803d" }}><b>{maAr(s.sd.pos)}</b><small>📒 ملاحظة إيجابية</small></div>
           <div className="pt-kpi" style={{ "--c": "#b91c1c" }}><b>{maAr(s.sd.neg)}</b><small>📒 تحتاج اهتماماً</small></div>
@@ -38593,10 +38599,13 @@ function InStudent({ D, sid, setSid, by }) {
         <div className="ma-card p-4"><b style={{ fontSize: 15 }}>📝 الملاحظات السلوكية ({maAr(s.bn.length)})</b>
           <div className="grid gap-1 mt-3" style={{ maxHeight: 260, overflow: "auto" }}>{[...s.bn].sort((a, b) => (b.at || 0) - (a.at || 0)).map(r => { const c = bnCat(D.bcats || BN_DEF, r.cat); return <div key={r.id} style={{ fontSize: 12.5, fontWeight: 700, background: c.c + "12", borderRight: `3px solid ${c.c}`, borderRadius: 10, padding: "6px 9px" }}>{c.ic} {c.t}{r.note ? " — " + r.note : ""}<div style={{ fontSize: 11, color: "#64748b" }}>{maDay(maDate(r.dk))} {maHijri(maDate(r.dk))} • {r.by}</div></div>; })}{!s.bn.length && <div style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا ملاحظات سلوكية</div>}</div>
         </div>
+        <div className="ma-card p-4"><b style={{ fontSize: 15 }}>🏫 المخالفات داخل الفصل ({maAr(dcL.length)})</b>
+          <div className="grid gap-1 mt-3" style={{ maxHeight: 260, overflow: "auto" }}>{dcL.map(r => <div key={r.id} style={{ fontSize: 12.5, fontWeight: 700, background: "#faf5ff", borderRight: "3px solid #7c3aed", borderRadius: 8, padding: "5px 9px" }}><small style={{ color: "#64748b" }}>{maDay(maDate(r.dk))} {maHijri(maDate(r.dk))}{r.per ? ` • الحصة ${maAr(r.per)}` : ""}{r.by ? ` • ${r.by}` : ""}</small><div>{dcCat(r)}{r.note ? ` — ${r.note}` : ""}</div></div>)}{!dcL.length && <div style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا توجد مخالفات</div>}</div>
+        </div>
         <div className="ma-card p-4"><b style={{ fontSize: 15 }}>⏰ التأخر والغياب</b>
           <div className="grid gap-1 mt-3" style={{ maxHeight: 260, overflow: "auto" }}>
             {lastLate.map((r, i) => <div key={"l" + i} style={{ fontSize: 12.5, fontWeight: 700, background: "#fff7ed", borderRadius: 10, padding: "6px 9px" }}>⏰ {maDay(maDate(r.dk))} {maHijri(maDate(r.dk))} — {r.time} ({maAr(+r.mins || 0)} د) {r.reason ? "• " + r.reason : ""}</div>)}
-            {[...s.abs].sort().reverse().map(k => <div key={"a" + k} style={{ fontSize: 12.5, fontWeight: 700, background: "#fef2f2", borderRadius: 10, padding: "6px 9px" }}>🚫 غياب {maDay(maDate(k))} {maHijri(maDate(k))}</div>)}
+            {[...s.abs].sort().reverse().map(k => <div key={"a" + k} style={{ fontSize: 12.5, fontWeight: 700, background: isE(k) ? "#f0fdf4" : "#fef2f2", borderRadius: 10, padding: "6px 9px" }}>🚫 غياب {maDay(maDate(k))} {maHijri(maDate(k))} <b style={{ color: isE(k) ? "#15803d" : "#b91c1c" }}>{isE(k) ? "بعذر" : "بدون عذر"}</b></div>)}
             {!lastLate.length && !s.abs.length && <div style={{ color: "#15803d", fontWeight: 900 }}>🌟 لا غياب ولا تأخر</div>}
           </div>
         </div>
@@ -51852,7 +51861,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","ipadmin"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","ipadmin","stusearch"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -52184,6 +52193,7 @@ function SchoolWebsiteInner() {
   // ── أدوات الفصل والتعليم
   const classToolPages = [
     { id: "insights", label: "مركز المؤشرات", icon: "🧠" },
+    { id: "stusearch", label: "البحث عن طالب برقم الهوية", icon: "🔎" },
     { id: "studentperf", label: "متابعة أداء الطلاب", icon: "🎓" },
     { id: "nafes", label: "منصة نافس التدريبية", icon: "🎯" },
     { id: "treasureadm", label: "رحلة الكنز إلى نافس", icon: "🗺️" },
@@ -52268,7 +52278,7 @@ function SchoolWebsiteInner() {
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","holidays","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","studentexcuses"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["stusearch","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
@@ -52566,7 +52576,7 @@ function SchoolWebsiteInner() {
                 {page === "weeklyplan" && <WeeklyPlanPage />}
                 {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
                 {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
-                {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
+                {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "stusearch" && <InsightsPage by={user?.name || "الإدارة"} initTab="student" tabs={["student"]} initPer="year" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NbPinSet by={user?.name || "الإدارة"} /><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "holidays" && <HolidaysPage by={user?.name || "الإدارة"} />}{page === "diag" && <div className="px-2 md:px-6 py-4"><DiagAdmin by={user?.name || "الإدارة"} /></div>}{page === "pgrec" && <div className="px-2 md:px-6 py-4"><PgAdmin by={user?.name || "الإدارة"} /></div>}{page === "plcr" && <div className="px-2 md:px-6 py-4"><PlrAdmin by={user?.name || "الإدارة"} /></div>}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
@@ -52758,7 +52768,7 @@ function SchoolWebsiteInner() {
         {page === "weeklyplan" && <WeeklyPlanPage />}
         {page === "morninglate" && <MorningLatePage by={user?.name || "الإدارة"} admin />}
         {page === "periodfollow" && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "periodnotes" && <PeriodNotesPage by={user?.name || "الإدارة"} />}{page === "asmfollow" && <AssemblyPage by={user?.name || "الإدارة"} />}{page === "admtasks" && <AdmTasksPage by={user?.name || "مدير المدرسة"} />}{page === "prepadm" && <PrepAdminPage by={user?.name || "الإدارة"} />}{page === "duty" && <DutyAdminPage by={user?.name || "الإدارة"} />}
-        {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
+        {page === "insights" && <InsightsPage by={user?.name || "الإدارة"} initTab="warn" />}{page === "stusearch" && <InsightsPage by={user?.name || "الإدارة"} initTab="student" tabs={["student"]} initPer="year" />}{page === "studentperf" && <StudentPerformancePage by={user?.name || "الإدارة"} />}
                 {page === "behavior" && <BehaviorNotesPage by={user?.name || "الإدارة"} admin />}{page === "nafes" && <NafesAdminPage by={user?.name || "الإدارة"} />}{page === "treasureadm" && <React.Suspense fallback={TR_WAIT}><TreasureAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}{page === "nafsbooks" && <React.Suspense fallback={NB_WAIT}><NbPinSet by={user?.name || "الإدارة"} /><NafsBooksAdmin by={user?.name || "الإدارة"} api={trApi()} /></React.Suspense>}
                 {page === "classvisits" && <ClassVisitsPage by={user?.name || "الإدارة"} />}{page === "peerx" && <div className="px-2 md:px-6 py-4"><PeerXAdmin by={user?.name || "الإدارة"} /></div>}{page === "holidays" && <HolidaysPage by={user?.name || "الإدارة"} />}{page === "diag" && <div className="px-2 md:px-6 py-4"><DiagAdmin by={user?.name || "الإدارة"} /></div>}{page === "pgrec" && <div className="px-2 md:px-6 py-4"><PgAdmin by={user?.name || "الإدارة"} /></div>}{page === "plcr" && <div className="px-2 md:px-6 py-4"><PlrAdmin by={user?.name || "الإدارة"} /></div>}{page === "conduct" && <DailyConductPage by={user?.name || "الإدارة"} admin />}{page === "alreport" && <AbsLateReportPage by={user?.name || "الإدارة"} />}{page === "trash" && <TrashPage />}{page === "stlogins" && <StudentLoginsPage by={user?.name || "الإدارة"} />}{page === "audit" && <AuditPage navigate={navigate} />}{page === "liveops" && <OpsRoom navigate={navigate} />}{page === "ttnow" && <div className="px-2 md:px-6 py-4"><TtNowBoard navigate={navigate} big /></div>}
                 {page === "termplan" && <TermPlanPage />}
