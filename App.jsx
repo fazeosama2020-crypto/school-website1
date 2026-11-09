@@ -2470,8 +2470,8 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
   const todayStr = today.toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
   const jsDay = today.getDay();
   const todayDi = jsDay <= 4 ? jsDay : 0;
-  const todayAbsent  = teachers.filter((_,ti) => (attendance[ti]?.[todayDi]?.status || "حاضر") === "غائب").length;
-  const todayLate    = teachers.filter((_,ti) => (attendance[ti]?.[todayDi]?.status || "حاضر") === "متأخر").length;
+  const todayAbsent  = teachers.filter((_,ti) => (attRec(attendance, week, ti, todayDi).status || "حاضر") === "غائب").length;
+  const todayLate    = teachers.filter((_,ti) => (attRec(attendance, week, ti, todayDi).status || "حاضر") === "متأخر").length;
   const todayPresent = teachers.length - todayAbsent - todayLate;
   const attendRate   = teachers.length > 0 ? Math.round((todayPresent / teachers.length) * 100) : 100;
   const totalStudents = classList.reduce((s,c) => s + c.students.filter(st=>st.name).length, 0);
@@ -2481,10 +2481,10 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
   const upcomingAct = activities.filter(a => a.status === "قادم").slice(0,3);
   const weekStats = (() => {
     let total=0, present=0;
-    week.days.forEach((_,di) => { teachers.forEach((_,ti) => { const st=attendance[ti]?.[di]?.status||"حاضر"; total++; if(st==="حاضر") present++; }); });
+    week.days.forEach((_,di) => { teachers.forEach((_,ti) => { const st=attRec(attendance, week, ti, di).status||"حاضر"; total++; if(st==="حاضر") present++; }); });
     return total > 0 ? Math.round(present/total*100) : 100;
   })();
-  const mostAbsent = teachers.map((name,ti) => ({ name, count: week.days.filter((_,di) => (attendance[ti]?.[di]?.status||"حاضر")==="غائب").length })).filter(t=>t.count>0).sort((a,b)=>b.count-a.count).slice(0,3);
+  const mostAbsent = teachers.map((name,ti) => ({ name, count: week.days.filter((_,di) => (attRec(attendance, week, ti, di).status||"حاضر")==="غائب").length })).filter(t=>t.count>0).sort((a,b)=>b.count-a.count).slice(0,3);
   const kpiColor = (v,good,warn) => v>=good?"#22c55e":v>=warn?"#f59e0b":"#ef4444";
   const kpiBg   = (v,good,warn) => v>=good?"#dcfce7":v>=warn?"#fef3c7":"#fee2e2";
 
@@ -2600,6 +2600,21 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
 
 
 
+// ══ الحضور اليومي: كل سجل مرتبط بتاريخه (dk) — لا يُحسب غياب/تأخر إلا من «حضوري» أو إدخال يدوي لنفس اليوم ══
+const attDkOf = (week, di) => { const dm = week && week.days && week.days[di] && week.days[di].dateM; if (!dm) return ""; const [dd, mm, yy] = String(dm).split("/").map(Number); return yy ? `${yy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}` : ""; };
+const attNm = s => String(s || "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[ًٌٍَُِّْـ]/g, "").replace(/\s+(بن|ابن)\s+/g, " ").replace(/\bال\s+/g, "ال").replace(/\s+/g, " ").trim();
+function attHdMap(teachers, names) { const L = Object.entries(ptObj(names)).map(([hk, v]) => ({ hk, w: attNm(ptObj(v).n).split(" ") })).filter(x => x.w[0]); const M = {};
+  (teachers || []).forEach((t, ti) => { const nm = typeof t === "string" ? t : (t && (t.name || t.n)) || ""; const w = attNm(nm).split(" "); if (!w[0]) return; const j = w.join(" ");
+    const f = L.find(x => x.w.join(" ") === j) || L.find(x => w.length >= 3 && x.w.slice(0, 3).join(" ") === w.slice(0, 3).join(" ")) || L.find(x => x.w[0] === w[0] && x.w[x.w.length - 1] === w[w.length - 1] && (w.length < 3 || x.w[1] === w[1])); if (f) M[ti] = f.hk; }); return M; }
+// السجل اليدوي صالح فقط إن كان لنفس التاريخ (السجلات القديمة بلا تاريخ تُقبل ما لم يُرفع «حضوري» لذلك اليوم)
+const attRec = (attendance, week, ti, di) => { const r = attendance && attendance[ti] && attendance[ti][di]; return r && (!r.dk || r.dk === attDkOf(week, di)) ? r : {}; };
+const attManOk = (r, dk, hdDayUp) => !!(r && r.status) && (r.dk ? r.dk === dk : !hdDayUp);
+const attFromHd = (rec, cfg) => { if (!rec || (!rec.st && !rec.a && !rec.fx)) return null; const x = hdDay(rec, cfg); if (!x || !x.kind || x.kind === "pend" || x.kind === "off") return null; const at = x.a != null ? `${String(Math.floor(x.a / 60)).padStart(2, "0")}:${String(x.a % 60).padStart(2, "0")}` : "";
+  if (x.kind === "abs") return { status: "غائب", absType: "اضطراري", src: "hd", at };
+  if (x.kind === "leave") return { status: "مستأذن", excuseReason: "إجازة", src: "hd", at };
+  if (x.kind === "perm") return { status: "مستأذن", excuseReason: "استئذان (حضوري)", src: "hd", at };
+  if (x.late > 0 && !x.rm) return { status: "متأخر", lateType: "صباحي", lateMinutes: String(x.late), src: "hd", at };
+  return { status: "حاضر", src: "hd", at, rm: x.rm ? 1 : 0 }; };
 function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, saveWeek, attendance, setAttendance, saveAttendance, navigate, weekArchive, setWeekArchive, saveWeekArchive }) {
   // ── حماية من الحفظ المبكر (قبل اكتمال تحميل Firebase) ──
   const attInitialized = useRef(false);
@@ -2629,6 +2644,19 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
   const GREG_M_ATT = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
   const [refreshing, setRefreshing] = useState(false);
   const [lastSync,   setLastSync]   = useState(null);
+
+  // ── بيانات «حضوري» للأسبوع المعروض ──
+  const [hdA, setHdA] = useState(null);
+  useEffect(() => { let on = 1; Promise.all([maGet(HD_NODE), maGet(HD_T), maGet(HD_CFG)]).then(([a, n, c]) => { if (on) setHdA({ all: ptObj(a), names: ptObj(n), cfg: ptObj(c) }); }).catch(() => on && setHdA({ all: {}, names: {}, cfg: {} })); return () => { on = 0; }; }, []);
+  const hdMap = React.useMemo(() => hdA ? attHdMap(teachers, hdA.names) : {}, [hdA, teachers]);
+  const hdUpDays = React.useMemo(() => { const S = new Set(); if (hdA) Object.values(hdA.all).forEach(r => Object.keys(ptObj(r)).forEach(k => S.add(k))); return S; }, [hdA]);
+  const todayK = maKey(new Date());
+  // السجل الفعلي لمعلم في يوم: يدوي لنفس التاريخ ← وإلا من «حضوري» ← وإلا لا شيء (لا يُحتسب)
+  const A = (ti, di) => { const dk = attDkOf(week, di); if (!dk || dk > todayK || maOff(dk)) return {}; const m = attendance[ti]?.[di];
+    const h = hdA && hdMap[ti] ? attFromHd(ptObj(ptObj(hdA.all[hdMap[ti]])[dk]), hdA.cfg) : null;
+    if (attManOk(m, dk, hdUpDays.has(dk))) return { ...m, src: "man", ...(h ? { hdSt: h.status, at: m.at || h.at } : {}) };
+    return h || {}; };
+  const hdStartM = hdA ? hdMin(hdEff(hdA.cfg).start) : null;
 
   // ── تحديث تلقائي من Firebase عند فتح الصفحة ──
   useEffect(() => {
@@ -2867,8 +2895,12 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
   };
   const getTeacherAssembly = (ti, di) => {
     const key = `${week.days[di]?.dateH}_${di}_${ti}`;
-    return teacherAssembly[key] ?? null;
+    const v = teacherAssembly[key]; if (v === true || v === false) return v;
+    // من «حضوري»: الحضور قبل/عند بداية الدوام = حاضر الطابور • بعده = متأخر (لم يحضر الطابور) • لا وقت حضور = لا يُحتسب
+    const r = A(ti, di); if (r.src !== "hd" || !r.at || hdStartM == null || r.rm) return null; if (r.status === "غائب") return null;
+    return hdMin(r.at) <= hdStartM;
   };
+  const asmSrc = (ti, di) => { const v = teacherAssembly[`${week.days[di]?.dateH}_${di}_${ti}`]; return v === true || v === false ? "man" : "hd"; };
   const setTeacherAssemblyVal = (ti, di, val) => {
     const key = `${week.days[di]?.dateH}_${di}_${ti}`;
     saveTeacherAssembly({ ...teacherAssembly, [key]: val });
@@ -2914,21 +2946,26 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
   // تحديث حقل في سجل الحضور
   const updateField = (ti, di, field, value) => {
     attInitialized.current = true;
+    const dk = attDkOf(week, di); const cur = A(ti, di); const seed = cur.src === "man" ? (() => { const { src, hdSt, ...o } = cur; return o; })() : (() => { const { src, hdSt, ...o } = cur; return o; })();
     setAttendance(prev => {
-      const next = { ...prev, [ti]: { ...prev[ti], [di]: { ...(prev[ti]?.[di] || {}), [field]: value } } };
-      if (field === "status" && value === "حاضر")    { next[ti][di] = { status: "حاضر" }; }
-      if (field === "status" && value === "غائب")    { next[ti][di] = { status: "غائب",    absType: next[ti][di]?.absType || "اضطراري", notes: next[ti][di]?.notes || "" }; }
-      if (field === "status" && value === "مستأذن")  { next[ti][di] = { status: "مستأذن",  excuseFrom: "", excuseTo: "", excuseReason: "", notes: next[ti][di]?.notes || "" }; }
+      const base = (prev[ti]?.[di] && prev[ti][di].dk === dk) ? prev[ti][di] : seed;
+      const next = { ...prev, [ti]: { ...prev[ti], [di]: { ...base, [field]: value, dk } } };
+      if (field === "status" && value === "حاضر")    { next[ti][di] = { status: "حاضر", dk }; }
+      if (field === "status" && value === "غائب")    { next[ti][di] = { status: "غائب",    absType: next[ti][di]?.absType || "اضطراري", notes: next[ti][di]?.notes || "", dk }; }
+      if (field === "status" && value === "مستأذن")  { next[ti][di] = { status: "مستأذن",  excuseFrom: "", excuseTo: "", excuseReason: "", notes: next[ti][di]?.notes || "", dk }; }
+      if (field === "status" && value === "متأخر" && !next[ti][di].lateType) next[ti][di].lateType = "صباحي";
       // ── احفظ عبر DB (localStorage + Firebase + queue + إشعار UI) ──
       DB.set("school-attendance", next);
       return next;
     });
     // ── ربط الغياب بجدول الحصص: الغائب يظهر في الجدول اليومي ويُطلب له الاحتياط
-    if (field === "status") { try { const prevSt = attendance[ti]?.[di]?.status || "حاضر"; const dm = week && week.days && week.days[di] && week.days[di].dateM; const tn = teachers[ti]; const name = typeof tn === "string" ? tn : (tn && (tn.name || tn.n)) || "";
+    if (field === "status") { try { const prevSt = cur.status || "حاضر"; const dm = week && week.days && week.days[di] && week.days[di].dateM; const tn = teachers[ti]; const name = typeof tn === "string" ? tn : (tn && (tn.name || tn.n)) || "";
       if (dm && name && (value === "غائب" || prevSt === "غائب")) { const [dd, mm, yy] = String(dm).split("/").map(Number); const dk = `${yy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
         if (!hdRemDay(dk)) ttAbsSync(dk, name, value === "غائب", "att", "حضور المعلمين").then(r => { if (r === "added") pamToast(`🗓️ ${name}: سُجّل غائباً في جدول الحصص — يُطلب له الاحتياط`); else if (r === "removed") pamToast(`↩️ ${name}: أُلغي غيابه من جدول الحصص`); else if (r === "nf" && value === "غائب") pamToast(`⚠️ ${name}: لم يُعثر على اسمه في جدول الحصص`); }); } } catch {} }
   };
 
+  // ↺ إلغاء الإدخال اليدوي والرجوع لبيانات «حضوري»
+  const resetToHd = (ti, di) => { attInitialized.current = true; setAttendance(prev => { const row = { ...(prev[ti] || {}) }; delete row[di]; const next = { ...prev, [ti]: row }; DB.set("school-attendance", next); return next; }); };
   // debounce احتياطي — الحفظ الفعلي يتم في updateField مباشرة
   // debounce 1.5 ثانية احتياطي للتأكد من الحفظ
   useEffect(() => {
@@ -2938,30 +2975,30 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
   }, [attendance]);
 
   // إحصائيات
-  const countStatus = (di, st) => teachers.filter((_, ti) => (attendance[ti]?.[di]?.status || "حاضر") === st).length;
+  const countStatus = (di, st) => teachers.filter((_, ti) => (A(ti, di).status || "حاضر") === st).length;
   const countLate = (di) => countStatus(di, "متأخر");
   const countAbsent = (di) => countStatus(di, "غائب");
   const countExcused = (di) => countStatus(di, "مستأذن");
   const countPresent = (di) => teachers.length - countLate(di) - countAbsent(di) - countExcused(di);
   // تأخر صباحي = متأخر بدون حصص محددة أو lateType = "صباحي"
   const countMorningLate = (di) => teachers.filter((_, ti) => {
-    const r = attendance[ti]?.[di] || {};
+    const r = A(ti, di);
     return r.status === "متأخر" && (r.lateType === "صباحي" || !r.lateType);
   }).length;
   // تأخر عن حصص = متأخر وlateType = "حصص"
   const countPeriodLate = (di) => teachers.filter((_, ti) => {
-    const r = attendance[ti]?.[di] || {};
+    const r = A(ti, di);
     return r.status === "متأخر" && r.lateType === "حصص";
   }).length;
   // إجمالي دقائق التأخر الصباحي
   const totalMorningMins = (di) => teachers.reduce((sum, _, ti) => {
-    const r = attendance[ti]?.[di] || {};
+    const r = A(ti, di);
     if (r.status === "متأخر" && (r.lateType === "صباحي" || !r.lateType)) return sum + (parseInt(r.lateMinutes) || 0);
     return sum;
   }, 0);
   // إجمالي دقائق التأخر عن الحصص
   const totalPeriodMins = (di) => teachers.reduce((sum, _, ti) => {
-    const r = attendance[ti]?.[di] || {};
+    const r = A(ti, di);
     if (r.status === "متأخر" && r.lateType === "حصص") return sum + (parseInt(r.lateMinutes) || 0);
     return sum;
   }, 0);
@@ -2995,7 +3032,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
          </div>`
       : `<div style="color:#94a3b8;font-size:11px;margin-bottom:10px">🎺 الطابور الصباحي: لم يُسجَّل</div>`;
     const rows = teachers.map((t, ti) => {
-      const r = attendance[ti]?.[selectedDay] || {};
+      const r = A(ti, selectedDay);
       const st = r.status || "حاضر";
       let details = "—";
       if (st === "متأخر") {
@@ -3059,7 +3096,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
       const notMarkedNames    = teachers.filter((_, ti) => getTeacherAssembly(ti, selectedDay) === null);
       const excuseGroups = {};
       teachers.forEach((t, ti) => {
-        const r = attendance[ti]?.[selectedDay]||{};
+        const r = A(ti, selectedDay);
         if (getTeacherAssembly(ti, selectedDay) === false && r.excuseReason) {
           if (!excuseGroups[r.excuseReason]) excuseGroups[r.excuseReason]=[];
           excuseGroups[r.excuseReason].push(t);
@@ -3076,7 +3113,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
           </div>
           <div class="labor-section absent">
             <h3>❌ لم يحضروا الطابور (${absentFromAsm.length})</h3>
-            <div class="names">${absentFromAsm.map(n=>{ const ti=teachers.indexOf(n); const r=attendance[ti]?.[selectedDay]||{}; const ic=r.excuseReason==="مولود"?"🎉":r.excuseReason==="وفاة"?"🕊️":r.excuseReason==="مرض"?"🏥":r.excuseReason?"📌":""; return ic?`${ic}${n}`:n; }).join(" · ") || "لا يوجد"}</div>
+            <div class="names">${absentFromAsm.map(n=>{ const ti=teachers.indexOf(n); const r=A(ti, selectedDay); const ic=r.excuseReason==="مولود"?"🎉":r.excuseReason==="وفاة"?"🕊️":r.excuseReason==="مرض"?"🏥":r.excuseReason?"📌":""; return ic?`${ic}${n}`:n; }).join(" · ") || "لا يوجد"}</div>
             ${excuseDetailHTML ? `<div class="excuse-detail">${excuseDetailHTML}</div>` : ""}
           </div>
           ${notMarkedHTML}
@@ -3095,14 +3132,14 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
   // طباعة ملخص الأسبوع
   const handlePrintSummary = () => {
     const rows = teachers.map((t, ti) => {
-      const morningLate = week.days.filter((_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType); }).length;
-      const periodLate  = week.days.filter((_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&r.lateType==="حصص"; }).length;
-      const absCount    = week.days.filter((_,di)=>(attendance[ti]?.[di]?.status||"حاضر")==="غائب").length;
-      const morningMins = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType)?s+(parseInt(r.lateMinutes)||0):s; },0);
-      const periodMins  = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&r.lateType==="حصص"?s+(parseInt(r.lateMinutes)||0):s; },0);
+      const morningLate = week.days.filter((_,di)=>{ const r=A(ti, di); return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType); }).length;
+      const periodLate  = week.days.filter((_,di)=>{ const r=A(ti, di); return r.status==="متأخر"&&r.lateType==="حصص"; }).length;
+      const absCount    = week.days.filter((_,di)=>(A(ti, di).status||"حاضر")==="غائب").length;
+      const morningMins = week.days.reduce((s,_,di)=>{ const r=A(ti, di); return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType)?s+(parseInt(r.lateMinutes)||0):s; },0);
+      const periodMins  = week.days.reduce((s,_,di)=>{ const r=A(ti, di); return r.status==="متأخر"&&r.lateType==="حصص"?s+(parseInt(r.lateMinutes)||0):s; },0);
       const color = absCount>0?"#fef2f2":morningLate+periodLate>0?"#fffbeb":"#fff";
       return `<tr style="background:${color}"><td>${ti+1}</td><td style="text-align:right;padding:6px 10px">${t}</td>
-        ${week.days.map((_,di)=>{ const r=attendance[ti]?.[di]||{}; const st=r.status||"حاضر"; const lt=r.lateType||"صباحي"; const min=r.lateMinutes||""; const rsn=r.excuseReason||""; const rsnIco=rsn==="مولود"?"🎉":rsn==="وفاة"?"🕊️":rsn==="مرض"?"🏥":rsn?"📌":""; return `<td>${st==="حاضر"?"✅":st==="متأخر"?(lt==="حصص"?`📚${min?min+"د":""}`:`🌅${min?min+"د":""}`)  :st==="مستأذن"?`📋${rsnIco}`:"❌"}</td>`; }).join("")}
+        ${week.days.map((_,di)=>{ const r=A(ti, di); const st=r.status||"حاضر"; const lt=r.lateType||"صباحي"; const min=r.lateMinutes||""; const rsn=r.excuseReason||""; const rsnIco=rsn==="مولود"?"🎉":rsn==="وفاة"?"🕊️":rsn==="مرض"?"🏥":rsn?"📌":""; return `<td>${st==="حاضر"?"✅":st==="متأخر"?(lt==="حصص"?`📚${min?min+"د":""}`:`🌅${min?min+"د":""}`)  :st==="مستأذن"?`📋${rsnIco}`:"❌"}</td>`; }).join("")}
         <td style="color:#ea580c;font-weight:bold">${morningLate||"—"}</td>
         <td style="color:#ea580c">${morningMins>0?morningMins+"د":"—"}</td>
         <td style="color:#d97706;font-weight:bold">${periodLate||"—"}</td>
@@ -3273,7 +3310,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
             {(() => {
               const reasons = {};
               teachers.forEach((_, ti) => {
-                const r = attendance[ti]?.[selectedDay] || {};
+                const r = A(ti, selectedDay);
                 if ((r.status||"حاضر") === "مستأذن" && r.excuseReason) {
                   reasons[r.excuseReason] = (reasons[r.excuseReason]||0)+1;
                 }
@@ -3307,7 +3344,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
           // تجميع أسباب الاستئذان للغائبين عن الطابور
           const excuseReasonGroups = {};
           teachers.forEach((t, ti) => {
-            const r = attendance[ti]?.[selectedDay] || {};
+            const r = A(ti, selectedDay);
             if (getTeacherAssembly(ti, selectedDay) === false && r.excuseReason) {
               if (!excuseReasonGroups[r.excuseReason]) excuseReasonGroups[r.excuseReason] = [];
               excuseReasonGroups[r.excuseReason].push(t);
@@ -3359,7 +3396,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
                   </div>
                   <div className="flex flex-wrap gap-1 mb-1">
                     {absentFromAssembly.map((name, i) => {
-                      const r = attendance[teachers.indexOf(name)]?.[selectedDay] || {};
+                      const r = A(teachers.indexOf(name), selectedDay);
                       const st = r.status || "حاضر";
                       const rIcon = r.excuseReason==="مولود"?"🎉":r.excuseReason==="وفاة"?"🕊️":r.excuseReason==="مرض"?"🏥":r.excuseReason==="موعد مستشفى"?"💊":st==="مستأذن"?"📋":st==="غائب"?"❌":"";
                       return (
@@ -3403,6 +3440,11 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
           );
         })()}
 
+        <div className="mb-3 flex items-center gap-2 flex-wrap" style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 14, padding: "8px 12px", fontSize: 12.5, fontWeight: 800, color: "#075985" }}>
+          <span>📲 يُحتسب الغياب والتأخر من «حضوري» أو الإدخال اليدوي لنفس اليوم فقط</span>
+          {hdStartM != null && <span>• الطابور: الحضور حتى {`${Math.floor(hdStartM / 60)}:${String(hdStartM % 60).padStart(2, "0")}`} = حاضر، وبعدها = متأخر</span>}
+          {(() => { const dk = attDkOf(week, selectedDay); return dk && !isFutureDay(selectedDay) ? <span style={{ marginInlineStart: "auto", background: hdUpDays.has(dk) ? "#dcfce7" : "#fef3c7", color: hdUpDays.has(dk) ? "#15803d" : "#92400e", borderRadius: 999, padding: "2px 10px" }}>{!hdA ? "⏳" : hdUpDays.has(dk) ? "✓ رُفع ملف حضوري لهذا اليوم" : "⚠️ لم يُرفع ملف حضوري لهذا اليوم"}</span> : null; })()}
+        </div>
         {/* ── بطاقة الطابور الصباحي ── */}
         <div className="mb-4">
           {(() => {
@@ -3706,18 +3748,18 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
               </thead>
               <tbody>
                 {teachers.filter(t => t.includes(searchQuery)).map((teacher, ti) => {
-                  const morningLate = week.days.filter((_, di) => { const r = attendance[ti]?.[di]||{}; return r.status==="متأخر" && (r.lateType==="صباحي"||!r.lateType); }).length;
-                  const periodLate = week.days.filter((_, di) => { const r = attendance[ti]?.[di]||{}; return r.status==="متأخر" && r.lateType==="حصص"; }).length;
-                  const absCount = week.days.filter((_, di) => (attendance[ti]?.[di]?.status||"حاضر")==="غائب").length;
-                  const morningMins = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType)?s+(parseInt(r.lateMinutes)||0):s; },0);
-                  const periodMins = week.days.reduce((s,_,di)=>{ const r=attendance[ti]?.[di]||{}; return r.status==="متأخر"&&r.lateType==="حصص"?s+(parseInt(r.lateMinutes)||0):s; },0);
+                  const morningLate = week.days.filter((_, di) => { const r = A(ti, di); return r.status==="متأخر" && (r.lateType==="صباحي"||!r.lateType); }).length;
+                  const periodLate = week.days.filter((_, di) => { const r = A(ti, di); return r.status==="متأخر" && r.lateType==="حصص"; }).length;
+                  const absCount = week.days.filter((_, di) => (A(ti, di).status||"حاضر")==="غائب").length;
+                  const morningMins = week.days.reduce((s,_,di)=>{ const r=A(ti, di); return r.status==="متأخر"&&(r.lateType==="صباحي"||!r.lateType)?s+(parseInt(r.lateMinutes)||0):s; },0);
+                  const periodMins = week.days.reduce((s,_,di)=>{ const r=A(ti, di); return r.status==="متأخر"&&r.lateType==="حصص"?s+(parseInt(r.lateMinutes)||0):s; },0);
                   const anyLate = morningLate + periodLate;
                   return (
                     <tr key={ti} className={`border-t border-gray-100 ${absCount>0?"bg-red-50":anyLate>0?"bg-amber-50":"hover:bg-gray-50"}`}>
                       <td className="p-2 text-center text-gray-400 font-bold">{ti+1}</td>
                       <td className="p-2 font-medium text-gray-800">{teacher}</td>
                       {week.days.map((_, di) => {
-                        const r = attendance[ti]?.[di] || {};
+                        const r = A(ti, di);
                         const st = r.status || "حاضر";
                         const lt = r.lateType || "صباحي";
                         const min = r.lateMinutes || "";
@@ -3770,7 +3812,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
               </thead>
               <tbody>
                 {filtered.map(({ name, idx: ti }) => {
-                  const r = attendance[ti]?.[selectedDay] || {};
+                  const r = A(ti, selectedDay);
                   const status = r.status || "حاضر";
                   const isLate = status === "متأخر";
                   const isAbsent = status === "غائب";
@@ -3783,6 +3825,12 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
                         <div className="flex items-center gap-2">
                           <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isAbsent ? "bg-red-400" : isLate ? "bg-amber-400" : status==="مستأذن" ? "bg-blue-400" : "bg-green-400"}`}></div>
                           <span className="font-medium text-gray-800 text-sm">{name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 flex-wrap" style={{ marginTop: 3, paddingInlineStart: 18 }}>
+                          {r.src === "hd" && <span style={{ fontSize: 10.5, fontWeight: 800, background: "#e0f2fe", color: "#0369a1", borderRadius: 999, padding: "1px 8px" }}>📲 من حضوري{r.at ? ` • حضر ${r.at}` : ""}{r.rm ? " • 🏠 عن بعد" : ""}</span>}
+                          {r.src === "man" && <span style={{ fontSize: 10.5, fontWeight: 800, background: "#f5f3ff", color: "#6d28d9", borderRadius: 999, padding: "1px 8px" }}>✍️ إدخال يدوي{r.at ? ` • حضوري: ${r.at}` : ""}</span>}
+                          {r.src === "man" && r.hdSt && r.hdSt !== r.status && <button onClick={() => resetToHd(ti, selectedDay)} title="إلغاء الإدخال اليدوي واعتماد حضوري" style={{ fontSize: 10.5, fontWeight: 800, background: "#fff", color: "#0369a1", border: "1px solid #bae6fd", borderRadius: 999, padding: "0 8px", cursor: "pointer" }}>↺ اعتماد حضوري ({r.hdSt})</button>}
+                          {!r.src && !isFutureDay(selectedDay) && <span style={{ fontSize: 10.5, fontWeight: 800, background: "#f1f5f9", color: "#94a3b8", borderRadius: 999, padding: "1px 8px" }}>لا توجد بيانات — لا يُحتسب</span>}
                         </div>
                       </td>
 
@@ -3942,6 +3990,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
                                     fontWeight:800, fontSize:11, cursor:"pointer",
                                   }}>❌</button>
                               </div>
+                              {asmVal !== null && asmSrc(ti, selectedDay) === "hd" && <span style={{ fontSize: 9.5, fontWeight: 800, color: asmVal ? "#047857" : "#b45309", whiteSpace: "nowrap" }}>{asmVal ? "✓ قبل بداية الدوام" : "⏰ بعد بداية الدوام"} (حضوري)</span>}
                               {asmVal === false && (
                                 <a href={MADAR} target="_blank" rel="noopener noreferrer"
                                   style={{ fontSize:9, color:"#2563eb", fontWeight:700, textDecoration:"none",
@@ -8237,7 +8286,7 @@ function TeacherAttendanceView({ currentTeacher, teachers, attendance, week, abs
 
   // فرز السجلات
   const allRecords = weekDays.map((day, di) => {
-    const r = (attendance && ti >= 0) ? (attendance[ti]?.[di] || {}) : {};
+    const r = (attendance && ti >= 0) ? attRec(attendance, week, ti, di) : {};
     return { day, di, status: r.status || "حاضر", lateType: r.lateType || "صباحي", lateMinutes: r.lateMinutes || 0, latePeriods: r.latePeriods || [], absType: r.absType || "اضطراري", notes: r.notes || "" };
   });
 
