@@ -41608,11 +41608,13 @@ function HfxPage({ by = "الإدارة" }) {
   const [ed, setEd] = useState(null); const [pick, setPick] = useState(null); const [q, setQ] = useState(""); const [flt, setFlt] = useState("all"); const [msg, setMsg] = useState(""); const [sig, setSig] = useState(false); const [imp, setImp] = useState(null); const [pe, setPe] = useState(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
   const [cmA, setCmA] = useState({});
+  const [arch, setArch] = useState([]); const [selOn, setSelOn] = useState(false); const [sel, setSel] = useState({});
+  const loadArch = async () => { const x = await maGet(HFX_DEL); setArch(Object.values(ptObj(x)).filter(c => c && c.id).map(hfxFix).sort((a, b) => (b.delAt || 0) - (a.delAt || 0))); };
   const loadCases = async () => { const [x, cm] = await Promise.all([maGet(HFX_NODE), maGet(HFX_CM)]); setCmA(ptObj(cm)); const L = Object.values(ptObj(x)).filter(c => c && c.id).map(hfxFix).sort((a, b) => (b.at || 0) - (a.at || 0)); setCases(L);
     try { const o = localStorage.getItem("hfx-open"); if (o) { localStorage.removeItem("hfx-open"); const c = L.find(z => z.id === o); if (c) { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); } } } catch {} };
   const cmNew = id => hfxCmList(cmA[id]).filter(m => !m.seen);
   const loadT = async () => setT(await hfxLoadTeachers());
-  useEffect(() => { (async () => { setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
+  useEffect(() => { (async () => { setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); loadArch(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
   // قادم من زر «📋 مساءلة» في سجل حضور المعلمين: يفتح النموذج المناسب للمعلم مباشرة
   useEffect(() => { if (!T || !cfg) return; let p = null; try { p = JSON.parse(localStorage.getItem("mosala_prefill") || "null"); } catch {} if (!p || !p.teacherName || Date.now() - (p.timestamp || 0) > 10 * 60000) return; localStorage.removeItem("mosala_prefill");
     const t = T.find(x => cvNorm(x.n) === cvNorm(p.teacherName)) || T.find(x => cvMatch(x.n, { e: { name: p.teacherName } }) === "e"); const fk = /absent|غائب|غياب/.test(String(p.status)) ? "gh" : "ta";
@@ -41626,11 +41628,24 @@ function HfxPage({ by = "الإدارة" }) {
   const printC = c => hfxPrint([{ fk: c.f, c, x: { cfg, nid: hfxNid(c.h) } }], ((HFX_F[c.f] || {}).n || "نموذج") + " — " + (c.n || ""));
   // لا إخفاء للمساءلات: تبقى حتى تُدخل في «فارس»، ثم يُتاح الحذف بتأكيدين (وتُنقل للأرشيف احتياطاً)
   const setFaris = async (c, on) => { const v = on ? { at: Date.now(), by } : null; const ok = await maPut(`${HFX_NODE}/${c.id}/faris`, v); if (!ok) { toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return; } setCases(L => L.map(x => x.id === c.id ? { ...x, faris: v || undefined } : x)); toast(on ? "✅ سُجّل: أُدخل في «فارس»" : "↩️ أُلغيت علامة «فارس»"); };
-  const delCase = async c => { if (!c.faris) { alert("لا يمكن الحذف قبل وضع علامة «أُدخل في فارس»"); return; } const nmF = (HFX_F[c.f] || {}).n || "نموذج";
-    if (!window.confirm(`حذف «${nmF}» للمعلم ${c.n}؟\nسيختفي من السجل ومن رابط المعلم.`)) return;
-    if ((window.prompt("للتأكيد النهائي اكتب كلمة: حذف") || "").trim() !== "حذف") { toast("لم يُحذف — كلمة التأكيد غير مطابقة"); return; }
-    const ok1 = await maPut(`${HFX_DEL}/${c.id}`, { ...c, delAt: Date.now(), delBy: by }); if (!ok1) { toast("⚠️ تعذّر الحذف — تحقق من الاتصال"); return; }
-    const ok2 = await maPut(`${HFX_NODE}/${c.id}`, null); if (!ok2) { toast("لم يُحذف — يحتاج موافقة مدير المدرسة"); return; } setCases(L => L.filter(x => x.id !== c.id)); toast("🗑️ حُذف النموذج (نسخة منه في الأرشيف)"); };
+  // 🗑 التحكم في الحذف (من ⚙️ الإعدادات): faris = بعد «فارس» فقط (الافتراضي) • any = أي نموذج • off = الحذف مقفل
+  const delMode = ["faris", "any", "off"].includes(cfg.delMode) ? cfg.delMode : "faris"; const delWord = cfg.delWord !== false;
+  const canDel = c => delMode === "any" || (delMode === "faris" && !!c.faris);
+  const delMany = async list => { const A = list.filter(canDel); if (!A.length) { alert(delMode === "off" ? "الحذف مقفل من ⚙️ الإعدادات" : "لا يمكن الحذف قبل وضع علامة «أُدخل في فارس»"); return; }
+    const one = A.length === 1 ? A[0] : null; const nmF = one ? ((HFX_F[one.f] || {}).n || "نموذج") : "";
+    const pend = A.filter(c => !c.faris).length;
+    if (!window.confirm((one ? `حذف «${nmF}» للمعلم ${one.n}؟` : `حذف ${A.length} نموذجاً محدداً؟`) + (pend ? `\n⚠️ ${one ? "هذا النموذج لم يُدخل" : pend + " منها لم تُدخل"} في «فارس» بعد.` : "") + "\nسيختفي من السجل ومن رابط المعلم، وتبقى نسخة في تبويب «المحذوفة» يمكن استرجاعها.")) return;
+    if (delWord && (window.prompt("للتأكيد النهائي اكتب كلمة: حذف") || "").trim() !== "حذف") { toast("لم يُحذف — كلمة التأكيد غير مطابقة"); return; }
+    let n = 0; const done = [];
+    for (const c of A) { const ok1 = await maPut(`${HFX_DEL}/${c.id}`, { ...c, delAt: Date.now(), delBy: by }); if (!ok1) { toast("⚠️ تعذّر الحذف — تحقق من الاتصال"); break; }
+      const ok2 = await maPut(`${HFX_NODE}/${c.id}`, null); if (!ok2) { toast("لم يُحذف — يحتاج موافقة مدير المدرسة"); break; } n++; done.push(c.id); }
+    if (n) { setCases(L => L.filter(x => !done.includes(x.id))); setSel({}); setSelOn(false); loadArch(); toast(n === 1 ? "🗑️ حُذف النموذج (نسخة منه في «المحذوفة»)" : `🗑️ حُذف ${maAr(n)} نموذجاً (نسخها في «المحذوفة»)`); } };
+  const delCase = c => delMany([c]);
+  const archV = arch.filter(a => !cases.some(c => c.id === a.id));
+  const restore = async c => { const r = { ...c }; delete r.delAt; delete r.delBy; const ok = await maPut(`${HFX_NODE}/${c.id}`, r); if (!ok) { toast("⚠️ تعذّر الاسترجاع — تحقق من الاتصال"); return; } await maPut(`${HFX_DEL}/${c.id}`, null); await Promise.all([loadCases(), loadArch()]); toast("↩️ استُرجع النموذج إلى السجل"); };
+  const purge = async list => { if (!list.length) return; if (!window.confirm(list.length === 1 ? `حذف نهائي لنموذج المعلم ${list[0].n} من الأرشيف؟\nلا يمكن استرجاعه بعد ذلك.` : `حذف نهائي لـ ${list.length} نموذجاً من الأرشيف؟\nلا يمكن استرجاعها بعد ذلك.`)) return;
+    if ((window.prompt("للتأكيد النهائي اكتب: حذف نهائي") || "").trim() !== "حذف نهائي") { toast("لم يُحذف — عبارة التأكيد غير مطابقة"); return; }
+    for (const c of list) { if (!(await maPut(`${HFX_DEL}/${c.id}`, null))) { toast("لم يُحذف — يحتاج موافقة مدير المدرسة"); break; } } loadArch(); };
   const tq = pick ? T.filter(t => !q || cvNorm(t.n).includes(cvNorm(q))) : [];
 
   const importX = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return; try { const list = await hfxParseExcel(f); if (!list.length) { alert("لم أجد عمودَي «الاسم» و«السجل المدني» في الملف"); return; } setImp(list); } catch (err) { alert("تعذّر قراءة الملف: " + (err?.message || err)); } };
@@ -41649,18 +41664,24 @@ function HfxPage({ by = "الإدارة" }) {
   return <div className="hfx px-2 md:px-6 py-3" dir="rtl"><style>{HFX_CSS}</style>
     <div className="grid gap-3" style={{ maxWidth: 1300, margin: "0 auto" }}>
       <div className="hfx-hero"><h2>📑 نماذج متابعة دوام الموظفين (حضوري)</h2><p>النماذج الرسمية طبق الأصل • تعبئة تلقائية من بيانات المعلمين • إرسال بالواتساب • تعبئة وتوقيع المعلم من جواله</p></div>
-      <div className="hfx-tabs">{[["list", `📂 السجل (${maAr(cases.length)})`], ["new", "➕ نموذج جديد"], ["tch", `👥 المعلمون (${maAr(T.length)})`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hfx-tab ${tab === k || (k === "new" && tab === "ed") ? "on" : ""}`} onClick={() => { setTab(k); setPick(null); }}>{l}</button>)}</div>
+      <div className="hfx-tabs">{[["list", `📂 السجل (${maAr(cases.length)})`], ["new", "➕ نموذج جديد"], ["tch", `👥 المعلمون (${maAr(T.length)})`], ["del", `🗑 المحذوفة (${maAr(archV.length)})`], ["cfg", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`hfx-tab ${tab === k || (k === "new" && tab === "ed") ? "on" : ""}`} onClick={() => { setTab(k); setPick(null); }}>{l}</button>)}</div>
 
       {tab === "list" && <div className="grid gap-2">
         {(() => { const U = (cases || []).filter(c => cmNew(c.id).length); if (!U.length) return null; return <div className="hfx-pane" style={{ borderColor: "#fca5a5", background: "linear-gradient(90deg,#fef2f2,#fff)" }}><b style={{ color: "#991b1b" }}>🔔 تعليقات واعتراضات جديدة من المعلمين ({maAr(U.reduce((a, c) => a + cmNew(c.id).length, 0))})</b>
           <div className="grid gap-1">{U.map(c => { const N = cmNew(c.id); const o = N.some(m => m.k === "obj"); return <button key={c.id} className="hfx-opt" style={{ justifyContent: "space-between" }} onClick={() => { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); }}><span>{o ? "⚖️" : "💬"} أ. {c.n} — {(HFX_F[c.f] || {}).n}</span><span style={{ fontSize: 12, color: o ? "#b91c1c" : "#0369a1" }}>{maAr(N.length)} جديد • فتح ←</span></button>; })}</div></div>; })()}
         <div className="flex gap-2 flex-wrap items-center">{[["all", "الكل", cases.length], ["draft", "مسودات", cnt("draft")], ["wait", "بانتظار المعلم", cnt("wait")], ["rep", "أعادها المعلم", cnt("rep")], ["ack", "اطّلع", cnt("ack")], ["closed", "مكتملة", cnt("closed")], ["nofaris", "⏳ لم تُدخل في فارس", cnt("nofaris")], ["faris", "☑️ أُدخلت في فارس", cnt("faris")]].map(([k, l, n]) => <button key={k} className={`hfx-tab ${flt === k ? "on" : ""}`} style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => setFlt(k)}>{l} {maAr(n)}</button>)}
           <input className="hfx-in" style={{ flex: "1 1 200px", maxWidth: 320 }} value={q} onChange={e => setQ(e.target.value)} placeholder="🔎 بحث باسم المعلم أو النموذج…" /></div>
-        {!L.length ? <div className="hfx-pane" style={{ textAlign: "center", color: "#64748b", fontWeight: 800 }}>لا توجد نماذج بعد. ابدأ من «➕ نموذج جديد».</div> : L.map(c => { const F = HFX_F[c.f] || {}; const s = HFX_ST[c.st] || HFX_ST.draft; return <div key={c.id} className="hfx-row">
-          <div style={{ width: 44, height: 44, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: F.c + "18" }}>{F.ic}</div>
+        {delMode !== "off" && L.length > 0 && (() => { const S = L.filter(c => sel[c.id] && canDel(c)); const E = L.filter(canDel); return <div className="flex gap-2 flex-wrap items-center" style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>
+          <button className="hfx-b" style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => { setSelOn(!selOn); setSel({}); }}>{selOn ? "✕ إلغاء التحديد" : "☑️ تحديد للحذف"}</button>
+          {selOn && <><button className="hfx-b" style={{ padding: "5px 12px", fontSize: 12.5 }} disabled={!E.length} onClick={() => setSel(S.length === E.length ? {} : Object.fromEntries(E.map(c => [c.id, 1])))}>{S.length === E.length && E.length ? "إلغاء الكل" : `تحديد الكل (${maAr(E.length)})`}</button>
+            <button className="hfx-b red" style={{ padding: "5px 12px", fontSize: 12.5 }} disabled={!S.length} onClick={() => delMany(S)}>🗑 حذف المحدد ({maAr(S.length)})</button>
+            <span>{delMode === "faris" ? "يُحدَّد فقط ما وُضعت عليه علامة «أُدخلت في فارس»" : "الحذف متاح لكل النماذج حسب الإعدادات"}</span></>}</div>; })()}
+        {delMode === "off" && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>🔒 الحذف مقفل — يُفتح من «⚙️ الإعدادات»</div>}
+        {!L.length ? <div className="hfx-pane" style={{ textAlign: "center", color: "#64748b", fontWeight: 800 }}>لا توجد نماذج بعد. ابدأ من «➕ نموذج جديد».</div> : L.map(c => { const F = HFX_F[c.f] || {}; const s = HFX_ST[c.st] || HFX_ST.draft; return <div key={c.id} className="hfx-row" style={selOn && sel[c.id] ? { borderColor: "#fca5a5", background: "#fff7f7" } : null}>
+          <div className="flex items-center gap-2">{selOn && <input type="checkbox" style={{ width: 20, height: 20, accentColor: "#b91c1c" }} checked={!!sel[c.id]} disabled={!canDel(c)} title={canDel(c) ? "تحديد للحذف" : "لا يُحذف قبل علامة «فارس»"} onChange={e => setSel(o => { const n = { ...o }; if (e.target.checked) n[c.id] = 1; else delete n[c.id]; return n; })} />}<div style={{ width: 44, height: 44, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: F.c + "18" }}>{F.ic}</div></div>
           <div style={{ minWidth: 0 }}><b style={{ fontSize: 14.5 }}>{c.n || "—"}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{F.n} • {hfxHijTxt(c.v && c.v.hd)}</div>
             <div className="flex gap-1 flex-wrap mt-1"><span className="hfx-pill" style={{ background: s.bg, color: s.c }}>{s.ic} {s.l}</span>{c.repAt && <span className="hfx-pill" style={{ background: "#f8fafc", color: "#475569" }}>أُعيد {new Date(c.repAt).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}{!hfxNid(c.h) && <span className="hfx-pill" style={{ background: "#fff7ed", color: "#9a3412" }} title="رقم الهوية غير محفوظ على هذا الجهاز">🪪 بلا هوية هنا</span>}{hfxCmList(cmA[c.id]).length > 0 && (() => { const N = cmNew(c.id), A = hfxCmList(cmA[c.id]); const o = A.some(m => m.k === "obj"); return <span className="hfx-pill" style={{ background: N.length ? "#b91c1c" : (o ? "#fee2e2" : "#e0f2fe"), color: N.length ? "#fff" : (o ? "#b91c1c" : "#0369a1") }}>{o ? "⚖️ اعتراض" : "💬 تعليق"}{N.length ? ` جديد (${maAr(N.length)})` : ` (${maAr(A.length)})`}</span>; })()}{c.faris && c.faris.at && <span className="hfx-pill" style={{ background: "#dcfce7", color: "#166534" }}>☑️ فارس {new Date(c.faris.at).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" })}</span>}</div></div>
-          <div className="flex gap-1 flex-wrap justify-end"><button className="hfx-b pri" onClick={() => { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); }}>فتح</button><button className="hfx-b" onClick={() => printC(c)}>🖨</button><button className="hfx-b" style={c.faris ? { background: "#dcfce7", color: "#166534", borderColor: "#86efac" } : {}} onClick={() => setFaris(c, !c.faris)} title={c.faris ? "اضغط لإلغاء علامة فارس" : "ضع العلامة بعد إدخال المساءلة في نظام فارس"}>{c.faris ? "☑️ أُدخلت في فارس" : "☐ أُدخلت في فارس"}</button>{c.faris && <button className="hfx-b red" onClick={() => delCase(c)} title="حذف بعد الإدخال في فارس">🗑 حذف</button>}</div>
+          <div className="flex gap-1 flex-wrap justify-end"><button className="hfx-b pri" onClick={() => { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); }}>فتح</button><button className="hfx-b" onClick={() => printC(c)}>🖨</button><button className="hfx-b" style={c.faris ? { background: "#dcfce7", color: "#166534", borderColor: "#86efac" } : {}} onClick={() => setFaris(c, !c.faris)} title={c.faris ? "اضغط لإلغاء علامة فارس" : "ضع العلامة بعد إدخال المساءلة في نظام فارس"}>{c.faris ? "☑️ أُدخلت في فارس" : "☐ أُدخلت في فارس"}</button>{canDel(c) && <button className="hfx-b red" onClick={() => delCase(c)} title={delMode === "any" ? "حذف (يُنقل إلى «المحذوفة»)" : "حذف بعد الإدخال في فارس"}>🗑 حذف</button>}</div>
         </div>; })}
       </div>}
 
@@ -41677,6 +41698,17 @@ function HfxPage({ by = "الإدارة" }) {
         <div style={{ marginTop: 10 }}><button className="hfx-b" onClick={() => { setEd(null); setTab("list"); }}>→ رجوع للسجل</button></div></div>}
       {tab === "ed" && ed && HFX_F[ed.f] && <HfxEditor key={ed.id} init={ed} cfg={cfg} saveCfg={saveCfg} T={T} by={by} toast={toast} onSaved={c => { setEd(c); loadCases(); }} onClose={() => { setEd(null); setTab("list"); loadCases(); }} onTeacher={t => setPe({ ...t, nid: hfxNid(t.h) })} />}
 
+      {tab === "del" && <div className="grid gap-2">
+        <div className="hfx-note">النماذج المحذوفة تبقى هنا احتياطاً ولا تظهر للمعلم. يمكنك <b>استرجاعها</b> إلى السجل كما كانت، أو حذفها <b>نهائياً</b>.</div>
+        {archV.length > 1 && <div><button className="hfx-b red" style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => purge(archV)}>🗑 تفريغ المحذوفة نهائياً ({maAr(archV.length)})</button></div>}
+        {!archV.length ? <div className="hfx-pane" style={{ textAlign: "center", color: "#64748b", fontWeight: 800 }}>لا توجد نماذج محذوفة.</div> : archV.map(c => { const F = HFX_F[c.f] || {}; return <div key={c.id} className="hfx-row">
+          <div style={{ width: 44, height: 44, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: (F.c || "#64748b") + "18" }}>{F.ic || "📄"}</div>
+          <div style={{ minWidth: 0 }}><b style={{ fontSize: 14.5 }}>{c.n || "—"}</b><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>{F.n || "نموذج"} • {hfxHijTxt(c.v && c.v.hd)}</div>
+            <div className="flex gap-1 flex-wrap mt-1"><span className="hfx-pill" style={{ background: "#fee2e2", color: "#b91c1c" }}>🗑 حُذف {c.delAt ? new Date(c.delAt).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" }) : ""}{c.delBy ? ` • ${c.delBy}` : ""}</span>{c.faris && c.faris.at ? <span className="hfx-pill" style={{ background: "#dcfce7", color: "#166534" }}>☑️ فارس</span> : <span className="hfx-pill" style={{ background: "#fff7ed", color: "#9a3412" }}>⏳ لم تُدخل في فارس</span>}</div></div>
+          <div className="flex gap-1 flex-wrap justify-end"><button className="hfx-b" onClick={() => printC(c)}>🖨</button><button className="hfx-b pri" onClick={() => restore(c)}>↩️ استرجاع</button><button className="hfx-b red" onClick={() => purge([c])}>حذف نهائي</button></div>
+        </div>; })}
+      </div>}
+
       {tab === "tch" && <div className="grid gap-3">
         <div className="hfx-pane"><b>📥 استيراد ملف المعلمين (Excel)</b>
           <div className="hfx-note">نفس ملف «تقرير الحضور والانصراف» أو أي ملف فيه عمودا <b>الاسم</b> و<b>السجل المدني</b>. يقرأ أيضاً إن وُجدت: التخصص، المرتبة، رقم الوظيفة، المسمى، الجوال.<br />🔒 رقم الهوية الكامل يُحفظ على <b>هذا الجهاز فقط</b> ولا يُرفع للخادم — والمعلم يُدخل هويته بنفسه لفتح نموذجه.</div>
@@ -41692,6 +41724,10 @@ function HfxPage({ by = "الإدارة" }) {
         <div className="hfx-f"><label>رقم التواصل (قرار حسم التأخير)</label><input className="hfx-in" inputMode="tel" defaultValue={cfg.phone || ""} onBlur={e => e.target.value.trim() !== (cfg.phone || "") && saveCfg({ phone: e.target.value.trim() })} /></div>
         <div className="hfx-f"><label>توقيع الرئيس المباشر (اختياري — يظهر في خانة توقيعه)</label><HfxSigButtons cfg={cfg} onSave={saveCfg} /></div>
         <div className="hfx-note">الختم الرسمي لا يُضاف إلكترونياً — يُختم على النسخة المطبوعة.</div>
+        <div className="hfx-f"><label>🗑 التحكم في حذف المساءلات والنماذج</label>
+          <div className="grid gap-1">{[["faris", "☑️ بعد الإدخال في «فارس» فقط", "لا يظهر زر الحذف إلا بعد وضع علامة «أُدخلت في فارس» (الوضع الآمن)"], ["any", "🗑 السماح بحذف أي نموذج", "يظهر زر الحذف لكل النماذج: المسودات والمرسلة وما لم يُدخل في فارس"], ["off", "🔒 قفل الحذف", "يختفي زر الحذف من السجل تماماً حتى تفتحه من هنا"]].map(([k, l, d]) => <button key={k} className="hfx-opt" style={{ flexDirection: "column", alignItems: "flex-start", gap: 2, ...(delMode === k ? { borderColor: "#0b3d36", background: "#ecfdf5" } : {}) }} onClick={() => delMode !== k && saveCfg({ delMode: k })}><span>{delMode === k ? "◉" : "○"} {l}</span><small style={{ color: "#64748b", fontWeight: 700 }}>{d}</small></button>)}</div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: 13, fontWeight: 800, color: "#0f172a", cursor: "pointer" }}><input type="checkbox" style={{ width: 18, height: 18 }} checked={delWord} onChange={e => saveCfg({ delWord: e.target.checked })} />طلب كتابة كلمة «حذف» للتأكيد قبل كل حذف</label>
+          <div className="hfx-note">في كل الأحوال: الحذف يحتاج موافقة مدير المدرسة برقم هويته، والمحذوف يُنقل إلى تبويب «🗑 المحذوفة» ويمكن استرجاعه.</div></div>
       </div>}
     </div>
     {sig && <HfxSigPad title="توقيع الرئيس المباشر" onCancel={() => setSig(false)} onDone={s => { setSig(false); saveCfg({ sig: s }); }} />}
