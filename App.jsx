@@ -553,13 +553,27 @@ function StatCard({ icon, label, value, color }) {
 // ✨ لوحة التحرير المتقدم: التظليل بدرجات وأنماط، مؤثرات النص، التحكم في إظهار النص، الصناديق والزخارف
 // 📋 تنظيف النص الملصوق (من Word أو المواقع): إزالة المسافات والهوامش والمحاذاة الموروثة، والإبقاء على الغامق والمائل والألوان
 const ANN_JUST = "text-align:justify;text-justify:inter-word";
-function annJustifyBlock(el, wasCenter) { const t = (el.textContent || "").replace(/\s+/g, " ").trim(); if (!t) return; if (t.length >= 70) { el.style.textAlign = "justify"; el.style.textJustify = "inter-word"; } else if (wasCenter) el.style.textAlign = "center"; }
+function annJustifyBlock(el, wasCenter) { const t = (el.textContent || "").replace(/\s+/g, " ").trim(); if (!t) return; if (!wasCenter || t.length >= 90) { el.style.textAlign = "justify"; el.style.textJustify = "inter-word"; } else el.style.textAlign = "center"; }
+// دمج الأسطر المكسورة: السطر الذي لا ينتهي بعلامة نهاية جملة (. ! ؟ : ؛) يُكمَل مع ما بعده في الفقرة نفسها
+const ANN_END = /[.!؟?:؛»"]\s*$/;
+function annMergeLines(root) {
+  const leaf = el => /^(P|DIV)$/.test(el.tagName) && !el.querySelector("p,div,li,h1,h2,h3,h4,blockquote,img,table,details,ul,ol") && !el.closest("details,.ann-box,.ann-quote,table") && !el.classList.contains("ann-box");
+  const cen = el => /center/.test(el.style.textAlign || el.getAttribute("align") || "");
+  // داخل الفقرة: <br> بعد سطر غير منتهٍ ← مسافة
+  root.querySelectorAll("br").forEach(br => { const blk = br.closest("p,div,li"); if (!blk || !root.contains(blk) || cen(blk)) return; let t = "", n = br.previousSibling; while (n && n.nodeName !== "BR") { t = (n.textContent || "") + t; n = n.previousSibling; }
+    const nx = br.nextSibling; if (t.trim().length >= 60 && !ANN_END.test(t) && nx && (nx.textContent || "").trim()) br.replaceWith(document.createTextNode(" ")); });
+  // بين الفقرات المتتالية: فقرة غير منتهية تُدمج مع التي تليها
+  [...root.querySelectorAll("p,div")].filter(leaf).forEach(el => { if (!el.parentNode) return; const nx = el.nextElementSibling; const t = (el.textContent || "").trim();
+    if (!t || ANN_END.test(t) || cen(el) || t.length < 60 || !nx || !leaf(nx) || cen(nx) || !(nx.textContent || "").trim()) return;
+    el.appendChild(document.createTextNode(" ")); while (nx.firstChild) el.appendChild(nx.firstChild); nx.remove(); });
+}
 function annJustifyRoot(root) { const blocks = [...root.querySelectorAll("p,div,li,h1,h2,h3,h4,blockquote")].filter(b => !b.querySelector("p,div,li,h1,h2,h3,h4,blockquote,img,table,details") && !b.closest("details,.ann-box,table"));
   if (!blocks.length && (root.textContent || "").trim()) { const p = document.createElement("p"); while (root.firstChild) p.appendChild(root.firstChild); root.appendChild(p); blocks.push(p); }
-  blocks.forEach(b => { const c = (b.style.textAlign || b.getAttribute("align") || "").toLowerCase() === "center"; if ((b.textContent || "").trim().length >= 70) { b.style.textAlign = "justify"; b.style.textJustify = "inter-word"; } else if (!c && !b.style.textAlign) b.style.textAlign = ""; }); }
+  blocks.forEach(b => { const c = (b.style.textAlign || b.getAttribute("align") || "").toLowerCase() === "center"; const n = (b.textContent || "").trim().length; if (!c || n >= 90) { b.style.textAlign = "justify"; b.style.textJustify = "inter-word"; } }); }
 function annPasteClean(html, txt) {
   const esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  if (!html) return String(txt || "").split(/\r?\n/).map(l => l.trim()).filter((l, i, a) => l || (a[i - 1] && a[i - 1].trim())).map(l => l ? `<p style="${l.length >= 70 ? ANN_JUST : "text-align:right"}">${esc(l)}</p>` : "<p><br></p>").join("");
+  if (!html) { const P = []; String(txt || "").split(/\r?\n/).map(l => l.trim()).forEach(l => { if (!l) { if (P.length && P[P.length - 1] !== "") P.push(""); return; } const last = P[P.length - 1]; if (last && !ANN_END.test(last) && last.length >= 60) P[P.length - 1] = last + " " + l; else P.push(l); });
+    return P.map(l => l ? `<p style="${ANN_JUST}">${esc(l)}</p>` : "").join(""); }
   try { const doc = new DOMParser().parseFromString(html, "text/html"); const b = doc.body; b.querySelectorAll("style,script,meta,link,title,xml,o\\:p").forEach(x => x.remove());
     const tw = doc.createTreeWalker(b, 128); const cm = []; while (tw.nextNode()) cm.push(tw.currentNode); cm.forEach(c => c.remove());
     b.querySelectorAll("*").forEach(el => { const tag = el.tagName; if (/^O:/.test(tag)) { el.replaceWith(...el.childNodes); return; }
@@ -570,6 +584,7 @@ function annPasteClean(html, txt) {
       if (tag === "SPAN" && !el.getAttribute("style")) el.replaceWith(...el.childNodes);
       if (tag === "FONT") el.replaceWith(...el.childNodes); });
     if (![...b.children].some(c => /^(P|DIV|H[1-6]|UL|OL|TABLE)$/.test(c.tagName))) { const p = doc.createElement("p"); while (b.firstChild) p.appendChild(b.firstChild); b.appendChild(p); annJustifyBlock(p, false); }
+    try { annMergeLines(b); b.querySelectorAll("p,div").forEach(el => { if (!/center/.test(el.style.textAlign) && (el.textContent || "").trim()) { el.style.textAlign = "justify"; el.style.textJustify = "inter-word"; } }); } catch {}
     return b.innerHTML; } catch { return esc(txt || ""); }
 }
 // 🏷️ العنوان المنسّق: تلوين كلمة أو أكثر بلون مختلف، وتقسيم العنوان إلى سطرين أو أكثر
@@ -684,7 +699,7 @@ function RichEditor({ value, onChange }) {
     if (last) { try { const nr = document.createRange(); nr.setStartAfter(last); nr.collapse(true); sl.removeAllRanges(); sl.addRange(nr); } catch {} }
     saveSel(); onChange(ed.innerHTML); };
   // تنسيق تلقائي: الفقرات الطويلة تُضبط من بداية السطر إلى آخره، والأسطر القصيرة (التحية والعناوين) تبقى كما هي
-  const autoJustify = () => { const ed = editorRef.current; if (!ed) return; annJustifyRoot(ed); onChange(ed.innerHTML); };
+  const autoJustify = () => { const ed = editorRef.current; if (!ed) return; annMergeLines(ed); annJustifyRoot(ed); onChange(ed.innerHTML); };
   const onPaste = e => { const cd = e.clipboardData; if (!cd) return; const html = cd.getData("text/html"), txt = cd.getData("text/plain"); if (!html && !txt) return;
     if (!html && cd.files && cd.files.length) return; e.preventDefault(); restoreSel(); const ed = editorRef.current; const sl = window.getSelection(); if (!ed || !sl || !sl.rangeCount) return;
     const r = sl.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return; r.deleteContents();
@@ -1023,7 +1038,7 @@ function RichEditor({ value, onChange }) {
       {showFx && <AnnFxPanel {...{ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, wrapIn, exec, unFx, saveSel, onClose: () => setShowFx(false) }} />}
       <style>{ANN_FX_CSS}</style>
       <div ref={editorRef} contentEditable dir="rtl" onPaste={onPaste} onInput={handleInput} onKeyUp={saveSel} onMouseUp={saveSel} onBlur={saveSel}
-        className="min-h-36 p-4 text-sm leading-relaxed focus:outline-none"
+        className="ann-ed min-h-36 p-4 text-sm leading-relaxed focus:outline-none"
         style={{ direction: "rtl", fontFamily: "'Noto Naskh Arabic', serif" }}
         data-placeholder="اكتب محتوى الإعلان هنا…"></div>
       <style>{`[contenteditable]:empty:before { content: attr(data-placeholder); color: #9CA3AF; pointer-events: none; }`}</style>
@@ -1513,6 +1528,10 @@ details.ann-det[open]>*:not(summary){animation:annFadeIn .4s ease both}
 .ann-box.navy *{color:#fff}
 .ann-quote{display:block;border-inline-start:5px solid #d4a017;background:#f8fafc;padding:8px 14px;margin:10px 0;border-radius:0 12px 12px 0;font-style:italic;color:#334155}
 .ann-hr{border:none;height:2px;margin:14px auto;width:70%;background:linear-gradient(90deg,transparent,#d4a017,#0f1e3d,#d4a017,transparent)}
+.annhtml{padding-inline:3.5%}
+.annhtml p:not([style*="center"]),.annhtml div:not([style*="center"]):not(.ann-box):not([style*="flex"]),.annhtml li{text-align:justify!important;text-justify:inter-word}
+.ann-ed{padding-inline:3.5%!important}.ann-ed p:not([style*="center"]),.ann-ed div:not([style*="center"]):not(.ann-box):not([style*="flex"]),.ann-ed li{text-align:justify;text-justify:inter-word}
+.annhtml [style*="justify"]{text-align:justify!important}
 @media print{.ann-sp{filter:none!important}details.ann-det>*{display:block!important}.ann-pulse,.ann-fade,.ann-hla{animation:none!important;background-size:100% 100%!important}}
 `;
 try { if (typeof document !== "undefined" && !document.getElementById("ann-fx-css")) { const st = document.createElement("style"); st.id = "ann-fx-css"; st.textContent = ANN_FX_CSS; document.head.appendChild(st); } } catch {}
