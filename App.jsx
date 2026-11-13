@@ -550,6 +550,48 @@ function StatCard({ icon, label, value, color }) {
   );
 }
 
+// ✨ لوحة التحرير المتقدم: التظليل بدرجات وأنماط، مؤثرات النص، التحكم في إظهار النص، الصناديق والزخارف
+function AnnFxPanel({ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, exec, unFx, saveSel, onClose }) {
+  const HLC = ["#fde047", "#86efac", "#7dd3fc", "#f9a8d4", "#fdba74", "#c4b5fd", "#d4a017", "#94a3b8"];
+  const B = ({ t, on, children, st }) => <button type="button" title={t} onMouseDown={e => e.preventDefault()} onClick={on} style={{ border: "1.5px solid #e2e8f0", background: "#fff", borderRadius: 10, padding: "5px 10px", fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", color: "#0f1e3d", ...st }}>{children}</button>;
+  const H = ({ children }) => <div style={{ fontSize: 12, fontWeight: 900, color: "#b08d57", margin: "6px 0 4px", gridColumn: "1/-1" }}>{children}</div>;
+  const row = { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" };
+  const prev = hlM === "half" ? { backgroundImage: `linear-gradient(transparent 55%, ${hlC}${Math.round(hlA * 255).toString(16).padStart(2, "0")} 55%)` } : hlM === "wave" ? { textDecoration: `underline wavy ${hlC}`, textUnderlineOffset: 5 } : { background: hlC + Math.round(hlA * 255).toString(16).padStart(2, "0") };
+  return <div dir="rtl" onMouseDown={e => { if (e.target.tagName !== "INPUT") e.preventDefault(); }} style={{ background: "linear-gradient(180deg,#fffdf5,#fff)", borderBottom: "1.5px solid #f1e3b0", padding: "8px 12px", display: "grid", gap: 4 }}>
+    <div style={{ display: "flex", alignItems: "center" }}><b style={{ flex: 1, color: "#0f1e3d", fontSize: 13.5 }}>✨ التحرير المتقدم <small style={{ color: "#64748b", fontWeight: 700 }}>— حدّد جزءاً من النص ثم اختر</small></b><B t="إغلاق" on={onClose}>✕</B></div>
+    <H>🖍️ التظليل</H>
+    <div style={row}>{HLC.map(c => <button key={c} type="button" onClick={() => setHlC(c)} title="لون التظليل" style={{ width: 26, height: 26, borderRadius: 999, background: c, border: hlC === c ? "3px solid #0f1e3d" : "2px solid #fff", boxShadow: "0 0 0 1px #cbd5e1", cursor: "pointer" }} />)}
+      <input type="color" value={hlC} onChange={e => setHlC(e.target.value)} title="لون مخصص" style={{ width: 30, height: 28, border: "none", background: "none", cursor: "pointer" }} />
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800 }}>الدرجة<input type="range" min="0.12" max="0.8" step="0.04" value={hlA} onChange={e => setHlA(+e.target.value)} style={{ width: 110 }} /><small>{hlA <= .25 ? "خفيف" : hlA <= .5 ? "متوسط" : "قوي"}</small></label></div>
+    <div style={row}>{[["full", "كامل"], ["half", "نصف سفلي (قلم تظليل)"], ["wave", "خط متموج"]].map(([k, l]) => <B key={k} t={l} on={() => setHlM(k)} st={hlM === k ? { background: "#0f1e3d", color: "#fde68a", borderColor: "#0f1e3d" } : null}>{l}</B>)}
+      <span style={{ fontSize: 13, fontWeight: 800, padding: "2px 8px", borderRadius: 4, ...prev }}>معاينة التظليل</span>
+      <B t="تظليل" on={() => doHl(false)} st={{ background: "#0f1e3d", color: "#fff" }}>🖍️ ظلّل</B><B t="يُرسم التظليل تدريجياً عند فتح الإعلان" on={() => doHl(true)}>✍️ تظليل متحرك</B></div>
+    <H>🔠 مؤثرات النص</H>
+    <div style={row}>
+      <B t="ظل" on={() => wrapSel('<span style="text-shadow:0 2px 6px rgba(15,30,61,.35)">', "</span>")}>ظل</B>
+      <B t="توهج ذهبي" on={() => wrapSel('<span style="text-shadow:0 0 8px rgba(212,160,23,.75),0 0 2px rgba(212,160,23,.9);font-weight:800">', "</span>")} st={{ textShadow: "0 0 6px #d4a017" }}>توهج</B>
+      <B t="تدرّج كحلي ذهبي" on={() => wrapSel('<span style="background:linear-gradient(90deg,#0f1e3d,#b08d57);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900">', "</span>")}><span style={{ background: "linear-gradient(90deg,#0f1e3d,#b08d57)", WebkitBackgroundClip: "text", color: "transparent" }}>تدرّج</span></B>
+      <B t="لمعان متحرك" on={() => wrapSel('<span class="ann-shine">', "</span>")}>✦ لمعان</B>
+      <B t="خط مفرّغ" on={() => wrapSel('<span style="-webkit-text-stroke:1px #0f1e3d;color:transparent;font-weight:900">', "</span>")}>مفرّغ</B>
+      <B t="شطب" on={() => exec("strikeThrough")}><s>شطب</s></B>
+      <B t="مرتفع" on={() => exec("superscript")}>س²</B><B t="منخفض" on={() => exec("subscript")}>س₂</B>
+      <B t="ملصق كحلي" on={() => wrapSel('<span style="background:#0f1e3d;color:#fde68a;border-radius:999px;padding:1px 12px;font-weight:900">', "</span>")} st={{ background: "#0f1e3d", color: "#fde68a" }}>شارة</B>
+      <B t="إطار حول الكلمة" on={() => wrapSel('<span style="border:1.5px solid #d4a017;border-radius:8px;padding:0 6px">', "</span>")}>إطار</B></div>
+    <H>👁️ التحكم في إظهار النص</H>
+    <div style={row}>
+      <B t="يظهر النص ضبابياً ويتضح عند الضغط أو المرور" on={() => wrapSel('<span class="ann-sp" tabindex="0" title="اضغط لإظهار النص">', "</span>")}>🌫️ يظهر بالضغط</B>
+      <B t="قسم يُطوى ويُفتح بعنوان" on={() => { const t = prompt("عنوان القسم القابل للطي:", "اضغط لعرض التفاصيل"); if (t == null) return; wrapSel(`<details class="ann-det"><summary>${t.replace(/[<>]/g, "")}</summary><div>`, "</div></details><p></p>", "اكتب التفاصيل هنا…"); }}>📂 قسم قابل للطي</B>
+      <B t="يظهر بتلاشٍ تدريجي عند فتح الإعلان" on={() => wrapSel('<span class="ann-fade" style="display:inline-block">', "</span>")}>🌅 ظهور تدريجي</B>
+      <B t="نبض للفت الانتباه" on={() => wrapSel('<span class="ann-pulse">', "</span>")}>💓 نبض</B></div>
+    <H>🗂️ صناديق وزخارف</H>
+    <div style={row}>{[["note", "ℹ️ ملاحظة"], ["warn", "⚠️ تنبيه"], ["imp", "❗ هام"], ["ok", "✅ إنجاز"], ["gold", "🏅 إطار ذهبي"], ["navy", "🔷 كحلي رسمي"]].map(([k, l]) => <B key={k} t={l} on={() => wrapSel(`<div class="ann-box ${k}">`, "</div><p></p>", l + ": ")}>{l}</B>)}
+      <B t="اقتباس" on={() => wrapSel('<div class="ann-quote">', "</div><p></p>", "نص الاقتباس")}>❝ اقتباس</B>
+      <B t="فاصل زخرفي" on={() => exec("insertHTML", '<hr class="ann-hr" /><p></p>')}>〰️ فاصل</B>
+      <B t="تباعد أسطر أوسع" on={() => wrapSel('<div style="line-height:2.2">', "</div>")}>↕️ تباعد</B>
+      <B t="إزالة التنسيق عن الجزء المحدد" on={unFx} st={{ color: "#b91c1c", borderColor: "#fecaca" }}>🧹 إزالة التنسيق</B></div>
+  </div>;
+}
+
 function RichEditor({ value, onChange }) {
   const editorRef  = useRef(null);
   const wrapRef    = useRef(null);
@@ -562,6 +604,8 @@ function RichEditor({ value, onChange }) {
   const [showColors, setShowColors] = useState(false);
   const [showBgColors, setShowBgColors] = useState(false);
   const [showFonts, setShowFonts] = useState(false);
+  const [showFx, setShowFx] = useState(false);
+  const [hlC, setHlC] = useState("#fde047"); const [hlA, setHlA] = useState(0.35); const [hlM, setHlM] = useState("full");
   const [imgSize, setImgSize] = useState("medium");
   const [overlay, setOverlay] = useState(null);
   const [customW, setCustomW] = useState("");
@@ -575,6 +619,23 @@ function RichEditor({ value, onChange }) {
   const saveSel = () => { try { const sl = window.getSelection(); if (sl && sl.rangeCount && editorRef.current && editorRef.current.contains(sl.anchorNode)) selRef.current = sl.getRangeAt(0).cloneRange(); } catch {} };
   const restoreSel = () => { const ed = editorRef.current; if (!ed) return; ed.focus(); try { const sl = window.getSelection(); if (sl && (!sl.rangeCount || !ed.contains(sl.anchorNode))) { let r = selRef.current; if (!r || !ed.contains(r.startContainer)) { r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); } sl.removeAllRanges(); sl.addRange(r); } } catch {} };
   const exec = (cmd, val = null) => { restoreSel(); document.execCommand(cmd, false, val); saveSel(); if (editorRef.current) onChange(editorRef.current.innerHTML); };
+  // ── التحرير المتقدم: تغليف الجزء المحدد بعنصر منسّق
+  // إدراج مباشر في المستند (execCommand يحذف الأصناف ويحوّلها إلى أنماط فتضيع المؤثرات)
+  const wrapSel = (open, close, empty = "") => { restoreSel(); const ed = editorRef.current; const sl = window.getSelection(); if (!ed || !sl || !sl.rangeCount) return;
+    const r = sl.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return; if (r.collapsed && !empty) { alert("حدّد جزءاً من النص أولاً"); return; }
+    const tpl = document.createElement("template"); tpl.innerHTML = open + '<i data-slot="1"></i>' + close; const slot = tpl.content.querySelector("[data-slot]");
+    if (r.collapsed) slot.replaceWith(document.createTextNode(empty)); else slot.replaceWith(r.extractContents());
+    const last = tpl.content.lastChild; r.insertNode(tpl.content); ed.normalize();
+    try { const nr = document.createRange(); nr.setStartAfter(last); nr.collapse(true); sl.removeAllRanges(); sl.addRange(nr); } catch {}
+    saveSel(); onChange(ed.innerHTML); };
+  const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+  const hlStyle = (anim) => { const c = rgba(hlC, hlA); const base = "border-radius:4px;padding:0 3px;-webkit-box-decoration-break:clone;box-decoration-break:clone;";
+    if (hlM === "half") return base + `background-image:linear-gradient(transparent 55%,${c} 55%);` + (anim ? "" : "background-size:100% 100%;");
+    if (hlM === "wave") return `text-decoration:underline wavy ${rgba(hlC, Math.min(1, hlA + .45))};text-decoration-thickness:2px;text-underline-offset:5px;`;
+    return base + (anim ? `background-image:linear-gradient(${c},${c});` : `background-color:${c};`); };
+  const doHl = (anim) => wrapSel(`<span${anim && hlM !== "wave" ? ' class="ann-hla"' : ""} style="${hlStyle(anim)}">`, "</span>");
+  const unFx = () => { restoreSel(); const sl = window.getSelection(); if (!sl || !sl.rangeCount) return; const ed = editorRef.current; let n = sl.anchorNode; n = n && n.nodeType === 3 ? n.parentElement : n;
+    const el = n && n.closest && n.closest(".ann-sp,.ann-hla,.ann-pulse,.ann-fade,.ann-shine,.ann-box,.ann-quote,span[style]"); if (el && ed.contains(el) && el !== ed) { const f = document.createDocumentFragment(); while (el.firstChild) f.appendChild(el.firstChild); el.replaceWith(f); } else document.execCommand("removeFormat"); onChange(ed.innerHTML); };
   const imgTag = (src, w) => `<img src="${src}" style="width:${w};max-width:100%;height:auto;border-radius:12px;margin:8px auto;display:block;cursor:pointer;" />`;
   const handleRow = async (e) => {
     const files = [...(e.target.files || [])].filter(f => f.type.startsWith("image/")).slice(0, 3); e.target.value = ""; if (!files.length) return;
@@ -688,7 +749,7 @@ function RichEditor({ value, onChange }) {
   };
   const handleInput = () => { if (editorRef.current) onChange(editorRef.current.innerHTML); };
   useEffect(() => { if (editorRef.current && !editorRef.current.innerHTML && value) editorRef.current.innerHTML = value; }, []);
-  const closeAll = () => { setShowEmoji(false); setShowStickers(false); setShowColors(false); setShowBgColors(false); setShowFonts(false); };
+  const closeAll = () => { setShowEmoji(false); setShowStickers(false); setShowColors(false); setShowBgColors(false); setShowFonts(false); setShowFx(false); };
 
   const ToolBtn = ({ onClick, title, children }) => (
     <button type="button" onClick={onClick} title={title}
@@ -885,7 +946,12 @@ function RichEditor({ value, onChange }) {
           )}
         </div>
         <ToolBtn onClick={() => exec("insertUnorderedList")} title="قائمة">• قائمة</ToolBtn>
+        <ToolBtn onClick={() => exec("insertOrderedList")} title="قائمة مرقمة">١. ترقيم</ToolBtn>
+        <button type="button" onMouseDown={e => { e.preventDefault(); saveSel(); }} onClick={() => { const v = !showFx; closeAll(); setShowFx(v); }} title="تظليل ومؤثرات وإظهار النص"
+          className="h-8 px-3 rounded-lg flex items-center justify-center text-xs font-black whitespace-nowrap" style={{ background: showFx ? "linear-gradient(135deg,#0f1e3d,#1e3a8a)" : "linear-gradient(135deg,#fff8e1,#fde68a)", color: showFx ? "#fde68a" : "#0f1e3d", border: "1.5px solid #d4a017" }}>✨ تحرير متقدم</button>
       </div>
+      {showFx && <AnnFxPanel {...{ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, exec, unFx, saveSel, onClose: () => setShowFx(false) }} />}
+      <style>{ANN_FX_CSS}</style>
       <div ref={editorRef} contentEditable dir="rtl" onInput={handleInput} onKeyUp={saveSel} onMouseUp={saveSel} onBlur={saveSel}
         className="min-h-36 p-4 text-sm leading-relaxed focus:outline-none"
         style={{ direction: "rtl", fontFamily: "'Noto Naskh Arabic', serif" }}
@@ -1347,7 +1413,40 @@ function annLinkify(doc, root) {
   const tw = doc.createTreeWalker(root, 4); const L = []; while (tw.nextNode()) { const t = tw.currentNode; if (!(t.parentElement && t.parentElement.closest("a")) && ANN_URL_RE.test(t.nodeValue)) L.push(t); }
   L.forEach(t => { const frag = doc.createDocumentFragment(); t.nodeValue.split(ANN_URL_RE).forEach((part, i) => { if (i % 2) { const a = doc.createElement("a"); const href = /^www\./i.test(part) ? "https://" + part : part; a.setAttribute("href", href); a.setAttribute("target", "_blank"); a.setAttribute("rel", "noopener noreferrer"); a.setAttribute("dir", "ltr"); a.className = "ann-link"; let label = part.replace(/^https?:\/\//i, "").replace(/^www\./i, ""); try { label = decodeURI(label); } catch {} a.textContent = "🔗 " + (label.length > 48 ? label.slice(0, 45) + "…" : label); a.title = href; frag.appendChild(a); } else if (part) frag.appendChild(doc.createTextNode(part)); }); t.parentNode.replaceChild(frag, t); });
 }
-const ANN_HTML_CSS = `
+// ✨ مؤثرات التحرير المتقدم في الإعلانات والتعاميم (تظليل، إظهار بالضغط، أقسام قابلة للطي، صناديق، حركة)
+const ANN_FX_CSS = `
+.ann-sp{filter:blur(6px);cursor:pointer;transition:filter .35s;border-radius:6px;background:rgba(15,30,61,.06);outline:none}
+.ann-sp:hover,.ann-sp:focus{filter:none}
+.ann-sp::after{content:"";}
+details.ann-det{border:1.5px solid #e2c675;border-radius:14px;background:#fffdf5;margin:10px 0;padding:0 14px;overflow:hidden}
+details.ann-det>summary{cursor:pointer;font-weight:900;color:#0f1e3d;padding:10px 0;list-style:none;display:flex;align-items:center;gap:8px}
+details.ann-det>summary::-webkit-details-marker{display:none}
+details.ann-det>summary::before{content:"◀";font-size:11px;color:#b08d57;transition:transform .25s}
+details.ann-det[open]>summary::before{transform:rotate(-90deg)}
+details.ann-det[open]{padding-bottom:10px}
+details.ann-det[open]>*:not(summary){animation:annFadeIn .4s ease both}
+.ann-fade{animation:annFadeIn 1.1s ease both}
+@keyframes annFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ann-pulse{display:inline-block;animation:annPulse 1.8s ease-in-out infinite}
+@keyframes annPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.ann-hla{background-repeat:no-repeat!important;background-size:0% 100%;animation:annSweep 1.4s .3s ease forwards}
+@keyframes annSweep{to{background-size:100% 100%}}
+.ann-shine{background:linear-gradient(110deg,#0f1e3d 35%,#d4a017 50%,#0f1e3d 65%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:annShine 3s linear infinite;font-weight:900}
+@keyframes annShine{from{background-position:100% 0}to{background-position:-150% 0}}
+.ann-box{display:block;border-radius:14px;padding:10px 14px;margin:10px 0;border:1.5px solid;border-inline-start-width:6px}
+.ann-box.note{background:#eff6ff;border-color:#93c5fd;color:#1e3a8a}
+.ann-box.warn{background:#fffbeb;border-color:#fcd34d;color:#78350f}
+.ann-box.imp{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
+.ann-box.ok{background:#f0fdf4;border-color:#86efac;color:#14532d}
+.ann-box.gold{background:linear-gradient(135deg,#fffdf5,#fff8e1);border-color:#d4a017;color:#0f1e3d;box-shadow:0 6px 18px -10px rgba(176,141,87,.6)}
+.ann-box.navy{background:linear-gradient(135deg,#0f1e3d,#1e3a8a);border-color:#d4a017;color:#fff}
+.ann-box.navy *{color:#fff}
+.ann-quote{display:block;border-inline-start:5px solid #d4a017;background:#f8fafc;padding:8px 14px;margin:10px 0;border-radius:0 12px 12px 0;font-style:italic;color:#334155}
+.ann-hr{border:none;height:2px;margin:14px auto;width:70%;background:linear-gradient(90deg,transparent,#d4a017,#0f1e3d,#d4a017,transparent)}
+@media print{.ann-sp{filter:none!important}details.ann-det>*{display:block!important}.ann-pulse,.ann-fade,.ann-hla{animation:none!important;background-size:100% 100%!important}}
+`;
+try { if (typeof document !== "undefined" && !document.getElementById("ann-fx-css")) { const st = document.createElement("style"); st.id = "ann-fx-css"; st.textContent = ANN_FX_CSS; document.head.appendChild(st); } } catch {}
+const ANN_HTML_CSS = ANN_FX_CSS + `
 .ann-link{display:inline-flex;align-items:center;gap:2px;max-width:100%;color:#0369a1!important;background:#e0f2fe;border:1px solid #bae6fd;border-radius:10px;padding:1px 10px;margin:2px 0;font-weight:800;text-decoration:none!important;word-break:break-all;unicode-bidi:isolate;cursor:pointer;transition:.15s}
 .ann-link:hover{background:#0369a1;color:#fff!important;border-color:#0369a1}
 .annhtml{font-size:16px;line-height:1.95;overflow-wrap:anywhere;word-break:normal;text-align:right}
@@ -12653,7 +12752,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
   const printAnn = (ann) => {
     const prioColor = ann.priority === "عاجل" ? "#dc2626" : ann.priority === "مهم" ? "#d97706" : "#0d9488";
     printWindow(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>${ann.title}</title>
-    <style>
+    <style>${ANN_FX_CSS}
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:'Noto Sans Arabic',Arial,sans-serif;direction:rtl;background:#fff;color:#111;padding:32px}
       .header{text-align:center;margin-bottom:24px;padding-bottom:14px;border-bottom:3px solid ${prioColor}}
@@ -39407,11 +39506,50 @@ const cvTotal = e => e && e.fin ? 1 : null; // «منفذة» = معتمدة
 const cvPart = e => maArr(e && e.sc).filter(x => x != null && x !== "").length;
 const cvNorm = s => String(s || "").replace(/[إأآا]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/\s+/g, " ").trim();
 const cvTok = s => cvNorm(s).split(" ").filter(w => w && w !== "ال").map(w => w.replace(/^ال(?=..)/, ""));
+// ── ضبط مطابقة الأسماء: لا يُقبل التطابق التقريبي إذا كان في المدرسة أكثر من معلم ينطبق عليه الاسم
+//    (مثل «علي الغامدي» مع وجود «علي أحمد الغامدي» و«علي سعيد الغامدي») — عندها يلزم الربط برقم الهوية من الإعدادات.
+let _cvReg = [], _cvRegP = null;
+const cvRegSet = lic => { const L = Object.values(ptObj(lic)).filter(x => x && x.name).map(x => ({ n: cvNorm(x.name), t: cvTok(x.name) })); if (L.length) _cvReg = L; };
+const cvRegLoad = () => _cvRegP || (_cvRegP = maGet(LIC_NODE).then(l => { cvRegSet(l); }).catch(() => { _cvRegP = null; }));
+const cvSub = (s, l) => s.length >= 2 && s.every(w => l.includes(w));
+const cvFuzzy = (a, b) => a.length <= b.length ? cvSub(a, b) : cvSub(b, a);
+// عدد المعلمين المسجلين الذين ينطبق عليهم هذا الاسم (تطابقاً تاماً أو تقريبياً)
+const cvRegHits = name => { const n = cvNorm(name), t = cvTok(name); return _cvReg.filter(p => p.n === n || cvSub(t, p.t)).length; };
+const cvAmbig = name => cvRegHits(name) > 1;
 function cvMatch(name, lic) {
-  const E = Object.entries(ptObj(lic)).filter(([, x]) => x && x.name);
-  const ex = E.find(([, x]) => cvNorm(x.name) === cvNorm(name)); if (ex) return ex[0];
-  const a = cvTok(name); const c = E.filter(([, x]) => { const b = cvTok(x.name); const [s, l] = a.length <= b.length ? [a, b] : [b, a]; return s.length >= 2 && s.every(w => l.includes(w)); });
-  return c.length === 1 ? c[0][0] : null;
+  const E = Object.entries(ptObj(lic)).filter(([, x]) => x && x.name); const nn = cvNorm(name);
+  const exs = E.filter(([, x]) => cvNorm(x.name) === nn);
+  if (exs.length > 1) return null;                                   // اسمان متطابقان تماماً في القائمة
+  if (exs.length === 1) return _cvReg.filter(p => p.n === nn).length > 1 ? null : exs[0][0]; // معلمان بالاسم نفسه في المدرسة
+  const a = cvTok(name); const c = E.filter(([, x]) => cvFuzzy(a, cvTok(x.name)));
+  if (c.length !== 1) return null;
+  const b = cvTok(c[0][1].name); const short = a.length <= b.length ? name : c[0][1].name;
+  return cvAmbig(short) ? null : c[0][0];                            // الاسم المختصر ينطبق على أكثر من معلم
+}
+// معلم الجدول الخاص بهذا الحساب: بالربط برقم الهوية أولاً، ثم بالاسم بشرط ألا ينطبق إلا على سجل واحد
+const cvMineT = (TS, links, me) => { const L = ptObj(links); if (!me) return null;
+  const byId = me.rid ? TS.find(x => L[x.tk] && L[x.tk] === me.rid) : null; if (byId) return byId;
+  const c = TS.filter(x => !L[x.tk] && cvMatch(x.name, { me: { name: me.name } }) === "me"); return c.length === 1 ? c[0] : null; };
+// فحص سلامة الربط: أسماء متشابهة • سجل واحد بأكثر من اسم • حساب مربوط بأكثر من سجل
+function cvIssues(D, TS, links) {
+  const I = []; const L = ptObj(links);
+  TS.forEach(T => { const nm = [...new Set(Object.values(ptObj(D.plan)).filter(r => r && r.tk === T.tk).map(r => String(r.t || "").trim()).filter(Boolean))]; const uniq = nm.filter((x, i) => nm.findIndex(y => cvNorm(y) === cvNorm(x)) === i);
+    if (uniq.length > 1) I.push({ k: "mix", T, names: uniq, t: `سجل واحد يضم أكثر من اسم: ${uniq.join(" • ")}` });
+    if (!L[T.tk] && cvAmbig(T.name)) I.push({ k: "amb", T, t: `الاسم «${T.name}» ينطبق على أكثر من معلم — اختر صاحبه من القائمة` });
+    if (L[T.tk] && D.lic[L[T.tk]] && !(cvNorm(D.lic[L[T.tk]].name) === cvNorm(T.name) || cvFuzzy(cvTok(T.name), cvTok(D.lic[L[T.tk]].name)))) I.push({ k: "bad", T, t: `«${T.name}» مربوط بحساب «${D.lic[L[T.tk]].name}» والاسمان مختلفان` }); });
+  const by = {}; TS.forEach(T => { if (L[T.tk]) (by[L[T.tk]] = by[L[T.tk]] || []).push(T); });
+  Object.entries(by).forEach(([rid, A]) => { if (A.length > 1) I.push({ k: "dup", T: A[0], t: `الحساب «${ptObj(D.lic[rid]).name || rid}» مربوط بأكثر من سجل: ${A.map(x => x.name).join(" • ")}` }); });
+  return I;
+}
+// فصل اسم من سجل مختلط إلى سجل مستقل (جدول الزيارات + رصدها + صورها + رسائل المعلم)
+async function cvSplit(D, T, name) {
+  const rows = Object.values(ptObj(D.plan)).filter(r => r && r.tk === T.tk && cvNorm(r.t) === cvNorm(name)); if (!rows.length) return null;
+  const nt = "tx" + asmK(name) + "_" + Date.now().toString(36).slice(-3); const o = {}; const plan = { ...D.plan }; const ev = { ...D.ev }; const evOld = { ...ptObj(ev[T.tk]) }; const evNew = {}; const msgs = { ...D.msgs };
+  for (const r of rows) { o[`${CV_PLAN}/${r.id}/tk`] = nt; plan[r.id] = { ...r, tk: nt };
+    if (evOld[r.v]) { o[`${CV_EVAL}/${nt}/${r.v}`] = evOld[r.v]; o[`${CV_EVAL}/${T.tk}/${r.v}`] = null; evNew[r.v] = evOld[r.v]; delete evOld[r.v]; }
+    try { const im = await maGet(`${CV_IMG}/${T.tk}/${r.v}`); if (im) { o[`${CV_IMG}/${nt}/${r.v}`] = im; o[`${CV_IMG}/${T.tk}/${r.v}`] = null; } } catch {} }
+  Object.values(msgs).forEach(m => { if (m && m.tk === T.tk && cvNorm(m.name) === cvNorm(name)) { o[`${CV_MSG}/${m.id}/tk`] = nt; msgs[m.id] = { ...m, tk: nt }; } });
+  const ok = await cvPatch(o); if (!ok) return null; ev[T.tk] = evOld; ev[nt] = evNew; return { plan, ev, msgs, nt };
 }
 function cvSeedPlan() {
   const tks = {}; let k = 0; const o = {};
@@ -39425,7 +39563,7 @@ const cvFixRow = r => r && CV_TMFIX[r.p] && r.tm === CV_TMFIX[r.p][0] ? { ...r, 
 function cvDayMap(plan, T, dk) { const o = {}; if (!T || !T.T) return o; Object.values(ptObj(plan)).forEach(r0 => { const r = cvFixRow(r0); if (!r || r.date !== dk) return; const ti = sttFindMe(T, r.t); const p = TT_ORD.indexOf(r.p); const m = String(r.c || "").match(/^(\d)\/(\d)$/); o[ti >= 0 && p >= 0 ? `${ti}_${p}` : "x" + r.id] = { ...r, pn: r.p, ti, p, ck: m ? `${m[2]}-${m[1]}` : "" }; }); return o; }
 async function cvLoad() { vsLoad().catch(() => {});
   let [plan, ev, cfg, lic, msgs] = await Promise.all([maGet(CV_PLAN), maGet(CV_EVAL), maGet(CV_CFG), maGet(LIC_NODE), maGet(CV_MSG)]);
-  plan = Object.fromEntries(Object.entries(ptObj(plan)).map(([k, r]) => [k, cvFixRow(r)])); cfg = ptObj(cfg);
+  cvRegSet(lic); plan = Object.fromEntries(Object.entries(ptObj(plan)).map(([k, r]) => [k, cvFixRow(r)])); cfg = ptObj(cfg);
   return { plan, ev: ptObj(ev), msgs: ptObj(msgs), cfg: { crit: [], gen: ptObj(cfg.gen), resched: cfg.resched || "", links: ptObj(cfg.links), comp: maArr(cfg.comp).length ? cfg.comp : CV_COMP }, lic: ptObj(lic) };
 }
 const cvTeachers = plan => { const m = {}; Object.values(plan).forEach(r => { if (!r || !r.tk) return; const o = m[r.tk] = m[r.tk] || { tk: r.tk, name: r.t, s: r.s, vis: [] }; o.vis.push(r); }); Object.values(m).forEach(o => o.vis.sort((a, b) => a.v - b.v || a.date.localeCompare(b.date))); return Object.values(m).sort((a, b) => a.vis[0].n - b.vis[0].n); };
@@ -40542,16 +40680,22 @@ function CvResched({ D, setD, toast }) {
 function CvCfg({ D, setD, TS, toast }) {
   const [links, setLinks] = useState({ ...D.cfg.links }); const [crit, setCrit] = useState([...D.cfg.crit]);
   const lic = Object.entries(D.lic).filter(([, x]) => x && x.name).sort((a, b) => a[1].name.localeCompare(b[1].name, "ar"));
-  const auto = () => { const n = { ...links }; let c = 0; TS.forEach(T => { if (!n[T.tk]) { const r = cvMatch(T.name, D.lic); if (r) { n[T.tk] = r; c++; } } }); setLinks(n); toast(`🔗 رُبط ${maAr(c)} معلم تلقائياً`); };
+  const auto = () => { const n = { ...links }; let c = 0; TS.forEach(T => { if (!n[T.tk]) { const r = cvMatch(T.name, D.lic); if (r) { n[T.tk] = r; c++; } } }); setLinks(n); const amb = TS.filter(T => !n[T.tk] && cvAmbig(T.name)).length; toast(`🔗 رُبط ${maAr(c)} معلم تلقائياً${amb ? ` — ${maAr(amb)} اسم متشابه يحتاج ربطاً يدوياً` : ""}`); };
   const save = async () => { const ok = await cvPatch({ [`${CV_CFG}/links`]: links }); setD(d => ({ ...d, cfg: { ...d.cfg, links } })); toast(ok ? "✅ حُفظ الربط" : "📱 حُفظ على الجهاز"); };
   const reseed = async () => { if (!window.confirm("إعادة تحميل جدول الزيارات الأصلي (١٤٤٨)؟ ستُلغى تعديلات المواعيد، وتبقى التقييمات والزيارات المضافة يدوياً.")) return; const p = { ...cvSeedPlan(), ...Object.fromEntries(Object.entries(D.plan).filter(([, r]) => r && r.add)) }; const ok = await maPut(CV_PLAN, p); if (ok) setD(d => ({ ...d, plan: p })); toast(ok ? "✅ أُعيد تحميل الجدول" : "⚠️ تعذّر"); };
-  const nL = TS.filter(T => links[T.tk]).length;
+  const nL = TS.filter(T => links[T.tk]).length; const issues = cvIssues(D, TS, links);
+  const split = async (T, name) => { if (!window.confirm(`فصل زيارات «${name}» عن سجل «${T.name}» في سجل مستقل؟\nتُنقل معه مواعيده ورصد زياراته وصورها ورسائله. يُستحسن أخذ نسخة احتياطية أولاً.`)) return; const r = await cvSplit(D, T, name); if (!r) { toast("⚠️ تعذّر الفصل — تحقق من الاتصال"); return; } setD(d => ({ ...d, plan: r.plan, ev: r.ev, msgs: r.msgs })); toast("✅ فُصل السجل — اربطه الآن بحساب صاحبه ثم احفظ"); };
   return (
     <div className="grid gap-3">
+      <div className="ma-card p-4 grid gap-2" style={{ border: `2px solid ${issues.length ? "#f59e0b" : "#86efac"}` }}>
+        <b style={{ fontSize: 15, color: issues.length ? "#b45309" : "#15803d" }}>{issues.length ? `🛡️ فحص تشابه الأسماء: ${maAr(issues.length)} حالة تحتاج ضبطاً` : "🛡️ فحص تشابه الأسماء: لا توجد حالات تداخل"}</b>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>لا تصل زيارات المعلم ورصدها وملاحظاتها إلا لصاحبها: بالربط برقم الهوية أولاً، وبالاسم فقط إذا لم ينطبق إلا على معلم واحد في المدرسة. الأسماء المتشابهة تُربط يدوياً من القائمة أدناه.</div>
+        {issues.map((x, i) => <div key={i} style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "7px 10px", fontSize: 13, fontWeight: 800, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span style={{ flex: "1 1 240px" }}>{x.k === "mix" ? "🔀" : x.k === "dup" ? "👥" : x.k === "bad" ? "❗" : "⚠️"} {x.t}</span>{x.k === "mix" && x.names.filter(n => cvNorm(n) !== cvNorm(x.T.name)).map(n => <button key={n} className="ma-btn" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => split(x.T, n)}>فصل «{n}»</button>)}</div>)}
+      </div>
       <div className="ma-card p-4 grid gap-2">
         <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15 }}>🔗 ربط معلمي الجدول بحساباتهم (رقم الهوية)</b><span className="pt-st" style={{ background: nL === TS.length ? "#dcfce7" : "#fef3c7", color: nL === TS.length ? "#15803d" : "#92400e" }}>{maAr(nL)} من {maAr(TS.length)} مربوط</span><button className="ma-btn" style={{ marginRight: "auto" }} onClick={auto}>⚡ ربط تلقائي بالاسم</button></div>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>يدخل المعلم من «بوابة المعلمين» برقم هويته المسجل في قائمة المعلمين (الرخصة المهنية)، فتظهر له زياراته وتقييمه. المعلم غير المسجّل يُضاف أولاً من قائمة المعلمين.</div>
-        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>{TS.map(T => <div key={T.tk} className="flex items-center gap-2" style={{ background: links[T.tk] ? "#f0fdf4" : "#fff7ed", borderRadius: 12, padding: "6px 10px" }}><span>{links[T.tk] ? "✅" : "⚠️"}</span><b style={{ flex: 1, fontSize: 13 }}>{T.name}</b><select className="ma-inp" style={{ width: 170, height: 34 }} value={links[T.tk] || ""} onChange={e => setLinks({ ...links, [T.tk]: e.target.value })}><option value="">— غير مربوط —</option>{lic.map(([id, x]) => <option key={id} value={id}>{x.name}</option>)}</select></div>)}</div>
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>{TS.map(T => <div key={T.tk} className="flex items-center gap-2" style={{ background: links[T.tk] ? "#f0fdf4" : "#fff7ed", borderRadius: 12, padding: "6px 10px" }}><span>{links[T.tk] ? "✅" : "⚠️"}</span><b style={{ flex: 1, fontSize: 13 }}>{T.name}{!links[T.tk] && cvAmbig(T.name) ? <small style={{ display: "block", color: "#b91c1c", fontWeight: 800 }}>اسم متشابه — يلزم الربط اليدوي</small> : null}</b><select className="ma-inp" style={{ width: 170, height: 34 }} value={links[T.tk] || ""} onChange={e => setLinks({ ...links, [T.tk]: e.target.value })}><option value="">— غير مربوط —</option>{lic.map(([id, x]) => <option key={id} value={id}>{x.name}</option>)}</select></div>)}</div>
       </div>
             <div className="flex gap-2"><button className="ma-btn pri" onClick={save}>💾 حفظ الربط</button><button className="ma-btn" onClick={reseed}>↺ إعادة تحميل الجدول الأصلي</button></div>
     </div>
@@ -40693,7 +40837,7 @@ function PxWatcher({ me, all = false, onOpen }) {
 function CvTeacherWatcher({ me, onOpen }) {
   const [V, setV] = useState([]); const [now, setNow] = useState(Date.now()); const fired = useRef({}); const [hid, setHid] = useState({});
   useEffect(() => { let ok = true; const load = async () => { try { const k = maKey(new Date()); if (maOff(k)) { setV([]); return; } const D = await cvLoad(); const TS = cvTeachers(D.plan);
-      const T = TS.find(t => D.cfg.links[t.tk] === me.rid) || TS.find(t => !D.cfg.links[t.tk] && cvMatch(t.name, { me: { name: me.name } }) === "me"); if (!T || !ok) return;
+      const T = cvMineT(TS, D.cfg.links, me); if (!T || !ok) return;
       const E = ptObj(D.ev[T.tk]); setV(T.vis.filter(r => r.date === k && cvAt(r) && cvTotal(ptObj(E[r.v])) == null)); } catch {} };
     load(); const a = setInterval(load, 300000); const t = setInterval(() => setNow(Date.now()), 1000); return () => { ok = false; clearInterval(a); clearInterval(t); }; }, []);
   const cur = V.find(r => { const at = +cvAt(r); return now >= at - 30 * 60000 && now <= at + 5 * 60000 && !hid[r.id]; });
@@ -40743,7 +40887,7 @@ function CvAdminWatcher({ navigate }) {
 }
 function CvHomeBanner({ me, onOpen }) {
   const [x, setX] = useState(null);
-  useEffect(() => { (async () => { const D = await cvLoad(); const TS = cvTeachers(D.plan); const T = TS.find(t => D.cfg.links[t.tk] === me.rid) || TS.find(t => !D.cfg.links[t.tk] && cvMatch(t.name, { me: { name: me.name } }) === "me"); if (!T) return; const k = maKey(new Date()); const E = ptObj(D.ev[T.tk]); const nx = T.vis.find(r => r.date >= k && !maOff(r.date) && cvTotal(ptObj(E[r.v])) == null); if (nx) setX(nx); })(); }, []);
+  useEffect(() => { (async () => { const D = await cvLoad(); const TS = cvTeachers(D.plan); const T = cvMineT(TS, D.cfg.links, me); if (!T) return; const k = maKey(new Date()); const E = ptObj(D.ev[T.tk]); const nx = T.vis.find(r => r.date >= k && !maOff(r.date) && cvTotal(ptObj(E[r.v])) == null); if (nx) setX(nx); })(); }, []);
   if (!x) return null; const dd = cvDays(x.date); if (dd > 3) return null;
   return <button type="button" onClick={onOpen} className="cv-alert" style={{ border: "none", textAlign: "right", fontFamily: "inherit", cursor: "pointer", background: dd === 0 ? "linear-gradient(135deg,#c2410c,#f59e0b)" : "linear-gradient(135deg,#0369a1,#0891b2)", animation: dd === 0 ? undefined : "none" }}><style>{CV_ALERT_CSS}</style><div className="flex items-center gap-3"><span className="bell">{dd === 0 ? "⏰" : "📣"}</span><div><div style={{ fontSize: 16, fontWeight: 900 }}>{dd === 0 ? "استعد — لديك زيارة صفية اليوم" : dd === 1 ? "تذكير: لديك زيارة صفية غداً" : `زيارة صفية بعد ${maAr(dd)} أيام`}</div><div style={{ fontSize: 12.5, fontWeight: 800 }}>الحصة {x.p}{x.tm ? ` (${cvTm(x.tm)})` : ""} • {cvCls(x.c)} • {maDay(maDate(x.date))} {cvHij(x.hij)} ← اضغط للتفاصيل</div></div></div></button>;
 }
@@ -40771,7 +40915,7 @@ function TeacherVisitsView({ me }) {
   useEffect(() => { (async () => setD(await cvLoad()))(); }, []);
   if (!D) return <div className="ma-card p-10 text-center font-bold text-gray-400">⏳</div>;
   const TS = cvTeachers(D.plan);
-  const T = TS.find(x => D.cfg.links[x.tk] && D.cfg.links[x.tk] === me.rid) || TS.find(x => !D.cfg.links[x.tk] && cvMatch(x.name, { me: { name: me.name } }) === "me");
+  const T = cvMineT(TS, D.cfg.links, me);
   if (!T) return <div className="ma-card p-8 text-center"><div style={{ fontSize: 40 }}>🔎</div><b>لا توجد زيارات صفية مجدولة باسمك</b><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginTop: 6 }}>إذا كان اسمك في جدول الزيارات فيرجى مراجعة الإدارة لربط حسابك</div></div>;
   const E = ptObj(D.ev[T.tk]); const k = maKey(new Date());
   const next = T.vis.find(r => r.date >= k && !ptObj(E[r.v]).fin);
@@ -42843,7 +42987,7 @@ function TchMustSign({ me, onCirc, onCv }) {
   const [S, setS] = useState(null);
   useEffect(() => { let a = true; if (!me || !me.hash) return; (async () => { const [cr, hf] = await Promise.all([crMine(me).catch(() => []), maGet(HFX_NODE).catch(() => null)]);
     const H = Object.values(ptObj(hf)).filter(c => c && c.id && c.tok && c.h === me.hash && ["sent", "opened"].includes(c.st)).sort((x, y) => (y.at || 0) - (x.at || 0));
-    let V = null; try { const [sgA, pl, cf] = await Promise.all([maGet(CV_SIG), maGet(CV_PLAN), maGet(CV_CFG)]); const TS = cvTeachers(ptObj(pl)); const links = ptObj(ptObj(cf).links); const T = TS.find(x => links[x.tk] && links[x.tk] === me.rid) || TS.find(x => !links[x.tk] && cvMatch(x.name, { me: { name: me.name } }) === "me"); const g = T && ptObj(ptObj(sgA)[T.tk]); if (g && g.req && !g.sig) V = 1; } catch {}
+    let V = null; try { const [sgA, pl, cf] = await Promise.all([maGet(CV_SIG), maGet(CV_PLAN), maGet(CV_CFG), cvRegLoad()]); const TS = cvTeachers(ptObj(pl)); const links = ptObj(ptObj(cf).links); const T = cvMineT(TS, links, me); const g = T && ptObj(ptObj(sgA)[T.tk]); if (g && g.req && !g.sig) V = 1; } catch {}
     if (a) setS({ C: cr.filter(c => !(c.my && c.my.at)), H, V }); })(); return () => { a = false; }; }, []);
   if (!S || (!S.C.length && !S.H.length && !S.V)) return null;
   const openH = c => { window.location.hash = `hfx=${c.id}.${c.tok}`; window.location.reload(); };
@@ -44924,7 +45068,8 @@ function sttFindMe(T, name) {
   const rows = T.T.map((n, i) => ({ i, w: sttNorm(n).split(" ").filter(Boolean) }));
   const a = rows.filter(r => r.w[0] === w[0] && w.slice(1).some(x => r.w.slice(1).includes(x)));
   if (a.length === 1) return a[0].i;
-  const b = rows.filter(r => r.w[r.w.length - 1] === w[w.length - 1] && r.w[0] === w[0]); if (b.length) return b[0].i;
+  const b = rows.filter(r => r.w[r.w.length - 1] === w[w.length - 1] && r.w[0] === w[0]); if (b.length === 1) return b[0].i;
+  if (b.length > 1) { const ex = b.filter(r => r.w.join(" ") === w.join(" ")); return ex.length === 1 ? ex[0].i : -1; } // أكثر من معلم بالاسم الأول والأخير نفسه: لا يُختار إلا المطابق تماماً
   const c = rows.filter(r => w.includes(r.w[0]) && w.includes(r.w[r.w.length - 1])); return c.length === 1 ? c[0].i : -1;
 }
 const sttRes = (T, d, p) => { const day = T.D[d]; const r = T.RS && T.RS[day] ? T.RS[day][p] : (T.R && T.R[day] ? T.R[day][p] : null); const arr = Array.isArray(r) ? r : (r && typeof r === "object" ? Object.values(r) : []); return arr.filter(x => x !== null && x !== undefined && x !== "").map(Number).slice(0, 3); };
@@ -51742,7 +51887,7 @@ function cvWkOf(plan, date) {
   const b = CV_SEED[0]; return b[2] + Math.round((maDate(ws) - maDate(wkStart(b[3]))) / (7 * 864e5));
 }
 const cvHol = d => { const X = maHolX(d); if (X) return X.work ? "" : (X.n || "إجازة"); const H = typeof DU_OFF_H !== "undefined" ? DU_OFF_H : {}; return H[d] || ""; };
-function cvTkOf(plan, name) { const TS = cvTeachers(plan); const E = Object.fromEntries(TS.map(x => [x.tk, { name: x.name }])); return cvMatch(name, E) || ("tx" + asmK(name)); }
+function cvTkOf(plan, name) { const TS = cvTeachers(plan); const ex = TS.filter(x => cvNorm(x.name) === cvNorm(name)); if (ex.length === 1) return ex[0].tk; const E = Object.fromEntries(TS.map(x => [x.tk, { name: x.name }])); return (ex.length ? null : cvMatch(name, E)) || ("tx" + asmK(name)); }
 function cvNextV(plan, ev, tk) { for (let v = 1; v <= 3; v++) { const e = ptObj(ptObj(ev[tk])[v]); if (!e.fin) return v; } return 3; }
 async function cvReadNames(file) {
   const X = await loadXLSX(); const wb = X.read(await file.arrayBuffer(), { type: "array" });

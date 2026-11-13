@@ -80,7 +80,7 @@ const StB = ({ k }) => { const S = OP_ST[k] || OP_ST.wait; return <span classNam
 const useToast = () => { const [m, setM] = useState(""); const t = useRef(); return [m, s => { setM(s); clearTimeout(t.current); t.current = setTimeout(() => setM(""), 2600); }]; };
 
 // ══════════ محرر البرنامج ══════════
-function Editor({ api, init, people, doms, by, onClose, onSaved, onDel, onPrint }) {
+function Editor({ api, init, people, doms, by, onClose, onSaved, onDel, onPrint, onPro }) {
   const [p, setP] = useState(() => ({ dom: "", t: "", goal: "", ind: "", base: "", tg: "", act: "", unit: "%", ex: "", par: "", from: "", to: "", proc: [], ev: [], note: "", st: "", imgs: {}, ...JSON.parse(JSON.stringify(init)) }));
   const [srcs, setSrcs] = useState({}); const [busy, setBusy] = useState(""); const [nproc, setNproc] = useState(""); const [nev, setNev] = useState({ t: "", u: "" }); const fileR = useRef();
   const isNew = !init.id; const id = useRef(init.id || uid("p")).current;
@@ -92,12 +92,12 @@ function Editor({ api, init, people, doms, by, onClose, onSaved, onDel, onPrint 
     setSrcs(s => ({ ...s, ...add })); setP(x => ({ ...x, imgs: { ...obj(x.imgs), ...meta } })); setBusy("");
     if (!isNew) await api.maPut(`${N.P}/${id}/imgs`, { ...obj(p.imgs), ...meta }); };
   const delImg = async iid => { if (!confirm("حذف الصورة؟")) return; await api.maPut(`${N.IMG}/${id}/${iid}`, null); setSrcs(s => { const o = { ...s }; delete o[iid]; return o; }); setP(x => { const im = { ...obj(x.imgs) }; delete im[iid]; return { ...x, imgs: im }; }); };
-  const save = async () => { if (!p.t.trim()) { alert("اكتب اسم البرنامج"); return; } setBusy("save"); const v = { ...p, meth: arr(p.meth).map(x => x.trim()).filter(Boolean), evalp: arr(p.evalp).map(x => x.trim()).filter(Boolean), id, t: p.t.trim(), by: p.by || by, at: p.at || Date.now(), up: Date.now(), upBy: by, ord: p.ord || Date.now() };
+  const save = async () => { if (!p.t.trim()) { alert("اكتب اسم البرنامج"); return; } setBusy("save"); const v = { ...p, meth: arr(p.meth).map(x => x.trim()).filter(Boolean), evalp: arr(p.evalp).map(x => x.trim()).filter(Boolean), req: arr(p.req).map(x => x.trim()).filter(Boolean), id, t: p.t.trim(), by: p.by || by, at: p.at || Date.now(), up: Date.now(), upBy: by, ord: p.ord || Date.now() };
     await api.maPut(`${N.P}/${id}`, v); setBusy(""); onSaved(v); };
   const imgs = Object.entries(obj(p.imgs)).sort((a, b) => (a[1].ord || 0) - (b[1].ord || 0));
   return <div className="op-modal" onClick={e => e.target === e.currentTarget && onClose()}><div className="op">
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><Ring v={C.prog} size={58} c={OP_ST[C.st].c} /><div style={{ flex: 1, minWidth: 200 }}><b style={{ fontSize: 18, color: NAVY }}>{isNew ? "➕ برنامج جديد" : p.t || "برنامج"}</b><div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}><StB k={C.st} />{C.pn > 0 && <span className="op-note">الإجراءات {ar(C.dn)}/{ar(C.pn)}</span>}{C.ach != null && <span className="op-note">• تحقق المؤشر {ar(C.ach)}٪</span>}</div></div>
-      {!isNew && <button className="op-btn sm g" onClick={() => onPrint({ ...p, id })}>🖨️ ورقة تقرير البرنامج</button>}<button className="op-btn sm" onClick={onClose}>✕</button></div>
+      {!isNew && <button className="op-btn sm p" onClick={() => onPro({ ...p, id })}>📘 تقرير البرنامج الاحترافي</button>}{!isNew && <button className="op-btn sm g" onClick={() => onPrint({ ...p, id })}>🖨️ ورقة صفحة واحدة</button>}<button className="op-btn sm" onClick={onClose}>✕</button></div>
 
     <div className="op-sec"><b>📋 بيانات البرنامج</b>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
@@ -122,7 +122,7 @@ function Editor({ api, init, people, doms, by, onClose, onSaved, onDel, onPrint 
       <label className="op-lbl" style={{ display: "flex", alignItems: "center", gap: 6 }}><input type="checkbox" checked={p.st === "hold"} onChange={e => set("st", e.target.checked ? "hold" : "")} /> البرنامج معلّق مؤقتاً</label>
     </div>
 
-    <details className="op-sec" open={!!(p.gen || p.obj)}><summary style={{ cursor: "pointer", fontWeight: 900, color: NAVY, fontSize: 15 }}>📑 ارتباط البرنامج بالخطة (الهدف العام والتفصيلي والمتابعة)</summary>
+    <details className="op-sec" open><summary style={{ cursor: "pointer", fontWeight: 900, color: NAVY, fontSize: 15 }}>📑 ارتباط البرنامج بالخطة (الهدف العام والتفصيلي والمتابعة)</summary>
       <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
         <label className="op-lbl">الهدف الاستراتيجي<input className="op-inp" value={p.strat || ""} onChange={e => set("strat", e.target.value)} /></label>
         <label className="op-lbl">الهدف العام {p.gn ? `(${p.gn})` : ""}<textarea className="op-inp" rows={2} value={p.gen || ""} onChange={e => set("gen", e.target.value)} /></label>
@@ -132,6 +132,7 @@ function Editor({ api, init, people, doms, by, onClose, onSaved, onDel, onPrint 
           <label className="op-lbl">مستهدف الهدف العام<input className="op-inp" value={p.gtg || ""} onChange={e => set("gtg", e.target.value)} /></label>
         </div>
         <label className="op-lbl">الهدف التفصيلي {p.on ? `(${p.on})` : ""}<textarea className="op-inp" rows={2} value={p.obj || ""} onChange={e => set("obj", e.target.value)} /></label>
+        <label className="op-lbl">الأثر المتوقع<textarea className="op-inp" rows={2} value={p.gimp || ""} onChange={e => set("gimp", e.target.value)} placeholder="ما الذي سيتحسن بعد تنفيذ البرنامج؟" /></label>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10 }}>
           <label className="op-lbl">المستفيدون<input className="op-inp" value={p.ben || ""} onChange={e => set("ben", e.target.value)} /></label>
           <label className="op-lbl">مكان التنفيذ<input className="op-inp" value={p.place || ""} onChange={e => set("place", e.target.value)} /></label>
@@ -140,6 +141,10 @@ function Editor({ api, init, people, doms, by, onClose, onSaved, onDel, onPrint 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 10 }}>
           <label className="op-lbl">أساليب التنفيذ (كل أسلوب في سطر)<textarea className="op-inp" rows={6} value={arr(p.meth).join("\n")} onChange={e => set("meth", e.target.value.split("\n"))} /></label>
           <label className="op-lbl">إجراءات التقويم (كل إجراء في سطر)<textarea className="op-inp" rows={6} value={arr(p.evalp).join("\n")} onChange={e => set("evalp", e.target.value.split("\n"))} /></label>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 10 }}>
+          <label className="op-lbl">متطلبات التنفيذ والموارد (كل متطلب في سطر)<textarea className="op-inp" rows={4} value={arr(p.req).join("\n")} onChange={e => set("req", e.target.value.split("\n"))} placeholder={"مثال:\nقاعة مجهزة بجهاز عرض\nمطبوعات وشهادات تكريم\nتنسيق مع أولياء الأمور"} /></label>
+          <label className="op-lbl">التكلفة التقديرية (اختياري)<input className="op-inp" value={p.cost || ""} onChange={e => set("cost", e.target.value)} placeholder="مثال: ٥٠٠ ريال / بدون تكلفة" /></label>
         </div>
       </div></details>
 
@@ -297,7 +302,7 @@ const SCSS = `
 .sh-l .bx{width:3.8mm;height:3.8mm;border-radius:50%;border:.4mm solid #94a3b8;flex:none;display:grid;place-items:center;font-size:6.5pt;margin-top:.7mm;color:#fff}.sh-l .bx.on{background:#15803d;border-color:#15803d}.sh-l .ev{background:${GOLD};border-color:${GOLD}}
 .sh-l .d{font-size:7pt;color:#64748b;white-space:nowrap}
 .sh-ph{flex:1;min-height:0;margin:2.5mm 12.5mm 1mm;display:grid;gap:3.4mm}
-.sh-ph.n1{grid-template-columns:1fr}.sh-ph.n2{grid-template-columns:1fr 1fr}.sh-ph.n3{grid-template-columns:1.35fr 1fr;grid-template-rows:1fr 1fr}.sh-ph.n3 figure:first-child{grid-row:1 / span 2}.sh-ph.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.sh-ph.n1{grid-template-columns:1fr}.sh-ph.n2{grid-template-columns:1fr 1fr;align-content:center}.sh-ph.n2:not(.ap) figure{height:72mm}.sh-ph.n3{grid-template-columns:1.35fr 1fr;grid-template-rows:1fr 1fr}.sh-ph.n3 figure:first-child{grid-row:1 / span 2}.sh-ph.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
 .sh-ph.ap{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
 .sh-ph figure{margin:0;position:relative;border-radius:4mm;overflow:hidden;min-height:0;box-shadow:0 0 0 .5mm ${GOLD},0 0 0 1.3mm #fff,0 0 0 1.6mm ${NAVY}}
 .sh-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
@@ -337,6 +342,74 @@ async function printSheets(api, list, cfg) {
   api.print(out.join(""), list.length === 1 ? `تقرير تنفيذ برنامج — ${list[0].t}` : "تقارير تنفيذ البرامج", RCSS + SCSS);
 }
 
+// ══════════ 📘 تقرير البرنامج الاحترافي (كل عناصر التنفيذ + الصور صورتين متجاورتين بحجم متوسط) ══════════
+const PCSS2 = `@page{size:A4;margin:9mm 0 11mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#fff;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}
+.pp{width:210mm;padding:0 12mm;break-before:page;page-break-before:always}.pp:first-child{break-before:auto;page-break-before:auto}
+.pp-top{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(120deg,${NAVY},#13315c 60%,#1e3a8a);color:#fff;border-radius:5mm;padding:3.5mm 6mm;position:relative;overflow:hidden}
+.pp-top::after{content:"";position:absolute;inset:auto 0 0 0;height:1.4mm;background:linear-gradient(90deg,${GOLD},#f5e6a8,${GOLD})}
+.pp-top .lg{width:17mm;height:17mm;background:#fff;border-radius:4mm;display:grid;place-items:center;box-shadow:0 0 0 .7mm rgba(201,162,39,.8)}.pp-top .lg img{max-width:14mm;max-height:14mm}
+.pp-top .m{text-align:center;font-size:9pt;font-weight:700;line-height:1.6}.pp-top .m b{font-size:12pt;color:#fde68a}
+.pp-ti{display:flex;gap:5mm;align-items:center;margin:5mm 0 3mm}
+.pp-ti .k{display:inline-block;background:${GOLD};color:#fff;font-size:8.5pt;font-weight:900;padding:.8mm 4mm;border-radius:0 3mm 0 3mm}
+.pp-ti h1{margin:1mm 0 0;font-size:20pt;font-weight:900;color:${NAVY};line-height:1.35}.pp-ti .dm{font-size:9pt;font-weight:800;color:${GOLD2}}
+.pp-rg{width:24mm;height:24mm;border-radius:50%;display:grid;place-items:center;flex:none}.pp-rg span{width:18.5mm;height:18.5mm;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center;font-weight:900;font-size:13pt;line-height:1.1}.pp-rg small{display:block;font-size:6.5pt;color:#64748b}
+.pp-in{display:grid;grid-template-columns:repeat(4,1fr);gap:2.2mm;margin-bottom:3mm}
+.pp-in div{background:#f8f5e8;border-radius:3mm;padding:1.6mm 3mm;border-inline-start:1.3mm solid ${GOLD};font-size:8.8pt;font-weight:800;color:${NAVY};line-height:1.5;break-inside:avoid}
+.pp-in small{display:block;font-size:7pt;color:${GOLD2};font-weight:900}
+.pp-h{display:flex;align-items:center;gap:2mm;font-size:11pt;font-weight:900;color:${NAVY};margin:4mm 0 2mm;break-after:avoid}
+.pp-h::before{content:"";width:3.2mm;height:3.2mm;background:${GOLD};transform:rotate(45deg)}.pp-h::after{content:"";flex:1;height:.5mm;background:linear-gradient(90deg,${GOLD},transparent)}
+.pp-g{border:.4mm solid #e7e2cc;border-radius:3.5mm;padding:2mm 4mm;margin-bottom:2mm;break-inside:avoid;background:#fff}
+.pp-g small{display:block;font-size:7.5pt;font-weight:900;color:${GOLD2}}.pp-g p{margin:0;font-size:9.3pt;font-weight:700;line-height:1.7}
+.pp-g.nv{background:linear-gradient(135deg,${NAVY},#1e3a8a);border-color:${NAVY}}.pp-g.nv small{color:#fde68a}.pp-g.nv p{color:#fff}
+.pp-2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.pp-k{display:grid;grid-template-columns:repeat(3,1fr);gap:2.5mm;margin:2mm 0}.pp-k div{text-align:center;border-radius:3mm;padding:2mm;background:#f1f5f9;font-size:8pt;font-weight:800;color:#475569}.pp-k b{display:block;font-size:14pt;color:${NAVY}}
+.pp-l{list-style:none;margin:0;padding:0;display:grid;gap:1.3mm}.pp-l li{display:flex;gap:2mm;font-size:9pt;font-weight:700;line-height:1.6;break-inside:avoid}.pp-l li::before{content:"◆";color:${GOLD};font-size:7pt;margin-top:1mm}
+table.pp-t{width:100%;border-collapse:separate;border-spacing:0;font-size:9pt;border:.4mm solid #cbd5e1;border-radius:3mm;overflow:hidden}
+.pp-t th{background:${NAVY};color:#fff;padding:1.8mm;font-weight:900}.pp-t td{padding:1.6mm 2.5mm;border-top:.3mm solid #e2e8f0;font-weight:700}.pp-t tr:nth-child(even) td{background:#fafaf5}.pp-t tr{break-inside:avoid}
+.pp-ok{display:inline-block;border-radius:999px;padding:.3mm 3mm;font-size:8pt;font-weight:900}
+.pp-ph{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:2mm}
+.pp-ph figure{margin:0;break-inside:avoid;background:#fff;border-radius:4mm;padding:1.6mm;box-shadow:0 0 0 .45mm ${GOLD},0 0 0 1.2mm #fff,0 0 0 1.5mm ${NAVY}}
+.pp-ph .im{height:62mm;border-radius:3mm;overflow:hidden;background:#f1f5f9}.pp-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.pp-ph figcaption{text-align:center;font-size:8.5pt;font-weight:800;color:${NAVY};padding:1.6mm 1mm .4mm;line-height:1.5}
+.pp-ph figcaption::before{content:"";display:block;width:14mm;height:.6mm;background:${GOLD};margin:0 auto 1mm;border-radius:2px}
+.pp-sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;margin:7mm 2mm 2mm;text-align:center;font-size:9pt;font-weight:800;break-inside:avoid}.pp-sg b{display:block;color:${NAVY}}.pp-sg i{display:block;height:8mm;border-bottom:.3mm dashed #94a3b8;margin-bottom:1mm}
+.pp-ft{margin-top:4mm;display:flex;justify-content:space-between;font-size:8pt;font-weight:700;color:#64748b;border-top:.4mm solid ${GOLD};padding-top:1.5mm}`;
+function proHtml(api, p, cfg, src) {
+  const C = opCalc(p); const S = OP_ST[C.st]; const u = v => v ? esc(v) + (p.unit === "%" && !/[٪%]/.test(v) ? "٪" : "") : "—";
+  const im = Object.entries(obj(p.imgs)).sort((a, b) => (b[1].main ? 1 : 0) - (a[1].main ? 1 : 0) || (a[1].ord || 0) - (b[1].ord || 0)).filter(([iid]) => src[iid]);
+  const tile = (k, v) => `<div><small>${k}</small>${esc(v || "—")}</div>`;
+  const per = p.from || p.to ? `${p.from ? hijS(p.from) : "—"} ← ${p.to ? hijS(p.to) : "—"}` : "";
+  const box = (k, v, nv) => v ? `<div class="pp-g${nv ? " nv" : ""}"><small>${k}</small><p>${esc(v)}</p></div>` : "";
+  const list = a => `<ul class="pp-l">${arr(a).map(x => `<li><span>${esc(typeof x === "string" ? x : x.t)}</span></li>`).join("")}</ul>`;
+  const proc = arr(p.proc); const req = arr(p.req), meth = arr(p.meth), evalp = arr(p.evalp), ev = arr(p.ev);
+  return `<section class="pp">
+  <div class="pp-top"><div class="lg"><img src="${api.moe}"></div><div class="m">المملكة العربية السعودية • وزارة التعليم<br>${esc(api.region || "")}<br><b>${esc(api.school)}</b></div><div class="lg"><img src="${api.logo}"></div></div>
+  <div class="pp-ti"><div style="flex:1"><span class="k">تقرير برنامج • ${esc(cfg.docName || "الخطة التشغيلية")} ${esc(cfg.year || "")}</span><h1>${esc(p.t)}</h1><div class="dm">${esc(p.dom || "")}${p.gn ? ` • الهدف العام ${esc(p.gn)}${p.on ? ` — الهدف التفصيلي ${esc(p.on)}` : ""}` : ""}</div></div>
+    <div class="pp-rg" style="background:conic-gradient(${S.c} ${C.prog * 3.6}deg,#e5e7eb 0)"><span style="color:${S.c}">${ar(C.prog)}٪<small>${S.t}</small></span></div></div>
+  <div class="pp-in">${tile("المجال", p.dom)}${tile("الهدف الاستراتيجي", p.strat)}${tile("المنفّذ (مسؤول التنفيذ)", p.ex)}${tile("المشاركون / المساندون", p.par)}${tile("المستفيدون", p.ben)}${tile("مكان التنفيذ", p.place)}${tile("الفترة الزمنية", per)}${tile("مسؤول المتابعة", p.fol)}</div>
+  <div class="pp-h">الأهداف</div>
+  ${box(`الهدف العام${p.gn ? ` (${p.gn})` : ""}`, p.gen, 1)}
+  ${p.gind || p.gtg || p.gbase ? `<div class="pp-g"><small>مؤشر قياس الهدف العام</small><p>${esc(p.gind || "")}${p.gbase || p.gtg ? ` <b style="color:${GOLD2}">— خط الأساس: ${esc(p.gbase || "—")} • المستهدف: ${esc(p.gtg || "—")}</b>` : ""}</p></div>` : ""}
+  <div class="pp-2"><div>${box(`الهدف التفصيلي${p.on ? ` (${p.on})` : ""}`, p.obj)}</div><div>${box("هدف البرنامج", p.goal)}</div></div>
+  ${box("الأثر المتوقع", p.gimp)}
+  <div class="pp-h">مؤشر الإنجاز</div>
+  ${box("المؤشر", p.ind)}
+  <div class="pp-k"><div><b>${u(p.base)}</b>القيمة الحالية (خط الأساس)</div><div><b>${u(p.tg)}</b>المستهدف</div><div><b style="color:#15803d">${u(p.act)}</b>المتحقق فعلياً</div></div>
+  ${req.length || p.cost || meth.length ? `<div class="pp-2"><div><div class="pp-h">متطلبات التنفيذ والموارد</div>${req.length ? list(req) : ""}${p.cost ? `<div class="pp-g" style="margin-top:2mm"><small>التكلفة التقديرية</small><p>${esc(p.cost)}</p></div>` : ""}${!req.length && !p.cost ? `<div style="font-size:9pt;color:#94a3b8">—</div>` : ""}</div><div><div class="pp-h">أساليب التنفيذ</div>${meth.length ? list(meth) : `<div style="font-size:9pt;color:#94a3b8">—</div>`}</div></div>` : ""}
+  ${proc.length ? `<div class="pp-h">الإجراءات التنفيذية (المنفّذ ${ar(C.dn)} من ${ar(C.pn)})</div><table class="pp-t"><thead><tr><th style="width:9mm">م</th><th>الإجراء</th><th style="width:26mm">الحالة</th><th style="width:30mm">تاريخ التنفيذ</th></tr></thead><tbody>${proc.map((x, i) => `<tr><td style="text-align:center">${ar(i + 1)}</td><td>${esc(x.t)}</td><td style="text-align:center"><span class="pp-ok" style="background:${x.done ? "#dcfce7" : "#f1f5f9"};color:${x.done ? "#15803d" : "#64748b"}">${x.done ? "✓ منفّذ" : "قيد التنفيذ"}</span></td><td style="text-align:center">${x.d ? hijS(x.d) : "—"}</td></tr>`).join("")}</tbody></table>` : ""}
+  ${evalp.length || ev.length ? `<div class="pp-2"><div>${evalp.length ? `<div class="pp-h">إجراءات التقويم</div>${list(evalp)}` : ""}</div><div>${ev.length ? `<div class="pp-h">الشواهد</div><ul class="pp-l">${ev.map(x => `<li><span>${esc(x.t)}${x.u ? `<br><span dir="ltr" style="font-size:7.5pt;color:#1d4ed8;word-break:break-all">${esc(x.u)}</span>` : ""}</span></li>`).join("")}</ul>` : ""}</div></div>` : ""}
+  ${p.note ? `<div class="pp-h">ملاحظات ومعوقات</div>${box("", p.note)}` : ""}
+  ${im.length ? `<div class="pp-h">التوثيق المصوّر (${ar(im.length)} صورة)</div><div class="pp-ph">${im.map(([iid, m]) => `<figure><div class="im"><img src="${src[iid]}"></div><figcaption>${esc(m.cap || p.t)}</figcaption></figure>`).join("")}</div>` : ""}
+  <div class="pp-sg"><div><i></i><b>مسؤول التنفيذ</b>${esc(p.ex || "")}</div><div><i></i><b>مسؤول المتابعة</b>${esc(p.fol && !/مدير/.test(p.fol) ? p.fol : "وكيل المدرسة")}</div><div><i></i><b>مدير المدرسة</b>${esc(api.mgr || "")}</div></div>
+  <div class="pp-ft"><span>${esc(api.school)}</span><span>تقرير برنامج: ${esc(p.t)}</span><span>${hij(today())}</span></div>
+  </section>`;
+}
+async function printPro(api, list, cfg) {
+  const out = []; for (const p of list) { const src = Object.keys(obj(p.imgs)).length ? obj(await api.maGet(`${N.IMG}/${p.id}`)) : {}; out.push(proHtml(api, p, cfg, src)); }
+  api.print(out.join(""), list.length === 1 ? `تقرير برنامج — ${list[0].t}` : "تقارير البرامج", PCSS2);
+}
+
 // ══════════ الصفحة الرئيسية ══════════
 export function OpPlan({ api, me }) {
   const by = (me && me.name) || "الإدارة"; const [toast, say] = useToast();
@@ -357,6 +430,7 @@ export function OpPlan({ api, me }) {
     if (n) await api.fbPatch(P); say(n ? `✅ أُضيف ${ar(n)} برنامجاً من ${m.PLAN_SEED_NAME}` : "جميع برامج الخطة موجودة"); await load(); setTab("list"); } catch (e) { alert("تعذّر التحميل: " + (e.message || e)); } setBusy(""); };
   const del = async p => { if (!confirm(`حذف البرنامج «${p.t}» وصوره؟`)) return; await api.maPut(`${N.P}/${p.id}`, null); await api.maPut(`${N.IMG}/${p.id}`, null); setEd(null); say("🗑️ تم الحذف"); load(); };
   const print = async (list, scope) => { setBusy("print"); try { await printReport({ ...api, mgr: api.mgr || mgr }, list, cfg, by, { ...ro, scope }); } catch (e) { alert("تعذّر إعداد التقرير: " + (e.message || e)); } setBusy(""); };
+  const pros = async list => { setBusy("pro"); try { await printPro({ ...api, mgr: api.mgr || mgr }, list, cfg); } catch (e) { alert("تعذّر إعداد التقرير: " + (e.message || e)); } setBusy(""); };
   const sheets = async list => { setBusy("sheet"); try { await printSheets({ ...api, mgr: api.mgr || mgr }, list, cfg); } catch (e) { alert("تعذّر إعداد التقرير: " + (e.message || e)); } setBusy(""); };
   const Card = ({ x }) => { const S = OP_ST[x.C.st]; return <button className="op-prog" style={{ borderTop: `5px solid ${S.c}` }} onClick={() => setEd(x.p)}>
     <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Ring v={x.C.prog} c={S.c} size={56} /><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 11.5, fontWeight: 800, color: GOLD2 }}>{x.p.gn ? `الهدف ${x.p.gn}-${x.p.on} • ` : ""}{x.p.dom || "—"}</div><b style={{ fontSize: 15, color: NAVY, display: "block", lineHeight: 1.5 }}>{x.p.t}</b></div></div>
@@ -386,6 +460,7 @@ export function OpPlan({ api, me }) {
       <input className="op-inp" style={{ flex: "1 1 160px", width: "auto" }} placeholder="🔎 بحث" value={f.q} onChange={e => setF({ ...f, q: e.target.value })} />
       <button className="op-btn sm p" onClick={() => setEd({ dom: f.dom })}>➕ برنامج</button><button className="op-btn sm" onClick={() => setImp(true)}>📥 استيراد</button>{seedN > 0 && <button className="op-btn sm ok" disabled={busy === "seed"} onClick={loadSeed}>⭐ برامج الخطة ({ar(seedN)})</button>}
       <button className="op-btn sm g" disabled={!FL.length || busy === "print"} onClick={() => print(FL.map(x => x.p), f.dom || (f.st ? OP_ST[f.st].t : f.ex ? `برامج ${f.ex}` : "جميع البرامج"))}>{busy === "print" ? "⏳" : `🖨️ تقرير المعروض (${ar(FL.length)})`}</button>
+      <button className="op-btn sm p" disabled={!FL.length || busy === "pro"} onClick={() => pros(FL.map(x => x.p))}>{busy === "pro" ? "⏳" : `📘 تقرير احترافي لكل برنامج (${ar(FL.length)})`}</button>
       <button className="op-btn sm p" disabled={!FL.length || busy === "sheet"} onClick={() => sheets(FL.map(x => x.p))}>{busy === "sheet" ? "⏳" : `📄 ورقة لكل برنامج (${ar(FL.length)})`}</button></div>
     <div className="op-card" style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center", padding: 10 }}><b style={{ fontSize: 13 }}>خيارات التقرير:</b><label style={{ fontWeight: 800, fontSize: 13 }}><input type="checkbox" checked={ro.imgs} onChange={e => setRo({ ...ro, imgs: e.target.checked })} /> تضمين الصور</label><label style={{ fontWeight: 800, fontSize: 13 }}><input type="checkbox" checked={ro.cover} onChange={e => setRo({ ...ro, cover: e.target.checked })} /> صفحة غلاف</label></div>
     {!FL.length ? <div className="op-card" style={{ textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا توجد برامج مطابقة</div> :
@@ -406,7 +481,7 @@ export function OpPlan({ api, me }) {
   return <div className="op" style={{ display: "grid", gap: 12 }}><style>{CSS}</style>
     <div className="op-tabs">{[["dash", "📊 لوحة المتابعة"], ["list", `📋 البرامج (${ar(L.length)})`], ["doc", "📄 وثيقة الخطة"], ["set", "⚙️ الإعدادات"]].map(([k, l]) => <button key={k} className={`op-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
     {tab === "dash" && dash()}{tab === "list" && list()}{tab === "doc" && doc()}{tab === "set" && set()}
-    {ed && <Editor api={api} init={ed} people={people} doms={doms} by={by} onClose={() => setEd(null)} onDel={del} onPrint={p => sheets([p])} onSaved={() => { setEd(null); say("✅ تم الحفظ"); load(); }} />}
+    {ed && <Editor api={api} init={ed} people={people} doms={doms} by={by} onClose={() => setEd(null)} onDel={del} onPrint={p => sheets([p])} onPro={p => pros([p])} onSaved={() => { setEd(null); say("✅ تم الحفظ"); load(); }} />}
     {imp && <Importer api={{ ...api, by }} onClose={() => setImp(false)} onDone={n => { setImp(false); say(`✅ استُورد ${ar(n)} برنامج`); load(); setTab("list"); }} />}
     {toast && <div style={{ position: "fixed", bottom: 18, left: "50%", transform: "translateX(-50%)", background: NAVY, color: "#fff", padding: "10px 18px", borderRadius: 14, fontWeight: 800, zIndex: 999 }}>{toast}</div>}
   </div>;
