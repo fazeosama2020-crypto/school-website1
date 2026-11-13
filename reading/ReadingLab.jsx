@@ -14,6 +14,10 @@ const ar = n => String(n ?? "").replace(/\d/g, x => "٠١٢٣٤٥٦٧٨٩"[x]);
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const obj = v => (v && typeof v === "object" ? v : {});
 const arr = v => Array.isArray(v) ? v.filter(Boolean) : (v && typeof v === "object" ? Object.values(v).filter(Boolean) : []);
+// تحويل التسجيل إلى نص على الخادم (api/stt.js) — يُستخدم لأجهزة أندرويد
+async function sttAudio(aud, n = 0) { if (!aud) return { error: "noaud" }; const j = await sttOnce(aud); if (j.error && /rate|limit|429/i.test(j.error) && n < 3) { await new Promise(r => setTimeout(r, 8000 + n * 7000)); return sttAudio(aud, n + 1); } return j; }
+async function sttOnce(aud) { try { const c = new AbortController(); const to = setTimeout(() => c.abort(), 60000);
+  const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio: aud }), signal: c.signal }); clearTimeout(to); const j = await r.json().catch(() => ({})); return j || {}; } catch (e) { return { error: "net" }; } }
 const skOf = s => `${s.ck}_${String(s.id || s.sid).replace(/[.#$[\]/]/g, "")}`;
 const dateAr = t => { try { return new Date(t).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "short" }); } catch { return ""; } };
 const NAVY = "#0b2545", GOLD = "#c9a227";
@@ -225,26 +229,23 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
     trialR.current = !!trial; heardR.current = ""; setErr(""); if (!canRec() && !SR) { setErr("المتصفح لا يدعم التسجيل الصوتي — افتح الرابط في متصفح Chrome أو Safari"); return; }
     const android = /Android/i.test(navigator.userAgent || "");
     try { recR.current = null; if (canRec() && !trial) recR.current = await makeRecorder(); } catch (e) { if (!SR) { setErr("لم يُسمح باستخدام الميكروفون — اسمح للموقع باستخدام الميكروفون ثم أعد المحاولة"); return; } recR.current = null; }
-    srOk.current = !!SR;
+    const recOnly = android && recR.current && text.aprio !== "auto"; srOk.current = !!SR && !recOnly; setAudOnly(!!recOnly);
     const onTxt = txt => { heardR.current = txt; const A = rdAlign(refT, txt); setLive({ st: A.st, pos: A.pos, text: txt }); clearTimeout(auto.current); if (A.pos >= refT.length - 1) auto.current = setTimeout(() => finish(), 2500); };
-    lisR.current = makeListener(onTxt, () => { srOk.current = false; });
+    lisR.current = recOnly ? null : makeListener(onTxt, () => { srOk.current = false; });
     lisR.current && lisR.current.start();
     // على بعض أجهزة أندرويد يتعارض التسجيل مع التعرف على الكلام: إذا سُمع صوت الطالب في الميكروفون ولم يلتقط المتعرّف أي كلمة فهو تعارض.
     // الافتراضي: يُحفظ صوت الطالب ويُوقف التقييم الآلي (يستمع المعلم ويقيّم). ويمكن للمعلم اختيار تقديم التقييم الآلي من إعدادات النص.
-    setAudOnly(false);
-    if (android && SR && recR.current) { const t1 = Date.now(); const chk = () => { if (!recR.current || heardR.current) return; const pk = recR.current.peak(); const el = (Date.now() - t1) / 1000;
-        if ((pk != null && pk >= 0.04 && el >= 6) || el >= 14) {
-          if (text.aprio === "auto") { try { recR.current.kill(); } catch {} recR.current = null; try { lisR.current && lisR.current.stop(); } catch {} lisR.current = makeListener(onTxt, () => { srOk.current = false; }); lisR.current && lisR.current.start(); }
-          else { try { lisR.current && lisR.current.stop(); } catch {} lisR.current = null; srOk.current = false; setAudOnly(true); }
-          return; }
-        auto2.current = setTimeout(chk, 2000); }; auto2.current = setTimeout(chk, 6000); }
+    if (android && SR && recR.current && !recOnly) auto2.current = setTimeout(() => { if (!heardR.current && recR.current) { try { recR.current.kill(); } catch {} recR.current = null; try { lisR.current && lisR.current.stop(); } catch {} lisR.current = makeListener(onTxt, () => { srOk.current = false; }); lisR.current && lisR.current.start(); } }, 8000);
     t0.current = Date.now(); setSec(0); tick.current = setInterval(() => { const s = (Date.now() - t0.current) / 1000; setSec(s); if (recR.current) setLvl(recR.current.level()); if (s > 300) finish(); }, 300); setLive({ st: "", pos: -1, text: "" }); setPh("rec");
   };
   const busy = useRef(false);
   const finish = async () => {
     if (busy.current) return; busy.current = true; clearInterval(tick.current); clearTimeout(auto.current); clearTimeout(auto2.current); setPh("save");
-    const dur = (Date.now() - t0.current) / 1000; const heard = lisR.current ? lisR.current.stop() : ""; const avg = recR.current ? recR.current.avg() : null; const peak = recR.current ? recR.current.peak() : null; const aud = recR.current ? await recR.current.stop() : null; recR.current = null;
+    const dur = (Date.now() - t0.current) / 1000; let heard = lisR.current ? lisR.current.stop() : ""; const avg = recR.current ? recR.current.avg() : null; const peak = recR.current ? recR.current.peak() : null; const aud = recR.current ? await recR.current.stop() : null; recR.current = null;
     // ── رفض التسجيل غير الواضح (لا تُحتسب محاولة): صمت، صوت منخفض جداً، أو كلام غير مميَّز
+    let heard2 = heard; let src = "";
+    if (!heard.trim() && aud && dur >= 3 && !(avg != null && avg < 0.006 && (peak == null || peak < 0.03))) { setPh("stt"); const j = await sttAudio(aud); if (j.text) { heard2 = j.text; src = "stt"; srOk.current = true; } }
+    heard = heard2;
     const hw = heard.trim().split(/\s+/).filter(Boolean).length; const quiet = avg != null && avg < 0.006 && (peak == null || peak < 0.03); const voice = avg != null && avg >= 0.015;
     let bad = "";
     if (dur < 3) bad = "التسجيل قصير جداً — اقرأ النص ثم اضغط «انتهيت»";
@@ -253,7 +254,7 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
     else if (srOk.current && hw > 0 && dur >= 8 && hw / dur < 0.25 && hw < refT.length * 0.4) bad = "التسجيل غير واضح — لم تُميَّز إلا كلمات قليلة";
     if (bad) { busy.current = false; setErr(`🚫 ${bad}. لم تُحتسب محاولة — اجلس في مكان هادئ، قرّب الجهاز من فمك، واقرأ بصوت مرتفع ثم أعد التسجيل.`); setPh("intro"); return; }
     const id = Date.now().toString(36); let tr;
-    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg, true); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", heard: heard.slice(0, 2500) }; }
+    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg, true); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", heard: heard.slice(0, 2500), ...(src ? { src } : {}) }; }
     else tr = { id, at: Date.now(), dur: Math.round(dur), st: "n".repeat(refT.length), hd: {}, ins: 0, tg, m: null, mode: "rec", why: SR ? "silent" : "nosr", heard: heard.slice(0, 2500) };
     if (trialR.current) { busy.current = false; if (!tr.m) { setErr("لم تُلتقط قراءتك في التجربة — حاول مرة أخرى بصوت أوضح"); setPh("intro"); return; } setCur({ ...tr, trial: 1 }); setPh("res"); return; }
     let audOk = false; if (aud && aud.length < 2.6e6) audOk = await api.maPut(`${N.AUD}/${text.id}/${skOf(me)}/${id}`, aud); tr.aud = audOk ? 1 : 0;
@@ -264,7 +265,7 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
   useEffect(() => { if (ph !== "res" || !cur || !cur.aud || myAud[cur.id]) return; api.maGet(`${N.AUD}/${text.id}/${skOf(me)}/${cur.id}`).then(v => typeof v === "string" && setMyAud(o => ({ ...o, [cur.id]: v }))); }, [ph, cur && cur.id]);
   const prog = live.pos >= 0 ? Math.round((live.pos + 1) / refT.length * 100) : 0;
   return <div style={{ display: "grid", gap: 12 }}>
-    <div className="rl-hero"><div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 1 }}><button className="rl-btn sm" onClick={onBack} disabled={ph === "rec" || ph === "save"}>→ النصوص</button><div style={{ flex: 1 }}><div style={{ fontSize: 12, opacity: .8, fontWeight: 800 }}>📖 اختبار القراءة الجهرية</div><b style={{ fontSize: 19 }}>{text.title}</b></div><span className="rl-lv" style={{ background: "rgba(255,255,255,.15)", color: "#fde68a" }}>المحاولات المتبقية: {ar(left)}</span></div></div>
+    <div className="rl-hero"><div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 1 }}><button className="rl-btn sm" onClick={onBack} disabled={ph === "rec" || ph === "save" || ph === "stt"}>→ النصوص</button><div style={{ flex: 1 }}><div style={{ fontSize: 12, opacity: .8, fontWeight: 800 }}>📖 اختبار القراءة الجهرية</div><b style={{ fontSize: 19 }}>{text.title}</b></div><span className="rl-lv" style={{ background: "rgba(255,255,255,.15)", color: "#fde68a" }}>المحاولات المتبقية: {ar(left)}</span></div></div>
     {ph === "intro" && <div className="rl-card" style={{ display: "grid", gap: 12 }}>
       <b style={{ fontSize: 16 }}>تعليمات الاختبار</b>
       <ol className="rl-note" style={{ margin: 0, paddingInlineStart: 20, fontSize: 14, color: "#334155" }}><li>اجلس في مكان هادئ، وقرّب الجهاز من فمك قليلاً.</li><li>{maud ? "استمع أولاً لقراءة معلمك النموذجية." : "اقرأ النص بعينك مرة واحدة قبل البدء."}</li><li>يمكنك قراءة النص والتدرّب عليه قبل التسجيل: اقرأه بعينك، أو اضغط «تجربة قراءة» لتجرّب بصوتك دون احتساب.</li><li>اضغط «ابدأ القراءة» واقرأ النص بصوت واضح ومسموع من أوله إلى آخره.</li><li>إذا كان التسجيل غير واضح سيُرفض ولن يُحتسب، وتعيد التسجيل.</li><li>اضغط «انتهيت» عند الانتهاء، وستظهر نتيجتك وأخطاؤك مباشرة.</li></ol>
@@ -278,10 +279,11 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}><button className="rl-mic" onClick={finish} title="انتهيت">⏹</button>
         <div style={{ flex: 1, minWidth: 200 }}><b style={{ fontSize: 18, color: trialR.current ? "#0e7490" : "#b91c1c" }}>{trialR.current ? "📖 تجربة قراءة — غير محتسبة" : "● جارٍ التسجيل — اقرأ بصوت واضح"}</b>{recR.current && <div title="مستوى صوتك" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}><small style={{ fontWeight: 800, color: "#64748b" }}>🎤</small><div className="rl-bar" style={{ flex: 1, maxWidth: 220 }}><i style={{ width: Math.min(100, lvl * 500) + "%", background: lvl < 0.01 ? "#dc2626" : lvl < 0.03 ? "#f59e0b" : "#16a34a", transition: "width .2s" }} /></div><small style={{ fontWeight: 800, color: lvl < 0.01 ? "#dc2626" : "#15803d" }}>{lvl < 0.01 ? "ارفع صوتك" : "الصوت جيد"}</small></div>}<div style={{ fontSize: 28, fontWeight: 900, color: NAVY }}>{ar(rdFmtDur(sec))}</div>{srOk.current && <><div className="rl-bar" style={{ marginTop: 4 }}><i style={{ width: prog + "%", background: `linear-gradient(90deg,${GOLD},#16a34a)` }} /></div><small style={{ fontWeight: 800, color: "#64748b" }}>تقدّم القراءة {ar(prog)}٪</small></>}</div>
         <button className="rl-btn ok" style={{ fontSize: 16, padding: "12px 22px" }} onClick={finish}>✔️ انتهيت</button></div>
-      {audOnly && <div className="rl-note" style={{ background: "#eff6ff", border: "1.5px solid #bfdbfe", borderRadius: 10, padding: "6px 10px", fontWeight: 800, color: "#1e3a8a" }}>🎙️ جهازك لا يسمح بالتقييم الفوري مع التسجيل — أكمل القراءة، سيُحفظ صوتك ويقيّمك معلمك.</div>}
+      {audOnly && <div className="rl-note" style={{ background: "#eff6ff", border: "1.5px solid #bfdbfe", borderRadius: 10, padding: "6px 10px", fontWeight: 800, color: "#1e3a8a" }}>🎙️ يُسجَّل صوتك الآن — اقرأ النص كاملاً بصوت واضح ثم اضغط «انتهيت»، وسيُحلَّل تسجيلك بعدها.</div>}
       <Words refT={refT} live={srOk.current ? live : null} />
     </div>}
     {ph === "save" && <Wait t="جارٍ تحليل قراءتك وحفظها…" />}
+    {ph === "stt" && <Wait t="جارٍ الاستماع لتسجيلك وتحليله… (قد يستغرق دقيقة)" />}
     {ph === "res" && cur && <>
       {tries.length > 1 && <div className="rl-card" style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}><b style={{ fontSize: 13 }}>محاولاتك:</b>{tries.map((t, i) => <button key={t.id} className={`rl-chip ${cur.id === t.id ? "on" : ""}`} style={t.rej ? { borderColor: "#fecaca", color: cur.id === t.id ? "#fff" : "#b91c1c" } : null} onClick={() => setCur(t)}>المحاولة {ar(i + 1)} {t.rej ? "• 🚫 مرفوضة" : t.m ? `• ${ar(t.m.score)}` : "• بانتظار المعلم"}</button>)}{(() => { const a = tries.filter(t => t.m && !t.rej); if (a.length < 2) return null; const d = a[a.length - 1].m.score - a[0].m.score; return <span className="rl-lv" style={{ background: d >= 0 ? "#dcfce7" : "#fee2e2", color: d >= 0 ? "#15803d" : "#dc2626", marginInlineStart: "auto" }}>{d >= 0 ? "📈 تحسّنت" : "📉 تراجعت"} {ar(Math.abs(d))} درجة</span>; })()}</div>}
       {cur.trial && <div className="rl-card" style={{ background: "#ecfeff", border: "2px solid #a5f3fc", fontWeight: 800, color: "#0e7490", textAlign: "center" }}>📖 هذه نتيجة تجربة غير محتسبة ولم تُحفظ — راجع أخطاءك ثم اضغط «ابدأ القراءة والتسجيل» عندما تكون جاهزاً.</div>}
@@ -436,6 +438,10 @@ function Review({ api, text, stu, rec, tryId, by, onClose, onSaved }) {
   const save = async () => { setBusy(true); const tr = { ...(base || { id: Date.now().toString(36), at: Date.now(), mode: "live", aud: 0, hd: {} }), rej: null, st, ins, dur: Math.round(dur), tg, m: M, sk: rdSkills(refT, st, base ? base.hd : {}, M).map(s => s.k), rv: { by, at: Date.now() } };
     const list = base ? tries.map(x => x.id === base.id ? tr : x) : [...tries, tr].slice(-6); const R = { sid: stu.id, name: stu.name, ck: stu.ck, tries: list, last: Date.now() };
     await api.maPut(`${N.RES}/${text.id}/${skOf(stu)}`, R); setBusy(false); onSaved(R); };
+  const [sttMsg, setSttMsg] = useState("");
+  const reStt = async () => { setBusy("stt"); setSttMsg(""); const j = await sttAudio(aud); setBusy(false);
+    if (j.text) { const A = rdAlign(refT, j.text); setSt(A.st); setIns(A.ins); if (base) { base.hd = A.hd; base.heard = j.text.slice(0, 2500); base.src = "stt"; } if (!dur && base && base.dur) setDur(base.dur); setSttMsg("✅ حُلِّل التسجيل وعُلِّمت الأخطاء على النص — راجعها ثم اضغط «اعتماد التقييم»."); }
+    else setSttMsg(j.error === "nokey" ? "⚠️ التحليل الآلي للتسجيل غير مفعّل بعد (يحتاج مفتاح GROQ_API_KEY في إعدادات Vercel). يمكنك الاستماع وتعليم الأخطاء يدوياً." : "⚠️ تعذّر تحليل التسجيل" + (j.error ? ` (${j.error})` : "") + " — علّم الأخطاء يدوياً."); };
   const reject = async () => { const why = prompt("سبب رفض التسجيل (يظهر للطالب):", "التسجيل غير واضح — أعد القراءة في مكان هادئ وبصوت مرتفع"); if (why == null) return; setBusy(true);
     const list = tries.map(x => x.id === base.id ? { ...x, rej: { by, at: Date.now(), why: why.trim() || "التسجيل غير واضح" } } : x); const R = { sid: stu.id, name: stu.name, ck: stu.ck, tries: list, last: Date.now() };
     await api.maPut(`${N.RES}/${text.id}/${skOf(stu)}`, R); setBusy(false); onSaved(R, "rej"); };
@@ -443,7 +449,7 @@ function Review({ api, text, stu, rec, tryId, by, onClose, onSaved }) {
     try { setAiTxt(await api.ai(`أنت مشرف لغة عربية في المرحلة المتوسطة. اكتب تقريراً تشخيصياً مختصراً (٦–٨ أسطر) لقراءة طالب جهرية بلغة مهنية موجهة للمعلم وولي الأمر، يتضمن: وصف المستوى، أبرز الأخطاء بأمثلة، المهارات المطلوب علاجها، خطة علاجية لأسبوعين بأنشطة محددة.\nالبيانات: الدرجة ${M.score}/100، الدقة ${M.acc}%، الطلاقة ${M.wcpm} كلمة/دقيقة (المستهدف ${tg})، إكمال النص ${M.comp}%، حذف ${M.c.d}، إبدال ${M.c.s}، ضبط ${M.c.t}، تكرار ${M.c.r}، إضافة ${M.ins}.\nالمهارات الضعيفة: ${sk.map(s => rdSkTitle(s) + " (" + s.w.join("، ") + ")").join(" | ") || "لا يوجد"}.`, { max: 1500 })); } catch (e) { setAiTxt("تعذّر: " + (e.message || e)); } };
   return <div className="rl-modal" onClick={e => e.target === e.currentTarget && onClose()}><div className="rl" style={{ display: "grid", gap: 10 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ flex: 1 }}><b style={{ fontSize: 17, color: NAVY }}>{live ? "📝 تقييم حضوري" : "🔎 مراجعة التقييم واعتماده"} — {stu.name}</b><div className="rl-note">{api.maClassName(stu.ck)} • {text.title}{base && base.mode === "auto" ? " • التقييم الآلي جاهز للمراجعة" : base ? " • تسجيل صوتي بانتظار التقييم" : ""}</div></div><button className="rl-btn sm" onClick={onClose}>✕</button></div>
-    {aud && <div className="rl-card" style={{ padding: 10 }}><b style={{ fontSize: 13 }}>🎧 تسجيل الطالب</b><audio src={aud} controls style={{ width: "100%", marginTop: 4 }} /></div>}
+    {aud && <div className="rl-card" style={{ padding: 10 }}><div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}><b style={{ fontSize: 13, flex: 1 }}>🎧 تسجيل الطالب</b><button className="rl-btn sm g" disabled={busy} onClick={reStt}>{busy === "stt" ? "⏳ جارٍ التحليل…" : "🤖 تحليل التسجيل آلياً"}</button><a className="rl-btn sm" href={aud} download={`قراءة-${stu.name}-${text.title}.${/mp4|m4a/.test(aud.slice(0, 30)) ? "m4a" : /ogg/.test(aud.slice(0, 30)) ? "ogg" : "webm"}`}>⬇️ تنزيل التسجيل (وثيقة)</a></div><audio src={aud} controls style={{ width: "100%", marginTop: 4 }} />{sttMsg && <div className="rl-note" style={{ marginTop: 4 }}>{sttMsg}</div>}</div>}
     {base && !!base.aud && !aud && <div className="rl-note">⏳ جارٍ تحميل التسجيل…</div>}
     {base && !base.aud && <div className="rl-note" style={{ background: "#f8fafc", borderRadius: 10, padding: "6px 10px" }}>ℹ️ لا يوجد تسجيل صوتي محفوظ لهذه المحاولة (جهاز الطالب لم يسمح بالتسجيل مع التقييم الآلي).</div>}
     {base && base.heard && <details className="rl-card" open={!base.aud} style={{ padding: 10, background: "#f0f9ff", border: "1.5px solid #bae6fd" }}><summary style={{ fontWeight: 900, cursor: "pointer", color: "#0c4a6e" }}>📝 ما قرأه الطالب كما التقطه الجهاز</summary><div style={{ fontFamily: "Amiri,serif", fontSize: 19, lineHeight: 2, marginTop: 6, whiteSpace: "pre-wrap" }}>{base.heard}</div><div className="rl-note">هذا نص تقريبي من متعرّف الصوت (بدون تشكيل)، وقد يصحّح بعض الكلمات تلقائياً — استخدمه للمقارنة مع النص الأصلي.</div></details>}
