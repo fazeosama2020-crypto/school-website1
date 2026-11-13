@@ -173,3 +173,59 @@ export function rdNeeds(M, skills) {
   return L;
 }
 export const rdFmtDur = s => { s = Math.round(+s || 0); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+// ══════════ شرح دقيق لكل خطأ: ماذا حدث في الكلمة؟ ══════════
+const HARAKA = { "َ": "الفتحة", "ُ": "الضمة", "ِ": "الكسرة", "ْ": "السكون", "ً": "تنوين الفتح", "ٌ": "تنوين الضم", "ٍ": "تنوين الكسر" };
+const clean = w => String(w || "").replace(/[،,.؛:!؟?«»"()]/g, "");
+const showL = (ch, refN, i) => ch === "ه" && i === refN.length - 1 ? "ة" : ch;
+// عمليات الفرق على مستوى الحروف
+function charOps(a, b) {
+  const m = a.length, n = b.length; const D = Array.from({ length: m + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => i ? (j ? 0 : i) : j));
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) D[i][j] = Math.min(D[i - 1][j] + 1, D[i][j - 1] + 1, D[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  const ops = []; let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && D[i][j] === D[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)) { if (a[i - 1] !== b[j - 1]) ops.push({ k: "s", i: i - 1, a: a[i - 1], b: b[j - 1] }); i--; j--; }
+    else if (i > 0 && D[i][j] === D[i - 1][j] + 1) { ops.push({ k: "d", i: i - 1, a: a[i - 1] }); i--; }
+    else { ops.push({ k: "i", i, b: b[j - 1] }); j--; }
+  }
+  return ops.reverse();
+}
+const lastHaraka = raw => { const m = String(raw).replace(/[^ء-يً-ْ]/g, "").match(/[ً-ْ]+$/); if (!m) return ""; const h = [...m[0]].find(c => HARAKA[c]); return h ? HARAKA[h] : ""; };
+// تنبيهات من خصائص الكلمة نفسها
+function wordHints(raw, n) {
+  const H = []; const letters = String(raw).replace(/[^ء-يّ]/g, "");
+  const sh = [...letters].map((c, i) => c === "ّ" ? letters[i - 1] : null).filter(Boolean);
+  if (sh.length) H.push(`فيها حرف مشدّد (${sh.join("، ")}) يُنطق مرتين: ساكناً ثم متحركاً`);
+  if (/[ً-ٍ]/.test(raw)) H.push(`تنتهي بـ${lastHaraka(raw) || "تنوين"} فتُنطق نوناً ساكنة في آخرها`);
+  const pre = n.match(/^(و|ف|ب|ك)?ال/); if (pre) { const c = n.slice(pre[0].length)[0]; if (c && "تثدذرزسشصضطظلن".includes(c)) H.push(`اللام فيها شمسية: تُكتب ولا تُنطق، ويُشدّد الحرف بعدها (${c})`); }
+  if (n.length >= 7) H.push("كلمة طويلة: قسّمها إلى مقاطع ثم اجمعها");
+  return H;
+}
+// يُرجع لكل كلمة خاطئة: { i, w, k, title, what, hints[] }
+export function rdExplain(ref, stStr, hd = {}) {
+  const st = String(stStr || ""); const out = [];
+  ref.forEach((tok, i) => {
+    const s = st[i]; if (!"dstr".includes(s) || !s) return; const w = clean(tok.d); const n = tok.n;
+    if (s === "d") out.push({ i, w, k: s, title: "حذف", what: `لم تقرأ كلمة «${w}» وتجاوزتها`, hints: ["تتبّع السطر بإصبعك، ولا تنتقل حتى تنطق كل كلمة"] });
+    else if (s === "r") out.push({ i, w, k: s, title: "تكرار", what: `كرّرت كلمة «${w}» أكثر من مرة`, hints: ["اقرأ الكلمة مرة واحدة بثقة؛ اقرأ الجملة بعينك أولاً ثم بصوتك"] });
+    else if (s === "t") { const h = lastHaraka(tok.d); out.push({ i, w, k: s, title: "ضبط (تشكيل)", what: `أخطأت في تشكيل كلمة «${w}»${h ? `؛ الصحيح أن آخرها بـ${h}` : ""}`, hints: ["انظر إلى الحركة على كل حرف، خاصة الحرف الأخير، واستمع للقراءة النموذجية"] }); }
+    else if (s === "s") {
+      const hr = clean(hd[i] || ""); const h = arNorm(hr); let what = hr ? `قرأتها «${hr}» والصحيح «${w}»` : `نطقت كلمة «${w}» نطقاً غير صحيح`; const det = [];
+      if (h) {
+        const strip = x => x.replace(/^(و|ف|ب|ك)?ال/, "");
+        if (h === strip(n) && h !== n) det.push(`أسقطت «ال» من أول الكلمة`);
+        else if ("ال" + h === n.replace(/^(و|ف|ب|ك)/, "") && h !== n) det.push(`أسقطت حرف (${n[0]}) من أول الكلمة`);
+        else if (n === "ال" + h || ("ال" + strip(h)) === n) det.push(`أسقطت «ال» من أول الكلمة`);
+        else if (h === "ال" + n) det.push("أضفت «ال» إلى أول الكلمة وهي ليست فيها");
+        else { const ops = charOps(n, h); if (ops.length && ops.length <= 3) ops.forEach(o => {
+          if (o.k === "s") det.push(`نطقت حرف (${o.b}) بدل حرف (${showL(o.a, n, o.i)})`);
+          else if (o.k === "d") det.push(`أسقطت حرف (${showL(o.a, n, o.i)})${o.i === 0 ? " من أول الكلمة" : o.i === n.length - 1 ? " من آخر الكلمة" : " من وسط الكلمة"}`);
+          else det.push(`أضفت حرف (${o.b})${o.i === 0 ? " في أول الكلمة" : o.i >= n.length ? " في آخر الكلمة" : " في وسط الكلمة"}`); }); else if (ops.length) det.push("نطقت كلمة مختلفة عن المكتوبة؛ ركّز على حروفها بالترتيب"); }
+      }
+      out.push({ i, w, k: s, title: "خطأ نطق / إبدال", what: what + (det.length ? ` — ${det.join("، ")}` : ""), hints: wordHints(tok.d, n) });
+    }
+  });
+  return out;
+}
+// موضع التوقف إن لم يُكمل النص
+export function rdStopInfo(ref, stStr) { const st = String(stStr || ""); const i = st.indexOf("n"); if (i < 0 || !/[^n]/.test(st)) return null; if (st.slice(i).replace(/n/g, "")) return null; return { i, w: clean(ref[i] ? ref[i].d : ""), left: st.length - i }; }
