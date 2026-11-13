@@ -217,7 +217,7 @@ function Practice({ refT, tr, onClose }) {
 function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
   const refT = useMemo(() => rdTokens(text.body), [text.body]); const tg = +text.tg || RD_TARGET[+String(me.ck)[0]] || 100;
   const [rec, setRec] = useState(rec0); const tries = arr(rec && rec.tries); const valid = tries.filter(t => !t.rej); const left = Math.max(0, (+text.max || 3) - valid.length);
-  const [lvl, setLvl] = useState(0); const trialR = useRef(false); const heardR = useRef("");
+  const [lvl, setLvl] = useState(0); const [audOnly, setAudOnly] = useState(false); const trialR = useRef(false); const heardR = useRef("");
   const [ph, setPh] = useState(tries.length ? "res" : "intro"); const [live, setLive] = useState({ st: "", pos: -1, text: "" }); const [sec, setSec] = useState(0); const [err, setErr] = useState(""); const [cur, setCur] = useState(() => { const v = arr(rec0 && rec0.tries); const ok = v.filter(t => !t.rej); return v.length ? (v[v.length - 1].rej ? v[v.length - 1] : ok[ok.length - 1]) : null; }); const [prac, setPrac] = useState(false);
   const [maud, setMaud] = useState(null); const [myAud, setMyAud] = useState({}); const [icur, setIcur] = useState(-1); const lisR = useRef(null), recR = useRef(null), t0 = useRef(0), tick = useRef(null), auto = useRef(null), auto2 = useRef(null), srOk = useRef(!!SR);
   useEffect(() => { if (text.aud) api.maGet(`${N.TAUD}/${text.id}`).then(v => typeof v === "string" && setMaud(v)); return () => { clearInterval(tick.current); clearTimeout(auto.current); clearTimeout(auto2.current); try { lisR.current && lisR.current.stop(); } catch {} try { recR.current && recR.current.kill(); } catch {} }; }, []);
@@ -229,8 +229,15 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
     const onTxt = txt => { heardR.current = txt; const A = rdAlign(refT, txt); setLive({ st: A.st, pos: A.pos, text: txt }); clearTimeout(auto.current); if (A.pos >= refT.length - 1) auto.current = setTimeout(() => finish(), 2500); };
     lisR.current = makeListener(onTxt, () => { srOk.current = false; });
     lisR.current && lisR.current.start();
-    // على بعض أجهزة أندرويد يتعارض التسجيل مع التعرف على الكلام: إن لم يُلتقط كلام خلال ٨ ثوانٍ يُوقف التسجيل ويُعاد تشغيل التعرف (يُقدَّم التقييم الآلي)
-    if (android && SR && recR.current) auto2.current = setTimeout(() => { if (!heardR.current && recR.current) { try { recR.current.kill(); } catch {} recR.current = null; try { lisR.current && lisR.current.stop(); } catch {} lisR.current = makeListener(onTxt, () => { srOk.current = false; }); lisR.current && lisR.current.start(); } }, 8000);
+    // على بعض أجهزة أندرويد يتعارض التسجيل مع التعرف على الكلام: إذا سُمع صوت الطالب في الميكروفون ولم يلتقط المتعرّف أي كلمة فهو تعارض.
+    // الافتراضي: يُحفظ صوت الطالب ويُوقف التقييم الآلي (يستمع المعلم ويقيّم). ويمكن للمعلم اختيار تقديم التقييم الآلي من إعدادات النص.
+    setAudOnly(false);
+    if (android && SR && recR.current) { const t1 = Date.now(); const chk = () => { if (!recR.current || heardR.current) return; const pk = recR.current.peak(); const el = (Date.now() - t1) / 1000;
+        if ((pk != null && pk >= 0.04 && el >= 6) || el >= 14) {
+          if (text.aprio === "auto") { try { recR.current.kill(); } catch {} recR.current = null; try { lisR.current && lisR.current.stop(); } catch {} lisR.current = makeListener(onTxt, () => { srOk.current = false; }); lisR.current && lisR.current.start(); }
+          else { try { lisR.current && lisR.current.stop(); } catch {} lisR.current = null; srOk.current = false; setAudOnly(true); }
+          return; }
+        auto2.current = setTimeout(chk, 2000); }; auto2.current = setTimeout(chk, 6000); }
     t0.current = Date.now(); setSec(0); tick.current = setInterval(() => { const s = (Date.now() - t0.current) / 1000; setSec(s); if (recR.current) setLvl(recR.current.level()); if (s > 300) finish(); }, 300); setLive({ st: "", pos: -1, text: "" }); setPh("rec");
   };
   const busy = useRef(false);
@@ -271,6 +278,7 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}><button className="rl-mic" onClick={finish} title="انتهيت">⏹</button>
         <div style={{ flex: 1, minWidth: 200 }}><b style={{ fontSize: 18, color: trialR.current ? "#0e7490" : "#b91c1c" }}>{trialR.current ? "📖 تجربة قراءة — غير محتسبة" : "● جارٍ التسجيل — اقرأ بصوت واضح"}</b>{recR.current && <div title="مستوى صوتك" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}><small style={{ fontWeight: 800, color: "#64748b" }}>🎤</small><div className="rl-bar" style={{ flex: 1, maxWidth: 220 }}><i style={{ width: Math.min(100, lvl * 500) + "%", background: lvl < 0.01 ? "#dc2626" : lvl < 0.03 ? "#f59e0b" : "#16a34a", transition: "width .2s" }} /></div><small style={{ fontWeight: 800, color: lvl < 0.01 ? "#dc2626" : "#15803d" }}>{lvl < 0.01 ? "ارفع صوتك" : "الصوت جيد"}</small></div>}<div style={{ fontSize: 28, fontWeight: 900, color: NAVY }}>{ar(rdFmtDur(sec))}</div>{srOk.current && <><div className="rl-bar" style={{ marginTop: 4 }}><i style={{ width: prog + "%", background: `linear-gradient(90deg,${GOLD},#16a34a)` }} /></div><small style={{ fontWeight: 800, color: "#64748b" }}>تقدّم القراءة {ar(prog)}٪</small></>}</div>
         <button className="rl-btn ok" style={{ fontSize: 16, padding: "12px 22px" }} onClick={finish}>✔️ انتهيت</button></div>
+      {audOnly && <div className="rl-note" style={{ background: "#eff6ff", border: "1.5px solid #bfdbfe", borderRadius: 10, padding: "6px 10px", fontWeight: 800, color: "#1e3a8a" }}>🎙️ جهازك لا يسمح بالتقييم الفوري مع التسجيل — أكمل القراءة، سيُحفظ صوتك ويقيّمك معلمك.</div>}
       <Words refT={refT} live={srOk.current ? live : null} />
     </div>}
     {ph === "save" && <Wait t="جارٍ تحليل قراءتك وحفظها…" />}
@@ -403,6 +411,7 @@ function TextEditor({ api, init, classes, by, onClose, onSaved }) {
       <label className="rl-note">الصف<select className="rl-inp" value={t.lv} onChange={e => { set("lv", e.target.value); set("cls", []); }}><option value="">جميع الصفوف</option><option value="1">الأول المتوسط</option><option value="2">الثاني المتوسط</option><option value="3">الثالث المتوسط</option></select></label>
       <label className="rl-note">الطلاقة المستهدفة (كلمة/دقيقة)<input className="rl-inp" type="number" placeholder={`تلقائي (${ar(RD_TARGET[+t.lv] || 100)})`} value={t.tg} onChange={e => set("tg", e.target.value)} /></label>
       <label className="rl-note">عدد المحاولات للطالب<select className="rl-inp" value={t.max} onChange={e => set("max", +e.target.value)}>{[1, 2, 3, 4, 5].map(x => <option key={x} value={x}>{ar(x)}</option>)}</select></label>
+      <label className="rl-note">أجهزة أندرويد (عند تعارض التسجيل والتقييم الآلي)<select className="rl-inp" value={t.aprio || "aud"} onChange={e => set("aprio", e.target.value)}><option value="aud">🎙️ احفظ صوت الطالب (يقيّمه المعلم)</option><option value="auto">🤖 التقييم الآلي بدون صوت</option></select></label>
       <label className="rl-note">الحالة<select className="rl-inp" value={t.open} onChange={e => set("open", +e.target.value)}><option value={1}>متاح للطلاب</option><option value={0}>مغلق</option></select></label>
     </div>
     <div><span className="rl-note">الفصول (اتركها فارغة لجميع فصول الصف):</span><div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 4 }}>{classes.filter(c => !t.lv || c.ck.startsWith(t.lv + "-")).map(c => { const on = arr(t.cls).includes(c.ck); return <button key={c.ck} className={`rl-chip ${on ? "on" : ""}`} onClick={() => set("cls", on ? arr(t.cls).filter(x => x !== c.ck) : [...arr(t.cls), c.ck])}>{api.maClassName(c.ck)}</button>; })}</div></div>
@@ -437,6 +446,7 @@ function Review({ api, text, stu, rec, tryId, by, onClose, onSaved }) {
     {aud && <div className="rl-card" style={{ padding: 10 }}><b style={{ fontSize: 13 }}>🎧 تسجيل الطالب</b><audio src={aud} controls style={{ width: "100%", marginTop: 4 }} /></div>}
     {base && !!base.aud && !aud && <div className="rl-note">⏳ جارٍ تحميل التسجيل…</div>}
     {base && !base.aud && <div className="rl-note" style={{ background: "#f8fafc", borderRadius: 10, padding: "6px 10px" }}>ℹ️ لا يوجد تسجيل صوتي محفوظ لهذه المحاولة (جهاز الطالب لم يسمح بالتسجيل مع التقييم الآلي).</div>}
+    {base && base.heard && <details className="rl-card" open={!base.aud} style={{ padding: 10, background: "#f0f9ff", border: "1.5px solid #bae6fd" }}><summary style={{ fontWeight: 900, cursor: "pointer", color: "#0c4a6e" }}>📝 ما قرأه الطالب كما التقطه الجهاز</summary><div style={{ fontFamily: "Amiri,serif", fontSize: 19, lineHeight: 2, marginTop: 6, whiteSpace: "pre-wrap" }}>{base.heard}</div><div className="rl-note">هذا نص تقريبي من متعرّف الصوت (بدون تشكيل)، وقد يصحّح بعض الكلمات تلقائياً — استخدمه للمقارنة مع النص الأصلي.</div></details>}
     {base && base.rej && <div style={{ background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: 10, fontWeight: 800, color: "#b91c1c" }}>🚫 هذا التسجيل مرفوض ({base.rej.by}): {base.rej.why}</div>}
     {live && <div className="rl-card" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", padding: 10 }}><b>⏱️ زمن القراءة: {ar(rdFmtDur(t0 ? (Date.now() - t0) / 1000 : dur))}</b>{!t0 ? <button className="rl-btn sm red" onClick={() => setT0(Date.now() - dur * 1000)}>▶ بدء التوقيت</button> : <button className="rl-btn sm ok" onClick={() => { setDur((Date.now() - t0) / 1000); setT0(0); }}>⏹ إيقاف</button>}<span className="rl-note">ابدأ التوقيت عندما يبدأ الطالب القراءة أمامك</span></div>}
     <div className="rl-card" style={{ padding: 10, display: "grid", gap: 8 }}>
@@ -516,7 +526,7 @@ function ReadingStaff({ api, me, admin }) {
             <td><input type="checkbox" checked={!!sel[x.ck + x.sid]} onChange={e => setSel(p => ({ ...p, [x.ck + x.sid]: e.target.checked ? 1 : 0 }))} /></td>
             <td style={{ textAlign: "right", fontWeight: 900 }}>{x.name}</td><td>{api.maClassName(x.ck)}</td><td><b>{ar(x.M.score)}</b></td><td><LvB k={x.M.lv} /></td><td>{ar(x.M.acc)}٪</td><td>{ar(x.M.wcpm)}</td>
             <td style={{ textAlign: "right", fontSize: 12 }}>{x.sk.slice(0, 2).map(rdSkTitle).join("، ") || "—"}</td><td style={{ textAlign: "right", fontSize: 11.5, maxWidth: 280 }}>{x.needs[0]}</td><td style={{ fontSize: 12 }}>{arT(x.ck) || "—"}</td>
-            <td><button className="rl-btn sm" onClick={() => printStudent(api, x, texts, by)}>🖨️ بطاقة</button></td></tr>)}</tbody></table></div>}
+            <td style={{ whiteSpace: "nowrap" }}>{(() => { const it = [...x.items].sort((a, b) => (b.last.at || 0) - (a.last.at || 0))[0]; const tx = it && texts.find(t => t.id === it.tid); if (!tx) return null; const stu = { id: x.sid, sid: x.sid, name: x.name, ck: x.ck }; const rec = obj(RES[it.tid])[skOf(stu)]; if (!rec) return null; return <button className="rl-btn sm" title={it.last.aud ? "الاستماع لتسجيل الطالب ومراجعة التقييم" : "مراجعة التقييم (لا يوجد تسجيل محفوظ)"} onClick={() => setRv({ stu, rec, tryId: it.last.id, text: tx })}>{it.last.aud ? "🎧 استماع" : "🔎 مراجعة"}</button>; })()} <button className="rl-btn sm" onClick={() => printStudent(api, x, texts, by)}>🖨️ بطاقة</button></td></tr>)}</tbody></table></div>}
     </div>; };
 
   // ── لوحة المدرسة (المدير)
@@ -568,7 +578,7 @@ function ReadingStaff({ api, me, admin }) {
     {myCls && !admin && <div className="rl-note">📌 تظهر فصولك حسب الجدول المدرسي: {myCls.map(api.maClassName).join("، ")}</div>}
     {tab === "dash" && dashTab()}{tab === "res" && resTab()}{tab === "weak" && weakTab()}{tab === "texts" && textsTab()}
     {edit && <TextEditor api={api} init={edit} classes={R.classes} by={by} onClose={() => setEdit(null)} onSaved={v => { setEdit(null); say("✅ تم حفظ النص"); setTid(v.id); load(); }} />}
-    {rv && text && <Review api={api} text={text} stu={rv.stu} rec={rv.rec} tryId={rv.tryId} by={by} onClose={() => setRv(null)} onSaved={(R, k) => { setRv(null); say(k === "rej" ? "🚫 رُفض التسجيل — سيُطلب من الطالب إعادة القراءة" : "✅ تم اعتماد التقييم"); load(); }} />}
+    {rv && (rv.text || text) && <Review api={api} text={rv.text || text} stu={rv.stu} rec={rv.rec} tryId={rv.tryId} by={by} onClose={() => setRv(null)} onSaved={(R, k) => { setRv(null); say(k === "rej" ? "🚫 رُفض التسجيل — سيُطلب من الطالب إعادة القراءة" : "✅ تم اعتماد التقييم"); load(); }} />}
     {det && <div className="rl-modal" onClick={e => e.target === e.currentTarget && setDet(null)}><div style={{ display: "grid", gap: 10 }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><b style={{ flex: 1, fontSize: 17, color: NAVY }}>{det.stu.name} — {det.text.title}</b>{(() => { const x = AG.L.find(y => y.sid === det.stu.id && y.ck === det.stu.ck); return x && x.M ? <button className="rl-btn sm p" onClick={() => printStudent(api, x, texts, by)}>🖨️ بطاقة الطالب</button> : null; })()}<button className="rl-btn sm" onClick={() => setDet(null)}>✕</button></div><ResultCard text={det.text} tr={det.tr} refT={rdTokens(det.text.body)} onWord={i => speak(rdTokens(det.text.body)[i].d)} saud={detAud} staff />{det.tr.aud && !detAud ? <div className="rl-note">⏳ جارٍ تحميل تسجيل الطالب…</div> : null}</div></div>}
     <Toast m={toast} />
   </div>;
