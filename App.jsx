@@ -696,8 +696,14 @@ function RichEditor({ value, onChange }) {
     if (hlM === "wave") return `text-decoration:underline wavy ${rgba(hlC, Math.min(1, hlA + .45))};text-decoration-thickness:2px;text-underline-offset:5px;`;
     return base + (anim ? `background-image:linear-gradient(${c},${c});` : `background-color:${c};`); };
   const doHl = (anim) => wrapIn(`<span${anim && hlM !== "wave" ? ' class="ann-hla"' : ""} style="${hlStyle(anim)}">`, "</span>");
-  const unFx = () => { restoreSel(); const sl = window.getSelection(); if (!sl || !sl.rangeCount) return; const ed = editorRef.current; let n = sl.anchorNode; n = n && n.nodeType === 3 ? n.parentElement : n;
-    const el = n && n.closest && n.closest(".ann-sp,.ann-hla,.ann-pulse,.ann-fade,.ann-shine,.ann-box,.ann-quote,span[style]"); if (el && ed.contains(el) && el !== ed) { const f = document.createDocumentFragment(); while (el.firstChild) f.appendChild(el.firstChild); el.replaceWith(f); } else document.execCommand("removeFormat"); onChange(ed.innerHTML); };
+  // إزالة التظليل والمؤثرات من كل ما يقع داخل التحديد (أو من العنصر الذي فيه المؤشر إن لم يُحدَّد شيء)
+  const unFx = () => { restoreSel(); const sl = window.getSelection(); const ed = editorRef.current; if (!ed || !sl || !sl.rangeCount) return; const r = sl.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return;
+    const SEL = ".ann-sp,.ann-hla,.ann-pulse,.ann-fade,.ann-shine,.ann-box,.ann-quote,span[style],font,mark";
+    let L = [...ed.querySelectorAll(SEL)].filter(el => r.intersectsNode(el));
+    if (r.collapsed) { let n = r.startContainer; n = n.nodeType === 3 ? n.parentElement : n; const el = n && n.closest && n.closest(SEL); L = el && ed.contains(el) && el !== ed ? [el] : []; }
+    L.reverse().forEach(el => { if (!el.parentNode) return; const f = document.createDocumentFragment(); while (el.firstChild) f.appendChild(el.firstChild); el.replaceWith(f); });
+    ed.querySelectorAll("p,div,li").forEach(el => { if (r.collapsed ? false : r.intersectsNode(el)) { el.style.backgroundColor = ""; el.style.background = ""; if (!el.getAttribute("style")) el.removeAttribute("style"); } });
+    if (!L.length && !r.collapsed) document.execCommand("removeFormat"); ed.normalize(); saveSel(); onChange(ed.innerHTML); };
   const imgTag = (src, w) => `<img src="${src}" style="width:${w};max-width:100%;height:auto;border-radius:12px;margin:8px auto;display:block;cursor:pointer;" />`;
   const handleRow = async (e) => {
     const files = [...(e.target.files || [])].filter(f => f.type.startsWith("image/")).slice(0, 3); e.target.value = ""; if (!files.length) return;
@@ -943,6 +949,7 @@ function RichEditor({ value, onChange }) {
         <ToolBtn onClick={() => exec("justifyCenter")} title="وسط">↔ وسط</ToolBtn>
         <ToolBtn onClick={() => exec("justifyLeft")} title="يسار">➡ يسار</ToolBtn>
         <ToolBtn onClick={() => exec("justifyFull")} title="ضبط">☰ ضبط</ToolBtn>
+        <button type="button" onMouseDown={e => e.preventDefault()} onClick={unFx} title="حدّد النص ثم اضغط لإزالة التظليل والألوان والمؤثرات منه" className="h-8 px-2 rounded-lg flex items-center justify-center text-xs font-black whitespace-nowrap" style={{ background: "#fef2f2", color: "#b91c1c", border: "1.5px solid #fecaca" }}>🧹 إزالة التظليل</button>
         <button type="button" onMouseDown={e => e.preventDefault()} onClick={autoJustify} title="تنسيق النص كله: الفقرات تمتد من بداية السطر إلى آخره، وتبقى التحية والعناوين القصيرة كما هي" className="h-8 px-2 rounded-lg flex items-center justify-center text-xs font-black whitespace-nowrap" style={{ background: "#ecfdf5", color: "#065f46", border: "1.5px solid #6ee7b7" }}>⇔ تنسيق تلقائي</button>
         <ToolBtn onClick={() => exec("indent")} title="إزاحة النص للداخل">⇤ إزاحة</ToolBtn>
         <ToolBtn onClick={() => exec("outdent")} title="إرجاع الإزاحة">⇥ إرجاع</ToolBtn>
