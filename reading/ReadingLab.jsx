@@ -6,7 +6,7 @@
 // قاعدة البيانات: school-rd-txt/{tid} • school-rd-taud/{tid} • school-rd-res/{tid}/{ck_sid} • school-rd-aud/{tid}/{ck_sid}/{tryId}
 // ══════════════════════════════════════════════════════════════════
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { RD_LV, rdLvOf, RD_TARGET, RD_ST, RD_CYCLE, rdTokens, rdAlign, rdMetrics, rdSkills, rdSkTitle, rdSkTip, rdNeeds, rdFmtDur, arNorm, rdExplain, rdStopInfo, rdFixRec } from "./rdEngine.js";
+import { RD_LV, rdLvOf, RD_TARGET, RD_ST, RD_CYCLE, rdTokens, rdAlign, rdMetrics, rdSkills, rdSkTitle, rdSkTip, rdNeeds, rdFmtDur, arNorm, rdExplain, rdStopInfo, rdFixRec, rdTiming } from "./rdEngine.js";
 
 const N = { TXT: "school-rd-txt", TAUD: "school-rd-taud", RES: "school-rd-res", AUD: "school-rd-aud" };
 const STU_LS = "rd-stu-v1";
@@ -154,7 +154,7 @@ function Legend() { return <div style={{ display: "flex", gap: 6, flexWrap: "wra
 
 // ── بطاقة النتيجة (للطالب والمعلم)
 function ResultCard({ text, tr, refT, onWord, hideWords, maud, saud, staff }) {
-  const M = tr.m; const sk = useMemo(() => M ? rdSkills(refT, tr.st, tr.hd, M) : [], [tr]); const needs = useMemo(() => M ? rdNeeds(M, sk) : [], [tr]);
+  const M = tr.m; const sk = useMemo(() => M ? rdSkills(refT, tr.st, tr.hd, M, tr) : [], [tr]); const needs = useMemo(() => M ? rdNeeds(M, sk) : [], [tr]);
   const errs = useMemo(() => M ? rdExplain(refT, tr.st, tr.hd) : [], [tr]); const stop = useMemo(() => M ? rdStopInfo(refT, tr.st) : null, [tr]);
   const [cur, setCur] = useState(-1); const [sel, setSel] = useState(-1);
   const pick = (i, scrollTo) => { setSel(i); onWord && onWord(i); if (scrollTo) { const el = document.getElementById(scrollTo === "w" ? `rlw-${i}` : `rle-${i}`); el && el.scrollIntoView({ behavior: "smooth", block: "center" }); } };
@@ -191,6 +191,8 @@ function ResultCard({ text, tr, refT, onWord, hideWords, maud, saud, staff }) {
           {e.hints.map((h, k) => <div key={k} style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>💡 {h}</div>)}</div>
         <button className="rl-btn sm" onClick={ev => { ev.stopPropagation(); speak(e.w); setSel(e.i); }}>🔊 النطق</button></div>; })}
       {stop && <div className="rl-err" style={{ cursor: "default", background: "#f8fafc" }}><span className="rl-num" style={{ background: "#94a3b8" }}>⏸</span><div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.8 }}>توقفت عند كلمة «{stop.w}» ولم تُكمل {ar(stop.left)} كلمة من النص<div style={{ fontSize: 12.5, color: "#475569" }}>💡 أكمل قراءة النص كاملاً في المحاولة القادمة؛ إكمال النص جزء من الدرجة</div></div><span /></div>}
+      {!!(tr.hes && tr.hes.length) && <div className="rl-err" style={{ cursor: "default", background: "#fffbeb" }}><span className="rl-num" style={{ background: GOLD }}>⏳</span><div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.8 }}>تردّدت (سكتة طويلة داخل الجملة) قبل: {tr.hes.map(i => <span key={i} style={{ fontFamily: "Amiri,serif", fontSize: 17, margin: "0 4px", color: "#92400e" }}>«{refT[i] ? refT[i].d.replace(/[،,.؛:!؟?]/g, "") : ""}»</span>)}<div className="rl-note">اقرأ الجملة بعينك قبل نطقها، وتدرّب على الكلمة حتى تقرأها دون توقف.</div></div></div>}
+      {!!(tr.pun && tr.pun.length) && <div className="rl-err" style={{ cursor: "default", background: "#f0f9ff" }}><span className="rl-num" style={{ background: "#0369a1" }}>⛔</span><div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.8 }}>لم تقف عند نهاية الجملة بعد: {tr.pun.map(i => <span key={i} style={{ fontFamily: "Amiri,serif", fontSize: 17, margin: "0 4px", color: "#0c4a6e" }}>«{refT[i] ? refT[i].d : ""}»</span>)}<div className="rl-note">علامة الترقيم (. ؟ ! ؛ :) تعني وقفة واضحة قبل الجملة التالية؛ والوقف يكون بالسكون.</div></div></div>}
     </div>}
     {!hideWords && M && !errs.length && !stop && <div className="rl-card" style={{ textAlign: "center", fontWeight: 900, color: "#15803d" }}>🌟 قراءة سليمة — لم تُرصد أخطاء في الكلمات</div>}
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 12 }}>
@@ -227,9 +229,9 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
   useEffect(() => { if (text.aud) api.maGet(`${N.TAUD}/${text.id}`).then(v => typeof v === "string" && setMaud(v)); return () => { clearInterval(tick.current); clearTimeout(auto.current); clearTimeout(auto2.current); try { lisR.current && lisR.current.stop(); } catch {} try { recR.current && recR.current.kill(); } catch {} }; }, []);
   const start = async (trial) => {
     trialR.current = !!trial; heardR.current = ""; setErr(""); if (!canRec() && !SR) { setErr("المتصفح لا يدعم التسجيل الصوتي — افتح الرابط في متصفح Chrome أو Safari"); return; }
-    const android = /Android/i.test(navigator.userAgent || "");
+    const ua = navigator.userAgent || ""; const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); const android = /Android/i.test(ua); const mobile = android || ios;
     try { recR.current = null; if (canRec() && !trial) recR.current = await makeRecorder(); } catch (e) { if (!SR) { setErr("لم يُسمح باستخدام الميكروفون — اسمح للموقع باستخدام الميكروفون ثم أعد المحاولة"); return; } recR.current = null; }
-    const recOnly = android && recR.current && text.aprio !== "auto"; srOk.current = !!SR && !recOnly; setAudOnly(!!recOnly);
+    const recOnly = mobile && recR.current && text.aprio !== "auto"; srOk.current = !!SR && !recOnly; setAudOnly(!!recOnly);
     const onTxt = txt => { heardR.current = txt; const A = rdAlign(refT, txt); setLive({ st: A.st, pos: A.pos, text: txt }); clearTimeout(auto.current); if (A.pos >= refT.length - 1) auto.current = setTimeout(() => finish(), 2500); };
     lisR.current = recOnly ? null : makeListener(onTxt, () => { srOk.current = false; });
     lisR.current && lisR.current.start();
@@ -243,8 +245,8 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
     if (busy.current) return; busy.current = true; clearInterval(tick.current); clearTimeout(auto.current); clearTimeout(auto2.current); setPh("save");
     const dur = (Date.now() - t0.current) / 1000; let heard = lisR.current ? lisR.current.stop() : ""; const avg = recR.current ? recR.current.avg() : null; const peak = recR.current ? recR.current.peak() : null; const aud = recR.current ? await recR.current.stop() : null; recR.current = null;
     // ── رفض التسجيل غير الواضح (لا تُحتسب محاولة): صمت، صوت منخفض جداً، أو كلام غير مميَّز
-    let heard2 = heard; let src = "";
-    if (!heard.trim() && aud && dur >= 3 && !(avg != null && avg < 0.006 && (peak == null || peak < 0.03))) { setPh("stt"); const j = await sttAudio(aud); if (j.text) { heard2 = j.text; src = "stt"; srOk.current = true; } }
+    let heard2 = heard; let src = ""; let tw = null;
+    if (!heard.trim() && aud && dur >= 3 && !(avg != null && avg < 0.006 && (peak == null || peak < 0.03))) { setPh("stt"); const j = await sttAudio(aud); if (j.text) { heard2 = j.words && j.words.length ? j.words.map(x => x.w).join(" ") : j.text; tw = j.words && j.words.length ? j.words.map(x => [x.s, x.e]) : null; src = "stt"; srOk.current = true; } }
     heard = heard2;
     const hw = heard.trim().split(/\s+/).filter(Boolean).length; const quiet = avg != null && avg < 0.006 && (peak == null || peak < 0.03); const voice = avg != null && avg >= 0.015;
     let bad = "";
@@ -254,7 +256,7 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
     else if (srOk.current && hw > 0 && dur >= 8 && hw / dur < 0.25 && hw < refT.length * 0.4) bad = "التسجيل غير واضح — لم تُميَّز إلا كلمات قليلة";
     if (bad) { busy.current = false; setErr(`🚫 ${bad}. لم تُحتسب محاولة — اجلس في مكان هادئ، قرّب الجهاز من فمك، واقرأ بصوت مرتفع ثم أعد التسجيل.`); setPh("intro"); return; }
     const id = Date.now().toString(36); let tr;
-    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg, true); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", heard: heard.slice(0, 2500), ...(src ? { src } : {}) }; }
+    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg, true); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", heard: heard.slice(0, 2500), ...(src ? { src } : {}), ...(tw ? (() => { const T = rdTiming(refT, A, tw); return { tw, hes: T.hes, pun: T.pun }; })() : {}) }; }
     else tr = { id, at: Date.now(), dur: Math.round(dur), st: "n".repeat(refT.length), hd: {}, ins: 0, tg, m: null, mode: "rec", why: SR ? "silent" : "nosr", heard: heard.slice(0, 2500) };
     if (trialR.current) { busy.current = false; if (!tr.m) { setErr("لم تُلتقط قراءتك في التجربة — حاول مرة أخرى بصوت أوضح"); setPh("intro"); return; } setCur({ ...tr, trial: 1 }); setPh("res"); return; }
     let audOk = false; if (aud && aud.length < 2.6e6) audOk = await api.maPut(`${N.AUD}/${text.id}/${skOf(me)}/${id}`, aud); tr.aud = audOk ? 1 : 0;
@@ -313,7 +315,7 @@ export function ReadingStudent({ onBack, api }) {
   const login = async () => { setErr(""); const n = api.licNormId(idv); if (n.length !== 10) { setErr("رقم الهوية يتكوّن من ١٠ أرقام"); return; } setBusy(true); const h = await api.stuHash(n); let st = null;
     for (const c of R.classes) { const s = R.studentsOf(c.ck).find(x => x.nh === h); if (s) { st = { id: s.id, name: s.name, ck: c.ck, nh: h, n4: s.n4 }; break; } }
     setBusy(false); if (!st) { setErr("رقم الهوية غير مسجّل — تأكد من الرقم أو اختر فصلك واسمك"); return; } keep(st); };
-  useEffect(() => { if (!me) return; (async () => { const T = arr(await api.maGet(N.TXT)).filter(t => textFor(t, me.ck)).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(T); const o = {}; await Promise.all(T.map(async t => { const r = await api.maGet(`${N.RES}/${t.id}/${skOf(me)}`); if (r) o[t.id] = rdFixRec(r); })); setMine(o); })(); }, [me, open]);
+  useEffect(() => { if (!me) return; (async () => { const T = arr(await api.maGet(N.TXT)).filter(t => textFor(t, me.ck)).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(T); const o = {}; await Promise.all(T.map(async t => { const r = await api.maGet(`${N.RES}/${t.id}/${skOf(me)}`); if (r) o[t.id] = rdFixRec(r, rdTokens(t.body)); })); setMine(o); })(); }, [me, open]);
   const wrap = node => <div className="rl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f5f1e3,#f8fafc 260px)", padding: "14px 10px" }}><style>{CSS}</style><div style={{ maxWidth: 940, margin: "0 auto", display: "grid", gap: 12 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{api.logo && <img src={api.logo} alt="" style={{ width: 42, height: 42, borderRadius: "50%", background: "#fff", padding: 2 }} />}<b style={{ flex: 1, color: NAVY }}>{api.school || ""}</b>{me && <button className="rl-btn sm" onClick={() => { setMe(null); setOpen(null); try { localStorage.removeItem(STU_LS); } catch {} }}>خروج</button>}{onBack && <button className="rl-btn sm" onClick={onBack}>🏠 الموقع</button>}</div>{node}</div></div>;
   if (!me) return wrap(<div className="rl-card" style={{ maxWidth: 520, margin: "20px auto", display: "grid", gap: 12, textAlign: "center" }}>
@@ -344,7 +346,7 @@ function aggregate(texts, RES, studentsOf, classes) {
   Object.entries(obj(RES)).forEach(([tid, rs]) => { const t = T[tid]; if (!t) return; const refT = rdTokens(t.body);
     Object.entries(obj(rs)).forEach(([sk, r]) => { if (!r || !r.ck) return; const tr = arr(r.tries).filter(x => !x.rej); const done = tr.filter(x => x.m); const o = S[sk] = S[sk] || { sid: r.sid, name: r.name, ck: r.ck, items: [], pend: 0 };
       if (tr.some(x => !x.m)) o.pend++; if (!done.length) return; const last = done[done.length - 1], first = done[0];
-      o.items.push({ tid, title: t.title, last, first, n: done.length, sk: rdSkills(refT, last.st, last.hd, last.m) }); }); });
+      o.items.push({ tid, title: t.title, last, first, n: done.length, sk: rdSkills(refT, last.st, last.hd, last.m, last) }); }); });
   const L = Object.values(S).map(o => { if (!o.items.length) return { ...o, M: null };
     const av = k => Math.round(o.items.reduce((a, x) => a + (x.last.m[k] || 0), 0) / o.items.length);
     const M = { score: av("score"), acc: av("acc"), wcpm: av("wcpm"), flu: av("flu"), comp: av("comp") };
@@ -413,7 +415,7 @@ function TextEditor({ api, init, classes, by, onClose, onSaved }) {
       <label className="rl-note">الصف<select className="rl-inp" value={t.lv} onChange={e => { set("lv", e.target.value); set("cls", []); }}><option value="">جميع الصفوف</option><option value="1">الأول المتوسط</option><option value="2">الثاني المتوسط</option><option value="3">الثالث المتوسط</option></select></label>
       <label className="rl-note">الطلاقة المستهدفة (كلمة/دقيقة)<input className="rl-inp" type="number" placeholder={`تلقائي (${ar(RD_TARGET[+t.lv] || 100)})`} value={t.tg} onChange={e => set("tg", e.target.value)} /></label>
       <label className="rl-note">عدد المحاولات للطالب<select className="rl-inp" value={t.max} onChange={e => set("max", +e.target.value)}>{[1, 2, 3, 4, 5].map(x => <option key={x} value={x}>{ar(x)}</option>)}</select></label>
-      <label className="rl-note">أجهزة أندرويد (عند تعارض التسجيل والتقييم الآلي)<select className="rl-inp" value={t.aprio || "aud"} onChange={e => set("aprio", e.target.value)}><option value="aud">🎙️ احفظ صوت الطالب (يقيّمه المعلم)</option><option value="auto">🤖 التقييم الآلي بدون صوت</option></select></label>
+      <label className="rl-note">أجهزة الجوال (أندرويد وآيفون)<select className="rl-inp" value={t.aprio || "aud"} onChange={e => set("aprio", e.target.value)}><option value="aud">🎙️ تسجيل الصوت وحفظه ثم تحليله (موصى به)</option><option value="auto">🤖 التقييم الفوري (قد لا يُحفظ الصوت)</option></select></label>
       <label className="rl-note">الحالة<select className="rl-inp" value={t.open} onChange={e => set("open", +e.target.value)}><option value={1}>متاح للطلاب</option><option value={0}>مغلق</option></select></label>
     </div>
     <div><span className="rl-note">الفصول (اتركها فارغة لجميع فصول الصف):</span><div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 4 }}>{classes.filter(c => !t.lv || c.ck.startsWith(t.lv + "-")).map(c => { const on = arr(t.cls).includes(c.ck); return <button key={c.ck} className={`rl-chip ${on ? "on" : ""}`} onClick={() => set("cls", on ? arr(t.cls).filter(x => x !== c.ck) : [...arr(t.cls), c.ck])}>{api.maClassName(c.ck)}</button>; })}</div></div>
@@ -432,20 +434,22 @@ function Review({ api, text, stu, rec, tryId, by, onClose, onSaved }) {
   const [aud, setAud] = useState(null); const [mode, setMode] = useState("s"); const [t0, setT0] = useState(0); const [, force] = useState(0); const [busy, setBusy] = useState(false); const [aiTxt, setAiTxt] = useState("");
   useEffect(() => { if (base && base.aud) api.maGet(`${N.AUD}/${text.id}/${skOf(stu)}/${base.id}`).then(v => typeof v === "string" && setAud(v)); }, []);
   useEffect(() => { if (!t0) return; const i = setInterval(() => force(x => x + 1), 500); return () => clearInterval(i); }, [t0]);
-  const tap = i => setSt(s => { const c = s[i]; const nx = mode === "cycle" ? RD_CYCLE[(RD_CYCLE.indexOf(c) + 1) % RD_CYCLE.length] : c === mode ? "o" : mode; return s.slice(0, i) + nx + s.slice(i + 1); });
+  const [pmsg, setPmsg] = useState("");
+  const tap = i => { if (mode === "t" && /[،,.؛:!؟?]$/.test(refT[i].d) && st[i] !== "t") { setPmsg(`ℹ️ «${refT[i].d.replace(/[،,.؛:!؟?]/g, "")}» قبل علامة ترقيم: الوقف عليها بالسكون جائز ولا يُعدّ خطأ ضبط.`); setTimeout(() => setPmsg(""), 5000); return; } tap0(i); };
+  const tap0 = i => setSt(s => { const c = s[i]; const nx = mode === "cycle" ? RD_CYCLE[(RD_CYCLE.indexOf(c) + 1) % RD_CYCLE.length] : c === mode ? "o" : mode; return s.slice(0, i) + nx + s.slice(i + 1); });
   const stopAt = i => setSt(s => s.split("").map((c, k) => k > i ? "n" : c === "n" ? "o" : c).join(""));
   const M = rdMetrics(st, ins, dur, tg); const L = rdLvOf(M.lv);
-  const save = async () => { setBusy(true); const tr = { ...(base || { id: Date.now().toString(36), at: Date.now(), mode: "live", aud: 0, hd: {} }), rej: null, st, ins, dur: Math.round(dur), tg, m: M, sk: rdSkills(refT, st, base ? base.hd : {}, M).map(s => s.k), rv: { by, at: Date.now() } };
+  const save = async () => { setBusy(true); const tr = { ...(base || { id: Date.now().toString(36), at: Date.now(), mode: "live", aud: 0, hd: {} }), rej: null, st, ins, dur: Math.round(dur), tg, m: M, sk: rdSkills(refT, st, base ? base.hd : {}, M, base).map(s => s.k), rv: { by, at: Date.now() } };
     const list = base ? tries.map(x => x.id === base.id ? tr : x) : [...tries, tr].slice(-6); const R = { sid: stu.id, name: stu.name, ck: stu.ck, tries: list, last: Date.now() };
     await api.maPut(`${N.RES}/${text.id}/${skOf(stu)}`, R); setBusy(false); onSaved(R); };
   const [sttMsg, setSttMsg] = useState("");
   const reStt = async () => { setBusy("stt"); setSttMsg(""); const j = await sttAudio(aud); setBusy(false);
-    if (j.text) { const A = rdAlign(refT, j.text); setSt(A.st); setIns(A.ins); if (base) { base.hd = A.hd; base.heard = j.text.slice(0, 2500); base.src = "stt"; } if (!dur && base && base.dur) setDur(base.dur); setSttMsg("✅ حُلِّل التسجيل وعُلِّمت الأخطاء على النص — راجعها ثم اضغط «اعتماد التقييم»."); }
+    if (j.text) { const htx = j.words && j.words.length ? j.words.map(x => x.w).join(" ") : j.text; const tw = j.words && j.words.length ? j.words.map(x => [x.s, x.e]) : null; const A = rdAlign(refT, htx); setSt(A.st); setIns(A.ins); if (base) { base.hd = A.hd; base.heard = htx.slice(0, 2500); base.src = "stt"; if (tw) { const T = rdTiming(refT, A, tw); base.tw = tw; base.hes = T.hes; base.pun = T.pun; } } if (!dur && base && base.dur) setDur(base.dur); setSttMsg("✅ حُلِّل التسجيل وعُلِّمت الأخطاء على النص — راجعها ثم اضغط «اعتماد التقييم»."); }
     else setSttMsg(j.error === "nokey" ? "⚠️ التحليل الآلي للتسجيل غير مفعّل بعد (يحتاج مفتاح GROQ_API_KEY في إعدادات Vercel). يمكنك الاستماع وتعليم الأخطاء يدوياً." : "⚠️ تعذّر تحليل التسجيل" + (j.error ? ` (${j.error})` : "") + " — علّم الأخطاء يدوياً."); };
   const reject = async () => { const why = prompt("سبب رفض التسجيل (يظهر للطالب):", "التسجيل غير واضح — أعد القراءة في مكان هادئ وبصوت مرتفع"); if (why == null) return; setBusy(true);
     const list = tries.map(x => x.id === base.id ? { ...x, rej: { by, at: Date.now(), why: why.trim() || "التسجيل غير واضح" } } : x); const R = { sid: stu.id, name: stu.name, ck: stu.ck, tries: list, last: Date.now() };
     await api.maPut(`${N.RES}/${text.id}/${skOf(stu)}`, R); setBusy(false); onSaved(R, "rej"); };
-  const aiRep = async () => { if (!api.hasAI()) { alert("فعّل مفتاح الذكاء الاصطناعي أولاً"); return; } setAiTxt("⏳ جارٍ إعداد التقرير…"); const sk = rdSkills(refT, st, base ? base.hd : {}, M);
+  const aiRep = async () => { if (!api.hasAI()) { alert("فعّل مفتاح الذكاء الاصطناعي أولاً"); return; } setAiTxt("⏳ جارٍ إعداد التقرير…"); const sk = rdSkills(refT, st, base ? base.hd : {}, M, base);
     try { setAiTxt(await api.ai(`أنت مشرف لغة عربية في المرحلة المتوسطة. اكتب تقريراً تشخيصياً مختصراً (٦–٨ أسطر) لقراءة طالب جهرية بلغة مهنية موجهة للمعلم وولي الأمر، يتضمن: وصف المستوى، أبرز الأخطاء بأمثلة، المهارات المطلوب علاجها، خطة علاجية لأسبوعين بأنشطة محددة.\nالبيانات: الدرجة ${M.score}/100، الدقة ${M.acc}%، الطلاقة ${M.wcpm} كلمة/دقيقة (المستهدف ${tg})، إكمال النص ${M.comp}%، حذف ${M.c.d}، إبدال ${M.c.s}، ضبط ${M.c.t}، تكرار ${M.c.r}، إضافة ${M.ins}.\nالمهارات الضعيفة: ${sk.map(s => rdSkTitle(s) + " (" + s.w.join("، ") + ")").join(" | ") || "لا يوجد"}.`, { max: 1500 })); } catch (e) { setAiTxt("تعذّر: " + (e.message || e)); } };
   return <div className="rl-modal" onClick={e => e.target === e.currentTarget && onClose()}><div className="rl" style={{ display: "grid", gap: 10 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ flex: 1 }}><b style={{ fontSize: 17, color: NAVY }}>{live ? "📝 تقييم حضوري" : "🔎 مراجعة التقييم واعتماده"} — {stu.name}</b><div className="rl-note">{api.maClassName(stu.ck)} • {text.title}{base && base.mode === "auto" ? " • التقييم الآلي جاهز للمراجعة" : base ? " • تسجيل صوتي بانتظار التقييم" : ""}</div></div><button className="rl-btn sm" onClick={onClose}>✕</button></div>
@@ -457,6 +461,15 @@ function Review({ api, text, stu, rec, tryId, by, onClose, onSaved }) {
     {live && <div className="rl-card" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", padding: 10 }}><b>⏱️ زمن القراءة: {ar(rdFmtDur(t0 ? (Date.now() - t0) / 1000 : dur))}</b>{!t0 ? <button className="rl-btn sm red" onClick={() => setT0(Date.now() - dur * 1000)}>▶ بدء التوقيت</button> : <button className="rl-btn sm ok" onClick={() => { setDur((Date.now() - t0) / 1000); setT0(0); }}>⏹ إيقاف</button>}<span className="rl-note">ابدأ التوقيت عندما يبدأ الطالب القراءة أمامك</span></div>}
     <div className="rl-card" style={{ padding: 10, display: "grid", gap: 8 }}>
       <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}><b style={{ fontSize: 13 }}>عند الضغط على كلمة سجّلها:</b>{["s", "d", "t", "r"].map(k => <button key={k} className={`rl-chip ${mode === k ? "on" : ""}`} style={mode === k ? { background: RD_ST[k].c, borderColor: RD_ST[k].c } : { color: RD_ST[k].c }} onClick={() => setMode(k)}>{RD_ST[k].t}</button>)}<button className={`rl-chip ${mode === "cut" ? "on" : ""}`} onClick={() => setMode("cut")}>✂️ توقّف هنا</button></div>
+      <details className="rl-note" style={{ background: "#f8fafc", borderRadius: 10, padding: "6px 10px" }}><summary style={{ fontWeight: 900, cursor: "pointer", color: NAVY }}>📚 قواعد التحليل المعتمدة</summary><ol style={{ margin: "6px 0 0", paddingInlineStart: 20, lineHeight: 1.9 }}>
+        <li><b>المطابقة التامة:</b> تُقارن كل كلمة بالمكتوبة حرفاً حرفاً؛ ولا يُتجاوز إلا ما لا يُسمع: أشكال الهمزة في الكتابة، والتاء المربوطة/الهاء، وألف تنوين الفتح.</li>
+        <li><b>أنواع الأخطاء:</b> حذف، إضافة، إبدال/نطق، ضبط (تشكيل)، تكرار، تردد، إهمال الوقف عند علامات الترقيم.</li>
+        <li><b>تصنيف الإبدال:</b> اللام الشمسية والقمرية • حروف العطف والجر المتصلة (و، ف، ب، ك، ل) • الضمائر واللواحق المتصلة • بنية الكلمة (إفراد/جمع، تذكير/تأنيث) • المدّ • الحروف المتقاربة في المخرج مع بيان مخرج كل حرف • القلب (تبديل ترتيب حرفين) • القراءة التخمينية.</li>
+        <li><b>الوقف:</b> الوقف بالسكون قبل علامة الترقيم جائز وليس خطأ ضبط؛ التاء المربوطة تُنطق هاءً في الوقف وتاءً في الوصل؛ تنوين الفتح يُبدل ألفاً في الوقف، وتنوين الضم والكسر يُحذف.</li>
+        <li><b>التكرار:</b> إذا كرّر الطالب الكلمة يُحكم على آخر نطق، ويُسجَّل التكرار دون خصم إن كان آخر نطق صحيحاً.</li>
+        <li><b>التوقيت (لتسجيلات الجوال):</b> سكتة ١٫٨ ثانية فأكثر داخل الجملة = تردد؛ وصل نهاية الجملة بما بعدها دون سكتة = إهمال الوقف. لا يُخصمان من الدقة.</li>
+        <li><b>حدود الآلة:</b> التشكيل والتشديد ودقة مخارج الحروف لا تُكتشف آلياً بدقة — سماع المعلم هو الحكم.</li></ol></details>
+      {pmsg && <div className="rl-note" style={{ background: "#ecfeff", border: "1.5px solid #a5f3fc", borderRadius: 10, padding: "6px 10px", fontWeight: 800, color: "#155e75" }}>{pmsg}</div>}
       <Words refT={refT} st={st} hd={base ? base.hd : {}} onWord={i => mode === "cut" ? (stopAt(i), setMode("s")) : tap(i)} size={22} />
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}><span style={{ fontWeight: 800 }}>كلمات مضافة: <button className="rl-btn sm" onClick={() => setIns(Math.max(0, ins - 1))}>−</button> <b>{ar(ins)}</b> <button className="rl-btn sm" onClick={() => setIns(ins + 1)}>+</button></span>
         <label style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 4 }}>الزمن (ث):<input className="rl-inp" type="number" style={{ width: 90, minHeight: 34 }} value={Math.round(dur)} onChange={e => setDur(+e.target.value || 0)} /></label>
@@ -475,7 +488,7 @@ function ReadingStaff({ api, me, admin }) {
   const [tab, setTab] = useState(admin ? "dash" : "res"); const [texts, setTexts] = useState(null); const [RES, setRES] = useState(null); const [edit, setEdit] = useState(null);
   const [tid, setTid] = useState(""); const [ck, setCk] = useState(""); const [rv, setRv] = useState(null); const [det, setDet] = useState(null); const [detAud, setDetAud] = useState(null);
   useEffect(() => { setDetAud(null); if (det && det.tr && det.tr.aud) api.maGet(`${N.AUD}/${det.text.id}/${skOf(det.stu)}/${det.tr.id}`).then(v => typeof v === "string" && setDetAud(v)); }, [det && det.tr && det.tr.id]); const [T, setTT] = useState(null); const [lvF, setLvF] = useState("ms"); const [clsF, setClsF] = useState(""); const [sel, setSel] = useState({});
-  const load = async () => { const [t, r] = await Promise.all([api.maGet(N.TXT), api.maGet(N.RES)]); const L = arr(t).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(L); const RR = {}; Object.entries(obj(r)).forEach(([k, v]) => { RR[k] = {}; Object.entries(obj(v)).forEach(([sk, x]) => { RR[k][sk] = rdFixRec(x); }); }); setRES(RR); if (!tid && L.length) setTid(L[0].id); };
+  const load = async () => { const [t, r] = await Promise.all([api.maGet(N.TXT), api.maGet(N.RES)]); const L = arr(t).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(L); const RR = {}; Object.entries(obj(r)).forEach(([k, v]) => { const tx = L.find(y => y.id === k); const rf = tx ? rdTokens(tx.body) : null; RR[k] = {}; Object.entries(obj(v)).forEach(([sk, x]) => { RR[k][sk] = rdFixRec(x, rf); }); }); setRES(RR); if (!tid && L.length) setTid(L[0].id); };
   useEffect(() => { load(); api.TT().then(setTT).catch(() => {}); }, []);
   const myCls = useMemo(() => { if (admin || !T || !T.C) return null; const ti = api.ttFind(T, by); if (ti < 0) return null; return Object.keys(T.C).filter(k => arr(T.C[k]).some(d => arr(d).some(c => c && c[1] === ti))); }, [T]);
   const arT = ck => { if (!T || !T.C || !T.C[ck]) return ""; const s = new Set(); arr(T.C[ck]).forEach(d => arr(d).forEach(c => { if (c && c[0] >= 0 && c[1] >= 0 && /لغتي|عربي/.test(String((T.SA && T.SA[c[0]]) || T.S[c[0]] || ""))) s.add(String(T.T[c[1]] || "").replace(/\s*\(.*?\)\s*/g, "")); })); return [...s].join("، "); };
