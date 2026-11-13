@@ -18,11 +18,13 @@ export default async function handler(req, res) {
     const fd = new FormData();
     fd.append("file", new Blob([buf], { type: mime.split(";")[0] }), "read." + ext);
     fd.append("model", groq ? "whisper-large-v3" : "whisper-1");
-    fd.append("language", "ar"); fd.append("response_format", "json"); fd.append("temperature", "0");
+    fd.append("language", "ar"); fd.append("response_format", "verbose_json"); fd.append("timestamp_granularities[]", "word"); fd.append("temperature", "0");
     const url = groq ? "https://api.groq.com/openai/v1/audio/transcriptions" : "https://api.openai.com/v1/audio/transcriptions";
     const r = await fetch(url, { method: "POST", headers: { Authorization: "Bearer " + (groq || oai) }, body: fd });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return res.status(200).json({ error: (j.error && j.error.message) || ("http " + r.status) });
-    return res.status(200).json({ text: String(j.text || "").trim() });
+    // أزمنة الكلمات (لقياس التردد والوقف عند علامات الترقيم)
+    const words = Array.isArray(j.words) ? j.words.map(w => ({ w: String(w.word || "").replace(/\s+/g, ""), s: Math.round((+w.start || 0) * 100) / 100, e: Math.round((+w.end || 0) * 100) / 100 })).filter(w => w.w) : [];
+    return res.status(200).json({ text: String(j.text || "").trim(), words });
   } catch (e) { return res.status(200).json({ error: String(e && e.message || e) }); }
 }
