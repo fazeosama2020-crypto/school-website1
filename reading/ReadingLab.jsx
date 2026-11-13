@@ -6,7 +6,7 @@
 // قاعدة البيانات: school-rd-txt/{tid} • school-rd-taud/{tid} • school-rd-res/{tid}/{ck_sid} • school-rd-aud/{tid}/{ck_sid}/{tryId}
 // ══════════════════════════════════════════════════════════════════
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { RD_LV, rdLvOf, RD_TARGET, RD_ST, RD_CYCLE, rdTokens, rdAlign, rdMetrics, rdSkills, rdSkTitle, rdSkTip, rdNeeds, rdFmtDur, arNorm, rdExplain, rdStopInfo } from "./rdEngine.js";
+import { RD_LV, rdLvOf, RD_TARGET, RD_ST, RD_CYCLE, rdTokens, rdAlign, rdMetrics, rdSkills, rdSkTitle, rdSkTip, rdNeeds, rdFmtDur, arNorm, rdExplain, rdStopInfo, rdFixRec } from "./rdEngine.js";
 
 const N = { TXT: "school-rd-txt", TAUD: "school-rd-taud", RES: "school-rd-res", AUD: "school-rd-aud" };
 const STU_LS = "rd-stu-v1";
@@ -99,7 +99,7 @@ function speak(w, rate = 0.75) { try { const u = new SpeechSynthesisUtterance(w)
 function makeListener(onText, onErr) {
   if (!SR) return null; let run = false, finals = [], rec = null;
   const boot = () => { rec = new SR(); rec.lang = "ar-SA"; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
-    rec.onresult = e => { let inter = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) finals.push(r[0].transcript); else inter += " " + r[0].transcript; } onText((finals.join(" ") + " " + inter).trim()); };
+    rec.onresult = e => { let inter = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) { const t = String(r[0].transcript || "").trim(); const L = finals.length ? finals[finals.length - 1] : ""; if (!t) continue; if (L && (t === L || t.startsWith(L + " "))) finals[finals.length - 1] = t; else if (L && L.startsWith(t + " ")) continue; else finals.push(t); } else inter += " " + r[0].transcript; } onText((finals.join(" ") + " " + inter).trim()); };
     rec.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") { run = false; onErr && onErr(e.error); } };
     rec.onend = () => { if (run) setTimeout(() => { if (run) try { boot(); } catch {} }, 120); };
     try { rec.start(); } catch {} };
@@ -169,7 +169,7 @@ function ResultCard({ text, tr, refT, onWord, hideWords, maud, saud, staff }) {
     </div>
     <div className="rl-kpis">
       {[["d", "حذف"], ["s", "إبدال/نطق"], ["t", "ضبط"], ["r", "تكرار"]].map(([k, l]) => <div key={k} className="rl-kpi" style={{ borderColor: RD_ST[k].bg }}><b style={{ color: RD_ST[k].c }}>{ar(M.c[k] || 0)}</b><small>{l}</small></div>)}
-      <div className="rl-kpi"><b style={{ color: "#be185d" }}>{ar(M.ins)}</b><small>كلمات مضافة</small></div>
+      <div className="rl-kpi"><b style={{ color: "#be185d" }}>{ar(M.ins)}</b><small>كلمات مضافة</small></div>{M.dup ? <div className="rl-note" style={{ gridColumn: "1/-1" }}>ℹ️ كرّر الجهاز التقاط بعض الكلمات أثناء التسجيل، فلم تُحتسب الإضافات في الدرجة.</div> : null}
       <div className="rl-kpi"><b style={{ color: "#64748b" }}>{ar(M.c.n || 0)}</b><small>لم تُقرأ</small></div>
     </div>
     {!hideWords && <div className="rl-card" style={{ display: "grid", gap: 10 }}><div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>📝 النص مع أخطائك ملوّنة — اضغط على أي كلمة لسماعها ومعرفة الخطأ</b><Legend /></div>
@@ -246,7 +246,7 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
     else if (srOk.current && hw > 0 && dur >= 8 && hw / dur < 0.25 && hw < refT.length * 0.4) bad = "التسجيل غير واضح — لم تُميَّز إلا كلمات قليلة";
     if (bad) { busy.current = false; setErr(`🚫 ${bad}. لم تُحتسب محاولة — اجلس في مكان هادئ، قرّب الجهاز من فمك، واقرأ بصوت مرتفع ثم أعد التسجيل.`); setPh("intro"); return; }
     const id = Date.now().toString(36); let tr;
-    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", heard: heard.slice(0, 2500) }; }
+    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg, true); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", heard: heard.slice(0, 2500) }; }
     else tr = { id, at: Date.now(), dur: Math.round(dur), st: "n".repeat(refT.length), hd: {}, ins: 0, tg, m: null, mode: "rec", why: SR ? "silent" : "nosr", heard: heard.slice(0, 2500) };
     if (trialR.current) { busy.current = false; if (!tr.m) { setErr("لم تُلتقط قراءتك في التجربة — حاول مرة أخرى بصوت أوضح"); setPh("intro"); return; } setCur({ ...tr, trial: 1 }); setPh("res"); return; }
     let audOk = false; if (aud && aud.length < 2.6e6) audOk = await api.maPut(`${N.AUD}/${text.id}/${skOf(me)}/${id}`, aud); tr.aud = audOk ? 1 : 0;
@@ -303,7 +303,7 @@ export function ReadingStudent({ onBack, api }) {
   const login = async () => { setErr(""); const n = api.licNormId(idv); if (n.length !== 10) { setErr("رقم الهوية يتكوّن من ١٠ أرقام"); return; } setBusy(true); const h = await api.stuHash(n); let st = null;
     for (const c of R.classes) { const s = R.studentsOf(c.ck).find(x => x.nh === h); if (s) { st = { id: s.id, name: s.name, ck: c.ck, nh: h, n4: s.n4 }; break; } }
     setBusy(false); if (!st) { setErr("رقم الهوية غير مسجّل — تأكد من الرقم أو اختر فصلك واسمك"); return; } keep(st); };
-  useEffect(() => { if (!me) return; (async () => { const T = arr(await api.maGet(N.TXT)).filter(t => textFor(t, me.ck)).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(T); const o = {}; await Promise.all(T.map(async t => { const r = await api.maGet(`${N.RES}/${t.id}/${skOf(me)}`); if (r) o[t.id] = r; })); setMine(o); })(); }, [me, open]);
+  useEffect(() => { if (!me) return; (async () => { const T = arr(await api.maGet(N.TXT)).filter(t => textFor(t, me.ck)).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(T); const o = {}; await Promise.all(T.map(async t => { const r = await api.maGet(`${N.RES}/${t.id}/${skOf(me)}`); if (r) o[t.id] = rdFixRec(r); })); setMine(o); })(); }, [me, open]);
   const wrap = node => <div className="rl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f5f1e3,#f8fafc 260px)", padding: "14px 10px" }}><style>{CSS}</style><div style={{ maxWidth: 940, margin: "0 auto", display: "grid", gap: 12 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{api.logo && <img src={api.logo} alt="" style={{ width: 42, height: 42, borderRadius: "50%", background: "#fff", padding: 2 }} />}<b style={{ flex: 1, color: NAVY }}>{api.school || ""}</b>{me && <button className="rl-btn sm" onClick={() => { setMe(null); setOpen(null); try { localStorage.removeItem(STU_LS); } catch {} }}>خروج</button>}{onBack && <button className="rl-btn sm" onClick={onBack}>🏠 الموقع</button>}</div>{node}</div></div>;
   if (!me) return wrap(<div className="rl-card" style={{ maxWidth: 520, margin: "20px auto", display: "grid", gap: 12, textAlign: "center" }}>
@@ -459,7 +459,7 @@ function ReadingStaff({ api, me, admin }) {
   const [tab, setTab] = useState(admin ? "dash" : "res"); const [texts, setTexts] = useState(null); const [RES, setRES] = useState(null); const [edit, setEdit] = useState(null);
   const [tid, setTid] = useState(""); const [ck, setCk] = useState(""); const [rv, setRv] = useState(null); const [det, setDet] = useState(null); const [detAud, setDetAud] = useState(null);
   useEffect(() => { setDetAud(null); if (det && det.tr && det.tr.aud) api.maGet(`${N.AUD}/${det.text.id}/${skOf(det.stu)}/${det.tr.id}`).then(v => typeof v === "string" && setDetAud(v)); }, [det && det.tr && det.tr.id]); const [T, setTT] = useState(null); const [lvF, setLvF] = useState("ms"); const [clsF, setClsF] = useState(""); const [sel, setSel] = useState({});
-  const load = async () => { const [t, r] = await Promise.all([api.maGet(N.TXT), api.maGet(N.RES)]); const L = arr(t).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(L); setRES(obj(r)); if (!tid && L.length) setTid(L[0].id); };
+  const load = async () => { const [t, r] = await Promise.all([api.maGet(N.TXT), api.maGet(N.RES)]); const L = arr(t).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(L); const RR = {}; Object.entries(obj(r)).forEach(([k, v]) => { RR[k] = {}; Object.entries(obj(v)).forEach(([sk, x]) => { RR[k][sk] = rdFixRec(x); }); }); setRES(RR); if (!tid && L.length) setTid(L[0].id); };
   useEffect(() => { load(); api.TT().then(setTT).catch(() => {}); }, []);
   const myCls = useMemo(() => { if (admin || !T || !T.C) return null; const ti = api.ttFind(T, by); if (ti < 0) return null; return Object.keys(T.C).filter(k => arr(T.C[k]).some(d => arr(d).some(c => c && c[1] === ti))); }, [T]);
   const arT = ck => { if (!T || !T.C || !T.C[ck]) return ""; const s = new Set(); arr(T.C[ck]).forEach(d => arr(d).forEach(c => { if (c && c[0] >= 0 && c[1] >= 0 && /لغتي|عربي/.test(String((T.SA && T.SA[c[0]]) || T.S[c[0]] || ""))) s.add(String(T.T[c[1]] || "").replace(/\s*\(.*?\)\s*/g, "")); })); return [...s].join("، "); };

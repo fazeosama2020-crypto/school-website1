@@ -105,10 +105,14 @@ export function rdAlign(ref, heardText) {
 }
 
 // المقاييس من حالة الكلمات
-export function rdMetrics(stStr, ins = 0, dur = 0, target = 100) {
+export function rdMetrics(stStr, ins = 0, dur = 0, target = 100, auto = false) {
   const st = String(stStr || ""); const n = st.length; const c = { o: 0, d: 0, s: 0, t: 0, r: 0, n: 0 };
   for (const ch of st) c[ch] = (c[ch] || 0) + 1;
-  const att = n - c.n; const correct = c.o + c.r; const errs = c.d + c.s + c.t + (+ins || 0);
+  const att = n - c.n; const correct = c.o + c.r; const insRaw = +ins || 0;
+  // الكلمات المضافة: في التقييم الآلي قد يكرّر متعرّف الصوت (خصوصاً في أندرويد) ما سمعه فتتضخم الإضافات؛
+  // إن تجاوزت نصف المقروء فهي خلل تقني لا خطأ قراءة فلا تُحتسب، وفي كل الأحوال لا تخصم أكثر من ٢٠٪ من الدقة
+  const dup = auto && att > 0 && insRaw > att * 0.5; ins = dup ? 0 : Math.min(insRaw, Math.ceil(att * 0.2));
+  const errs = c.d + c.s + c.t + ins;
   const acc = att ? Math.max(0, (att - errs) / att * 100) : 0;
   const comp = n ? att / n * 100 : 0;
   const wcpm = dur >= 3 ? correct / (dur / 60) : 0;
@@ -118,7 +122,7 @@ export function rdMetrics(stStr, ins = 0, dur = 0, target = 100) {
   // سقف المستوى حسب الدقة (معيار القراءة: أقل من ٩٠٪ مستوى إحباط، أقل من ٨٠٪ ضعف، أقل من ٦٠٪ ضعف شديد)
   if (acc < 60 && "abm".includes(lv)) lv = "s"; else if (acc < 80 && "ab".includes(lv)) lv = "m"; else if (acc < 90 && lv === "a") lv = "b";
   if (comp < 50 && "ab".includes(lv)) lv = "m"; // لم يُكمل نصف النص
-  return { n, c, ins: +ins || 0, att, correct, errs, acc: Math.round(acc), comp: Math.round(comp), wcpm: Math.round(wcpm), flu: Math.round(flu), score, lv, dur: Math.round(dur) };
+  return { n, c, ins, insRaw, dup: dup ? 1 : 0, att, correct, errs, acc: Math.round(acc), comp: Math.round(comp), wcpm: Math.round(wcpm), flu: Math.round(flu), score, lv, dur: Math.round(dur) };
 }
 
 // ── تحليل المهارات من الكلمات الخاطئة
@@ -229,3 +233,7 @@ export function rdExplain(ref, stStr, hd = {}) {
 }
 // موضع التوقف إن لم يُكمل النص
 export function rdStopInfo(ref, stStr) { const st = String(stStr || ""); const i = st.indexOf("n"); if (i < 0 || !/[^n]/.test(st)) return null; if (st.slice(i).replace(/n/g, "")) return null; return { i, w: clean(ref[i] ? ref[i].d : ""), left: st.length - i }; }
+
+// إعادة حساب مقاييس المحاولات المحفوظة بالقاعدة الحالية (تصحيح نتائج قديمة تضخمت فيها «الكلمات المضافة»)
+export function rdFixRec(r) { if (!r || !Array.isArray(r.tries)) return r;
+  return { ...r, tries: r.tries.map(t => { if (!t || !t.m || !t.st) return t; const raw = t.m.insRaw != null ? t.m.insRaw : (t.ins || 0); return { ...t, m: rdMetrics(t.st, raw, t.dur, t.tg || 100, !t.rv) }; }) }; }
