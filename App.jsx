@@ -551,7 +551,52 @@ function StatCard({ icon, label, value, color }) {
 }
 
 // ✨ لوحة التحرير المتقدم: التظليل بدرجات وأنماط، مؤثرات النص، التحكم في إظهار النص، الصناديق والزخارف
-function AnnFxPanel({ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, exec, unFx, saveSel, onClose }) {
+// 📋 تنظيف النص الملصوق (من Word أو المواقع): إزالة المسافات والهوامش والمحاذاة الموروثة، والإبقاء على الغامق والمائل والألوان
+const ANN_JUST = "text-align:justify;text-justify:inter-word";
+function annJustifyBlock(el, wasCenter) { const t = (el.textContent || "").replace(/\s+/g, " ").trim(); if (!t) return; if (t.length >= 70) { el.style.textAlign = "justify"; el.style.textJustify = "inter-word"; } else if (wasCenter) el.style.textAlign = "center"; }
+function annJustifyRoot(root) { const blocks = [...root.querySelectorAll("p,div,li,h1,h2,h3,h4,blockquote")].filter(b => !b.querySelector("p,div,li,h1,h2,h3,h4,blockquote,img,table,details") && !b.closest("details,.ann-box,table"));
+  if (!blocks.length && (root.textContent || "").trim()) { const p = document.createElement("p"); while (root.firstChild) p.appendChild(root.firstChild); root.appendChild(p); blocks.push(p); }
+  blocks.forEach(b => { const c = (b.style.textAlign || b.getAttribute("align") || "").toLowerCase() === "center"; if ((b.textContent || "").trim().length >= 70) { b.style.textAlign = "justify"; b.style.textJustify = "inter-word"; } else if (!c && !b.style.textAlign) b.style.textAlign = ""; }); }
+function annPasteClean(html, txt) {
+  const esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  if (!html) return String(txt || "").split(/\r?\n/).map(l => l.trim()).filter((l, i, a) => l || (a[i - 1] && a[i - 1].trim())).map(l => l ? `<p style="${l.length >= 70 ? ANN_JUST : "text-align:right"}">${esc(l)}</p>` : "<p><br></p>").join("");
+  try { const doc = new DOMParser().parseFromString(html, "text/html"); const b = doc.body; b.querySelectorAll("style,script,meta,link,title,xml,o\\:p").forEach(x => x.remove());
+    const tw = doc.createTreeWalker(b, 128); const cm = []; while (tw.nextNode()) cm.push(tw.currentNode); cm.forEach(c => c.remove());
+    b.querySelectorAll("*").forEach(el => { const tag = el.tagName; if (/^O:/.test(tag)) { el.replaceWith(...el.childNodes); return; }
+      const st = el.style; const cen = (st && st.textAlign === "center") || (el.getAttribute("align") || "").toLowerCase() === "center";
+      const keep = {}; if (st) { if (st.color && !/^(rgb\(0, 0, 0\)|#000000|black|windowtext)$/i.test(st.color)) keep.color = st.color; if (/bold|[6-9]00/.test(st.fontWeight)) keep.fontWeight = "bold"; if (st.fontStyle === "italic") keep.fontStyle = "italic"; if (/underline/.test(st.textDecoration || "")) keep.textDecoration = "underline"; if (st.backgroundColor && !/transparent|rgba\(0, 0, 0, 0\)|white|#fff|rgb\(255, 255, 255\)/i.test(st.backgroundColor)) keep.backgroundColor = st.backgroundColor; }
+      [...el.attributes].forEach(a => el.removeAttribute(a.name)); Object.entries(keep).forEach(([k, v]) => { el.style[k] = v; });
+      if (/^(P|DIV|H[1-6]|LI|BLOCKQUOTE)$/.test(tag)) annJustifyBlock(el, cen);
+      if (tag === "SPAN" && !el.getAttribute("style")) el.replaceWith(...el.childNodes);
+      if (tag === "FONT") el.replaceWith(...el.childNodes); });
+    if (![...b.children].some(c => /^(P|DIV|H[1-6]|UL|OL|TABLE)$/.test(c.tagName))) { const p = doc.createElement("p"); while (b.firstChild) p.appendChild(b.firstChild); b.appendChild(p); annJustifyBlock(p, false); }
+    return b.innerHTML; } catch { return esc(txt || ""); }
+}
+// 🏷️ العنوان المنسّق: تلوين كلمة أو أكثر بلون مختلف، وتقسيم العنوان إلى سطرين أو أكثر
+function annTitleClean(h) { try { const d = new DOMParser().parseFromString(`<div>${h || ""}</div>`, "text/html").body.firstChild;
+  d.querySelectorAll("*").forEach(el => { if (!/^(SPAN|BR|B|STRONG)$/.test(el.tagName)) { el.replaceWith(...el.childNodes); return; } const c = el.style.color, w = el.style.fontWeight, z = el.style.fontSize; [...el.attributes].forEach(a => el.removeAttribute(a.name)); if (c) el.style.color = c; if (w) el.style.fontWeight = w; if (z && /em$/.test(z)) el.style.fontSize = z; });
+  return d.innerHTML; } catch { return ""; } }
+const AnnT = ({ a }) => a && a.titleHtml ? <span style={{ display: "inline" }} dangerouslySetInnerHTML={{ __html: annTitleClean(a.titleHtml) }} /> : <>{a ? a.title : ""}</>;
+const annTitleHtml = a => a && a.titleHtml ? annTitleClean(a.titleHtml) : String((a && a.title) || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+function AnnTitleFx({ val, setVal }) {
+  const ref = useRef(null); const C = ["#0f1e3d", "#d4a017", "#b08d57", "#dc2626", "#0d9488", "#2563eb", "#7c3aed", "#059669", "#db2777"];
+  useEffect(() => { if (ref.current) ref.current.innerHTML = val.titleHtml ? annTitleClean(val.titleHtml) : String(val.title || "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }, []);
+  useEffect(() => { const el = ref.current; if (el && !val.titleHtml && document.activeElement !== el && el.textContent !== (val.title || "")) el.textContent = val.title || ""; }, [val.title, val.titleHtml]);
+  const push = () => { const el = ref.current; if (!el) return; const h = annTitleClean(el.innerHTML); const plain = el.innerText.replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim(); setVal(p => ({ ...p, title: plain, titleHtml: h })); };
+  const wrap = st => { const sl = window.getSelection(); if (!sl || !sl.rangeCount || sl.isCollapsed || !ref.current.contains(sl.anchorNode)) { alert("حدّد الكلمة أو الكلمات في العنوان أولاً"); return; } const r = sl.getRangeAt(0); const sp = document.createElement("span"); Object.assign(sp.style, st); sp.appendChild(r.extractContents()); r.insertNode(sp); sl.removeAllRanges(); push(); };
+  const B = { border: "1.5px solid #e2e8f0", background: "#fff", borderRadius: 8, padding: "3px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
+  return <div dir="rtl" style={{ border: "1.5px dashed #d4a017", borderRadius: 12, padding: 8, background: "#fffdf5", display: "grid", gap: 6 }}>
+    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}><b style={{ fontSize: 12, color: "#92400e" }}>✨ عنوان منسّق — حدّد كلمة ثم اختر لونها • Enter لسطر جديد:</b>
+      {C.map(c => <button key={c} type="button" title="لون الكلمات المحددة" onMouseDown={e => { e.preventDefault(); wrap({ color: c }); }} style={{ width: 22, height: 22, borderRadius: 999, background: c, border: "2px solid #fff", boxShadow: "0 0 0 1px #cbd5e1", cursor: "pointer" }} />)}
+      <button type="button" style={B} onMouseDown={e => { e.preventDefault(); wrap({ fontSize: "0.75em", fontWeight: "700" }); }}>أصغر</button>
+      <button type="button" style={B} onMouseDown={e => { e.preventDefault(); document.execCommand("insertLineBreak"); push(); }}>↵ سطر جديد</button>
+      <button type="button" style={{ ...B, color: "#b91c1c" }} onMouseDown={e => { e.preventDefault(); if (ref.current) { ref.current.textContent = ref.current.innerText; push(); } }}>🧹 مسح التلوين</button></div>
+    <div ref={ref} contentEditable suppressContentEditableWarning onInput={push} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); document.execCommand("insertLineBreak"); push(); } }}
+      style={{ minHeight: 42, padding: "6px 10px", borderRadius: 10, background: "#fff", border: "1.5px solid #e2e8f0", fontWeight: 900, fontSize: 19, lineHeight: 1.6, color: val.titleColor || "#1f2937", textAlign: val.titleAlign || "right", outline: "none" }} />
+  </div>;
+}
+
+function AnnFxPanel({ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, wrapIn, exec, unFx, saveSel, onClose }) {
   const HLC = ["#fde047", "#86efac", "#7dd3fc", "#f9a8d4", "#fdba74", "#c4b5fd", "#d4a017", "#94a3b8"];
   const B = ({ t, on, children, st }) => <button type="button" title={t} onMouseDown={e => e.preventDefault()} onClick={on} style={{ border: "1.5px solid #e2e8f0", background: "#fff", borderRadius: 10, padding: "5px 10px", fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", color: "#0f1e3d", ...st }}>{children}</button>;
   const H = ({ children }) => <div style={{ fontSize: 12, fontWeight: 900, color: "#b08d57", margin: "6px 0 4px", gridColumn: "1/-1" }}>{children}</div>;
@@ -568,21 +613,21 @@ function AnnFxPanel({ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, exec
       <B t="تظليل" on={() => doHl(false)} st={{ background: "#0f1e3d", color: "#fff" }}>🖍️ ظلّل</B><B t="يُرسم التظليل تدريجياً عند فتح الإعلان" on={() => doHl(true)}>✍️ تظليل متحرك</B></div>
     <H>🔠 مؤثرات النص</H>
     <div style={row}>
-      <B t="ظل" on={() => wrapSel('<span style="text-shadow:0 2px 6px rgba(15,30,61,.35)">', "</span>")}>ظل</B>
-      <B t="توهج ذهبي" on={() => wrapSel('<span style="text-shadow:0 0 8px rgba(212,160,23,.75),0 0 2px rgba(212,160,23,.9);font-weight:800">', "</span>")} st={{ textShadow: "0 0 6px #d4a017" }}>توهج</B>
-      <B t="تدرّج كحلي ذهبي" on={() => wrapSel('<span style="background:linear-gradient(90deg,#0f1e3d,#b08d57);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900">', "</span>")}><span style={{ background: "linear-gradient(90deg,#0f1e3d,#b08d57)", WebkitBackgroundClip: "text", color: "transparent" }}>تدرّج</span></B>
-      <B t="لمعان متحرك" on={() => wrapSel('<span class="ann-shine">', "</span>")}>✦ لمعان</B>
-      <B t="خط مفرّغ" on={() => wrapSel('<span style="-webkit-text-stroke:1px #0f1e3d;color:transparent;font-weight:900">', "</span>")}>مفرّغ</B>
+      <B t="ظل" on={() => wrapIn('<span style="text-shadow:0 2px 6px rgba(15,30,61,.35)">', "</span>")}>ظل</B>
+      <B t="توهج ذهبي" on={() => wrapIn('<span style="text-shadow:0 0 8px rgba(212,160,23,.75),0 0 2px rgba(212,160,23,.9);font-weight:800">', "</span>")} st={{ textShadow: "0 0 6px #d4a017" }}>توهج</B>
+      <B t="تدرّج كحلي ذهبي" on={() => wrapIn('<span style="background:linear-gradient(90deg,#0f1e3d,#b08d57);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900">', "</span>")}><span style={{ background: "linear-gradient(90deg,#0f1e3d,#b08d57)", WebkitBackgroundClip: "text", color: "transparent" }}>تدرّج</span></B>
+      <B t="لمعان متحرك" on={() => wrapIn('<span class="ann-shine">', "</span>")}>✦ لمعان</B>
+      <B t="خط مفرّغ" on={() => wrapIn('<span style="-webkit-text-stroke:1px #0f1e3d;color:transparent;font-weight:900">', "</span>")}>مفرّغ</B>
       <B t="شطب" on={() => exec("strikeThrough")}><s>شطب</s></B>
       <B t="مرتفع" on={() => exec("superscript")}>س²</B><B t="منخفض" on={() => exec("subscript")}>س₂</B>
-      <B t="ملصق كحلي" on={() => wrapSel('<span style="background:#0f1e3d;color:#fde68a;border-radius:999px;padding:1px 12px;font-weight:900">', "</span>")} st={{ background: "#0f1e3d", color: "#fde68a" }}>شارة</B>
-      <B t="إطار حول الكلمة" on={() => wrapSel('<span style="border:1.5px solid #d4a017;border-radius:8px;padding:0 6px">', "</span>")}>إطار</B></div>
+      <B t="ملصق كحلي" on={() => wrapIn('<span style="background:#0f1e3d;color:#fde68a;border-radius:999px;padding:1px 12px;font-weight:900">', "</span>")} st={{ background: "#0f1e3d", color: "#fde68a" }}>شارة</B>
+      <B t="إطار حول الكلمة" on={() => wrapIn('<span style="border:1.5px solid #d4a017;border-radius:8px;padding:0 6px">', "</span>")}>إطار</B></div>
     <H>👁️ التحكم في إظهار النص</H>
     <div style={row}>
-      <B t="يظهر النص ضبابياً ويتضح عند الضغط أو المرور" on={() => wrapSel('<span class="ann-sp" tabindex="0" title="اضغط لإظهار النص">', "</span>")}>🌫️ يظهر بالضغط</B>
+      <B t="يظهر النص ضبابياً ويتضح عند الضغط أو المرور" on={() => wrapIn('<span class="ann-sp" tabindex="0" title="اضغط لإظهار النص">', "</span>")}>🌫️ يظهر بالضغط</B>
       <B t="قسم يُطوى ويُفتح بعنوان" on={() => { const t = prompt("عنوان القسم القابل للطي:", "اضغط لعرض التفاصيل"); if (t == null) return; wrapSel(`<details class="ann-det"><summary>${t.replace(/[<>]/g, "")}</summary><div>`, "</div></details><p></p>", "اكتب التفاصيل هنا…"); }}>📂 قسم قابل للطي</B>
-      <B t="يظهر بتلاشٍ تدريجي عند فتح الإعلان" on={() => wrapSel('<span class="ann-fade" style="display:inline-block">', "</span>")}>🌅 ظهور تدريجي</B>
-      <B t="نبض للفت الانتباه" on={() => wrapSel('<span class="ann-pulse">', "</span>")}>💓 نبض</B></div>
+      <B t="يظهر بتلاشٍ تدريجي عند فتح الإعلان" on={() => wrapIn('<span class="ann-fade" style="display:inline-block">', "</span>")}>🌅 ظهور تدريجي</B>
+      <B t="نبض للفت الانتباه" on={() => wrapIn('<span class="ann-pulse">', "</span>")}>💓 نبض</B></div>
     <H>🗂️ صناديق وزخارف</H>
     <div style={row}>{[["note", "ℹ️ ملاحظة"], ["warn", "⚠️ تنبيه"], ["imp", "❗ هام"], ["ok", "✅ إنجاز"], ["gold", "🏅 إطار ذهبي"], ["navy", "🔷 كحلي رسمي"]].map(([k, l]) => <B key={k} t={l} on={() => wrapSel(`<div class="ann-box ${k}">`, "</div><p></p>", l + ": ")}>{l}</B>)}
       <B t="اقتباس" on={() => wrapSel('<div class="ann-quote">', "</div><p></p>", "نص الاقتباس")}>❝ اقتباس</B>
@@ -628,12 +673,29 @@ function RichEditor({ value, onChange }) {
     const last = tpl.content.lastChild; r.insertNode(tpl.content); ed.normalize();
     try { const nr = document.createRange(); nr.setStartAfter(last); nr.collapse(true); sl.removeAllRanges(); sl.addRange(nr); } catch {}
     saveSel(); onChange(ed.innerHTML); };
+  // تنسيق مضمَّن على مستوى الكلمات: يُغلَّف كل جزء نصي داخل التحديد على حدة (لا تظهر ألوان في أطراف الفقرات أو الأسطر الفارغة)
+  const wrapIn = (open, close) => { restoreSel(); const ed = editorRef.current; const sl = window.getSelection(); if (!ed || !sl || !sl.rangeCount) return;
+    const r = sl.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return; if (r.collapsed) { alert("حدّد الكلمة أو الجزء المطلوب أولاً"); return; }
+    const root = r.commonAncestorContainer.nodeType === 3 ? r.commonAncestorContainer.parentNode : r.commonAncestorContainer; const tw = document.createTreeWalker(root, 4); const L = [];
+    while (tw.nextNode()) { const t = tw.currentNode; if (r.intersectsNode(t) && t.nodeValue.trim()) L.push(t); }
+    let last = null; L.forEach(t => { let a = t === r.startContainer ? r.startOffset : 0, b = t === r.endContainer ? r.endOffset : t.nodeValue.length; if (b <= a) return;
+      let mid = t; if (a > 0) mid = mid.splitText(a); if (b - a < mid.nodeValue.length) mid.splitText(b - a); if (!mid.nodeValue.trim()) return;
+      const tp = document.createElement("template"); tp.innerHTML = open + close; const w = tp.content.firstElementChild; if (!w) return; mid.parentNode.insertBefore(w, mid); w.appendChild(mid); last = w; });
+    if (last) { try { const nr = document.createRange(); nr.setStartAfter(last); nr.collapse(true); sl.removeAllRanges(); sl.addRange(nr); } catch {} }
+    saveSel(); onChange(ed.innerHTML); };
+  // تنسيق تلقائي: الفقرات الطويلة تُضبط من بداية السطر إلى آخره، والأسطر القصيرة (التحية والعناوين) تبقى كما هي
+  const autoJustify = () => { const ed = editorRef.current; if (!ed) return; annJustifyRoot(ed); onChange(ed.innerHTML); };
+  const onPaste = e => { const cd = e.clipboardData; if (!cd) return; const html = cd.getData("text/html"), txt = cd.getData("text/plain"); if (!html && !txt) return;
+    if (!html && cd.files && cd.files.length) return; e.preventDefault(); restoreSel(); const ed = editorRef.current; const sl = window.getSelection(); if (!ed || !sl || !sl.rangeCount) return;
+    const r = sl.getRangeAt(0); if (!ed.contains(r.commonAncestorContainer)) return; r.deleteContents();
+    const tp = document.createElement("template"); tp.innerHTML = annPasteClean(html, txt); const last = tp.content.lastChild; r.insertNode(tp.content);
+    try { const nr = document.createRange(); nr.setStartAfter(last); nr.collapse(true); sl.removeAllRanges(); sl.addRange(nr); } catch {} saveSel(); onChange(ed.innerHTML); };
   const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
   const hlStyle = (anim) => { const c = rgba(hlC, hlA); const base = "border-radius:4px;padding:0 3px;-webkit-box-decoration-break:clone;box-decoration-break:clone;";
     if (hlM === "half") return base + `background-image:linear-gradient(transparent 55%,${c} 55%);` + (anim ? "" : "background-size:100% 100%;");
     if (hlM === "wave") return `text-decoration:underline wavy ${rgba(hlC, Math.min(1, hlA + .45))};text-decoration-thickness:2px;text-underline-offset:5px;`;
     return base + (anim ? `background-image:linear-gradient(${c},${c});` : `background-color:${c};`); };
-  const doHl = (anim) => wrapSel(`<span${anim && hlM !== "wave" ? ' class="ann-hla"' : ""} style="${hlStyle(anim)}">`, "</span>");
+  const doHl = (anim) => wrapIn(`<span${anim && hlM !== "wave" ? ' class="ann-hla"' : ""} style="${hlStyle(anim)}">`, "</span>");
   const unFx = () => { restoreSel(); const sl = window.getSelection(); if (!sl || !sl.rangeCount) return; const ed = editorRef.current; let n = sl.anchorNode; n = n && n.nodeType === 3 ? n.parentElement : n;
     const el = n && n.closest && n.closest(".ann-sp,.ann-hla,.ann-pulse,.ann-fade,.ann-shine,.ann-box,.ann-quote,span[style]"); if (el && ed.contains(el) && el !== ed) { const f = document.createDocumentFragment(); while (el.firstChild) f.appendChild(el.firstChild); el.replaceWith(f); } else document.execCommand("removeFormat"); onChange(ed.innerHTML); };
   const imgTag = (src, w) => `<img src="${src}" style="width:${w};max-width:100%;height:auto;border-radius:12px;margin:8px auto;display:block;cursor:pointer;" />`;
@@ -881,6 +943,7 @@ function RichEditor({ value, onChange }) {
         <ToolBtn onClick={() => exec("justifyCenter")} title="وسط">↔ وسط</ToolBtn>
         <ToolBtn onClick={() => exec("justifyLeft")} title="يسار">➡ يسار</ToolBtn>
         <ToolBtn onClick={() => exec("justifyFull")} title="ضبط">☰ ضبط</ToolBtn>
+        <button type="button" onMouseDown={e => e.preventDefault()} onClick={autoJustify} title="تنسيق النص كله: الفقرات تمتد من بداية السطر إلى آخره، وتبقى التحية والعناوين القصيرة كما هي" className="h-8 px-2 rounded-lg flex items-center justify-center text-xs font-black whitespace-nowrap" style={{ background: "#ecfdf5", color: "#065f46", border: "1.5px solid #6ee7b7" }}>⇔ تنسيق تلقائي</button>
         <ToolBtn onClick={() => exec("indent")} title="إزاحة النص للداخل">⇤ إزاحة</ToolBtn>
         <ToolBtn onClick={() => exec("outdent")} title="إرجاع الإزاحة">⇥ إرجاع</ToolBtn>
         <div className="w-px bg-gray-300 mx-1"></div>
@@ -950,9 +1013,9 @@ function RichEditor({ value, onChange }) {
         <button type="button" onMouseDown={e => { e.preventDefault(); saveSel(); }} onClick={() => { const v = !showFx; closeAll(); setShowFx(v); }} title="تظليل ومؤثرات وإظهار النص"
           className="h-8 px-3 rounded-lg flex items-center justify-center text-xs font-black whitespace-nowrap" style={{ background: showFx ? "linear-gradient(135deg,#0f1e3d,#1e3a8a)" : "linear-gradient(135deg,#fff8e1,#fde68a)", color: showFx ? "#fde68a" : "#0f1e3d", border: "1.5px solid #d4a017" }}>✨ تحرير متقدم</button>
       </div>
-      {showFx && <AnnFxPanel {...{ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, exec, unFx, saveSel, onClose: () => setShowFx(false) }} />}
+      {showFx && <AnnFxPanel {...{ hlC, setHlC, hlA, setHlA, hlM, setHlM, doHl, wrapSel, wrapIn, exec, unFx, saveSel, onClose: () => setShowFx(false) }} />}
       <style>{ANN_FX_CSS}</style>
-      <div ref={editorRef} contentEditable dir="rtl" onInput={handleInput} onKeyUp={saveSel} onMouseUp={saveSel} onBlur={saveSel}
+      <div ref={editorRef} contentEditable dir="rtl" onPaste={onPaste} onInput={handleInput} onKeyUp={saveSel} onMouseUp={saveSel} onBlur={saveSel}
         className="min-h-36 p-4 text-sm leading-relaxed focus:outline-none"
         style={{ direction: "rtl", fontFamily: "'Noto Naskh Arabic', serif" }}
         data-placeholder="اكتب محتوى الإعلان هنا…"></div>
@@ -1452,6 +1515,7 @@ const ANN_HTML_CSS = ANN_FX_CSS + `
 .annhtml{font-size:16px;line-height:1.95;overflow-wrap:anywhere;word-break:normal;text-align:right}
 .annhtml,.annhtml *{max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;float:none!important;text-indent:0!important;letter-spacing:normal!important;word-spacing:normal!important}
 .annhtml p,.annhtml div,.annhtml li{margin-top:0;margin-bottom:.5em}
+.annhtml [style*="justify"]{text-align:justify!important;text-justify:inter-word}
 .annhtml p:empty,.annhtml div:empty{display:none}
 .annhtml br+br{display:none}
 .annhtml img,.annhtml video,.annhtml iframe{height:auto!important;border-radius:14px;display:block;margin:10px auto}
@@ -1513,7 +1577,7 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
               <AnnAudience ann={ann} size="lg" />
               <div className="flex items-start gap-3 mb-3 flex-wrap">
                 <span className="text-3xl">{cIcons[ann.category] || "📢"}</span>
-                <h1 className={"font-black flex-1 leading-snug " + (ann.titleSize||"text-2xl")} style={{color: ann.titleColor||"#1f2937", textAlign: ann.titleAlign||"right"}}>{ann.title}</h1>
+                <h1 className={"font-black flex-1 leading-snug " + (ann.titleSize||"text-2xl")} style={{color: ann.titleColor||"#1f2937", textAlign: ann.titleAlign||"right"}}><AnnT a={ann} /></h1>
                 {ann.pinned && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">📌 مثبت</span>}
               </div>
               <AnnDateLine ann={ann} size="lg" />
@@ -1637,7 +1701,7 @@ const ANN_TEMPLATES = [
                 {ann.pinned&&<span style={{background:"rgba(251,191,36,.2)",color:"#fbbf24",borderRadius:20,padding:"2px 10px",fontSize:10,fontWeight:700}}>📌 مثبت</span>}
               </div>
               <AnnAudience ann={ann} size="sm" />
-              <h3 style={{fontSize:18,fontWeight:900,color:"#f1f5f9",lineHeight:1.4,marginBottom:4,textShadow:"0 2px 8px rgba(0,0,0,.4)"}}>{ann.title}</h3>
+              <h3 style={{fontSize:18,fontWeight:900,color:"#f1f5f9",lineHeight:1.4,marginBottom:4,textShadow:"0 2px 8px rgba(0,0,0,.4)"}}><AnnT a={ann} /></h3>
               <AnnDateLine ann={ann} size="sm" dark />
               <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7,maxHeight:56,overflow:"hidden"}}
                 dangerouslySetInnerHTML={{__html:ann.content?.replace(/<[^>]*>/g," ").substring(0,120)+"…"}}/>
@@ -1676,7 +1740,7 @@ const ANN_TEMPLATES = [
               {ann.pinned&&<span style={{fontSize:10,color:"#f59e0b"}}>📌</span>}
             </div>
             <AnnAudience ann={ann} size="sm" />
-            <h3 style={{fontSize:16,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:2}}>{ann.title}</h3>
+            <h3 style={{fontSize:16,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:2}}><AnnT a={ann} /></h3>
             <AnnDateLine ann={ann} size="sm" />
             <div style={{fontSize:12,color:"#64748b",lineHeight:1.8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}
               dangerouslySetInnerHTML={{__html:ann.content?.replace(/<[^>]*>/g," ")}}/>
@@ -1717,7 +1781,7 @@ const ANN_TEMPLATES = [
               </div>
             </div>
             <AnnAudience ann={ann} size="sm" />
-            <h3 style={{fontSize:16,fontWeight:900,color:"#fff",lineHeight:1.4,textShadow:"0 1px 4px rgba(0,0,0,.3)"}}>{ann.title}</h3>
+            <h3 style={{fontSize:16,fontWeight:900,color:"#fff",lineHeight:1.4,textShadow:"0 1px 4px rgba(0,0,0,.3)"}}><AnnT a={ann} /></h3>
             <AnnDateLine ann={ann} size="sm" dark />
           </div>
           {/* جسم البطاقة */}
@@ -1757,7 +1821,7 @@ const ANN_TEMPLATES = [
             {ann.priority!=="عادي"&&<span style={{background:pColor+"15",color:pColor,borderRadius:20,padding:"1px 10px",fontSize:10,fontWeight:900}}>{ann.priority}</span>}
           </div>
           <div style={{paddingRight:10}}><AnnAudience ann={ann} size="sm" /></div>
-          <h3 style={{fontSize:15,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:2,paddingRight:10}}>{ann.title}</h3>
+          <h3 style={{fontSize:15,fontWeight:900,color:"#1e293b",lineHeight:1.4,marginBottom:2,paddingRight:10}}><AnnT a={ann} /></h3>
           <div style={{paddingRight:10}}><AnnDateLine ann={ann} size="sm" /></div>
           <div style={{fontSize:12,color:"#64748b",lineHeight:1.7,paddingRight:10,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}
             dangerouslySetInnerHTML={{__html:ann.content?.replace(/<[^>]*>/g," ")}}/>
@@ -1839,7 +1903,7 @@ function CreativeAnnouncementsView({ announcements }) {
             </div>
 
             <h2 style={{fontSize:22,fontWeight:900,color:"#fff",lineHeight:1.4,marginBottom:8,
-              textShadow:"0 2px 8px rgba(0,0,0,.3)"}}>{selected.title}</h2>
+              textShadow:"0 2px 8px rgba(0,0,0,.3)"}}><AnnT a={selected} /></h2>
             <div style={{fontSize:11,color:"rgba(255,255,255,.7)",fontWeight:700}}>{selected.date}</div>
           </div>
 
@@ -12769,7 +12833,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
     <div class="header">
       <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
       ${ann.audience ? `<div class="aud">موجّه إلى: ${ann.audience}</div>` : ""}
-      <div class="title">${cIcons[ann.category]||"📌"} ${ann.title}</div>
+      <div class="title">${cIcons[ann.category]||"📌"} ${annTitleHtml(ann)}</div>
       <div class="adate">📅 ${ann.date}</div>
       <div class="meta">
         <span class="badge">${ann.priority}</span>
@@ -12819,7 +12883,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
 
             {/* العنوان */}
             <input type="text" placeholder="عنوان الإعلان..." value={newAnn.title}
-              onChange={e => setNewAnn(p=>({...p,title:e.target.value}))}
+              onChange={e => setNewAnn(p=>({...p,title:e.target.value,titleHtml:""}))}
               style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:"2px solid #e2e8f0",
                        fontSize:15, fontWeight:800, color: newAnn.titleColor, marginBottom:8,
                        fontFamily:"'Cairo',sans-serif", boxSizing:"border-box",
@@ -12916,7 +12980,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                   /* وضع التعديل — جوال */
                   <div style={{ padding:12 }}>
                     <div style={{ fontSize:12, fontWeight:800, color:"#0d9488", marginBottom:8 }}>✏️ تعديل الإعلان</div>
-                    <input value={editAnn.title} onChange={e=>setEditAnn(p=>({...p,title:e.target.value}))}
+                    <input value={editAnn.title} onChange={e=>setEditAnn(p=>({...p,title:e.target.value,titleHtml:""}))}
                       style={{ width:"100%", padding:"8px 10px", borderRadius:10, border:"2px solid #0d9488", fontSize:14, fontWeight:800, color:editAnn.titleColor||"#1f2937", fontFamily:"'Cairo',sans-serif", boxSizing:"border-box", outline:"none", marginBottom:8 }} />
                     <textarea value={editAnn.content.replace(/<[^>]*>/g,'')}
                       onChange={e=>setEditAnn(p=>({...p,content:e.target.value}))} rows={3}
@@ -12952,7 +13016,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                           </div>
                           <AnnAudience ann={ann} size="sm" />
                           <div style={{ fontSize:14, fontWeight:900, color:ann.titleColor||"#1f2937", lineHeight:1.3 }}>
-                            {ann.title}
+                            <AnnT a={ann} />
                           </div>
                           <AnnDateLine ann={ann} size="sm" />
                         </div>
@@ -13066,9 +13130,10 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
         <div className="bg-white rounded-2xl p-5 shadow-md border border-teal-200 mb-6">
           <h3 className="font-bold text-teal-800 mb-4">إضافة إعلان جديد</h3>
           <div className="space-y-3">
-            <input type="text" placeholder="عنوان الإعلان" value={newAnn.title} onChange={e => setNewAnn(p => ({...p, title: e.target.value}))}
+            <input type="text" placeholder="عنوان الإعلان" value={newAnn.title} onChange={e => setNewAnn(p => ({...p, title: e.target.value, titleHtml: ""}))}
               className={"w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-400 focus:outline-none font-black " + (newAnn.titleSize||"text-xl")}
               style={{ color: newAnn.titleColor || "#1f2937" }} />
+            <AnnTitleFx val={newAnn} setVal={setNewAnn} />
             <div className="flex gap-2 flex-wrap items-center">
               <span className="text-xs font-bold text-gray-500">🎨 لون العنوان:</span>
               {["#1f2937","#0d9488","#dc2626","#7c3aed","#d97706","#2563eb","#059669","#db2777","#be123c","#0369a1","#92400e","#166534"].map(c => (
@@ -13132,9 +13197,10 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-black text-teal-700">✏️ تعديل الإعلان</span>
                 </div>
-                <input value={editAnn.title} onChange={e => setEditAnn(p => ({...p, title: e.target.value}))}
+                <input value={editAnn.title} onChange={e => setEditAnn(p => ({...p, title: e.target.value, titleHtml: ""}))}
                   className={"w-full px-4 py-2.5 rounded-xl border-2 border-teal-300 focus:outline-none font-black " + (editAnn.titleSize||"text-xl")}
                   style={{color: editAnn.titleColor||"#1f2937"}} placeholder="العنوان" />
+                <AnnTitleFx key={"e" + editId} val={editAnn} setVal={setEditAnn} />
                 <div className="flex gap-2 flex-wrap items-center">
                   <span className="text-xs font-bold text-gray-500">🎨 لون العنوان:</span>
                   {["#1f2937","#0d9488","#dc2626","#7c3aed","#d97706","#2563eb","#059669","#db2777"].map(c => (
@@ -13182,7 +13248,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
                 <div className="flex items-start justify-between gap-3 mb-1 flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap" style={{ flex: "1 1 260px", minWidth: 0 }}>
                     <span className="text-xl">{cIcons[ann.category] || "📌"}</span>
-                    <h3 className={"font-bold ann-title-r " + (ann.titleSize||"text-lg")} style={{color: ann.titleColor||"#1f2937", lineHeight: 1.5, minWidth: 0, flex: "1 1 200px", overflowWrap: "break-word"}}>{ann.title}</h3>
+                    <h3 className={"font-bold ann-title-r " + (ann.titleSize||"text-lg")} style={{color: ann.titleColor||"#1f2937", lineHeight: 1.5, minWidth: 0, flex: "1 1 200px", overflowWrap: "break-word"}}><AnnT a={ann} /></h3>
                     {ann.pinned && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">📌 مثبّت</span>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
@@ -35290,7 +35356,7 @@ function GuardianPortal({ onBack }) {
             {tab === "ann" && (d.anns.length ? d.anns.map(a => { const cs = ptVals(d.comm[a.id]).sort((x, y) => x.at - y.at); const on = openAnn === a.id; return (
               <div key={a.id} className="pt-item">
                 <button type="button" onClick={() => { setOpenAnn(on ? null : a.id); setCm(""); }} style={{ all: "unset", cursor: "pointer", display: "block", width: "100%" }}>
-                  <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15, flex: 1 }}>📣 {a.title}</b>{a.priority === "عاجل" && <span className="pt-st" style={{ background: "#fee2e2", color: "#b91c1c" }}>عاجل</span>}<span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{a.date || ""} • 💬 {maAr(cs.length)}</span></div>
+                  <div className="flex items-center gap-2 flex-wrap"><b style={{ fontSize: 15, flex: 1 }}>📣 <AnnT a={a} /></b>{a.priority === "عاجل" && <span className="pt-st" style={{ background: "#fee2e2", color: "#b91c1c" }}>عاجل</span>}<span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{a.date || ""} • 💬 {maAr(cs.length)}</span></div>
                 </button>
                 {on && <div style={{ marginTop: 10 }}>
                   <style>{ANN_HTML_CSS}</style><div style={{ fontSize: 14, lineHeight: 1.9, overflowWrap: "anywhere" }} className="ann-body annhtml" dangerouslySetInnerHTML={{ __html: annFit(a.content || "") }} />
