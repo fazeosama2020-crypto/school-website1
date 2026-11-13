@@ -5,7 +5,7 @@
 // قاعدة البيانات: school-grades/{id} = { subj, teacher, type, title, ck, max, date, marks:{sid: درجة | "غ"}, names, by, at }
 // ══════════════════════════════════════════════════════════════════
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { rdFixRec } from "../reading/rdEngine.js";
+import { rdFixRec, rdTokens } from "../reading/rdEngine.js";
 
 const NODE = "school-grades";
 const IX = "school-grades-stu"; // فهرس لكل طالب: school-grades-stu/{ck}/{sid}/{recId} — تقرأ منه صفحة الطالب وولي الأمر
@@ -286,7 +286,7 @@ export function StudentMarks({ api, me }) {
   const [L, setL] = useState(null); const [RL, setRL] = useState([]); const [fs, setFs] = useState("");
   useEffect(() => { let on = true; (async () => {
     const m = obj(await api.maGet(`${IX}/${me.ck}/${ixKey(me.sid)}`)); const list = Object.entries(m).map(([id, x]) => ({ id, ...x })).filter(x => x && x.s).sort((a, b) => (b.d || "").localeCompare(a.d || "") || (b.at || 0) - (a.at || 0)); on && setL(list);
-    try { const T = arr(await api.maGet(RD.TXT)); const out = []; await Promise.all(T.map(async t => { const r = await api.maGet(`${RD.RES}/${t.id}/${me.ck}_${ixKey(me.sid)}`); const tr = arr(rdFixRec(r) && rdFixRec(r).tries).filter(x => x.m && !x.rej); if (tr.length) out.push({ t, last: tr[tr.length - 1], n: tr.length, first: tr[0] }); })); on && setRL(out.sort((a, b) => (b.last.at || 0) - (a.last.at || 0))); } catch {}
+    try { const T = arr(await api.maGet(RD.TXT)); const out = []; await Promise.all(T.map(async t => { const r = await api.maGet(`${RD.RES}/${t.id}/${me.ck}_${ixKey(me.sid)}`); const fx = rdFixRec(r, rdTokens(t.body)); const tr = arr(fx && fx.tries).filter(x => x.m && !x.rej); if (tr.length) out.push({ t, last: tr[tr.length - 1], n: tr.length, first: tr[0] }); })); on && setRL(out.sort((a, b) => (b.last.at || 0) - (a.last.at || 0))); } catch {}
   })(); return () => { on = false; }; }, [me.sid, me.ck]);
   const box = { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 18, padding: 14, boxShadow: "0 10px 24px -22px rgba(11,37,69,.6)" };
   const cell = (v, l, c) => <div style={{ flex: "1 1 76px", textAlign: "center", background: "#f8fafc", borderRadius: 12, padding: "6px 4px" }}><b style={{ display: "block", fontSize: 19, fontWeight: 900, color: c || NAVY, lineHeight: 1.4 }}>{v}</b><small style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>{l}</small></div>;
