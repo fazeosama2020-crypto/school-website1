@@ -7,6 +7,13 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 
 const NODE = "school-grades";
+const IX = "school-grades-stu"; // فهرس لكل طالب: school-grades-stu/{ck}/{sid}/{recId} — تقرأ منه صفحة الطالب وولي الأمر
+const RD = { TXT: "school-rd-txt", RES: "school-rd-res" };
+const ixKey = sid => String(sid).replace(/[.#$[\]/]/g, "");
+const ixPatch = (rec, prev) => { const P = {}; const e = { s: rec.subj, ty: rec.type, ti: rec.title || "", mx: +rec.max, d: rec.date, t: rec.teacher || "", at: rec.up || Date.now() };
+  Object.entries(obj(rec.marks)).forEach(([sid, v]) => { P[`${IX}/${rec.ck}/${ixKey(sid)}/${rec.id}`] = { ...e, v }; });
+  if (prev) Object.keys(obj(prev.marks)).forEach(sid => { if (prev.ck !== rec.ck || obj(rec.marks)[sid] == null) P[`${IX}/${prev.ck}/${ixKey(sid)}/${rec.id}`] = null; });
+  return P; };
 const NAVY = "#0b2545", GOLD = "#c9a227";
 const TYPES = ["تشخيصي", "تكويني", "تجريبي", "اختبار فترة", "نافس تجريبي", "نهائي"];
 const MAXES = Array.from({ length: 21 }, (_, i) => i + 10); // من ١٠ إلى ٣٠
@@ -119,7 +126,9 @@ export function GradeBook({ api, me, admin = false }) {
   const [f, setF] = useState(blank); const [raw, setRaw] = useState({}); const [view, setView] = useState(null); const [busy, setBusy] = useState(false);
   const [cs, setCs] = useState({ subj: "", type: "", g: "", ck: "" }); const [lq, setLq] = useState({ subj: "", type: "", ck: "", q: "" });
   const inputs = useRef([]);
-  const load = async () => setAll(arr(await api.maGet(NODE)).sort((a, b) => (b.at || 0) - (a.at || 0)));
+  const load = async () => { const L = arr(await api.maGet(NODE)).sort((a, b) => (b.at || 0) - (a.at || 0)); setAll(L);
+    // ترحيل الرصود القديمة إلى صفحات الطلاب (مرة واحدة لكل رصد)
+    const old = L.filter(r => r && r.id && !r.ix).slice(0, 40); if (old.length) { const P = {}; old.forEach(r => { Object.assign(P, ixPatch(r)); P[`${NODE}/${r.id}/ix`] = 1; }); try { await api.fbPatch(P); } catch {} } };
   useEffect(() => { load(); api.TT().then(setTT).catch(() => {}); api.staff().then(s => setStaff(arr(s).map(x => x.name).filter(Boolean))).catch(() => {}); }, []);
   const teachers = useMemo(() => [...new Set([...(T && T.T ? T.T.map(n => String(n || "").replace(/\s*\(.*?\)\s*/g, "").trim()) : []), ...staff])].filter(Boolean).sort((a, b) => a.localeCompare(b, "ar")), [T, staff]);
   const subjects = useMemo(() => { const s = T && T.S ? T.S.map((x, i) => (T.SA && T.SA[i]) || x).filter(x => x && !/احتياط|نشاط|ريادة|انتظار/.test(x)) : []; return [...new Set([...s, ...SUBJ_STD, ...(all || []).map(r => r.subj)])].filter(Boolean); }, [T, all]);
@@ -138,11 +147,11 @@ export function GradeBook({ api, me, admin = false }) {
     if (!Object.keys(marks).length) { alert("لم تُرصد أي درجة"); return; }
     if (!f.id) { const dup = all.find(r => r.ck === f.ck && nrm(r.subj) === nrm(f.subj) && r.type === f.type && (r.title || "") === (f.title || "")); if (dup && !confirm(`يوجد رصد سابق لنفس المادة والنوع والفصل (${dAr(dup.date)}). هل تريد إنشاء رصد جديد؟ (للتعديل افتح السجل من «السجلات»)`)) return; }
     setBusy(true); const id = f.id || "g" + Date.now().toString(36); const names = {}; S.forEach(s => { if (marks[s.id] != null) names[s.id] = s.name; });
-    const rec = { ...f, id, subj: f.subj.trim(), teacher: f.teacher.trim(), type: f.type.trim(), title: (f.title || "").trim(), max, marks, names, n: S.length, by: f.by || by, at: f.at || Date.now(), up: Date.now() };
-    const ok = await api.maPut(`${NODE}/${id}`, rec); setBusy(false); if (ok === false) { say("⚠️ حُفظ على الجهاز وسيُرفع عند عودة الاتصال"); }
-    else say("✅ تم الحفظ والتحليل"); setAll(a => [rec, ...a.filter(x => x.id !== id)]); setView(rec); setF(blank()); setRaw({});
+    const rec = { ...f, id, subj: f.subj.trim(), teacher: f.teacher.trim(), type: f.type.trim(), title: (f.title || "").trim(), max, marks, names, n: S.length, by: f.by || by, at: f.at || Date.now(), up: Date.now(), ix: 1 };
+    const ok = await api.maPut(`${NODE}/${id}`, rec); try { await api.fbPatch(ixPatch(rec, all.find(x => x.id === id))); } catch {} setBusy(false); if (ok === false) { say("⚠️ حُفظ على الجهاز وسيُرفع عند عودة الاتصال"); }
+    else say("✅ تم الحفظ والتحليل — ظهرت الدرجات في صفحات الطلاب وأولياء الأمور"); setAll(a => [rec, ...a.filter(x => x.id !== id)]); setView(rec); setF(blank()); setRaw({});
   };
-  const del = async r => { if (!confirm(`حذف رصد ${r.subj} — ${r.type} — ${api.maClassName(r.ck)}؟`)) return; await api.maPut(`${NODE}/${r.id}`, null); setAll(a => a.filter(x => x.id !== r.id)); setView(null); say("🗑️ تم الحذف"); };
+  const del = async r => { if (!confirm(`حذف رصد ${r.subj} — ${r.type} — ${api.maClassName(r.ck)}؟`)) return; await api.maPut(`${NODE}/${r.id}`, null); try { const P = {}; Object.keys(obj(r.marks)).forEach(sid => { P[`${IX}/${r.ck}/${ixKey(sid)}/${r.id}`] = null; }); await api.fbPatch(P); } catch {} setAll(a => a.filter(x => x.id !== r.id)); setView(null); say("🗑️ تم الحذف"); };
   const othersOf = r => all.filter(o => nrm(o.subj) === nrm(r.subj) && o.type === r.type && String(o.ck)[0] === String(r.ck)[0]).reduce((m, o) => { const c = m.find(x => x.ck === o.ck); if (!c || (o.date || "") > (c.date || "")) return [...m.filter(x => x.ck !== o.ck), o]; return m; }, []).sort((a, b) => a.ck.localeCompare(b.ck, "en", { numeric: true }));
   const prevOf = r => all.filter(o => o.id !== r.id && o.ck === r.ck && nrm(o.subj) === nrm(r.subj) && ((o.date || "") < (r.date || "") || ((o.date || "") === (r.date || "") && (o.at || 0) < (r.at || 0)))).sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.at || 0) - (a.at || 0))[0];
 
@@ -266,5 +275,42 @@ export function GradeBook({ api, me, admin = false }) {
     <div className="gb-tabs">{[["new", f.id ? "✏️ تعديل الرصد" : "📝 رصد الدرجات"], ["list", `📚 السجلات (${ar(all.filter(r => admin || myRec(r)).length)})`], ["cmp", "📊 التحليل والمقارنة"], ["weak", "⚠️ يحتاجون معالجة"]].map(([k, l]) => <button key={k} className={`gb-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
     {tab === "new" && newTab()}{tab === "list" && listTab()}{tab === "cmp" && cmpTab()}{tab === "weak" && weakTab()}
     {toast && <div style={{ position: "fixed", bottom: 18, left: "50%", transform: "translateX(-50%)", background: NAVY, color: "#fff", padding: "10px 18px", borderRadius: 14, fontWeight: 800, zIndex: 999 }}>{toast}</div>}
+  </div>;
+}
+
+
+// ══════════ درجات الطالب في صفحته وصفحة ولي أمره ══════════
+// لكل اختبار مرصود: الدرجة • النسبة • عدد الأخطاء (الدرجات المفقودة) • المستوى — ومعها نتائج اختبار القراءة الجهرية
+export function StudentMarks({ api, me }) {
+  const [L, setL] = useState(null); const [RL, setRL] = useState([]); const [fs, setFs] = useState("");
+  useEffect(() => { let on = true; (async () => {
+    const m = obj(await api.maGet(`${IX}/${me.ck}/${ixKey(me.sid)}`)); const list = Object.entries(m).map(([id, x]) => ({ id, ...x })).filter(x => x && x.s).sort((a, b) => (b.d || "").localeCompare(a.d || "") || (b.at || 0) - (a.at || 0)); on && setL(list);
+    try { const T = arr(await api.maGet(RD.TXT)); const out = []; await Promise.all(T.map(async t => { const r = await api.maGet(`${RD.RES}/${t.id}/${me.ck}_${ixKey(me.sid)}`); const tr = arr(r && r.tries).filter(x => x.m); if (tr.length) out.push({ t, last: tr[tr.length - 1], n: tr.length, first: tr[0] }); })); on && setRL(out.sort((a, b) => (b.last.at || 0) - (a.last.at || 0))); } catch {}
+  })(); return () => { on = false; }; }, [me.sid, me.ck]);
+  const box = { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 18, padding: 14, boxShadow: "0 10px 24px -22px rgba(11,37,69,.6)" };
+  const cell = (v, l, c) => <div style={{ flex: "1 1 76px", textAlign: "center", background: "#f8fafc", borderRadius: 12, padding: "6px 4px" }}><b style={{ display: "block", fontSize: 19, fontWeight: 900, color: c || NAVY, lineHeight: 1.4 }}>{v}</b><small style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>{l}</small></div>;
+  if (!L) return <div style={{ ...box, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>⏳</div>;
+  const subs = [...new Set(L.map(x => x.s))]; const F = L.filter(x => !fs || x.s === fs); const num = F.filter(x => typeof x.v === "number");
+  const avg = num.length ? num.reduce((a, x) => a + x.v / x.mx * 100, 0) / num.length : null;
+  const RLV = { a: ["متقن", "#15803d", "#dcfce7"], b: ["متمكن", "#0e7490", "#cffafe"], m: ["ضعف متوسط", "#d97706", "#fef3c7"], s: ["ضعف شديد", "#dc2626", "#fee2e2"] };
+  return <div className="gb" style={{ display: "grid", gap: 10 }}><style>{CSS}</style>
+    <div style={{ ...box, background: `linear-gradient(135deg,${NAVY},#1e3a8a)`, color: "#fff", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ flex: "1 1 200px" }}><b style={{ fontSize: 17 }}>📝 درجات الاختبارات</b><div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{ar(L.length)} اختباراً مرصوداً{avg != null ? ` • متوسط النسبة ${f1(avg)}٪` : ""}</div></div>
+      {subs.length > 1 && <select className="gb-inp" style={{ width: 170, minHeight: 38 }} value={fs} onChange={e => setFs(e.target.value)}><option value="">جميع المواد</option>{subs.map(x => <option key={x}>{x}</option>)}</select>}</div>
+    {!L.length && <div style={{ ...box, textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>لم تُرصد درجات اختبارات بعد</div>}
+    {F.map(x => { const ab = x.v === "غ"; const p = ab ? null : x.v / x.mx * 100; const b = p == null ? null : bandOf(p); const er = ab ? null : Math.max(0, Math.round((x.mx - x.v) * 100) / 100);
+      return <div key={x.id} style={{ ...box, borderRight: `6px solid ${b ? b.c : "#94a3b8"}`, display: "grid", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}><b style={{ fontSize: 15.5, color: NAVY }}>📚 {x.s} <span className="gb-lv" style={{ background: "#fef3c7", color: "#92400e" }}>{x.ty}</span></b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{dAr(x.d)}{x.t ? ` • 👤 ${x.t}` : ""}</span></div>
+        {x.ti && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>{x.ti}</div>}
+        {ab ? <div style={{ fontWeight: 900, color: "#b45309" }}>غائب عن الاختبار</div> : <>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{cell(<>{f1(x.v)}<small style={{ fontSize: 12, color: "#64748b" }}> / {ar(x.mx)}</small></>, "الدرجة", b.c)}{cell(f1(p) + "٪", "النسبة", b.c)}{cell(f1(er), "عدد الأخطاء", er ? "#dc2626" : "#15803d")}{cell(<span className="gb-lv" style={{ background: b.bg, color: b.c, fontSize: 13 }}>{b.t}</span>, "المستوى")}</div>
+          <div className="gb-bar"><i style={{ width: `${p}%`, background: b.c }} /></div></>}
+      </div>; })}
+    {RL.length > 0 && <div style={{ ...box, display: "grid", gap: 8 }}><b style={{ fontSize: 15.5, color: NAVY }}>🎙️ اختبار القراءة الجهرية</b>
+      {RL.map(({ t, last, n, first }) => { const M = last.m; const lv = RLV[M.lv] || RLV.s; const d = n > 1 ? M.score - first.m.score : null;
+        return <div key={t.id} style={{ border: "1px solid #eef2f7", borderRadius: 14, padding: 10, display: "grid", gap: 6 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}><b style={{ fontSize: 14 }}>📄 {t.title}</b><span className="gb-lv" style={{ background: lv[2], color: lv[1] }}>{lv[0]}</span></div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{cell(<>{ar(M.score)}<small style={{ fontSize: 12, color: "#64748b" }}> / ١٠٠</small></>, "الدرجة", lv[1])}{cell(ar(M.acc) + "٪", "دقة القراءة")}{cell(ar(M.errs), "عدد الأخطاء", M.errs ? "#dc2626" : "#15803d")}{cell(ar(M.wcpm), "كلمة/دقيقة")}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>حذف {ar(M.c.d || 0)} • إبدال {ar(M.c.s || 0)} • ضبط {ar(M.c.t || 0)} • إضافة {ar(M.ins || 0)} • المحاولات {ar(n)}{d != null ? ` • ${d >= 0 ? "تحسّن" : "تراجع"} ${ar(Math.abs(d))} درجة` : ""}</div></div>; })}</div>}
   </div>;
 }
