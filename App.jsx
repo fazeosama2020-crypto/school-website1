@@ -29,6 +29,18 @@ const ReadingStudent = React.lazy(() => import("./reading/ReadingLab.jsx").then(
 const ReadingTeacher = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingTeacher })));
 const ReadingAdmin = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingAdmin })));
 const OpPlan = React.lazy(() => import("./OpPlan.jsx").then(m => ({ default: m.OpPlan })));
+const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ default: m.HealthPlan })));
+const AbsAction = React.lazy(() => import("./AbsAction.jsx").then(m => ({ default: m.AbsAction })));
+// حصر غياب كل طالب في فترة (أيام الغياب، وما صُنّف منها بعذر) — لملف إجراءات معالجة الغياب
+const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: "الإدارة العامة للتعليم بمحافظة جدة", absData: async (f, t) => {
+  const [ros, meta, att, ax] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(ABSX, f, t).catch(() => ({}))]);
+  const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4]; const classes = maClasses(counts); const R = ptObj(ros), X = ptObj(ax); const S = {};
+  classes.forEach(c => maArr(R[c.ck] && R[c.ck].students).filter(x => x && x.id && x.name).forEach(st => { S[st.id] = { sid: st.id, name: st.name, ck: c.ck, cls: maClassName(c.ck), abs: [], ex: [] }; }));
+  Object.entries(ptObj(att)).forEach(([dk, day]) => Object.entries(ptObj(day)).forEach(([ck, r]) => maArr(r && r.absent).forEach(a => { const o = a && S[a.id]; if (!o || o.abs.includes(dk)) return; o.abs.push(dk); if (absxS(X, dk, a.id) === "e") o.ex.push(dk); })));
+  const list = Object.values(S).filter(o => o.abs.length).map(o => ({ ...o, e: o.ex.length, u: o.abs.length - o.ex.length }));
+  return { list, classes: classes.map(c => ({ ck: c.ck, name: maClassName(c.ck) })) };
+} });
+const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: "الإدارة العامة للتعليم بمحافظة جدة" });
 // عرض وثيقة الخطة (تعميم) داخل قسم الخطة التشغيلية
 function OpPlanDoc({ cid }) {
   const [st, setSt] = React.useState(null);
@@ -2229,7 +2241,7 @@ const HUB_GROUPS = [
   { title:"التواصل والإعلام", desc:"الرسائل والإعلانات والبث المدرسي", icon:"📣", c:"#d97706", tint:"#ffedd5",
     tools:[{id:"parentinbox",label:"طلبات أولياء الأمور",icon:"📨"},{id:"portals",label:"بوابات الدخول والصلاحيات",icon:"🔐"},{id:"announcements",label:"الإعلانات",icon:"📣"},{id:"messages",label:"رسائل الأهالي",icon:"💌"},{id:"sms",label:"رسائل SMS",icon:"📲"},{id:"broadcast",label:"الإذاعة المدرسية",icon:"🎙️"},{id:"suggestions",label:"آراء ومقترحات",icon:"💬"}] },
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
-    tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
+    tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"healthplan",label:"البرامج الصحية",icon:"🩺"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
     tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"circdaily",label:"التعاميم اليومية",icon:"📨"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"audit",label:"سجل التدقيق",icon:"🕵️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
@@ -13474,6 +13486,8 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
   const actStudio = act => setStudio({ kind: "rep", title: act.title, date: act.date || "", by: act.responsible || "", type: act.type || "", body: psTxt(act.description), imgs: psImgs(act.description), ref: "act-" + act.id, theme: "emerald" });
   return (
     <div dir="rtl" style={{ maxWidth: 1100, margin: "0 auto", width: "100%" }}>
+      <button type="button" onClick={() => { window.location.hash = "healthplan"; }} style={{ width: "100%", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "right", borderRadius: 18, padding: "14px 18px", marginBottom: 16, color: "#fff", background: "linear-gradient(120deg,#1d7a93,#2490ab 55%,#3aa7c1)", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 10px 24px -14px rgba(29,122,147,.8)" }}>
+        <span style={{ fontSize: 34 }}>🩺</span><span style={{ flex: 1 }}><b style={{ display: "block", fontSize: 17 }}>الخطة المشتركة للبرامج الصحية المدرسية 1448هـ</b><small style={{ fontWeight: 700, opacity: .9 }}>البرامج بآلية تنفيذها ودور الموجه الصحي والشواهد — توثيق بالصور والاستمارات وطباعة تقرير التنفيذ</small></span><span style={{ background: "#fff", color: "#1d7a93", borderRadius: 999, padding: "6px 14px", fontWeight: 900, fontSize: 13 }}>فتح ←</span></button>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="text-2xl font-black text-teal-900">الأنشطة المدرسية</h2>
         <button onClick={() => setStudio({ kind: "rep", theme: "emerald" })} style={{ background: "linear-gradient(135deg,#0b3d36,#d4a017)", color: "#fff", border: "none", borderRadius: 12, padding: "10px 16px", fontWeight: 900, fontSize: 13.5, cursor: "pointer", fontFamily: "'Cairo',sans-serif" }}>🎨 تقرير نشاط بالصور</button>
@@ -31422,7 +31436,7 @@ const NAV_TOOL_DESC = {
   aiteacher:"مساعد ذكي للمعلم", lessonprep:"تحضير الدروس بالذكاء", strategies:"استراتيجيات التدريس",
   announcements:"إعلانات وتعاميم المدرسة", messages:"التواصل مع أولياء الأمور", sms:"إرسال رسائل نصية",
   broadcast:"برامج الإذاعة الصباحية", suggestions:"آراء ومقترحات المجتمع",
-  activities:"خطة الأنشطة والبرامج", gallery:"صور ومعرض الأنشطة", meetings:"محاضر الاجتماعات", committeemeeting:"اجتماعات اللجان المدرسية",
+  absaction:"إجراءات معالجة غياب الطلاب", activities:"خطة الأنشطة والبرامج", healthplan:"الخطة المشتركة للبرامج الصحية المدرسية 1448هـ", gallery:"صور ومعرض الأنشطة", meetings:"محاضر الاجتماعات", committeemeeting:"اجتماعات اللجان المدرسية",
   monthlyreport:"التقرير الشهري الشامل", report:"توثيق تقارير البرامج", qiyas:"قياس أثر البرامج",
   conduct:"مخالفات الطلاب والفصول مع الصور والتقرير", alreport:"الفصول الأكثر غياباً وتأخراً والطلاب المتكررون", trash:"استرجاع أي شيء حُذف أو استُبدل", audit:"من عدّل ماذا ومتى في كل أقسام الموقع", liveops:"متابعة اليوم الدراسي لحظياً مع تنبيهات ذكية",
   surveys:"استبيانات ونماذج رأي", hfx:"مساءلات الدوام طبق الأصل + واتساب + توقيع المعلم", hdisc:"رفع تقرير حضوري ونسبة انضباط كل معلم ومؤشرات الفعالية", circulars:"تعاميم بالصور وPDF مع توقيع المعلمين والأرشفة", timetable:"الجدول المدرسي", settings:"إعدادات النظام",
@@ -34978,6 +34992,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "classify") return wrap("🏷️ تصنيف الطلاب", <StudentClassifyPage mode="teacher" />);
   if (view === "stlv") return wrap("📊 سجل تصنيف مستويات الطلاب", <StudentLevelsPage by={me.name} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
   if (view === "readwk") return wrap("📖 حصر الضعف القرائي", <ReadingWeakPage by={me.name} admin={isStaff} />);
+  if (view === "absact" && isStaff && (["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox"))) return wrap("📂 إجراءات معالجة غياب الطلاب", <React.Suspense fallback={RD_WAIT}><AbsAction me={me} api={absApi()} /></React.Suspense>);
+  if (view === "health" && isStaff) return wrap("🩺 البرامج الصحية المدرسية", <React.Suspense fallback={RD_WAIT}><HealthPlan me={me} api={hpApi()} canEdit={["principal", "deputy"].includes(me.role) ? true : "guide"} /></React.Suspense>);
   if (view === "opplan" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🎯 متابعة الخطة التشغيلية", <React.Suspense fallback={RD_WAIT}><OpPlan me={me} api={opApi()} /></React.Suspense>);
   if (view === "qiraa") return wrap("🎙️ اختبار القراءة الجهرية", <React.Suspense fallback={RD_WAIT}><ReadingTeacher me={me} api={rdApi()} admin={isStaff && ["principal", "deputy", "counselor"].includes(me.role)} /></React.Suspense>);
   if (view === "grades") return wrap("📝 رصد الدرجات وتحليلها", <React.Suspense fallback={RD_WAIT}><GradeBook me={me} api={rdApi()} admin={isStaff && ["principal", "deputy", "counselor"].includes(me.role)} /></React.Suspense>);
@@ -35073,6 +35089,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><LeaderStrip onOpen={() => setView("lead")} /></div>}
               {["principal", "deputy"].includes(me.role) && ptTile("ext", "📋", "ملف شواهد التقويم الخارجي", "المؤشرات ودلالات التحقق والشواهد — متحقق/جزئي/غير متحقق، رفع الشواهد، وطباعة الملف بغلاف المدرسة", "#0b2545", "#c9a227", () => setView("ext"))}
               {["principal", "deputy"].includes(me.role) && ptTile("trep", "📑", "التقارير الدورية للمعلمين", "تقرير أداء وإنجاز شهري لكل معلم من بيانات الموقع ومنصة مدرستي — يُعتمد ويُنشر لحساب المعلم PDF", "#0f3b5f", "#1e3a8a", () => setView("trep"))}
+              {ptTile("health", "🩺", "البرامج الصحية المدرسية", "الخطة المشتركة 1448هـ: البرامج وآلية تنفيذها ودور الموجه الصحي وتوثيقها بالصور والاستمارات", "#1d7a93", "#2490ab", () => setView("health"))}
               {["principal", "deputy"].includes(me.role) && ptTile("opplan", "🗂️", "متابعة الخطة التشغيلية", "برامج الخطة بأهدافها ومؤشراتها والمستهدف والمنفذ والإجراءات والشواهد والصور — مع لوحة إنجاز وتقرير فاخر للطباعة", "#0b2545", "#c9a227", () => setView("opplan"))}
               {["principal", "deputy"].includes(me.role) && ptTile("ipadm", "🎯", "خطة التحسين المدرسي", "الاستمارة (1) بناء الخطة والاستمارة (2) الأسبوعية — من التقويم الذاتي ونافس وواقع المدرسة، بالذكاء الاصطناعي وبنفس شكل الاستمارتين", "#1f6b34", "#54A021", () => setView("ipadm"))}
               <div style={{ gridColumn: "1/-1" }}><RmtTeacherCard me={me} quiet /></div>
@@ -35118,6 +35135,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {["principal", "deputy", "counselor"].includes(me.role) && ptTile("grades", "📝", "رصد الدرجات وتحليلها", "رصد درجات أي مادة وأي فصل، والتحليل والمقارنة بين الفصول وأنواع الاختبارات، ومن يحتاج خطة علاجية", "#1e3a8a", "#0f766e", () => setView("grades"))}
               {["principal", "deputy", "counselor"].includes(me.role) && ptTile("diagadm", "🧪", "الاختبارات التشخيصية", "نتائج الصف الثالث في المواد الأربع: لوحة قيادة، الفصول والمعلمون، الطلاب، البعدي والمقارنة", "#12305a", "#0d4f3c", () => setView("diagadm"))}
               {["principal", "deputy", "counselor", "admin"].includes(me.role) && ptTile("dplan", "📘", "خطة وسجل الانضباط المدرسي", "الخطة الإجرائية ولجنة الانضباط وتحليل الغياب والتأخر والاجتماعات والبرامج — مع الطباعة", "#007a72", "#009f8e", () => setView("dplan"))}
+              {(["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox")) && ptTile("absact", "📂", "إجراءات معالجة الغياب", "ملف لكل طالب: التنبيه • الاستدعاء • التعهد • الإرشاد ودراسة الحالة • الرفع لإدارة التعليم • الحماية الأسرية — بالشواهد وتقرير مطبوع", "#0b2545", "#c9a227", () => setView("absact"))}
               {(["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox")) && ptTile("absx", "📋", "تصنيف الغياب: بعذر / بدون عذر", "قبول عذر ولي الأمر يحوّل الغياب «بعذر» تلقائياً، وتعديل أي يوم لأي طالب يدوياً — ينعكس على نسبة الطالب والإنذار", "#0f766e", "#1e3a8a", () => setView("absx"))}
               {ptCan(me, "inbox") && ptTile("inbox", "📨", "أعذار وملاحظات أولياء الأمور", "مراجعة الأعذار وقبولها أو رفضها والرد على الملاحظات", "#2563eb", "#3b82f6", () => setView("inbox"), sum && sum.exc + sum.notes ? maAr(sum.exc + sum.notes) : "")}
             </div>
@@ -37612,6 +37630,7 @@ function GuardianDaily({ me }) {
 
 const MA_LOCK = "school-mattend-lock";
 function MorningAttendancePage({ mode = "admin", onBack, section = "take", initTab }) {
+  const [absAct, setAbsAct] = useState(false);
   const isT = mode === "teacher";
   const isStats = !isT && section === "stats";
   const [tab, setTab] = useState(isStats ? (initTab || "stats") : "take");
@@ -38001,6 +38020,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
   return (
     <div className="ma px-3 md:px-6 py-4" dir="rtl">
       <style>{MA_CSS}</style>
+      {absAct && <div style={{ position: "fixed", inset: 0, zIndex: 9990, background: "#f1f5f9", overflow: "auto", padding: 12 }}><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: "" }} api={absApi()} onClose={() => setAbsAct(false)} /></React.Suspense></div>}
 
       {!isT && !isStats && (
         <div className="ma-card mb-3" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "linear-gradient(90deg,#fffbeb,#fff)", borderColor: "#fcd34d", position: "sticky", top: 0, zIndex: 30 }}>
@@ -38062,6 +38082,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
           <div className="p-3">
             <div className="ma-tabs">
               {(isStats ? [["stats", "📊 إحصائية اليوم"], ["late", "🌅 التأخر الصباحي"], ["weekly", "📈 الحصر الأسبوعي"], ["arch", "🗂 الأرشيف"]] : [["take", "📝 التحضير"], ["manage", "👥 الفصول والطلاب"]]).map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}
+              <button type="button" className="ma-tab" style={{ background: "linear-gradient(135deg,#0b2545,#13315c)", color: "#f3d77a", borderColor: "#c9a227" }} onClick={() => setAbsAct(true)}>📂 إجراءات معالجة الغياب</button>
             </div>
           </div>
         )}
@@ -52566,7 +52587,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","attendance","announcements","activities","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -52886,9 +52907,11 @@ function SchoolWebsiteInner() {
     { id: "attendance",      label: "الحضور اليومي",  icon: "📅" },
     { id: "admin-attendance",label: "دوام الإداريين", icon: "🏛️" },
     { id: "student-absence", label: "غياب الطلاب",   icon: "🎒" },
+    { id: "absaction",       label: "إجراءات معالجة الغياب", icon: "📂" },
     { id: "students",        label: "تقييم الطلاب",  icon: "🎓" },
     { id: "announcements", label: "الإعلانات",       icon: "📣" },
     { id: "activities",    label: "الأنشطة",         icon: "🎯" },
+    { id: "healthplan",    label: "البرامج الصحية المدرسية", icon: "🩺" },
     { id: "messages",      label: "رسائل الأهالي",  icon: "💌" },
     { id: "sms",           label: "رسائل SMS",       icon: "📲" },
     { id: "perfresults",   label: "تقويم الأداء",   icon: "📈" },
@@ -52987,11 +53010,11 @@ function SchoolWebsiteInner() {
   const extraPages = [...classToolPages, ...reportPages];
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
-    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","holidays","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","studentexcuses"] },
+    { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","holidays","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","absaction","studentexcuses"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["stusearch","notices","readlab","gradebook","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
-    { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","gallery","meetings","committeemeeting"] },
+    { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","healthplan","gallery","meetings","committeemeeting"] },
     { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","ttnow","trash","audit","settings"] },
   ];
 
@@ -53278,7 +53301,7 @@ function SchoolWebsiteInner() {
               <div style={{ direction:"rtl", padding: narrow ? "6px 8px 14px" : 0 }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
                 <HolTodayStrip navigate={navigate} />
                 {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
-                {page === "student-absence" && <StudentAbsencePage />}
+                {page === "student-absence" && <StudentAbsencePage />}{page === "absaction" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: user?.name || "الإدارة" }} api={absApi()} /></React.Suspense></div>}
                 {page === "admin-attendance"&& <AdminAttendancePage />}
                 {page === "attendance"     && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
                 {page === "formative"      && <FormativeGradebookPage classList={classList} />}
@@ -53299,6 +53322,7 @@ function SchoolWebsiteInner() {
                 {page === "students"       && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
                 {page === "announcements"  && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} viewMode="mobile" />}
                 {page === "activities"     && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
+                {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
                 {page === "messages"       && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
                 {page === "surveys"        && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
                 {page === "qiyas"          && <QiyasAlatharPage />}
@@ -53471,7 +53495,7 @@ function SchoolWebsiteInner() {
       <main className="w-full py-3 pam-main"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
         <HolTodayStrip navigate={navigate} />
         {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
-        {page === "student-absence" && <StudentAbsencePage />}
+        {page === "student-absence" && <StudentAbsencePage />}{page === "absaction" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: user?.name || "الإدارة" }} api={absApi()} /></React.Suspense></div>}
         {page === "admin-attendance" && <AdminAttendancePage />}
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
         {page === "formative"     && <FormativeGradebookPage classList={classList} />}
@@ -53492,6 +53516,7 @@ function SchoolWebsiteInner() {
         {page === "students"      && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
         {page === "activities"    && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
+        {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
         {page === "messages"      && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
         {page === "surveys"       && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
         {page === "qiyas"         && <QiyasAlatharPage />}
