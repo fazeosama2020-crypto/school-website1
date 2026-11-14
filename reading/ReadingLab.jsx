@@ -15,6 +15,37 @@ const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const obj = v => (v && typeof v === "object" ? v : {});
 const arr = v => Array.isArray(v) ? v.filter(Boolean) : (v && typeof v === "object" ? Object.values(v).filter(Boolean) : []);
 // تحويل التسجيل إلى نص على الخادم (api/stt.js) — يُستخدم لأجهزة أندرويد
+// ── تحليل التسجيل بدقة: يُقطَّع إلى مقاطع ≤ ٢٤ ثانية عند مواضع السكوت (16kHz أحادي)، ويُحلَّل كل مقطع على حدة ثم تُجمع الكلمات بأزمنتها.
+// هذا يمنع تخطّي أجزاء من القراءة بعد السكتات الطويلة، وهو ما يحدث عند إرسال التسجيل كاملاً دفعة واحدة.
+const STT_JUNK = /(اشترك(وا)? في القناة|ترجمة نانسي قنقر|شكرا(ً)? (لكم )?(على|للمشاهدة)|نشكركم على المشاهدة|موسيقى|\[.*?\]|\(.*?\))/g;
+async function decode16k(aud) { const buf = await (await fetch(aud)).arrayBuffer(); const AC = window.AudioContext || window.webkitAudioContext; if (!AC) throw new Error("noac"); const ac = new AC();
+  const ab = await new Promise((res, rej) => { try { const pr = ac.decodeAudioData(buf.slice(0), res, rej); if (pr && pr.then) pr.then(res, rej); } catch (e) { rej(e); } }); try { ac.close && ac.close(); } catch {}
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext; let sr = 16000, out;
+  for (const rate of [16000, 22050]) { try { const off = new OAC(1, Math.ceil(ab.duration * rate), rate); const src = off.createBufferSource(); src.buffer = ab; src.connect(off.destination); src.start(0); const r = await (off.startRendering.length ? new Promise(res => { off.oncomplete = e => res(e.renderedBuffer); off.startRendering(); }) : off.startRendering()); out = r.getChannelData(0); sr = rate; break; } catch {} }
+  if (!out) throw new Error("noresample"); return { pcm: out, sr }; }
+function wavUrl(pcm, sr) { const n = pcm.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b); const W = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  W(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); W(8, "WAVE"); W(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); W(36, "data"); v.setUint32(40, n * 2, true);
+  let pk = 0; for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(pcm[i])); const g = pk > 0 && pk < 0.5 ? Math.min(4, 0.9 / pk) : 1; // تضخيم الصوت المنخفض
+  for (let i = 0; i < n; i++) { const x = Math.max(-1, Math.min(1, pcm[i] * g)); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+  const u = new Uint8Array(b); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return "data:audio/wav;base64," + btoa(s); }
+function splitPcm(pcm, sr) { const F = Math.round(sr * 0.05), nf = Math.floor(pcm.length / F), rms = new Float32Array(nf); for (let f = 0; f < nf; f++) { let a = 0; for (let i = f * F; i < (f + 1) * F; i++) a += pcm[i] * pcm[i]; rms[f] = Math.sqrt(a / F); }
+  const per = 20, MIN = 12 * per, MAX = 24 * per, C = []; let st = 0;
+  while (nf - st > MAX) { let best = st + MAX, bv = 9; for (let f = st + MIN; f < st + MAX; f++) { const w = (rms[f - 1] || 0) + rms[f] + (rms[f + 1] || 0); if (w < bv) { bv = w; best = f; } } C.push([st, best]); st = best; } C.push([st, nf]);
+  return C.map(([a, b]) => { let e = 0; for (let f = a; f < b; f++) e += rms[f]; return { a: a * F, b: Math.min(pcm.length, b * F), t0: a * 0.05, lvl: e / Math.max(1, b - a) }; }); }
+async function sttChunked(aud, onP) {
+  let D; try { D = await decode16k(aud); } catch { return sttAudio(aud); }
+  const parts = splitPcm(D.pcm, D.sr); const words = [], texts = []; let errs = 0, last = "";
+  for (let k = 0; k < parts.length; k++) { const p = parts[k]; onP && onP(k + 1, parts.length); if (p.lvl < 0.004) continue; // مقطع صامت
+    const j = await sttAudio(wavUrl(D.pcm.subarray(p.a, p.b), D.sr)); if (!j.text) { errs++; last = j.error || last; continue; }
+    const clean = String(j.text).replace(STT_JUNK, " ").replace(/\s+/g, " ").trim(); if (!clean) continue; texts.push(clean);
+    const W = arr(j.words).filter(w => w && w.w && !STT_JUNK.test(w.w)); STT_JUNK.lastIndex = 0;
+    if (W.length) W.forEach(w => words.push({ w: w.w, s: Math.round((w.s + p.t0) * 100) / 100, e: Math.round((w.e + p.t0) * 100) / 100 }));
+    else { const ws = clean.split(" "), d = (p.b - p.a) / D.sr / Math.max(1, ws.length); ws.forEach((w, i) => words.push({ w, s: +(p.t0 + i * d).toFixed(2), e: +(p.t0 + (i + 1) * d).toFixed(2) })); } }
+  if (!texts.length) return { error: last || (errs ? "stt" : "silent") };
+  return { text: texts.join(" "), words, parts: parts.length, errs };
+}
+// تغطية التحليل: نسبة كلمات النص التي التُقطت (للتنبيه على التحليل الناقص)
+const covOf = st => { const s = String(st || ""); if (!s.length) return 0; return Math.round(s.split("").filter(c => c !== "n" && c !== "d").length / s.length * 100); };
 async function sttAudio(aud, n = 0) { if (!aud) return { error: "noaud" }; const j = await sttOnce(aud); if (j.error && /rate|limit|429/i.test(j.error) && n < 3) { await new Promise(r => setTimeout(r, 8000 + n * 7000)); return sttAudio(aud, n + 1); } return j; }
 async function sttOnce(aud) { try { const c = new AbortController(); const to = setTimeout(() => c.abort(), 60000);
   const r = await fetch("/api/stt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio: aud }), signal: c.signal }); clearTimeout(to); const j = await r.json().catch(() => ({})); return j || {}; } catch (e) { return { error: "net" }; } }
@@ -245,19 +276,19 @@ function Reader({ api, text, me, rec0, onBack, others = [], onOpen }) {
     if (busy.current) return; busy.current = true; clearInterval(tick.current); clearTimeout(auto.current); clearTimeout(auto2.current); setPh("save");
     const dur = (Date.now() - t0.current) / 1000; let heard = lisR.current ? lisR.current.stop() : ""; const avg = recR.current ? recR.current.avg() : null; const peak = recR.current ? recR.current.peak() : null; const aud = recR.current ? await recR.current.stop() : null; recR.current = null;
     // ── رفض التسجيل غير الواضح (لا تُحتسب محاولة): صمت، صوت منخفض جداً، أو كلام غير مميَّز
-    let heard2 = heard; let src = ""; let tw = null;
-    if (!heard.trim() && aud && dur >= 3 && !(avg != null && avg < 0.006 && (peak == null || peak < 0.03))) { setPh("stt"); const j = await sttAudio(aud); if (j.text) { heard2 = j.words && j.words.length ? j.words.map(x => x.w).join(" ") : j.text; tw = j.words && j.words.length ? j.words.map(x => [x.s, x.e]) : null; src = "stt"; srOk.current = true; } }
+    let heard2 = heard; let src = ""; let tw = null; let sttErr = "";
+    if (!heard.trim() && aud && dur >= 3 && !(avg != null && avg < 0.006 && (peak == null || peak < 0.03))) { setPh("stt"); const j = await sttChunked(aud); if (!j.text) sttErr = j.error || "stt"; if (j.text) { heard2 = j.words && j.words.length ? j.words.map(x => x.w).join(" ") : j.text; tw = j.words && j.words.length ? j.words.map(x => [x.s, x.e]) : null; src = "stt"; srOk.current = true; } }
     heard = heard2;
     const hw = heard.trim().split(/\s+/).filter(Boolean).length; const quiet = avg != null && avg < 0.006 && (peak == null || peak < 0.03); const voice = avg != null && avg >= 0.015;
     let bad = "";
     if (dur < 3) bad = "التسجيل قصير جداً — اقرأ النص ثم اضغط «انتهيت»";
     else if (quiet && hw < 5) bad = "لم يُسمع صوتك — الصوت منخفض جداً أو الميكروفون مغلق";
     else if (srOk.current && hw === 0 && !voice) bad = "لم يُسمع صوتك بوضوح";
-    else if (srOk.current && hw > 0 && dur >= 8 && hw / dur < 0.25 && hw < refT.length * 0.4) bad = "التسجيل غير واضح — لم تُميَّز إلا كلمات قليلة";
+    else if (srOk.current && src !== "stt" && hw > 0 && dur >= 8 && hw / dur < 0.25 && hw < refT.length * 0.4) bad = "التسجيل غير واضح — لم تُميَّز إلا كلمات قليلة";
     if (bad) { busy.current = false; setErr(`🚫 ${bad}. لم تُحتسب محاولة — اجلس في مكان هادئ، قرّب الجهاز من فمك، واقرأ بصوت مرتفع ثم أعد التسجيل.`); setPh("intro"); return; }
     const id = Date.now().toString(36); let tr;
-    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg, true); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", heard: heard.slice(0, 2500), ...(src ? { src } : {}), ...(tw ? (() => { const T = rdTiming(refT, A, tw); return { tw, hes: T.hes, pun: T.pun }; })() : {}) }; }
-    else tr = { id, at: Date.now(), dur: Math.round(dur), st: "n".repeat(refT.length), hd: {}, ins: 0, tg, m: null, mode: "rec", why: SR ? "silent" : "nosr", heard: heard.slice(0, 2500) };
+    if (srOk.current && heard.trim()) { const A = rdAlign(refT, heard); const M = rdMetrics(A.st, A.ins, dur, tg, true); tr = { id, at: Date.now(), dur: Math.round(dur), st: A.st, hd: A.hd, ins: A.ins, tg, m: M, sk: rdSkills(refT, A.st, A.hd, M).map(s => s.k), mode: "auto", cov: covOf(A.st), heard: heard.slice(0, 2500), ...(src ? { src } : {}), ...(tw ? (() => { const T = rdTiming(refT, A, tw); return { tw, hes: T.hes, pun: T.pun }; })() : {}) }; }
+    else tr = { id, at: Date.now(), dur: Math.round(dur), st: "n".repeat(refT.length), hd: {}, ins: 0, tg, m: null, mode: "rec", why: sttErr ? "stt:" + String(sttErr).slice(0, 80) : SR ? "silent" : "nosr", heard: heard.slice(0, 2500) };
     if (trialR.current) { busy.current = false; if (!tr.m) { setErr("لم تُلتقط قراءتك في التجربة — حاول مرة أخرى بصوت أوضح"); setPh("intro"); return; } setCur({ ...tr, trial: 1 }); setPh("res"); return; }
     let audOk = false; if (aud && aud.length < 2.6e6) audOk = await api.maPut(`${N.AUD}/${text.id}/${skOf(me)}/${id}`, aud); tr.aud = audOk ? 1 : 0;
     const R = { sid: me.id, name: me.name, ck: me.ck, tries: [...tries, tr].slice(-6), last: tr.at };
@@ -443,8 +474,8 @@ function Review({ api, text, stu, rec, tryId, by, onClose, onSaved }) {
     const list = base ? tries.map(x => x.id === base.id ? tr : x) : [...tries, tr].slice(-6); const R = { sid: stu.id, name: stu.name, ck: stu.ck, tries: list, last: Date.now() };
     await api.maPut(`${N.RES}/${text.id}/${skOf(stu)}`, R); setBusy(false); onSaved(R); };
   const [sttMsg, setSttMsg] = useState("");
-  const reStt = async () => { setBusy("stt"); setSttMsg(""); const j = await sttAudio(aud); setBusy(false);
-    if (j.text) { const htx = j.words && j.words.length ? j.words.map(x => x.w).join(" ") : j.text; const tw = j.words && j.words.length ? j.words.map(x => [x.s, x.e]) : null; const A = rdAlign(refT, htx); setSt(A.st); setIns(A.ins); if (base) { base.hd = A.hd; base.heard = htx.slice(0, 2500); base.src = "stt"; if (tw) { const T = rdTiming(refT, A, tw); base.tw = tw; base.hes = T.hes; base.pun = T.pun; } } if (!dur && base && base.dur) setDur(base.dur); setSttMsg("✅ حُلِّل التسجيل وعُلِّمت الأخطاء على النص — راجعها ثم اضغط «اعتماد التقييم»."); }
+  const reStt = async () => { setBusy("stt"); setSttMsg("⏳ جارٍ تقطيع التسجيل وتحليله…"); const j = await sttChunked(aud, (k, n) => setSttMsg(`⏳ تحليل المقطع ${k} من ${n}…`)); setBusy(false); setSttMsg("");
+    if (j.text) { const htx = j.words && j.words.length ? j.words.map(x => x.w).join(" ") : j.text; const tw = j.words && j.words.length ? j.words.map(x => [x.s, x.e]) : null; const A = rdAlign(refT, htx); setSt(A.st); setIns(A.ins); if (base) { base.hd = A.hd; base.heard = htx.slice(0, 2500); base.src = "stt"; if (tw) { const T = rdTiming(refT, A, tw); base.tw = tw; base.hes = T.hes; base.pun = T.pun; } } if (!dur && base && base.dur) setDur(base.dur); { const cv = covOf(A.st); setSttMsg(cv < 70 ? `⚠️ التُقط ${cv}٪ فقط من كلمات النص — استمع للتسجيل وعلّم الكلمات التي قرأها ولم تُلتقط، ثم اعتمد.` : `✅ حُلِّل التسجيل (${j.parts || 1} مقاطع) وعُلِّمت الأخطاء على النص — التُقط ${cv}٪ من الكلمات. راجعها ثم اضغط «اعتماد التقييم».`); } }
     else setSttMsg(j.error === "nokey" ? "⚠️ التحليل الآلي للتسجيل غير مفعّل بعد (يحتاج مفتاح GROQ_API_KEY في إعدادات Vercel). يمكنك الاستماع وتعليم الأخطاء يدوياً." : "⚠️ تعذّر تحليل التسجيل" + (j.error ? ` (${j.error})` : "") + " — علّم الأخطاء يدوياً."); };
   const reject = async () => { const why = prompt("سبب رفض التسجيل (يظهر للطالب):", "التسجيل غير واضح — أعد القراءة في مكان هادئ وبصوت مرتفع"); if (why == null) return; setBusy(true);
     const list = tries.map(x => x.id === base.id ? { ...x, rej: { by, at: Date.now(), why: why.trim() || "التسجيل غير واضح" } } : x); const R = { sid: stu.id, name: stu.name, ck: stu.ck, tries: list, last: Date.now() };
@@ -486,7 +517,7 @@ function Review({ api, text, stu, rec, tryId, by, onClose, onSaved }) {
 function ReadingStaff({ api, me, admin }) {
   const by = (me && me.name) || "الإدارة"; const R = useRoster(api); const [toast, say] = useToast();
   const [tab, setTab] = useState(admin ? "dash" : "res"); const [texts, setTexts] = useState(null); const [RES, setRES] = useState(null); const [edit, setEdit] = useState(null);
-  const [tid, setTid] = useState(""); const [ck, setCk] = useState(""); const [rv, setRv] = useState(null); const [det, setDet] = useState(null); const [detAud, setDetAud] = useState(null);
+  const [tid, setTid] = useState(""); const [ck, setCk] = useState(""); const [rv, setRv] = useState(null); const [det, setDet] = useState(null); const [detAud, setDetAud] = useState(null); const [bulk, setBulk] = useState(null);
   useEffect(() => { setDetAud(null); if (det && det.tr && det.tr.aud) api.maGet(`${N.AUD}/${det.text.id}/${skOf(det.stu)}/${det.tr.id}`).then(v => typeof v === "string" && setDetAud(v)); }, [det && det.tr && det.tr.id]); const [T, setTT] = useState(null); const [lvF, setLvF] = useState("ms"); const [clsF, setClsF] = useState(""); const [sel, setSel] = useState({});
   const load = async () => { const [t, r] = await Promise.all([api.maGet(N.TXT), api.maGet(N.RES)]); const L = arr(t).sort((a, b) => (b.at || 0) - (a.at || 0)); setTexts(L); const RR = {}; Object.entries(obj(r)).forEach(([k, v]) => { const tx = L.find(y => y.id === k); const rf = tx ? rdTokens(tx.body) : null; RR[k] = {}; Object.entries(obj(v)).forEach(([sk, x]) => { RR[k][sk] = rdFixRec(x, rf); }); }); setRES(RR); if (!tid && L.length) setTid(L[0].id); };
   useEffect(() => { load(); api.TT().then(setTT).catch(() => {}); }, []);
@@ -507,11 +538,33 @@ function ReadingStaff({ api, me, admin }) {
   const tabs = [...(admin ? [["dash", "📊 لوحة المدرسة"]] : []), ["res", "📋 نتائج الطلاب"], ["weak", `⚠️ يحتاجون معالجة (${ar(scope.filter(x => x.M && "ms".includes(x.M.lv)).length)})`], ["texts", `📄 النصوص (${ar(texts.length)})`]];
 
   // ── نتائج نص لفصل
+  // ── تحليل جماعي: يحلّل كل تسجيل محفوظ لم يُحلَّل أو كان تحليله ناقصاً (أو الكل)، ويتركه «للمراجعة» حتى يعتمده المعلم
+  const bulkJobs = (mode, onlyCk) => { const rs = obj(RES[tid]); const S = onlyCk ? R.studentsOf(onlyCk).map(skOf) : null; const J = [];
+    Object.entries(rs).forEach(([sk, rec]) => { if (S && !S.includes(sk)) return; arr(rec && rec.tries).forEach(tr => { if (!tr || !tr.aud || tr.rej || tr.rv) return; if (mode === "all" || tr.mode !== "auto" || !tr.m || (tr.src === "stt" && (tr.cov == null || tr.cov < 70))) J.push({ sk, id: tr.id, name: rec.name }); }); }); return J; };
+  const runBulk = async (mode, onlyCk) => { const text = texts.find(t => t.id === tid); if (!text) return; const refT = rdTokens(text.body); const J = bulkJobs(mode, onlyCk);
+    if (!J.length) { say("لا توجد تسجيلات تحتاج تحليلاً"); return; }
+    if (!confirm(`سيُحلَّل ${J.length} تسجيلاً بالتقطيع الدقيق (قد يستغرق ذلك دقائق). تبقى النتائج «للمراجعة» حتى تعتمدها. متابعة؟`)) return;
+    let ok = 0, fail = 0;
+    for (let i = 0; i < J.length; i++) { const { sk, id, name } = J[i]; setBulk({ i: i + 1, n: J.length, ok, fail, name, p: "" });
+      try { const aud = await api.maGet(`${N.AUD}/${tid}/${sk}/${id}`); if (typeof aud !== "string") { fail++; continue; }
+        const j = await sttChunked(aud, (k, n) => setBulk(b => b && { ...b, p: `مقطع ${k}/${n}` })); const cur = obj(await api.maGet(`${N.RES}/${tid}/${sk}`)); const tries = arr(cur.tries); const k = tries.findIndex(t => t && t.id === id); if (k < 0) continue; const tr = { ...tries[k] };
+        if (j.text) { const htx = j.words && j.words.length ? j.words.map(x => x.w).join(" ") : j.text; const tw = j.words && j.words.length ? j.words.map(x => [x.s, x.e]) : null; const A = rdAlign(refT, htx); const tg = tr.tg || +text.tg || 100; const M = rdMetrics(A.st, A.ins, tr.dur, tg, true); const T = tw ? rdTiming(refT, A, tw) : { hes: [], pun: [] };
+          Object.assign(tr, { mode: "auto", src: "stt", st: A.st, hd: A.hd, ins: A.ins, m: M, sk: rdSkills(refT, A.st, A.hd, M, T).map(x => x.k), heard: htx.slice(0, 2500), cov: covOf(A.st), why: null, ...(tw ? { tw, hes: T.hes, pun: T.pun } : {}) }); ok++; }
+        else { tr.why = "stt:" + String(j.error || "").slice(0, 80); fail++; }
+        tries[k] = tr; const R2 = { ...cur, tries }; await api.maPut(`${N.RES}/${tid}/${sk}`, R2); setRES(o => ({ ...o, [tid]: { ...obj(o[tid]), [sk]: rdFixRec(R2, refT) } }));
+      } catch { fail++; } }
+    setBulk(null); say(`✅ حُلِّل ${ok} تسجيلاً${fail ? ` • تعذّر ${fail}` : ""} — راجعها بالسماع واعتمدها`); };
   const resTab = () => { if (!text) return <div className="rl-card" style={{ textAlign: "center", fontWeight: 800 }}>أضف نصاً أولاً من تبويب «النصوص»</div>;
     const S = R.studentsOf(ck).sort((a, b) => a.name.localeCompare(b.name, "ar")); const rs = obj(RES[tid]); const refT = rdTokens(text.body);
     const rows = S.map(s => { const r = rs[skOf(s)]; const trAll = arr(r && r.tries); const tr = trAll.filter(x => !x.rej); const done = tr.filter(x => x.m); const rejN = trAll.length - tr.length; const rejLast = trAll.length > 0 && !!trAll[trAll.length - 1].rej; return { s, r, tr, rejN, rejLast, last: done[done.length - 1], pend: tr.filter(x => !x.m || (x.mode === "auto" && !x.rv)).length, first: done[0] }; });
     const D = rows.filter(x => x.last); const avg = k => D.length ? Math.round(D.reduce((a, x) => a + x.last.m[k], 0) / D.length) : null;
+    const nNeed = bulkJobs("need", ck).length, nAll = bulkJobs("all", ck).length;
     return <div style={{ display: "grid", gap: 10 }}>
+      {bulk ? <div className="rl-card" style={{ background: "#eff6ff", border: "1.5px solid #bfdbfe", fontWeight: 800 }}>⏳ تحليل التسجيلات: {ar(bulk.i)} من {ar(bulk.n)} — {bulk.name} {bulk.p ? `(${bulk.p})` : ""} • نجح {ar(bulk.ok)}{bulk.fail ? ` • تعذّر ${ar(bulk.fail)}` : ""}<div style={{ height: 6, background: "#dbeafe", borderRadius: 9, marginTop: 6 }}><div style={{ height: 6, width: `${Math.round(bulk.i / bulk.n * 100)}%`, background: "#2563eb", borderRadius: 9 }} /></div></div>
+        : (nNeed > 0 || nAll > 0) && <div className="rl-card" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", background: "#fffbeb", border: "1.5px solid #fde68a" }}>
+          <b style={{ flex: "1 1 240px", fontSize: 13.5 }}>🤖 التحليل الدقيق للتسجيلات (تقطيع عند السكتات وتحليل كل مقطع) — النتائج تبقى للمراجعة حتى تعتمدها</b>
+          {nNeed > 0 && <button className="rl-btn sm g" onClick={() => runBulk("need", ck)}>تحليل غير المحلل والناقص ({ar(nNeed)})</button>}
+          {nAll > 0 && <button className="rl-btn sm" onClick={() => runBulk("all", ck)}>إعادة تحليل كل غير المعتمد ({ar(nAll)})</button>}</div>}
       <div className="rl-card" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <select className="rl-inp" style={{ flex: "2 1 220px", width: "auto" }} value={tid} onChange={e => setTid(e.target.value)}>{texts.map(t => <option key={t.id} value={t.id}>📄 {t.title}</option>)}</select>
         <select className="rl-inp" style={{ flex: "1 1 160px", width: "auto" }} value={ck} onChange={e => setCk(e.target.value)}>{clsAll.map(c => <option key={c.ck} value={c.ck}>{api.maClassName(c.ck)}</option>)}</select>
@@ -525,7 +578,7 @@ function ReadingStaff({ api, me, admin }) {
           <td><b>{m ? ar(m.score) : "—"}</b></td><td>{m ? <LvB k={m.lv} /> : "—"}</td><td>{m ? ar(m.acc) + "٪" : "—"}</td><td>{m ? ar(m.wcpm) : "—"}</td>
           {["d", "s", "t", "r"].map(k => <td key={k} style={{ color: m && m.c[k] ? RD_ST[k].c : "#cbd5e1", fontWeight: 800 }}>{m ? ar(m.c[k] || 0) : "—"}</td>)}
           <td>{x.first && x.last && x.first !== x.last ? <b style={{ color: x.last.m.score >= x.first.m.score ? "#15803d" : "#dc2626" }}>{x.last.m.score >= x.first.m.score ? "▲" : "▼"}{ar(Math.abs(x.last.m.score - x.first.m.score))}</b> : "—"}</td>
-          <td>{x.rejLast ? <span className="rl-lv" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 رُفض — بانتظار الإعادة</span> : !x.tr.length ? <span className="rl-lv" style={{ background: "#f1f5f9", color: "#64748b" }}>لم يقرأ</span> : lastT && !lastT.m ? <span className="rl-lv" style={{ background: "#e0e7ff", color: "#3730a3" }}>🎧 بانتظارك</span> : lastT.rv ? <span className="rl-lv" style={{ background: "#dcfce7", color: "#15803d" }}>✔️ معتمد</span> : <span className="rl-lv" style={{ background: "#fef3c7", color: "#92400e" }}>🤖 آلي</span>}</td>
+          <td>{x.rejLast ? <span className="rl-lv" style={{ background: "#fee2e2", color: "#b91c1c" }}>🚫 رُفض — بانتظار الإعادة</span> : !x.tr.length ? <span className="rl-lv" style={{ background: "#f1f5f9", color: "#64748b" }}>لم يقرأ</span> : lastT && !lastT.m ? <span className="rl-lv" title={lastT.why && /^stt:/.test(lastT.why) ? "تعذّر التحليل الآلي: " + lastT.why.slice(4) : ""} style={{ background: "#e0e7ff", color: "#3730a3" }}>🎧 بانتظارك{lastT.aud ? " — غير محلل" : ""}</span> : lastT.rv ? <span className="rl-lv" style={{ background: "#dcfce7", color: "#15803d" }}>✔️ معتمد</span> : lastT.cov != null && lastT.cov < 70 ? <span className="rl-lv" title={`التُقط ${lastT.cov}٪ من كلمات النص فقط`} style={{ background: "#ffedd5", color: "#c2410c" }}>⚠️ تحليل ناقص {ar(lastT.cov)}٪</span> : <span className="rl-lv" style={{ background: "#fef3c7", color: "#92400e" }}>🤖 آلي — للمراجعة</span>}</td>
           <td style={{ whiteSpace: "nowrap" }}>{lastT ? <button className="rl-btn sm" title={lastT.aud ? "الاستماع لتسجيل الطالب ومراجعة التقييم" : "مراجعة التقييم (لا يوجد تسجيل محفوظ)"} onClick={() => setRv({ stu: x.s, rec: x.r, tryId: lastT.id })}>{lastT.aud ? "🎧 استماع ومراجعة" : "🔎 مراجعة"}</button> : null} <button className="rl-btn sm" title="تقييم حضوري" onClick={() => setRv({ stu: x.s, rec: x.r, tryId: null })}>📝</button>{x.tr.length > 0 && <button className="rl-btn sm red" title="السماح بإعادة الاختبار" onClick={() => resetStu(x.s)}>↺</button>}</td>
         </tr>; })}</tbody></table></div>
       <div className="rl-note">💡 اضغط اسم الطالب لعرض أخطائه على النص وسماع قراءته • «🎧 استماع ومراجعة» لسماع التسجيل وتعديل التقييم واعتماده أو رفض التسجيل غير الواضح • «📝» لتقييم طالب يقرأ أمامك بلا جهاز.</div>
