@@ -41,10 +41,11 @@ module.exports = async function handler(req, res) {
     // ② الحدود
     // الرسوم التوضيحية لها عدّاد يومي مستقل حتى لا تُنقص تحليلات المعلم
     const isIP = b.kind === "ip";
-    const UN = isIP ? "school-sl-usei" : b.kind === "vis" ? "school-sl-usev" : b.kind === "b" ? "school-sl-useb" : "school-sl-use";
-    const lim = isIP ? (+C.ipDaily > 0 ? +C.ipDaily : 40) : daily;
+    const isNB = b.kind === "nb"; // التغذية الراجعة لأسئلة «مراجع نافس» — عدّاد مستقل
+    const UN = isIP ? "school-sl-usei" : isNB ? "school-sl-usen" : b.kind === "vis" ? "school-sl-usev" : b.kind === "b" ? "school-sl-useb" : "school-sl-use";
+    const lim = isIP ? (+C.ipDaily > 0 ? +C.ipDaily : 40) : isNB ? (+C.nbDaily > 0 ? +C.nbDaily : 150) : daily;
     const [used, mUsed] = await Promise.all([fbGet(`${UN}/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]);
-    if ((+used || 0) >= lim) return res.status(200).json({ ok: false, code: "daily", msg: isIP ? `بلغت حد توليد خطة التحسين اليومي (${lim}) — يتجدد غدًا` : `استنفدت حدّك اليومي (${daily} تحليلات) — يتجدد غدًا. يمكنك الاستفادة من بنك الدروس دون حدود.` });
+    if ((+used || 0) >= lim) return res.status(200).json({ ok: false, code: "daily", msg: isNB ? `بلغت حد تجهيز التغذية الراجعة اليومي (${lim} صفحة) — يتجدد غدًا` : isIP ? `بلغت حد توليد خطة التحسين اليومي (${lim}) — يتجدد غدًا` : `استنفدت حدّك اليومي (${daily} تحليلات) — يتجدد غدًا. يمكنك الاستفادة من بنك الدروس دون حدود.` });
     if ((+mUsed || 0) >= monthly) return res.status(200).json({ ok: false, code: "monthly", msg: "بلغت المدرسة السقف الشهري للتحليلات — راجع الإدارة" });
     // ③ تجهيز الطلب
     const prompt = String(b.prompt || "").slice(0, isIP ? 32000 : 16000);
