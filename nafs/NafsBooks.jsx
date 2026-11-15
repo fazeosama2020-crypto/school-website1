@@ -14,6 +14,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import PRE from "./pretest.js";
+import { Q as QM, P as QP, S as QS } from "./qmeta.js";
 
 const NB = "school-nafsbook", NB_IDX = "school-nafsbook-idx", NB_TC = "school-nafsbook-tc";
 const NB_T = "school-nafsbook-t", NB_TP = "school-nafsbook-tp", NB_B = "school-nafsbook-b";
@@ -609,7 +610,7 @@ function KeysPanel({ book, page, hidden, setHidden, open, setOpen }) {
 // ══════════════════════ عارض الصفحة مع طبقة الكتابة والسبورة ══════════════════════
 // store: مسار حفظ الكتابة (null = مؤقتة) • idx: فهرس الصفحات المحلولة • marks: مسار فهرس للاطّلاع فقط
 // tc: "show" / "edit" تعليق المعلم • tp: {tkey,tname,cks,ck} تسجيل «تم شرح الصفحة» • boards: مسار السبورات
-function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null, marks = null, readOnly = false, tc: tcMode = null, tcPath = null, tp = null, keys = false, boards = null, boardsRO = false, seenSid = null, who = "x", title = "", by = "", onBack, rel = null }) {
+function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null, marks = null, readOnly = false, tc: tcMode = null, tcPath = null, tp = null, keys = false, boards = null, boardsRO = false, seenSid = null, who = "x", title = "", by = "", onBack, rel = null, qz = null }) {
   const B = BOOKS[book];
   const [doc, setDoc] = useState(null);
   const [err, setErr] = useState("");
@@ -644,6 +645,8 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const seg = segAt(book, page);
   const flash = (m, ms = 1700) => { setSaved(m); clearTimeout(msgT.current); msgT.current = setTimeout(() => setSaved(""), ms); };
   useSeen(api, seenSid, book, page);
+  // ✅ الإجابة الإلكترونية والتصحيح الآلي
+  const Z = useQuiz({ api, qz, book, page, idx, flash }); const [qzOpen, setQzOpen] = useState(false);
   // ── الإجابات: إتاحتها للطلاب ومواضعها على الصفحة
   useEffect(() => { const c = rel || (tp && ck); if (!c) { setRelP({}); return; } api.maGet(`${NB_REL}/${c}/${book}`).then(d => setRelP(obj(d))); }, [book, rel, ck]);
   const released = !!relP[page];
@@ -837,7 +840,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
   const nBoards = Object.keys(pb).length;
 
   // يُعرض في طبقة كاملة فوق الموقع (لا تتداخل معه القوائم والعناوين وأشرطة التنقل)
-  return createPortal(<div ref={rootRef} className="nb nb-fs" dir="rtl" style={{ "--c": B.c }} role="dialog" aria-label={`مرجع ${B.name}`}><style>{CSS + LCSS}</style>
+  return createPortal(<div ref={rootRef} className="nb nb-fs" dir="rtl" style={{ "--c": B.c }} role="dialog" aria-label={`مرجع ${B.name}`}><style>{CSS + LCSS + QZ_CSS}</style>
     <div className="nb-top" ref={topRef}>
       <button className="nb-b" onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); onBack(); }}>→ رجوع</button>
       <b>{B.name}{title ? ` • ${title}` : ""}</b>
@@ -864,6 +867,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
       {keys && <button className={"nb-b" + (kOpen ? " on" : "")} style={{ "--c": "#b45309" }} onClick={() => setKOpen(!kOpen)} title="مفتاح إجابات هذه الصفحة">🔑 الإجابات</button>}
       {keys && keyL.length > 0 && <button className={"nb-b" + (ansOn ? " on" : "")} style={{ "--c": "#15803d" }} onClick={() => setAnsOn(!ansOn)} title="إظهار الإجابات في أماكنها على الصفحة">✅ على الصفحة</button>}
       {keys && !readOnly && keyL.length > 0 && <button className={"nb-b" + (placing != null ? " on" : "")} style={{ "--c": "#0f766e" }} onClick={() => { if (placing != null) { setPlacing(null); return; } const i = keyL.findIndex((_, j) => !ansPos[j]); setPlacing(i >= 0 ? i : 0); setAnsOn(true); }} title="ضع كل إجابة في فراغها مرة واحدة لتظهر للطلاب في مكانها">📍 وضع الإجابات في الفراغات</button>}
+      {Z.on && Z.U.pages.length > 0 && <button className={"nb-b" + (qzOpen ? " on" : "")} style={{ "--c": "#15803d", fontWeight: 900 }} onClick={() => setQzOpen(!qzOpen)} title="أجب عن أسئلة الصفحة إلكترونيًا وصحّحها فورًا">📝 ورقة الإجابة ({ar(Z.st.ans)}/{ar(Z.st.tot)})</button>}
       {rel && released && <button className={"nb-b" + (ansOn ? " on" : "")} style={{ "--c": "#15803d" }} onClick={() => { setAnsOn(!ansOn); if (!Object.keys(ansPos).length) setAnsList(true); }} title="أتاحها معلمك">🔑 الإجابات {ansOn ? "(ظاهرة)" : ""}</button>}
       {rel && released && <button className={"nb-b" + (ansList ? " on" : "")} onClick={() => setAnsList(!ansList)}>📋 قائمة الإجابات</button>}
       {!readOnly && <>
@@ -930,6 +934,7 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
             {!readOnly && editNote !== n.id && <button className="x" onClick={e => { e.stopPropagation(); delNote(n.id); }} aria-label="حذف">×</button>}
           </div>)}
           {ansOn && keyL.map((k, i) => ansPos[i] ? <div key={"a" + i} className="nb-ansp" style={{ right: `${(1 - ansPos[i].x) * 100}%`, top: `${ansPos[i].y * 100}%`, fontSize: Math.max(10, size.w * 0.017) }} title={stripH(k[1])}>{stripH(k[2])}</div> : null)}
+          <QzBubbles Z={Z} book={book} page={page} size={size} active={tool === "view" && !Z.ro && placing == null} color={B.c} />
           {placing != null && <div className="nb-placeov" onPointerDown={e => { e.stopPropagation(); placeAt(e); }} />}
           {ann.n.filter(n => n.k !== "f").map(n => <div key={n.id} className="nb-note" style={{ right: `${(1 - n.x) * 100}%`, top: `${n.y * 100}%`, fontSize: Math.max(12, size.w * 0.022) }}
             onClick={e => { if (!readOnly) { e.stopPropagation(); setEditNote(n.id); } }}>
@@ -945,6 +950,8 @@ function BookViewer({ api, book, startPage = 1, store: store0 = null, idx = null
     {fillEd && <div className="nb-pal" onMouseDown={e => e.preventDefault()} onPointerDown={e => e.preventDefault()}>
       <div className="pt">{NB_SYM.map(([l], i) => <button key={l} className={"nb-b" + (symT === i ? " on" : "")} onClick={() => setSymT(i)}>{l}</button>)}<span className="nb-sp" /><button className="nb-b" onClick={() => setFillZ(-0.15)}>A−</button><button className="nb-b" onClick={() => setFillZ(0.15)}>A+</button>{["#1d4ed8", "#dc2626", "#111827"].map(c => <span key={c} className="nb-dot" style={{ background: c }} onClick={() => { setColor(c); setAnn(a => ({ ...a, n: a.n.map(x => x.id === editNote ? { ...x, c } : x) })); }} />)}<button className="nb-b on" onClick={() => { const id = editNote; finishNote(id); }}>✓ تم</button></div>
       <div className="ps">{NB_SYM[symT][1].map(x => <button key={x} onClick={() => ins(x)}>{x}</button>)}</div></div>}
+    {Z.on && Z.U.pages.length > 0 && !qzOpen && !fillEd && <button className="qz-fab" style={{ "--c": B.c }} onClick={() => setQzOpen(true)}>📝 {Z.ro ? "إجابات الطالب" : Z.graded ? "نتيجتي والتغذية الراجعة" : Z.U.test ? "ورقة إجابة الاختبار" : "أجب وصحّح"}<small>{Z.anyG && qPct(Z.st.C, Z.st.G) != null ? `${ar(qPct(Z.st.C, Z.st.G))}٪` : `${ar(Z.st.ans)}/${ar(Z.st.tot)}`}</small></button>}
+    {Z.on && qzOpen && <QzSheet Z={Z} book={book} page={page} onClose={() => setQzOpen(false)} onGo={goTo} color={B.c} />}
     {!fillEd && <div className="nb-nav"><button onClick={() => go(-1)} aria-label="السابقة">›</button><button onClick={() => go(1)} aria-label="التالية">‹</button></div>}
     {saved && <div className="nb-save">{saved}</div>}
     {idxOpen && <IndexDrawer book={book} doc={doc} page={page} onGo={goTo} onClose={() => setIdxOpen(false)}
@@ -992,7 +999,7 @@ function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, onP
   useEffect(() => { if (!student) return; api.maGet(`${NB_IDX}/${student.id}`).then(d => setDone(obj(d))); api.maGet(`${NB_OPEN}/${student.ck}`).then(d => setOpen(obj(d))); }, [student && student.id]);
   const count = book => Object.keys(obj(done[book])).length;
   const tests = books.flatMap(b => Object.keys(obj(open[b])).map(w => ({ b, w: +w, solved: testSolved(done[b], b, +w) }))).sort((a, c) => a.solved - c.solved);
-  return <div className="nb-home">
+  return <div className="nb-home"><style>{QZ_CSS}</style>
     <div className="nb-book" style={{ "--c": "#7c3aed", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 900, fontSize: 17 }}>{readOnly ? "دفتر الطالب: " : "أهلًا "}{student.name}</div>
@@ -1017,6 +1024,7 @@ function Library({ api, student, books = BOOK_IDS, onOpen, onLogout, onBack, onP
           <button className="nb-b on" onClick={() => onOpen(id, 1)}>{readOnly ? "افتح دفتره" : "افتح المرجع"}</button>
         </div>
         <div className="nb-weeks">{vals.map((v, w) => <button key={w} className={"nb-wk" + (v >= 60 ? " done" : "")} onClick={() => onOpen(id, B.units[w * 2])} aria-label={`الأسبوع ${w + 1}`}>{ar(w + 1)}<i><b style={{ width: v + "%" }} /></i></button>)}</div>
+        <QzMine api={api} sid={student.id} book={id} color={B.c} />
         {readOnly && count(id) > 0 && <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#475569" }}>الصفحات: {Object.keys(obj(done[id])).sort((a, b) => a - b).map(p => <button key={p} className="nb-wk" style={{ margin: 2, padding: "2px 6px", display: "inline-flex" }} onClick={() => onOpen(id, +p)}>{ar(p)}</button>)}</div>}
       </div>; })}
   </div>;
@@ -1032,7 +1040,7 @@ export function NafsBooksStudent({ api, onBack }) {
   return <div className="nb"><style>{CSS + LCSS}</style>
     {!st ? <StudentLogin api={api} onIn={setSt} onBack={onBack} />
       : open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} idx={`${NB_IDX}/${st.id}`} tc="show" tcPath={`${NB_TC}/${st.id}`} rel={st.ck}
-          boards={`${NB_B}/s_${st.id}`} seenSid={st.id} who={"s_" + st.id} title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} />
+          boards={`${NB_B}/s_${st.id}`} seenSid={st.id} who={"s_" + st.id} title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} qz={{ sid: st.id, ck: st.ck, nm: st.name }} />
         : lv ? (lv.k === "pre" ? <PreTest api={api} st={st} book={lv.b} onBack={() => setLv(null)} /> : <HwDo api={api} st={st} hw={lv.h} onBack={() => setLv(null)} onOpenPage={p => setOpen({ book: lv.h.book, page: p })} />)
         : <Library api={api} student={st} onOpen={(book, page) => setOpen({ book, page })} onLogout={logout} onBack={onBack} learn={<StudentLearn key={st.id + (lv ? 1 : 0)} api={api} st={st} onPre={b => setLv({ k: "pre", b })} onHw={h => setLv({ k: "hw", h })} />}
             onProfile={() => { lsSet("pam-parent", { ck: st.ck, sid: st.id, name: st.name, nh: st.nh }); window.location.hash = "parent"; window.location.reload(); }} />}
@@ -1124,7 +1132,7 @@ function ClassStudents({ api, ros, idx, seen = {}, cks, books, onPick }) {
 
 function StudentReview({ api, st, books, by, onBack }) { // يفتحه المعلم أو الإدارة فقط
   const [open, setOpen] = useState(null);
-  return open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} marks={`${NB_IDX}/${st.id}`} readOnly keys tc="edit" tcPath={`${NB_TC}/${st.id}`} by={by}
+  return open ? <BookViewer api={api} book={open.book} startPage={open.page} store={`${NB}/${st.id}`} marks={`${NB_IDX}/${st.id}`} readOnly keys tc="edit" tcPath={`${NB_TC}/${st.id}`} by={by} qz={{ sid: st.id, ro: 1 }}
       boards={`${NB_B}/s_${st.id}`} boardsRO who="rv" title={st.name.split(" ").slice(0, 2).join(" ")} onBack={() => setOpen(null)} />
     : <Library api={api} student={st} books={books} readOnly onOpen={(book, page) => setOpen({ book, page })} onBack={onBack} />;
 }
@@ -1161,6 +1169,8 @@ export function NafsBooksTeacher({ api, by }) {
   if (V && V.k === "stu") return wrapIn(<StudentReview api={api} st={V.st} books={[V.book]} by={S.name} onBack={() => setView({ k: "studs", book: V.book })} />);
   if (V && (V.k === "pre" || V.k === "hw")) return wrapIn(<div className="nb-home"><div className="nb-book nb-h" style={{ "--c": BOOKS[V.book].c }}><b>{V.k === "pre" ? "🧪 الاختبار القبلي" : "📝 الواجبات والتغذية الراجعة"} – {BOOKS[V.book].name}</b><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div>
     {V.k === "pre" ? <PreClass api={api} book={V.book} cks={S.assign[V.book]} ros={ros} by={S.name} /> : <HwTeacher api={api} book={V.book} cks={S.assign[V.book]} ros={ros} tkey={S.key} tname={S.name} />}</div>);
+  if (V && V.k === "qz") return wrapIn(<><div className="nb-home" style={{ paddingBottom: 0 }}><div className="nb-book nb-h" style={{ "--c": BOOKS[V.book].c }}><b>✅ الإجابات الإلكترونية – {BOOKS[V.book].name}</b><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div></div>
+    <NbResults api={api} books={[V.book]} cks={S.assign[V.book]} ros={ros} by={S.name} /></>);
   if (V && V.k === "studs") return wrapIn(<div className="nb-home"><div className="nb-book nb-h" style={{ "--c": BOOKS[V.book].c }}><b>🎓 طلابي في {BOOKS[V.book].name}: الدخول والحل</b><span className="nb-sp" /><button className="nb-b" onClick={back}>رجوع</button></div>
     <ClassStudents api={api} ros={ros} idx={idx} seen={seen} cks={S.assign[V.book]} books={[V.book]} onPick={st => setView({ k: "stu", book: V.book, st })} /></div>);
 
@@ -1200,6 +1210,7 @@ export function NafsBooksTeacher({ api, by }) {
           <button className="nb-b big" style={{ padding: 12, fontSize: 15 }} onClick={() => setView({ k: "studs", book: b })}>🎓 طلابي: الدخول والحل</button>
           <button className="nb-b big" style={{ padding: 12, fontSize: 15 }} onClick={() => setView({ k: "pre", book: b })}>🧪 الاختبار القبلي: مستوى طلابي</button>
           <button className="nb-b big" style={{ padding: 12, fontSize: 15 }} onClick={() => setView({ k: "hw", book: b })}>📝 الواجبات والتغذية الراجعة</button>
+          <button className="nb-b big on" style={{ padding: 12, fontSize: 15, "--c": "#15803d" }} onClick={() => setView({ k: "qz", book: b })}>✅ الإجابات الإلكترونية والنتائج</button>
         </div>
         <small style={{ color: "#64748b", fontWeight: 700 }}>أثناء العرض: «✅ تم شرح الصفحة» يحسب الدرس والأسبوع تلقائيًا، وعند اكتمال الأسبوع تُبلَّغ الإدارة لعمل الاختبار. وسبورتك 🧑‍🏫 تُحفظ ملاحظةً على الصفحة لكل فصولك.</small>
       </div>; })}
@@ -1261,10 +1272,11 @@ export function NafsBooksAdmin({ api, by = "الإدارة", tab0 = "sum" }) {
     <div className="nb-book" style={{ "--c": "#7c3aed" }}>
       <div className="nb-h"><b>📚 مراجع نافس – متابعة الإدارة</b><span className="nb-sp" /><button className="nb-b" onClick={() => { setD(null); load(); }}>🔄 تحديث</button></div>
       <p style={{ margin: "6px 0 10px", color: "#475569", fontWeight: 700, fontSize: 13.5 }}>رابط الطلاب: <span dir="ltr" style={{ userSelect: "all" }}>{window.location.origin}/#marji</span> • المعلمون من «بوابة المعلمين» ويرى كلٌّ مادته وفصوله حسب الجدول</p>
-      <div className="nb-tabs">{[["sum", "📊 الملخص"], ["week", "📅 المتابعة الأسبوعية"], ["alerts", <>🔔 الاختبارات{nNew ? <span className="nb-badge">{ar(nNew)}</span> : null}</>], ["teachers", "👨‍🏫 المعلمون"], ["pre", "🧪 القبلي"], ["hw", "📝 الواجبات"], ["students", "🎓 الطلاب"], ["books", "📖 الكتب"]].map(([k, l]) => <button key={k} className={"nb-b" + (tab === k ? " on" : "")} onClick={() => setTab(k)}>{l}</button>)}</div>
+      <div className="nb-tabs">{[["sum", "📊 الملخص"], ["week", "📅 المتابعة الأسبوعية"], ["alerts", <>🔔 الاختبارات{nNew ? <span className="nb-badge">{ar(nNew)}</span> : null}</>], ["teachers", "👨‍🏫 المعلمون"], ["pre", "🧪 القبلي"], ["hw", "📝 الواجبات"], ["qz", "✅ الإجابات الإلكترونية"], ["students", "🎓 الطلاب"], ["books", "📖 الكتب"]].map(([k, l]) => <button key={k} className={"nb-b" + (tab === k ? " on" : "")} onClick={() => setTab(k)}>{l}</button>)}</div>
     </div>
 
     {tab === "week" && <WeekBoard api={api} D={D} rows={M.rows} cks={M.cks} />}
+    {tab === "qz" && <NbResults api={api} books={BOOK_IDS} cks={M.cks} ros={D.ros} by={by} />}
     {tab === "pre" && BOOK_IDS.map(b => <PreClass key={b} api={api} book={b} cks={M.cks} ros={D.ros} by={by} />)}
     {tab === "hw" && BOOK_IDS.map(b => <HwTeacher key={b} api={api} book={b} cks={M.cks} ros={D.ros} admin tname={by} />)}
     {tab === "sum" && <>
@@ -1702,3 +1714,391 @@ function WeekBoard({ api, D, rows, cks }) {
     </div>}
   </div>;
 }
+
+// ════════════════════════════════════════════════════════════════════
+// ✅ الإجابة الإلكترونية في المراجع: الضغط على دائرة الاختيار في الصفحة نفسها • ورقة إجابة لكل سؤال
+//    (اختيار • صواب/خطأ • إجابة مكتوبة مع لوحة الرموز) • ملاحظة الطالب لكل سؤال • تصحيح آلي فوري
+//    وتغذية راجعة بسبب الخطأ • نتائج للطالب والمعلم والإدارة وتحليل الأسئلة ومراجعة الإجابات المكتوبة
+//   school-nafsbook-qa/{book}/{page}/{sid} = { a:{i:الإجابة}, x:{i:التصحيح}, n:{i:ملاحظة}, sr:{i:تقييم ذاتي},
+//                                             tr:{i:قرار المعلم}, c:{i:تعليق المعلم}, g:{النتيجة}, f:{المحاولة الأولى}, ck, nm }
+//   school-nafsbook-qr/{sid}/{book}/{page} = { c, g, t, p, n, at }      ملخص سريع للنتائج
+//   school-nafsbook-fb/{book}/{page}/{i}   = { r: سبب الإجابة الصحيحة, o:{0..3: لماذا هذا الخيار خطأ} }
+// ════════════════════════════════════════════════════════════════════
+const NB_QA = "school-nafsbook-qa", NB_QR = "school-nafsbook-qr", NB_FB = "school-nafsbook-fb";
+const QLET = ["أ", "ب", "ج", "د"];
+const QK_LBL = { m: "اختيار من متعدد", tf: "صواب أم خطأ", s: "إجابة قصيرة", o: "إجابة مكتوبة" };
+const qmOf = (b, p) => { const L = obj(QM[b])[p]; return Array.isArray(L) ? L : []; };
+const qKindAt = (b, p, i) => (qmOf(b, p)[i] || [])[2] || "o";
+// وحدة التصحيح: صفحة الدرس وحدها، أو صفحات اختبار الأسبوع معًا (مع ورقة «ظلّل الدائرة»)
+const qUnit = (b, p) => { for (let w = 0; w < 15; w++) { const T = testPages(b, w); if (T.includes(p)) return { w, test: true, pages: T.filter(x => qmOf(b, x).length) }; } return { w: weekOfPage(b, p), test: false, pages: qmOf(b, p).length ? [p] : [] }; };
+const qPct = (c, g) => g ? Math.round(c / g * 100) : null;
+const qLvl = v => v == null ? ["—", "#94a3b8"] : v >= 90 ? ["متقدم", "#15803d"] : v >= 75 ? ["متمكن", "#2563eb"] : v >= 60 ? ["قريب من التمكن", "#b45309"] : ["يحتاج دعمًا", "#dc2626"];
+const qHtml = h => ({ __html: String(h || "") });
+
+// ── التصحيح نفسه (نسخة احتياطية في المتصفح عند تعذّر الخادم — نفس منطق api/nbgrade.js)
+const qzKind = (t, a) => /اختيار من متعدد/.test(t) ? "m" : /صواب\/خطأ/.test(t) ? "tf" : (/^(أكمل|أكمل الحل|حساب ذهني)$/.test(stripH(t)) && stripH(a).length <= 40) ? "s" : "o";
+const qDig = s => String(s).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+const qNorm = s => qDig(stripH(s)).replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[−–—]/g, "-").replace(/[٫,]/g, ".").replace(/×/g, "x").replace(/[\s()]/g, "").replace(/(ريالا|ريال|سم|كم|درجه|°)$/, "").replace(/\.$/, "");
+function qShortOk(key, v) { const k = stripH(key), a = String(v || ""); if (!a.trim()) return false; const nk = qNorm(k), na = qNorm(a); if (!na) return false; if (na === nk) return true;
+  if (k.includes("=") && qNorm(k.split("=").pop()) === na) return true;
+  const parts = s => s.split(/[،؛;]|\sو\s|\sأو\s/).map(qNorm).filter(Boolean); const kp = parts(k), ap = parts(a);
+  return kp.length > 1 && kp.length === ap.length && kp.every(x => ap.includes(x)); }
+function qGradeLocal(Kx, b, pages) { const out = {}; pages.forEach(({ p, a }) => { const L = Array.isArray(obj(Kx[b])[p]) ? Kx[b][p] : []; const A = obj(a); const r = {}, ci = {}, k = {}; let c = 0, g = 0, pn = 0;
+  L.forEach(([n, t, key], i) => { const kd = qzKind(t, key), v = A[i], empty = v == null || String(v).trim() === "";
+    if (kd === "m") { ci[i] = QLET.indexOf(stripH(key)[0]); const ex = String(key).split("—").slice(1).join("—").trim(); if (ex) k[i] = ex; r[i] = !empty && +v === ci[i] ? 1 : 0; }
+    else if (kd === "tf") { ci[i] = /^صواب/.test(stripH(key)) ? "ص" : "خ"; k[i] = key; r[i] = v === ci[i] ? 1 : 0; }
+    else { k[i] = key; r[i] = empty ? 0 : kd === "s" && qShortOk(key, v) ? 1 : -1; }
+    if (r[i] === 1) c++; if (r[i] === -1) pn++; else g++; });
+  out[p] = { r, ci, k, c, g, t: L.length, p: pn }; }); return out; }
+async function nbGrade(book, pages) {
+  try { const r = await fetch("/api/nbgrade", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ b: book, pages }) });
+    if (r.ok) { const j = await r.json(); if (j && j.ok && j.res) return j.res; } } catch {}
+  return qGradeLocal(await loadKeys(), book, pages);
+}
+// تطبيق قرارات المعلم على نتيجة التصحيح وإعادة الحساب
+function qApplyTr(G, tr) { const r = { ...obj(G.r) }; Object.entries(obj(tr)).forEach(([i, v]) => { if (r[i] !== undefined && (v === 0 || v === 1)) r[i] = v; });
+  let c = 0, g = 0, pn = 0; Object.values(r).forEach(v => { if (v === 1) c++; if (v === -1) pn++; else g++; }); return { ...G, r, c, g, p: pn }; }
+
+// ── حالة الإجابات في عارض الصفحة
+function useQuiz({ api, qz, book, page, idx, flash }) {
+  const on = !!qz;
+  const U = useMemo(() => on ? qUnit(book, page) : { pages: [] }, [on, book, page]);
+  const [D, setD] = useState({}); const [fb, setFb] = useState({}); const [busy, setBusy] = useState(false);
+  const tm = useRef({}); const pend = useRef({});
+  const key = U.pages.join(",");
+  const rec = p => obj(D[book + "/" + p]);
+  useEffect(() => { if (!on || !U.pages.length) return; let ok = true;
+    Promise.all(U.pages.map(p => api.maGet(`${NB_QA}/${book}/${p}/${qz.sid}`))).then(L => { if (!ok) return; setD(d => { const n = { ...d }; U.pages.forEach((p, j) => { if (!pend.current[book + "/" + p]) n[book + "/" + p] = obj(L[j]); }); return n; }); });
+    return () => { ok = false; }; }, [on, book, key, qz && qz.sid]);
+  const anyG = U.pages.some(p => rec(p).g);
+  useEffect(() => { if (!on || !anyG) return; U.pages.forEach(p => { if (fb[book + "/" + p] === undefined) api.maGet(`${NB_FB}/${book}/${p}`).then(d => setFb(f => ({ ...f, [book + "/" + p]: obj(d) }))); }); }, [on, book, key, anyG]);
+  // حفظ فوري للاختيارات، ومؤجَّل قليلًا للكتابة حتى لا يُرسل كل حرف
+  const save = (fp, v, delay) => { clearTimeout(tm.current[fp]); const go = () => { delete tm.current[fp]; Promise.resolve(api.maPut(fp, v)).then(ok => { if (ok === false) { const q = qGet(); q[fp] = v; qSet(q); } }); };
+    if (delay) tm.current[fp] = setTimeout(go, delay); else go(); };
+  useEffect(() => () => { Object.values(tm.current).forEach(clearTimeout); }, []);
+  const path = p => `${NB_QA}/${book}/${p}/${qz.sid}`;
+  const put = (p, sub, v, delay) => { const k = book + "/" + p; pend.current[k] = 1;
+    setD(d => { const R = obj(d[k]); const [a, b2] = sub.split("/"); const n = { ...R }; if (b2 == null) { if (v == null) delete n[a]; else n[a] = v; } else { n[a] = { ...obj(R[a]) }; if (v == null) delete n[a][b2]; else n[a][b2] = v; } return { ...d, [k]: n }; });
+    save(`${path(p)}/${sub}`, v == null ? null : v, delay); };
+  const meta = p => { const R = rec(p); if (R.ck || qz.ro) return; put(p, "ck", qz.ck || ""); put(p, "nm", qz.nm || ""); if (idx) api.maPut(`${idx}/${book}/${p}`, Date.now()); };
+  const locked = p => !!qz.ro || !!rec(p).g;
+  const setAns = (p, i, v, delay) => { if (locked(p)) { if (!qz.ro && rec(p).g) flash("🔒 صُحّحت إجاباتك — اضغط «🔁 أعد محاولة الأخطاء» للتعديل", 2400); return; } meta(p); put(p, "a/" + i, v === "" ? null : v, delay); };
+  const setX = (p, i, v) => { if (!locked(p)) put(p, "x/" + i, v || null, 700); };
+  const setNote = (p, i, v) => { if (qz.ro) return; meta(p); put(p, "n/" + i, v || null, 700); const n = { ...obj(rec(p).n), [i]: v }; const cnt = Object.values(n).filter(x => x && String(x).trim()).length; save(`${NB_QR}/${qz.sid}/${book}/${p}/n`, cnt || null, 900); };
+  const setSelf = (p, i, v) => { if (!qz.ro) put(p, "sr/" + i, v); };
+  const grade = async () => { if (busy || qz.ro) return; setBusy(true);
+    try { const pages = U.pages.map(p => ({ p, a: obj(rec(p).a) })); const res = await nbGrade(book, pages); const now = Date.now(); let C = 0, G = 0, P = 0;
+      for (const p of U.pages) { const R = rec(p); if (!res[p]) continue; const g = { ...qApplyTr(res[p], R.tr), at: now, try: (+R.tries || 0) + 1 };
+        C += g.c; G += g.g; P += g.p; meta(p); put(p, "g", g); put(p, "tries", g.try); if (!R.f) put(p, "f", { c: g.c, g: g.g, at: now });
+        const nn = Object.values(obj(R.n)).filter(x => x && String(x).trim()).length;
+        save(`${NB_QR}/${qz.sid}/${book}/${p}`, { c: g.c, g: g.g, t: g.t, p: g.p, at: now, ...(nn ? { n: nn } : {}), ...(R.f ? { f: qPct(R.f.c, R.f.g) } : { f: qPct(g.c, g.g) }) }); }
+      const v = qPct(C, G); if (v === 100) confetti();
+      flash(v == null ? "⏳ أُرسلت إجاباتك المكتوبة لمعلمك ليقيّمها" : `${v === 100 ? "🎉 ممتاز!" : v >= 75 ? "👏 أحسنت" : "💪 راجع الأخطاء"} — نتيجتك ${ar(C)} من ${ar(G)} (${ar(v)}٪)${P ? ` • ${ar(P)} بانتظار المعلم` : ""}`, 4200);
+    } catch (e) { flash("⚠️ تعذّر التصحيح الآن — تحقق من الاتصال وأعد المحاولة", 3000); }
+    setBusy(false); };
+  const retry = () => { if (qz.ro) return; U.pages.forEach(p => { const R = rec(p); if (!R.g) return; const A = { ...obj(R.a) }; Object.entries(obj(R.g.r)).forEach(([i, v]) => { const kd = qKindAt(book, p, +i); if (v === 0 && (kd === "m" || kd === "tf")) delete A[i]; }); put(p, "a", Object.keys(A).length ? A : null); put(p, "g", null); });
+    flash("🔁 أعد اختيار إجابات الأسئلة الخاطئة ثم صحّح مرة أخرى", 2600); };
+  let tot = 0, ans = 0, C = 0, G = 0, P = 0; U.pages.forEach(p => { const L = qmOf(book, p), R = rec(p), A = obj(R.a); tot += L.length; ans += L.filter((_, i) => A[i] != null && String(A[i]).trim() !== "").length; if (R.g) { C += R.g.c; G += R.g.g; P += R.g.p; } });
+  const graded = U.pages.length > 0 && U.pages.every(p => rec(p).g);
+  return { on, ro: on && !!qz.ro, U, rec, fb: p => obj(fb[book + "/" + p]), setAns, setX, setNote, setSelf, grade, retry, busy, graded, anyG, st: { tot, ans, C, G, P } };
+}
+
+// ── دوائر الاختيار فوق الصفحة: يضغط الطالب الدائرة نفسها في السؤال أو في ورقة «ظلّل الدائرة»
+function QzBubbles({ Z, book, page, size, active, color }) {
+  if (!Z.on) return null;
+  const G = arr(obj(QP[book])[page]).map(([i, co]) => ({ p: page, i, co }));
+  const sh = obj(QS[book])[page]; if (sh) arr(sh.g).forEach((co, n) => { const q = sh.q[n]; if (q) G.push({ p: q[0], i: q[1], co, sheet: n + 1 }); });
+  if (!G.length) return null;
+  const d0 = Math.max(18, size.w * 0.038), ds = size.w * 0.031;
+  return G.map(g => { const R = Z.rec(g.p), v = obj(R.a)[g.i], Gr = R.g, d = g.sheet ? ds : d0; return g.co.map(([x, y], j) => {
+    const sel = v != null && +v === j, ok = Gr && obj(Gr.ci)[g.i] === j, bad = Gr && sel && obj(Gr.r)[g.i] === 0;
+    return <button key={`${g.p}-${g.i}-${j}-${g.sheet || 0}`} type="button" className={"qz-bub" + (sel ? " sel" : "") + (Gr && ok ? " ok" : "") + (bad ? " bad" : "") + (Gr ? " done" : "")}
+      style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: d, height: d, fontSize: d * 0.5, "--qc": color, pointerEvents: active ? "auto" : "none" }}
+      onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); Z.setAns(g.p, g.i, j); }} aria-label={`السؤال ${g.sheet || ""} الخيار ${QLET[j]}`}>
+      {(sel || (Gr && ok)) ? (Gr ? (ok ? "✓" : "✗") : QLET[j]) : ""}</button>; }); });
+}
+
+// ── ورقة الإجابة: كل أسئلة الصفحة (أو الاختبار) مع الكتابة والملاحظة والتصحيح والتغذية الراجعة
+function QzSheet({ Z, book, page, onClose, onGo, color }) {
+  const [foc, setFoc] = useState(null); const [symT, setSymT] = useState(0); const [kb, setKb] = useState({ b: 0, h: 0 }); const [noteOpen, setNoteOpen] = useState({});
+  const refs = useRef({});
+  useEffect(() => { const vv = window.visualViewport; if (!vv) return; const f = () => setKb({ b: Math.max(0, window.innerHeight - vv.height - vv.offsetTop), h: vv.height }); f(); vv.addEventListener("resize", f); vv.addEventListener("scroll", f); return () => { vv.removeEventListener("resize", f); vv.removeEventListener("scroll", f); }; }, []);
+  const U = Z.U, S = Z.st, ro = Z.ro;
+  const focusField = (k, el) => { setFoc(k); setTimeout(() => { try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch {} }, 280); };
+  const insSym = s => { if (!foc) return; const el = refs.current[foc]; if (!el) return; const [p, i, kind] = foc.split("|"); const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? a; const t = s.replace(/\s\s/g, " "); const v = el.value.slice(0, a) + t + el.value.slice(b);
+    if (kind === "x") Z.setX(+p, +i, v); else Z.setAns(+p, +i, v, 700); requestAnimationFrame(() => { try { el.focus(); const c = a + t.length; el.setSelectionRange(c, c); } catch {} }); };
+  const v = qPct(S.C, S.G); const L = qLvl(v);
+  const kbOpen = kb.b > 80;
+  const sheetH = kb.h ? Math.min(kb.h * (kbOpen ? 0.92 : 0.72), 760) : undefined;
+  return <div className={"qz-sheet" + (kbOpen ? " kb" : "")} style={{ bottom: kb.b, maxHeight: sheetH, "--qc": color }} onPointerDown={e => e.stopPropagation()} role="dialog" aria-label="ورقة الإجابة">
+    <div className="qz-hd">
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <b style={{ fontSize: 15.5 }}>📝 {U.test ? `ورقة إجابة اختبار الأسبوع ${ar(U.w + 1)}` : `أسئلة صفحة ${ar(page)}`}</b>
+        <div className="qz-prog"><i style={{ width: `${S.tot ? S.ans / S.tot * 100 : 0}%` }} /></div>
+        <small>{ro ? "عرض إجابات الطالب" : Z.graded ? "صُحّحت — راجع التغذية الراجعة تحت كل سؤال" : `أجبت ${ar(S.ans)} من ${ar(S.tot)}`}</small>
+      </div>
+      {Z.anyG && <div className="qz-score" style={{ "--lc": L[1] }}><b>{v == null ? "⏳" : ar(v) + "٪"}</b><small>{v == null ? "بانتظار المعلم" : `${ar(S.C)}/${ar(S.G)} • ${L[0]}`}</small></div>}
+      <button className="nb-b" onClick={onClose} aria-label="إغلاق">✕</button>
+    </div>
+    <div className="qz-body">
+      {U.pages.map(p => { const R = Z.rec(p), A = obj(R.a), Gr = R.g, F = Z.fb(p);
+        return <div key={p}>
+          {U.pages.length > 1 && <div className="qz-pg"><span>صفحة {ar(p)}</span>{p !== page && <button className="nb-b" onClick={() => onGo(p)}>انتقل إليها ‹</button>}</div>}
+          {qmOf(book, p).map(([n, t, kd], i) => { const val = A[i], r = Gr ? obj(Gr.r)[i] : undefined, ci = Gr ? obj(Gr.ci)[i] : undefined, kk = Gr ? obj(Gr.k)[i] : null, fbi = obj(F[i]);
+            const tc = obj(R.c)[i], note = obj(R.n)[i], sr = obj(R.sr)[i], lock = ro || !!Gr;
+            const st = r === 1 ? "ok" : r === 0 ? (val == null || String(val).trim() === "" ? "skip" : "bad") : r === -1 ? "wait" : "";
+            const fk = `${p}|${i}|a`;
+            return <div key={i} className={"qz-q " + st}>
+              <div className="qz-qh"><span className="qz-n" dangerouslySetInnerHTML={qHtml(n)} /><small className="qz-t">{t || QK_LBL[kd]}</small><span className="nb-sp" />
+                {st === "ok" && <span className="qz-r ok">✅ صحيحة</span>}{st === "bad" && <span className="qz-r bad">❌ خطأ</span>}{st === "skip" && <span className="qz-r skip">⚪ لم تُجب</span>}{st === "wait" && <span className="qz-r wait">⏳ يقيّمها المعلم</span>}</div>
+              {kd === "m" && <div className="qz-opts">{QLET.map((l, j) => { const sel = val != null && +val === j; return <button key={j} type="button" disabled={lock} className={"qz-o" + (sel ? " sel" : "") + (Gr && ci === j ? " ok" : "") + (Gr && sel && r === 0 ? " bad" : "")} onClick={() => Z.setAns(p, i, j)}>{l}</button>; })}</div>}
+              {kd === "tf" && <><div className="qz-opts tf">{[["ص", "✔ صواب"], ["خ", "✖ خطأ"]].map(([k, l]) => <button key={k} type="button" disabled={lock} className={"qz-o" + (val === k ? " sel" : "") + (Gr && ci === k ? " ok" : "") + (Gr && val === k && r === 0 ? " bad" : "")} onClick={() => Z.setAns(p, i, k)}>{l}</button>)}</div>
+                {val === "خ" && <input className="qz-in" ref={el => { refs.current[`${p}|${i}|x`] = el; }} disabled={lock} value={obj(R.x)[i] || ""} onFocus={e => focusField(`${p}|${i}|x`, e.target)} onChange={e => Z.setX(p, i, e.target.value)} placeholder="صحّح العبارة الخاطئة…" enterKeyHint="done" dir="auto" />}</>}
+              {(kd === "s" || kd === "o") && <textarea className="qz-in" ref={el => { refs.current[fk] = el; }} rows={kd === "s" ? 1 : 3} disabled={lock} value={val || ""} dir="auto" enterKeyHint={kd === "s" ? "done" : "enter"}
+                onFocus={e => focusField(fk, e.target)} onChange={e => Z.setAns(p, i, e.target.value, 700)} onKeyDown={e => { if (kd === "s" && e.key === "Enter") { e.preventDefault(); e.target.blur(); } }}
+                placeholder={ro ? "لم يكتب إجابة" : kd === "s" ? "اكتب الإجابة هنا…" : "اكتب إجابتك وخطوات الحل هنا…"} />}
+              {/* التغذية الراجعة */}
+              {Gr && st === "bad" && kd === "m" && <div className="qz-fb bad"><b>اخترت ({QLET[+val]}) — والإجابة الصحيحة ({QLET[ci]})</b>
+                {fbi.o && fbi.o[+val] && <div><span className="qz-fl">لماذا ({QLET[+val]}) غير صحيحة؟</span> {fbi.o[+val]}</div>}
+                {(fbi.r || kk) && <div><span className="qz-fl">💡 لماذا ({QLET[ci]}) هي الصحيحة؟</span> {fbi.r ? fbi.r : <span dangerouslySetInnerHTML={qHtml(kk)} />}</div>}
+                {!fbi.r && !kk && !(fbi.o && fbi.o[+val]) && <div>💡 راجع شرح الدرس في المرجع ثم اضغط «أعد محاولة الأخطاء».</div>}</div>}
+              {Gr && st === "skip" && kd === "m" && <div className="qz-fb skip">الإجابة الصحيحة ({QLET[ci]}){fbi.r ? <div>💡 {fbi.r}</div> : null}</div>}
+              {Gr && st === "ok" && kd === "m" && fbi.r && <div className="qz-fb ok">💡 {fbi.r}</div>}
+              {Gr && kd === "tf" && (st === "bad" || st === "skip") && <div className="qz-fb bad"><b>العبارة {ci === "ص" ? "صحيحة" : "خاطئة"}</b>{fbi.r ? <div>💡 {fbi.r}</div> : <div dangerouslySetInnerHTML={qHtml(kk)} />}</div>}
+              {Gr && kd === "tf" && st === "ok" && ci === "خ" && <div className="qz-fb ok"><span className="qz-fl">التصحيح النموذجي:</span> <span dangerouslySetInnerHTML={qHtml(String(kk || "").replace(/^خطأ،?\s*(والتصحيح:)?/, ""))} /></div>}
+              {Gr && (kd === "s" || kd === "o") && kk && st !== "ok" && <div className={"qz-fb " + (st === "wait" ? "wait" : "skip")}><span className="qz-fl">الإجابة النموذجية:</span> <span dangerouslySetInnerHTML={qHtml(kk)} />{fbi.r && <div>💡 {fbi.r}</div>}
+                {st === "wait" && !ro && <div className="qz-self">قارن إجابتك بالنموذجية: <button className={"qz-chip" + (sr === 1 ? " on ok" : "")} onClick={() => Z.setSelf(p, i, 1)}>👍 إجابتي صحيحة</button><button className={"qz-chip" + (sr === 0 ? " on bad" : "")} onClick={() => Z.setSelf(p, i, 0)}>👎 أخطأت</button></div>}
+                {st === "wait" && ro && sr != null && <div className="qz-self">تقييم الطالب لنفسه: {sr ? "👍 صحيحة" : "👎 أخطأ"}</div>}</div>}
+              {tc && <div className="qz-fb tc">👨‍🏫 تعليق المعلم: {tc}</div>}
+              {(note || noteOpen[fk]) ? <textarea className="qz-in note" rows={2} disabled={ro} value={note || ""} dir="auto" onFocus={e => focusField(`${fk}n`, e.target)} onChange={e => Z.setNote(p, i, e.target.value)} placeholder="ملاحظتك أو سؤالك للمعلم عن هذا السؤال…" />
+                : !ro && <button className="qz-add" onClick={() => setNoteOpen(o => ({ ...o, [fk]: 1 }))}>💬 إضافة ملاحظة أو سؤال للمعلم</button>}
+            </div>; })}
+        </div>; })}
+    </div>
+    {foc && !foc.endsWith("n") && book !== "ar" && !ro && !Z.rec(+foc.split("|")[0]).g && <div className="qz-sym" onMouseDown={e => e.preventDefault()} onPointerDown={e => e.preventDefault()}>
+      <div className="pt">{NB_SYM.map(([l], i) => <button key={l} className={"nb-b" + (symT === i ? " on" : "")} onClick={() => setSymT(i)}>{l}</button>)}<span className="nb-sp" /><button className="nb-b" onClick={() => { const el = refs.current[foc]; setFoc(null); try { el && el.blur(); } catch {} }}>⌨️ إخفاء</button></div>
+      <div className="ps">{NB_SYM[symT][1].map(x => <button key={x} onClick={() => insSym(x)}>{x}</button>)}</div></div>}
+    {!ro && <div className="qz-ft">
+      {!Z.graded ? <button className="nb-b big qz-go" disabled={Z.busy || !S.ans} onClick={() => { if (S.ans < S.tot && !window.confirm(`لم تُجب عن ${ar(S.tot - S.ans)} سؤال${S.tot - S.ans > 1 ? "ًا" : ""}. هل تريد التصحيح الآن؟`)) return; Z.grade(); }}>{Z.busy ? "⏳ جارٍ التصحيح…" : `✅ صحّح إجاباتي (${ar(S.ans)}/${ar(S.tot)})`}</button>
+        : <>{S.G > S.C && <button className="nb-b big" onClick={Z.retry}>🔁 أعد محاولة الأخطاء</button>}<button className="nb-b big on" onClick={onClose}>تم</button></>}
+    </div>}
+  </div>;
+}
+
+// ── تقرير الإجابات الإلكترونية للمعلم والإدارة: الطلاب • الأسابيع • تحليل كل سؤال • مراجعة المكتوب • التغذية الراجعة
+async function qPageImg(book, p, w = 1100) { const doc = await openDoc(book); const pg = await doc.getPage(p); const v1 = pg.getViewport({ scale: 1 }); const vp = pg.getViewport({ scale: w / v1.width });
+  const c = document.createElement("canvas"); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); await pg.render({ canvasContext: g, viewport: vp }).promise; return c.toDataURL("image/jpeg", 0.72); }
+const qParse = s => { try { return JSON.parse(s); } catch {} const a = s.indexOf("{"), b = s.lastIndexOf("}"); if (a >= 0 && b > a) { try { return JSON.parse(s.slice(a, b + 1)); } catch {} } return null; };
+async function qGenFb(api, book, p) {
+  const Kx = await loadKeys(); const L = Array.isArray(obj(Kx[book])[p]) ? Kx[book][p] : []; if (!L.length) return null;
+  const img = await qPageImg(book, p);
+  const list = L.map(([n, t, a], i) => `${i}) السؤال ${stripH(n)} — ${stripH(t)} — الإجابة: ${stripH(a)}`).join("\n");
+  const prompt = `هذه صفحة ${p} من «مرجع نافس» لمادة ${BOOKS[book].name} للصف الثالث المتوسط (الصورة مرفقة)، وهذا مفتاح إجاباتها:\n${list}\n\nالمطلوب لكل سؤال (بالرقم i نفسه) تغذية راجعة للطالب بلغة عربية سهلة يفهمها طالب الثالث المتوسط:\n• why: سطر أو سطران يشرحان لماذا الإجابة الصحيحة صحيحة (الفكرة أو القاعدة أو خطوة الحل)، دون مقدمات.\n• o0..o3 (لأسئلة الاختيار من متعدد فقط): لكل خيار خاطئ سبب الخطأ أو المفهوم الخاطئ الذي يقود الطالب إليه في جملة قصيرة، واترك الخيار الصحيح فارغًا "".\nاعتمد على نص السؤال والخيارات كما تظهر في الصورة، ولا تغيّر الإجابة الصحيحة الواردة في المفتاح.`;
+  const schema = { type: "object", properties: { items: { type: "array", items: { type: "object", properties: { i: { type: "integer" }, why: { type: "string" }, o0: { type: "string" }, o1: { type: "string" }, o2: { type: "string" }, o3: { type: "string" } }, required: ["i", "why"] } } }, required: ["items"] };
+  const r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: api.hash, prompt, images: [img], tag: `nbfb-${book}-${p}`, max: 4000, schema, kind: "nb" }) });
+  const ct = r.headers.get("content-type") || ""; if (ct.includes("json") || !r.ok) { let j = {}; try { j = await r.json(); } catch {} throw new Error(j.msg || "خدمة الذكاء الاصطناعي غير متاحة الآن"); }
+  const rd = r.body.getReader(), dc = new TextDecoder(); let out = ""; for (;;) { const { done, value } = await rd.read(); if (done) break; out += dc.decode(value, { stream: true }); }
+  const j = qParse(out); if (!j || !Array.isArray(j.items)) throw new Error("تعذّر قراءة الرد");
+  const cur = obj(await api.maGet(`${NB_FB}/${book}/${p}`)); const F = { ...cur };
+  j.items.forEach(x => { const i = +x.i; if (!(i >= 0 && i < L.length)) return; const old = obj(cur[i]); if (old.man) return; const o = {}; [0, 1, 2, 3].forEach(k => { const s = String(x["o" + k] || "").trim(); if (s) o[k] = s; });
+    F[i] = { r: String(x.why || "").trim(), ...(Object.keys(o).length ? { o } : {}), ai: 1 }; });
+  await api.maPut(`${NB_FB}/${book}/${p}`, F); return F;
+}
+
+function NbResults({ api, books, cks, ros, by }) {
+  const [book, setBook] = useState(books[0]); const [ck, setCk] = useState(cks[0] || ""); const [QR, setQR] = useState(null); const [pg, setPg] = useState(null); const [stu, setStu] = useState(null);
+  const [gen, setGen] = useState(null); const [gw, setGw] = useState(0); const [fbHas, setFbHas] = useState({});
+  const load = () => { setQR(null); api.maGet(NB_QR).then(d => setQR(obj(d))); api.maGet(NB_FB).then(d => { const F = obj(obj(d)[book]); setFbHas(Object.fromEntries(Object.keys(F).map(p => [p, 1]))); }); };
+  useEffect(load, [book]);
+  useEffect(() => { if (!cks.includes(ck)) setCk(cks[0] || ""); }, [cks.join()]);
+  const B = BOOKS[book];
+  const studs = arr(ros[ck] && ros[ck].students).filter(s => s && s.id && s.name);
+  const wrap = n => <div className="nb-home"><style>{QZ_CSS}</style>{n}</div>;
+  if (pg) return wrap(<QzPageAnalysis api={api} book={book} p={pg} studs={studs} ck={ck} by={by} onBack={() => { setPg(null); load(); }} onGo={setPg} />);
+  if (!QR) return wrap(<div className="nb-msg">⏳ جارٍ تحميل النتائج…</div>);
+  const R = s => obj(obj(QR[s.id])[book]);
+  const rows = studs.map(s => { const P = R(s); let c = 0, g = 0, pn = 0, n = 0, f = [], at = 0; Object.values(P).forEach(x => { if (!x) return; c += +x.c || 0; g += +x.g || 0; pn += +x.p || 0; n += +x.n || 0; if (x.f != null) f.push(+x.f); at = Math.max(at, +x.at || 0); });
+    return { s, pages: Object.keys(P).length, c, g, pn, n, v: qPct(c, g), f: f.length ? Math.round(f.reduce((a, b) => a + b, 0) / f.length) : null, at }; }).sort((a, b) => (b.v ?? -1) - (a.v ?? -1));
+  const pagesAll = [...new Set(studs.flatMap(s => Object.keys(R(s)).map(Number)))].sort((a, b) => a - b);
+  const pAvg = p => { let c = 0, g = 0, k = 0, pn = 0; studs.forEach(s => { const x = R(s)[p]; if (x) { c += +x.c || 0; g += +x.g || 0; pn += +x.p || 0; k++; } }); return { v: qPct(c, g), k, pn }; };
+  const wAvg = w => { let c = 0, g = 0; studs.forEach(s => Object.entries(R(s)).forEach(([p, x]) => { if (x && (weekOfPage(book, +p) === w)) { c += +x.c || 0; g += +x.g || 0; } })); return qPct(c, g); };
+  const act = rows.filter(r => r.pages); const avg = qPct(act.reduce((a, r) => a + r.c, 0), act.reduce((a, r) => a + r.g, 0));
+  const pend = rows.reduce((a, r) => a + r.pn, 0), notes = rows.reduce((a, r) => a + r.n, 0);
+  const genWeek = async () => { if (!api.hash) { alert("سجّل الدخول من بوابة المعلمين أو حساب الإدارة لاستعمال الذكاء الاصطناعي"); return; }
+    const P = [...weekPages(book, gw), ...testPages(book, gw)].filter(p => qmOf(book, p).length && !fbHas[p]);
+    if (!P.length) { alert("أسئلة هذا الأسبوع لها تغذية راجعة جاهزة ✓"); return; }
+    if (!window.confirm(`تجهيز التغذية الراجعة (سبب الإجابة الصحيحة وسبب خطأ كل خيار) لـ ${ar(P.length)} صفحة من الأسبوع ${ar(gw + 1)} بالذكاء الاصطناعي؟\nتُراجَع وتُعدَّل بعدها من تحليل كل صفحة.`)) return;
+    let ok = 0, err = ""; for (let k = 0; k < P.length; k++) { setGen(`⏳ صفحة ${ar(P[k])} (${ar(k + 1)} من ${ar(P.length)})`); try { await qGenFb(api, book, P[k]); ok++; setFbHas(h => ({ ...h, [P[k]]: 1 })); } catch (e) { err = e.message; if (/حد|السقف|أوقفت|مفتاح|سجّل|مسجّل/.test(err)) break; } }
+    setGen(null); alert(`✅ جُهّزت ${ar(ok)} صفحة${err ? `\n⚠️ ${err}` : ""}`); };
+  return wrap(<>
+    <div className="nb-book" style={{ "--c": B.c }}>
+      <div className="nb-h" style={{ gap: 6 }}><b style={{ fontSize: 17 }}>✅ الإجابات الإلكترونية والتصحيح الآلي</b><span className="nb-sp" />
+        {books.length > 1 && books.map(b => <button key={b} className={"nb-b" + (book === b ? " on" : "")} style={{ "--c": BOOKS[b].c }} onClick={() => { setBook(b); setPg(null); }}>{BOOKS[b].name}</button>)}
+        <button className="nb-b" onClick={load}>🔄</button></div>
+      <div className="nb-h" style={{ gap: 6, marginTop: 8 }}>{cks.map(c => <button key={c} className={"nb-b" + (ck === c ? " on" : "")} onClick={() => setCk(c)}>فصل {cls(c)}</button>)}</div>
+      <div className="nb-kpis" style={{ marginTop: 10 }}>
+        <div className="nb-kpi"><b>{ar(act.length)}/{ar(studs.length)}</b><small>طالب أجاب إلكترونيًا</small><Bar v={pct(act.length, studs.length)} c={B.c} /></div>
+        <div className="nb-kpi" style={{ "--c": qLvl(avg)[1] }}><b>{avg == null ? "—" : ar(avg) + "٪"}</b><small>متوسط الفصل • {qLvl(avg)[0]}</small></div>
+        <div className="nb-kpi" style={{ "--c": "#b45309" }}><b>{ar(pend)}</b><small>إجابة مكتوبة بانتظار تقييمك</small></div>
+        <div className="nb-kpi" style={{ "--c": "#2563eb" }}><b>{ar(notes)}</b><small>ملاحظة وسؤال من الطلاب</small></div>
+      </div>
+    </div>
+    <div className="nb-book" style={{ "--c": B.c }}><b>📅 متوسط الفصل في كل أسبوع</b>
+      <div className="qz-wk">{Array.from({ length: 15 }, (_, w) => { const v = wAvg(w); const Lv = qLvl(v); return <div key={w} title={`${B.titles[w * 2]} • ${B.titles[w * 2 + 1]}`}><i style={{ height: `${v ?? 0}%`, background: Lv[1] }} /><small>{v == null ? "" : ar(v)}</small><b>{ar(w + 1)}</b></div>; })}</div>
+      <div className="nb-h" style={{ gap: 6, marginTop: 10 }}><b style={{ fontSize: 13.5 }}>🤖 التغذية الراجعة (سبب الخطأ):</b><select className="nb-sel" value={gw} onChange={e => setGw(+e.target.value)}>{Array.from({ length: 15 }, (_, w) => <option key={w} value={w}>الأسبوع {ar(w + 1)}</option>)}</select>
+        <button className="nb-b on" disabled={!!gen} onClick={genWeek}>{gen || "تجهيزها بالذكاء الاصطناعي"}</button><small style={{ color: "#64748b", fontWeight: 700 }}>مرة واحدة لكل صفحة، وتظهر لكل الطلاب بعد التصحيح</small></div>
+    </div>
+    <div className="nb-book" style={{ "--c": B.c }}><b>📄 الصفحات التي أجاب عنها الطلاب — اضغط للتحليل والمراجعة</b>
+      {!pagesAll.length ? <div className="nb-msg" style={{ padding: 16 }}>لم يُجب طلاب هذا الفصل إلكترونيًا بعد. يضغط الطالب دائرة الإجابة في الصفحة أو «📝 ورقة الإجابة» ثم «صحّح».</div>
+        : <div className="qz-pgs">{pagesAll.map(p => { const a = pAvg(p), Lv = qLvl(a.v); return <button key={p} className="qz-pgb" style={{ "--lc": Lv[1] }} onClick={() => setPg(p)}><b>ص {ar(p)}</b><span>{a.v == null ? "⏳" : ar(a.v) + "٪"}</span><small>{ar(a.k)} طالب{a.pn ? ` • ⏳${ar(a.pn)}` : ""}{fbHas[p] ? " • 💡" : ""}</small></button>; })}</div>}
+    </div>
+    <div className="nb-book" style={{ "--c": B.c }}><b>🎓 نتائج الطلاب</b>
+      <div className="nb-tbl-w" style={{ marginTop: 8 }}><table className="nb-tbl"><thead><tr><th className="r">الطالب</th><th>صفحات</th><th>النتيجة</th><th>المحاولة الأولى</th><th>المستوى</th><th>بانتظار التقييم</th><th>ملاحظات</th><th>آخر إجابة</th></tr></thead>
+        <tbody>{rows.map(r => { const Lv = qLvl(r.v); return <tr key={r.s.id} className={r.pages ? "click" : ""} onClick={() => r.pages && setStu(stu === r.s.id ? null : r.s.id)}>
+          <td className="r">{r.s.name}</td><td>{ar(r.pages)}</td>
+          <td>{r.v == null ? "—" : <div style={{ display: "flex", alignItems: "center", gap: 5, justifyContent: "center" }}><Bar v={r.v} c={Lv[1]} w={56} /><b>{ar(r.v)}٪</b></div>}</td>
+          <td>{r.f == null ? "—" : ar(r.f) + "٪"}</td><td><b style={{ color: Lv[1] }}>{r.pages ? Lv[0] : "لم يبدأ"}</b></td>
+          <td>{r.pn ? <span className="nb-badge" style={{ background: "#b45309" }}>{ar(r.pn)}</span> : "—"}</td><td>{r.n ? `💬 ${ar(r.n)}` : "—"}</td><td style={{ color: "#64748b" }}>{when(r.at)}</td></tr>; })}</tbody></table></div>
+      {stu && (() => { const s = studs.find(x => x.id === stu); const P = R(s); return <div className="qz-pgs" style={{ marginTop: 8 }}><b style={{ width: "100%", fontSize: 13.5 }}>صفحات {s.name}:</b>{Object.entries(P).sort((a, b) => a[0] - b[0]).map(([p, x]) => { const v = qPct(+x.c || 0, +x.g || 0); return <button key={p} className="qz-pgb" style={{ "--lc": qLvl(v)[1] }} onClick={() => setPg(+p)}><b>ص {ar(p)}</b><span>{v == null ? "⏳" : ar(v) + "٪"}</span><small>{ar(x.c || 0)}/{ar(x.g || 0)}{x.p ? ` • ⏳${ar(x.p)}` : ""}{x.n ? ` • 💬${ar(x.n)}` : ""}</small></button>; })}</div>; })()}
+    </div>
+  </>);
+}
+
+function QzPageAnalysis({ api, book, p, studs, ck, by, onBack, onGo }) {
+  const [QA, setQA] = useState(null); const [K, setK] = useState(null); const [F, setF] = useState({}); const [fbEd, setFbEd] = useState(null); const [busy, setBusy] = useState(""); const [cm, setCm] = useState({});
+  const load = () => Promise.all([api.maGet(`${NB_QA}/${book}/${p}`), loadKeys(), api.maGet(`${NB_FB}/${book}/${p}`)]).then(([a, k, f]) => { setQA(obj(a)); setK(k); setF(obj(f)); });
+  useEffect(() => { setQA(null); load(); }, [book, p]);
+  const B = BOOKS[book]; const QL = qmOf(book, p); const KL = K && Array.isArray(obj(K[book])[p]) ? K[book][p] : [];
+  if (!QA || !K) return <div className="nb-msg">⏳ جارٍ تحميل إجابات الطلاب…</div>;
+  const ids = new Set(studs.map(s => s.id)); const name = sid => (studs.find(s => s.id === sid) || {}).name || obj(QA[sid]).nm || sid;
+  const L = Object.entries(QA).filter(([sid, R]) => R && (ids.has(sid) || (!ck && R))).map(([sid, R]) => ({ sid, R: obj(R) }));
+  const review = async (sid, i, v) => { const R = obj(QA[sid]); const tr = { ...obj(R.tr) }; if (v == null) delete tr[i]; else tr[i] = v; const base = `${NB_QA}/${book}/${p}/${sid}`;
+    await api.maPut(`${base}/tr/${i}`, v == null ? null : v); let g = R.g ? qApplyTr(R.g, tr) : null;
+    if (R.g && v == null) { const r0 = { ...obj(R.g.r) }; r0[i] = qKindAt(book, p, i) === "m" || qKindAt(book, p, i) === "tf" ? r0[i] : (String(obj(R.a)[i] || "").trim() ? -1 : 0); g = qApplyTr({ ...R.g, r: r0 }, tr); }
+    if (g) { await api.maPut(`${base}/g`, g); const q = obj(await api.maGet(`${NB_QR}/${sid}/${book}/${p}`)); await api.maPut(`${NB_QR}/${sid}/${book}/${p}`, { ...q, c: g.c, g: g.g, t: g.t, p: g.p }); }
+    setQA(o => ({ ...o, [sid]: { ...R, tr, ...(g ? { g } : {}) } })); };
+  const saveCm = async (sid, i) => { const t = String(cm[sid + "|" + i] ?? "").trim(); await api.maPut(`${NB_QA}/${book}/${p}/${sid}/c/${i}`, t || null); setQA(o => ({ ...o, [sid]: { ...obj(o[sid]), c: { ...obj(obj(o[sid]).c), [i]: t || undefined } } })); setCm(c => { const n = { ...c }; delete n[sid + "|" + i]; return n; }); };
+  const saveFb = async (i, v) => { const n = { ...F }; if (!v.r && !Object.values(obj(v.o)).some(Boolean)) delete n[i]; else n[i] = { r: v.r || "", o: Object.fromEntries(Object.entries(obj(v.o)).filter(([, s]) => String(s || "").trim())), man: 1 }; await api.maPut(`${NB_FB}/${book}/${p}`, Object.keys(n).length ? n : null); setF(n); setFbEd(null); };
+  const genAI = async () => { if (!api.hash) { alert("سجّل الدخول من بوابة المعلمين أو حساب الإدارة لاستعمال الذكاء الاصطناعي"); return; } setBusy("⏳ يجهّز الذكاء الاصطناعي التغذية الراجعة…"); try { const n = await qGenFb(api, book, p); if (n) setF(n); setBusy(""); } catch (e) { setBusy("⚠️ " + e.message); } };
+  const graded = L.filter(x => x.R.g); let tc = 0, tg = 0; graded.forEach(x => { tc += x.R.g.c; tg += x.R.g.g; }); const v = qPct(tc, tg);
+  return <>
+    <div className="nb-book nb-h" style={{ "--c": B.c, gap: 6 }}><b>🔎 تحليل صفحة {ar(p)} • {B.name}{ck ? ` • فصل ${cls(ck)}` : ""}</b><span className="nb-tag" style={{ "--c": qLvl(v)[1] }}>{v == null ? "—" : ar(v) + "٪"} • {ar(graded.length)} طالب صحّح</span><span className="nb-sp" />
+      <button className="nb-b" onClick={() => onGo(Math.max(1, p - 1))}>›</button><button className="nb-b" onClick={() => onGo(p + 1)}>‹</button>
+      <button className="nb-b on" style={{ "--c": "#7c3aed" }} disabled={!!busy && busy.startsWith("⏳")} onClick={genAI}>🤖 {Object.keys(F).length ? "إعادة توليد" : "توليد"} التغذية الراجعة</button><button className="nb-b" onClick={onBack}>رجوع</button></div>
+    {busy && <div className="nb-info" style={{ position: "static" }}>{busy}</div>}
+    <details className="nb-book" style={{ "--c": B.c, padding: 8 }}><summary style={{ cursor: "pointer", fontWeight: 900, fontSize: 13.5 }}>📄 عرض صفحة المرجع</summary><PageImg key={p} book={book} p={p} w={900} /></details>
+    {QL.map(([n, t, kd], i) => { const key = KL[i] ? KL[i][2] : ""; const ci = kd === "m" ? QLET.indexOf(stripH(key)[0]) : kd === "tf" ? (/^صواب/.test(stripH(key)) ? "ص" : "خ") : null;
+      const ansd = L.filter(x => { const a = obj(x.R.a)[i]; return a != null && String(a).trim() !== ""; }); const rs = graded.map(x => obj(x.R.g.r)[i]); const okN = rs.filter(r => r === 1).length, gN = rs.filter(r => r === 0 || r === 1).length; const qv = qPct(okN, gN);
+      const dist = kd === "m" ? QLET.map((_, j) => ansd.filter(x => +obj(x.R.a)[i] === j).length) : kd === "tf" ? ["ص", "خ"].map(k => ansd.filter(x => obj(x.R.a)[i] === k).length) : null;
+      const wrongTop = dist && kd === "m" ? dist.map((c, j) => [c, j]).filter(([, j]) => j !== ci).sort((a, b) => b[0] - a[0])[0] : null;
+      const fi = obj(F[i]); const ed = fbEd && fbEd.i === i ? fbEd : null;
+      return <div key={i} className="nb-book qz-an" style={{ "--c": qLvl(qv)[1] }}>
+        <div className="nb-h" style={{ gap: 6 }}><span className="qz-n" dangerouslySetInnerHTML={qHtml(n)} /><small className="qz-t">{t}</small><span className="nb-sp" /><b style={{ color: qLvl(qv)[1] }}>{qv == null ? "—" : `${ar(qv)}٪ إجابة صحيحة`}</b><small style={{ color: "#64748b", fontWeight: 800 }}>أجاب {ar(ansd.length)}</small></div>
+        <div className="qz-key">🔑 <span dangerouslySetInnerHTML={qHtml(key)} /></div>
+        {dist && <div className="qz-dist">{dist.map((c, j) => { const isOk = kd === "m" ? j === ci : ["ص", "خ"][j] === ci; return <div key={j} className={isOk ? "ok" : ""}><b>{kd === "m" ? QLET[j] : ["صواب", "خطأ"][j]}</b><span><i style={{ width: `${pct(c, ansd.length)}%` }} /></span><small>{ar(c)} ({ar(pct(c, ansd.length))}٪)</small></div>; })}</div>}
+        {wrongTop && wrongTop[0] > 0 && pct(wrongTop[0], ansd.length) >= 25 && <div className="qz-fb bad" style={{ marginTop: 6 }}>⚠️ خطأ شائع: اختار {ar(pct(wrongTop[0], ansd.length))}٪ الخيار ({QLET[wrongTop[1]]}){fi.o && fi.o[wrongTop[1]] ? ` — ${fi.o[wrongTop[1]]}` : ""}. يُنصح بإعادة شرح هذه الفكرة.</div>}
+        {(kd === "s" || kd === "o" || kd === "tf") && ansd.length > 0 && <div className="qz-ans">{ansd.map(x => { const a = obj(x.R.a)[i], r = x.R.g ? obj(x.R.g.r)[i] : undefined, tr = obj(x.R.tr)[i], sr = obj(x.R.sr)[i], nt = obj(x.R.n)[i], c0 = obj(x.R.c)[i], ck2 = x.sid + "|" + i;
+          return <div key={x.sid} className={"qz-ar " + (r === 1 ? "ok" : r === 0 ? "bad" : r === -1 ? "wait" : "")}>
+            <b>{name(x.sid)}</b><span className="qz-av" dir="auto">{kd === "tf" ? (a === "ص" ? "✔ صواب" : "✖ خطأ") + (obj(x.R.x)[i] ? ` — ${obj(x.R.x)[i]}` : "") : String(a)}</span>
+            {sr != null && r === -1 && <small>تقييمه لنفسه: {sr ? "👍" : "👎"}</small>}
+            <span className="qz-rv"><button className={"qz-chip" + (tr === 1 || (tr == null && r === 1) ? " on ok" : "")} onClick={() => review(x.sid, i, 1)}>✓ صحيحة</button><button className={"qz-chip" + (tr === 0 || (tr == null && r === 0) ? " on bad" : "")} onClick={() => review(x.sid, i, 0)}>✗ خطأ</button>{tr != null && <button className="qz-chip" title="إلغاء قرارك" onClick={() => review(x.sid, i, null)}>↺</button>}</span>
+            {nt && <div className="qz-fb tc" style={{ flexBasis: "100%" }}>💬 ملاحظة الطالب: {nt}</div>}
+            <div style={{ display: "flex", gap: 5, flexBasis: "100%" }}><input className="qz-in" style={{ padding: "5px 9px", fontSize: 13 }} value={cm[ck2] ?? c0 ?? ""} onChange={e => setCm(o => ({ ...o, [ck2]: e.target.value }))} placeholder="تعليقك للطالب على هذا السؤال (اختياري)" />{cm[ck2] != null && <button className="nb-b on" onClick={() => saveCm(x.sid, i)}>حفظ</button>}</div>
+          </div>; })}</div>}
+        {kd === "m" && L.some(x => obj(x.R.n)[i]) && <div className="qz-ans">{L.filter(x => obj(x.R.n)[i]).map(x => <div key={x.sid} className="qz-ar"><b>{name(x.sid)}</b><span className="qz-av">💬 {obj(x.R.n)[i]}</span>
+          <div style={{ display: "flex", gap: 5, flexBasis: "100%" }}><input className="qz-in" style={{ padding: "5px 9px", fontSize: 13 }} value={cm[x.sid + "|" + i] ?? obj(x.R.c)[i] ?? ""} onChange={e => setCm(o => ({ ...o, [x.sid + "|" + i]: e.target.value }))} placeholder="ردّك على الطالب" />{cm[x.sid + "|" + i] != null && <button className="nb-b on" onClick={() => saveCm(x.sid, i)}>حفظ</button>}</div></div>)}</div>}
+        {!ed ? <div className="qz-fbv">{fi.r || (fi.o && Object.keys(fi.o).length) ? <><div><b>💡 سبب الإجابة الصحيحة:</b> {fi.r || "—"}</div>{kd === "m" && fi.o && QLET.map((l, j) => fi.o[j] ? <div key={j}><b>({l}) خطأ لأن:</b> {fi.o[j]}</div> : null)}{fi.ai && !fi.man ? <small style={{ color: "#7c3aed" }}>🤖 مولّدة آليًا — راجعها</small> : null}</> : <small style={{ color: "#94a3b8", fontWeight: 800 }}>لا توجد تغذية راجعة مكتوبة لهذا السؤال — يرى الطالب الإجابة الصحيحة فقط</small>}
+            <button className="nb-b" style={{ marginInlineStart: "auto" }} onClick={() => setFbEd({ i, r: fi.r || "", o: { ...obj(fi.o) } })}>✏️ تحرير التغذية الراجعة</button></div>
+          : <div className="qz-fbe"><label>💡 لماذا الإجابة الصحيحة صحيحة؟<textarea className="qz-in" rows={2} value={ed.r} onChange={e => setFbEd({ ...ed, r: e.target.value })} /></label>
+            {kd === "m" && QLET.map((l, j) => j === ci ? null : <label key={j}>({l}) سبب الخطأ / المفهوم الخاطئ<input className="qz-in" value={ed.o[j] || ""} onChange={e => setFbEd({ ...ed, o: { ...ed.o, [j]: e.target.value } })} /></label>)}
+            <div className="nb-h" style={{ gap: 6 }}><button className="nb-b on" onClick={() => saveFb(i, ed)}>حفظ</button><button className="nb-b" onClick={() => setFbEd(null)}>إلغاء</button></div></div>}
+      </div>; })}
+  </>;
+}
+
+// نتيجة الطالب في كل كتاب (لمكتبته)
+function QzMine({ api, sid, book, color }) {
+  const [P, setP] = useState(null);
+  useEffect(() => { api.maGet(`${NB_QR}/${sid}/${book}`).then(d => setP(obj(d))); }, [sid, book]);
+  if (!P) return null; let c = 0, g = 0, pn = 0; const L = Object.values(P).filter(Boolean); L.forEach(x => { c += +x.c || 0; g += +x.g || 0; pn += +x.p || 0; }); if (!L.length) return null;
+  const v = qPct(c, g), Lv = qLvl(v);
+  return <div className="qz-mine" style={{ "--lc": Lv[1], "--c": color }}><b>✅ نتيجتي في الأسئلة: {v == null ? "⏳" : `${ar(v)}٪`}</b><span>{ar(c)} صحيحة من {ar(g)} • {ar(L.length)} صفحة صحّحتها{pn ? ` • ${ar(pn)} بانتظار المعلم` : ""}</span><em>{v == null ? "" : Lv[0]}</em></div>;
+}
+
+const QZ_CSS = `
+.qz-bub{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:2px dashed color-mix(in srgb,var(--qc) 55%,transparent);background:rgba(255,255,255,.01);z-index:6;cursor:pointer;padding:0;display:grid;place-items:center;font:inherit;font-weight:900;color:#fff;line-height:1;transition:transform .12s,background .12s;-webkit-tap-highlight-color:transparent}
+.qz-bub:hover{background:color-mix(in srgb,var(--qc) 18%,transparent);border-style:solid}
+.qz-bub:active{transform:translate(-50%,-50%) scale(.9)}
+.qz-bub.sel{background:var(--qc);border:2px solid var(--qc);box-shadow:0 0 0 3px color-mix(in srgb,var(--qc) 30%,transparent),0 3px 8px rgba(0,0,0,.25);animation:qzPop .25s}
+.qz-bub.done{border-style:solid;border-color:transparent}
+.qz-bub.done:not(.sel):not(.ok){background:transparent;border:0}
+.qz-bub.ok{background:#16a34a;border:2px solid #16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.3)}
+.qz-bub.bad{background:#dc2626;border:2px solid #dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.3)}
+.qz-bub.ok:not(.sel){background:rgba(22,163,74,.18);color:#15803d}
+@keyframes qzPop{0%{transform:translate(-50%,-50%) scale(.6)}70%{transform:translate(-50%,-50%) scale(1.15)}100%{transform:translate(-50%,-50%) scale(1)}}
+.qz-fab{position:fixed;left:14px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:2045;border:0;border-radius:999px;padding:12px 18px;font:inherit;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,var(--c),#0f172a);box-shadow:0 10px 26px rgba(0,0,0,.28);cursor:pointer;display:flex;gap:8px;align-items:center}
+.qz-fab small{background:rgba(255,255,255,.22);border-radius:999px;padding:2px 8px;font-size:12px}
+.qz-sheet{position:fixed;left:0;right:0;z-index:2055;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -14px 40px rgba(15,23,42,.28);display:flex;flex-direction:column;max-height:72vh;border-top:4px solid var(--qc);animation:qzUp .22s ease-out}
+@media(min-width:900px){.qz-sheet{left:auto;right:14px;top:auto;width:430px;border-radius:20px;bottom:14px!important;max-height:calc(100vh - 120px)!important;border:1px solid #e2e8f0;border-top:4px solid var(--qc)}}
+@keyframes qzUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.qz-hd{display:flex;align-items:center;gap:10px;padding:12px 14px 8px;border-bottom:1px solid #eef2f6}
+.qz-hd small{color:#64748b;font-weight:800;font-size:12px}
+.qz-prog{height:6px;border-radius:9px;background:#eef2f6;overflow:hidden;margin:5px 0 3px}.qz-prog i{display:block;height:100%;background:var(--qc);border-radius:9px;transition:width .3s}
+.qz-score{display:grid;justify-items:center;padding:4px 10px;border-radius:14px;background:color-mix(in srgb,var(--lc) 12%,#fff);border:1.5px solid var(--lc);color:var(--lc)}
+.qz-score b{font-size:19px;line-height:1.1}.qz-score small{color:inherit!important;font-size:10.5px!important}
+.qz-body{overflow:auto;padding:10px 12px;display:grid;gap:10px;flex:1;overscroll-behavior:contain}
+.qz-pg{display:flex;align-items:center;gap:8px;font-weight:900;color:var(--qc);font-size:13px;margin:4px 0 6px}.qz-pg span{flex:1;border-bottom:2px dotted #cbd5e1;padding-bottom:3px}
+.qz-q{border:1.5px solid #e2e8f0;border-radius:16px;padding:10px 12px;display:grid;gap:8px;background:#fff;margin-bottom:8px}
+.qz-q.ok{border-color:#86efac;background:#f7fef9}.qz-q.bad{border-color:#fca5a5;background:#fffafa}.qz-q.wait{border-color:#fcd34d;background:#fffdf5}.qz-q.skip{border-color:#cbd5e1;background:#f8fafc}
+.qz-qh{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.qz-n{min-width:30px;height:30px;padding:0 6px;border-radius:999px;display:inline-grid;place-items:center;background:var(--qc,#334155);color:#fff;font-weight:900;font-size:14px}
+.qz-an .qz-n{background:var(--c)}
+.qz-t{color:#64748b;font-weight:800;font-size:12px}
+.qz-r{font-weight:900;font-size:12.5px;padding:3px 10px;border-radius:999px}.qz-r.ok{background:#dcfce7;color:#15803d}.qz-r.bad{background:#fee2e2;color:#b91c1c}.qz-r.wait{background:#fef3c7;color:#92400e}.qz-r.skip{background:#f1f5f9;color:#475569}
+.qz-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.qz-opts.tf{grid-template-columns:1fr 1fr}
+.qz-o{height:46px;border-radius:14px;border:2px solid #cbd5e1;background:#fff;font:inherit;font-size:19px;font-weight:900;color:#334155;cursor:pointer;transition:all .12s}
+.qz-opts.tf .qz-o{font-size:15.5px}
+.qz-o:not(:disabled):hover{border-color:var(--qc)}.qz-o:not(:disabled):active{transform:scale(.95)}
+.qz-o.sel{background:var(--qc);border-color:var(--qc);color:#fff;box-shadow:0 4px 12px color-mix(in srgb,var(--qc) 35%,transparent)}
+.qz-o.ok{background:#16a34a;border-color:#16a34a;color:#fff}.qz-o.ok:not(.sel){background:#dcfce7;color:#15803d}
+.qz-o.bad{background:#dc2626;border-color:#dc2626;color:#fff}
+.qz-o:disabled{cursor:default;opacity:1}
+.qz-in{width:100%;box-sizing:border-box;border:1.5px solid #cbd5e1;border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;font-weight:700;resize:vertical;background:#fff;color:#0f172a;outline:none;transition:border .12s,box-shadow .12s}
+.qz-in:focus{border-color:var(--qc,#2563eb);box-shadow:0 0 0 3px color-mix(in srgb,var(--qc,#2563eb) 20%,transparent)}
+.qz-in:disabled{background:#f8fafc;color:#334155}
+.qz-in.note{font-size:14.5px;background:#f8fbff;border-style:dashed}
+.qz-add{justify-self:start;border:0;background:none;color:#2563eb;font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;padding:0}
+.qz-fb{border-radius:12px;padding:8px 11px;font-size:13.5px;font-weight:700;line-height:1.8;display:grid;gap:3px}
+.qz-fb.bad{background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca}.qz-fb.ok{background:#f0fdf4;color:#14532d;border:1px solid #bbf7d0}.qz-fb.wait{background:#fffbeb;color:#78350f;border:1px solid #fde68a}.qz-fb.skip{background:#f8fafc;color:#334155;border:1px solid #e2e8f0}.qz-fb.tc{background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe}
+.qz-fl{font-weight:900}
+.qz-self{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;font-weight:800}
+.qz-chip{border:1.5px solid #cbd5e1;background:#fff;border-radius:999px;padding:4px 11px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
+.qz-chip.on.ok{background:#16a34a;border-color:#16a34a;color:#fff}.qz-chip.on.bad{background:#dc2626;border-color:#dc2626;color:#fff}
+.qz-ft{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #eef2f6;background:#fff;border-radius:0 0 20px 20px}
+.qz-ft .nb-b{flex:1;justify-content:center;padding:12px;font-size:15.5px}
+.qz-go{background:linear-gradient(135deg,#16a34a,#0f766e)!important;color:#fff!important;border-color:transparent!important}
+.qz-go:disabled{opacity:.55}
+.qz-sheet.kb .qz-ft{display:none}
+.qz-sym{border-top:2px solid var(--qc);background:#f8fafc;padding:6px 8px}
+.qz-sym .pt{display:flex;gap:5px;align-items:center;overflow-x:auto}.qz-sym .ps{display:flex;gap:5px;overflow-x:auto;padding-top:6px}
+.qz-sym .ps button{flex:none;min-width:42px;height:40px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer;padding:0 8px;direction:ltr}
+.qz-wk{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;align-items:end;height:120px;margin-top:8px}
+.qz-wk>div{display:grid;grid-template-rows:1fr auto auto;height:100%;text-align:center}.qz-wk i{align-self:end;display:block;border-radius:6px 6px 2px 2px;min-height:3px;transition:height .3s}
+.qz-wk small{font-size:10.5px;font-weight:800;color:#475569}.qz-wk b{font-size:11px;color:#94a3b8}
+.qz-pgs{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.qz-pgb{border:1.5px solid var(--lc);border-radius:13px;background:color-mix(in srgb,var(--lc) 8%,#fff);padding:6px 11px;display:grid;justify-items:center;gap:1px;cursor:pointer;font:inherit;min-width:78px}
+.qz-pgb b{font-size:13px}.qz-pgb span{font-weight:900;color:var(--lc);font-size:15px}.qz-pgb small{font-size:10.5px;color:#64748b;font-weight:800}
+.qz-key{font-weight:800;font-size:13.5px;background:#fffbeb;border:1px dashed #f59e0b;border-radius:10px;padding:6px 10px;margin-top:6px}
+.qz-dist{display:grid;gap:5px;margin-top:8px}.qz-dist>div{display:grid;grid-template-columns:44px 1fr 90px;gap:8px;align-items:center;font-weight:800;font-size:13px}
+.qz-dist span{height:12px;border-radius:9px;background:#f1f5f9;overflow:hidden}.qz-dist span i{display:block;height:100%;background:#f87171;border-radius:9px}
+.qz-dist .ok span i{background:#16a34a}.qz-dist .ok b{color:#15803d}
+.qz-ans{display:grid;gap:6px;margin-top:8px}
+.qz-ar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;border:1px solid #e2e8f0;border-radius:12px;padding:7px 10px;font-size:13.5px}
+.qz-ar.ok{border-color:#86efac;background:#f7fef9}.qz-ar.bad{border-color:#fca5a5;background:#fffafa}.qz-ar.wait{border-color:#fcd34d;background:#fffdf5}
+.qz-ar>b{min-width:120px}.qz-av{flex:1;min-width:140px;font-weight:700;white-space:pre-wrap}.qz-rv{display:flex;gap:4px}
+.qz-fbv{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:8px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:8px 10px;font-size:13.5px;font-weight:700;line-height:1.8}
+.qz-fbv>div{flex-basis:100%}
+.qz-fbe{display:grid;gap:6px;margin-top:8px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:8px 10px}.qz-fbe label{display:grid;gap:3px;font-weight:900;font-size:12.5px;color:#6b21a8}
+.qz-mine{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;border-radius:14px;padding:8px 12px;margin-top:8px;background:color-mix(in srgb,var(--lc) 9%,#fff);border:1.5px solid color-mix(in srgb,var(--lc) 50%,#fff)}
+.qz-mine b{color:var(--lc);font-size:15px}.qz-mine span{font-size:12.5px;font-weight:800;color:#475569}.qz-mine em{font-style:normal;font-weight:900;color:var(--lc);margin-inline-start:auto}
+`;
