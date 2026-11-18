@@ -207,6 +207,45 @@ export function MfPreview({ D, mgrImg, max = 520 }) { const [w, setW] = useState
 
 const In = ({ l, v, on, w, type = "text", ...r }) => <label style={{ display: "grid", gap: 3, fontSize: 12, fontWeight: 800, color: "#475569", flex: w ? `0 0 ${w}` : "1 1 150px" }}>{l}<input className="ar-in" type={type} value={v ?? ""} onChange={e => on(e.target.value)} {...r} /></label>;
 const Sg = ({ x, l }) => <span className="ar-chip" style={{ background: x && x.img ? "#dcfce7" : "#f1f5f9", color: x && x.img ? "#15803d" : "#94a3b8" }}>{x && x.img ? "✓" : "○"} {l}</span>;
+
+// ═══ 📅 إضافة غياب سابق لطالب (أيام قبل تفعيل النظام أو لم تُسجَّل) ═══
+function PastAbs({ api, D, by, off, toast, onDone }) {
+  const [q, setQ] = useState(""); const [sid, setSid] = useState(""); const [d1, setD1] = useState(""); const [d2, setD2] = useState(""); const [ty, setTy] = useState("u"); const [pend, setPend] = useState([]); const [busy, setBusy] = useState(false);
+  const S = D.S; const s = S[sid]; const y0 = D.f || yearStart(); const mx = today();
+  const L = q.trim().length >= 2 ? Object.values(S).filter(x => x.name.includes(q.trim())).slice(0, 10) : [];
+  const addRange = () => { if (!d1) return; const a = d1, b = d2 && d2 >= d1 ? d2 : d1; if (a < y0 || b > mx) { toast("⚠️ التاريخ خارج العام الدراسي أو في المستقبل"); return; }
+    const out = []; let k = a, g = 0; while (k <= b && g < 200) { if (!off(k) && !s.abs.includes(k) && !pend.some(p => p.dk === k)) out.push({ dk: k, s: ty }); k = addD(k, 1); g++; }
+    if (!out.length) { toast(off(a) && a === b ? "⚠️ هذا اليوم إجازة/ليس يوم دوام" : "⚠️ لا أيام جديدة — الأيام مسجلة مسبقاً أو إجازات"); return; }
+    setPend(p => [...p, ...out].sort((x, y) => x.dk < y.dk ? -1 : 1)); setD1(""); setD2(""); };
+  const write = async (dk, add) => { const prev = await api.maGet(`${api.MA_ATT}/${dk}/${s.ck}`); const cur = arr(prev && prev.absent).filter(a => a && a.id);
+    const next = add ? (cur.some(a => a.id === s.sid) ? cur : [...cur, { id: s.sid, name: s.name }]) : cur.filter(a => a.id !== s.sid);
+    const total = (prev && prev.total) || arr(obj(D.ros[s.ck]).students).length || next.length; return api.saveAbs(dk, s.ck, next, total, by, add ? "إضافة غياب سابق لطالب" : "حذف غياب سابق لطالب"); };
+  const save = async () => { setBusy(true); let n = 0; const X = {};
+    for (const p of pend) { if (await write(p.dk, true)) { n++; X[`${api.ABSX}/${p.dk}/${s.sid}`] = { s: p.s, src: "man", by, at: Date.now(), past: true }; } }
+    if (Object.keys(X).length) await api.fbPatch(X); setBusy(false); setPend([]); toast(n === pend.length ? `✅ أُضيف ${ar(n)} يوم غياب للطالب ${s.name}` : `⚠️ حُفظ ${ar(n)} من ${ar(pend.length)} — تحقق من الاتصال`); onDone(); };
+  const del = async (dk) => { if (!confirm(`حذف غياب ${s.name} يوم ${dayN(dk)} ${hijN(dk)}؟`)) return; setBusy(true); const ok = await write(dk, false); if (ok) await api.fbPatch({ [`${api.ABSX}/${dk}/${s.sid}`]: null }); setBusy(false); toast(ok ? "🗑️ حُذف اليوم" : "⚠️ تعذّر الحذف"); onDone(); };
+  const toggleEx = async (dk) => { const e = s.ex.includes(dk); setBusy(true); const ok = await api.fbPatch({ [`${api.ABSX}/${dk}/${s.sid}`]: { s: e ? "u" : "e", src: "man", by, at: Date.now() } }); setBusy(false); toast(ok ? (e ? "صار بدون عذر" : "✅ صار بعذر") : "⚠️ تعذّر الحفظ"); onDone(); };
+  return <div className="ar-card grid gap-3">
+    <div><b style={{ fontSize: 16 }}>📅 إضافة غياب سابق لطالب</b><div style={{ fontSize: 12.5, color: "#64748b", fontWeight: 700, marginTop: 3 }}>لأيام الغياب التي سبقت تفعيل النظام أو لم تُسجَّل — تُحتسب في عدد أيام الغياب والإحالة والنماذج. من بداية العام ({hijN(y0)}) حتى اليوم.</div></div>
+    <div style={{ position: "relative" }}><input className="ar-in" style={{ width: "100%" }} placeholder="🔎 اكتب اسم الطالب (حرفان على الأقل)" value={q} onChange={e => { setQ(e.target.value); }} />
+      {L.length > 0 && (!s || q !== s.name) && <div style={{ display: "grid", gap: 4, marginTop: 6 }}>{L.map(x => <button key={x.sid} className="ar-b ar-gh" style={{ justifyContent: "flex-start", textAlign: "right", padding: "7px 12px" }} onClick={() => { setSid(x.sid); setQ(x.name); setPend([]); }}>{x.name} <small style={{ color: "#64748b", marginInlineStart: 8 }}>{api.className(x.ck)} • غياب {ar(x.abs.length)}</small></button>)}</div>}</div>
+    {s && <>
+      <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 12px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", fontWeight: 800 }}><b style={{ fontSize: 15 }}>{s.name}</b><span className="ar-chip" style={{ background: "#fff", color: NAVY }}>{api.className(s.ck)}</span><span className="ar-chip" style={{ background: "#fee2e2", color: RED }}>بدون عذر {ar(s.u)}</span><span className="ar-chip" style={{ background: "#dcfce7", color: "#15803d" }}>بعذر {ar(s.e)}</span></div>
+      <div style={{ border: "1.5px dashed #cbd5e1", borderRadius: 14, padding: 10, display: "grid", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+          <label style={{ display: "grid", gap: 3, fontSize: 12, fontWeight: 800, color: "#475569" }}>من تاريخ<input className="ar-in" type="date" min={y0} max={mx} value={d1} onChange={e => setD1(e.target.value)} /></label>
+          <label style={{ display: "grid", gap: 3, fontSize: 12, fontWeight: 800, color: "#475569" }}>إلى تاريخ (اختياري)<input className="ar-in" type="date" min={d1 || y0} max={mx} value={d2} onChange={e => setD2(e.target.value)} /></label>
+          <div style={{ display: "flex", gap: 4 }}>{[["u", "بدون عذر", RED], ["e", "بعذر", "#15803d"]].map(([k, l, c]) => <button key={k} className="ar-b" style={{ padding: "8px 12px", background: ty === k ? c : "#f1f5f9", color: ty === k ? "#fff" : "#334155" }} onClick={() => setTy(k)}>{l}</button>)}</div>
+          <button className="ar-b ar-nv" disabled={!d1} onClick={addRange}>➕ إضافة</button></div>
+        {d1 && <small style={{ fontWeight: 700, color: "#475569" }}>{dayN(d1)} {hijN(d1)}{d2 && d2 > d1 ? ` ← ${dayN(d2)} ${hijN(d2)} (تُتخطّى الإجازات تلقائياً)` : ""}{off(d1) && (!d2 || d2 === d1) ? " — ⚠️ ليس يوم دوام" : ""}</small>}
+        {pend.length > 0 && <><div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>{pend.map(p => <span key={p.dk} className="ar-chip" style={{ background: p.s === "e" ? "#dcfce7" : "#fee2e2", color: p.s === "e" ? "#15803d" : RED, cursor: "pointer" }} onClick={() => setPend(x => x.filter(y => y.dk !== p.dk))}>{dayN(p.dk)} {hijN(p.dk)} • {p.s === "e" ? "بعذر" : "بدون عذر"} ✕</span>)}</div>
+          <button className="ar-b" style={{ background: RED, color: "#fff", justifySelf: "start" }} disabled={busy} onClick={save}>{busy ? "⏳ جارٍ الحفظ…" : `💾 حفظ ${ar(pend.length)} يوم غياب`}</button></>}
+      </div>
+      <b style={{ fontSize: 13.5 }}>أيام غيابه المسجلة ({ar(s.abs.length)}) <small style={{ color: "#64748b", fontWeight: 700 }}>— اضغط النوع للتبديل بين بعذر/بدون عذر</small></b>
+      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", maxHeight: 220, overflow: "auto" }}>{!s.abs.length ? <small style={{ color: "#94a3b8", fontWeight: 700 }}>لا يوجد غياب مسجل</small> : s.abs.slice().reverse().map(dk => { const e = s.ex.includes(dk); return <span key={dk} className="ar-chip" style={{ background: "#fff", border: "1px solid #e2e8f0", color: "#334155", gap: 6, display: "inline-flex", alignItems: "center" }}>{dayN(dk)} {hijN(dk)}<button className="ar-b" disabled={busy} style={{ padding: "1px 8px", fontSize: 11, background: e ? "#dcfce7" : "#fee2e2", color: e ? "#15803d" : RED }} onClick={() => toggleEx(dk)}>{e ? "بعذر" : "بدون عذر"}</button><button className="ar-b ar-gh" disabled={busy} title="حذف" style={{ padding: "1px 7px", fontSize: 11 }} onClick={() => del(dk)}>✕</button></span>; })}</div>
+    </>}
+  </div>;
+}
 // نافذة النماذج الرسمية لطالب: تعبئة إلكترونية + توقيع حضوري + إرسال لولي الأمر للتوقيع + طباعة طبق الأصل
 function DocDlg({ api, s, P, by, onClose, toast: toast0, init = "p74" }) {
   const [msg, setMsg] = useState(""); const toast = m => { setMsg(m); setTimeout(() => setMsg(""), 3800); };
@@ -267,7 +306,7 @@ export function AbsRef({ api, me, mode = "dep" }) {
   const [refDlg, setRefDlg] = useState(null); const [docDlg, setDocDlg] = useState(null); const [cDlg, setCDlg] = useState(null); const [rf, setRf] = useState("open"); const [edDk, setEdDk] = useState(null); const [q, setQ] = useState("");
   const toast = m => { setMsg(m); setTimeout(() => setMsg(""), 3800); };
   const off = k => { try { return !!api.off(k); } catch { const w = dt(k).getDay(); return w === 5 || w === 6; } };
-  const load = async () => { setD(null); const [d, r, p, s] = await Promise.all([loadData(api, dk), api.maGet(NREF), api.maGet(NPROC), api.maGet(`${api.PT_PREP}`).catch(() => null)]);
+  const load = async (quiet) => { if (quiet !== true) setD(null); const [d, r, p, s] = await Promise.all([loadData(api, dk), api.maGet(NREF), api.maGet(NPROC), api.maGet(`${api.PT_PREP}`).catch(() => null)]);
     Object.values(d.S).forEach(o => { o.cons = streak(o.ud, off, dk).best; o.f = d.f; o.to = dk; }); setD(d); setRefs(arr(r).sort((a, b) => (b.at || 0) - (a.at || 0))); setProc(obj(p));
     const SN = {}; arr(s).forEach(x => { if (x && x.absd && x.sid) SN[`${x.sid}|${x.absd}`] = x.at; }); setSent(SN); };
   useEffect(() => { load(); }, [dk]);
@@ -325,7 +364,7 @@ export function AbsRef({ api, me, mode = "dep" }) {
         <div style={{ fontSize: 13.5, fontWeight: 800, textAlign: "center" }}>{dayN(dk)} • {hij(dk)}{isOff ? <span style={{ color: "#fde68a" }}> • إجازة</span> : ""}</div>
         <div style={{ display: "flex", gap: 5, justifyContent: "center" }}>{[["اليوم", today()], ["أمس", (() => { let k = today(); for (let i = 0; i < 9; i++) { k = addD(k, -1); if (!off(k)) break; } return k; })()]].map(([l, k]) => <button key={l} className="ar-b" style={{ padding: "3px 12px", fontSize: 12, background: dk === k ? GOLD : "rgba(255,255,255,.15)", color: dk === k ? NAVY : "#fff" }} onClick={() => setDk(k)}>{l}</button>)}</div></div></div>
     {msg && <div style={{ background: /⚠️/.test(msg) ? "#fef2f2" : "#f0fdf4", color: /⚠️/.test(msg) ? RED : "#15803d", borderRadius: 14, padding: 10, fontWeight: 800, textAlign: "center" }}>{msg}</div>}
-    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{(isC ? [["ref", "🧭 الإحالات", nNew], ["day", "🚫 غياب اليوم"], ["rules", "📘 المادة ٣٤"]] : [["day", "🚫 الغائبون", dayAbs.length], ["due", "⚠️ مستحقو الإحالة", due.length], ["ref", "🧭 الإحالات", nNew], ["rules", "📘 المادة ٣٤"]]).map(([k, l, n]) => <button key={k} className={`ar-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}{n ? <i>{ar(n)}</i> : null}</button>)}</div>
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{(isC ? [["ref", "🧭 الإحالات", nNew], ["day", "🚫 غياب اليوم"], ["rules", "📘 المادة ٣٤"]] : [["day", "🚫 الغائبون", dayAbs.length], ["due", "⚠️ مستحقو الإحالة", due.length], ["ref", "🧭 الإحالات", nNew], ["past", "📅 غياب سابق"], ["rules", "📘 المادة ٣٤"]]).map(([k, l, n]) => <button key={k} className={`ar-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}{n ? <i>{ar(n)}</i> : null}</button>)}</div>
     {!D ? <div className="ar-card" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>⏳ جارٍ جمع غياب العام الدراسي…</div> : <>
 
     {tab === "day" && <>
@@ -366,6 +405,7 @@ export function AbsRef({ api, me, mode = "dep" }) {
             <button className="ar-b ar-gd" onClick={() => doPrint(api, `إحالة ${R.name}`, refForm(api, R))}>🖨 نموذج الإحالة</button>{s && <button className="ar-b ar-gh" onClick={() => setDocDlg({ s })}>📋 نموذج إجراءات الغياب (ص٧٤)</button>}{s && <button className="ar-b ar-gh" onClick={() => setDocDlg({ s, t: "plg" })}>📝 تعهد الالتزام بالحضور</button>}
             {s && <ProcTicks s={s} P={proc[s.sid]} onMark={markProc} />}</div></div>; })}</div>}
 
+    {tab === "past" && !isC && <PastAbs api={api} D={D} by={by} off={off} toast={toast} onDone={() => load(true)} />}
     {tab === "rules" && <div className="ar-card grid gap-3"><b style={{ fontSize: 16 }}>📘 إجراءات الغياب بدون عذر — المادة (٣٤)</b><div style={{ fontSize: 12.5, color: "#64748b", fontWeight: 700 }}>قواعد السلوك والمواظبة لطلبة التعليم العام — الإصدار الخامس ١٤٤٧هـ</div>
       <div className="ar-lad">{RULES.map(r => <div key={r.k} style={{ "--b": r.bg, "--c": r.c }}><b>{r.t}</b><p>{r.a}</p><p style={{ color: r.c }}>👤 {r.who}</p></div>)}</div>
       <div style={{ background: "#f8fafc", borderRadius: 14, padding: "10px 14px", fontSize: 13, fontWeight: 700, lineHeight: 2 }}>• يُحسم من درجة المواظبة درجة واحدة عن كل يوم غياب بدون عذر.<br />• يُقدَّم العذر مع ما يثبته خلال ثلاثة أيام عمل من الغياب، ويُثبت العذر الصحي من منصة صحتي.<br />• إذا تجاوز الغياب بدون عذر ١٠٪ من أيام الدراسة يُحرم الطالب من الانتقال للعام التالي (المرحلتان الابتدائية والمتوسطة) أو للفصل التالي (المرحلة الثانوية).</div></div>}
