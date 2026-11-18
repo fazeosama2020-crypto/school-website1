@@ -33,6 +33,10 @@ const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ defa
 const AbsAction = React.lazy(() => import("./AbsAction.jsx").then(m => ({ default: m.AbsAction })));
 const Command = React.lazy(() => import("./Command.jsx").then(m => ({ default: m.Command })));
 const AbsRef = React.lazy(() => import("./AbsRef.jsx").then(m => ({ default: m.AbsRef })));
+const QuranTeacher = React.lazy(() => import("./Quran.jsx").then(m => ({ default: m.QuranTeacher })));
+const QuranAdmin = React.lazy(() => import("./Quran.jsx").then(m => ({ default: m.QuranAdmin })));
+const QuranStudent = React.lazy(() => import("./Quran.jsx").then(m => ({ default: m.QuranStudent })));
+const qrnApi = () => ({ maGet, maPut, fbPatch, fbRange, MA_ROSTER, MA_META, classes: maClasses, className: maClassName, TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), print: printWindow, moeLogo: MOE_LOGO, school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة", region: "الإدارة العامة للتعليم بمحافظة جدة", principal: "فازع عبدالله حسن القرني" });
 const ActCards = React.lazy(() => import("./ActCard.jsx").then(m => ({ default: m.ActCards })));
 const actApi = () => ({ maGet, maPut, fbPatch, print: printWindow, SigPad: HfxSigPad, school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة", principal: "فازع عبدالله حسن القرني", mgrSig: async () => { try { return (await vsLoad()).mgr.sig || ""; } catch { return ""; } } });
 const PeriodAdmin = React.lazy(() => import("./Period.jsx").then(m => ({ default: m.PeriodAdmin })));
@@ -34978,6 +34982,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   const [me, setMe] = useState(() => { try { const m = JSON.parse(localStorage.getItem("pam-staff") || "null"); return m && m.day === maKey(new Date()) && m.name ? m : null; } catch { return null; } });
   const [view, setView] = useState(initView);
   const [sum, setSum] = useState(null);
+  const [qrnOn, setQrnOn] = useState(false);
+  useEffect(() => { if (!me || !me.name || kind === "staff") return; let a = true; (async () => { try { const [c, t] = await Promise.all([maGet("school-qrn-cfg"), maGet(TT_NODE)]); const T = ttFresh(t); const ti = sttFindMe(T, me.name); const C = c || {}; if (a) setQrnOn(!!((ti >= 0 && C.on && C.on[T.T[ti]]) || maArr(C.nm).some(n => n && String(me.name).includes(n)))); } catch {} })(); return () => { a = false; }; }, [me && me.name]);
   const grad = isStaff ? "linear-gradient(160deg,#7c2d12,#c2410c 50%,#f59e0b)" : "linear-gradient(160deg,#134e4a,#0f766e 50%,#14b8a6)";
   const login = async (v) => {
     const r = await ptStaffLogin(v); if (r.err) return r.err;
@@ -35013,6 +35019,8 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "stlv") return wrap("📊 سجل تصنيف مستويات الطلاب", <StudentLevelsPage by={me.name} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
   if (view === "readwk") return wrap("📖 حصر الضعف القرائي", <ReadingWeakPage by={me.name} admin={isStaff} />);
   if (view === "command" && isStaff && ["principal", "deputy", "counselor"].includes(me.role)) return wrap("🧭 مركز القيادة والإنذار المبكر", <React.Suspense fallback={RD_WAIT}><Command me={{ name: me.name, role: me.role }} api={cmdApi("")} /></React.Suspense>);
+  if (view === "quran") return wrap("📖 حلقة القرآن الكريم — التسميع والمراجعة", <React.Suspense fallback={RD_WAIT}><QuranTeacher api={qrnApi()} me={{ name: me.name }} admin={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
+  if (view === "quranadm" && isStaff) return wrap("📖 حلقات القرآن الكريم — الإدارة", <React.Suspense fallback={RD_WAIT}><QuranAdmin api={qrnApi()} me={{ name: me.name }} /></React.Suspense>);
   if (view === "actcards") return wrap("🏆 بطاقات تنفيذ المسابقات والبرامج — النشاط الطلابي", <React.Suspense fallback={RD_WAIT}><ActCards api={actApi()} me={{ name: me.name, role: isStaff ? me.role : "t" }} admin={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "absref" && isStaff && (["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox"))) return wrap(me.role === "counselor" ? "🧭 إحالات الغياب للموجه الطلابي" : "🚫 الطلاب الغائبون والإحالة للموجه", <React.Suspense fallback={RD_WAIT}><AbsRef me={{ name: me.name }} api={absRefApi()} mode={me.role === "counselor" ? "coun" : me.role === "principal" ? "admin" : "dep"} /></React.Suspense>);
   if (view === "absact" && isStaff && (["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox"))) return wrap("📂 إجراءات معالجة غياب الطلاب", <React.Suspense fallback={RD_WAIT}><AbsAction me={me} api={absApi()} /></React.Suspense>);
@@ -35142,6 +35150,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               {["principal", "deputy"].includes(me.role) && ptTile("prepadm", "📘", "تحليل تحضير المعلمين", "رفع ملف Excel من النظام وتحليله: النسب والترتيب والخريطة الحرارية والمتابعة والطباعة", "#0b1f3a", "#0f766e", () => setView("prepadm"))}
               {["principal", "deputy"].includes(me.role) && ptTile("pxadm", "🤝", "تبادل الزيارات بين المعلمين", "جدولة آلية من الجدول المدرسي للعلوم والرياضيات ولغتي والإنجليزي ومتابعة التقييمات والطباعة", "#0d4f3c", "#12305a", () => setView("pxadm"))}
               {["principal", "deputy"].includes(me.role) && ptTile("cvadm", "🎯", "الزيارات الصفية", "جدول زيارات المعلمين وتقييمها ومؤشراتها", "#0f766e", "#0891b2", () => setView("cvadm"))}
+              {["principal", "deputy"].includes(me.role) && ptTile("quranadm", "📖", "حلقات القرآن الكريم", "تفعيل الصفحة لمعلمي القرآن والدراسات الإسلامية • متابعة التسميع والمراجعة في كل الفصول", "#0b3d2e", "#c9a227", () => setView("quranadm"))}
               {ptTile("actcards", "🏆", "بطاقات تنفيذ المسابقات والبرامج", "النشاط الطلابي • نموذجا إدارة تعليم جدة طبق الأصل • طباعة و PDF لبطاقة أو مجموعة • بطاقتان في الصفحة", "#003845", "#3aa58a", () => setView("actcards"))}
               {ptCan(me, "beh") && ptTile("beh", "📝", "الملاحظات السلوكية اليومية", "قصة الشعر والزي والفوضى والانشغال… تُحفظ بلمسة واحدة مع الإحصائية", "#7c3aed", "#db2777", () => setView("beh"))}
               {ptCan(me, "conduct") && ptTile("conduct", "🚸", "متابعة السلوك اليومي", "مخالفات الطلاب والفصول مع الصور • التقرير والطلاب المتكررون", "#1e3a8a", "#0f766e", () => setView("conduct"))}
@@ -35201,6 +35210,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           <div className="pt-sec"><h3>🎓 طلابي</h3><div className="pt-tiles">
             {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
             {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
+            {qrnOn && ptTile("quran", "📖", "حلقة القرآن الكريم", "افتح حصتك من الجدول ← 🟢 تسميع • 🔵 مراجعة لكل طالب • ملاحظات يومية • إحصاء الأسبوع للطالب وولي أمره والإدارة", "#0b3d2e", "#c9a227", () => setView("quran"))}
             {ptTile("actcards", "🏆", "بطاقات تنفيذ المسابقات والبرامج", "النشاط الطلابي • نموذجا إدارة تعليم جدة طبق الأصل • طباعة و PDF لبطاقة أو مجموعة • بطاقتان في الصفحة", "#003845", "#3aa58a", () => setView("actcards"))}
             {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
             {ptTile("stlv", "📊", "سجل مستويات الطلاب", "مميز • جيد • متوسط • متدنٍ — مع الملاحظات وطباعة السجل باسمك", "#6d28d9", "#db2777", () => setView("stlv"))}
@@ -35330,7 +35340,7 @@ function GuardianPortal({ onBack }) {
   const updExc = nx => setD(p => ({ ...p, exc: p.exc.map(y => y.id === nx.id ? nx : y) }));
   const updNote = nx => setD(p => ({ ...p, notes: p.notes.map(y => y.id === nx.id ? nx : y) }));
   const excSt = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
-  const tabs = [["file", "🧾 الملف الشامل"], ["p1", "🎓 نتائج الفترة"], ["tt", "🗓️ جدولي"], ["perf", "📈 تقريري"], ...(String(me.ck || "")[0] === "3" ? [["diag", "🧪 التشخيصي"]] : []), ["nafes", "🎯 نافس"], ["pnotes", "📒 ملاحظات الحصص"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["beh", `📝 السلوك${d && d.bn ? ` (${maAr(d.bn.length)})` : ""}`], ["alerts", `📨 التنبيهات والدعوات${d && d.reps && d.reps.filter(GD_PENDING).length ? ` (${maAr(d.reps.filter(GD_PENDING).length)} جديد)` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
+  const tabs = [["file", "🧾 الملف الشامل"], ["p1", "🎓 نتائج الفترة"], ["qrn", "📖 حلقة القرآن"], ["tt", "🗓️ جدولي"], ["perf", "📈 تقريري"], ...(String(me.ck || "")[0] === "3" ? [["diag", "🧪 التشخيصي"]] : []), ["nafes", "🎯 نافس"], ["pnotes", "📒 ملاحظات الحصص"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["beh", `📝 السلوك${d && d.bn ? ` (${maAr(d.bn.length)})` : ""}`], ["alerts", `📨 التنبيهات والدعوات${d && d.reps && d.reps.filter(GD_PENDING).length ? ` (${maAr(d.reps.filter(GD_PENDING).length)} جديد)` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
   return (
     <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eff6ff,#f8fafc)" }}>
       <style>{MA_CSS + PT_CSS + GD_CSS + (typeof scCSS !== "undefined" ? scCSS : "")}</style>
@@ -35381,7 +35391,7 @@ function GuardianPortal({ onBack }) {
         <div className="gd-tabs" role="tablist">{tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}><GdIco n={GD_TABI[k] || "file"} s={16} />{String(l).replace(/^[^؀-ۿ]+/, "")}</button>)}</div>
         {!d ? <div className="p-10 text-center font-bold text-gray-400">جاري التحميل…</div> : (
           <div className="grid gap-3">
-            {tab === "file" && <GuardianDossier me={me} d={d} setTab={setTab} onRep={v => setD(x => ({ ...x, reps: [v, ...maArr(x.reps)] }))} />}{tab === "p1" && <React.Suspense fallback={RD_WAIT}><PeriodStudent api={perApi()} me={me} /></React.Suspense>}{tab === "perf" && <GuardianPerf me={me} />}{tab === "nafes" && <NqStudentResults me={me} />}{tab === "diag" && <DiagStudent me={me} />}{tab === "pnotes" && <GuardianPeriodNotes me={me} />}
+            {tab === "file" && <GuardianDossier me={me} d={d} setTab={setTab} onRep={v => setD(x => ({ ...x, reps: [v, ...maArr(x.reps)] }))} />}{tab === "p1" && <React.Suspense fallback={RD_WAIT}><PeriodStudent api={perApi()} me={me} /></React.Suspense>}{tab === "qrn" && <React.Suspense fallback={RD_WAIT}><QuranStudent api={qrnApi()} me={me} /></React.Suspense>}{tab === "perf" && <GuardianPerf me={me} />}{tab === "nafes" && <NqStudentResults me={me} />}{tab === "diag" && <DiagStudent me={me} />}{tab === "pnotes" && <GuardianPeriodNotes me={me} />}
             {tab === "level" && (d.cls.length ? d.cls.map((r, i) => (
               <div key={i} className="pt-item">
                 <div className="flex items-center justify-between flex-wrap gap-2"><b style={{ fontSize: 15 }}>📚 {r.subject || "تقييم عام"} <small style={{ fontSize: 12, color: "#7c3aed" }}>{pLabel(r.pm, r.pk)}</small></b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>👤 {r.teacher}{r.at ? " • " + ptWhen(r.at) : ""}</span></div>
@@ -49815,7 +49825,7 @@ function NbPinSet({ by = "الإدارة" }) {
     <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>يُطلب من المعلم عند فتح «مراجع نافس» من حسابه، ويبقى مفتوحاً حتى يغلق المتصفح. دخول الطلاب والإدارة لا يتأثر.</div>
   </div>;
 }
-const GATE_EXEMPT = ["school-actcards", "school-actimg", "school-actcards-cfg", "school-absref", "school-absproc", "school-absdoc", "school-per", "school-notice", "school-ext", "school-excw", "school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-qrn", "school-qrnn", "school-qrn-cfg", "school-actcards", "school-actimg", "school-actcards-cfg", "school-absref", "school-absproc", "school-absdoc", "school-per", "school-notice", "school-ext", "school-excw", "school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -50715,7 +50725,7 @@ const GD_IP = {
   download: "M12 3v12M7 10l5 5 5-5M5 21h14",
 };
 const GdIco = ({ n, s = 18, w = 1.9, style }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", ...style }}><path d={GD_IP[n] || GD_IP.file} /></svg>;
-const GD_TABI = { p1: "grad", diag: "target", file: "file", tt: "calendar", perf: "trend", nafes: "target", pnotes: "notebook", level: "bars", week: "medal", grades: "grad", abs: "ban", late: "clock", beh: "shield", alerts: "mail", daily: "clipboard", ann: "megaphone", exc: "doc", note: "msg" };
+const GD_TABI = { qrn: "notebook", p1: "grad", diag: "target", file: "file", tt: "calendar", perf: "trend", nafes: "target", pnotes: "notebook", level: "bars", week: "medal", grades: "grad", abs: "ban", late: "clock", beh: "shield", alerts: "mail", daily: "clipboard", ann: "megaphone", exc: "doc", note: "msg" };
 // 📨 ما ينتظر رد المدرسة من أولياء الأمور (فهرس خفيف حتى لا تُحمَّل صور الأعذار مع كل تحديث للعدّاد)
 const PT_IDX = "school-pinbox-idx";
 const ptPend = (x, k) => !x ? false : k === "exc" ? (!x.status || x.status === "new" || (x.pAt || 0) > (x.sAt || 0)) : (!x.reply && !(x.sAt) ? true : (x.pAt || 0) > (x.sAt || x.replyAt || 0));
@@ -52662,7 +52672,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","command","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","command","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -53002,6 +53012,7 @@ function SchoolWebsiteInner() {
     { id: "insights", label: "مركز المؤشرات", icon: "🧠" },
     { id: "stusearch", label: "البحث عن طالب برقم الهوية", icon: "🔎" },
     { id: "period", label: "تحليل نتائج الفترة (إشعارات نور)", icon: "🎓" },
+    { id: "quran", label: "حلقات القرآن الكريم (التسميع والمراجعة)", icon: "📖" },
     { id: "notices", label: "رسائل الأعذار والتأخر الصباحي", icon: "📣" },
     { id: "studentperf", label: "متابعة أداء الطلاب", icon: "🎓" },
     { id: "nafes", label: "منصة نافس التدريبية", icon: "🎯" },
@@ -53090,7 +53101,7 @@ function SchoolWebsiteInner() {
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","holidays","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","absaction","studentexcuses"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["command","period","stusearch","notices","readlab","gradebook","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["command","period","quran","stusearch","notices","readlab","gradebook","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
@@ -53401,7 +53412,7 @@ function SchoolWebsiteInner() {
                 {page === "students"       && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
                 {page === "announcements"  && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} viewMode="mobile" />}
                 {page === "activities"     && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
-                {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}
+                {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
                 {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
                 {page === "messages"       && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
                 {page === "surveys"        && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
@@ -53596,7 +53607,7 @@ function SchoolWebsiteInner() {
         {page === "students"      && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
         {page === "activities"    && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
-        {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}
+        {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
         {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
         {page === "messages"      && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
         {page === "surveys"       && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
