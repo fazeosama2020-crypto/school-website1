@@ -39109,6 +39109,7 @@ function InStudent({ D, sid, setSid, by }) {
       </div>
       {B.length > 0 && <div className="ma-card p-4"><b style={{ fontSize: 15 }}>🏅 الأوسمة خلال الفترة</b><div className="flex gap-2 flex-wrap mt-3">{B.map(b => <div key={b[1]} className="in-badge" style={{ "--c": b[3] }}><span>{b[0]}</span><b>{b[1]}</b><small>{b[2]}</small></div>)}</div></div>}
       <div className="ma-card p-4"><b style={{ fontSize: 15 }}>📈 مسار الحضور أسبوعاً بأسبوع</b><div className="mt-3"><InTrend s={s} f={D.f} t={D.t} /></div></div>
+      <div className="ma-card p-4"><b style={{ fontSize: 15 }}>🎓 نتائج الفترة (إشعارات نور)</b><div className="mt-3">{s.nh ? <React.Suspense fallback={RD_WAIT}><PeriodStudent key={s.nh} api={perApi()} me={{ nh: s.nh, name: s.name, ck: s.ck }} /></React.Suspense> : <div style={{ color: "#94a3b8", fontWeight: 800 }}>الطالب غير مربوط برقم الهوية — اربطه من كشوف الفصول لتظهر نتائجه هنا وفي حسابه</div>}</div></div>
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
         <div className="ma-card p-4"><b style={{ fontSize: 15 }}>🏷️ تصنيف المعلمين</b>
           {s.sc ? <div className="grid gap-2 mt-3">{SC_DIMS.map(dm => { const v = s.sc[dm.k]; const L = v != null ? dm.lv[v] : null; return <div key={dm.k} className="flex items-center gap-2" style={{ background: dm.soft, borderRadius: 12, padding: "7px 10px" }}><b style={{ color: dm.ac, flex: 1 }}>{dm.ic} {dm.t}</b>{L ? <span className="sc-badge" style={{ background: L[2], color: L[1] }}>{L[0]}</span> : "—"}</div>; })}
