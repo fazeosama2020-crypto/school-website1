@@ -35340,11 +35340,14 @@ function GuardianPortal({ onBack }) {
   const updExc = nx => setD(p => ({ ...p, exc: p.exc.map(y => y.id === nx.id ? nx : y) }));
   const updNote = nx => setD(p => ({ ...p, notes: p.notes.map(y => y.id === nx.id ? nx : y) }));
   const excSt = s => s === "ok" ? ["✅ مقبول", "#dcfce7", "#15803d"] : s === "no" ? ["❌ مرفوض", "#fee2e2", "#b91c1c"] : ["⏳ قيد المراجعة", "#fef3c7", "#b45309"];
+  const disc = gdDisc(d);
   const tabs = [["file", "🧾 الملف الشامل"], ["p1", "🎓 نتائج الفترة"], ["qrn", "📖 حلقة القرآن"], ["tt", "🗓️ جدولي"], ["perf", "📈 تقريري"], ...(String(me.ck || "")[0] === "3" ? [["diag", "🧪 التشخيصي"]] : []), ["nafes", "🎯 نافس"], ["pnotes", "📒 ملاحظات الحصص"], ["level", "📊 المستوى"], ["week", "🏅 الأسبوع والأوسمة"], ["grades", "📘 الدرجات"], ["abs", `🚫 الغياب${d ? ` (${maAr(d.abs.length)})` : ""}`], ["late", `⏰ التأخر${d ? ` (${maAr(d.lat.length)})` : ""}`], ["beh", `📝 السلوك${d && d.bn ? ` (${maAr(d.bn.length)})` : ""}`], ["alerts", `📨 التنبيهات والدعوات${d && d.reps && d.reps.filter(GD_PENDING).length ? ` (${maAr(d.reps.filter(GD_PENDING).length)} جديد)` : ""}`], ["daily", "📒 المتابعة اليومية"], ["ann", "📣 الإعلانات"], ["exc", "📝 الأعذار"], ["note", "💬 ملاحظة للمدرسة"]];
   return (
-    <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eff6ff,#f8fafc)" }}>
-      <style>{MA_CSS + PT_CSS + GD_CSS + (typeof scCSS !== "undefined" ? scCSS : "")}</style>
+    <div className="ma pt px-3 md:px-6 py-5" dir="rtl" style={{ minHeight: "100vh", background: disc ? disc.b.bg : "linear-gradient(180deg,#eff6ff,#f8fafc)", transition: "background .6s" }}>
+      <style>{MA_CSS + PT_CSS + GD_CSS + (typeof scCSS !== "undefined" ? scCSS : "") + (disc ? `.gd-hero{box-shadow:0 0 0 3px ${disc.b.c2},0 24px 50px -30px ${disc.b.c}!important}.gd-tabs .on{background:${disc.b.c}!important;border-color:${disc.b.c}!important}` : "")}</style>
+      {disc && <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 60, height: 5, background: `linear-gradient(90deg,${disc.b.c},${disc.b.c2})`, pointerEvents: "none" }} />}
       <div style={{ maxWidth: 980, margin: "0 auto" }} className="grid gap-4">
+        <GdDiscBar x={disc} />
         {(() => { const excS = d ? absExcSet(d.sx, d.exc) : new Set(); const excN = d ? d.abs.filter(k => excS.has(k)).length : 0; const negN = d ? maArr(d.bn).filter(r => r.neg).length : 0; const posN = d ? maArr(d.bn).filter(r => !r.neg).length : 0; const sx = d && d.sx;
           const go = h => { window.location.hash = h; window.location.reload(); };
           return <div className="gd-hero">
@@ -49825,7 +49828,7 @@ function NbPinSet({ by = "الإدارة" }) {
     <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 700 }}>يُطلب من المعلم عند فتح «مراجع نافس» من حسابه، ويبقى مفتوحاً حتى يغلق المتصفح. دخول الطلاب والإدارة لا يتأثر.</div>
   </div>;
 }
-const GATE_EXEMPT = ["school-qrn", "school-qrnn", "school-qrn-cfg", "school-actcards", "school-actimg", "school-actcards-cfg", "school-absref", "school-absproc", "school-absdoc", "school-per", "school-notice", "school-ext", "school-excw", "school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
+const GATE_EXEMPT = ["school-alerts", "school-qrn", "school-qrnn", "school-qrn-cfg", "school-actcards", "school-actimg", "school-actcards-cfg", "school-absref", "school-absproc", "school-absdoc", "school-per", "school-notice", "school-ext", "school-excw", "school-circ-grp", "school-sb", "school-absx", "school-pinbox-idx", "school-circd", "school-circd-ack", "school-circd-cfg", "school-circd-arch", "school-nbpin", "school-nafsbook-ans", "school-nafsbook-rel", "school-plcr", "school-holx", "school-diag", "school-pg", "school-mlate-live", "school-mlate-draft", "school-bk2", "school-sidx", "school-mattend-index", "school-visitor", "school-backup", "school-tt-old", "school-ttlog", "school-tt-abs", "school-asm", "school-wplan-pg", "school-wplan-cover", "school-tplan-pg", "school-duty-pg", "school-hd-faris", "school-ann-meta", "school-hd-seen", "school-ops-cfg"];
 const gateExempt = p => !p || GATE_EXEMPT.some(s => p === s || p.startsWith(s + "/")) || /\/(faris|hid)$/.test(p);
 let _gateOK = 0, _gateBy = "", _gateWait = null; const _gateDenied = new Set();
 function gateModal(items) {
@@ -51829,6 +51832,116 @@ function GdAlerts({ reps, onResp }) {
       <div className="flex gap-2"><button className="ma-btn pri" disabled={!other.note.trim()} onClick={() => { answer(other.r, { st: "other", note: other.note.trim() }); setOther(null); }}>إرسال</button><button className="ma-btn" onClick={() => setOther(null)}>إلغاء</button></div></div></div>}
   </div>;
 }
+// ═══════════════ 🚨 التنبيهات العاجلة المنبثقة — تظهر لولي الأمر/الزوار/المنسوبين عند دخول الموقع ═══════════════
+//  school-alerts/{id} = { id, title, text, on, aud:{parent,home,staff}, from, to (datetime-local), dur (ثوانٍ، 0 = حتى الإغلاق), style:"modal"|"flash"|"banner", snd:"siren"|"bell"|"none", sndS, rep:"visit"|"every"|"once", col, at, by }
+const UAL_NODE = "school-alerts";
+const UAL_COL = { red: ["#b91c1c", "#ef4444", "#fef2f2", "أحمر — عاجل"], orange: ["#c2410c", "#f97316", "#fff7ed", "برتقالي — مهم"], green: ["#15803d", "#22c55e", "#f0fdf4", "أخضر — بشرى"], blue: ["#1d4ed8", "#3b82f6", "#eff6ff", "أزرق — إعلامي"] };
+const UAL_AUD = [["parent", "👪 أولياء الأمور والطلاب (بوابة الطالب)"], ["home", "🏠 زوار الصفحة الرئيسية"], ["staff", "🧑‍🏫 المعلمون والإداريون"]];
+const UAL_TPL = { title: "تنبيه مهم لأولياء الأمور", text: "غدًا الخميس نستكمل الخطة الدراسية لهذا الأسبوع، ويستمتع أبناؤنا بعده بأسبوع من الراحة؛ فلنحرص على أن يُتمّوا أسبوعهم بجدٍّ وانضباط.\nولهذا نشدّد ونؤكد أهمية الحضور غدًا، كما عهدناكم شركاء وداعمين لنا؛ فلا نرضى أن تضيع ثمرة جهودنا وجهودكم بغياب غير مقبول ولا مبرر، والإجازة على الأبواب.\nننتظر طلابنا غدًا الخميس، وتقديرًا للمنضبطين، نعدهم بالتجاوز عن غياب يوم واحد من مجموع غياباتهم السابقة، وفق ما تسمح به الأنظمة.\n⚠️ سيُحتسب غياب غدٍ الخميس ويُرصد، ويمكنكم مراجعة سجل الطالب عبر موقع المدرسة.\n\nإدارة مدرسة الأمير عبدالمجيد المتوسطة" };
+const ualLocal = d => { const p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+const ualActive = (a, aud, now = ualLocal(new Date())) => a && a.on && a.text && (!aud || (a.aud && a.aud[aud])) && (!a.from || a.from <= now) && (!a.to || a.to >= now);
+// صوت صفارة إنذار / جرس — Web Audio (المتصفحات تمنع الصوت قبل أول لمسة، فيبدأ عند أول لمسة إن مُنع)
+function ualSound(kind, secs) { try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC || kind === "none") return { stop() {}, ctx: null }; const ctx = new AC(); const g = ctx.createGain(); g.gain.value = 0.0001; g.connect(ctx.destination); const o = ctx.createOscillator(); o.connect(g);
+    const t0 = ctx.currentTime + 0.05, T = Math.max(1, +secs || 6);
+    if (kind === "bell") { o.type = "sine"; for (let t = 0; t < T; t += 1.2) { [880, 1175].forEach((f, i) => { o.frequency.setValueAtTime(f, t0 + t + i * 0.28); g.gain.setValueAtTime(0.0001, t0 + t + i * 0.28); g.gain.exponentialRampToValueAtTime(0.35, t0 + t + i * 0.28 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + t + i * 0.28 + 0.26); }); } }
+    else { o.type = "sawtooth"; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.15); for (let t = 0; t < T; t += 1.4) { o.frequency.setValueAtTime(620, t0 + t); o.frequency.linearRampToValueAtTime(1350, t0 + t + 0.7); o.frequency.linearRampToValueAtTime(620, t0 + t + 1.4); } g.gain.setValueAtTime(0.18, t0 + T - 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t0 + T); }
+    o.start(t0); o.stop(t0 + T + 0.1); return { ctx, stop() { try { g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setValueAtTime(0.0001, ctx.currentTime); o.stop(); } catch {} setTimeout(() => { try { if (ctx.state !== "closed") ctx.close().catch(() => {}); } catch {} }, 200); } }; } catch { return { stop() {}, ctx: null }; } }
+function UalShow({ a, onClose, preview }) {
+  const C = UAL_COL[a.col] || UAL_COL.red; const dur = +a.dur || 0; const [left, setLeft] = useState(dur); const [mute, setMute] = useState(a.snd === "none"); const [blocked, setBlocked] = useState(false); const S = useRef(null);
+  const play = () => { if (S.current) S.current.stop(); S.current = ualSound(a.snd || "siren", a.sndS || 6); const c = S.current.ctx; if (c && c.state === "suspended") { setBlocked(true); c.resume().then(() => { if (c.state === "running") setBlocked(false); }).catch(() => {}); } else setBlocked(false); };
+  useEffect(() => { if (a.snd !== "none") play(); const un = () => { if (S.current && S.current.ctx && S.current.ctx.state === "suspended") { S.current.ctx.resume().then(() => setBlocked(false)).catch(() => {}); } }; window.addEventListener("pointerdown", un, { once: true }); window.addEventListener("keydown", un, { once: true }); return () => { window.removeEventListener("pointerdown", un); window.removeEventListener("keydown", un); S.current && S.current.stop(); }; }, []);
+  useEffect(() => { if (!dur) return; const t = setInterval(() => setLeft(x => { if (x <= 1) { clearInterval(t); setTimeout(onClose, 0); return 0; } return x - 1; }), 1000); return () => clearInterval(t); }, []);
+  const close = () => { S.current && S.current.stop(); onClose(); };
+  const lines = String(a.text || "").split("\n");
+  const body = <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 2, color: "#1f2937" }}>{lines.map((l, i) => !l.trim() ? <div key={i} style={{ height: 8 }} /> : /^⚠️|^❗|^🔴/.test(l.trim()) ? <div key={i} style={{ background: C[2], border: `1.5px solid ${C[1]}`, color: C[0], borderRadius: 12, padding: "6px 12px", margin: "6px 0", fontWeight: 900 }}>{l}</div> : i === lines.length - 1 && /إدارة|المدير/.test(l) ? <div key={i} style={{ textAlign: "left", fontWeight: 900, color: C[0], marginTop: 6 }}>{l}</div> : <div key={i}>{l}</div>)}</div>;
+  const bar = dur ? <div style={{ height: 6, background: "#0000001a", borderRadius: 9, overflow: "hidden" }}><div style={{ height: "100%", width: `${100 * left / dur}%`, background: `linear-gradient(90deg,${C[0]},${C[1]})`, transition: "width 1s linear" }} /></div> : null;
+  const ctr = <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>{dur ? <span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>⏱️ تختفي خلال {maAr(left)} ثانية</span> : null}<span style={{ flex: 1 }} />
+    {a.snd !== "none" && <button type="button" onClick={() => { if (mute) { setMute(false); play(); } else { setMute(true); S.current && S.current.stop(); } }} style={{ border: "none", borderRadius: 12, padding: "8px 12px", fontWeight: 800, cursor: "pointer", background: blocked && !mute ? C[0] : "#f1f5f9", color: blocked && !mute ? "#fff" : "#334155", fontFamily: "inherit" }}>{mute ? "🔇 تشغيل الصوت" : blocked ? "🔊 اضغط لتشغيل الصوت" : "🔈 إيقاف الصوت"}</button>}
+    <button type="button" onClick={close} style={{ border: "none", borderRadius: 12, padding: "8px 18px", fontWeight: 900, cursor: "pointer", background: `linear-gradient(135deg,${C[1]},${C[0]})`, color: "#fff", fontFamily: "inherit" }}>✓ قرأت التنبيه</button></div>;
+  const css = `@keyframes ualPulse{0%,100%{box-shadow:0 0 0 0 ${C[1]}99,0 30px 70px -20px #000}50%{box-shadow:0 0 0 14px ${C[1]}00,0 30px 70px -20px #000}}@keyframes ualIn{from{transform:translateY(-30px) scale(.96);opacity:0}to{transform:none;opacity:1}}@keyframes ualFlash{0%,100%{background:${C[0]}cc}50%{background:#0f172acc}}@keyframes ualSiren{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}`;
+  if (a.style === "banner") return <div dir="rtl" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 99999, background: `linear-gradient(135deg,${C[0]},${C[1]})`, color: "#fff", padding: "12px 16px 8px", boxShadow: "0 12px 30px -10px #000a", animation: "ualIn .4s", maxHeight: "70vh", overflow: "auto" }}><style>{css}</style>
+    <div style={{ maxWidth: 980, margin: "0 auto", display: "grid", gap: 8 }}><div style={{ display: "flex", gap: 10, alignItems: "center" }}><span style={{ fontSize: 30, animation: "ualSiren .5s infinite" }}>🚨</span><b style={{ fontSize: 18, flex: 1 }}>{a.title || "تنبيه"}</b>{preview && <span style={{ background: "#fff3", borderRadius: 8, padding: "2px 8px", fontSize: 12 }}>معاينة</span>}</div>
+      <div style={{ background: "#fff", borderRadius: 16, padding: "8px 14px" }}>{body}{bar}<div style={{ marginTop: 8 }}>{ctr}</div></div></div></div>;
+  return <div dir="rtl" onClick={e => { if (e.target === e.currentTarget && !a.lock) close(); }} style={{ position: "fixed", inset: 0, zIndex: 99999, display: "grid", placeItems: "center", padding: 14, background: a.style === "flash" ? undefined : "rgba(15,23,42,.72)", animation: a.style === "flash" ? "ualFlash 1s infinite" : undefined, backdropFilter: "blur(3px)", overflow: "auto" }}><style>{css}</style>
+    <div style={{ width: "min(640px,100%)", background: "#fff", borderRadius: 26, overflow: "hidden", animation: "ualIn .45s, ualPulse 1.6s infinite .5s", border: `3px solid ${C[1]}` }}>
+      <div style={{ background: `linear-gradient(135deg,${C[0]},${C[1]})`, color: "#fff", padding: "16px 18px", display: "flex", gap: 12, alignItems: "center" }}><span style={{ fontSize: 40, animation: "ualSiren .5s infinite", display: "inline-block" }}>🚨</span><div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 800, opacity: .9 }}>تنبيه من إدارة المدرسة{preview ? " — معاينة" : ""}</div><b style={{ fontSize: 21 }}>{a.title || "تنبيه"}</b></div></div>
+      {bar && <div style={{ padding: "0 0" }}>{bar}</div>}
+      <div style={{ padding: "14px 18px", display: "grid", gap: 10 }}>{body}{ctr}</div></div></div>;
+}
+// يُركَّب في الصفحة الرئيسية وبوابة الطالب وبوابة المنسوبين
+function UrgentAlert({ aud }) { const [Q, setQ] = useState([]);
+  useEffect(() => { if (!aud) return; let ok = true; maGet(UAL_NODE).then(v => { if (!ok) return; const now = ualLocal(new Date()); const L = maArr(v).filter(a => ualActive(a, aud, now)).filter(a => { const k = "pam-ual-" + a.id + "-" + (a.ver || 0); try { if (a.rep === "once") return !localStorage.getItem(k); if (a.rep !== "every") return !sessionStorage.getItem(k); } catch {} return true; }).sort((x, y) => (y.at || 0) - (x.at || 0)); setQ(L); }).catch(() => {}); return () => { ok = false; }; }, [aud]);
+  const a = Q[0]; if (!a) return null;
+  const done = () => { const k = "pam-ual-" + a.id + "-" + (a.ver || 0); try { if (a.rep === "once") localStorage.setItem(k, "1"); else sessionStorage.setItem(k, "1"); } catch {} setQ(q => q.slice(1)); };
+  return <UalShow key={a.id} a={a} onClose={done} />; }
+// صفحة الإدارة: إنشاء التنبيهات وجدولتها ومعاينتها
+const UalF = ({ l, children, w }) => <label style={{ display: "grid", gap: 4, fontSize: 12.5, fontWeight: 800, color: "#475569", flex: w ? `0 1 ${w}` : "1 1 180px" }}>{l}{children}</label>;
+function UrgentAlertAdmin({ by = "الإدارة" }) { const [L, setL] = useState(null); const [ed, setEd] = useState(null); const [pv, setPv] = useState(null); const [msg, setMsg] = useState("");
+  const toast = m => { setMsg(m); setTimeout(() => setMsg(""), 2800); };
+  const load = async () => setL(maArr(await maGet(UAL_NODE)).filter(x => x && x.id).sort((a, b) => (b.at || 0) - (a.at || 0)));
+  useEffect(() => { load(); }, []);
+  const tmr = () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); return ualLocal(d); };
+  const blank = () => ({ id: "al" + Date.now().toString(36), title: "تنبيه", text: "", on: true, aud: { parent: true, home: true }, from: ualLocal(new Date()), to: tmr(), dur: 30, style: "modal", snd: "siren", sndS: 6, rep: "visit", col: "red" });
+  const save = async (a) => { if (!String(a.text || "").trim()) { toast("⚠️ اكتب نص التنبيه"); return; } if (!maArr(UAL_AUD.map(([k]) => a.aud && a.aud[k])).some(Boolean)) { toast("⚠️ اختر من يظهر له التنبيه"); return; } if (a.to && a.from && a.to < a.from) { toast("⚠️ وقت الانتهاء قبل وقت البدء"); return; }
+    const v = { ...a, ver: (a.ver || 0) + 1, at: a.at || Date.now(), upd: Date.now(), by }; const ok = await maPut(`${UAL_NODE}/${v.id}`, v); if (!ok) { toast("⚠️ تعذّر الحفظ"); return; } setEd(null); toast(v.on ? "✅ حُفظ التنبيه — سيظهر للفئات المحددة عند دخولهم في الوقت المحدد" : "💾 حُفظ (موقوف)"); load(); };
+  const del = async a => { if (!window.confirm("حذف هذا التنبيه؟")) return; await fbPatch({ [`${UAL_NODE}/${a.id}`]: null }); load(); };
+  const tog = async a => { await fbPatch({ [`${UAL_NODE}/${a.id}/on`]: !a.on }); load(); };
+  const st = a => { const now = ualLocal(new Date()); return !a.on ? ["⏸️ موقوف", "#64748b", "#f1f5f9"] : a.to && a.to < now ? ["⌛ منتهٍ", "#64748b", "#f1f5f9"] : a.from && a.from > now ? ["🕒 مجدول", "#1d4ed8", "#eff6ff"] : ["🔴 يظهر الآن", "#b91c1c", "#fee2e2"]; };
+  const fmt = v => { if (!v) return "—"; try { const d = new Date(v); return d.toLocaleDateString("ar-SA", { weekday: "long", day: "numeric", month: "long" }) + " " + d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" }); } catch { return v; } };
+  return <div className="grid gap-3" dir="rtl">
+    <div style={{ borderRadius: 24, padding: "18px 20px", color: "#fff", background: "radial-gradient(600px 200px at 110% -30%,rgba(255,255,255,.18),transparent 60%),linear-gradient(135deg,#7f1d1d,#b91c1c 55%,#ef4444)", boxShadow: "0 20px 40px -24px #7f1d1d", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <span style={{ fontSize: 44 }}>🚨</span><div style={{ flex: 1, minWidth: 220 }}><b style={{ fontSize: 21 }}>التنبيهات العاجلة المنبثقة</b><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>رسالة تظهر فور دخول الموقع لأولياء الأمور أو الزوار أو المنسوبين — بوقت محدد ومدة عرض وصوت صفارة</div></div>
+      <button className="ma-btn" style={{ background: "#fff", color: "#b91c1c", fontWeight: 900 }} onClick={() => setEd(blank())}>➕ تنبيه جديد</button><button className="ma-btn" style={{ background: "#fff3", color: "#fff", border: "1.5px solid #fff8" }} onClick={() => setEd({ ...blank(), ...UAL_TPL })}>📋 قالب: الحضور غداً الخميس</button></div>
+    {ed && <div className="ma-card p-4 grid gap-3" style={{ border: "2px solid #fca5a5" }}>
+      <b style={{ fontSize: 16 }}>{L && L.some(x => x.id === ed.id) ? "✏️ تعديل التنبيه" : "➕ تنبيه جديد"}</b>
+      <UalF l="عنوان التنبيه"><input className="ma-inp" value={ed.title} onChange={e => setEd({ ...ed, title: e.target.value })} /></UalF>
+      <UalF l="نص الرسالة (السطر الذي يبدأ بـ ⚠️ يظهر مميزاً)"><textarea className="ma-inp" rows={8} style={{ lineHeight: 1.9 }} value={ed.text} onChange={e => setEd({ ...ed, text: e.target.value })} /></UalF>
+      <div><div style={{ fontSize: 12.5, fontWeight: 800, color: "#475569", marginBottom: 4 }}>يظهر لـ</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{UAL_AUD.map(([k, l]) => <label key={k} className="ma-btn" style={{ background: ed.aud[k] ? "#fee2e2" : "#fff", border: `1.5px solid ${ed.aud[k] ? "#ef4444" : "#e2e8f0"}`, cursor: "pointer" }}><input type="checkbox" checked={!!ed.aud[k]} onChange={e => setEd({ ...ed, aud: { ...ed.aud, [k]: e.target.checked } })} /> {l}</label>)}</div></div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><UalF l="🕒 يبدأ الظهور"><input type="datetime-local" className="ma-inp" value={ed.from || ""} onChange={e => setEd({ ...ed, from: e.target.value })} /></UalF><UalF l="⌛ يتوقف الظهور"><input type="datetime-local" className="ma-inp" value={ed.to || ""} onChange={e => setEd({ ...ed, to: e.target.value })} /></UalF>
+        <UalF l="⏱️ مدة العرض ثم يختفي" w="170px"><select className="ma-inp" value={ed.dur} onChange={e => setEd({ ...ed, dur: +e.target.value })}>{[10, 15, 20, 30, 45, 60, 90, 0].map(s => <option key={s} value={s}>{s ? `${maAr(s)} ثانية` : "حتى يغلقه القارئ"}</option>)}</select></UalF></div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <UalF l="🖼️ طريقة العرض"><select className="ma-inp" value={ed.style} onChange={e => setEd({ ...ed, style: e.target.value })}><option value="modal">نافذة منبثقة وسط الشاشة</option><option value="flash">نافذة مع وميض الشاشة (إنذار)</option><option value="banner">شريط في أعلى الصفحة</option></select></UalF>
+        <UalF l="🔊 الصوت"><select className="ma-inp" value={ed.snd} onChange={e => setEd({ ...ed, snd: e.target.value })}><option value="siren">صفارة إنذار</option><option value="bell">جرس تنبيه</option><option value="none">بدون صوت</option></select></UalF>
+        {ed.snd !== "none" && <UalF l="مدة الصوت" w="130px"><select className="ma-inp" value={ed.sndS} onChange={e => setEd({ ...ed, sndS: +e.target.value })}>{[3, 6, 10, 15, 30].map(s => <option key={s} value={s}>{maAr(s)} ث</option>)}</select></UalF>}
+        <UalF l="🎨 اللون"><select className="ma-inp" value={ed.col} onChange={e => setEd({ ...ed, col: e.target.value })}>{Object.entries(UAL_COL).map(([k, v]) => <option key={k} value={k}>{v[3]}</option>)}</select></UalF>
+        <UalF l="🔁 التكرار"><select className="ma-inp" value={ed.rep} onChange={e => setEd({ ...ed, rep: e.target.value })}><option value="visit">مرة في كل زيارة للموقع</option><option value="every">عند كل فتح للصفحة</option><option value="once">مرة واحدة فقط لكل جهاز</option></select></UalF></div>
+      <label style={{ fontWeight: 800, fontSize: 13.5 }}><input type="checkbox" checked={!!ed.on} onChange={e => setEd({ ...ed, on: e.target.checked })} /> مفعّل</label>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="ma-btn pri" onClick={() => save(ed)}>💾 حفظ ونشر</button><button className="ma-btn" onClick={() => setPv(ed)}>👁️ معاينة مع الصوت</button><button className="ma-btn" onClick={() => setEd(null)}>إلغاء</button></div>
+      <small style={{ color: "#64748b", fontWeight: 700, lineHeight: 1.8 }}>ℹ️ المتصفحات تمنع تشغيل الصوت تلقائياً قبل أن يلمس الزائر الشاشة — يبدأ الصوت مع أول لمسة، ويظهر زر «🔊 اضغط لتشغيل الصوت».</small></div>}
+    {L === null ? <div className="ma-card p-4" style={{ textAlign: "center", color: "#94a3b8", fontWeight: 800 }}>⏳</div> : !L.length ? <div className="ma-card p-5" style={{ textAlign: "center", color: "#64748b", fontWeight: 800 }}>لا توجد تنبيهات — أنشئ تنبيهاً جديداً أو استخدم القالب</div>
+      : L.map(a => { const s = st(a), C = UAL_COL[a.col] || UAL_COL.red; return <div key={a.id} className="ma-card p-3 grid gap-2" style={{ borderRight: `6px solid ${C[0]}` }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><b style={{ fontSize: 15.5 }}>🚨 {a.title}</b><span style={{ background: s[2], color: s[1], borderRadius: 999, padding: "2px 10px", fontSize: 12, fontWeight: 900 }}>{s[0]}</span><span style={{ flex: 1 }} />
+          <button className="ma-btn" onClick={() => setPv(a)}>👁️</button><button className="ma-btn" onClick={() => setEd({ ...a, aud: { ...a.aud } })}>✏️ تعديل</button><button className="ma-btn" onClick={() => tog(a)}>{a.on ? "⏸️ إيقاف" : "▶️ تفعيل"}</button><button className="ma-btn" style={{ color: "#b91c1c" }} onClick={() => del(a)}>🗑</button></div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#334155", whiteSpace: "pre-wrap", maxHeight: 66, overflow: "hidden" }}>{a.text}</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 11.5, fontWeight: 800, color: "#475569" }}><span>🕒 {fmt(a.from)} ← {fmt(a.to)}</span><span>• ⏱️ {a.dur ? `${maAr(a.dur)} ث` : "حتى الإغلاق"}</span><span>• {UAL_AUD.filter(([k]) => a.aud && a.aud[k]).map(([, l]) => l.split(" (")[0]).join("، ")}</span><span>• {a.snd === "none" ? "🔇" : a.snd === "bell" ? "🔔 جرس" : "🚨 صفارة"}</span></div></div>; })}
+    {pv && <UalShow a={pv} preview onClose={() => setPv(null)} />}
+    {msg && <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "#0f172a", color: "#fff", borderRadius: 14, padding: "10px 16px", fontWeight: 800, zIndex: 999 }}>{msg}</div>}
+  </div>; }
+
+// 🚦 مؤشر الانضباط والالتزام — يلوّن صفحة الطالب من الأخضر (ملتزم) إلى الأحمر (في خطر)
+//   ١٠٠ − ٦ لكل يوم غياب بدون عذر − ١ لكل يوم بعذر − ٢ لكل تأخر صباحي − ٤ لكل ملاحظة سلوكية سلبية + ٢ لكل إيجابية (حتى +١٠)
+//   ومع المادة ٣٤ من قواعد السلوك والمواظبة: ٣ أيام بدون عذر لا تتجاوز «يحتاج انتباهاً»، و٥ «تحت المتابعة»، و١٠ «في خطر»
+const GD_BANDS = [
+  { min: 90, k: "ex", t: "ملتزم ومنضبط — أحسنت", ic: "🌟", c: "#15803d", c2: "#22c55e", bg: "linear-gradient(180deg,#dcfce7,#f0fdf4 320px,#f8fafc)", msg: "انضباط ممتاز في الحضور والسلوك — استمر على هذا التميّز" },
+  { min: 75, k: "gd", t: "ملتزم", ic: "✅", c: "#4d7c0f", c2: "#84cc16", bg: "linear-gradient(180deg,#ecfccb,#f7fee7 320px,#f8fafc)", msg: "مستوى التزام جيد — حافظ على الحضور المبكر وتجنّب الغياب" },
+  { min: 60, k: "yl", t: "يحتاج انتباهاً", ic: "⚠️", c: "#a16207", c2: "#eab308", bg: "linear-gradient(180deg,#fef9c3,#fefce8 320px,#f8fafc)", msg: "بدأ الغياب أو التأخر يؤثر على مستواه — نأمل متابعة ولي الأمر" },
+  { min: 40, k: "or", t: "تحت المتابعة", ic: "🔶", c: "#c2410c", c2: "#f97316", bg: "linear-gradient(180deg,#ffedd5,#fff7ed 320px,#f8fafc)", msg: "الغياب أو التأخر أو الملاحظات تجاوزت الحد — يلزم التواصل مع المدرسة" },
+  { min: -1, k: "rd", t: "في خطر", ic: "🚨", c: "#b91c1c", c2: "#ef4444", bg: "linear-gradient(180deg,#fee2e2,#fef2f2 320px,#f8fafc)", msg: "وضع الطالب يستدعي تدخلاً عاجلاً — يرجى مراجعة المدرسة في أقرب وقت" }];
+function gdDisc(d) { if (!d) return null; const excS = absExcSet(d.sx, d.exc); const u = maArr(d.absU).length, e = maArr(d.abs).filter(k => excS.has(k)).length, l = maArr(d.lat).length; const neg = maArr(d.bn).filter(r => r.neg).length, pos = maArr(d.bn).filter(r => !r.neg).length;
+  let s = 100 - 6 * u - e - 2 * l - 4 * neg + Math.min(10, 2 * pos); s = Math.max(0, Math.min(100, Math.round(s)));
+  const cap = u >= 10 ? 39 : u >= 5 ? 59 : u >= 3 ? 74 : 100; const sc = Math.min(s, cap); const b = GD_BANDS.find(x => sc >= x.min) || GD_BANDS[4];
+  return { s: sc, b, u, e, l, neg, pos, capped: sc < s }; }
+function GdDiscBar({ x }) { if (!x) return null; const { b } = x;
+  return <div style={{ borderRadius: 22, padding: "12px 14px", background: "#fff", border: `2px solid ${b.c2}`, boxShadow: `0 16px 30px -22px ${b.c}`, display: "grid", gap: 9 }}>
+    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><div style={{ width: 52, height: 52, borderRadius: 16, background: `linear-gradient(135deg,${b.c2},${b.c})`, display: "grid", placeItems: "center", fontSize: 26, flex: "none", boxShadow: `0 8px 18px -8px ${b.c}` }}>{b.ic}</div>
+      <div style={{ flex: "1 1 220px" }}><div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>🚦 مؤشر الانضباط والالتزام — لون الصفحة يعكس حالة الطالب</div><b style={{ fontSize: 18, color: b.c }}>{b.t}</b><div style={{ fontSize: 13, fontWeight: 700, color: "#334155", lineHeight: 1.7 }}>{b.msg}</div></div>
+      <div style={{ textAlign: "center", minWidth: 74 }}><b style={{ fontSize: 30, color: b.c, lineHeight: 1 }}>{maAr(x.s)}</b><div style={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>من ١٠٠</div></div></div>
+    <div style={{ position: "relative", paddingTop: 6 }}><div style={{ height: 14, borderRadius: 99, background: "linear-gradient(90deg,#b91c1c 0%,#ef4444 20%,#f97316 40%,#eab308 60%,#84cc16 78%,#16a34a 92%,#15803d 100%)", direction: "ltr", boxShadow: "inset 0 1px 3px rgba(0,0,0,.2)" }} />
+      <div style={{ position: "absolute", top: 0, left: `calc(${x.s}% - 11px)`, width: 22, height: 26, display: "grid", placeItems: "center" }}><div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fff", border: `4px solid ${b.c}`, boxShadow: "0 3px 8px rgba(0,0,0,.35)" }} /></div>
+      <div style={{ display: "flex", justifyContent: "space-between", direction: "ltr", fontSize: 10.5, fontWeight: 800, marginTop: 5 }}>{[...GD_BANDS].reverse().map(z => <span key={z.k} style={{ color: z.c, opacity: z.k === b.k ? 1 : .6, textDecoration: z.k === b.k ? "underline" : "none" }}>{z.ic} {z.t.split(" — ")[0]}</span>)}</div></div>
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 12, fontWeight: 800 }}>{[["🚫", "غياب بدون عذر", x.u, x.u ? "#b91c1c" : "#15803d"], ["📄", "غياب بعذر", x.e, "#475569"], ["⏰", "تأخر صباحي", x.l, x.l ? "#c2410c" : "#15803d"], ["📝", "ملاحظات سلبية", x.neg, x.neg ? "#b91c1c" : "#15803d"], ["⭐", "ملاحظات إيجابية", x.pos, "#15803d"]].map(([ic, l, n, c]) => <span key={l} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "3px 9px", color: c }}>{ic} {l}: {maAr(n)}</span>)}
+      {x.capped && <span style={{ background: "#fef2f2", borderRadius: 10, padding: "3px 9px", color: "#b91c1c" }}>⚖️ حُدِّد المستوى وفق المادة (٣٤): {maAr(x.u)} أيام غياب بدون عذر</span>}</div>
+  </div>; }
 // ✍️ توقيع ولي الأمر والطالب إلكترونياً على النماذج الرسمية (إجراءات الغياب بدون عذر ص٧٤ • تعهد الالتزام بالحضور ص٧٥)
 function GdSignDoc({ r, onClose, onSigned }) {
   const [M, setM] = useState(null); const [D, setD] = useState(undefined); const [mImg, setMImg] = useState(""); const [pad, setPad] = useState(null); const [gn, setGn] = useState(""); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
@@ -52260,6 +52373,42 @@ class PamSafe extends React.Component {
   render() { return this.state.err ? null : this.props.children; }
 }
 
+// ═══════════════ 📱🖥️ ملاءمة العرض تلقائياً حسب الجهاز ═══════════════
+//  «تلقائي»: كل صفحة تُعرض بعرض الجهاز، وإن كانت أعرض من الشاشة (مكبّرة/تحتاج تمريراً جانبياً) تُصغَّر تلقائياً لتظهر كاملة
+//  «الجوال»: تخطيط الجوال دائماً • «الكمبيوتر المصغّر»: نفس شكل الكمبيوتر مصغّراً على الشاشة (مع إمكانية التكبير بالإصبعين)
+const PAM_VIEW_K = "pam-view";
+const PAM_VIEW_DESK = 1280;
+function pamViewInit() { if (typeof window === "undefined" || window.__pamView) return; window.__pamView = 1;
+  const get = () => { try { return localStorage.getItem(PAM_VIEW_K) || "auto"; } catch { return "auto"; } };
+  const meta = () => { let m = document.querySelector('meta[name="viewport"]'); if (!m) { m = document.createElement("meta"); m.name = "viewport"; document.head.appendChild(m); } return m; };
+  const DEV = "width=device-width, initial-scale=1, viewport-fit=cover";
+  const small = () => Math.min(screen.width || 9999, screen.height || 9999) < 900 || window.matchMedia("(pointer:coarse)").matches && (screen.width || 0) < 1100;
+  let busy = false, tm = 0, lastSet = "";
+  const set = c => { if (c !== lastSet) { lastSet = c; meta().setAttribute("content", c); } };
+  const fit = () => { const mode = get(); if (!small()) { set(DEV); return; }
+    if (mode === "desk") { set(`width=${PAM_VIEW_DESK}`); return; }
+    if (mode === "mobile") { set(DEV); return; }
+    if (busy) return; busy = true; set(DEV);
+    requestAnimationFrame(() => setTimeout(() => { try { const vw = Math.round(screen.width || window.innerWidth); const sw = Math.max(document.documentElement.scrollWidth, document.body ? document.body.scrollWidth : 0);
+        if (sw > vw + 12) set(`width=${Math.min(1600, sw + 8)}`); } catch {} busy = false; }, 120)); };
+  const later = (d = 500) => { clearTimeout(tm); tm = setTimeout(fit, d); };
+  window.addEventListener("hashchange", () => later(700)); window.addEventListener("popstate", () => later(700)); window.addEventListener("orientationchange", () => later(400));
+  window.addEventListener("load", () => later(800)); later(1200);
+  // زر صغير عائم لاختيار طريقة العرض (يظهر على الجوال فقط)
+  const mk = () => { if (!small() || document.getElementById("pam-vbtn")) return; const b = document.createElement("button"); b.id = "pam-vbtn"; b.type = "button"; b.setAttribute("aria-label", "طريقة العرض");
+    const ic = () => ({ auto: "📱", mobile: "📱", desk: "🖥️" })[get()] || "📱"; b.textContent = ic();
+    b.style.cssText = "position:fixed;left:10px;bottom:150px;z-index:99990;width:42px;height:42px;border-radius:50%;border:1.5px solid #cbd5e1;background:rgba(255,255,255,.92);box-shadow:0 6px 16px -6px rgba(15,23,42,.45);font-size:19px;cursor:pointer;backdrop-filter:blur(6px);opacity:.85";
+    b.onclick = () => { const old = document.getElementById("pam-vmenu"); if (old) { old.remove(); return; } const m = document.createElement("div"); m.id = "pam-vmenu"; m.dir = "rtl";
+      m.style.cssText = "position:fixed;left:10px;bottom:198px;z-index:99991;background:#fff;border-radius:16px;box-shadow:0 18px 40px -12px rgba(15,23,42,.5);border:1px solid #e2e8f0;padding:8px;display:grid;gap:6px;font-family:inherit;min-width:230px";
+      const cur = get(); [["auto", "✨ تلقائي حسب الجهاز (موصى به)", "تُصغَّر الصفحة العريضة تلقائياً لتظهر كاملة"], ["mobile", "📱 شكل الجوال", "عناصر كبيرة في عمود واحد"], ["desk", "🖥️ شكل الكمبيوتر مصغّراً", "نفس إخراج الكمبيوتر — كبّر بإصبعين"]].forEach(([k, t, d]) => {
+        const o = document.createElement("button"); o.type = "button"; o.innerHTML = `<b style="display:block;font-size:13.5px">${t}${cur === k ? " ✓" : ""}</b><small style="color:#64748b;font-size:11.5px">${d}</small>`;
+        o.style.cssText = `text-align:right;border:1.5px solid ${cur === k ? "#0f766e" : "#e2e8f0"};background:${cur === k ? "#f0fdfa" : "#fff"};border-radius:12px;padding:8px 10px;cursor:pointer;font-family:inherit;color:#0f172a`;
+        o.onclick = () => { try { localStorage.setItem(PAM_VIEW_K, k); } catch {} m.remove(); b.textContent = ic(); lastSet = ""; fit(); setTimeout(() => window.scrollTo(0, 0), 200); }; m.appendChild(o); });
+      document.body.appendChild(m); setTimeout(() => document.addEventListener("click", function h(e) { if (!m.contains(e.target) && e.target !== b) { m.remove(); document.removeEventListener("click", h); } }), 0); };
+    document.body.appendChild(b); };
+  if (document.body) mk(); else window.addEventListener("DOMContentLoaded", mk); }
+try { pamViewInit(); } catch {}
+
 export default function SchoolWebsite(props) {
   const [hok, setHok] = useState(false);
   useEffect(() => { let d = false; const done = () => { if (!d) { d = true; setHok(true); } }; Promise.all([maHolXLoad(), hdRemLoad()]).finally(done); const t = setTimeout(done, 2500); return () => clearTimeout(t); }, []);
@@ -52672,7 +52821,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","command","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","command","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -52966,9 +53115,9 @@ function SchoolWebsiteInner() {
   if (hubPortal === "marji") return <React.Suspense fallback={NB_WAIT}><NafsBooksStudent onBack={hubBack} api={trApi()} /></React.Suspense>;
   if (hubPortal === "qiraa") return <React.Suspense fallback={RD_WAIT}><ReadingStudent onBack={hubBack} api={rdApi()} /></React.Suspense>;
   if (hubPortal.startsWith("termplan")) return <TermPlanPublic onBack={hubBack} id={hubPortal.slice(9)} />;
-  if (hubPortal === "parent") return <GuardianPortal onBack={hubBack} />;
-  if (hubPortal === "late") return <StaffHub kind="staff" initView="late" onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
-  if (hubPortal) return <StaffHub key={hubPortal + ":" + (hubView || "")} kind={hubPortal} initView={hubView} onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} />;
+  if (hubPortal === "parent") return <><UrgentAlert aud="parent" /><GuardianPortal onBack={hubBack} /></>;
+  if (hubPortal === "late") return <><UrgentAlert aud="staff" /><StaffHub kind="staff" initView="late" onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} /></>;
+  if (hubPortal) return <><UrgentAlert aud="staff" /><StaffHub key={hubPortal + ":" + (hubView || "")} kind={hubPortal} initView={hubView} onBack={hubBack} classList={classList} setClassList={setClassList} saveClass={saveClass} messages={messages} onSendNote={handleSendNote} /></>;
   if (clsPortal) return <div style={{ minHeight: "100vh" }}><StudentClassifyPage mode="teacher" onBack={() => { setClsPortal(false); window.location.hash = ""; }} /></div>;
   if (attPortal) return <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f0fdfa 40%,#f8fafc)" }}><MorningAttendancePage mode="teacher" onBack={() => { setAttPortal(false); window.location.hash = ""; }} /></div>;
   if (licPortal) return <LicenseTeacherPortal siteFont={siteFont} onBack={() => { setLicPortal(false); window.location.hash = ""; }} />;
@@ -53014,6 +53163,7 @@ function SchoolWebsiteInner() {
     { id: "period", label: "تحليل نتائج الفترة (إشعارات نور)", icon: "🎓" },
     { id: "quran", label: "حلقات القرآن الكريم (التسميع والمراجعة)", icon: "📖" },
     { id: "notices", label: "رسائل الأعذار والتأخر الصباحي", icon: "📣" },
+    { id: "ualerts", label: "التنبيهات العاجلة المنبثقة", icon: "🚨" },
     { id: "studentperf", label: "متابعة أداء الطلاب", icon: "🎓" },
     { id: "nafes", label: "منصة نافس التدريبية", icon: "🎯" },
     { id: "readlab", label: "اختبار القراءة الجهرية", icon: "🎙️" },
@@ -53101,7 +53251,7 @@ function SchoolWebsiteInner() {
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
   const navGroups = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","holidays","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","absaction","studentexcuses"] },
-    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["command","period","quran","stusearch","notices","readlab","gradebook","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
+    { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["command","period","quran","stusearch","notices","ualerts","readlab","gradebook","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
@@ -53110,6 +53260,7 @@ function SchoolWebsiteInner() {
 
   return (
     <>
+    {!user && <UrgentAlert aud="home" />}
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
       .nav-pill-main {
@@ -53412,7 +53563,7 @@ function SchoolWebsiteInner() {
                 {page === "students"       && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
                 {page === "announcements"  && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} viewMode="mobile" />}
                 {page === "activities"     && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
-                {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
+                {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "ualerts" && <div className="px-2 md:px-6 py-4"><UrgentAlertAdmin by={user?.name || "الإدارة"} /></div>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
                 {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
                 {page === "messages"       && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
                 {page === "surveys"        && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
@@ -53607,7 +53758,7 @@ function SchoolWebsiteInner() {
         {page === "students"      && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
         {page === "activities"    && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
-        {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
+        {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "ualerts" && <div className="px-2 md:px-6 py-4"><UrgentAlertAdmin by={user?.name || "الإدارة"} /></div>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
         {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
         {page === "messages"      && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
         {page === "surveys"       && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
