@@ -35013,7 +35013,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "stlv") return wrap("📊 سجل تصنيف مستويات الطلاب", <StudentLevelsPage by={me.name} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
   if (view === "readwk") return wrap("📖 حصر الضعف القرائي", <ReadingWeakPage by={me.name} admin={isStaff} />);
   if (view === "command" && isStaff && ["principal", "deputy", "counselor"].includes(me.role)) return wrap("🧭 مركز القيادة والإنذار المبكر", <React.Suspense fallback={RD_WAIT}><Command me={{ name: me.name, role: me.role }} api={cmdApi("")} /></React.Suspense>);
-  if (view === "actcards") return wrap("🏆 بطاقات تنفيذ مسابقات النشاط الطلابي", <React.Suspense fallback={RD_WAIT}><ActCards api={actApi()} me={{ name: me.name, role: isStaff ? me.role : "t" }} admin={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
+  if (view === "actcards") return wrap("🏆 بطاقات تنفيذ المسابقات والبرامج — النشاط الطلابي", <React.Suspense fallback={RD_WAIT}><ActCards api={actApi()} me={{ name: me.name, role: isStaff ? me.role : "t" }} admin={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "absref" && isStaff && (["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox"))) return wrap(me.role === "counselor" ? "🧭 إحالات الغياب للموجه الطلابي" : "🚫 الطلاب الغائبون والإحالة للموجه", <React.Suspense fallback={RD_WAIT}><AbsRef me={{ name: me.name }} api={absRefApi()} mode={me.role === "counselor" ? "coun" : me.role === "principal" ? "admin" : "dep"} /></React.Suspense>);
   if (view === "absact" && isStaff && (["principal", "deputy", "counselor"].includes(me.role) || ptCan(me, "inbox"))) return wrap("📂 إجراءات معالجة غياب الطلاب", <React.Suspense fallback={RD_WAIT}><AbsAction me={me} api={absApi()} /></React.Suspense>);
   if (view === "health" && isStaff) return wrap("🩺 البرامج الصحية المدرسية", <React.Suspense fallback={RD_WAIT}><HealthPlan me={me} api={hpApi()} canEdit={["principal", "deputy"].includes(me.role) ? true : "guide"} /></React.Suspense>);
@@ -35200,7 +35200,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           <div className="pt-sec"><h3>🎓 طلابي</h3><div className="pt-tiles">
             {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
             {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
-            {ptTile("actcards", "🏆", "بطاقات تنفيذ المسابقات", "النشاط الطلابي • نموذج إدارة تعليم جدة طبق الأصل • طباعة و PDF لبطاقة أو مجموعة", "#003845", "#3aa58a", () => setView("actcards"))}
+            {ptTile("actcards", "🏆", "بطاقات تنفيذ المسابقات والبرامج", "النشاط الطلابي • نموذجا إدارة تعليم جدة طبق الأصل • طباعة و PDF لبطاقة أو مجموعة • بطاقتان في الصفحة", "#003845", "#3aa58a", () => setView("actcards"))}
             {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
             {ptTile("stlv", "📊", "سجل مستويات الطلاب", "مميز • جيد • متوسط • متدنٍ — مع الملاحظات وطباعة السجل باسمك", "#6d28d9", "#db2777", () => setView("stlv"))}
             {ptTile("qiraa", "🎙️", "اختبار القراءة الجهرية", "يقرأ الطالب النص بصوته فيقيّمه الموقع: الدقة والطلاقة والأخطاء والمستوى — مع مراجعتك واعتمادك وقائمة الضعف", "#0b2545", "#c9a227", () => setView("qiraa"))}
@@ -52987,7 +52987,7 @@ function SchoolWebsiteInner() {
     { id: "students",        label: "تقييم الطلاب",  icon: "🎓" },
     { id: "announcements", label: "الإعلانات",       icon: "📣" },
     { id: "activities",    label: "الأنشطة",         icon: "🎯" },
-    { id: "actcards",      label: "بطاقات تنفيذ المسابقات", icon: "🏆" },
+    { id: "actcards",      label: "بطاقات تنفيذ المسابقات والبرامج", icon: "🏆" },
     { id: "healthplan",    label: "البرامج الصحية المدرسية", icon: "🩺" },
     { id: "messages",      label: "رسائل الأهالي",  icon: "💌" },
     { id: "sms",           label: "رسائل SMS",       icon: "📲" },

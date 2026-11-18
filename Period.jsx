@@ -286,8 +286,9 @@ export function studentCard(r, sum, M, cfg) {
 }
 // ملخص يُحفظ للمقارنة (متوسطات الفصل والصف لكل مادة)
 function mkSum(A) { const sub = x => Object.fromEntries(Object.entries(x.sub).filter(([, v]) => v.a != null).map(([k, v]) => [k, Math.round(v.a * 10) / 10])); return { cls: Object.fromEntries(A.CL.map(c => [c.ck, { n: c.n, core: c.core == null ? -1 : Math.round(c.core * 10) / 10, sub: sub(c) }])), gr: Object.fromEntries(A.GR.map(g => [g.g, { n: g.n, core: g.core == null ? -1 : Math.round(g.core * 10) / 10, sub: sub(g) }])), at: Date.now() }; }
-const fixSum = s => { const o = obj(s); const f = x => ({ ...x, core: x.core < 0 ? null : x.core }); return { cls: Object.fromEntries(Object.entries(obj(o.cls)).map(([k, v]) => [k, f(v)])), gr: Object.fromEntries(Object.entries(obj(o.gr)).map(([k, v]) => [k, f(v)])) }; };
-const fixRec = r => ({ ...r, S: Object.fromEntries(Object.entries(obj(r.S)).map(([k, x]) => [k, { ...x, s: x.s < 0 ? -1 : x.s }])) });
+// Firebase يحوّل المفاتيح الرقمية (الصفوف 1،2،3) إلى مصفوفة فيها null — نُعيدها كائناً ونتجاهل الفراغات
+const fixSum = s => { const o = obj(s); const f = x => ({ ...x, core: x.core == null || x.core < 0 ? null : x.core, sub: obj(x.sub) }); const m = v => Object.fromEntries(Object.entries(obj(v)).filter(([, x]) => x && typeof x === "object").map(([k, x]) => [k, f(x)])); return { cls: m(o.cls), gr: m(o.gr) }; };
+const fixRec = r => ({ ...obj(r), S: Object.fromEntries(Object.entries(obj(obj(r).S)).filter(([, x]) => x && typeof x === "object").map(([k, x]) => [k, { ...x, s: x.s < 0 ? -1 : x.s }])) });
 const perTitle = s => { const t = nrm(s); return /ثاني/.test(t) ? "الفترة الثانية" : /ثالث/.test(t) ? "الفترة الثالثة" : /اولي|اول/.test(t) ? "الفترة الأولى" : "الفترة"; };
 
 // ─────────── واجهات React ───────────
