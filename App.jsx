@@ -47,7 +47,7 @@ const absRefApi = () => ({ SigPad: HfxSigPad, gov: "مكة المكرمة/جدة
       : { ck, date: dk, dayName: maDay(D), hijri: maHijri(D), total, absent: absList, teacher: by, byId: "", savedAt: now.getTime(), time: tm, src: "absref" };
     const ok = await maPut(`${MA_ATT}/${dk}/${ck}`, rec); if (ok) sidxAbs(dk, ck, absList.map(a => a.id), prev ? maArr(prev.absent).map(a => a && a.id) : []).catch(() => {}); return ok; } });
 // تحليل نتائج الفترة (إشعارات نور PDF) — يُمرَّر لملف Period.jsx
-const perApi = () => ({ maGet, maPut, fbPatch, stuHash, MA_ROSTER, pdfLib: nqPdfLib, print: printWindow, logo: SCHOOL_LOGO, school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة (بنين)", region: "الإدارة العامة للتعليم بمحافظة جدة", principal: "فازع عبدالله حسن القرني" });
+const perApi = () => ({ idSave: pairs => idMapPut(pairs), maGet, maPut, fbPatch, stuHash, MA_ROSTER, pdfLib: nqPdfLib, print: printWindow, logo: SCHOOL_LOGO, school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة (بنين)", region: "الإدارة العامة للتعليم بمحافظة جدة", principal: "فازع عبدالله حسن القرني" });
 // حصر غياب كل طالب في فترة (أيام الغياب، وما صُنّف منها بعذر) — لملف إجراءات معالجة الغياب
 const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: "الإدارة العامة للتعليم بمحافظة جدة", absData: async (f, t) => {
   const [ros, meta, att, ax] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(ABSX, f, t).catch(() => ({}))]);
@@ -39055,16 +39055,30 @@ function InTrend({ s, f, t }) {
     </div>
   );
 }
+// 🪪 سجل الهويات الكاملة — يُحفظ على جهاز الإدارة فقط (localStorage) ولا يُرفع إلى قاعدة البيانات المفتوحة
+const ID_LS = "pam-idmap";
+function idMapGet() { try { return JSON.parse(localStorage.getItem(ID_LS) || "{}") || {}; } catch { return {}; } }
+function idMapPut(pairs) { try { const m = idMapGet(); let n = 0; (pairs || []).forEach(([h, id]) => { const v = licNormId(id); if (h && v.length === 10 && m[h] !== v) { m[h] = v; n++; } }); localStorage.setItem(ID_LS, JSON.stringify(m)); return n; } catch { return 0; } }
 function InStudent({ D, sid, setSid, by }) {
-  const { S, days } = D.R; const [q, setQ] = useState("");
-  const s = sid && S[sid];
-  const hits = q.trim().length >= 2 ? Object.values(S).filter(x => x.name.includes(q.trim()) || (x.n4 && q.trim() === x.n4)).slice(0, 12) : [];
-  const findById = async () => { const n = licNormId(q); if (n.length !== 10) return; const h = await stuHash(n); const x = Object.values(S).find(y => y.nh === h); if (x) { setSid(x.sid); setQ(""); } else alert("لم يُعثر على طالب بهذه الهوية"); };
+  const { S, days } = D.R; const [q, setQ] = useState(""); const [idm, setIdm] = useState(idMapGet); const [imp, setImp] = useState("");
+  const s = sid && S[sid]; const fullId = x => x && x.nh && idm[x.nh];
+  const nKnown = Object.values(S).filter(x => fullId(x)).length, nLinked = Object.values(S).filter(x => x.nh).length;
+  const importIds = async (file) => { if (!file) return; setImp("⏳ جارٍ قراءة الملف…"); try { const X = await loadXLSX(); const wb = X.read(await file.arrayBuffer(), { type: "array" }); const ids = new Set();
+      wb.SheetNames.forEach(sn => X.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: false }).forEach(row => (row || []).forEach(c => { const v = licNormId(c); if (v.length === 10 && /^[12]/.test(v)) ids.add(v); })));
+      if (!ids.size) { setImp("⚠️ لم يُعثر على أرقام هويات (١٠ أرقام) في الملف"); return; }
+      const HS = new Set(Object.values(S).map(x => x.nh).filter(Boolean)); const pairs = []; for (const v of ids) { const h = await stuHash(v); if (HS.has(h)) pairs.push([h, v]); }
+      idMapPut(pairs); setIdm(idMapGet()); setImp(`✅ قُرئ ${maAr(ids.size)} رقماً — طابق ${maAr(pairs.length)} طالباً مربوطاً بالهوية`); } catch (e) { setImp("⚠️ تعذّرت قراءة الملف — " + (e && e.message || "")); } };
+  const hits = q.trim().length >= 2 ? Object.values(S).filter(x => x.name.includes(q.trim()) || (x.n4 && q.trim() === x.n4) || (x.nh && idm[x.nh] && licNormId(q).length >= 4 && idm[x.nh].includes(licNormId(q)))).slice(0, 12) : [];
+  const findById = async () => { const n = licNormId(q); if (n.length !== 10) return; const h = await stuHash(n); const x = Object.values(S).find(y => y.nh === h); if (x) { idMapPut([[h, n]]); setIdm(idMapGet()); setSid(x.sid); setQ(""); } else alert("لم يُعثر على طالب بهذه الهوية"); };
   if (!s) return (
     <div className="ma-card p-4 grid gap-3">
       <b style={{ fontSize: 15 }}>👤 ابحث عن طالب بالاسم أو رقم الهوية</b>
+      <div style={{ background: "#f0fdfa", border: "1px dashed #5eead4", borderRadius: 14, padding: "9px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 12.5, fontWeight: 800, color: "#115e59" }}>
+        <span style={{ flex: "1 1 260px" }}>🪪 الهويات الكاملة المعروفة على هذا الجهاز: {maAr(nKnown)} من {maAr(nLinked)} طالباً مربوطاً<br /><small style={{ color: "#64748b", fontWeight: 700 }}>تُحفظ على هذا الجهاز فقط ولا تُرفع للموقع — تُضاف تلقائياً عند البحث بالهوية أو رفع إشعارات الفترة، أو باستيراد كشف من نور</small></span>
+        <label className="ma-btn pri" style={{ cursor: "pointer" }}>📥 استيراد هويات من نور (Excel)<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={e => { importIds(e.target.files[0]); e.target.value = ""; }} /></label>
+        {imp && <span style={{ flex: "1 1 100%", color: /⚠️/.test(imp) ? "#b45309" : "#15803d" }}>{imp}</span>}</div>
       <div className="flex gap-2 flex-wrap"><input className="ma-inp" style={{ flex: "1 1 240px" }} placeholder="اسم الطالب أو رقم الهوية" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && findById()} />{licNormId(q).length === 10 && <button className="ma-btn pri" onClick={findById}>بحث بالهوية</button>}</div>
-      <div className="grid gap-2">{hits.map(x => <button key={x.sid} className="in-row" style={{ cursor: "pointer", fontFamily: "inherit", textAlign: "right" }} onClick={() => { setSid(x.sid); setQ(""); }}><div className="in-av" style={{ background: IN_LV[x.lvl][2] }}>{x.name[0]}</div><b style={{ flex: 1 }}>{x.name}</b><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maClassName(x.ck)}</span>{inLvChip(x.lvl)}</button>)}</div>
+      <div className="grid gap-2">{hits.map(x => <button key={x.sid} className="in-row" style={{ cursor: "pointer", fontFamily: "inherit", textAlign: "right" }} onClick={() => { setSid(x.sid); setQ(""); }}><div className="in-av" style={{ background: IN_LV[x.lvl][2] }}>{x.name[0]}</div><b style={{ flex: 1 }}>{x.name}</b><span style={{ fontSize: 12, fontWeight: 800, color: x.n4 ? "#0f766e" : "#b45309", background: x.n4 ? "#f0fdfa" : "#fffbeb", borderRadius: 8, padding: "2px 8px", direction: "ltr" }}>{fullId(x) ? `🪪 ${fullId(x)}` : x.n4 ? `🪪 ******${x.n4}` : "غير مربوط بالهوية"}</span><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>{maClassName(x.ck)}</span>{inLvChip(x.lvl)}</button>)}</div>
       {!hits.length && <div className="grid gap-2"><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>أو اختر من الفصول:</div><div className="in-grid">{D.classes.map(c => <details key={c.ck} className="in-cell"><summary style={{ cursor: "pointer" }}>{maClassName(c.ck)} ({maAr(Object.values(S).filter(x => x.ck === c.ck).length)})</summary><div className="grid gap-1 mt-2">{Object.values(S).filter(x => x.ck === c.ck).sort((a, b) => a.name.localeCompare(b.name, "ar")).map(x => <button key={x.sid} onClick={() => setSid(x.sid)} style={{ all: "unset", cursor: "pointer", fontSize: 12, padding: "2px 0" }}>{IN_LV[x.lvl][0]} {x.name}</button>)}</div></details>)}</div></div>}
     </div>
   );
@@ -39094,7 +39108,7 @@ function InStudent({ D, sid, setSid, by }) {
       <div className="ma-card p-4" style={{ borderTop: `5px solid ${lc}` }}>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="in-av" style={{ width: 60, height: 60, borderRadius: 20, fontSize: 26, background: `linear-gradient(135deg,${lc},#0f172a)` }}>{s.name[0]}</div>
-          <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 20, fontWeight: 900 }}>{s.name}</div><div style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>الصف {maClassName(s.ck)}{s.n4 ? ` • الهوية ***${s.n4}` : " • غير مربوط بالهوية"}</div></div>
+          <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 20, fontWeight: 900 }}>{s.name}</div><div style={{ fontSize: 13, fontWeight: 800, color: "#64748b" }}>الصف {maClassName(s.ck)}{fullId(s) ? ` • الهوية ${fullId(s)}` : s.n4 ? ` • الهوية ***${s.n4}` : " • غير مربوط بالهوية"}</div></div>
           <span className="in-fl" style={{ background: lbg, color: lc, fontSize: 14, padding: "7px 14px" }}>{ic} {lt}</span>
           <div className="flex gap-1 flex-wrap"><button className="ma-btn" onClick={() => setSid(null)}>🔍 طالب آخر</button><button className="ma-btn pri" onClick={print}>🖨️ طباعة الملف</button>{B.length > 0 && <button className="ma-btn gold" onClick={cert}>🏅 شهادة تميّز</button>}</div>
         </div>

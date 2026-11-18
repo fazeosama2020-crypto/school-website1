@@ -319,7 +319,7 @@ export function PeriodAdmin({ api, me }) {
     setProg(null); if (!all.length) { setUp({ rep, recs: [] }); toast("⚠️ لم يُعثر على إشعارات طلاب في الملفات"); return; }
     const byId = new Map(); all.forEach(s => byId.set(s.id, s)); const S = [...byId.values()]; const { recs, names } = buildRecs(S);
     const ros = obj(await api.maGet(api.MA_ROSTER)); const RN = {}; Object.entries(ros).forEach(([ck, r]) => (Array.isArray(r && r.students) ? r.students : vals(r && r.students)).forEach(s => { if (s && s.nh) RN[s.nh] = { ck, sid: s.id }; }));
-    for (const r of recs) { r.nh = await api.stuHash(r.id); const m = RN[r.nh]; if (m) { r.sid = m.sid; r.rck = m.ck; } }
+    for (const r of recs) { r.nh = await api.stuHash(r.id); const m = RN[r.nh]; if (m) { r.sid = m.sid; r.rck = m.ck; } } try { api.idSave && api.idSave(recs.map(r => [r.nh, r.id])); } catch {}
     const s0 = S[0]; const year = s0.year || ""; const per = perTitle(s0.per); const tn = /ثاني/.test(nrm(s0.term)) ? 2 : /ثالث/.test(nrm(s0.term)) ? 3 : 1; const pn = /ثاني/.test(per) ? 2 : /ثالث/.test(per) ? 3 : 1;
     const id = `${(year.split("-")[1] || year || "y").replace(/\D/g, "")}_${tn}_${pn}`;
     setUp({ rep, recs, names, meta: { id, year, term: s0.term || "", perT: per, date: s0.date || "", t: `${per} — ${s0.term || ""} ${year}هـ` } }); };
