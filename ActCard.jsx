@@ -84,7 +84,7 @@ export function acPages(c, imgs = [], o = {}) { if (tyOf(c) === "prog") return p
 <tr><td class="ttl" colspan="6">بطاقة تنفيذ مسابقة نشاط طلابي</td></tr>
 <tr><td colspan="4">اسم المدرسة : </td>${td("school", 2)}</tr>
 <tr><td colspan="4">الرقم الوزاري : </td>${td("mno", 2)}</tr>
-<tr><td colspan="2">اسم المنسقة</td>${td("coord", 4)}</tr>
+<tr><td colspan="2">اسم المنسق</td>${td("coord", 4)}</tr>
 <tr class="z"><td colspan="2">المجال</td>${td("field", 4)}</tr>
 <tr><td colspan="2">عدد الحصص للإعداد والتأهيل للمسابقة</td>${td("periods", 4)}</tr>
 <tr class="z"><td colspan="2">الفصل الدراسي</td>${td("term", 4)}</tr>
@@ -227,7 +227,7 @@ function Editor({ api, me, card, imgs0, mgr, onClose, onSave, onPrint, onPdf }) 
     <div className="ed">
       <div style={{ display: "grid", gap: 12 }}>
         <div className="sec"><h4><i>🏫</i>بيانات المدرسة</h4><div className="row"><Fld {...fp("school")} l="اسم المدرسة" /><Fld {...fp("mno")} l="الرقم الوزاري" inputMode="numeric" /></div>
-          <div className="row"><Fld {...fp("coord")} l="اسم المنسقة" /><Fld {...fp("term")} l="الفصل الدراسي" list="ac-terms" /></div></div>
+          <div className="row"><Fld {...fp("coord")} l="اسم المنسق" /><Fld {...fp("term")} l="الفصل الدراسي" list="ac-terms" /></div></div>
         <div className="sec"><h4><i>{domIc(f.field)}</i>{P2 ? "البرنامج" : "المسابقة"}</h4>{P2 && <Fld k="title" v={c.title} on={v => { setC(x => ({ ...x, title: v })); setDirty(true); }} hot={hot === "title"} onF={setHot} l="اسم البرنامج" />}<div className="row"><Fld {...fp("field")} l="المجال" list="ac-doms" ph="ثقافي، علمي، رياضي…" /><Fld {...fp("periods")} l={P2 ? "عدد حصص البرنامج" : "عدد الحصص للإعداد والتأهيل"} inputMode="numeric" /></div>
           <div className="row" style={{ gap: 5 }}>{DOMAINS.slice(0, 9).map(([d, ic]) => <button key={d} type="button" className={`chip${f.field === d ? " on" : ""}`} onClick={() => set("field", d)}>{ic} {d}</button>)}</div>
           <div className="row"><Fld {...fp("grade")} l="الصف" list="ac-grades" /><Fld {...fp("teacher")} l="المعلم/ة المنفذ/ة" /></div></div>
