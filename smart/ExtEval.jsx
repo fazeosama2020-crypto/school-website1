@@ -55,7 +55,7 @@ const SRC = {
   classify: ["🏷️", "تصنيف الطلاب", "studentclassify"], studentperf: ["📈", "متابعة أداء الطلاب", "studentperf"], nafsbooks: ["📚", "مراجع نافس — متابعة الإنجاز", "nafsbooks"], raffle: ["🎲", "سحب الطلاب", "raffle"],
   duty: ["🛡️", "الإشراف اليومي والمناوبة", "duty", "school-duty-rep", "تقرير"],
 };
-const CFG0 = { school: "مدرسة الأمير عبدالمجيد المتوسطة الأولى", principal: "فازع القرني", edu: "الإدارة العامة للتعليم بمحافظة جدة", year: "١٤٤٨هـ", stage: "المرحلة المتوسطة — بنين" };
+const CFG0 = { school: `${((typeof window !== "undefined" && window.__SP) || {}).name || "مدرسة الأمير عبدالمجيد المتوسطة"}`, principal: `${((typeof window !== "undefined" && window.__SP) || {}).principalShort || "فازع القرني"}`, edu: `${((typeof window !== "undefined" && window.__SP) || {}).region || "الإدارة العامة للتعليم بمحافظة جدة"}`, year: "١٤٤٨هـ", stage: "المرحلة المتوسطة — بنين" };
 // النسبة: متحقق = ١، جزئي = ٠٫٥ ، غير متحقق = ٠ (يُستبعد ما لا ينطبق وما لم يُقيَّم)
 function score(I, s) { const st = obj(s.st); let a = 0, n = 0, c = { y: 0, p: 0, n: 0, u: 0 }; I.e.forEach((_, i) => { const v = st[i]; if (v === "y") { a += 1; n++; c.y++; } else if (v === "p") { a += .5; n++; c.p++; } else if (v === "n") { n++; c.n++; } else c.u++; }); return { pct: n ? Math.round(a / n * 100) : null, c, done: !c.u }; }
 const lvl = p => p == null ? ["لم يُقيَّم", "#94a3b8"] : p >= 90 ? ["متميز", "#15803d"] : p >= 75 ? ["متقدم", "#0f766e"] : p >= 50 ? ["منطلق", "#b45309"] : ["بحاجة لدعم", "#b91c1c"];
