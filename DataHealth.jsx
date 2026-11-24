@@ -13,11 +13,14 @@ const nrm = s => String(s || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, 
 const ixKey = sid => String(sid).replace(/[.#$[\]/]/g, "");
 const pad = n => String(n).padStart(2, "0");
 const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const daysAgo = ts => ts ? Math.floor((Date.now() - ts) / 864e5) : null;
+// عدد أيام الدراسة منذ تاريخ (تُستثنى الجمعة والسبت والإجازات الرسمية وإجازات المدرسة عبر maOff)
+let _off = null;
+const daysAgo = ts => { if (!ts) return null; const t0 = new Date(ts); t0.setHours(0, 0, 0, 0); const now = new Date(); now.setHours(0, 0, 0, 0); let n = 0;
+  for (let d = new Date(t0.getTime() + 864e5), i = 0; d <= now && i < 400; d = new Date(d.getTime() + 864e5), i++) { if (!_off || !_off(dkey(d))) n++; } return n; };
 const dTs = k => { const [y, m, d] = String(k).split("-").map(Number); return y ? new Date(y, m - 1, d, 12).getTime() : 0; };
 const SEV = { h: ["مهم", "#b91c1c", "#fee2e2", 7], m: ["متوسط", "#b45309", "#fef3c7", 3.5], l: ["تنبيه", "#2563eb", "#dbeafe", 1.2], ok: ["سليم", "#15803d", "#dcfce7", 0] };
 
-async function scan(api) {
+async function scan(api) { _off = api.maOff || null;
   const T = new Date(); const t = dkey(T); const f = dkey(new Date(Date.now() - 16 * 864e5));
   const [ros, meta, att, late, bn, gr, rdR, nqR, pre, qr, staff, ign, ann, circ] = await Promise.all([
     api.maGet(api.MA_ROSTER), api.maGet(api.MA_META), api.fbRange(api.MA_ATT, f, t).catch(() => ({})), api.fbRange(api.MA_LATE, f, t).catch(() => ({})), api.fbRange(api.BN_NODE, dkey(new Date(Date.now() - 60 * 864e5)), t).catch(() => ({})),
@@ -71,7 +74,7 @@ async function scan(api) {
   let lastAnn = 0; arrv(ann).forEach(a => { const x = +(a.at || a.ts || a.createdAt || a.date && Date.parse(a.date) || 0); if (x > lastAnn) lastAnn = x; });
   let lastCr = 0; arrv(circ).forEach(a => { const x = +(a.at || a.ts || 0); if (x > lastCr) lastCr = x; });
   const st = [["att", "رصد الغياب", lastAtt, 3, "morningattend"], ["late", "التأخر الصباحي", lastLate, 7, "morninglate"], ["bn", "الملاحظات السلوكية", lastBn, 14, "behavior"], ["g", "رصد الدرجات", lastG, 30, "gradebook"], ["rd", "اختبار القراءة الجهرية", lastRd, 45, "readlab"], ["nq", "اختبارات نافس التدريبية", lastNq, 30, "nafes"], ["ann", "الإعلانات", lastAnn, 21, "announcements"], ["cr", "التعاميم", lastCr, 21, "circulars"]];
-  const stale = st.map(([k, l, ts, lim, go]) => { const d = daysAgo(ts); return { k, t: l, sub: ts ? (d === 0 ? "حُدّث اليوم" : `آخر تحديث قبل ${ar(d)} يوم`) : "لا توجد بيانات بعد", d, lim, go, bad: d == null || d > lim }; });
+  const stale = st.map(([k, l, ts, lim, go]) => { const d = daysAgo(ts); return { k, t: l, sub: ts ? (d === 0 ? "حُدّث اليوم" : `آخر تحديث قبل ${ar(d)} يوم دراسي`) : "لا توجد بيانات بعد", d, lim, go, bad: d == null || d > lim }; });
   C.push({ id: "stale", g: "sec", sev: stale.filter(x => x.bad && (x.k === "att" || x.k === "g")).length ? "m" : stale.some(x => x.bad) ? "l" : "ok", title: "أقسام توقف تحديثها", why: "قسم لم يُحدَّث منذ مدة يعني أن تقاريره ومؤشراته لا تعكس الواقع الحالي.", items: stale.filter(x => x.bad), all: stale });
   // ٦) الموظفون
   const stf = arrv(staff); const badS = stf.filter(x => !x.idHash || !x.role).map(x => ({ k: x.id, t: x.name || "(بلا اسم)", sub: !x.idHash ? "بلا رقم هوية — لا يستطيع الدخول" : "بلا دور محدد" }));

@@ -20,7 +20,7 @@ const TreasureAdmin = React.lazy(() => import("./treasure/TreasureAdmin.jsx"));
 const NafsBooksStudent = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksStudent })));
 const NafsBooksTeacher = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksTeacher })));
 const NafsBooksAdmin = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksAdmin })));
-const trApi = () => ({ logo: SCHOOL_LOGO, push: o => pushSend(o), PushBell, maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src), TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n) });
+const trApi = () => ({ logo: SCHOOL_LOGO, maOff, push: o => pushSend(o), PushBell, maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src), TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n) });
 const TR_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#78350f" }}>🧭 جارٍ تحميل رحلة الكنز…</div>;
 const SmartLessonTeacher = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonTeacher })));
 const SmartLessonAdmin = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonAdmin })));
