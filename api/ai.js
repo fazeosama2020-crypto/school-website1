@@ -10,6 +10,8 @@ const SYSTEM = "أنت خبير مناهج وطرق تدريس في المملك
 
 // خطة التحسين المدرسي (kind: "ip"): تعليمات مستقلة وعدّاد يومي مستقل (school-sl-usei) حتى لا تُنقص تحليلات المعلمين
 const SYSTEM_IP = "أنت خبير في التخطيط المدرسي وتحسين الأداء وفق إطار التقويم المدرسي لهيئة تقويم التعليم والتدريب في المملكة العربية السعودية، وتعرف استمارتي وزارة التعليم: (1) بناء خطة التحسين و(2) تنفيذ خطة التحسين في مجالات الممارسات الإشرافية، واختبارات نافس. تكتب خططاً عملية واقعية قابلة للتنفيذ والقياس في مدرسة حكومية، بعربية فصيحة إجرائية موجزة، وتلتزم بالبيانات المعطاة دون اختلاق أرقام، وتعيد الناتج كاملاً وفق القالب المطلوب.";
+// المبادرات واللقاءات الطلابية (kind: "ini"): صياغة المبادرة وابتكار شعارها وجدول أعمال اللقاءات — عدّاد يومي مستقل (school-sl-usea)
+const SYSTEM_INI = "أنت خبير في النشاط الطلابي والتوجيه والإرشاد وتصميم الهويات البصرية للمبادرات المدرسية في المملكة العربية السعودية. تصوغ مبادرات ولقاءات مدرسية عملية قابلة للتنفيذ والقياس، مرتبطة بقيم المدرسة ورؤية المملكة ٢٠٣٠ ومجالات التقويم المدرسي، بعربية فصيحة موجزة جذابة، دون اختلاق أرقام أو أسماء أشخاص. وعند تصميم الشعار ترسم أيقونة SVG بسيطة مسطّحة احترافية معبّرة عن فكرة المبادرة.";
 const fbGet = async p => { try { const r = await fetch(`${FB}/${p}.json`); return await r.json(); } catch { return null; } };
 const fbPatch = async o => { try { await fetch(`${FB}.json`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }); } catch {} };
 const vals = v => (v && typeof v === "object" ? Object.values(v) : []);
@@ -41,9 +43,9 @@ module.exports = async function handler(req, res) {
     // ② الحدود
     // الرسوم التوضيحية لها عدّاد يومي مستقل حتى لا تُنقص تحليلات المعلم
     const isIP = b.kind === "ip";
-    const isNB = b.kind === "nb"; // التغذية الراجعة لأسئلة «مراجع نافس» — عدّاد مستقل
-    const UN = isIP ? "school-sl-usei" : isNB ? "school-sl-usen" : b.kind === "vis" ? "school-sl-usev" : b.kind === "b" ? "school-sl-useb" : "school-sl-use";
-    const lim = isIP ? (+C.ipDaily > 0 ? +C.ipDaily : 40) : isNB ? (+C.nbDaily > 0 ? +C.nbDaily : 150) : daily;
+    const isNB = b.kind === "nb"; const isINI = b.kind === "ini"; // التغذية الراجعة لأسئلة «مراجع نافس» — عدّاد مستقل
+    const UN = isIP ? "school-sl-usei" : isNB ? "school-sl-usen" : isINI ? "school-sl-usea" : b.kind === "vis" ? "school-sl-usev" : b.kind === "b" ? "school-sl-useb" : "school-sl-use";
+    const lim = isIP ? (+C.ipDaily > 0 ? +C.ipDaily : 40) : isNB ? (+C.nbDaily > 0 ? +C.nbDaily : 150) : isINI ? (+C.iniDaily > 0 ? +C.iniDaily : 40) : daily;
     const [used, mUsed] = await Promise.all([fbGet(`${UN}/${day}/${hk}`), fbGet(`school-sl-usem/${mon}`)]);
     if ((+used || 0) >= lim) return res.status(200).json({ ok: false, code: "daily", msg: isNB ? `بلغت حد تجهيز التغذية الراجعة اليومي (${lim} صفحة) — يتجدد غدًا` : isIP ? `بلغت حد توليد خطة التحسين اليومي (${lim}) — يتجدد غدًا` : `استنفدت حدّك اليومي (${daily} تحليلات) — يتجدد غدًا. يمكنك الاستفادة من بنك الدروس دون حدود.` });
     if ((+mUsed || 0) >= monthly) return res.status(200).json({ ok: false, code: "monthly", msg: "بلغت المدرسة السقف الشهري للتحليلات — راجع الإدارة" });
@@ -58,7 +60,7 @@ module.exports = async function handler(req, res) {
     // ④ الاتصال مع البث التدريجي للنص (يرى المعلم التقدّم ولا تنتهي مهلة الخادم)
     let r = null, model = "", err = "";
     for (const m of MODELS) {
-      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: Math.min(+b.max || 7000, 9000), system: isIP ? SYSTEM_IP : SYSTEM, stream: true, messages: [{ role: "user", content }], ...(tool ? { tools: [tool], tool_choice: { type: "tool", name: tool.name } } : {}) }) });
+      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: Math.min(+b.max || 7000, 9000), system: isIP ? SYSTEM_IP : isINI ? SYSTEM_INI : SYSTEM, stream: true, messages: [{ role: "user", content }], ...(tool ? { tools: [tool], tool_choice: { type: "tool", name: tool.name } } : {}) }) });
       if (r.ok) { model = m; break; }
       err = await r.text(); if (!/not_found|model/i.test(err)) break;
     }
