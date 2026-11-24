@@ -124,7 +124,7 @@ function Login({ api, cfg, onEnter, onDemo, onBack }) {
       <small className="tr-school">{TR_SCHOOL}</small>
       <h1 className="tr-disp tr-title">رحلة الكنز</h1>
       <div className="tr-sub">طريقي إلى نافس • الصف الثالث المتوسط</div>
-      <p className="tr-lead">من <b>مدرسة الأمير عبدالمجيد</b> ننطلق إلى <b>جزيرة كنز نافس</b> 🏝️<br />٢٥ مرحلة • ٥ عوالم • القراءة والرياضيات والعلوم<br />اجمع المفاتيح وافتح الصناديق حتى تصل إلى الكنز الكبير 🏆</p>
+      <p className="tr-lead">من <b>{((typeof window !== "undefined" && window.__SP) || {}).short || "مدرسة الأمير عبدالمجيد"}</b> ننطلق إلى <b>جزيرة كنز نافس</b> 🏝️<br />٢٥ مرحلة • ٥ عوالم • القراءة والرياضيات والعلوم<br />اجمع المفاتيح وافتح الصناديق حتى تصل إلى الكنز الكبير 🏆</p>
       <label className="tr-lbl">رقم الهوية (السجل المدني)</label>
       <input className="tr-inp" inputMode="numeric" dir="ltr" maxLength={14} value={id} placeholder="1xxxxxxxxx" onChange={e => { setId(e.target.value); setErr(""); }} onKeyDown={e => e.key === "Enter" && go()} autoFocus />
       {err && <div className="tr-err">{err}</div>}
@@ -153,9 +153,9 @@ function MapView({ me, prog, avail, demo, loading, onPlay, onLogout, onBack, mut
       <div className="tr-hud-act"><button onClick={onIntro} title="قصة الرحلة">📜</button><button onClick={toggleMute} title="الصوت">{mute ? "🔇" : "🔊"}</button><button onClick={onLogout} title="خروج">🚪</button></div>
     </header>
     {demo && <div className="tr-demo-bar">👨‍🏫 <b>وضع الشرح:</b> جميع المراحل مفتوحة • داخل كل سؤال لوحة تُظهر التلميحة والحل والشرح والسؤال التوأم • لا يُحفظ شيء ولا يظهر في متابعة الطلاب</div>}
-    <div className="tr-map-title"><h1 className="tr-disp">رحلة الكنز</h1><p>من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس — ٢١ سؤالاً في كل مرحلة، تحتاج ١٤ لتعبر</p></div>
+    <div className="tr-map-title"><h1 className="tr-disp">رحلة الكنز</h1><p>من {((typeof window !== "undefined" && window.__SP) || {}).short || "مدرسة الأمير عبدالمجيد"} إلى جزيرة كنز نافس — ٢١ سؤالاً في كل مرحلة، تحتاج ١٤ لتعبر</p></div>
     <HuntCard done={+prog.done || 0} />
-    <div className="tr-start-pt"><span className="tr-school-ic">🏫</span><div><small>نقطة الانطلاق</small><b className="tr-disp">مدرسة الأمير عبدالمجيد</b></div><span className="tr-start-flag">🚩</span></div>
+    <div className="tr-start-pt"><span className="tr-school-ic">🏫</span><div><small>نقطة الانطلاق</small><b className="tr-disp">{((typeof window !== "undefined" && window.__SP) || {}).short || "مدرسة الأمير عبدالمجيد"}</b></div><span className="tr-start-flag">🚩</span></div>
     {WORLDS.map(w => {
       const done = Array.from({ length: 5 }, (_, i) => w.from + i).every(n => isPassed(obj(prog.best[n])));
       const H = 5 * 118 + 60;
@@ -436,7 +436,7 @@ function JourneyMap() {
     {JSTOPS.map(([e, x, y]) => <text key={e} x={x - 14} y={y + 9} fontSize="26">{e}</text>)}
     <text x="284" y="412" fontSize="28">🏫</text>
     <g fontSize="11.5" fontWeight="800" fill="#7c2d12" textAnchor="middle">
-      <text x="296" y="372">مدرسة الأمير عبدالمجيد</text>{JSTOPS.map(([e, x, y, l]) => <text key={l} x={x} y={y + 26}>{l}</text>)}
+      <text x="296" y="372">{((typeof window !== "undefined" && window.__SP) || {}).short || "مدرسة الأمير عبدالمجيد"}</text>{JSTOPS.map(([e, x, y, l]) => <text key={l} x={x} y={y + 26}>{l}</text>)}
     </g>
     <text x="80" y="100" fontSize="13" fontWeight="900" fill="#1e3a8a" textAnchor="middle">جزيرة كنز نافس</text>
     <g><text fontSize="24" x="-12" y="8">🧭</text><animateMotion dur="8s" repeatCount="indefinite" rotate="0" keyPoints="1;0" keyTimes="0;1" calcMode="linear" path={JPATH} /></g>
@@ -474,7 +474,7 @@ function printCert(me, prog) {
   const w = window.open("", "_blank"); if (!w) return;
   const stars = Object.values(obj(prog.stars)).reduce((a, b) => a + (+b || 0), 0);
   const d = new Date().toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long", year: "numeric" });
-  w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>شهادة بطل نافس</title><link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@500;800&display=swap" rel="stylesheet"><style>@page{size:A4 landscape;margin:0}body{margin:0;font-family:Tajawal,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.c{width:297mm;height:210mm;box-sizing:border-box;padding:14mm;background:radial-gradient(circle at 50% 0,#fff7d6,#fde68a 70%,#f59e0b);display:flex}.in{flex:1;border:6px double #92400e;border-radius:18px;background:#fffdf5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10mm;position:relative}.e{font-size:64px}.t{font-family:Lalezar,sans-serif;font-size:58px;color:#92400e;margin:4px 0}.s{font-size:20px;color:#57534e;font-weight:800}.n{font-family:Lalezar,sans-serif;font-size:50px;color:#1e3a8a;margin:10px 0;border-bottom:3px dashed #d97706;padding:0 30px}.p{font-size:20px;line-height:2;max-width:820px;color:#292524;font-weight:500}.b{display:flex;gap:18px;font-size:40px;margin:10px 0}.f{display:flex;justify-content:space-between;width:100%;margin-top:18px;font-weight:800;color:#57534e;font-size:16px}</style></head><body><div class="c"><div class="in"><div class="e">👑</div><div class="t">شهادة بطل نافس</div><div class="s">${TR_SCHOOL} — رحلة الكنز: من مدرسة الأمير عبدالمجيد إلى جزيرة كنز نافس</div><div class="n">${String(me.name || "").replace(/[<>&]/g, "")}</div><div class="p">أتمّ بنجاح مراحل رحلة الكنز الخمس والعشرين في القراءة والرياضيات والعلوم، وجمع ${ar(stars)} نجمة ⭐، متحلّياً بمهارات التفكير العليا والإصرار والعزيمة. نبارك له هذا الإنجاز، ونتمنى له التفوق في اختبارات نافس.</div><div class="b">🥉 🥈 🥇 💎 👑</div><div class="f"><span>التاريخ: ${d}</span><span>قائد المدرسة</span></div></div></div><script>setTimeout(()=>print(),800)<\/script></body></html>`);
+  w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>شهادة بطل نافس</title><link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@500;800&display=swap" rel="stylesheet"><style>@page{size:A4 landscape;margin:0}body{margin:0;font-family:Tajawal,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.c{width:297mm;height:210mm;box-sizing:border-box;padding:14mm;background:radial-gradient(circle at 50% 0,#fff7d6,#fde68a 70%,#f59e0b);display:flex}.in{flex:1;border:6px double #92400e;border-radius:18px;background:#fffdf5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10mm;position:relative}.e{font-size:64px}.t{font-family:Lalezar,sans-serif;font-size:58px;color:#92400e;margin:4px 0}.s{font-size:20px;color:#57534e;font-weight:800}.n{font-family:Lalezar,sans-serif;font-size:50px;color:#1e3a8a;margin:10px 0;border-bottom:3px dashed #d97706;padding:0 30px}.p{font-size:20px;line-height:2;max-width:820px;color:#292524;font-weight:500}.b{display:flex;gap:18px;font-size:40px;margin:10px 0}.f{display:flex;justify-content:space-between;width:100%;margin-top:18px;font-weight:800;color:#57534e;font-size:16px}</style></head><body><div class="c"><div class="in"><div class="e">👑</div><div class="t">شهادة بطل نافس</div><div class="s">${TR_SCHOOL} — رحلة الكنز: من ${((typeof window !== "undefined" && window.__SP) || {}).short || "مدرسة الأمير عبدالمجيد"} إلى جزيرة كنز نافس</div><div class="n">${String(me.name || "").replace(/[<>&]/g, "")}</div><div class="p">أتمّ بنجاح مراحل رحلة الكنز الخمس والعشرين في القراءة والرياضيات والعلوم، وجمع ${ar(stars)} نجمة ⭐، متحلّياً بمهارات التفكير العليا والإصرار والعزيمة. نبارك له هذا الإنجاز، ونتمنى له التفوق في اختبارات نافس.</div><div class="b">🥉 🥈 🥇 💎 👑</div><div class="f"><span>التاريخ: ${d}</span><span>قائد المدرسة</span></div></div></div><script>setTimeout(()=>print(),800)<\/script></body></html>`);
   w.document.close();
 }
 
@@ -500,7 +500,7 @@ function Journey({ name, onClose }) {
     <div key="0" className="tr-j-slide">
       <JourneyMap />
       <h2 className="tr-disp">{first ? `يا ${first}… ` : ""}من هنا تبدأ الرحلة!</h2>
-      <p>في مكتبة <b>مدرسة الأمير عبدالمجيد</b> عُثر على خريطة قديمة تقود إلى <b>جزيرة كنز نافس</b> 🏝️. الطريق يعبر خمسة عوالم مليئة بالألغاز، ولا يصل إلى الكنز إلا مستكشف يقرأ بعمق، ويحسب بدقة، ويفكّر كالعلماء.</p>
+      <p>في مكتبة <b>{((typeof window !== "undefined" && window.__SP) || {}).short || "مدرسة الأمير عبدالمجيد"}</b> عُثر على خريطة قديمة تقود إلى <b>جزيرة كنز نافس</b> 🏝️. الطريق يعبر خمسة عوالم مليئة بالألغاز، ولا يصل إلى الكنز إلا مستكشف يقرأ بعمق، ويحسب بدقة، ويفكّر كالعلماء.</p>
     </div>,
     <div key="1" className="tr-j-slide">
       <h2 className="tr-disp">كيف تعبر المراحل؟</h2>

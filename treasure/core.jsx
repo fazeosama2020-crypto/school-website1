@@ -5,6 +5,7 @@
 //   school-tr-prog/{sid}     = { sid, name, ck, n4, unlocked, stars:{n:1..3}, best:{n:{sc,r,m,s,sk,tries,ts}}, start, last }
 // ══════════════════════════════════════════════════════════
 import React from "react";
+import { Mth } from "../mathAr.jsx";
 
 export const TR_CFG = "school-tr-cfg";
 export const TR_PROG = "school-tr-prog";
@@ -13,7 +14,7 @@ export const TR_PASS = 10;           // حد العبور القديم (من ١�
 // حد العبور = ثلثا أسئلة المرحلة (١٤ من ٢١ • ١٠ من ١٥)
 export const passOf = of => Math.ceil((+of || 15) * 2 / 3);
 export const isPassed = b => !!b && (+b.sc || 0) >= passOf(b.of || 15);
-export const TR_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة";
+export const TR_SCHOOL = `${((typeof window !== "undefined" && window.__SP) || {}).name || "مدرسة الأمير عبدالمجيد المتوسطة"}`;
 
 // العوالم الخمسة — كل عالم ٥ مراحل
 export const WORLDS = [
@@ -96,15 +97,14 @@ const arSvg = b => String(b).replace(/>([^<>]+)</g, (m, t) => ">" + ar(t) + "<")
 // ── نص منسّق: {{أ|ب}} كسر • [[كلمة]] تمييز • **غامق** • سطر جديد \n
 export function Rich({ t, style }) {
   const parts = String(t ?? "").split(/(\{\{[^}]+\}\}|\[\[[^\]]+\]\]|\*\*[^*]+\*\*|\n)/g);
+  // الأرقام العربية والأس يسار الأساس والجذر والكسر بصيغة المنهج — عبر ../mathAr.jsx (للعرض فقط)
   return <span style={style}>{parts.map((p, i) => {
     if (!p) return null;
     if (p === "\n") return <br key={i} />;
-    if (p.startsWith("{{")) { const [a, b] = p.slice(2, -2).split("|"); return <span key={i} className="tr-frac"><span>{ar(a)}</span><span>{ar(b)}</span></span>; }
-    if (p.startsWith("[[")) return <mark key={i} className="tr-mark">{ar(p.slice(2, -2))}</mark>;
-    if (p.startsWith("**")) return <b key={i}>{ar(p.slice(2, -2))}</b>;
-    // الجذور (√50 ، √(36 + 64)) تُعزل باتجاه يسار←يمين حتى لا ينقلب ترتيبها داخل النص العربي
-    if (p.includes("√")) return <React.Fragment key={i}>{p.split(/(√(?:\([^)]*\)|[\d.]+))/g).map((x, j) => x.startsWith("√") ? <span key={j} dir="ltr" style={{ unicodeBidi: "isolate", whiteSpace: "nowrap" }}>{ar(x)}</span> : ar(x))}</React.Fragment>;
-    return <React.Fragment key={i}>{ar(p)}</React.Fragment>;
+    if (p.startsWith("{{")) { const [a, b] = p.slice(2, -2).split("|"); return <span key={i} className="tr-frac"><span><Mth t={a} /></span><span><Mth t={b} /></span></span>; }
+    if (p.startsWith("[[")) return <mark key={i} className="tr-mark"><Mth t={p.slice(2, -2)} /></mark>;
+    if (p.startsWith("**")) return <b key={i}><Mth t={p.slice(2, -2)} /></b>;
+    return <Mth key={i} t={p} />;
   })}</span>;
 }
 
