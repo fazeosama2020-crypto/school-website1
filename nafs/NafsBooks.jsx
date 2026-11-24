@@ -2115,6 +2115,9 @@ const QZ_CSS = `
 //   school-nafsbook-ptest/{id} = { t, at, by, books, cks, weeks:{book:[w]}, items:{book:[[p,i]]}, min, n, src, mode }
 // ════════════════════════════════════════════════════════════════════
 const NB_PT = "school-nafsbook-ptest", NQ_RESN = "school-nq-res";
+// أيام الدراسة منذ تاريخ (لا تُحسب الإجازات ولا نهاية الأسبوع) — off: maOff من الموقع
+const schDays = (ts, off) => { const dk = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; const t0 = new Date(ts); t0.setHours(0, 0, 0, 0); const now = new Date(); now.setHours(0, 0, 0, 0); let n = 0;
+  for (let d = new Date(t0.getTime() + 864e5), i = 0; d <= now && i < 400; d = new Date(d.getTime() + 864e5), i++) { const w = d.getDay(); if (off ? !off(dk(d)) : (w !== 5 && w !== 6)) n++; } return n; };
 const cRnd = seed => { let s = (seed >>> 0) || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
 const cShuf = (a, r) => { const x = [...a]; for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; };
 const wkList = W => { const a = [...W].sort((x, y) => x - y); if (!a.length) return "—"; const out = []; let s = a[0], p = a[0]; for (let i = 1; i <= a.length; i++) { if (a[i] === p + 1) { p = a[i]; continue; } out.push(s === p ? ar(s + 1) : `${ar(s + 1)}–${ar(p + 1)}`); s = p = a[i]; } return out.join("، "); };
@@ -2213,9 +2216,9 @@ function CcLow({ api, D, M, X, cks, books, onStu }) {
     idle: S.filter(x => x.entered && !x.solved),
     low: S.filter(x => x.v != null && x.v < thr).sort((a, b) => a.v - b.v),
     miss: S.filter(x => x.tMiss || x.nMiss).sort((a, b) => (b.tMiss + b.nMiss) - (a.tMiss + a.nMiss)),
-    stale: S.filter(x => x.entered && x.lastAt && now - x.lastAt > 10 * 864e5).sort((a, b) => a.lastAt - b.lastAt),
+    stale: S.filter(x => x.entered && x.lastAt && schDays(x.lastAt, api.maOff) > 10).sort((a, b) => a.lastAt - b.lastAt),
   };
-  const CARDS = [["low", "📉", `الأقل أداءً (أقل من ${ar(thr)}٪)`, "#dc2626"], ["none", "🚫", "لم يدخلوا المراجع ولا النماذج", "#7f1d1d"], ["idle", "💤", "دخلوا ولم يحلوا شيئًا", "#b45309"], ["miss", "📝", "فاتهم اختبار أسبوع أو نموذج", "#7c3aed"], ["stale", "⏰", "انقطعوا أكثر من ١٠ أيام", "#0f766e"]];
+  const CARDS = [["low", "📉", `الأقل أداءً (أقل من ${ar(thr)}٪)`, "#dc2626"], ["none", "🚫", "لم يدخلوا المراجع ولا النماذج", "#7f1d1d"], ["idle", "💤", "دخلوا ولم يحلوا شيئًا", "#b45309"], ["miss", "📝", "فاتهم اختبار أسبوع أو نموذج", "#7c3aed"], ["stale", "⏰", "انقطعوا أكثر من ١٠ أيام دراسية", "#0f766e"]];
   const L = G[f].filter(x => !q || x.s.name.includes(q.trim()));
   const lvl = v => qLvl(v);
   const cell = (x, b) => { const P = x.per[b]; const vv = [P.qv, P.nv].filter(v => v != null); const v = vv.length ? Math.round(vv.reduce((a, y) => a + y, 0) / vv.length) : null;
