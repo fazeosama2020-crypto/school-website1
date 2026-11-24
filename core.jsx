@@ -10,7 +10,7 @@ export const TR_CFG = "school-tr-cfg";
 export const TR_PROG = "school-tr-prog";
 export const TR_TOTAL = 20;          // عدد مراحل الرحلة
 export const TR_PASS = 10;           // الحد الأدنى لفتح المرحلة التالية (من ١٥)
-export const TR_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة";
+export const TR_SCHOOL = `${((typeof window !== "undefined" && window.__SP) || {}).name || "مدرسة الأمير عبدالمجيد المتوسطة"}`;
 
 // العوالم الأربعة — كل عالم ٥ مراحل
 export const WORLDS = [

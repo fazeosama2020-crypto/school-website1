@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { usePrefs, Customize, FavBar, Tour } from "./Personal.jsx";
+import { Mth, mthHtml, mthScan, MX_FLAG } from "./mathAr.jsx";
 import hfxImg_gh from "./img/forms/gh.png";
 import hfxImg_ta from "./img/forms/ta.png";
 import hfxImg_out from "./img/forms/out.png";
@@ -18,7 +20,7 @@ const TreasureAdmin = React.lazy(() => import("./treasure/TreasureAdmin.jsx"));
 const NafsBooksStudent = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksStudent })));
 const NafsBooksTeacher = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksTeacher })));
 const NafsBooksAdmin = React.lazy(() => import("./nafs/NafsBooks.jsx").then(m => ({ default: m.NafsBooksAdmin })));
-const trApi = () => ({ push: o => pushSend(o), PushBell, maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src), TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n) });
+const trApi = () => ({ logo: SCHOOL_LOGO, push: o => pushSend(o), PushBell, maGet, maPut, stuHash, MA_ROSTER, maClassName, logLogin: (st, src) => stuLoginLog(st, src), TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n) });
 const TR_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#78350f" }}>🧭 جارٍ تحميل رحلة الكنز…</div>;
 const SmartLessonTeacher = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonTeacher })));
 const SmartLessonAdmin = React.lazy(() => import("./smart/SmartLesson.jsx").then(m => ({ default: m.SmartLessonAdmin })));
@@ -32,18 +34,28 @@ const OpPlan = React.lazy(() => import("./OpPlan.jsx").then(m => ({ default: m.O
 const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ default: m.HealthPlan })));
 const AbsAction = React.lazy(() => import("./AbsAction.jsx").then(m => ({ default: m.AbsAction })));
 const Command = React.lazy(() => import("./Command.jsx").then(m => ({ default: m.Command })));
+const DataHealth = React.lazy(() => import("./DataHealth.jsx").then(m => ({ default: m.DataHealth })));
+// 🌿 الحياة المدرسية: المبادرات • اللقاءات الطلابية • زيارات الطلاب — وحدات منفصلة تُحمَّل عند فتحها فقط
+const LfInitiatives = React.lazy(() => import("./life/Initiatives.jsx").then(m => ({ default: m.Initiatives })));
+const LfMeetings = React.lazy(() => import("./life/Meetings.jsx").then(m => ({ default: m.Meetings })));
+const LfZyStaff = React.lazy(() => import("./life/StuVisits.jsx").then(m => ({ default: m.ZyStaff })));
+const LfZyMine = React.lazy(() => import("./life/StuVisits.jsx").then(m => ({ default: m.MyVisits })));
+const LfZyTeacher = React.lazy(() => import("./life/StuVisits.jsx").then(m => ({ default: m.TeacherOpinions })));
+const LfZyStudent = React.lazy(() => import("./life/StuVisits.jsx").then(m => ({ default: m.StudentVisits })));
+const LF_WAIT = <div dir="rtl" style={{ padding: 40, textAlign: "center", fontWeight: 800, color: "#475569" }}>⏳ جارٍ التحميل…</div>;
+const SchoolSetup = React.lazy(() => import("./SchoolSetup.jsx").then(m => ({ default: m.SchoolSetup })));
 const AbsRef = React.lazy(() => import("./AbsRef.jsx").then(m => ({ default: m.AbsRef })));
 const QuranTeacher = React.lazy(() => import("./Quran.jsx").then(m => ({ default: m.QuranTeacher })));
 const QuranAdmin = React.lazy(() => import("./Quran.jsx").then(m => ({ default: m.QuranAdmin })));
 const QuranStudent = React.lazy(() => import("./Quran.jsx").then(m => ({ default: m.QuranStudent })));
-const qrnApi = () => ({ maGet, maPut, fbPatch, fbRange, MA_ROSTER, MA_META, classes: maClasses, className: maClassName, TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), print: printWindow, moeLogo: MOE_LOGO, school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة", region: "الإدارة العامة للتعليم بمحافظة جدة", principal: "فازع عبدالله حسن القرني" });
+const qrnApi = () => ({ maGet, maPut, fbPatch, fbRange, MA_ROSTER, MA_META, classes: maClasses, className: maClassName, TT: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), print: printWindow, moeLogo: MOE_LOGO, school: `${SP.name}`, region: `${SP.region}`, principal: `${SP.principal}` });
 const ActCards = React.lazy(() => import("./ActCard.jsx").then(m => ({ default: m.ActCards })));
-const actApi = () => ({ maGet, maPut, fbPatch, print: printWindow, SigPad: HfxSigPad, school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة", principal: "فازع عبدالله حسن القرني", mgrSig: async () => { try { return (await vsLoad()).mgr.sig || ""; } catch { return ""; } } });
+const actApi = () => ({ maGet, maPut, fbPatch, print: printWindow, SigPad: HfxSigPad, school: `${SP.name}`, principal: `${SP.principal}`, mgrSig: async () => { try { return (await vsLoad()).mgr.sig || ""; } catch { return ""; } } });
 const PeriodAdmin = React.lazy(() => import("./Period.jsx").then(m => ({ default: m.PeriodAdmin })));
 const PeriodStudent = React.lazy(() => import("./Period.jsx").then(m => ({ default: m.PeriodStudent })));
 // تقرير الطلاب الغائبين والإحالة للموجه الطلابي — يُمرَّر لملف AbsRef.jsx
 const absRefApi = () => ({ SigPad: HfxSigPad, gov: "مكة المكرمة/جدة", stage: "المتوسطة", mgrSig: async () => { try { return (await vsLoad()).mgr.sig || ""; } catch { return ""; } }, maGet, maPut, fbPatch, fbRange, MA_ROSTER, MA_META, MA_ATT, ABSX, PT_PREP, classes: maClasses, className: maClassName, off: maOff, print: printWindow, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO,
-  school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة", region: "الإدارة العامة للتعليم بمحافظة جدة", principal: "فازع عبدالله حسن القرني",
+  school: `${SP.name}`, region: `${SP.region}`, principal: `${SP.principal}`,
   push: async o => { try { if (o && o.to && o.to.roles && o.to.roles.includes("counselor")) { const st = ptVals(await maGet(PT_STAFF)).filter(x => x && x.role === "counselor" && x.name).map(x => x.name); if (!st.length) return null; o = { ...o, to: { names: st } }; } return await pushSend(o); } catch { return null; } },
   // حفظ غياب فصل بنفس سجل «كشوف الحضور» (مع سجل التعديل وفهرس الطالب)
   saveAbs: async (dk, ck, absList, total, by, reason) => { const prev = await maGet(`${MA_ATT}/${dk}/${ck}`); const now = new Date(); const D = maDate(dk); const tm = now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" });
@@ -51,9 +63,9 @@ const absRefApi = () => ({ SigPad: HfxSigPad, gov: "مكة المكرمة/جدة
       : { ck, date: dk, dayName: maDay(D), hijri: maHijri(D), total, absent: absList, teacher: by, byId: "", savedAt: now.getTime(), time: tm, src: "absref" };
     const ok = await maPut(`${MA_ATT}/${dk}/${ck}`, rec); if (ok) sidxAbs(dk, ck, absList.map(a => a.id), prev ? maArr(prev.absent).map(a => a && a.id) : []).catch(() => {}); return ok; } });
 // تحليل نتائج الفترة (إشعارات نور PDF) — يُمرَّر لملف Period.jsx
-const perApi = () => ({ idSave: pairs => idMapPut(pairs), maGet, maPut, fbPatch, stuHash, MA_ROSTER, pdfLib: nqPdfLib, print: printWindow, logo: SCHOOL_LOGO, school: "مدرسة الأمير عبدالمجيد الأولى المتوسطة (بنين)", region: "الإدارة العامة للتعليم بمحافظة جدة", principal: "فازع عبدالله حسن القرني" });
+const perApi = () => ({ idSave: pairs => idMapPut(pairs), maGet, maPut, fbPatch, stuHash, MA_ROSTER, pdfLib: nqPdfLib, print: printWindow, logo: SCHOOL_LOGO, school: `${SP.name} (بنين)`, region: `${SP.region}`, principal: `${SP.principal}` });
 // حصر غياب كل طالب في فترة (أيام الغياب، وما صُنّف منها بعذر) — لملف إجراءات معالجة الغياب
-const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: "الإدارة العامة للتعليم بمحافظة جدة", absData: async (f, t) => {
+const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}`, absData: async (f, t) => {
   const [ros, meta, att, ax] = await Promise.all([maGet(MA_ROSTER), maGet(MA_META), fbRange(MA_ATT, f, t), fbRange(ABSX, f, t).catch(() => ({}))]);
   const counts = meta && Array.isArray(meta.counts) ? meta.counts.map(n => +n || 0) : [6, 4, 4]; const classes = maClasses(counts); const R = ptObj(ros), X = ptObj(ax); const S = {};
   classes.forEach(c => maArr(R[c.ck] && R[c.ck].students).filter(x => x && x.id && x.name).forEach(st => { S[st.id] = { sid: st.id, name: st.name, ck: c.ck, cls: maClassName(c.ck), abs: [], ex: [] }; }));
@@ -61,11 +73,15 @@ const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: "الإدارة 
   const list = Object.values(S).filter(o => o.abs.length).map(o => ({ ...o, e: o.ex.length, u: o.abs.length - o.ex.length }));
   return { list, classes: classes.map(c => ({ ck: c.ck, name: maClassName(c.ck) })) };
 } });
-const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: "الإدارة العامة للتعليم بمحافظة جدة" });
+const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}` });
 // 🧭 مركز القيادة والإنذار المبكر: يقرأ الحضور والسلوك (inLoad/inCompute) والغياب السنوي وبقية البيانات من قاعدة الموقع
 const SchoolPulse = React.lazy(() => import("./Pulse.jsx").then(m => ({ default: m.SchoolPulse })));
 const pulseApi = () => ({ ...absApi(), inLoad, inCompute, maClassName, fbRange });
 const cmdApi = absHash => ({ ...absApi(), inLoad, inCompute, maClassName, absHash });
+// 🩺 صحة البيانات ⚙️ إعدادات المدرسة
+const lifeApi = hash => ({ maGet, maPut, MA_ROSTER, MA_META, PT_STAFF, LIC_NODE, ttGet: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), maClasses, maClassName, inLoad, inCompute, SP, logo: SCHOOL_LOGO, hash: hash || "", stuHash });
+const dhApi = go => ({ maGet, maPut, fbRange, MA_ROSTER, MA_META, MA_ATT, MA_LATE, BN_NODE, PT_STAFF, ANN_NODE, CR_NODE, maClasses, maClassName, maOff, go });
+const ssApi = () => ({ maGet, maPut, MA_META, MA_ROSTER, TT_CFG, ttGet: async () => { const a = await maGet(TT_NODE); return a && a.C ? ttFresh(a) : null; }, SP, SP_LS, STAGES: SP_STAGES, moeLogo: MOE_LOGO, defLogo: SCHOOL_LOGO_DEF });
 // عرض وثيقة الخطة (تعميم) داخل قسم الخطة التشغيلية
 function OpPlanDoc({ cid }) {
   const [st, setSt] = React.useState(null);
@@ -74,7 +90,7 @@ function OpPlanDoc({ cid }) {
   if (st.err) return <div style={{ padding: 16, fontWeight: 800, color: "#dc2626" }}>لم يُعثر على التعميم</div>;
   return <CircViewer c={st.c} pages={st.pages} logo={MOE_LOGO} lazyId={crIsLazy(st.c) ? st.c.id : null} admin />;
 }
-const opApi = () => ({ ...rdApi(), circs: async () => ptVals(await maGet(CR_NODE)).map(c => ({ id: c.id, title: c.title, keep: c.keep, at: c.at || 0 })), PlanDoc: OpPlanDoc, xlsx: loadXLSX, moe: MOE_LOGO, region: "الإدارة العامة للتعليم بمحافظة جدة" });
+const opApi = () => ({ ...rdApi(), circs: async () => ptVals(await maGet(CR_NODE)).map(c => ({ id: c.id, title: c.title, keep: c.keep, at: c.at || 0 })), PlanDoc: OpPlanDoc, xlsx: loadXLSX, moe: MOE_LOGO, region: `${SP.region}` });
 const StudentMarks = React.lazy(() => import("./grades/GradeBook.jsx").then(m => ({ default: m.StudentMarks })));
 const GradeBook = React.lazy(() => import("./grades/GradeBook.jsx").then(m => ({ default: m.GradeBook })));
 const RD_WAIT = <div style={{ minHeight: "50vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#0b2545" }}>📖 جارٍ التحميل…</div>;
@@ -88,7 +104,25 @@ const slApi = () => ({ maGet, maPut, fbPatch, fbRange, directAI: nqKey() ? (p, i
 const NB_WAIT = <div style={{ minHeight: "60vh", display: "grid", placeItems: "center", fontWeight: 800, color: "#5b21b6" }}>📚 جارٍ تحميل مراجع نافس…</div>;
 // الصور ملفات مستقلة في مجلد img (تُحمَّل عند الحاجة ويحفظها المتصفح) — الرابط مطلق ليعمل في نوافذ الطباعة أيضاً
 const hfxAbs = u => { try { return new URL(u, window.location.href).href; } catch { return u; } };
-const SCHOOL_LOGO = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImJnIiBjeD0iNTAlIiBjeT0iNDAlIiByPSI3MiUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMWY4YTYzIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTUlIiBzdG9wLWNvbG9yPSIjMGY2YjRhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzA4M2YyYyIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ29sZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZjNkNjdhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZDRhZjM3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2I4OTAxZiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIyMDAiIGZpbGw9InVybCgjYmcpIi8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxOTEiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkKSIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxNTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNSIvPgoKICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMDAgMTA0KSI+CiAgICA8cGF0aCBkPSJNMCAzMCBDLTMwIDEyIC02NiAxMiAtODYgMjAgTC04NiAtMjYgQy02NiAtMzQgLTMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAzMCBDMzAgMTIgNjYgMTIgODYgMjAgTDg2IC0yNiBDNjYgLTM0IDMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZWVmNGYxIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAtMTYgTDAgMzAiIHN0cm9rZT0iIzBmNmI0YSIgc3Ryb2tlLXdpZHRoPSIyLjYiLz4KICAgIDxwYXRoIGQ9Ik0tNzAgLTE0IEMtNDYgLTIwIC0yNCAtMjAgLTggLTEwIE0tNzAgMCBDLTQ2IC02IC0yNCAtNiAtOCAzIE0tNzAgMTQgQy00NiA4IC0yNCA4IC04IDE3IiBzdHJva2U9IiNhN2M2YjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8cGF0aCBkPSJNNzAgLTE0IEM0NiAtMjAgMjQgLTIwIDggLTEwIE03MCAwIEM0NiAtNiAyNCAtNiA4IDMgTTcwIDE0IEM0NiA4IDI0IDggOCAxNyIgc3Ryb2tlPSIjYTdjNmI5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9Ii0yNyIgcj0iNC41IiBmaWxsPSJ1cmwoI2dvbGQpIi8+CiAgPC9nPgoKICA8dGV4dCB4PSIyMDAiIHk9IjE3NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNiIgZmlsbD0iI2VhZmZmNSI+2YXYr9ix2LPYqTwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMSIgZmlsbD0iI2ZmZmZmZiI+2KfZhNij2YXZitixINi52KjYr9in2YTZhdis2YrYrzwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNyIgZmlsbD0iI2YzZDY3YSI+2KfZhNmF2KrZiNiz2LfYqSDYp9mE2KPZiNmE2Yk8L3RleHQ+CgogIDxsaW5lIHgxPSIxMjgiIHkxPSIyNzAiIHgyPSIyNzIiIHkyPSIyNzAiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNyIvPgoKICA8dGV4dCB4PSIyMDAiIHk9IjI5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjYwMCIgZm9udC1zaXplPSIxOCIgZmlsbD0iI2RmZjdlYyI+2KrYudmE2YrZhSDinKYg2KrZhdmK2ZHYsiDinKYg2KfZhtiq2YXYp9ihPC90ZXh0PgogIDx0ZXh0IHg9IjIwMCIgeT0iMzI2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkaXJlY3Rpb249InJ0bCIgZm9udC1mYW1pbHk9IidOb3RvIE5hc2toIEFyYWJpYycsJ1NlZ29lIFVJJywnVGFob21hJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iNjAwIiBmb250LXNpemU9IjE1LjUiIGZpbGw9IiNiZmUzZDIiPtio2YbZitmGIOKAlCDYpdiv2KfYsdipINiq2LnZhNmK2YUg2KzYr9ipPC90ZXh0Pgo8L3N2Zz4=`;
+// ══════════ 🏫 ملف المدرسة — يُدار من «إعدادات المدرسة» دون تعديل الكود ══════════
+// يُقرأ فورًا من نسخة محفوظة في المتصفح، ثم يُطابَق مع قاعدة البيانات (school-profile) عند فتح الموقع
+const SP_LS = "school-profile-v1";
+const SP_STAGES = {
+  mid: { w: "متوسط", ww: "المتوسطة", g: [["الأول المتوسط", "أول"], ["الثاني المتوسط", "ثاني"], ["الثالث المتوسط", "ثالث"]] },
+  pri: { w: "ابتدائي", ww: "الابتدائية", g: [["الأول الابتدائي", "أول"], ["الثاني الابتدائي", "ثاني"], ["الثالث الابتدائي", "ثالث"], ["الرابع الابتدائي", "رابع"], ["الخامس الابتدائي", "خامس"], ["السادس الابتدائي", "سادس"]] },
+  sec: { w: "ثانوي", ww: "الثانوية", g: [["الأول الثانوي", "أول"], ["الثاني الثانوي", "ثاني"], ["الثالث الثانوي", "ثالث"]] },
+};
+const SP_DEF = { name: "مدرسة الأمير عبدالمجيد المتوسطة الأولى", short: "مدرسة الأمير عبدالمجيد", full: "مدرسة الأمير عبدالمجيد بن عبدالعزيز الأولى المتوسطة", stage: "mid", region: "الإدارة العامة للتعليم بمحافظة جدة", office: "", city: "جدة", gov: "مكة المكرمة/جدة", principal: "فازع عبدالله حسن القرني", principalShort: "فازع القرني", ministryNo: "", gender: "بنين", logo: "", roleOff: {}, adminOff: {} };
+const spBuild = c => { const o = { ...SP_DEF, ...(c && typeof c === "object" ? c : {}) }; Object.keys(SP_DEF).forEach(k => { if (typeof SP_DEF[k] === "string" && (o[k] == null || (k !== "logo" && k !== "office" && k !== "ministryNo" && String(o[k]).trim() === ""))) o[k] = SP_DEF[k]; });
+  if (!SP_STAGES[o.stage]) o.stage = "mid"; o.sub = o.name.startsWith(o.short) ? o.name.slice(o.short.length).trim() : ""; o.stageW = SP_STAGES[o.stage].w; o.stageWW = SP_STAGES[o.stage].ww; o.grades = SP_STAGES[o.stage].g; return o; };
+const SP = (() => { let c = null; try { c = JSON.parse(localStorage.getItem(SP_LS) || "null"); } catch {} return spBuild(c); })();
+if (typeof window !== "undefined") window.__SP = SP;
+// يُستدعى مرة عند فتح الموقع: إن تغيّر ملف المدرسة في قاعدة البيانات يُحفظ ويُعاد تحميل الصفحة مرة واحدة ليظهر في كل الأقسام
+const spSync = async getFn => { try { const d = await getFn("school-profile"); if (!d || typeof d !== "object") return; const now = JSON.stringify(d); let old = null; try { old = localStorage.getItem(SP_LS); } catch {}
+  if (now === old) return; try { localStorage.setItem(SP_LS, now); } catch {} let last = 0; try { last = +sessionStorage.getItem("sp-reload") || 0; } catch {}
+  if (Date.now() - last > 20000) { try { sessionStorage.setItem("sp-reload", String(Date.now())); } catch {} window.location.reload(); } } catch {} };
+const SCHOOL_LOGO_DEF = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImJnIiBjeD0iNTAlIiBjeT0iNDAlIiByPSI3MiUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMWY4YTYzIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTUlIiBzdG9wLWNvbG9yPSIjMGY2YjRhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzA4M2YyYyIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ29sZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZjNkNjdhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZDRhZjM3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2I4OTAxZiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIyMDAiIGZpbGw9InVybCgjYmcpIi8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxOTEiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkKSIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxNTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNSIvPgoKICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMDAgMTA0KSI+CiAgICA8cGF0aCBkPSJNMCAzMCBDLTMwIDEyIC02NiAxMiAtODYgMjAgTC04NiAtMjYgQy02NiAtMzQgLTMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAzMCBDMzAgMTIgNjYgMTIgODYgMjAgTDg2IC0yNiBDNjYgLTM0IDMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZWVmNGYxIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAtMTYgTDAgMzAiIHN0cm9rZT0iIzBmNmI0YSIgc3Ryb2tlLXdpZHRoPSIyLjYiLz4KICAgIDxwYXRoIGQ9Ik0tNzAgLTE0IEMtNDYgLTIwIC0yNCAtMjAgLTggLTEwIE0tNzAgMCBDLTQ2IC02IC0yNCAtNiAtOCAzIE0tNzAgMTQgQy00NiA4IC0yNCA4IC04IDE3IiBzdHJva2U9IiNhN2M2YjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8cGF0aCBkPSJNNzAgLTE0IEM0NiAtMjAgMjQgLTIwIDggLTEwIE03MCAwIEM0NiAtNiAyNCAtNiA4IDMgTTcwIDE0IEM0NiA4IDI0IDggOCAxNyIgc3Ryb2tlPSIjYTdjNmI5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9Ii0yNyIgcj0iNC41IiBmaWxsPSJ1cmwoI2dvbGQpIi8+CiAgPC9nPgoKICA8dGV4dCB4PSIyMDAiIHk9IjE3NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNiIgZmlsbD0iI2VhZmZmNSI+2YXYr9ix2LPYqTwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMSIgZmlsbD0iI2ZmZmZmZiI+2KfZhNij2YXZitixINi52KjYr9in2YTZhdis2YrYrzwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNyIgZmlsbD0iI2YzZDY3YSI+2KfZhNmF2KrZiNiz2LfYqSDYp9mE2KPZiNmE2Yk8L3RleHQ+CgogIDxsaW5lIHgxPSIxMjgiIHkxPSIyNzAiIHgyPSIyNzIiIHkyPSIyNzAiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNyIvPgoKICA8dGV4dCB4PSIyMDAiIHk9IjI5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjYwMCIgZm9udC1zaXplPSIxOCIgZmlsbD0iI2RmZjdlYyI+2KrYudmE2YrZhSDinKYg2KrZhdmK2ZHYsiDinKYg2KfZhtiq2YXYp9ihPC90ZXh0PgogIDx0ZXh0IHg9IjIwMCIgeT0iMzI2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkaXJlY3Rpb249InJ0bCIgZm9udC1mYW1pbHk9IidOb3RvIE5hc2toIEFyYWJpYycsJ1NlZ29lIFVJJywnVGFob21hJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iNjAwIiBmb250LXNpemU9IjE1LjUiIGZpbGw9IiNiZmUzZDIiPtio2YbZitmGIOKAlCDYpdiv2KfYsdipINiq2LnZhNmK2YUg2KzYr9ipPC90ZXh0Pgo8L3N2Zz4=`;
+const SCHOOL_LOGO = SP.logo || SCHOOL_LOGO_DEF;
 
 const FIREBASE_URL = "https://school-faza-default-rtdb.firebaseio.com";
 
@@ -562,7 +596,7 @@ const SchoolLogo = ({ size = 'md', animate = true }) => {
       <div style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', gap: size==='xl' ? 14 : 10 }}>
           <div style={bannerStyle('0s')}>
           {animate && <div style={shineStyle('0s')} />}
-          <span style={textStyle(bfs)}>وزارة التعليم — الإدارة العامة للتعليم بجدة</span>
+          <span style={textStyle(bfs)}>وزارة التعليم — {SP.region}</span>
         </div>
         {circleEl}
         <div style={{ ...bannerStyle('1.2s'), width: bw * 0.85 }}>
@@ -1083,7 +1117,7 @@ function RichEditor({ value, onChange }) {
   );
 }
 
-const LOGO_URL = hfxAbs(schoolLogoImg);
+const LOGO_URL = SP.logo || hfxAbs(schoolLogoImg);
 const SCHOOL_LOGO_URL = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImJnIiBjeD0iNTAlIiBjeT0iNDAlIiByPSI3MiUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMWY4YTYzIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTUlIiBzdG9wLWNvbG9yPSIjMGY2YjRhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzA4M2YyYyIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ29sZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZjNkNjdhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZDRhZjM3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2I4OTAxZiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIyMDAiIGZpbGw9InVybCgjYmcpIi8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxOTEiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkKSIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxNTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNSIvPgoKICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMDAgMTA0KSI+CiAgICA8cGF0aCBkPSJNMCAzMCBDLTMwIDEyIC02NiAxMiAtODYgMjAgTC04NiAtMjYgQy02NiAtMzQgLTMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAzMCBDMzAgMTIgNjYgMTIgODYgMjAgTDg2IC0yNiBDNjYgLTM0IDMwIC0zNCAwIC0xNiBaIiBmaWxsPSIjZWVmNGYxIiBvcGFjaXR5PSIwLjk2Ii8+CiAgICA8cGF0aCBkPSJNMCAtMTYgTDAgMzAiIHN0cm9rZT0iIzBmNmI0YSIgc3Ryb2tlLXdpZHRoPSIyLjYiLz4KICAgIDxwYXRoIGQ9Ik0tNzAgLTE0IEMtNDYgLTIwIC0yNCAtMjAgLTggLTEwIE0tNzAgMCBDLTQ2IC02IC0yNCAtNiAtOCAzIE0tNzAgMTQgQy00NiA4IC0yNCA4IC04IDE3IiBzdHJva2U9IiNhN2M2YjkiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8cGF0aCBkPSJNNzAgLTE0IEM0NiAtMjAgMjQgLTIwIDggLTEwIE03MCAwIEM0NiAtNiAyNCAtNiA4IDMgTTcwIDE0IEM0NiA4IDI0IDggOCAxNyIgc3Ryb2tlPSIjYTdjNmI5IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9Ii0yNyIgcj0iNC41IiBmaWxsPSJ1cmwoI2dvbGQpIi8+CiAgPC9nPgoKICA8dGV4dCB4PSIyMDAiIHk9IjE3NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNiIgZmlsbD0iI2VhZmZmNSI+2YXYr9ix2LPYqTwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjIxNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIzMSIgZmlsbD0iI2ZmZmZmZiI+2KfZhNij2YXZitixINi52KjYr9in2YTZhdis2YrYrzwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCIgZm9udC1zaXplPSIyNyIgZmlsbD0iI2YzZDY3YSI+2KfZhNmF2KrZiNiz2LfYqSDYp9mE2KPZiNmE2Yk8L3RleHQ+CgogIDxsaW5lIHgxPSIxMjgiIHkxPSIyNzAiIHgyPSIyNzIiIHkyPSIyNzAiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNyIvPgoKICA8dGV4dCB4PSIyMDAiIHk9IjI5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZGlyZWN0aW9uPSJydGwiIGZvbnQtZmFtaWx5PSInTm90byBOYXNraCBBcmFiaWMnLCdTZWdvZSBVSScsJ1RhaG9tYScsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjYwMCIgZm9udC1zaXplPSIxOCIgZmlsbD0iI2RmZjdlYyI+2KrYudmE2YrZhSDinKYg2KrZhdmK2ZHYsiDinKYg2KfZhtiq2YXYp9ihPC90ZXh0PgogIDx0ZXh0IHg9IjIwMCIgeT0iMzI2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkaXJlY3Rpb249InJ0bCIgZm9udC1mYW1pbHk9IidOb3RvIE5hc2toIEFyYWJpYycsJ1NlZ29lIFVJJywnVGFob21hJyxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iNjAwIiBmb250LXNpemU9IjE1LjUiIGZpbGw9IiNiZmUzZDIiPtio2YbZitmGIOKAlCDYpdiv2KfYsdipINiq2LnZhNmK2YUg2KzYr9ipPC90ZXh0Pgo8L3N2Zz4=";
 
 
@@ -1619,7 +1653,7 @@ function SingleAnnouncementPage({ announcements, siteFont, annId }) {
       style={{ fontFamily: siteFont, background: "linear-gradient(135deg, #0d9488 0%, #065f46 50%, #064e3b 100%)" }}>
       {/* شريط العنوان */}
       <div className="flex items-center justify-between px-6 py-4 bg-black bg-opacity-20">
-        <p className="font-black text-white text-sm">🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
+        <p className="font-black text-white text-sm">🏫 {SP.name}</p>
         <button onClick={() => { window.location.hash = ""; window.location.reload(); }}
           className="px-4 py-1.5 rounded-xl bg-white bg-opacity-20 text-white font-bold text-sm hover:bg-opacity-30 transition-all">
           ← الرئيسية
@@ -2112,7 +2146,7 @@ function PublicAnnouncementsPage({ announcements, siteFont, onLogin, onTeacherPo
         <div className="flex items-center justify-between mb-6 pt-4">
           <div className="text-center flex-1">
             <div className="text-4xl mb-1">🏫</div>
-            <h1 className="text-lg font-black text-white">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+            <h1 className="text-lg font-black text-white">{SP.name}</h1>
             <p className="text-white opacity-70 text-xs">بوابة الإعلانات المدرسية</p>
             <div className="mt-3 flex justify-center"><BoldVisitorBadge pageKey="announcements" /></div>
           </div>
@@ -2217,7 +2251,7 @@ function LoginPage({ users, onLogin, siteFont, onParentPortal, onTeacherPortal, 
       <div className="gt-in">
         <div className="gt-hd">
           <SchoolLogo size="lg" animate={true} />
-          <div><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1><p>البوابة الإلكترونية — اختر فئتك للدخول</p></div>
+          <div><h1>{SP.name}</h1><p>البوابة الإلكترونية — اختر فئتك للدخول</p></div>
         </div>
         <div className="gt-grid">
           <div className="gt-card" style={{ "--c": "#14b8a6", "--c2": "#0f766e", cursor: adm ? "default" : "pointer" }} onClick={() => !adm && setAdm(true)}>
@@ -3140,7 +3174,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
       </div>
       <div class="header">
         <h1>المملكة العربية السعودية — وزارة التعليم</h1>
-        <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة</p>
+        <p>${SP.name} — إدارة تعليم ${SP.city}</p>
         <p style="margin-top:6px;font-size:14px;font-weight:900;color:#1e3a5f">نموذج مساءلة ${isLate?"تأخر":"غياب"} — ${day.name}</p>
       </div>
       <div style="text-align:center;margin-bottom:14px">
@@ -3426,7 +3460,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
       @media print{@page{size:A4;margin:1.5cm}}
     </style></head><body>
     <div class="header">
-      <h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+      <h1>${SP.name}</h1>
       <p>سجل الحضور والغياب — ${day.name} | ${day.dateH} هـ | ${day.dateM} م</p>
     </div>
     ${assemblyLine}
@@ -3471,7 +3505,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
       <thead><tr><th>م</th><th>اسم المعلم / الإداري</th><th>الحالة</th><th>التفاصيل</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="footer">تم الإصدار بتاريخ ${new Date().toLocaleDateString('ar-SA')} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
+    <div class="footer">تم الإصدار بتاريخ ${new Date().toLocaleDateString('ar-SA')} — بوابة ${SP.short} الإلكترونية</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -3502,7 +3536,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
     th{background:#7c3aed;color:#fff;padding:7px;text-align:center}
     td{border:1px solid #e5e7eb;padding:5px;text-align:center}
     @media print{@page{size:A4 landscape;margin:1cm}}</style></head><body>
-    <div class="header"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+    <div class="header"><h1>${SP.name}</h1>
     <p>ملخص الحضور والغياب الأسبوعي — ${week.days[0]?.dateH} إلى ${week.days[week.days.length-1]?.dateH} هـ</p></div>
     <table><thead><tr><th>م</th><th>اسم المعلم</th>
     ${week.days.map((d,di)=>`<th>${d.name}<br/><span style="font-weight:normal;font-size:10px">${(() => { const a = getAssembly(di); return a !== null ? (a ? "🎺✅":"🎺❌") : "🎺—"; })()}</span></th>`).join("")}
@@ -3521,7 +3555,7 @@ function AttendancePage({ teachers, setTeachers, saveTeachers, week, setWeek, sa
           <div className="text-center sm:text-right">
             <div className="text-4xl mb-1">📋</div>
             <h2 className="text-2xl font-black">سجل الحضور والغياب</h2>
-            <p className="opacity-80 text-sm mt-1">مدرسة الأمير عبدالمجيد المتوسطة الأولى — ١٤٤٧هـ</p>
+            <p className="opacity-80 text-sm mt-1">{SP.name} — ١٤٤٧هـ</p>
           </div>
           <div className="flex gap-2 flex-wrap justify-center">
             <button onClick={handlePrint}
@@ -4821,7 +4855,7 @@ function AdminAttendancePage() {
     td{border:1px solid #e5e7eb;padding:5px;text-align:center}
     .footer{text-align:center;margin-top:16px;font-size:10px;color:#999}
     @media print{@page{size:A4;margin:1.5cm}}</style></head><body>
-    <div class="hdr"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+    <div class="hdr"><h1>${SP.name}</h1>
     <p>سجل دوام الإداريين — ${day.name} | ${day.dateM} م</p></div>
     <div class="stats">
       <div class="st"><span>${totalPresent(selDay)}</span><small>✅ حاضر</small></div>
@@ -4832,7 +4866,7 @@ function AdminAttendancePage() {
     </div>
     <table><thead><tr><th>م</th><th>اسم الإداري</th><th>الحالة</th><th>التفاصيل</th><th>ملاحظات</th></tr></thead>
     <tbody>${rows}</tbody></table>
-    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
+    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة ${SP.short} الإلكترونية</div>
     <script>window.onload=()=>window.print()</script></body></html>`);
   };
 
@@ -4869,13 +4903,13 @@ function AdminAttendancePage() {
     td{border:1px solid #e5e7eb;padding:4px;text-align:center}
     .footer{text-align:center;margin-top:12px;font-size:9px;color:#aaa}
     @media print{@page{size:A4 landscape;margin:1cm}}</style></head><body>
-    <div class="hdr"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+    <div class="hdr"><h1>${SP.name}</h1>
     <p>${title} — ${wk.days[0]?.dateM} إلى ${wk.days[wk.days.length-1]?.dateM} م</p></div>
     <table><thead><tr><th>م</th><th>اسم الإداري</th>
     ${wk.days.map(d=>`<th>${d.name}</th>`).join("")}
     <th>🌅متأخر</th><th>📋مستأذن</th><th>🚶انسحاب</th><th>❌غائب</th></tr></thead>
     <tbody>${rows}</tbody></table>
-    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
+    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة ${SP.short} الإلكترونية</div>
     <script>window.onload=()=>window.print()</script></body></html>`);
   };
 
@@ -4920,12 +4954,12 @@ function AdminAttendancePage() {
     td{border:1px solid #e5e7eb;padding:5px;text-align:center}
     .footer{text-align:center;margin-top:16px;font-size:10px;color:#999}
     @media print{@page{size:A4;margin:1.5cm}}</style></head><body>
-    <div class="hdr"><h1>مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+    <div class="hdr"><h1>${SP.name}</h1>
     <p>تقرير دوام الإداريين التراكمي — عام ${printYear} م (${allWeeks.length} أسبوع)</p></div>
     <table><thead><tr>
       <th>م</th><th>اسم الإداري</th><th>🌅تأخر</th><th>دقائق تأخر</th><th>📋استئذان</th><th>🚶انسحاب</th><th>❌غياب</th>
     </tr></thead><tbody>${rows}</tbody></table>
-    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة مدرسة الأمير عبدالمجيد الإلكترونية</div>
+    <div class="footer">تم الإصدار ${new Date().toLocaleDateString("ar-SA")} — بوابة ${SP.short} الإلكترونية</div>
     <script>window.onload=()=>window.print()</script></body></html>`);
   };
 
@@ -4940,7 +4974,7 @@ function AdminAttendancePage() {
           <div className="text-center sm:text-right">
             <div className="text-4xl mb-1">🏢</div>
             <h2 className="text-2xl font-black">سجل دوام الإداريين</h2>
-            <p className="opacity-80 text-sm mt-1">مدرسة الأمير عبدالمجيد المتوسطة الأولى — {new Date().getFullYear()}م</p>
+            <p className="opacity-80 text-sm mt-1">{SP.name} — {new Date().getFullYear()}م</p>
           </div>
           <div className="flex gap-2 flex-wrap justify-center">
             <button onClick={printDay} className="bg-white text-purple-700 px-3 py-2 rounded-xl text-xs font-bold hover:bg-purple-50 shadow">🖨️ طباعة اليوم</button>
@@ -5694,7 +5728,7 @@ function printAllExcuses(excusesList) {
 <div class="page-header">
   <div class="logo-box">🏫</div>
   <div class="school-info">
-    <div class="school-name">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+    <div class="school-name">${SP.name}</div>
     <div class="report-title">تقرير أعذار غياب الطلاب</div>
     <div class="report-date">تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} | إجمالي السجلات: ${excusesList.length}</div>
   </div>
@@ -5753,7 +5787,7 @@ function printAllExcuses(excusesList) {
   </div>
   <div class="sig">
     <div style="font-size:11px;color:#64748b;margin-bottom:4px">مدير المدرسة</div>
-    <div style="font-size:13px;font-weight:900;color:#0d3b6e;margin:6px 0">فازع القرني</div>
+    <div style="font-size:13px;font-weight:900;color:#0d3b6e;margin:6px 0">${SP.principalShort}</div>
     <div style="font-size:10px;color:#94a3b8">الاسم والتوقيع</div>
   </div>
   <div class="sig">
@@ -5763,7 +5797,7 @@ function printAllExcuses(excusesList) {
   </div>
 </div>
 
-<div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — تقرير أعذار الطلاب</div>
+<div class="footer">${SP.name} — تقرير أعذار الطلاب</div>
 <script>window.onload=()=>{window.print();}<\/script>
 </body></html>`);
   win.document.close();
@@ -6036,7 +6070,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
       .sig-line{border-top:1.5px solid #374151;padding-top:8px;margin-top:28px;font-weight:700}
       @media print{@page{size:A4;margin:2cm}body{padding:0}}
     </style></head><body>
-    <div class="school">إدارة تعليم جدة — مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+    <div class="school">إدارة تعليم ${SP.city} — ${SP.name}</div>
     <h1>📋 نموذج عذر طالب</h1>
     <div class="grid">
       <div class="field"><div class="label">👤 اسم الطالب</div><div class="val">${ex.studentName}</div></div>
@@ -6063,7 +6097,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
     </div>` : ""}
     <div class="sig">
       <div><div class="sig-line">توقيع ولي الأمر</div></div>
-      <div><div class="sig-line">مدير المدرسة<br>فازع عبدالله حسن القرني</div></div>
+      <div><div class="sig-line">مدير المدرسة<br>${SP.principal}</div></div>
     </div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
@@ -6795,7 +6829,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
           <span style={{ fontSize:22 }}>📋</span>
           <div style={{ flex:1 }}>
             <div style={{ fontWeight:900, fontSize:14 }}>نموذج تقديم العذر</div>
-            <div style={{ opacity:.7, fontSize:11 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+            <div style={{ opacity:.7, fontSize:11 }}>{SP.name}</div>
           </div>
         </div>
         <div style={{ maxWidth:600, margin:"0 auto", padding:"14px 12px 60px" }}>
@@ -6997,7 +7031,7 @@ function StudentExcusePortal({ onBack, siteFont, isAdmin = false }) {
           fontSize:32, margin:"0 auto 14px" }}>📋</div>
         <h1 style={{ fontSize:19, fontWeight:900, color:"#1e293b", marginBottom:4 }}>بوابة أعذار الطلاب</h1>
         <p style={{ fontSize:12.5, color:"#64748b", marginBottom:6, lineHeight:1.8 }}>
-          مدرسة الأمير عبدالمجيد المتوسطة الأولى
+          {SP.name}
         </p>
         <p style={{ fontSize:11.5, color:"#94a3b8", marginBottom:22 }}>
           أدخل رقم هوية الطالب لتقديم عذر الغياب
@@ -7121,7 +7155,7 @@ function ParentPortal({ classList, setClassList, saveClass, messages, setMessage
       {/* رأس الصفحة */}
       <div className="text-center text-white pt-10 pb-6 px-4">
         <div className="text-5xl mb-3">🏫</div>
-        <h1 className="text-2xl font-black mb-1">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+        <h1 className="text-2xl font-black mb-1">{SP.name}</h1>
         <p className="opacity-80 text-sm">بوابة أولياء الأمور — متابعة مستوى الطالب</p>
         <button onClick={onSuggestions}
           className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm shadow-lg"
@@ -7945,7 +7979,7 @@ function CertificatesPage({ teachers, attendance, week, classList }) {
       <div class="corner tl"></div><div class="corner tr"></div>
       <div class="corner bl"></div><div class="corner br"></div>
       <div class="star">⭐</div>
-      <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى — الإدارة العامة للتعليم بجدة</div>
+      <div class="school">${SP.name} — ${SP.region}</div>
       <div class="type-title">شهادة ${cert.type}</div>
       <div class="divider"></div>
       <div class="present">يُشرِّف إدارة المدرسة أن تُقدِّم هذه الشهادة إلى</div>
@@ -8220,7 +8254,7 @@ function StudentRafflePortal({ siteFont, onBack }) {
         <div className="text-center text-white mb-6">
           <div className="text-7xl float-ico mb-3">🎰</div>
           <h1 className="text-2xl font-black mb-1">سحب الجوائز</h1>
-          <p className="opacity-80 text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
+          <p className="opacity-80 text-sm">{SP.name}</p>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-5">
@@ -9705,7 +9739,7 @@ function PerformanceStandardsPortal({ siteFont, onBack }) {
         <div className="w-full max-w-lg">
           <div className="text-center text-white mb-8">
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-2xl" style={{ background:"rgba(255,255,255,0.12)", backdropFilter:"blur(10px)", border:"1px solid rgba(255,255,255,0.2)" }}>📊</div>
-            <h1 className="text-2xl font-black mb-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+            <h1 className="text-2xl font-black mb-2">{SP.name}</h1>
             <p className="text-sm opacity-70 bg-white/10 rounded-full px-5 py-2 inline-block">بطاقة التقويم الذاتي لعناصر الأداء الوظيفي</p>
             <div className="mt-2"><PageVisitorCounter pageKey="self-assessment" label="زيارة" /></div>
           </div>
@@ -10568,7 +10602,7 @@ function StudentEvalCard({ student, onUpdate, onDelete, onSendNote, messages }) 
 يمكنك متابعة مستوى ابنك والاطلاع على ملاحظات المعلم ومراسلته مباشرةً عبر الرابط التالي:
 ${shareUrl}
 
-مع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`
+مع تحيات إدارة ${SP.name}`
     );
     window.open("https://wa.me/" + phone + "?text=" + msg, "_blank");
   };
@@ -10577,7 +10611,7 @@ ${shareUrl}
     if (!student.parentPhone) { alert("أضف رقم جوال ولي الأمر أولاً"); return; }
     const phone = student.parentPhone.trim();
     const msg = encodeURIComponent(
-      `مدرسة الأمير عبدالمجيد - رابط متابعة الطالب ${student.name}: ${shareUrl}`
+      `${SP.short} - رابط متابعة الطالب ${student.name}: ${shareUrl}`
     );
     window.open("sms:" + phone + "?body=" + msg);
   };
@@ -10614,12 +10648,12 @@ ${shareUrl}
 يمكن الاطلاع عليها والرد مباشرةً عبر الرابط:
 ${parentLink}
 
-مع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`
+مع تحيات إدارة ${SP.name}`
     );
     if (sendMethod === "sms") {
       if (student.parentPhone) {
         window.open("sms:" + student.parentPhone.trim() + "?body=" + encodeURIComponent(
-          `مدرسة الأمير عبدالمجيد - يوجد ملاحظة من المعلم للطالب ${student.name}. الرابط: ${parentLink}`
+          `${SP.short} - يوجد ملاحظة من المعلم للطالب ${student.name}. الرابط: ${parentLink}`
         ));
       }
     } else if (student.parentPhone && student.parentPhone.trim()) {
@@ -10642,7 +10676,7 @@ ${parentLink}
 يمكنك متابعة مستوى ابنك والتواصل مع المعلم من خلال الرابط المباشر:
 ${link}
 
-مع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`
+مع تحيات إدارة ${SP.name}`
     );
     window.open("https://wa.me/" + phone + "?text=" + msg, "_blank");
   };
@@ -10808,7 +10842,7 @@ ${link}
     <div class="header">
       <div class="header-icon">👨‍🎓</div>
       <div>
-        <div class="header-school">مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة</div>
+        <div class="header-school">${SP.name} — إدارة تعليم ${SP.city}</div>
         <div class="header-name">${stu.name || "—"}</div>
         <div class="header-meta">رقم الهوية: ${stu.nationalId||"—"} · جوال ولي الأمر: ${stu.parentPhone||"—"}</div>
         ${lastLv&&lastLv.value?`<span class="level-badge" style="background:${lastLv.bg};color:${lastLv.color}">آخر مستوى: ${lastLv.label}</span>`:""}
@@ -10831,11 +10865,11 @@ ${link}
     <!-- التوقيعات -->
     <div class="sigs">
       <div class="sig"><div class="sig-label">توقيع المعلم</div><div class="sig-line">__________________</div></div>
-      <div class="sig"><div class="sig-label">توقيع مدير المدرسة</div><div class="sig-line">فازع القرني</div></div>
+      <div class="sig"><div class="sig-label">توقيع مدير المدرسة</div><div class="sig-line">${SP.principalShort}</div></div>
       <div class="sig"><div class="sig-label">توقيع ولي الأمر</div><div class="sig-line">__________________</div></div>
       <div class="sig"><div class="sig-label">التاريخ</div><div class="sig-line">__________________</div></div>
     </div>
-    <div class="footer">بوابة مدرسة الأمير عبدالمجيد الإلكترونية © ١٤٤٧هـ</div>
+    <div class="footer">بوابة ${SP.short} الإلكترونية © ١٤٤٧هـ</div>
 
     <script>window.onload=()=>{ window.print(); }</script>
     </body></html>`);
@@ -11488,7 +11522,7 @@ function ClassTable({ cls, onUpdateClass, onSave, onSendNote, messages }) {
     .footer{text-align:center;margin-top:20px;font-size:9px;color:#999}
     @page{size:A4;margin:1.5cm}</style></head><body>
     <h1>🏫 سجل التقييم الأسبوعي — ${cls.name||cls.level+" / "+cls.section}</h1>
-    <div class="sub">مدرسة الأمير عبدالمجيد المتوسطة الأولى — الفصل ${cls.semester||"—"} — ${cls.teacher||""}</div>
+    <div class="sub">${SP.name} — الفصل ${cls.semester||"—"} — ${cls.teacher||""}</div>
     <table><thead><tr><th>م</th><th>اسم الطالب</th><th>آخر مستوى</th><th>التاريخ</th><th>الملاحظات</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div style="display:flex;gap:40px;margin-top:20px;font-size:10px">
@@ -11496,7 +11530,7 @@ function ClassTable({ cls, onUpdateClass, onSave, onSendNote, messages }) {
       <div>توقيع مدير المدرسة: __________________</div>
       <div>التاريخ: __________________</div>
     </div>
-    <div class="footer">بوابة مدرسة الأمير عبدالمجيد الإلكترونية © ١٤٤٧هـ</div>
+    <div class="footer">بوابة ${SP.short} الإلكترونية © ١٤٤٧هـ</div>
     </body></html>`);
   };
 
@@ -11654,7 +11688,7 @@ function StudentsPage({ classList, setClassList, saveClass, deleteClass, teacher
         style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2E6DA4 60%, #1a8fe3 100%)" }}>
         <div className="text-4xl mb-2">👨‍🎓</div>
         <h2 className="text-2xl font-black mb-1">سجل تقييم الطلاب</h2>
-        <p className="opacity-80 text-sm">للعام الدراسي ١٤٤٧هـ — مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
+        <p className="opacity-80 text-sm">للعام الدراسي ١٤٤٧هـ — {SP.name}</p>
         <div className="flex justify-center gap-4 mt-3 text-sm opacity-90">
           <span>📚 {classList.length} فصل</span>
           <span>👨‍🎓 {totalStudents} طالب</span>
@@ -11882,7 +11916,7 @@ function MessagesPage({ messages, setMessages, saveMessages, isParent, parentNam
             <div className="text-center md:text-right flex-1">
               <h2 className="text-2xl font-black mb-2">شراكة الأسرة والمدرسة</h2>
               <p className="text-blue-100 leading-relaxed text-sm">
-                تؤمن مدرسة الأمير عبدالمجيد المتوسطة الأولى بأن نجاح الطالب يبدأ من شراكة حقيقية بين الأسرة والمدرسة.
+                تؤمن {SP.name} بأن نجاح الطالب يبدأ من شراكة حقيقية بين الأسرة والمدرسة.
                 هذه المنصة جسر تواصل مفتوح بين أولياء الأمور والمدرسة — شاركونا آراءكم ومقترحاتكم واستفساراتكم،
                 فأنتم شركاؤنا في بناء جيل واعٍ ومتميز.
               </p>
@@ -11901,7 +11935,7 @@ function MessagesPage({ messages, setMessages, saveMessages, isParent, parentNam
               <button onClick={() => {
                 const link = (typeof window !== "undefined" ? window.location.origin : "https://school-website1-sigma.vercel.app");
                 const msg = encodeURIComponent(
-                  `🏫 *مدرسة الأمير عبدالمجيد المتوسطة الأولى*\n\n` +
+                  `🏫 *${SP.name}*\n\n` +
                   `✉️ *بوابة التواصل مع الأسرة*\n\n` +
                   `أعزاءنا أولياء الأمور،\n` +
                   `يسعدنا إطلاق بوابة التواصل المدرسي حيث يمكنكم إرسال آرائكم ومقترحاتكم واستفساراتكم مباشرةً لإدارة المدرسة.\n\n` +
@@ -12176,7 +12210,7 @@ function SurveyBuilder({ survey, onSave, onCancel }) {
       <div style={{ background:`linear-gradient(135deg, ${s.color} 0%, ${s.color}cc 100%)`, borderRadius:16, padding:"16px 20px", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div>
           <div style={{ color:"#fff", fontWeight:900, fontSize:16 }}>📋 {s.id === survey.id && s.title ? "تعديل الاستبيان" : "استبيان جديد"}</div>
-          <div style={{ color:"rgba(255,255,255,.7)", fontSize:11, marginTop:2 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+          <div style={{ color:"rgba(255,255,255,.7)", fontSize:11, marginTop:2 }}>{SP.name}</div>
         </div>
         <button onClick={onCancel} style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, color:"#fff", fontWeight:800, fontSize:12, padding:"6px 14px", cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>✕ إلغاء</button>
       </div>
@@ -12293,7 +12327,7 @@ function SurveyRespond({ survey, onClose }) {
     </style></head><body>
     <div class="page">
       <div class="header">
-        <div class="school-name">🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+        <div class="school-name">🏫 ${SP.name}</div>
         <div class="survey-title">📋 ${survey.title}</div>
         <div class="quote">« رأيك يُسهم في تحسين بيئة التعلم وتجويد العمل المدرسي — شكراً لمشاركتك »</div>
         <div class="meta-row">
@@ -12325,7 +12359,7 @@ function SurveyRespond({ survey, onClose }) {
           </table>
         </div>`).join("")}
       <div class="secret">🔒 هذه الاستبانة سرية ولا يطلع عليها إلا المعنيون في إدارة المدرسة</div>
-      <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة — ${new Date().getFullYear()} م</div>
+      <div class="footer">${SP.name} — إدارة تعليم ${SP.city} — ${new Date().getFullYear()} م</div>
     </div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`;
@@ -12336,7 +12370,7 @@ function SurveyRespond({ survey, onClose }) {
     <div dir="rtl" style={{ fontFamily:"'Cairo','Noto Naskh Arabic',sans-serif", background:"#f8fafc", minHeight:"100vh" }}>
       {/* رأس الاستبيان */}
       <div style={{ background:`linear-gradient(135deg,${survey.color},${survey.color}bb)`, padding:"20px 16px", textAlign:"center" }}>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,.8)", marginBottom:4 }}>🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,.8)", marginBottom:4 }}>🏫 {SP.name}</div>
         <div style={{ fontSize:20, fontWeight:900, color:"#fff", marginBottom:6 }}>{survey.title}</div>
         <div style={{ fontSize:11.5, color:"rgba(255,255,255,.75)", lineHeight:1.7 }}>
           « رأيك يُسهم في تحسين بيئة التعلم وتجويد العمل المدرسي »
@@ -12519,7 +12553,7 @@ function SurveysPage({ surveys: surveys0, setSurveys, saveSurveys }) {
 // الحفظ: school-designs/{id} (التصميم كاملاً) + school-designs-idx/{id} (فهرس خفيف) — الحذف إخفاء
 // ═══════════════════════════════════════════════════════════════
 const PS_NODE = "school-designs", PS_IDX = "school-designs-idx";
-const PS_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة الأولى", PS_MGR = "فازع القرني";
+const PS_SCHOOL = `${SP.name}`, PS_MGR = `${SP.principalShort}`;
 const PS_FONT = "'Cairo','Noto Naskh Arabic',Tahoma,sans-serif";
 const PS_TH = {
   emerald: { n: "زمردي", a: "#0b3d36", b: "#0f766e", g: "#d4a017", ink: "#0b3d36", soft: "#ecfdf5", page: "#fbfdfb" },
@@ -12554,7 +12588,7 @@ function psNew(kind = "ann", pre = {}) {
   if (kind === "rep") {
     els.push({ id: psId(), t: "text", x: 80, y: 190, w: 840, h: 80, text: { s: "تقرير نشاط", fs: 26, c: "", b: 1, al: "center", bg: "ribbon" } });
     els.push({ id: psId(), t: "text", x: 60, y: 275, w: 880, h: 80, text: { s: pre.title || "اسم النشاط", fs: 40, c: "", b: 1, al: "center", bg: "none" } });
-    els.push({ id: psId(), t: "info", x: 60, y: 365, w: 880, h: 150, info: { rows: [["التاريخ", pre.date || ""], ["المكان", pre.place || "مدرسة الأمير عبدالمجيد"], ["المستهدفون", pre.target || "طلاب المدرسة"], ["المنفّذ", pre.by || ""], ["المجال", pre.type || ""], ["عدد المستفيدين", ""]] } });
+    els.push({ id: psId(), t: "info", x: 60, y: 365, w: 880, h: 150, info: { rows: [["التاريخ", pre.date || ""], ["المكان", pre.place || `${SP.short}`], ["المستهدفون", pre.target || "طلاب المدرسة"], ["المنفّذ", pre.by || ""], ["المجال", pre.type || ""], ["عدد المستفيدين", ""]] } });
     els.push({ id: psId(), t: "text", x: 60, y: 530, w: 880, h: 150, text: { s: pre.body ? pre.body : "الأهداف:\n• \n• \n\nوصف تنفيذ النشاط:", fs: 19, c: "#1f2937", b: 0, al: "right", bg: "soft" } });
   } else {
     els.push({ id: psId(), t: "text", x: 60, y: 200, w: 880, h: 110, text: { s: pre.title || "عنوان الإعلان", fs: 52, c: "", b: 1, al: "center", bg: "none" } });
@@ -12579,7 +12613,7 @@ function psThemeHtml(d) {
     formal: `<svg viewBox="0 0 1000 ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><rect width="1000" height="${H}" fill="#fff"/><rect x="22" y="22" width="956" height="${H - 44}" fill="none" stroke="${T.b}" stroke-width="2"/></svg>`,
   }[d.theme] || "";
   const hdr = !d.header ? "" : `<div style="position:absolute;left:${psU(30)};right:${psU(30)};top:${psU(30)};height:${psU(140)};border-radius:${psU(22)};background:linear-gradient(135deg,${T.a},${T.b});display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 ${psU(30)};color:#fff;box-shadow:0 ${psU(8)} ${psU(22)} rgba(0,0,0,.18)">
-    <div style="font-size:${psU(15.5)};font-weight:800;line-height:1.75;text-align:right">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b style="font-size:${psU(17)};color:${T.g === "#0f766e" ? "#fff" : T.g}">${PS_SCHOOL}</b></div>
+    <div style="font-size:${psU(15.5)};font-weight:800;line-height:1.75;text-align:right">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region}<br><b style="font-size:${psU(17)};color:${T.g === "#0f766e" ? "#fff" : T.g}">${PS_SCHOOL}</b></div>
     <div style="width:${psU(104)};height:${psU(104)};border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 ${psU(4)} ${T.g}"><img src="${SCHOOL_LOGO}" style="width:${psU(92)};height:${psU(92)}"></div>
     <div style="text-align:left;font-size:${psU(15.5)};font-weight:800;line-height:1.8"><span style="display:inline-block;background:${T.g};color:${T.a};border-radius:999px;padding:${psU(3)} ${psU(16)};font-weight:900;font-size:${psU(18)}">${lbl}</span><br>${psEsc(maDay(D))}<br>${psEsc(hij)}</div></div>
     <div style="position:absolute;left:${psU(120)};right:${psU(120)};top:${psU(176)};height:${psU(4)};border-radius:9px;background:linear-gradient(90deg,transparent,${T.g},transparent)"></div>`;
@@ -12894,7 +12928,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
       @media print{@page{size:A4;margin:2cm}body{padding:0}}
     </style></head><body>
     <div class="header">
-      <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+      <div class="school">${SP.name}</div>
       ${ann.audience ? `<div class="aud">موجّه إلى: ${ann.audience}</div>` : ""}
       <div class="title">${cIcons[ann.category]||"📌"} ${annTitleHtml(ann)}</div>
       <div class="adate">📅 ${ann.date}</div>
@@ -12904,7 +12938,7 @@ function AnnouncementsPage({ announcements, setAnnouncements, saveAnnouncements,
       </div>
     </div>
     <div class="body">${ann.content}</div>
-    <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${new Date().toLocaleDateString('ar-SA')}</div>
+    <div class="footer">${SP.name} — ${new Date().toLocaleDateString('ar-SA')}</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -13429,7 +13463,7 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
       @media print{@page{size:A4;margin:2cm}body{padding:0}}
     </style></head><body>
     <div class="header">
-      <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+      <div class="school">${SP.name}</div>
       <div class="icon">${act.image||"🎯"}</div>
       <div class="title">${act.title}</div>
       <div class="meta">
@@ -13440,7 +13474,7 @@ function ActivitiesPage({ activities, setActivities, saveActivities }) {
       </div>
     </div>
     <div class="body">${act.description||"لا يوجد وصف"}</div>
-    <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${new Date().toLocaleDateString('ar-SA')}</div>
+    <div class="footer">${SP.name} — ${new Date().toLocaleDateString('ar-SA')}</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -13701,7 +13735,7 @@ function SMSPage({ teachers, attendance, week, classList }) {
       const r = attendance?.[teachers.indexOf(t)]?.[di] || {};
       return `${i + 1}. ${t} (${r.lateType || "صباحي"} - ${r.lateMinutes || 0} دقيقة)`;
     });
-    let msg = `📋 تقرير حضور ${dayLabel} ${dateLabel}\nمدرسة الأمير عبدالمجيد المتوسطة الأولى\n\n`;
+    let msg = `📋 تقرير حضور ${dayLabel} ${dateLabel}\n${SP.name}\n\n`;
     if (absents.length) msg += `❌ الغائبون (${absents.length}):\n${absents.join("\n")}\n\n`;
     if (lates.length) msg += `🕐 المتأخرون (${lates.length}):\n${lates.join("\n")}\n`;
     if (!absents.length && !lates.length) msg += `✅ جميع المعلمين حاضرون`;
@@ -14075,10 +14109,10 @@ function SMSPage({ teachers, attendance, week, classList }) {
             <label className="text-xs font-bold text-gray-500 mb-2 block">قوالب جاهزة</label>
             <div className="flex gap-2 flex-wrap">
               {[
-                { label:"دعوة اجتماع", msg:"أولياء الأمور الكرام\nيُعقد اجتماعاً بالمدرسة يوم ............\nالرجاء الحضور في الموعد المحدد\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
-                { label:"موعد الاختبارات", msg:"أولياء الأمور الكرام\nتبدأ الاختبارات يوم ............\nنتمنى لأبنائكم التوفيق\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
-                { label:"إجازة عارضة", msg:"أولياء الأمور الكرام\nتُعلم المدرسة بعدم الدراسة يوم ............\nمع التقدير\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
-                { label:"نشاط مدرسي", msg:"أولياء الأمور الكرام\nتقيم المدرسة نشاطاً بتاريخ ............\nنتشرف بحضوركم\nمدرسة الأمير عبدالمجيد المتوسطة الأولى" },
+                { label:"دعوة اجتماع", msg:`أولياء الأمور الكرام\nيُعقد اجتماعاً بالمدرسة يوم ............\nالرجاء الحضور في الموعد المحدد\n${SP.name}` },
+                { label:"موعد الاختبارات", msg:`أولياء الأمور الكرام\nتبدأ الاختبارات يوم ............\nنتمنى لأبنائكم التوفيق\n${SP.name}` },
+                { label:"إجازة عارضة", msg:`أولياء الأمور الكرام\nتُعلم المدرسة بعدم الدراسة يوم ............\nمع التقدير\n${SP.name}` },
+                { label:"نشاط مدرسي", msg:`أولياء الأمور الكرام\nتقيم المدرسة نشاطاً بتاريخ ............\nنتشرف بحضوركم\n${SP.name}` },
               ].map(t => (
                 <button key={t.label} onClick={() => setBulkMsg(t.msg)}
                   className="bg-gray-100 hover:bg-teal-50 hover:text-teal-700 text-gray-600 text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 transition-all">
@@ -14306,12 +14340,12 @@ function StudentAbsencePage() {
     const dateAr = new Date(date).toLocaleDateString("ar-SA", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
     let msg = "";
     if (att.status === "غائب")
-      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nغاب عن المدرسة بتاريخ ${dateAr}\nنرجو التواصل مع الإدارة لمعرفة السبب.\nمع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
+      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nغاب عن المدرسة بتاريخ ${dateAr}\nنرجو التواصل مع الإدارة لمعرفة السبب.\nمع تحيات إدارة ${SP.name}`;
     else if (att.status === "تأخر صباحي")
-      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن الحضور الصباحي بتاريخ ${dateAr}${att.lateReason && att.lateReason !== "لم يُحدَّد السبب" ? `\nالسبب المُسجَّل: ${att.lateReason}` : ""}\nنرجو الحرص على الالتزام بالحضور في وقته.\nمع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
+      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن الحضور الصباحي بتاريخ ${dateAr}${att.lateReason && att.lateReason !== "لم يُحدَّد السبب" ? `\nالسبب المُسجَّل: ${att.lateReason}` : ""}\nنرجو الحرص على الالتزام بالحضور في وقته.\nمع تحيات إدارة ${SP.name}`;
     else if (att.status === "تأخر حصص") {
       const perNames = (att.periods||[]).sort((a,b)=>a-b).map(p => "الحصة " + PERIODS_T[p]).join("، ");
-      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن ${perNames} بتاريخ ${dateAr}\nنرجو متابعة الأمر.\nمع تحيات إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
+      msg = `السلام عليكم ورحمة الله وبركاته\nنُفيدكم بأن ابنكم الطالب / ${stu.name}\nتأخّر عن ${perNames} بتاريخ ${dateAr}\nنرجو متابعة الأمر.\nمع تحيات إدارة ${SP.name}`;
     }
     setModal({ stu, msg }); setCopied(false);
   };
@@ -14348,7 +14382,7 @@ function StudentAbsencePage() {
       <div style="background:linear-gradient(135deg,#7f1d1d,#991b1b);color:white;padding:20px 24px;border-radius:12px 12px 0 0">
         <div style="font-size:18px;font-weight:900">📋 كشف الغياب والتأخر اليومي</div>
         <div style="font-size:13px;opacity:.85;margin-top:6px">${className} &nbsp;|&nbsp; ${dateAr}</div>
-        <div style="font-size:12px;opacity:.75;margin-top:3px">مدرسة الأمير عبدالمجيد المتوسطة الأولى — جدة</div>
+        <div style="font-size:12px;opacity:.75;margin-top:3px">${SP.name} — جدة</div>
       </div>
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:none;padding:14px 20px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">${stats}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-top:none">
@@ -14864,7 +14898,7 @@ function ProgramReportPage() {
     supporter:"",
     activityLeader:"", activityLeaderTitle:"رائد النشاط",
     coordinator:"",   coordinatorTitle:"منسق البرنامج",
-    principal:"فازع القرني",
+    principal:`${SP.principalShort}`,
     witnesses:[null,null,null,null,null,null],
   };
 
@@ -14997,9 +15031,9 @@ body{font-family:'Cairo',sans-serif;background:#fff;color:#1a2035;direction:rtl;
 </style></head><body>
 <div class="page">
   <div class="hdr">
-    <div class="hc r"><div style="font-size:11px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:14px;font-weight:900">وزارة التعليم</div><div style="font-size:11px;opacity:.8">إدارة تعليم جدة</div></div>
+    <div class="hc r"><div style="font-size:11px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:14px;font-weight:900">وزارة التعليم</div><div style="font-size:11px;opacity:.8">إدارة تعليم ${SP.city}</div></div>
     <div class="hc c"><img src="${LOGO_URL}" class="logo"/></div>
-    <div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div><div style="font-size:11px;opacity:.8">الفصل الدراسي ${report.semester}</div></div>
+    <div class="hc l"><div style="font-size:11px;opacity:.8">${SP.name}</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div><div style="font-size:11px;opacity:.8">الفصل الدراسي ${report.semester}</div></div>
   </div>
   <div class="quote-bar">✨ ${report.motivationalQuote || QUOTE}</div>
   <div class="yr"><div class="yc">العام الدراسي ${report.acadYear}</div><div class="yc">الفصل الدراسي ${report.semester}</div></div>
@@ -15034,9 +15068,9 @@ body{font-family:'Cairo',sans-serif;background:#fff;color:#1a2035;direction:rtl;
 </div>
 <div class="page wp">
   <div class="hdr">
-    <div class="hc r"><div style="font-size:11px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:14px;font-weight:900">وزارة التعليم</div><div style="font-size:11px;opacity:.8">إدارة تعليم جدة</div></div>
+    <div class="hc r"><div style="font-size:11px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:14px;font-weight:900">وزارة التعليم</div><div style="font-size:11px;opacity:.8">إدارة تعليم ${SP.city}</div></div>
     <div class="hc c"><img src="${LOGO_URL}" class="logo"/></div>
-    <div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div></div>
+    <div class="hc l"><div style="font-size:11px;opacity:.8">${SP.name}</div><div style="font-size:13px;font-weight:900">العام الدراسي ${report.acadYear}</div></div>
   </div>
   <div class="wt">شواهد ${report.reportTitle}</div>
   <div class="wg">${wHtml}</div>
@@ -15140,7 +15174,7 @@ body{font-family:'Cairo',sans-serif;background:#fff;color:#1a2035;direction:rtl;
             <div style={{width:"1.5px",height:60,background:"rgba(255,255,255,.3)",borderRadius:2}}/>
           </div>
           <div className="flex-1 flex flex-col justify-center text-left px-5 py-3">
-            <div className="font-black text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+            <div className="font-black text-sm">{SP.name}</div>
             <div className="flex gap-2 mt-2">
               <select value={report.acadYear} onChange={e=>upd("acadYear",e.target.value)}
                 className="bg-white/15 rounded-lg px-2 py-0.5 text-white text-xs font-bold focus:outline-none border border-white/30">
@@ -15459,7 +15493,7 @@ function MonthlyReportPage({ teachers, attendance, week, weekArchive, classList,
       @media print{@page{size:A4;margin:1.5cm}body{padding:0}}
     </style></head><body>
     <div class="header">
-      <h1>🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+      <h1>🏫 ${SP.name}</h1>
       <p>تقرير الحضور والغياب — ${period} | ${displayWeeks.length} أسبوع | إجمالي الأيام: ${teacherStats[0]?.totalDays||0} يوم لكل معلم</p>
     </div>
     <div class="kpi-grid">
@@ -15481,7 +15515,7 @@ function MonthlyReportPage({ teachers, attendance, week, weekArchive, classList,
       <tbody>${rows}</tbody>
     </table>
     <div class="footer">
-      مدرسة الأمير عبدالمجيد المتوسطة الأولى — بوابة الإدارة الإلكترونية © ١٤٤٧ هـ |
+      ${SP.name} — بوابة الإدارة الإلكترونية © ١٤٤٧ هـ |
       تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")}
     </div>
     <script>window.onload=()=>window.print()</script>
@@ -16028,7 +16062,7 @@ function GradeAnalysisPage() {
     <div class="hd">
       <div>
         <h1>📊 تقرير تحليل نتائج الطلاب</h1>
-        <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — المرحلة: ${stage} | الفصل: ${sem} | ${r.total} طالب</p>
+        <p>${SP.name} — المرحلة: ${stage} | الفصل: ${sem} | ${r.total} طالب</p>
         <p>تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} — دليل وزارة التعليم ١٤٤٧/١٤٤٨ هـ</p>
       </div>
     </div>
@@ -16068,7 +16102,7 @@ function GradeAnalysisPage() {
       <p>• نسبة النجاح ${r.passRate}% — ${r.passRate>=90?"ممتازة وتستحق التكريم 🎉":r.passRate>=70?"جيدة وتستحق التعزيز":"تحتاج خطة تحسين عاجلة"}</p>
       <p>• أقوى مادة: <strong>${r.best}</strong> (${r.ss[r.best]?.avg}%) — نموذج يُحتذى به</p>
     </div>
-    <div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — نظام تحليل الدرجات الإلكتروني © ١٤٤٧ هـ</div>
+    <div class="footer">${SP.name} — نظام تحليل الدرجات الإلكتروني © ١٤٤٧ هـ</div>
     <script>window.onload=()=>window.print()</script>
     </body></html>`);
   };
@@ -18341,7 +18375,7 @@ const emptyForm = () => ({
   hijriDay:"", hijriMonth:"", hijriYear:"1447",
   gregDay:"", gregMonth:"", gregYear:"2025",
   methods:[], methodsOther:"", visitGoals:[],
-  principalName:"فازع عبدالله حسن القرني",
+  principalName:`${SP.principal}`,
   supervisorName:"",
   scores: Object.fromEntries(
     EVAL_SECTIONS.flatMap(s => s.fields.map(f => [f, 0]))
@@ -18501,7 +18535,7 @@ function AssessmentPage({ teachers: appTeachers = [] }) {
         <div class="hdr-logo">📊</div>
         <div class="hdr-center">
           <h1>بطاقة تشخيص قياس التحصيل الدراسي</h1>
-          <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة تعليم جدة</p>
+          <p>${SP.name} — إدارة تعليم ${SP.city}</p>
         </div>
         <div class="hdr-dates">
           <div><span class="lbl">هجري:</span> <span class="val">${fmtHijri||"—"}</span></div>
@@ -18570,7 +18604,7 @@ function AssessmentPage({ teachers: appTeachers = [] }) {
         </div>
         <div class="sig">
           <div class="sig-space"></div>
-          <div class="sig-name">${form.principalName||"فازع عبدالله حسن القرني"}</div>
+          <div class="sig-name">${form.principalName||`${SP.principal}`}</div>
           <div class="sig-title">${form.principalName==="أمين الحنيطي"?"وكيل المدرسة":"مدير المدرسة"}</div>
         </div>
         <div class="sig">
@@ -19022,12 +19056,12 @@ function AssessmentPage({ teachers: appTeachers = [] }) {
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:24 }}>
                 <div>
                   <label style={{ fontSize:11, fontWeight:700, color:"#5a7080", display:"block", marginBottom:5 }}>المدير / الوكيل المُوقِّع</label>
-                  <select value={form.principalName||"فازع عبدالله حسن القرني"}
+                  <select value={form.principalName||`${SP.principal}`}
                     onChange={e=>setForm(f=>({...f,principalName:e.target.value}))}
                     style={{ width:"100%", padding:"9px 12px", border:"1.5px solid #d0dbe8", borderRadius:8,
                              fontFamily:"'Tajawal',sans-serif", fontSize:13, color:"#1a2d3e",
                              background:"#f9fbfd", direction:"rtl", outline:"none", boxSizing:"border-box" }}>
-                    <option value="فازع عبدالله حسن القرني">فازع عبدالله حسن القرني — مدير المدرسة</option>
+                    <option value={`${SP.principal}`}>{SP.principal} — مدير المدرسة</option>
                     <option value="أمين الحنيطي">أمين الحنيطي — وكيل المدرسة</option>
                   </select>
                 </div>
@@ -19045,7 +19079,7 @@ function AssessmentPage({ teachers: appTeachers = [] }) {
                 {[
                   { title:"توقيع المعلم",       name:selectedTeacher?.name||"" },
                   { title: form.principalName==="أمين الحنيطي" ? "وكيل المدرسة" : "مدير المدرسة",
-                    name:form.principalName||"فازع عبدالله حسن القرني" },
+                    name:form.principalName||`${SP.principal}` },
                   { title:"المشرف التربوي",      name:form.supervisorName||"" },
                 ].map((s,i)=>(
                   <div key={i} style={{ textAlign:"center" }}>
@@ -19076,7 +19110,7 @@ function AssessmentPage({ teachers: appTeachers = [] }) {
         <div style={{ position:"relative", zIndex:2 }}>
           <div style={{ fontSize:32, marginBottom:6 }}>📊</div>
           <div style={{ fontSize:22, fontWeight:900, color:"#fff", marginBottom:4 }}>بطاقات تشخيص قياس التحصيل</div>
-          <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)" }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)" }}>{SP.name}</div>
           <div style={{ display:"flex", gap:12, justifyContent:"center", marginTop:18, flexWrap:"wrap" }}>
             {[
               {n:ASSESSMENT_TEACHERS.length, l:"إجمالي المعلمين",    c:"#fff"},
@@ -19305,7 +19339,7 @@ function EvalFeedbackDisplay({ text, imgs, criterionName }) {
         </div>
         <div>
           <div style={{fontWeight:900,fontSize:12,color:"#92400e"}}>تغذية راجعة من المدير</div>
-          <div style={{fontSize:10,color:"#b45309",opacity:.8}}>فازع القرني</div>
+          <div style={{fontSize:10,color:"#b45309",opacity:.8}}>{SP.principalShort}</div>
         </div>
       </div>
 
@@ -19476,7 +19510,7 @@ function TeacherPerformanceEvalPage() {
 <body>
 <div class="header">
   <h1>📊 إحصائيات تقييم أداء المعلمين</h1>
-  <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى | تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} | المقيَّمون: ${evaluated.length} من أصل ${teachersList.length}</p>
+  <p>${SP.name} | تاريخ الطباعة: ${new Date().toLocaleDateString("ar-SA")} | المقيَّمون: ${evaluated.length} من أصل ${teachersList.length}</p>
 </div>
 
 <div class="stats-grid">
@@ -20427,7 +20461,7 @@ function TeacherEvalPage({ teachers = [] }) {
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ fontSize:60, marginBottom:12 }}>🎯</div>
           <div style={{ color:"#fff", fontWeight:900, fontSize:22, lineHeight:1.2 }}>قياس الأداء المهني</div>
-          <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginTop:6 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+          <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginTop:6 }}>{SP.name}</div>
         </div>
         <div style={{ background:"#fff", borderRadius:24, padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.4)" }}>
           <div style={{ fontWeight:900, fontSize:16, color:"#1e293b", textAlign:"center", marginBottom:20 }}>دخول المعلم</div>
@@ -20714,7 +20748,7 @@ function TeacherEvalPage({ teachers = [] }) {
     tr:nth-child(even){background:#f9fafb}
     .footer{text-align:center;margin-top:20px;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:10px}
     @media print{@page{size:A4 landscape;margin:1cm}body{padding:0}}</style></head><body>
-    <div class="hdr"><h1>🎯 تقرير قياس الأداء المهني للمعلمين</h1><p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${new Date().toLocaleDateString("ar-SA")}</p></div>
+    <div class="hdr"><h1>🎯 تقرير قياس الأداء المهني للمعلمين</h1><p>${SP.name} — ${new Date().toLocaleDateString("ar-SA")}</p></div>
     <div class="stats">
       <div class="stat"><div class="stat-num">${totalTeachers}</div><div class="stat-lbl">إجمالي المعلمين</div></div>
       <div class="stat"><div class="stat-num">${completedRecs.length}</div><div class="stat-lbl">أكملوا التقييم</div></div>
@@ -20757,7 +20791,7 @@ function TeacherEvalPage({ teachers = [] }) {
             .bar{background:#e5e7eb;border-radius:99px;height:8px;overflow:hidden;margin-top:4px}
             .bar-fill{height:100%;border-radius:99px}
             @media print{@page{size:A4;margin:1.5cm}}</style></head><body>
-            <div class="hdr"><h1>🎯 تقرير أداء المعلم</h1><p>مدرسة الأمير عبدالمجيد المتوسطة الأولى — ${rec.date}</p></div>
+            <div class="hdr"><h1>🎯 تقرير أداء المعلم</h1><p>${SP.name} — ${rec.date}</p></div>
             <div class="score"><div class="num">${rec.pct}%</div><div class="lbl">${lvInfo.emoji} ${lvInfo.label}</div></div>
             <div class="info-grid">
               <div class="info-item"><strong>المعلم</strong>${rec.teacherName}</div>
@@ -21772,7 +21806,7 @@ function CommitteeMeetingPage({ teachers }) {
 
   <!-- الرأس -->
   <div class="header">
-    <div class="logo-text">الإدارة العامة للتعليم<br>بمحافظة جدة<br>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+    <div class="logo-text">الإدارة العامة للتعليم<br>بمحافظة جدة<br>${SP.name}</div>
     <div class="header-center">
       <h1>وزارة التعليم</h1>
       <h2>Ministry of Education</h2>
@@ -22083,7 +22117,7 @@ function CommitteeMeetingPage({ teachers }) {
               <div className="text-xs leading-relaxed" style={{color:COM_GREEN}}>
                 <div className="font-black">الإدارة العامة للتعليم</div>
                 <div className="font-bold">بمحافظة جدة</div>
-                <div className="font-bold">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+                <div className="font-bold">{SP.name}</div>
               </div>
               <div className="text-center">
                 <div className="font-black text-sm" style={{color:COM_GREEN}}>وزارة التعليم</div>
@@ -22339,7 +22373,7 @@ function SettingsPage({ teachers, setTeachers, saveTeachers, week, setWeek, save
               className={`p-3 rounded-xl border-2 text-sm transition-all text-right ${siteFont === f.value ? "border-teal-500 bg-teal-50 text-teal-800" : "border-gray-200 hover:border-teal-300"}`}
               style={{ fontFamily: f.value }}>
               <div className="font-bold">{f.label}</div>
-              <div className="text-xs mt-1 opacity-60">مدرسة الأمير عبدالمجيد</div>
+              <div className="text-xs mt-1 opacity-60">{SP.short}</div>
             </button>
           ))}
         </div>
@@ -23206,7 +23240,7 @@ function buildAndPrintEvalForm(teacherName, rec, CRITERIA, getGeneralRating, get
 <div class="page-header">
   <div class="school-logo">🏫</div>
   <div class="school-info">
-    <div class="school-name">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+    <div class="school-name">${SP.name}</div>
     <div class="form-title">استمارة تقييم أداء المعلم</div>
     <div class="form-sub">وزارة التعليم — المملكة العربية السعودية</div>
   </div>
@@ -23298,7 +23332,7 @@ ${printData.notes ? `<div class="notes-box">
   </div>
   <div class="sig-box">
     <div class="sig-title">مدير المدرسة</div>
-    <div class="sig-name">فازع القرني</div>
+    <div class="sig-name">${SP.principalShort}</div>
     <div class="sig-line">الاسم والتوقيع والتاريخ</div>
   </div>
 </div>
@@ -23421,7 +23455,7 @@ function TeacherProfilePortal({ siteFont, onBack, attendance, teachers, week }) 
           <div className="w-24 h-24 rounded-3xl mx-auto mb-4 flex items-center justify-center text-5xl shadow-2xl"
             style={{ background:"rgba(255,255,255,0.12)", backdropFilter:"blur(10px)", border:"1px solid rgba(255,255,255,0.2)" }}>👨‍🏫</div>
           <h1 className="text-2xl font-black mb-1">بوابة المعلم</h1>
-          <p className="text-sm opacity-60">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
+          <p className="text-sm opacity-60">{SP.name}</p>
           <div className="flex justify-center gap-3 mt-3 flex-wrap text-xs opacity-75">
             {["📊 التقويم الذاتي","📁 الملف الأسبوعي","📈 التحليل البياني","📋 التقارير"].map(l=>(
               <span key={l} className="bg-white/10 rounded-full px-3 py-1">{l}</span>
@@ -24294,7 +24328,7 @@ function SuggestionsPortal({ siteFont, onBack, classList }) {
           💬
         </div>
         <h1 className="text-2xl font-black mb-1">آراء ومقترحات</h1>
-        <p className="opacity-70 text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
+        <p className="opacity-70 text-sm">{SP.name}</p>
       </div>
 
       <div className="px-4 pb-10 max-w-md mx-auto w-full">
@@ -24439,7 +24473,7 @@ function printSingleSuggestion(item) {
 </head>
 <body>
 <div class="header">
-  <div class="school">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+  <div class="school">${SP.name}</div>
   <div class="sub">آراء ومقترحات أولياء الأمور</div>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -24464,14 +24498,14 @@ function printSingleSuggestion(item) {
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:36px">
   <div style="text-align:center;border-top:2px solid #1e293b;padding-top:8px">
     <div style="font-size:11px;color:#64748b">توقيع مدير المدرسة</div>
-    <div style="font-size:13px;font-weight:900;color:#0d3b6e;margin:6px 0">فازع القرني</div>
+    <div style="font-size:13px;font-weight:900;color:#0d3b6e;margin:6px 0">${SP.principalShort}</div>
   </div>
   <div style="text-align:center;border-top:2px solid #1e293b;padding-top:8px">
     <div style="font-size:11px;color:#64748b">التاريخ</div>
     <div style="font-size:13px;font-weight:900;color:#0d3b6e;margin:6px 0">${item.date}</div>
   </div>
 </div>
-<div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — إدارة الآراء والمقترحات</div>
+<div class="footer">${SP.name} — إدارة الآراء والمقترحات</div>
 <script>window.onload=()=>{window.print();}<\/script>
 </body></html>`);
   win.document.close();
@@ -24534,7 +24568,7 @@ function printAllSuggestions(items) {
 <body>
 <div class="header">
   <h1>📊 تقرير الآراء والمقترحات</h1>
-  <div class="sub">مدرسة الأمير عبدالمجيد المتوسطة الأولى | طُبع بتاريخ: ${new Date().toLocaleDateString("ar-SA")}</div>
+  <div class="sub">${SP.name} | طُبع بتاريخ: ${new Date().toLocaleDateString("ar-SA")}</div>
 </div>
 <div class="stats">
   <div class="stat" style="border-color:#7c3aed;background:#faf5ff">
@@ -24566,7 +24600,7 @@ function printAllSuggestions(items) {
   </tr></thead>
   <tbody>${rows}</tbody>
 </table>
-<div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — تقرير الآراء والمقترحات</div>
+<div class="footer">${SP.name} — تقرير الآراء والمقترحات</div>
 <script>window.onload=()=>{window.print();}<\/script>
 </body></html>`);
   win.document.close();
@@ -24881,8 +24915,8 @@ function LicenseTeacherPortal({ siteFont, onBack }) {
         <div style={{ display: "flex", alignItems: "center", gap: 14, color: "#fff", marginBottom: 18 }}>
           <img src={SCHOOL_LOGO} alt="" style={{ width: 64, height: 64, borderRadius: "50%", background: "#fff", padding: 4, boxShadow: "0 0 0 3px #d4a017" }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, opacity: .8 }}>وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div>
-            <div style={{ fontSize: 20, fontWeight: 900 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+            <div style={{ fontSize: 12, fontWeight: 800, opacity: .8 }}>وزارة التعليم — {SP.region}</div>
+            <div style={{ fontSize: 20, fontWeight: 900 }}>{SP.name}</div>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#fde68a" }}>🪪 سجل متابعة الرخصة المهنية للعام الدراسي {licToAr(year)} هـ</div>
           </div>
           {onBack && <button onClick={onBack} style={{ background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.3)", borderRadius: 12, padding: "8px 12px", fontFamily: "inherit", fontWeight: 800, cursor: "pointer" }}>← الرئيسية</button>}
@@ -25115,7 +25149,7 @@ function ProfessionalLicensePage() {
     setBusy(false);
     const yr = licToAr(year);
     const logo = typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : "";
-    const head = `<div class="hd"><div class="hr"><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة</b></div><div class="hc">${logo}</div><div class="hl">العام الدراسي<br><b class="yr">${yr} هـ</b></div></div>
+    const head = `<div class="hd"><div class="hr"><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><div class="hc">${logo}</div><div class="hl">العام الدراسي<br><b class="yr">${yr} هـ</b></div></div>
       <div class="tt"><span>سجل متابعة الرخصة المهنية للعام الدراسي ${yr} هـ</span></div>`;
     const yes = list.filter(r => r.hasLicense === true).length, no = list.filter(r => r.hasLicense === false).length;
     const summary = `<section class="pg">${head}
@@ -25177,7 +25211,7 @@ ul{margin:0 0 10px;padding-right:20px;font-weight:700;font-size:13.5px;line-heig
               <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,.18)", border: "2px solid rgba(255,255,255,.35)", display: "grid", placeItems: "center", fontSize: 28 }}>🪪</div>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 900 }}>سجل متابعة الرخصة المهنية</div>
-                <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{SP.name}</div>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -25370,7 +25404,7 @@ function LicenseShareLink() {
   const shareLink = () => {
     if (navigator.share) {
       navigator.share({
-        title: "الرخصة المهنية — مدرسة الأمير عبدالمجيد",
+        title: `الرخصة المهنية — ${SP.short}`,
         text: "أكمل بياناتك للرخصة المهنية من خلال هذا الرابط",
         url: getLink(),
       });
@@ -25380,7 +25414,7 @@ function LicenseShareLink() {
   };
 
   const whatsapp = () => {
-    const msg = encodeURIComponent(`📋 *الرخصة المهنية — مدرسة الأمير عبدالمجيد المتوسطة الأولى*
+    const msg = encodeURIComponent(`📋 *الرخصة المهنية — ${SP.name}*
 
 أكمل بياناتك للرخصة المهنية من خلال الرابط:
 ${getLink()}`);
@@ -25974,7 +26008,7 @@ function DailyAttendanceTrackerPage({ teachers }) {
       return "<tr><td>"+t+"</td><td style=\"text-align:center;font-weight:900;color:"+(si?.color||"#94a3b8")+"\">"+(si?.label||"—")+"</td><td style=\"text-align:center;color:#7c3aed\">"+(at?at.icon+" "+at.val:"—")+"</td><td style=\"text-align:center;font-weight:900;color:"+(r.farisEntered?"#059669":r.farisEntered===false?"#dc2626":"#94a3b8")+"\">"+(r.farisEntered===true?"✅ نعم":r.farisEntered===false?"❌ لا":"—")+"</td></tr>";
     }).join("");
     const st = {حاضر:dayStat("حاضر"),غائب:dayStat("غائب"),متأخر:dayStat("متأخر"),مستأذن:dayStat("مستأذن")};
-    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف الحضور اليومي</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;font-size:12px}.page{max-width:760px;margin:0 auto;border:3px solid #0d3b6e}.hdr{background:linear-gradient(135deg,#0d3b6e,#1a5276,#0d9488);color:#fff;display:flex;align-items:stretch;min-height:78px}.hc{flex:1;padding:10px 15px;display:flex;flex-direction:column;justify-content:center}.hc.c{flex:0 0 95px;align-items:center}.hc.r{text-align:right}.hc.l{text-align:left}.logo{height:55px;filter:brightness(0) invert(1)}.tb{background:#1a2f5e;color:#fff;text-align:center;padding:9px;font-size:14px;font-weight:900;border-top:4px solid #f59e0b}.meta{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0d9488}.mc{padding:6px 10px;border-left:1px solid #c7d2e8;background:#f8fafd}.mc:last-child{border-left:none}.ml{font-size:9px;color:#64748b;font-weight:700}.mv{font-size:11px;font-weight:700}.stats{display:grid;grid-template-columns:repeat(4,1fr);margin:8px 12px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.st{padding:7px;text-align:center;border-left:1px solid #c7d2e8}.st:first-child{border-left:none}.stn{font-size:17px;font-weight:900}.stl{font-size:9px;color:#64748b}table{width:100%;border-collapse:collapse;margin:0 0 8px}thead tr{background:linear-gradient(135deg,#0d3b6e,#1d4ed8);color:#fff}th,td{padding:6px 10px;border:1px solid #c7d2e8;font-size:11px}th{font-weight:900;text-align:center}td:first-child{text-align:right}tbody tr:nth-child(even){background:#f8fafd}.sig{display:grid;grid-template-columns:1fr 1fr;margin:0 12px 8px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.sb{padding:10px;text-align:center;border-left:1px solid #c7d2e8}.sb:first-child{border-left:none}.sr{font-size:9px;color:#64748b}.sn{border-top:1.5px dashed #0d9488;padding-top:5px;font-size:11px;font-weight:900;color:#0d3b6e;margin-top:12px}.footer{background:#0d1b2e;color:rgba(255,255,255,.5);text-align:center;padding:5px;font-size:9px}@media print{@page{size:A4;margin:8mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page"><div class="hdr"><div class="hc r"><div style="font-size:10px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:13px;font-weight:900">وزارة التعليم</div><div style="font-size:10px;opacity:.8">إدارة تعليم جدة</div></div><div class="hc c"><img src="${LOGO_URL}" class="logo"/></div><div class="hc l"><div style="font-size:11px;opacity:.8">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div></div></div><div class="tb">كشف متابعة الحضور اليومي للمعلمين</div><div class="meta"><div class="mc"><div class="ml">اليوم</div><div class="mv">${selDay}</div></div><div class="mc"><div class="ml">الهجري</div><div class="mv">${selDayNum} ${selHijriM} ${selHijriY}هـ</div></div><div class="mc"><div class="ml">الميلادي</div><div class="mv">${selDayNum} ${selGregM} ${selGregY}م</div></div><div class="mc"><div class="ml">الإجمالي</div><div class="mv">${teacherList.length} معلم</div></div></div><div class="stats"><div class="st"><div class="stn" style="color:#059669">${st.حاضر}</div><div class="stl">حاضر</div></div><div class="st"><div class="stn" style="color:#dc2626">${st.غائب}</div><div class="stl">غائب</div></div><div class="st"><div class="stn" style="color:#d97706">${st.متأخر}</div><div class="stl">متأخر</div></div><div class="st"><div class="stn" style="color:#2563eb">${st.مستأذن}</div><div class="stl">مستأذن</div></div></div><table><thead><tr><th>اسم المعلم</th><th>الحالة</th><th>نوع الغياب</th><th>فارس</th></tr></thead><tbody>${rows}</tbody></table><div class="sig"><div class="sb"><div class="sr">مشرف الحضور</div><div class="sn">______________</div></div><div class="sb"><div class="sr">مدير المدرسة</div><div class="sn">فازع عبدالله القرني</div></div></div><div class="footer">مدرسة الأمير عبدالمجيد المتوسطة الأولى — كشف الحضور اليومي</div></div><script>window.onload=()=>window.print();</script></body></html>`);
+    printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف الحضور اليومي</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Cairo',sans-serif;direction:rtl;font-size:12px}.page{max-width:760px;margin:0 auto;border:3px solid #0d3b6e}.hdr{background:linear-gradient(135deg,#0d3b6e,#1a5276,#0d9488);color:#fff;display:flex;align-items:stretch;min-height:78px}.hc{flex:1;padding:10px 15px;display:flex;flex-direction:column;justify-content:center}.hc.c{flex:0 0 95px;align-items:center}.hc.r{text-align:right}.hc.l{text-align:left}.logo{height:55px;filter:brightness(0) invert(1)}.tb{background:#1a2f5e;color:#fff;text-align:center;padding:9px;font-size:14px;font-weight:900;border-top:4px solid #f59e0b}.meta{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #0d9488}.mc{padding:6px 10px;border-left:1px solid #c7d2e8;background:#f8fafd}.mc:last-child{border-left:none}.ml{font-size:9px;color:#64748b;font-weight:700}.mv{font-size:11px;font-weight:700}.stats{display:grid;grid-template-columns:repeat(4,1fr);margin:8px 12px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.st{padding:7px;text-align:center;border-left:1px solid #c7d2e8}.st:first-child{border-left:none}.stn{font-size:17px;font-weight:900}.stl{font-size:9px;color:#64748b}table{width:100%;border-collapse:collapse;margin:0 0 8px}thead tr{background:linear-gradient(135deg,#0d3b6e,#1d4ed8);color:#fff}th,td{padding:6px 10px;border:1px solid #c7d2e8;font-size:11px}th{font-weight:900;text-align:center}td:first-child{text-align:right}tbody tr:nth-child(even){background:#f8fafd}.sig{display:grid;grid-template-columns:1fr 1fr;margin:0 12px 8px;border:2px solid #c7d2e8;border-radius:8px;overflow:hidden}.sb{padding:10px;text-align:center;border-left:1px solid #c7d2e8}.sb:first-child{border-left:none}.sr{font-size:9px;color:#64748b}.sn{border-top:1.5px dashed #0d9488;padding-top:5px;font-size:11px;font-weight:900;color:#0d3b6e;margin-top:12px}.footer{background:#0d1b2e;color:rgba(255,255,255,.5);text-align:center;padding:5px;font-size:9px}@media print{@page{size:A4;margin:8mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page"><div class="hdr"><div class="hc r"><div style="font-size:10px;opacity:.8">المملكة العربية السعودية</div><div style="font-size:13px;font-weight:900">وزارة التعليم</div><div style="font-size:10px;opacity:.8">إدارة تعليم ${SP.city}</div></div><div class="hc c"><img src="${LOGO_URL}" class="logo"/></div><div class="hc l"><div style="font-size:11px;opacity:.8">${SP.name}</div></div></div><div class="tb">كشف متابعة الحضور اليومي للمعلمين</div><div class="meta"><div class="mc"><div class="ml">اليوم</div><div class="mv">${selDay}</div></div><div class="mc"><div class="ml">الهجري</div><div class="mv">${selDayNum} ${selHijriM} ${selHijriY}هـ</div></div><div class="mc"><div class="ml">الميلادي</div><div class="mv">${selDayNum} ${selGregM} ${selGregY}م</div></div><div class="mc"><div class="ml">الإجمالي</div><div class="mv">${teacherList.length} معلم</div></div></div><div class="stats"><div class="st"><div class="stn" style="color:#059669">${st.حاضر}</div><div class="stl">حاضر</div></div><div class="st"><div class="stn" style="color:#dc2626">${st.غائب}</div><div class="stl">غائب</div></div><div class="st"><div class="stn" style="color:#d97706">${st.متأخر}</div><div class="stl">متأخر</div></div><div class="st"><div class="stn" style="color:#2563eb">${st.مستأذن}</div><div class="stl">مستأذن</div></div></div><table><thead><tr><th>اسم المعلم</th><th>الحالة</th><th>نوع الغياب</th><th>فارس</th></tr></thead><tbody>${rows}</tbody></table><div class="sig"><div class="sb"><div class="sr">مشرف الحضور</div><div class="sn">______________</div></div><div class="sb"><div class="sr">مدير المدرسة</div><div class="sn">${SP.principal}</div></div></div><div class="footer">${SP.name} — كشف الحضور اليومي</div></div><script>window.onload=()=>window.print();</script></body></html>`);
   };
 
   if (loading) return (
@@ -26012,7 +26046,7 @@ function DailyAttendanceTrackerPage({ teachers }) {
             <div style={{width:"1.5px",height:52,background:"rgba(255,255,255,.3)",borderRadius:2}}/>
           </div>
           <div className="flex-1 flex flex-col justify-center text-left px-5 py-3">
-            <div className="font-black text-sm">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+            <div className="font-black text-sm">{SP.name}</div>
             <div className="text-xs opacity-70 mt-0.5">متابعة الحضور اليومي</div>
           </div>
         </div>
@@ -26366,7 +26400,7 @@ function BroadcastPage() {
   ];
   const [items, setItems] = useState(defaultItems);
   const [date, setDate] = useState(new Date().toLocaleDateString("ar-SA-u-nu-arab", {weekday:"long", year:"numeric", month:"long", day:"numeric"}));
-  const [schoolName] = useState("مدرسة الأمير عبدالمجيد المتوسطة الأولى");
+  const [schoolName] = useState(`${SP.name}`);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -26502,7 +26536,7 @@ function QuizPage() {
     printWindow(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title>نتيجة الاختبار</title>
     <style>body{font-family:sans-serif;padding:30px;direction:rtl;} h1{color:#0d9488;} .score{font-size:48px;font-weight:bold;text-align:center;color:${r.percent>=60?"#0d9488":"#dc2626"};}</style>
     </head><body>
-    <h1>🏫 مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+    <h1>🏫 ${SP.name}</h1>
     <h2>نتيجة اختبار: ${r.quizTitle}</h2>
     <p>الطالب: <strong>${r.studentName}</strong></p>
     <p>رقم الهوية: ${r.studentId||"—"}</p>
@@ -27137,7 +27171,7 @@ function TimetablePage({ teachers }) {
   const print = () => {
     printWindow(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title>جدول الحصص</title>
     <style>body{font-family:sans-serif;direction:rtl;padding:20px;font-size:12px;} h1{color:#0d9488;text-align:center;} table{width:100%;border-collapse:collapse;margin-top:16px;} th,td{border:1px solid #ccc;padding:8px 6px;text-align:center;} th{background:#0d9488;color:white;font-size:11px;} td{font-size:11px;} .period{background:#f0fdfa;font-weight:bold;}</style>
-    </head><body><h1>🏫 جدول الحصص الأسبوعي — مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+    </head><body><h1>🏫 جدول الحصص الأسبوعي — ${SP.name}</h1>
     <table><tr><th>الحصة</th>${days.map(d=>`<th>${d}</th>`).join("")}</tr>
     ${periods.map(p=>`<tr><td class="period">الحصة ${p}</td>${days.map(d=>`<td>${timetable[d+"-"+p]||""}</td>`).join("")}</tr>`).join("")}
     </table></body></html>`);
@@ -27204,7 +27238,7 @@ function HonorBoardPage({ classList }) {
     printWindow(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title>لوحة الشرف</title>
     <style>body{font-family:sans-serif;direction:rtl;padding:30px;text-align:center;background:#fffbeb;} h1{color:#0d9488;font-size:22px;margin-bottom:4px;} .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-top:24px;} .card{background:white;border:2px solid #fde68a;border-radius:12px;padding:16px;} .badge{font-size:36px;} .name{font-weight:bold;font-size:14px;margin:8px 0 4px;} .class{font-size:12px;color:#666;} .reason{font-size:11px;color:#0d9488;margin-top:6px;}</style>
     </head><body>
-    <h1>🏫 لوحة الشرف</h1><p style="color:#666;font-size:13px;">مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
+    <h1>🏫 لوحة الشرف</h1><p style="color:#666;font-size:13px;">${SP.name}</p>
     <div class="grid">${honorStudents.map(s=>`<div class="card"><div class="badge">${s.badge}</div><div class="name">${s.name}</div><div class="class">${s.class}</div><div class="reason">${s.reason||""}</div></div>`).join("")}</div>
     </body></html>`);
   };
@@ -27596,7 +27630,7 @@ const SDX_IMPROVE = [
   "تقدّمكم في الالتزام بالدوام محل تقدير الإدارة، استمروا على هذا النهج الجميل.",
   "خطوة رائعة نحو التميز؛ تحسّن انضباطكم ملحوظ ومقدّر، بارك الله في جهودكم.",
 ];
-const SDX_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة الأولى";
+const SDX_SCHOOL = `${SP.name}`;
 
 // ── أدوات الوقت والتاريخ ──
 const sdxPad = n => String(n).padStart(2, "0");
@@ -30018,7 +30052,7 @@ function AttendanceAnalysisPage() {
     .sig{text-align:center;flex:1}.sig .lb{color:#6b7280;font-size:10px;margin-bottom:20px}
     .sig .ln{border-top:1px solid #374151;padding-top:4px;font-weight:900;font-size:11px}
     @page{size:A4;margin:1.2cm}</style></head><body>
-    <div class="h"><h1>📊 تقرير استخراج الغياب والتأخر — مدرسة الأمير عبدالمجيد المتوسطة الأولى</h1>
+    <div class="h"><h1>📊 تقرير استخراج الغياب والتأخر — ${SP.name}</h1>
     <p><strong>${teacher.name||"—"}</strong> · ${teacher.id||""} · ${teacher.role||""}</p>
     <p>الفترات: ${periods} · ${teacher.files.length} ملف · ${st.total} يوم دوام</p></div>
     <div class="ks">
@@ -30036,7 +30070,7 @@ function AttendanceAnalysisPage() {
     <tbody>${latR}</tbody><tfoot><tr class="fl"><td colspan="4" class="rt">المجموع</td><td>${st.totLat} دقيقة</td><td colspan="2">متوسط ${st.avgLat}د/يوم</td></tr></tfoot></table>`:""}
     <div class="sigs">
       <div class="sig"><div class="lb">توقيع الموظف</div><div class="ln">__________________</div></div>
-      <div class="sig"><div class="lb">مدير المدرسة</div><div class="ln">فازع القرني</div></div>
+      <div class="sig"><div class="lb">مدير المدرسة</div><div class="ln">${SP.principalShort}</div></div>
       <div class="sig"><div class="lb">التاريخ</div><div class="ln">__________________</div></div>
     </div>
     <script>window.onload=()=>window.print();</script></body></html>`);
@@ -30100,7 +30134,7 @@ function AttendanceAnalysisPage() {
     <div class="header">
       <div>
         <h1>🏫 تقرير الحضور والانصراف</h1>
-        <p>مدرسة الأمير عبدالمجيد المتوسطة الأولى</p>
+        <p>${SP.name}</p>
         <p style="margin-top:6px;font-size:13px;font-weight:700;">${emp.empName}</p>
         <p>${emp.empId}${emp.empRole ? " — " + emp.empRole : ""}</p>
         <p style="margin-top:2px;opacity:.7;">${emp.dateRange}</p>
@@ -30902,7 +30936,7 @@ function QiyasAlatharPage() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>استبانة قياس الأثر — مدرسة الأمير عبدالمجيد المتوسطة الأولى</title>
+<title>استبانة قياس الأثر — ${SP.name}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -31221,8 +31255,8 @@ body {
   <!-- ── رأس ── -->
   <div class="hdr">
     <div class="hdr-ornament">❖ &nbsp; ❖ &nbsp; ❖</div>
-    <div class="school-name">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
-    <div class="school-sub">إدارة تعليم جدة &nbsp;—&nbsp; وزارة التعليم</div>
+    <div class="school-name">${SP.name}</div>
+    <div class="school-sub">إدارة تعليم ${SP.city} &nbsp;—&nbsp; وزارة التعليم</div>
 
     <div class="sep">
       <span></span><i>✦</i><span></span>
@@ -31325,7 +31359,7 @@ body {
 
   <!-- ذيل -->
   <div class="footer">
-    مدرسة الأمير عبدالمجيد المتوسطة الأولى &nbsp;|&nbsp; إدارة تعليم جدة &nbsp;|&nbsp; وزارة التعليم
+    ${SP.name} &nbsp;|&nbsp; إدارة تعليم ${SP.city} &nbsp;|&nbsp; وزارة التعليم
     &nbsp;|&nbsp; 🔒 جميع البيانات سرية ومحمية
   </div>
 </div>
@@ -31734,7 +31768,7 @@ const FG_SEMESTERS = ["الفترة الأولى","الفترة الثانية",
 const FG_LEVELS = ["الصف الأول المتوسط","الصف الثاني المتوسط","الصف الثالث المتوسط"];
 const fgId = () => Math.random().toString(36).slice(2, 9);
 // معلمو المدرسة (من تقرير الحضور والانصراف) — يمكن تحديثها من داخل الصفحة
-const FG_TEACHERS_DEFAULT = ["عبدالرحيم رضوان", "علي الغامدي", "فازع القرني", "احمد الشهري", "محمد الجوفي", "رمضان الزهراني", "فايز الزلفي", "وليد الزايدي", "يحي الزبيدي", "عبدالعزيز الزهراني", "هادي المقاطي العتيبي", "فارس البشري", "عادل الغامدي", "عبدالله السهيمي", "سعد العتيبي", "عمر العمشاني", "محمد القارحى", "ماجد الهذلي", "حاتم الشمراني", "محمد الحربي", "فهد ال رده", "عبدالعزيز الذبياني", "حسن العيسى", "أحمد عزي", "فيصل العتيبى", "صاطي الحارثي", "محمد الشهري", "مجاهد الزهراني", "طارق الزهراني", "جابر الشهري", "محمد وراد الحربي", "عوض العماري", "اسامه السفري"];
+const FG_TEACHERS_DEFAULT = ["عبدالرحيم رضوان", "علي الغامدي", `${SP.principalShort}`, "احمد الشهري", "محمد الجوفي", "رمضان الزهراني", "فايز الزلفي", "وليد الزايدي", "يحي الزبيدي", "عبدالعزيز الزهراني", "هادي المقاطي العتيبي", "فارس البشري", "عادل الغامدي", "عبدالله السهيمي", "سعد العتيبي", "عمر العمشاني", "محمد القارحى", "ماجد الهذلي", "حاتم الشمراني", "محمد الحربي", "فهد ال رده", "عبدالعزيز الذبياني", "حسن العيسى", "أحمد عزي", "فيصل العتيبى", "صاطي الحارثي", "محمد الشهري", "مجاهد الزهراني", "طارق الزهراني", "جابر الشهري", "محمد وراد الحربي", "عوض العماري", "اسامه السفري"];
 // فصول كل صف
 const FG_SECTIONS = { "الصف الأول المتوسط": ["1","2","3","4","5","6","7","8"], "الصف الثاني المتوسط": ["1","2","3","4","5","6"], "الصف الثالث المتوسط": ["1","2","3","4","5","6"] };
 
@@ -31798,7 +31832,7 @@ function fgNewSheet(defaults = {}) {
   return {
     id: "fg-" + Date.now(), teacher: "", subject: "", level: FG_LEVELS[0], section: "1",
     semester: FG_SEMESTERS[0], year: "١٤٤٧هـ", edu: "الإدارة العامة للتعليم",
-    school: "مدرسة الأمير عبدالمجيد المتوسطة", model, ...fgBuildColumns(model),
+    school: `${SP.name}`, model, ...fgBuildColumns(model),
     students: Array.from({ length: 5 }, () => ({ id: fgId(), name: "", scores: {} })),
     ...defaults, updated: Date.now(),
   };
@@ -32314,7 +32348,7 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
 <h1>سجل رصد التقويم التكويني</h1>
 <div class="info"><span>المعلم: ${sheet.teacher || "—"}</span><span>المادة: ${sheet.subject || "—"}</span><span>الصف: ${sheet.level}</span><span>الفصل: ${sheet.section}</span><span>عدد الطلاب: ${named.length}</span><span>${FG_FORMS[form].ic} ${FG_FORMS[form].t}</span></div>
 <table style="font-size:10px"><thead><tr><th rowspan="${HR}">م</th><th rowspan="${HR}" style="min-width:150px">اسم الطالب</th>${gh}<th rowspan="${HR}">المجموع<br><small>${maxTotal}</small></th></tr><tr>${ch}</tr>${anyMulti ? `<tr>${sh3}</tr>` : ""}</thead><tbody>${body}</tbody></table>
-<div class="sig"><span>معلم المادة: ${sheet.teacher || "............"}</span><span>التوقيع: ............</span><span>مدير المدرسة: فازع القرني ............</span></div>
+<div class="sig"><span>معلم المادة: ${sheet.teacher || "............"}</span><span>التوقيع: ............</span><span>مدير المدرسة: ${SP.principalShort} ............</span></div>
 <script>setTimeout(()=>print(),600)</script></body></html>`);
   };
 
@@ -32751,7 +32785,8 @@ ${BW ? `body{color:#000}h1{color:#000!important}.k{border-bottom-color:#000!impo
 // الفصول: school-mroster/{ck}   التحضير: school-mattend/{YYYY-MM-DD}/{ck}   الفهرس: school-mattend-index/{date}
 // ══════════════════════════════════════════════════════════
 const MA_ROSTER = "school-mroster", MA_ATT = "school-mattend", MA_IDX = "school-mattend-index", MA_META = "school-mattend-meta";
-const MA_LV = [{ n: "الأول المتوسط", s: "أول", c: "#0d9488", soft: "#ccfbf1" }, { n: "الثاني المتوسط", s: "ثاني", c: "#2563eb", soft: "#dbeafe" }, { n: "الثالث المتوسط", s: "ثالث", c: "#7c3aed", soft: "#ede9fe" }];
+const MA_LV_COL = [["#0d9488", "#ccfbf1"], ["#2563eb", "#dbeafe"], ["#7c3aed", "#ede9fe"], ["#d97706", "#fef3c7"], ["#db2777", "#fce7f3"], ["#0891b2", "#cffafe"]];
+const MA_LV = SP.grades.map(([n, s2], i) => ({ n, s: s2, c: MA_LV_COL[i % 6][0], soft: MA_LV_COL[i % 6][1] }));
 const maId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const maPad = n => String(n).padStart(2, "0");
 const maKey = d => `${d.getFullYear()}-${maPad(d.getMonth() + 1)}-${maPad(d.getDate())}`;
@@ -32760,7 +32795,7 @@ const maDay = d => d.toLocaleDateString("ar-SA", { weekday: "long" });
 const maHijri = d => { try { return d.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "long", year: "numeric" }).replace(/\s*هـ\s*$/, "") + " هـ"; } catch { return ""; } };
 const maGreg = d => d.toLocaleDateString("ar-EG-u-nu-arab", { day: "numeric", month: "long", year: "numeric" }) + " م";
 const maAr = n => String(n ?? "").replace(/\d/g, x => "٠١٢٣٤٥٦٧٨٩"[x]);
-const maClassName = ck => { const [l, s] = String(ck).split("-"); return `${MA_LV[+l - 1]?.s || ""} متوسط / ${maAr(s)}`; };
+const maClassName = ck => { const [l, s] = String(ck).split("-"); return `${MA_LV[+l - 1]?.s || ""} ${SP.stageW} / ${maAr(s)}`; };
 // ── الإجازات الرسمية لمدارس مكة والمدينة وجدة والطائف — التقويم الدراسي ١٤٤٨/١٤٤٩هـ (أيام الأحد–الخميس فقط)
 //    اليوم الوطني ٢٣–٢٦/٩/٢٠٢٦ • الخريف ٢٠–٢٨/١١ • منتصف العام ٨–١٦/١/٢٠٢٧ • التأسيس ١٩–٢٢/٢ • الفطر ٢٦/٢–١٣/٣ • الأضحى ٣٠/٤–٢٢/٥ • نهاية العام من ١/٧ حتى عودة المعلمين ٢٢/٨/٢٠٢٧
 const SCHOOL_HOL_1448 = {"2026-09-23":"إجازة اليوم الوطني","2026-09-24":"إجازة اليوم الوطني","2026-11-22":"إجازة الخريف","2026-11-23":"إجازة الخريف","2026-11-24":"إجازة الخريف","2026-11-25":"إجازة الخريف","2026-11-26":"إجازة الخريف","2027-01-10":"إجازة منتصف العام الدراسي","2027-01-11":"إجازة منتصف العام الدراسي","2027-01-12":"إجازة منتصف العام الدراسي","2027-01-13":"إجازة منتصف العام الدراسي","2027-01-14":"إجازة منتصف العام الدراسي","2027-02-21":"إجازة يوم التأسيس","2027-02-22":"إجازة يوم التأسيس","2027-02-28":"إجازة عيد الفطر","2027-03-01":"إجازة عيد الفطر","2027-03-02":"إجازة عيد الفطر","2027-03-03":"إجازة عيد الفطر","2027-03-04":"إجازة عيد الفطر","2027-03-07":"إجازة عيد الفطر","2027-03-08":"إجازة عيد الفطر","2027-03-09":"إجازة عيد الفطر","2027-03-10":"إجازة عيد الفطر","2027-03-11":"إجازة عيد الفطر","2027-05-02":"إجازة عيد الأضحى","2027-05-03":"إجازة عيد الأضحى","2027-05-04":"إجازة عيد الأضحى","2027-05-05":"إجازة عيد الأضحى","2027-05-06":"إجازة عيد الأضحى","2027-05-09":"إجازة عيد الأضحى","2027-05-10":"إجازة عيد الأضحى","2027-05-11":"إجازة عيد الأضحى","2027-05-12":"إجازة عيد الأضحى","2027-05-13":"إجازة عيد الأضحى","2027-05-16":"إجازة عيد الأضحى","2027-05-17":"إجازة عيد الأضحى","2027-05-18":"إجازة عيد الأضحى","2027-05-19":"إجازة عيد الأضحى","2027-05-20":"إجازة عيد الأضحى","2027-07-01":"إجازة نهاية العام الدراسي","2027-07-04":"إجازة نهاية العام الدراسي","2027-07-05":"إجازة نهاية العام الدراسي","2027-07-06":"إجازة نهاية العام الدراسي","2027-07-07":"إجازة نهاية العام الدراسي","2027-07-08":"إجازة نهاية العام الدراسي","2027-07-11":"إجازة نهاية العام الدراسي","2027-07-12":"إجازة نهاية العام الدراسي","2027-07-13":"إجازة نهاية العام الدراسي","2027-07-14":"إجازة نهاية العام الدراسي","2027-07-15":"إجازة نهاية العام الدراسي","2027-07-18":"إجازة نهاية العام الدراسي","2027-07-19":"إجازة نهاية العام الدراسي","2027-07-20":"إجازة نهاية العام الدراسي","2027-07-21":"إجازة نهاية العام الدراسي","2027-07-22":"إجازة نهاية العام الدراسي","2027-07-25":"إجازة نهاية العام الدراسي","2027-07-26":"إجازة نهاية العام الدراسي","2027-07-27":"إجازة نهاية العام الدراسي","2027-07-28":"إجازة نهاية العام الدراسي","2027-07-29":"إجازة نهاية العام الدراسي","2027-08-01":"إجازة نهاية العام الدراسي","2027-08-02":"إجازة نهاية العام الدراسي","2027-08-03":"إجازة نهاية العام الدراسي","2027-08-04":"إجازة نهاية العام الدراسي","2027-08-05":"إجازة نهاية العام الدراسي","2027-08-08":"إجازة نهاية العام الدراسي","2027-08-09":"إجازة نهاية العام الدراسي","2027-08-10":"إجازة نهاية العام الدراسي","2027-08-11":"إجازة نهاية العام الدراسي","2027-08-12":"إجازة نهاية العام الدراسي","2027-08-15":"إجازة نهاية العام الدراسي","2027-08-16":"إجازة نهاية العام الدراسي","2027-08-17":"إجازة نهاية العام الدراسي","2027-08-18":"إجازة نهاية العام الدراسي","2027-08-19":"إجازة نهاية العام الدراسي"};
@@ -33062,13 +33097,13 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
   const [flt, setFlt] = useState({ d: "any", i: -1, ck: "" });
   const [openCk, setOpenCk] = useState(null);
   const [imp, setImp] = useState(null);
-  const [per, setPer] = useState({ from: "", to: "", cal: "h", principal: "فازع القرني" });
+  const [per, setPer] = useState({ from: "", to: "", cal: "h", principal: `${SP.principalShort}` });
   const [perEd, setPerEd] = useState(null);
   const fileRef = useRef(null);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
   const classes = maClasses(counts);
   const periodTxt = per.from && per.to ? `من ${scFmtD(per.from, per.cal)} إلى ${scFmtD(per.to, per.cal)}` : per.from ? `من ${scFmtD(per.from, per.cal)}` : "";
-  const savePer = async () => { const v = { ...perEd, principal: (perEd.principal || "").trim() || "فازع القرني" }; if (v.from && v.to && v.to < v.from) { alert("تاريخ النهاية قبل تاريخ البداية"); return; } setBusy(true); const ok = await maPut(SC_META, v); setBusy(false); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; } setPer(v); setPerEd(null); toast("✅ تم حفظ فترة التصنيف"); };
+  const savePer = async () => { const v = { ...perEd, principal: (perEd.principal || "").trim() || `${SP.principalShort}` }; if (v.from && v.to && v.to < v.from) { alert("تاريخ النهاية قبل تاريخ البداية"); return; } setBusy(true); const ok = await maPut(SC_META, v); setBusy(false); if (!ok) { alert("⚠️ تعذّر الحفظ"); return; } setPer(v); setPerEd(null); toast("✅ تم حفظ فترة التصنيف"); };
   const studentsOf = k => maArr(rosters[k] && rosters[k].students).filter(x => x && x.id && x.name);
   const tKey = isT ? (me ? me.hash.slice(0, 16) : "") : "admin";
   const tName = isT ? (me ? me.name : "") : "الإدارة";
@@ -33080,7 +33115,7 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
 
   const loadAll = async () => {
     const [meta, ros, sc, pm] = await Promise.all([maGet(MA_META), maGet(MA_ROSTER), maGet(SC_NODE), maGet(SC_META)]);
-    if (pm && typeof pm === "object") setPer(p => ({ ...p, ...pm, principal: pm.principal || "فازع القرني" }));
+    if (pm && typeof pm === "object") setPer(p => ({ ...p, ...pm, principal: pm.principal || `${SP.principalShort}` }));
     if (meta && Array.isArray(meta.counts)) setCounts(meta.counts.map(n => +n || 0));
     setRosters(ros && typeof ros === "object" ? ros : {});
     const d = {}; if (sc && typeof sc === "object") Object.entries(sc).forEach(([k, v]) => { d[k] = {}; if (v && typeof v === "object") Object.entries(v).forEach(([tk, r]) => { if (r && typeof r === "object") d[k][tk] = { ...r, items: r.items && typeof r.items === "object" ? r.items : {} }; }); });
@@ -33159,8 +33194,8 @@ function StudentClassifyPage({ mode = "admin", onBack, viewOnly = false }) {
 
   // ── الطباعة
   const header = (title) => hdr(title) + (periodTxt ? `<div class="per">🗓️ فترة التصنيف: ${periodTxt}</div>` : "");
-  const sigP = () => `<div>مدير المدرسة<br><b class="pn">${per.principal || "فازع القرني"}</b><span>............</span></div>`;
-  const hdr = (title) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة</b></div><div class="c">${typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : ""}</div><div class="l">${maDay(new Date())}<br>${maHijri(new Date())}<br>${maGreg(new Date())}</div></div><div class="tt"><span>${title}</span></div>`;
+  const sigP = () => `<div>مدير المدرسة<br><b class="pn">${per.principal || `${SP.principalShort}`}</b><span>............</span></div>`;
+  const hdr = (title) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><div class="c">${typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : ""}</div><div class="l">${maDay(new Date())}<br>${maHijri(new Date())}<br>${maGreg(new Date())}</div></div><div class="tt"><span>${title}</span></div>`;
   const pb = (dk, i) => { if (i == null) return `<span class="b" style="background:#f1f5f9;color:#94a3b8">—</span>`; const [l, c, bg] = scLv(dk, i); return `<span class="b" style="background:${bg};color:${c}">${l}</span>`; };
   const css = `@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}
 .pg{page-break-after:always;border:2px solid #0f766e;border-radius:16px;padding:14px 16px;position:relative}.pg:last-child{page-break-after:auto}
@@ -33225,7 +33260,7 @@ table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#0f766e
       <div style={{ maxWidth: 460, margin: "0 auto" }}>
         <div style={{ textAlign: "center", color: "#fff", marginBottom: 16 }}>
           <img src={SCHOOL_LOGO} alt="" style={{ width: 84, height: 84, borderRadius: "50%", background: "#fff", padding: 4, boxShadow: "0 0 0 3px #fbbf24", margin: "0 auto" }} />
-          <div style={{ fontSize: 20, fontWeight: 900, marginTop: 8 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+          <div style={{ fontSize: 20, fontWeight: 900, marginTop: 8 }}>{SP.name}</div>
           <div style={{ fontSize: 16, fontWeight: 900, color: "#fde68a" }}>🏷️ تصنيف الطلاب</div>
           <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>المستوى الدراسي • السلوك • الحضور</div>
         </div>
@@ -33756,6 +33791,7 @@ const PT_CSS = `
 .pt-hero::after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.08);left:-60px;top:-110px}
 .pt-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .cmd-feat{display:flex;align-items:center;gap:16px;width:100%;text-align:right;border:0;cursor:pointer;font:inherit;color:#fff;border-radius:22px;padding:18px 20px;background:radial-gradient(circle at 8% 0%,rgba(201,162,39,.45),transparent 45%),linear-gradient(135deg,#0b2545,#1d3f73);box-shadow:0 14px 32px rgba(11,37,69,.3);border-bottom:4px solid #c9a227;transition:transform .15s}.cmd-feat:hover{transform:translateY(-3px)}.cmd-feat-i{font-size:38px;width:66px;height:66px;flex:none;display:grid;place-items:center;border-radius:20px;background:rgba(201,162,39,.2);border:1.5px solid rgba(201,162,39,.6)}.cmd-feat-t{flex:1;display:grid;gap:4px;min-width:0}.cmd-feat-t b{font-size:19px;font-weight:900}.cmd-feat-t em{font-style:normal;font-size:11.5px;background:#c9a227;color:#0b2545;border-radius:99px;padding:1px 10px;margin-inline-start:6px;vertical-align:middle}.cmd-feat-t small{font-size:13px;font-weight:700;opacity:.88;line-height:1.7}.cmd-feat-go{flex:none;background:#c9a227;color:#0b2545;font-weight:900;border-radius:12px;padding:8px 14px}@media(max-width:600px){.cmd-feat{flex-wrap:wrap;padding:14px}.cmd-feat-i{width:52px;height:52px;font-size:30px}.cmd-feat-go{width:100%;text-align:center}}
+.pt-tw{position:relative;display:grid;min-width:0}.pt-tw>.pt-tile{height:100%}.pt-tw.hid>.pt-tile{opacity:.4;filter:grayscale(.7)}.pt-tw.ed>.pt-tile{outline:2px dashed #cbd5e1;outline-offset:2px}.pt-star{position:absolute;top:8px;left:8px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:18px;line-height:1;color:#94a3b8;background:rgba(255,255,255,.85);cursor:pointer;opacity:0;transition:opacity .15s;box-shadow:0 2px 6px rgba(0,0,0,.12);z-index:2}.pt-tw:hover .pt-star,.pt-star.on,.pt-tw.ed .pt-star{opacity:1}.pt-star.on{color:#c9a227}@media(hover:none){.pt-star{opacity:.75}}.pt-eye{position:absolute;bottom:8px;left:8px;z-index:2;background:#0b2545;color:#fff;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:900;cursor:pointer}.pt-editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fffbeb;border:1.5px solid #fde68a;color:#92400e;border-radius:14px;padding:8px 12px;font-weight:800;font-size:13px;margin-bottom:10px}.pt-editbar .ma-btn{margin-inline-start:auto}.pt-tiles:empty{display:none}.pt-sec:has(.pt-tiles:empty){display:none}
 .pt-tile{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;height:100%}.pt-tile b,.pt-tile small{width:100%}
 .pt-bns{display:grid;gap:10px}.pt-bn:empty{display:none}.pt-bns:not(:has(.pt-bn:not(:empty))){display:none}
 .pt-sec h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:16px;font-weight:900;color:#0f1e3d}.pt-sec h3::after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradient(90deg,#e2e8f0,transparent)}
@@ -33793,12 +33829,37 @@ const PT_ICO = { hd: "chart", hdadmin: "chart", weekly: "chart", score: "trophy"
   duty: "shield", dutyadm: "shield", cv: "target", cvadm: "target", nafes: "target", circ: "scroll", circadmin: "scroll", attend: "ucheck", students: "note", classify: "tag", clsum: "tag", beh: "alert", nbooks: "books", nbadm: "bars", stlv: "bars", stats: "bars",
   mytasks: "check", admtasks: "check", late: "sun", warn: "siren", absalert: "siren", inbox: "mail", dplan: "bookok", pnotes: "radio", conduct: "users", alrep: "repeat", asmrank: "medal", px: "users", pxadm: "users", diag: "flask", diagadm: "flask", pg: "bookok", pgadm: "bookok", plr: "users", plradm: "users" };
 const PtIco = ({ id }) => { const k = PT_ICO[id]; const d = k && PT_ICP[k]; if (!d) return null; return <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d.split("|").map((x, i) => <path key={i} d={x} />)}</svg>; };
-const ptTile = (id, ic, t, d, c, c2, onClick, badge) => (
-  <button key={id} type="button" className="pt-tile" style={{ "--c": c, "--c2": c2 }} onClick={onClick}>
-    {badge ? <span className="bd">{badge}</span> : null}
-    <i>{PT_ICO[id] ? <PtIco id={id} /> : ic}</i><b>{t}</b><small>{d}</small><span className="go" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg></span>
-  </button>
-);
+// قائمة أقسام بوابة الموظفين (لمصفوفة الصلاحيات في «إعدادات المدرسة»)
+const PT_TILE_LIST = [["command", "🧭", "مركز القيادة والإنذار المبكر"], ["dhealth", "🩺", "صحة البيانات"], ["zy", "👣", "زيارات الطلاب"], ["zyt", "🗣️", "رأيي في طلابي (زيارات الطلاب)"], ["meet", "🤝", "اللقاءات الطلابية"], ["ini", "🚀", "مبادرات المدرسة"], ["pulse", "📈", "مؤشر أداء المدرسة الأسبوعي"], ["ext", "📋", "ملف شواهد التقويم الخارجي"], ["trep", "📑", "التقارير الدورية للمعلمين"], ["health", "🩺", "البرامج الصحية المدرسية"], ["opplan", "🗂️", "متابعة الخطة التشغيلية"], ["ipadm", "🎯", "خطة التحسين المدرسي"], ["admtasks", "📌", "المهام اليومية للإداريين"], ["mytasks", "📌", "مهامي اليومية"], ["late", "🌅", "سجل التأخر الصباحي"], ["rmtadm", "🏠", "التحضير بالحصص (عن بعد)"], ["dutyadm", "🛡️", "الإشراف والمناوبة"], ["duty", "🛡️", "مهامي في الإشراف والمناوبة"], ["asm", "🎺", "حضور المعلمين للطابور"], ["sched", "🗓️", "الجدول المدرسي"], ["ttnow", "📺", "الحصص الآن"], ["pnotes", "📡", "حصر ملاحظات الحصص (مباشر)"], ["tt", "🗓️", "متابعة الحصص اليومية"], ["stats", "📊", "الإحصائية اليومية"], ["weekly", "📈", "الحصر الأسبوعي"], ["clsum", "🏷️", "خلاصة تصنيف الطلاب"], ["asmrank", "🎺", "مفاضلة الطابور"], ["scoreadm", "🏆", "ترتيب المعلمين الشامل"], ["prepadm", "📘", "تحليل تحضير المعلمين"], ["pxadm", "🤝", "تبادل الزيارات بين المعلمين"], ["cvadm", "🎯", "الزيارات الصفية"], ["quranadm", "📖", "حلقات القرآن الكريم"], ["actcards", "🏆", "بطاقات تنفيذ المسابقات والبرامج"], ["beh", "📝", "الملاحظات السلوكية اليومية"], ["conduct", "🚸", "متابعة السلوك اليومي"], ["circdadm", "📨", "التعاميم اليومية"], ["circd", "🔔", "تعاميمي"], ["circadmin", "📜", "التعاميم"], ["hdadmin", "📈", "سجل الانضباط اليومي (حضوري)"], ["alrep", "🔁", "تقرير الغياب والتأخر المتكرر"], ["warn", "🚨", "الإنذار المبكر وملف الطالب"], ["plradm", "🌿", "سجل مجتمعات التعلّم المهنية"], ["pgadm", "📗", "سجل النمو المهني"], ["pushadm", "🔔", "إشعارات الجوال"], ["smartadm", "✨", "درسي الذكي – الإدارة"], ["smart", "✨", "درسي الذكي"], ["qiraa", "🎙️", "اختبار القراءة الجهرية — لوحة المدرسة"], ["grades", "📝", "رصد الدرجات وتحليلها"], ["diagadm", "🧪", "الاختبارات التشخيصية"], ["dplan", "📘", "خطة وسجل الانضباط المدرسي"], ["absact", "📂", "إجراءات معالجة الغياب"], ["absx", "📋", "تصنيف الغياب: بعذر / بدون عذر"], ["inbox", "📨", "أعذار وملاحظات أولياء الأمور"], ["score", "🏆", "بطاقتي الشاملة وترتيبي"], ["hd", "📈", "انضباطي اليومي"], ["hdrep", "📑", "تقريري للفترة"], ["prep", "📘", "تحضيري"], ["ttnotes", "📒", "ملاحظات متابعة حصصي"], ["plr", "🌿", "مجتمعات التعلّم المهنية"], ["pg", "📗", "سجلي في النمو المهني"], ["diag", "🧪", "الاختبارات التشخيصية"], ["px", "🤝", "تبادل الزيارات"], ["cv", "🎯", "زياراتي الصفية"], ["circ", "📜", "التعاميم"], ["attend", "📋", "غياب الحصة الثانية"], ["students", "📒", "المتابعة اليومية للطلاب"], ["quran", "📖", "حلقة القرآن الكريم"], ["classify", "🏷️", "تصنيف الطلاب"], ["stlv", "📊", "سجل مستويات الطلاب"], ["readwk", "📖", "حصر الضعف القرائي"], ["formative", "📘", "التقويم التكويني"], ["nafes", "🎯", "نتائج نافس لطلابي"], ["nbooks", "📚", "مراجع نافس"], ["absalert", "🚨", "حد الغياب واستدعاء أولياء الأمور"], ["nbadm", "📊", "مراجع نافس – متابعة الإدارة"]];
+// ⭐ تخصيص البوابة: مصفوفة الأدوار (إعدادات المدرسة) + إخفاء ومفضلة كل مستخدم — تضبطها StaffHub قبل كل رسم
+const PT_UI = { off: {}, hide: new Set(), fav: [], edit: false, reg: {}, togFav: null, togHide: null };
+const ptTile = (id, ic, t, d, c, c2, onClick, badge) => {
+  if (PT_UI.off[id]) return null;
+  PT_UI.reg[id] = { id, ic, label: t, c, onClick };
+  const hid = PT_UI.hide.has(id); if (hid && !PT_UI.edit) return null;
+  const fav = PT_UI.fav.includes(id);
+  return <div key={id} className={"pt-tw" + (hid ? " hid" : "") + (PT_UI.edit ? " ed" : "")}>
+    <button type="button" className="pt-tile" style={{ "--c": c, "--c2": c2 }} onClick={onClick}>
+      {badge ? <span className="bd">{badge}</span> : null}
+      <i>{PT_ICO[id] ? <PtIco id={id} /> : ic}</i><b>{t}</b><small>{d}</small><span className="go" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg></span>
+    </button>
+    {PT_UI.togFav && !hid && <span role="button" tabIndex={0} className={"pt-star" + (fav ? " on" : "")} title={fav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"} aria-label="المفضلة" onClick={e => { e.stopPropagation(); PT_UI.togFav(id); }} onKeyDown={e => { if (e.key === "Enter") PT_UI.togFav(id); }}>{fav ? "★" : "☆"}</span>}
+    {PT_UI.edit && PT_UI.togHide && <span role="button" tabIndex={0} className="pt-eye" onClick={e => { e.stopPropagation(); PT_UI.togHide(id); }}>{hid ? "👁️ إظهار" : "🙈 إخفاء"}</span>}
+  </div>;
+};
+// شريط المفضلة في البوابة — يُرسم بعد البطاقات فيقرأ ما سُجّل منها
+function PtCustomize(p) { const reg = Object.values(PT_UI.reg); return <Customize {...p} groups={[{ title: "أقسام البوابة", icon: "🗂️", items: reg.map(x => ({ id: x.id, ic: x.ic, label: x.label })) }]} />; }
+function PtFavBar({ onEdit, onTour, edit }) {
+  const items = PT_UI.fav.map(id => PT_UI.reg[id]).filter(Boolean).filter(x => !PT_UI.hide.has(x.id));
+  return <div style={{ gridColumn: "1/-1" }}>{edit && <div className="pt-editbar">✏️ وضع التخصيص: اضغط «🙈 إخفاء» على أي قسم لا تستعمله، و☆ لإضافته إلى المفضلة. <button className="ma-btn" onClick={onEdit}>✓ إنهاء التخصيص</button></div>}
+    <FavBar items={items} onOpen={it => it.onClick && it.onClick()} onEdit={edit ? null : onEdit} onTour={onTour} /></div>;
+}
+const PT_PICKS = { principal: ["command", "stats", "warn", "circadmin", "ext", "dhealth"], deputy: ["command", "stats", "late", "warn", "absact", "beh"], counselor: ["command", "absact", "inbox", "warn", "beh", "conduct"], admin: ["late", "stats", "inbox", "beh", "tt", "weekly"], teacher: ["tt", "beh", "conduct", "circd", "duty", "mytasks"] };
+const PT_TOUR = r => [
+  { ic: "🧭", t: r === "teacher" ? "بوابتك في مكان واحد" : "بوابة الإداريين في مكان واحد", d: r === "teacher" ? "كل ما تحتاجه في يومك: الحصص، والسلوك، والتعاميم، والإشراف، وطلابك. الأقسام مرتبة في مجموعات، والأهم في الأعلى." : "كل أعمالك اليومية هنا: الحضور والتأخر، والأعذار، والسلوك، والإنذار المبكر، والتقارير. الأرقام في الأعلى تُحدَّث تلقائيًا، واضغط أي رقم لتفتح تفاصيله." },
+  { ic: "⭐", t: "ثبّت ما تستعمله كثيرًا", d: "اضغط النجمة ☆ في زاوية أي قسم ليظهر في «المفضلة» أعلى البوابة، فتصل إليه بضغطة واحدة." },
+  { ic: "🙈", t: "أخفِ ما لا تحتاجه", d: "من «✏️ تخصيص» أخفِ الأقسام التي لا تستعملها، فتبقى بوابتك نظيفة ومركّزة. لا يُحذف شيء، ويمكنك إظهاره متى شئت." },
+];
 
 // شاشة الدخول بالهوية (مشتركة)
 function PtLoginCard({ title, sub, icon, grad, onLogin, onBack, hint, placeholder = "رقم السجل المدني (١٠ أرقام)" }) {
@@ -33810,7 +33871,7 @@ function PtLoginCard({ title, sub, icon, grad, onLogin, onBack, hint, placeholde
       <div className="pt-login">
         <div style={{ textAlign: "center", color: "#fff", marginBottom: 16 }}>
           <img src={SCHOOL_LOGO} alt="" style={{ width: 84, height: 84, borderRadius: "50%", background: "#fff", padding: 4, boxShadow: "0 0 0 3px #fbbf24", margin: "0 auto" }} />
-          <div style={{ fontSize: 19, fontWeight: 900, marginTop: 8 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+          <div style={{ fontSize: 19, fontWeight: 900, marginTop: 8 }}>{SP.name}</div>
           <div style={{ fontSize: 17, fontWeight: 900, color: "#fde68a" }}>{icon} {title}</div>
           <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{sub}</div>
         </div>
@@ -34153,7 +34214,7 @@ function dgPrintClass(D, ck, sk) { const sub = DG_SUB.find(x => x.k === sk); con
     ${A.txt ? `<h3>🛠️ الخطة العلاجية للفصل</h3><div class="rd" style="white-space:pre-wrap">${ptEsc(A.txt)}</div>` : ""}
     <div class="sg"><div>معلم المادة<br><b class="pn">${ptEsc(tn.join("، "))}</b><span>............</span></div>${vsCell("dep")}${vsCell("mgr")}</div></section>`, `التشخيصي — ${maClassName(ck)} — ${sub.l}`, DG_PCSS); }
 function dgCardHtml(D, s) { const T = dgTot(s.pre), TP = dgTotPost(s); const lv = T ? DG_LV.find(x => T.pct >= x.min) : null;
-  return `<div class="cd"><div class="h"><img src="${SCHOOL_LOGO}" alt=""><div class="t"><small>مدرسة الأمير عبدالمجيد المتوسطة الأولى • الاختبار التشخيصي ${TP ? "القبلي والبعدي" : "القبلي"} ١٤٤٨هـ</small><b>${ptEsc(s.n)}</b><small>${s.ck ? maClassName(s.ck) : "الصف الثالث المتوسط"}${lv ? ` • المستوى العام: ${lv.l}` : ""}</small></div>
+  return `<div class="cd"><div class="h"><img src="${SCHOOL_LOGO}" alt=""><div class="t"><small>${SP.name} • الاختبار التشخيصي ${TP ? "القبلي والبعدي" : "القبلي"} ١٤٤٨هـ</small><b>${ptEsc(s.n)}</b><small>${s.ck ? maClassName(s.ck) : "الصف الثالث المتوسط"}${lv ? ` • المستوى العام: ${lv.l}` : ""}</small></div>
     <div class="tot"><small>المجموع</small><b>${T ? maAr(T.sum) : "—"}</b><small>من ${T ? maAr(T.n * DG_MAX) : "٨٠"}</small></div>${TP ? `<div class="tot" style="border-color:#34d399"><small>البعدي</small><b style="color:#a7f3d0">${maAr(TP.sum)}</b><small>${TP.sum - (T ? T.sum : 0) >= 0 ? "▲ +" : "▼ "}${maAr(Math.abs(TP.sum - (T ? T.sum : 0)))}</small></div>` : ""}</div>
     <div class="bd">${DG_SUB.map(x => { const v = s.pre[x.k], p = s.post[x.k], l = dgLv(v); return `<div class="sb" style="--c:${x.c}"><div class="n">${x.ic} ${x.l}</div>${dgSvgRing(v == null ? null : v / DG_MAX * 100, x.c, v == null ? "—" : maAr(v), "من ٢٠")}<div>${l ? `<span class="lv" style="background:${l.bg};color:${l.c}">${l.l}</span>` : `<span class="lv" style="background:#f1f5f9;color:#64748b">لم تُرصد</span>`}</div>${p != null ? `<div style="font-size:10.5px;font-weight:900;margin-top:3px">البعدي: ${maAr(p)} <span style="color:${p - v >= 0 ? "#15803d" : "#b91c1c"}">${p - v > 0 ? "▲+" + maAr(p - v) : p - v < 0 ? "▼" + maAr(v - p) : ""}</span></div>` : ""}${l ? `<div class="tp">💡 ${DG_TIP[x.k][l.k === "hi" ? 2 : l.k === "md" ? 1 : 0]}</div>` : ""}</div>`; }).join("")}</div>
     <div class="cmp"><div class="ct">📊 موقعك مقارنةً بفصلك وبالصف <span><i style="background:#12305a"></i>أنت <i style="background:#a8874a"></i>متوسط فصلك <i style="background:#cbd5e1"></i>متوسط الصف</span></div>${DG_SUB.map(x => { const me = s.pre[x.k]; const c = dgStat(D.S.filter(y => y.ck && y.ck === s.ck).map(y => y.pre[x.k])).avg; const g = dgStat(D.S.map(y => y.pre[x.k])).avg; const bar = (v, col) => `<div class="b"><i style="width:${(v || 0) / DG_MAX * 100}%;background:${col}"></i><em>${v == null ? "—" : dgF(v)}</em></div>`; return `<div class="cr"><b style="color:${x.c}">${x.ic} ${x.s}</b><div>${bar(me, "#12305a")}${bar(c, "#a8874a")}${bar(g, "#cbd5e1")}</div></div>`; }).join("")}
@@ -34194,7 +34255,7 @@ const PG_TXT0 = {
   sGoals: ["تحديد الاحتياجات التدريبية والمهنية وفق جوانب الأداء.", "وضع خطط واضحة للتطوير المهني ومتابعة تنفيذها.", "توثيق الدورات والبرامج التدريبية وورش العمل المنفذة.", "تطبيق أثر التعلم والتدريب في الممارسات الصفية والتعليمية.", "تنمية مهارات التخطيط والتنفيذ والتقويم لدى المعلم.", "تبادل الخبرات والممارسات التعليمية مع الزملاء.", "توظيف التقنيات والوسائل التعليمية الحديثة في العملية التعليمية.", "متابعة مستوى التقدم المهني وتحديد جوانب القوة وفرص التحسين.", "جمع الشواهد والأدلة التي تعكس التطور والإنجاز المهني.", "تعزيز ثقافة التعلم المستمر والتطوير الذاتي لدى المعلم."],
   selfDec: "نظرًا لأهمية التطوير المهني للمعلمين بمختلف الأساليب التربوية المتنوعة (دورات تدريبية – لقاءات تربوية – ورش عمل – قراءات متنوعة – نشرات تربوية – دروس تطبيقية – مواقع تعليمية...)، وحيث لم يتيسر التحاقكم ببرامج التطوير المهني في الفترة الماضية؛ نأمل تزويدنا بالبرامج التي اكتسبتموها ذاتيًا مما له الأثر في تطوير أدائكم داخل غرفة الصف، وفق البيان أدناه، ولكم فائق التقدير.",
   decBase: "استنادًا إلى الصلاحية الممنوحة لنا والواردة بقرار معالي وزير التعليم رقم ٣٧٦١٧١٦٨ وتاريخ ١٤٣٧/٠٤/٠١هـ والقاضي بمنح مديري المدارس الصلاحيات المرفقة بالقرار، واستنادًا إلى ما ورد في الدليل التنظيمي لمدارس التعليم العام وما يصدر من تعاميم للعام الدراسي الحالي وبمقتضى النظام:" };
-const PG_TEAM0 = [{ n: "فازع عبدالله حسن القرني", role: "مدير المدرسة", task: "الإشراف العام على السجل واعتماد البرامج والقرارات" }, { n: "عوض محمد عالي العماري", role: "وكيل الشؤون التعليمية", task: "متابعة تنفيذ الخطة الزمنية للتنمية المهنية" }, { n: "عبدالله بن زيدي بن بلغيث السهيمي", role: "وكيل شؤون الطلاب", task: "متابعة تنفيذ الخطة الزمنية للتنمية المهنية" }, { n: "عادل علي بن صالح الغامدي", role: "الموجه الطلابي", task: "تقديم الدعم الفني" }, { n: "فايز ابن عابد ابن غلاب الزلفي", role: "الموجه الطلابي", task: "تقديم الدعم الفني" }, { n: "", role: "منسق النمو المهني", task: "تنظيم البرامج وتوثيق الحضور والتقارير" }, { n: "", role: "أمين مصادر التعلم", task: "دعم البرامج بالمصادر والوسائل التعليمية" }];
+const PG_TEAM0 = [{ n: `${SP.principal}`, role: "مدير المدرسة", task: "الإشراف العام على السجل واعتماد البرامج والقرارات" }, { n: "عوض محمد عالي العماري", role: "وكيل الشؤون التعليمية", task: "متابعة تنفيذ الخطة الزمنية للتنمية المهنية" }, { n: "عبدالله بن زيدي بن بلغيث السهيمي", role: "وكيل شؤون الطلاب", task: "متابعة تنفيذ الخطة الزمنية للتنمية المهنية" }, { n: "عادل علي بن صالح الغامدي", role: "الموجه الطلابي", task: "تقديم الدعم الفني" }, { n: "فايز ابن عابد ابن غلاب الزلفي", role: "الموجه الطلابي", task: "تقديم الدعم الفني" }, { n: "", role: "منسق النمو المهني", task: "تنظيم البرامج وتوثيق الحضور والتقارير" }, { n: "", role: "أمين مصادر التعلم", task: "دعم البرامج بالمصادر والوسائل التعليمية" }];
 const PG_FREE_ROLES = ["مدير المدرسة", "وكيل المدرسة", "الموجه الطلابي", "أمين مصادر التعلم"];
 // الأقسام (بلا تبادل الزيارات — له سجله المستقل)
 const PG_SECS = [["intro", "مقدمة • الرؤية • الرسالة • القيم"], ["goals", "الأهداف العامة والخاصة"], ["team", "فريق النمو المهني بالمدرسة"], ["plan", "الخطة الزمنية للتنمية المهنية داخل المدرسة"], ["comp", "حصر الكفاءات من المعلمين"], ["ranks", "سجل رتب المعلمين والرخص المهنية"], ["free", "النمو المهني للمفرغين"], ["intp", "النمو المهني المنفذ بالمدرسة (مُدرِّب)"], ["ext", "النمو المهني المنفذ خارج المدرسة (مستفيد)"], ["open", "النمو المهني للمعلمين (مفتوح)"], ["test", "النمو المهني للمعلمين (تخصصي – إثرائي – تربوي)"], ["att", "تقرير حضور منسوبي المدرسة للبرامج المهنية"], ["grp", "مجموعات التعلم (الداخلية) حسب التخصصات"], ["self", "قرار التطوير الذاتي للمعلم"], ["apldec", "قرار تنفيذ الدروس التطبيقية"], ["apl", "سجل تنفيذ الدروس التطبيقية"], ["plc", "تقرير جلسة مجتمع التعلم المهني"], ["rep", "تقرير برنامج (تنفيذ برنامج مهني)"], ["sum", "لوحة مؤشرات النمو المهني (إضافة)"]];
@@ -34255,10 +34316,10 @@ body{margin:0;font-family:'Noto Kufi Arabic','Noto Naskh Arabic',Tahoma,sans-ser
 .cv .bb{position:absolute;inset:auto 0 0 0;height:12mm;background:linear-gradient(90deg,${PG_DK},${PG_INK} 60%,#5fbf9a)}
 .bk{width:210mm;height:297mm;margin:0 auto;position:relative;overflow:hidden;background:linear-gradient(160deg,#5fbf9a,${PG_INK} 45%,${PG_DK});color:#fff;text-align:center}
 .bk .lg{position:absolute;left:50%;top:95mm;transform:translateX(-50%);width:62mm;height:62mm;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 5mm rgba(255,255,255,.18)}.bk .lg img{width:44mm}.bk h1{position:absolute;top:175mm;width:100%;font-size:30px;margin:0}.bk p{position:absolute;top:192mm;width:100%;margin:0;font-size:13px;line-height:2}`;
-const pgHd = D => `<div class="tb"></div><div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة</div><div class="c"><img src="${MOE_LOGO}">مدرسة الأمير عبد المجيد المتوسطة الأولى<i></i></div><div class="l">العام الدراسي: ${ptEsc(D.cfg.year)}<br>الرقم الوزاري: ${ptEsc(D.cfg.minNo)}</div></div>`;
+const pgHd = D => `<div class="tb"></div><div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region}</div><div class="c"><img src="${MOE_LOGO}">${SP.name}<i></i></div><div class="l">العام الدراسي: ${ptEsc(D.cfg.year)}<br>الرقم الوزاري: ${ptEsc(D.cfg.minNo)}</div></div>`;
 const pgMgr = (D, ttl = "مدير المدرسة") => { const m = vsGet().mgr; return `<div class="sgc"><em>${ttl}</em>الاسم: <b>${ptEsc(D.team[0] && D.team[0].n || m.n)}</b><br>التوقيع: ${D.cfg.mgrSig !== false && m.sig ? `<img src="${m.sig}">` : "...................................."}</div>`; };
 const pgBox = (ttl, n, sig) => `<div class="sgc"><em>${ttl}</em>الاسم: <b>${ptEsc(n || "")}</b>${n ? "" : "...................................."}<br>التوقيع: ${sig ? `<img src="${sig}">` : "...................................."}</div>`;
-const pgPage = (D, no, ttl, sub, body, sign = "mgr") => `<section class="pp">${pgHd(D)}<h2><b>${maAr(String(no).padStart(2, "0"))}</b>${ttl}${sub ? ` <small>(${sub})</small>` : ""}<span class="ln"></span></h2>${body}${sign === "mgr" ? `<div class="sgb"><span></span>${pgMgr(D)}</div>` : sign || ""}<div class="ft"><b>سجل النمو المهني</b><span>مدرسة الأمير عبد المجيد المتوسطة الأولى</span><i>@P@</i></div></section>`;
+const pgPage = (D, no, ttl, sub, body, sign = "mgr") => `<section class="pp">${pgHd(D)}<h2><b>${maAr(String(no).padStart(2, "0"))}</b>${ttl}${sub ? ` <small>(${sub})</small>` : ""}<span class="ln"></span></h2>${body}${sign === "mgr" ? `<div class="sgb"><span></span>${pgMgr(D)}</div>` : sign || ""}<div class="ft"><b>سجل النمو المهني</b><span>${SP.name}</span><i>@P@</i></div></section>`;
 const pgRows = (rows, cols, min, start = 1) => { const L = [...rows]; while (L.length < min) L.push(null); return L.map((r, i) => `<tr><td class="n">${maAr(i + start)}</td>${cols.map(c => `<td class="${c.r ? "r" : ""}">${r ? c.f(r) : (c.blank || "")}</td>`).join("")}</tr>`).join(""); };
 const pgTbl = (heads, rows, cols, min) => `<table><thead><tr><th style="width:8mm">م</th>${heads.map(h => `<th${h[1] ? ` style="width:${h[1]}"` : ""}>${h[0]}</th>`).join("")}</tr></thead><tbody>${pgRows(rows, cols, min)}</tbody></table>`;
 const PG_DTB = `<span class="dt">....../....../١٤٤....هـ</span>`;
@@ -34310,9 +34371,9 @@ function pgAutoGroups(D) { const M = {}; D.TS.forEach(t => { const s = ptObj(D.t
 function pgPrint(D, ids, cover = true) { const vis = PG_SECS.filter(([id]) => !D.cfg.hide[id]); let no = 0; const parts = []; const toc = [];
   vis.forEach(([id, l]) => { no++; const pg = pgSecPages(D, id, no); if (ids && !ids.includes(id)) return; parts.push({ id, l, no, pg }); });
   let pn = (cover && !ids ? 2 : 0); const body = parts.map(p => { const html = p.pg.map(h => { pn++; return h.replace("@P@", maAr(pn)); }).join(""); toc.push({ ...p, at: pn - p.pg.length + 1, to: pn }); return html; }).join("");
-  const cv = `<section class="cv"><div class="c1"></div><div class="c2"></div><div class="c3"></div><div class="ring"></div><div class="lg"><img src="${MOE_LOGO}"></div><div class="mn">المملكة العربية السعودية • وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة</div><div class="tl"><small>سجل</small><b>النمو المهني</b></div><div class="yr">للعام الدراسي ${ptEsc(D.cfg.year)}</div><div class="bt"><div>المدرسة<b>مدرسة الأمير عبد المجيد المتوسطة الأولى</b></div><div>مدير المدرسة<b>${ptEsc(D.team[0] && D.team[0].n || "")}</b></div><div>مسؤول السجل<b>${ptEsc(D.cfg.resp || ".................................")}</b></div></div><div class="bb"></div></section>`;
-  const tocP = `<section class="pp">${pgHd(D)}<h2><b>◆</b>محتويات سجل النمو المهني<span class="ln"></span></h2><table><thead><tr><th style="width:8mm">م</th><th>المحتويات</th><th style="width:22mm">الصفحة</th></tr></thead><tbody>${toc.map((t, i) => `<tr><td class="n">${maAr(i + 1)}</td><td class="r">${t.l}</td><td><b style="color:${PG_GD}">${t.at === t.to ? maAr(t.at) : `${maAr(t.at)} – ${maAr(t.to)}`}</b></td></tr>`).join("")}</tbody></table><div class="ft"><b>سجل النمو المهني</b><span>مدرسة الأمير عبد المجيد المتوسطة الأولى</span><i>${maAr(2)}</i></div></section>`;
-  const back = `<section class="bk"><div class="lg"><img src="${MOE_LOGO}"></div><h1>سجل النمو المهني</h1><p>مدرسة الأمير عبد المجيد المتوسطة الأولى<br>الإدارة العامة للتعليم بمحافظة جدة • العام الدراسي ${ptEsc(D.cfg.year)}</p></section>`;
+  const cv = `<section class="cv"><div class="c1"></div><div class="c2"></div><div class="c3"></div><div class="ring"></div><div class="lg"><img src="${MOE_LOGO}"></div><div class="mn">المملكة العربية السعودية • وزارة التعليم<br>${SP.region}</div><div class="tl"><small>سجل</small><b>النمو المهني</b></div><div class="yr">للعام الدراسي ${ptEsc(D.cfg.year)}</div><div class="bt"><div>المدرسة<b>${SP.name}</b></div><div>مدير المدرسة<b>${ptEsc(D.team[0] && D.team[0].n || "")}</b></div><div>مسؤول السجل<b>${ptEsc(D.cfg.resp || ".................................")}</b></div></div><div class="bb"></div></section>`;
+  const tocP = `<section class="pp">${pgHd(D)}<h2><b>◆</b>محتويات سجل النمو المهني<span class="ln"></span></h2><table><thead><tr><th style="width:8mm">م</th><th>المحتويات</th><th style="width:22mm">الصفحة</th></tr></thead><tbody>${toc.map((t, i) => `<tr><td class="n">${maAr(i + 1)}</td><td class="r">${t.l}</td><td><b style="color:${PG_GD}">${t.at === t.to ? maAr(t.at) : `${maAr(t.at)} – ${maAr(t.to)}`}</b></td></tr>`).join("")}</tbody></table><div class="ft"><b>سجل النمو المهني</b><span>${SP.name}</span><i>${maAr(2)}</i></div></section>`;
+  const back = `<section class="bk"><div class="lg"><img src="${MOE_LOGO}"></div><h1>سجل النمو المهني</h1><p>${SP.name}<br>${SP.region} • العام الدراسي ${ptEsc(D.cfg.year)}</p></section>`;
   const html = (cover && !ids ? cv + tocP : "") + body + (cover && !ids ? back : "");
   printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>سجل النمو المهني</title><link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet"><style>${PG_PCSS}</style></head><body>${html}<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>setTimeout(()=>print(),900))</script></body></html>`); }
 const PG_CSS = `.pg{font-family:Cairo,Tahoma,sans-serif}
@@ -34485,7 +34546,7 @@ const PLR_TXT0 = { idea: "اجتماعات قصيرة متتابعة تبدأ م
   res: "تستخدم نتيجة نافس كإشارة بداية مختصرة فقط في موادها، بينما يعتمد النقاش على تشخيص المدرسة وأعمال الطلاب. اللغة الإنجليزية تبدأ بتشخيص مدرسي لأنها ليست ضمن نتائج نافس الواردة.",
   time: "35-45 دقيقة: 5 دقائق لمتابعة التوصية السابقة، 10 دقائق للأدلة، 15 دقيقة للنقاش والنمذجة، 10 دقائق للقرار والتكليف." };
 const PLR_GOALS0 = [["بناء تشخيص مشترك لبداية العام", "أداة قصيرة، معيار تصحيح موحد، وخريطة مفاهيم أو مهارات مفقودة."], ["تحسين الممارسة التدريسية", "نمذجة ممارسة واحدة وتجريبها بين اجتماعين بدل اقتراح أنشطة كثيرة."], ["تحليل تعلم الطلاب", "عرض عينات فعلية قبل/بعد، لا الاكتفاء بوصف عام للمستوى."], ["تعزيز المسؤولية المشتركة", "كل توصية لها مسؤول وموعد ودليل إنجاز وتوقيع متابعة."], ["تقديم دعم متدرج", "تغيير المثال أو التمثيل أو المجموعة وفق استجابة الطالب."], ["صناعة معرفة مدرسية", "توثيق ما نجح ليصبح ممارسة متفقًا عليها داخل المادة."]].map(([g, h]) => ({ g, h }));
-const PLR_TEAM0 = [["قائد المدرسة", "المشرف العام", "اعتماد البرنامج ومناقشة أثر التوصيات.", "فازع عبدالله حسن القرني"], ["وكيل الشؤون التعليمية", "المنسق التنفيذي", "تحديد المواعيد، الحضور، الزيارات، ومتابعة المهلة.", "عوض محمد عالي العماري"], ["وكيل شؤون الطلاب", "عضو دعم", "ربط الغياب والانضباط باستجابة الطلاب.", "عبدالله بن زيدي بن بلغيث السهيمي"], ["الموجه الطلابي", "عضو دعم", "متابعة غير المستجيبين والشراكة مع الأسرة.", "عادل علي بن صالح الغامدي"], ["منسق نافس / البيانات", "مقرر عام", "إعداد البيانات المختصرة ولوحات التقدم.", ""], ["أعضاء فريق نافس", "أعضاء", "إدارة الاجتماعات ورفع المحاضر والأدلة.", ""]].map(([s, r, t, n]) => ({ s, r, t, n }));
+const PLR_TEAM0 = [["قائد المدرسة", "المشرف العام", "اعتماد البرنامج ومناقشة أثر التوصيات.", `${SP.principal}`], ["وكيل الشؤون التعليمية", "المنسق التنفيذي", "تحديد المواعيد، الحضور، الزيارات، ومتابعة المهلة.", "عوض محمد عالي العماري"], ["وكيل شؤون الطلاب", "عضو دعم", "ربط الغياب والانضباط باستجابة الطلاب.", "عبدالله بن زيدي بن بلغيث السهيمي"], ["الموجه الطلابي", "عضو دعم", "متابعة غير المستجيبين والشراكة مع الأسرة.", "عادل علي بن صالح الغامدي"], ["منسق نافس / البيانات", "مقرر عام", "إعداد البيانات المختصرة ولوحات التقدم.", ""], ["أعضاء فريق نافس", "أعضاء", "إدارة الاجتماعات ورفع المحاضر والأدلة.", ""]].map(([s, r, t, n]) => ({ s, r, t, n }));
 const PLR_RULES0 = [["مشكلة واحدة", "لا يناقش الاجتماع أكثر من مفهوم أو مهارة رئيسية."], ["دليل حاضر", "يُحضر كل معلم نتيجة أو عينة طالب أو بطاقة ملاحظة."], ["تجربة بين اجتماعين", "التوصية تتضمن ممارسة قابلة للتطبيق قبل اللقاء التالي."], ["متابعة أولًا", "يبدأ كل اجتماع بنسبة تنفيذ التوصية السابقة وأثرها."], ["توصية قابلة للتحقق", "فعل + فئة مستهدفة + مسؤول + موعد + دليل نجاح."]].map(([k, v]) => ({ k, v }));
 const PLR_REV = ["هل تحولت الاجتماعات إلى تغيّر ملحوظ داخل الحصة؟ وما الدليل؟", "ما التوصيات التي لم تُنفذ؟ ولماذا؟", "ما الاحتياج التدريبي المشترك بين المواد؟", "ما أول اجتماع في الدورة القادمة؟"];
 const PLR_ST = ["لم يبدأ", "جارٍ", "تم"];
@@ -34544,10 +34605,10 @@ p.tx{margin:0;font-size:10.5px;line-height:2;text-align:justify}.st{color:#64748
 .cv .cy{display:flex;justify-content:center;align-items:center;gap:3mm;margin-top:6mm;direction:rtl}.cv .cy div{border:1px solid rgba(201,162,39,.7);background:rgba(255,255,255,.06);border-radius:8mm;padding:2mm 4mm;font-size:10.5px;font-weight:700;display:flex;align-items:center;gap:2mm}.cv .cy div b{width:6mm;height:6mm;border-radius:50%;background:${PLR_GD};color:${PLR_G};display:grid;place-items:center;font-size:10px}.cv .cy span{color:${PLR_GD}}
 .cv .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;margin:6mm 18mm 0}.cv .cd{background:#fff;color:#1f2937;border-radius:3mm;padding:4mm;text-align:center;border-top:2mm solid var(--c)}.cv .cd i{display:grid;place-items:center;width:12mm;height:12mm;margin:0 auto;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-weight:800;font-size:13px}.cv .cd b{display:block;font-size:15px;margin-top:2mm}.cv .cd small{display:block;color:#64748b;font-size:10px;margin-top:1mm}.cv .cd em{display:inline-block;font-style:normal;font-size:9px;margin-top:2mm;background:#f1f5f9;border-radius:3mm;padding:0 3mm;color:var(--c);font-weight:800}
 .cv .bt{position:absolute;inset:auto 18mm 13mm 18mm;display:grid;grid-template-columns:2fr 1fr;border-radius:2mm;overflow:hidden}.cv .bt .a{background:linear-gradient(90deg,#e9c44e,${PLR_GD});color:${PLR_G};padding:3mm 6mm}.cv .bt .a b{display:block;font-size:17px}.cv .bt .a small{font-size:10px;font-weight:700}.cv .bt .b{background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:11px;font-weight:700;text-align:center;padding:2mm}`;
-const plrHd = D => `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br><span style="font-weight:600;color:#334155">الإدارة العامة للتعليم بمحافظة جدة</span></div><img src="${MOE_LOGO}" alt=""><div class="l"><b>مدرسة الأمير عبدالمجيد بن عبدالعزيز الأولى المتوسطة</b><br>العام الدراسي ${ptEsc(D.cfg.year)}<br><b>سجل مجتمعات التعلّم المهنية</b></div></div>`;
+const plrHd = D => `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br><span style="font-weight:600;color:#334155">${SP.region}</span></div><img src="${MOE_LOGO}" alt=""><div class="l"><b>${SP.full}</b><br>العام الدراسي ${ptEsc(D.cfg.year)}<br><b>سجل مجتمعات التعلّم المهنية</b></div></div>`;
 const plrSig = (D, list) => { const V = vsGet(); const L = list.map(k => k === "mgr" ? { t: "قائد المدرسة", n: V.mgr.n, sig: V.mgr.sig } : k === "dep" ? { t: "وكيل الشؤون التعليمية", n: V.dep.n, sig: V.dep.sig } : k === "co" ? { t: "منسق المجتمعات المهنية", n: D.cfg.coord || "" } : k === "cn" ? { t: "الموجه الطلابي", n: "" } : k);
   return `<div class="sgr" style="--n:${L.length}">${L.map(x => `<div><b>${ptEsc(x.t)}</b><br>الاسم: ${x.n ? `<b>${ptEsc(x.n)}</b>` : "........................."}<br>التوقيع: ${V.show && x.sig ? `<img src="${x.sig}">` : "........................."}</div>`).join("")}</div>`; };
-const plrPg = (D, a, b, body) => `<section class="pg">${plrHd(D)}<div class="tb"><div class="a">${a}</div><div class="b">${b} • مدرسة الأمير عبدالمجيد المتوسطة</div></div><div class="bd">${body}</div><div class="ft">سجل مجتمعات التعلّم المهنية &nbsp;|&nbsp; مدرسة الأمير عبدالمجيد بن عبدالعزيز الأولى المتوسطة &nbsp;|&nbsp; صفحة <b>@P@</b></div></section>`;
+const plrPg = (D, a, b, body) => `<section class="pg">${plrHd(D)}<div class="tb"><div class="a">${a}</div><div class="b">${b} • ${SP.name}</div></div><div class="bd">${body}</div><div class="ft">سجل مجتمعات التعلّم المهنية &nbsp;|&nbsp; ${SP.full} &nbsp;|&nbsp; صفحة <b>@P@</b></div></section>`;
 const plrMeetPage = (D, k, m, dn) => { const S = PLR_SUB.find(s => s.k === k); const A = ptObj(m.att); const mem = dn ? plrMem(D, k).filter(x => x.n && ptObj(A[asmK(x.n)]).img) : plrMem(D, k); const R = [...maArr(m.recs).filter(r => r && r.t)]; while (!dn && R.length < 3) R.push({});
   return plrPg(D, `${ptEsc(D.sub[k].label)} | الاجتماع ${maAr(m.no || "")}`, ptEsc(m.t || ""), `<table><tr><td class="k">التاريخ:</td><td>${m.date ? pgHij(m.date) : ""}</td><td class="k">اليوم:</td><td>${m.date ? pgDay(m.date) : ""}</td><td class="k">الوقت:</td><td>${ptEsc(m.time || "")}</td><td class="k">المكان:</td><td>${ptEsc(m.place || "مصادر التعلم / ........")}</td></tr></table>
     <table><tr><th style="width:32mm">عنصر الجلسة</th><th>المحتوى / التوثيق</th></tr><tr><td class="k">هدف الاجتماع</td><td class="r">${ptEsc(m.g || "")}</td></tr><tr><td class="k">محاور النقاش</td><td class="r">${maArr(m.ax).map((x, i) => `${maAr(i + 1)}. ${ptEsc(x)}`).join("<br>")}</td></tr><tr><td class="k">خلاصة ما نوقش</td><td class="r" style="height:11mm;white-space:pre-wrap">${ptEsc(m.sum || "")}</td></tr><tr><td class="k">المنتج المتوقع</td><td class="r">${ptEsc(m.p || "")}</td></tr></table>
@@ -34555,10 +34616,10 @@ const plrMeetPage = (D, k, m, dn) => { const S = PLR_SUB.find(s => s.k === k); c
     <table><tr><th style="width:8mm">م</th><th>الاسم</th><th style="width:30mm">الصفة</th><th style="width:34mm">توقيع الحضور</th><th>متابعة توصية سابقة</th></tr>${(mem.length ? mem : [{}, {}, {}]).map((x, i) => { const a = ptObj(A[asmK(x.n || "")]); return `<tr><td>${maAr(i + 1)}</td><td class="r">${ptEsc(x.n || "")}</td><td>${ptEsc(x.role || "عضو")}</td><td>${a.img ? `<img src="${a.img}" style="height:7mm">` : ""}</td><td class="r">${ptEsc(a.f || "")}</td></tr>`; }).join("")}</table>${plrSig(D, ["dep", "mgr"])}`); };
 function plrPrint(D, opt = {}) { const P = []; const PK = opt.pick; const dn = !!(PK && PK.done); const all = !PK && !opt.k && !opt.m;
   if (PK ? (PK.intro || PK.team) : (all || opt.intro)) {
-    if (!PK || PK.intro) { P.push(`<section class="cv"><div class="h"><div>المملكة العربية السعودية<br><b>وزارة التعليم</b><br>الإدارة العامة للتعليم بمحافظة جدة</div><div class="lg"><img src="${MOE_LOGO}"></div><div>العام الدراسي<br><b>${ptEsc(D.cfg.year)}</b><br>سجل تنظيمي ومتابعة</div></div><div class="s">من واقع الحصة .. إلى أثر ملموس في تعلّم الطلاب</div><h1>سجل مجتمعات <em>التعلّم المهنية</em></h1><div class="sb">${PLR_SUB.map(s => s.tag === "اللغة العربية" ? "اللغة العربية" : s.l).join('<i>|</i>')}</div>
+    if (!PK || PK.intro) { P.push(`<section class="cv"><div class="h"><div>المملكة العربية السعودية<br><b>وزارة التعليم</b><br>${SP.region}</div><div class="lg"><img src="${MOE_LOGO}"></div><div>العام الدراسي<br><b>${ptEsc(D.cfg.year)}</b><br>سجل تنظيمي ومتابعة</div></div><div class="s">من واقع الحصة .. إلى أثر ملموس في تعلّم الطلاب</div><h1>سجل مجتمعات <em>التعلّم المهنية</em></h1><div class="sb">${PLR_SUB.map(s => s.tag === "اللغة العربية" ? "اللغة العربية" : s.l).join('<i>|</i>')}</div>
       <div class="cy">${["تشخيص بداية العام", "تجربة ممارسة تدريسية", "فحص أعمال الطلاب", "تعديل الدعم", "إعادة القياس والقرار"].map((x, i) => `${i ? "<span>←</span>" : ""}<div><b>${maAr(i + 1)}</b>${x}</div>`).join("")}</div>
       <div class="cards">${PLR_SUB.map(s => `<div class="cd" style="--c:${s.c}"><i>${s.ic}</i><b>${s.k === "ar" ? "القراءة" : s.l}</b><small>${s.d}</small><em>${s.tag}</em></div>`).join("")}</div>
-      <div class="bt"><div class="a"><b>مدرسة الأمير عبدالمجيد بن عبدالعزيز الأولى المتوسطة</b><small>سجل مجتمعات التعلّم المهنية للمواد الأربع – العام الدراسي ${ptEsc(D.cfg.year)}</small></div><div class="b">حين نتشارك الخبرة .. يرتقي الأداء ويزدهر تعلّم أبنائنا</div></div></section>`);
+      <div class="bt"><div class="a"><b>${SP.full}</b><small>سجل مجتمعات التعلّم المهنية للمواد الأربع – العام الدراسي ${ptEsc(D.cfg.year)}</small></div><div class="b">حين نتشارك الخبرة .. يرتقي الأداء ويزدهر تعلّم أبنائنا</div></div></section>`);
     P.push(plrPg(D, "مقدمة السجل وأهدافه", "البدء من واقع الحصة", `<div class="box"><b>فكرة السجل</b><div>${ptEsc(D.txt.idea)}</div></div><p class="tx">${ptEsc(D.txt.intro)}</p><table><tr><th style="width:60mm">الهدف</th><th>كيف يظهر داخل الاجتماع؟</th></tr>${D.goals.map(g => `<tr><td class="k" style="width:60mm">${ptEsc(g.g)}</td><td class="r">${ptEsc(g.h)}</td></tr>`).join("")}</table><div class="box"><b>استعراض النتائج</b><div>${ptEsc(D.txt.res)}</div></div><div class="box"><b>زمن الاجتماع</b><div>${ptEsc(D.txt.time)}</div></div>`));
     }
     if (!PK || PK.team) P.push(plrPg(D, "الفريق المنظّم لمجتمعات التعلّم", "اعتماد وتنظيم ومتابعة", `<table><tr><th style="width:8mm">م</th><th style="width:36mm">الصفة</th><th style="width:28mm">الدور</th><th>المهمة</th><th style="width:52mm">الاسم</th><th style="width:30mm">التوقيع</th></tr>${(dn ? D.team.filter(t => t && t.n && plrSigOf(D, "_team", t.n).img) : D.team).map((t, i) => { const g = t.n ? plrSigOf(D, "_team", t.n) : {}; return `<tr><td>${maAr(i + 1)}</td><td class="k" style="width:36mm">${ptEsc(t.s)}</td><td>${ptEsc(t.r)}</td><td class="r">${ptEsc(t.t)}</td><td><b>${ptEsc(t.n || "")}</b></td><td>${g.img ? `<img src="${g.img}" style="height:9mm;max-width:28mm;object-fit:contain">` : ""}</td></tr>`; }).join("")}</table><table><tr><th style="width:50mm">ضابط الاجتماع</th><th>المعيار</th></tr>${D.rules.map(r => `<tr><td class="k" style="width:50mm">${ptEsc(r.k)}</td><td class="r">${ptEsc(r.v)}</td></tr>`).join("")}</table>`));
@@ -34639,7 +34700,7 @@ function PlrMemSign({ D, s, me, myName, onSaved }) {
 // ═══════════════════════════════════════════════════════════════════════
 const PLRS_ADD_T = [["topic", "🗓️ قضية مقترحة لاجتماع قادم"], ["goal", "🎯 هدف"], ["rule", "⚖️ ضابط للاجتماع"], ["rec", "✅ توصية"], ["other", "💡 مقترح آخر"]];
 const plrsLink = () => { try { return location.origin + "/#plrs"; } catch { return "/#plrs"; } };
-const plrsGroupMsg = () => `الزملاء الكرام في مدرسة الأمير عبدالمجيد المتوسطة الأولى\nالسلام عليكم ورحمة الله وبركاته\n\nنأمل التكرم بالدخول برقم الهوية والتوقيع على سجل «مجتمعات التعلّم المهنية» (تشكيل الفرق وخريطة الاجتماعات)، ويمكنكم إضافة ملاحظة أو اقتراح بند جديد.\n\n🔗 ${plrsLink()}\n\nشاكرين تعاونكم`;
+const plrsGroupMsg = () => `الزملاء الكرام في ${SP.name}\nالسلام عليكم ورحمة الله وبركاته\n\nنأمل التكرم بالدخول برقم الهوية والتوقيع على سجل «مجتمعات التعلّم المهنية» (تشكيل الفرق وخريطة الاجتماعات)، ويمكنكم إضافة ملاحظة أو اقتراح بند جديد.\n\n🔗 ${plrsLink()}\n\nشاكرين تعاونكم`;
 const plrNm = s => cvNorm(String(s || "").replace(/\(.*?\)/g, ""));
 const plrSameName = (a, b) => { const x = plrNm(a), y = plrNm(b); if (!x || !y) return false; if (x === y) return true; const A = x.split(" "), B = y.split(" "); return A[0] === B[0] && A[A.length - 1] === B[B.length - 1]; };
 // البنود التي يوقّع عليها الشخص
@@ -34985,6 +35046,10 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   const [view, setView] = useState(initView);
   const [sum, setSum] = useState(null);
   const [qrnOn, setQrnOn] = useState(false);
+  // ⭐ المفضلة والإخفاء ودليل أول دخول لكل مستخدم
+  const uiP = usePrefs({ maGet, maPut }, me ? "st_" + String(me.hash || me.name || "").slice(0, 24) : null);
+  const [ptEdit, setPtEdit] = useState(false); const [ptCust, setPtCust] = useState(false); const [ptTour, setPtTour] = useState(false);
+  useEffect(() => { if (me && me.name && uiP.ok && !uiP.tour) setPtTour(true); }, [me && me.name, uiP.ok]);
   useEffect(() => { if (!me || !me.name || kind === "staff") return; let a = true; (async () => { try { const [c, t] = await Promise.all([maGet("school-qrn-cfg"), maGet(TT_NODE)]); const T = ttFresh(t); const ti = sttFindMe(T, me.name); const C = c || {}; if (a) setQrnOn(!!((ti >= 0 && C.on && C.on[T.T[ti]]) || maArr(C.nm).some(n => n && String(me.name).includes(n)))); } catch {} })(); return () => { a = false; }; }, [me && me.name]);
   const grad = isStaff ? "linear-gradient(160deg,#7c2d12,#c2410c 50%,#f59e0b)" : "linear-gradient(160deg,#134e4a,#0f766e 50%,#14b8a6)";
   const login = async (v) => {
@@ -35016,11 +35081,21 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   );
   const pxAll = isStaff && ["principal", "deputy"].includes(me.role); const pxW = <>{view !== "circd" && <CdWatcher me={me} onOpen={() => setView("circd")} />}{!hdRemDay(maKey(new Date())) && <PxWatcher me={me} all={pxAll} onOpen={() => setView(pxAll ? "pxadm" : "px")} />}<DuSignWatcher me={me} onOpen={() => setView("duty")} />{!isStaff && <CvTeacherWatcher me={me} onOpen={() => setView("cv")} />}{pxAll && <AdmOpsWatcher navigate={p => setView(p === "periodfollow" ? "tt" : p === "duty" ? "dutyadm" : p)} />}</>;
   const wrap = (t, node) => <div className="pt px-2 md:px-5 py-4" dir="rtl" style={{ minHeight: "100vh", background: "#f8fafc" }}><style>{MA_CSS + PT_CSS}</style><Bar t={t} />{node}{pxW}</div>;
+  const myRole = isStaff ? (me.role || "admin") : "teacher";
+  PT_UI.off = ptObj((SP.roleOff || {})[myRole]); PT_UI.hide = new Set(uiP.hide); PT_UI.fav = uiP.fav; PT_UI.edit = ptEdit; PT_UI.togFav = uiP.togFav; PT_UI.togHide = uiP.togHide; PT_UI.reg = {};
+  if (view && PT_UI.off[view]) return wrap("⛔ قسم غير متاح", <div className="ma-card p-6 text-center"><div style={{ fontSize: 40 }}>🔒</div><b style={{ fontSize: 17 }}>هذا القسم غير مفعّل لدورك</b><p style={{ color: "#64748b", fontWeight: 700 }}>عطّله مدير المدرسة من «إعدادات المدرسة ← مصفوفة الصلاحيات».</p></div>);
+  const ptOverlays = <>{ptTour && <Tour name={me.name} roleLbl={isStaff ? PT_ROLE_LBL[me.role] : "معلم"} steps={PT_TOUR(myRole)} picks={(PT_PICKS[myRole] || []).map(id => PT_UI.reg[id]).filter(Boolean).slice(0, 6)} onPick={it => it.onClick && it.onClick()} onDone={() => { setPtTour(false); if (!uiP.tour) uiP.doneTour(); }} />}
+    {ptCust && <PtCustomize title="تخصيص البوابة" prefs={uiP} onClose={() => setPtCust(false)} groups={null} />}</>;
   if (view === "attend") return wrap("📋 غياب الحصة الثانية", <MorningAttendancePage mode="teacher" />);
   if (view === "classify") return wrap("🏷️ تصنيف الطلاب", <StudentClassifyPage mode="teacher" />);
   if (view === "stlv") return wrap("📊 سجل تصنيف مستويات الطلاب", <StudentLevelsPage by={me.name} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
   if (view === "readwk") return wrap("📖 حصر الضعف القرائي", <ReadingWeakPage by={me.name} admin={isStaff} />);
   if (view === "pulse" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("📈 مؤشر أداء المدرسة الأسبوعي", <React.Suspense fallback={RD_WAIT}><SchoolPulse api={pulseApi()} /></React.Suspense>);
+  if (view === "ini") return wrap("🚀 مبادرات المدرسة", <React.Suspense fallback={LF_WAIT}><LfInitiatives api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
+  if (view === "meet" && isStaff) return wrap("🤝 اللقاءات الطلابية", <React.Suspense fallback={LF_WAIT}><LfMeetings api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /></React.Suspense>);
+  if (view === "zy") return wrap("👣 زيارات الطلاب", <React.Suspense fallback={LF_WAIT}>{isStaff ? <LfZyStaff api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /> : <LfZyMine api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} />}</React.Suspense>);
+  if (view === "zyt") return wrap("🗣️ رأيي في طلابي", <React.Suspense fallback={LF_WAIT}><LfZyTeacher api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} /></React.Suspense>);
+  if (view === "dhealth" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🩺 صحة البيانات", <React.Suspense fallback={RD_WAIT}><DataHealth me={{ name: me.name }} api={dhApi(null)} /></React.Suspense>);
   if (view === "command" && isStaff && ["principal", "deputy", "counselor"].includes(me.role)) return wrap("🧭 مركز القيادة والإنذار المبكر", <React.Suspense fallback={RD_WAIT}><Command me={{ name: me.name, role: me.role }} api={cmdApi("")} /></React.Suspense>);
   if (view === "quran") return wrap("📖 حلقة القرآن الكريم — التسميع والمراجعة", <React.Suspense fallback={RD_WAIT}><QuranTeacher api={qrnApi()} me={{ name: me.name }} admin={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "quranadm" && isStaff) return wrap("📖 حلقات القرآن الكريم — الإدارة", <React.Suspense fallback={RD_WAIT}><QuranAdmin api={qrnApi()} me={{ name: me.name }} /></React.Suspense>);
@@ -35107,6 +35182,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           </div>
         </div>
         {allowed && <PushBellStaff me={me} isStaff={isStaff} />}
+        {allowed && ptOverlays}
 
         {!allowed ? (
           <div className="ma-card p-6 text-center"><div style={{ fontSize: 40 }}>⛔</div><div style={{ fontWeight: 900, fontSize: 17, margin: "6px 0" }}>هذه البوابة خاصة بالإداريين والمرشد الطلابي</div><div style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>صلاحيتك المسجّلة: {PT_ROLE_LBL[me.role] || "معلم"} — يمكن للمدير تعديلها من «بوابات الدخول والصلاحيات»</div><button className="ma-btn pri" style={{ marginTop: 14 }} onClick={() => { window.location.hash = "teacher"; window.location.reload(); }}>👨‍🏫 الذهاب لبوابة المعلمين</button></div>
@@ -35120,8 +35196,13 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
               <button className="pt-kpi" style={{ "--c": "#2563eb" }} onClick={() => setView("inbox")}><b>{maAr(sum.notes)}</b><small>ملاحظة بلا رد</small></button>
             </div>}
             <div className="pt-tiles">
-              {["principal", "deputy", "counselor"].includes(me.role) && <button className="cmd-feat" style={{ gridColumn: "1/-1" }} onClick={() => setView("command")}><span className="cmd-feat-i">🧭</span><span className="cmd-feat-t"><b>مركز القيادة والإنذار المبكر <em>جديد</em></b><small>كل بيانات الطالب في صورة واحدة: الحضور • السلوك • الدرجات • القراءة • نافس — مؤشر خطر بأسبابه، خريطة مهارات، خطط تدخل يُقاس أثرها، وملخص الأحد</small></span><span className="cmd-feat-go">افتح ‹</span></button>}
+              <PtFavBar edit={ptEdit} onEdit={() => ptEdit ? setPtEdit(false) : setPtCust(true)} onTour={() => setPtTour(true)} />
+              {["principal", "deputy", "counselor"].includes(me.role) && !PT_UI.off.command && <button className="cmd-feat" style={{ gridColumn: "1/-1" }} onClick={() => setView("command")}><span className="cmd-feat-i">🧭</span><span className="cmd-feat-t"><b>مركز القيادة والإنذار المبكر <em>جديد</em></b><small>كل بيانات الطالب في صورة واحدة: الحضور • السلوك • الدرجات • القراءة • نافس — مؤشر خطر بأسبابه، خريطة مهارات، خطط تدخل يُقاس أثرها، وملخص الأحد</small></span><span className="cmd-feat-go">افتح ‹</span></button>}
               {["principal", "deputy"].includes(me.role) && <div style={{ gridColumn: "1/-1" }}><LeaderStrip onOpen={() => setView("lead")} /></div>}
+              {ptTile("zy", "👣", "زيارات الطلاب", ["principal", "deputy"].includes(me.role) ? "وزّع الطلاب على الأعضاء (٥ لكل عضو) وتابع الزيارات وآراء المعلمين" : "طلابك المسندون إليك: قابلهم واستمع إليهم وسجّل الزيارة", "#6d28d9", "#a78bfa", () => setView("zy"))}
+              {ptTile("meet", "🤝", "اللقاءات الطلابية", "خطّط اللقاء واختر المشاركين والطلاب باقتراحات ذكية • المحضر والدعوة والصور", "#0f766e", "#2dd4bf", () => setView("meet"))}
+              {ptTile("ini", "🚀", "مبادرات المدرسة", "دوّن المبادرة ووثّقها بالصور • شعار مبتكر بالذكاء الاصطناعي • تقرير وملصق", "#1d4ed8", "#d4af37", () => setView("ini"))}
+              {["principal", "deputy"].includes(me.role) && ptTile("dhealth", "🩺", "صحة البيانات", "فصول لم ترصد • طلاب مكررون أو بلا هوية • درجات خارج المدى • نتائج لا تطابق طالبًا • أقسام توقف تحديثها", "#0f766e", "#14b8a6", () => setView("dhealth"))}
               {["principal", "deputy"].includes(me.role) && ptTile("pulse", "📈", "مؤشر أداء المدرسة الأسبوعي", "مقارنة الأسابيع في الحضور والتأخر والسلوك والمعلمين والدرجات والقراءة ونافس والقرآن — أين تتجه المدرسة؟", "#0b2545", "#c9a227", () => setView("pulse"))}
               {["principal", "deputy"].includes(me.role) && ptTile("ext", "📋", "ملف شواهد التقويم الخارجي", "المؤشرات ودلالات التحقق والشواهد — متحقق/جزئي/غير متحقق، رفع الشواهد، وطباعة الملف بغلاف المدرسة", "#0b2545", "#c9a227", () => setView("ext"))}
               {["principal", "deputy"].includes(me.role) && ptTile("trep", "📑", "التقارير الدورية للمعلمين", "تقرير أداء وإنجاز شهري لكل معلم من بيانات الموقع ومنصة مدرستي — يُعتمد ويُنشر لحساب المعلم PDF", "#0f3b5f", "#1e3a8a", () => setView("trep"))}
@@ -35193,6 +35274,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {!hdRemDay(maKey(new Date())) && <div className="pt-bn"><CvHomeBanner me={me} onOpen={() => setView("cv")} /></div>}
             {!hdRemDay(maKey(new Date())) && <div className="pt-bn"><PxHomeBanner me={me} onOpen={() => setView("px")} /></div>}
           </div>
+          <PtFavBar edit={ptEdit} onEdit={() => ptEdit ? setPtEdit(false) : setPtCust(true)} onTour={() => setPtTour(true)} />
           <div className="pt-sec"><h3>⏱️ دوامي وانضباطي</h3><div className="pt-tiles">
             {ptTile("score", "🏆", "بطاقتي الشاملة وترتيبي", "نسبة انضباطي في الحضور والطابور والحصص والتحضير، وتفاصيل حضوري وملاحظاتي، وترتيبي بين زملائي", "#0f1e3d", "#d4a017", () => setView("score"))}
             {ptTile("hd", "📈", "انضباطي اليومي", "نسبة انضباطك ودقائق التأخر والانصراف المبكر والاستئذان من «حضوري» مع الطابور وملاحظات الحصص", "#0f1e3d", "#0f766e", () => setView("hd"))}
@@ -35215,6 +35297,9 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("attend", "📋", "غياب الحصة الثانية", "رصد غياب طلاب فصلك واعتماده باسمك", "#0d9488", "#14b8a6", () => setView("attend"))}
             {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
             {qrnOn && ptTile("quran", "📖", "حلقة القرآن الكريم", "افتح حصتك من الجدول ← 🟢 تسميع • 🔵 مراجعة لكل طالب • ملاحظات يومية • إحصاء الأسبوع للطالب وولي أمره والإدارة", "#0b3d2e", "#c9a227", () => setView("quran"))}
+            {ptTile("zyt", "🗣️", "رأيي في طلابي (زيارات الطلاب)", "اكتب رأيك في مستوى طلاب فصولك الذين يزورهم أعضاء الإدارة واطّلع على زياراتهم", "#0369a1", "#38bdf8", () => setView("zyt"))}
+            {ptTile("zy", "👣", "زياراتي للطلاب", "إن كنت عضوًا في دورة زيارات: طلابك المسندون إليك وتسجيل زياراتهم", "#6d28d9", "#a78bfa", () => setView("zy"))}
+            {ptTile("ini", "🚀", "مبادرات المدرسة", "دوّن مبادرتك ووثّقها بالصور مع شعار مبتكر بالذكاء الاصطناعي", "#1d4ed8", "#d4af37", () => setView("ini"))}
             {ptTile("actcards", "🏆", "بطاقات تنفيذ المسابقات والبرامج", "النشاط الطلابي • نموذجا إدارة تعليم جدة طبق الأصل • طباعة و PDF لبطاقة أو مجموعة • بطاقتان في الصفحة", "#003845", "#3aa58a", () => setView("actcards"))}
             {ptTile("classify", "🏷️", "تصنيف الطلاب", "المستوى الدراسي • السلوك • الحضور مع الملاحظات", "#7c3aed", "#a855f7", () => setView("classify"))}
             {ptTile("stlv", "📊", "سجل مستويات الطلاب", "مميز • جيد • متوسط • متدنٍ — مع الملاحظات وطباعة السجل باسمك", "#6d28d9", "#db2777", () => setView("stlv"))}
@@ -35360,12 +35445,13 @@ function GuardianPortal({ onBack }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="gd-eyebrow"><GdIco n="users" s={14} /> بوابة الطالب وولي الأمر</div>
               <div className="gd-name">{me.name}</div>
-              <div className="gd-sub">{maClassName(me.ck)} • مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+              <div className="gd-sub">{maClassName(me.ck)} • {SP.name}</div>
             </div>
           </div>
           <div className="gd-acts">
             {String(me.ck).startsWith("3-") && <button className="gd-act" onClick={() => { try { localStorage.setItem("nafsbook-stu-v1", JSON.stringify({ id: me.sid, name: me.name, ck: me.ck, nh: me.nh, until: Date.now() + 30 * 864e5 })); } catch {} go("marji"); }}><GdIco n="book" s={16} /> مراجع نافس</button>}
             <button className="gd-act" onClick={() => { try { localStorage.setItem("rd-stu-v1", JSON.stringify({ id: me.sid, name: me.name, ck: me.ck, nh: me.nh, until: Date.now() + 30 * 864e5 })); } catch {} go("qiraa"); }}><GdIco n="book" s={16} /> اختبار القراءة</button>
+            <button className="gd-act" onClick={() => { try { localStorage.setItem("zy-stu-v1", JSON.stringify({ sid: me.sid, name: me.name, ck: me.ck, until: Date.now() + 30 * 864e5 })); } catch {} go("zyara"); }}>👣 زياراتي</button>
             <button className="gd-act" onClick={() => go("weekly")}><GdIco n="calendar" s={16} /> الخطة الأسبوعية</button>
             <button className="gd-act" onClick={() => go("termplan")}><GdIco n="layers" s={16} /> الخطة الفصلية</button>
             {onBack && <button className="gd-act" onClick={onBack}><GdIco n="home" s={16} /> الرئيسية</button>}
@@ -36264,7 +36350,7 @@ function WeeklyPlanPublic({ onBack, embedded }) {
         <div className="flex items-center gap-3 flex-wrap">
           <img src={SCHOOL_LOGO} alt="" style={{ width: 64, height: 64, borderRadius: "50%", background: "#fff", padding: 3, boxShadow: "0 0 0 3px #fde68a" }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+            <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>{SP.name}</div>
             <div style={{ fontSize: 26, fontWeight: 900 }}>🗓️ {meta.title || "الخطة الأسبوعية"}</div>
             <div style={{ fontSize: 13, fontWeight: 700, opacity: .85 }}>{meta.sub || "تُحدَّث كل أسبوع على نفس الرابط — احفظه في المفضلة"}</div>
           </div>
@@ -36353,7 +36439,7 @@ function WeeklyPlanPage() {
           <span style={{ fontWeight: 900, fontSize: 13.5, color: "#0f766e" }}>🔗 الرابط الثابت لأولياء الأمور:</span>
           <span dir="ltr" style={{ flex: "1 1 220px", minWidth: 0, background: "#fff", border: "1px solid #ccfbf1", borderRadius: 10, padding: "6px 10px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", userSelect: "all" }}>{link}</span>
           <button className="ma-btn" onClick={() => { try { navigator.clipboard.writeText(link); toast("✅ تم نسخ الرابط"); } catch {} }}>📋 نسخ</button>
-          <a className="ma-btn pri" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent("🗓️ " + (meta.title || "الخطة الأسبوعية") + " — مدرسة الأمير عبدالمجيد المتوسطة\nرابط ثابت يُحدَّث كل أسبوع:\n" + link)}`}>💬 واتساب</a>
+          <a className="ma-btn pri" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent("🗓️ " + (meta.title || "الخطة الأسبوعية") + ` — ${SP.name}\nرابط ثابت يُحدَّث كل أسبوع:\n` + link)}`}>💬 واتساب</a>
           <a className="ma-btn" href={link} target="_blank" rel="noreferrer">↗ فتح الصفحة</a>
           <button className="ma-btn" onClick={() => setMetaEd(!metaEd)}>⚙️ عنوان الصفحة</button>
           {metaEd && <div className="flex gap-2 flex-wrap" style={{ width: "100%" }}><input {...inp} style={{ flex: "1 1 200px" }} value={meta.title} onChange={e => setMeta({ ...meta, title: e.target.value })} placeholder="عنوان الصفحة" /><input {...inp} style={{ flex: "2 1 260px" }} value={meta.sub || ""} onChange={e => setMeta({ ...meta, sub: e.target.value })} placeholder="وصف قصير (مثال: الصف الأول المتوسط)" /><button className="ma-btn pri" onClick={saveMeta}>حفظ</button></div>}
@@ -36670,7 +36756,7 @@ function MorningLatePage({ by = "الإدارة", canConfig = true, admin = fals
   };
 
   // ── الطباعة
-  const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><div class="c"><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
+  const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><div class="c"><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
   const css = `@page{size:A4;margin:9mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}
 .pg{page-break-after:always;border:2px solid #c2410c;border-radius:16px;padding:14px 16px;position:relative}.pg:last-child{page-break-after:auto}
 .pg::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,#9a3412,#f97316,#fbbf24)}
@@ -36685,7 +36771,7 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
 .ltr{border:1.5px dashed #fdba74;border-radius:12px;padding:10px 14px;font-size:12.5px;line-height:2.1;margin:4px 0 12px;background:#fffaf5}
 .sg{display:flex;justify-content:space-around;margin-top:20px;font-weight:800;font-size:12.5px;text-align:center}.sg span{display:block;margin-top:14px;color:#94a3b8}.sg .pn{display:block;margin-top:4px;color:#9a3412}`;
   const open = (body, t) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${css}</style></head><body>${body}<script>setTimeout(()=>print(),800)</script></body></html>`);
-  const sig = () => `<div class="sg"><div>مسجّل البيانات<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>وكيل شؤون الطلاب<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`;
+  const sig = () => `<div class="sg"><div>مسجّل البيانات<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>وكيل شؤون الطلاب<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div>`;
   const dsub = k => { const d = maDate(k); return `${maDay(d)}<br>${maHijri(d)}<br>${maGreg(d)}`; };
   const printDay = () => {
     const rows = Object.values(dayLate).filter(Boolean).sort((a, b) => a.ck.localeCompare(b.ck) || mlToMin(a.time) - mlToMin(b.time));
@@ -36744,12 +36830,12 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
   const printReport = () => open(groupHTML(R, rp.f, rp.t, kindL, selLabel, rp.kind === "day"), "تقرير التأخر");
   // ── تقرير الطالب
   const stuInfo = (() => { if (!onePick) return null; const [k, sid] = onePick.split("|"); const rows = R.filter(r => r.ck === k && r.id === sid).sort((a, b) => a.dk.localeCompare(b.dk)); return { k, sid, name: rows[0]?.name || "", rows: rows.map(r => ({ dk: r.dk, time: r.time, mins: r.mins, reason: r.reason || "", note: r.note || "" })), n: rows.length, m: rows.reduce((a, r) => a + r.mins, 0), nh: nhOf(k, sid) }; })();
-  const stuLetter = (si, f, t) => `المكرم ولي أمر الطالب / ${si.name} — ${maClassName(si.k)}\nالسلام عليكم ورحمة الله وبركاته، وبعد:\nنفيدكم بأن ابنكم تأخر عن الطابور الصباحي (${maAr(si.n)}) ${si.n > 2 && si.n < 11 ? "مرات" : "مرة"} بمجموع (${maAr(si.m)}) دقيقة خلال الفترة من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))}.\nنأمل منكم الحرص على حضوره قبل بداية الطابور الصباحي الساعة ${mlFmtT(cfg.lineup)} شاكرين تعاونكم.\nمدير المدرسة / فازع القرني — مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
+  const stuLetter = (si, f, t) => `المكرم ولي أمر الطالب / ${si.name} — ${maClassName(si.k)}\nالسلام عليكم ورحمة الله وبركاته، وبعد:\nنفيدكم بأن ابنكم تأخر عن الطابور الصباحي (${maAr(si.n)}) ${si.n > 2 && si.n < 11 ? "مرات" : "مرة"} بمجموع (${maAr(si.m)}) دقيقة خلال الفترة من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))}.\nنأمل منكم الحرص على حضوره قبل بداية الطابور الصباحي الساعة ${mlFmtT(cfg.lineup)} شاكرين تعاونكم.\nمدير المدرسة / ${SP.principalShort} — ${SP.name}`;
   const stuHTML = (si, f, t, kL) => `<section class="pg">${hdr("تقرير التأخر الصباحي للطالب", `${kL}<br>من ${maHijri(maDate(f))}<br>إلى ${maHijri(maDate(t))}`)}
       <div class="kp"><div><b style="font-size:14px">${ptEsc(si.name)}</b>اسم الطالب</div><div><b style="font-size:15px">${maClassName(si.k)}</b>الفصل</div><div><b>${maAr(si.n)}</b>مرات التأخر</div><div><b>${maAr(si.m)}</b>مجموع الدقائق</div></div>
       <div class="ltr">${ptEsc(stuLetter(si, f, t)).split("\n").map((x, i) => i === 0 ? `<b>${x}</b>` : x).join("<br>")}</div>
       <table><thead><tr><th>م</th><th>اليوم</th><th>التاريخ الهجري</th><th>الميلادي</th><th>وقت الحضور</th><th>مدة التأخر</th><th>السبب</th></tr></thead><tbody>${si.rows.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td>${maDay(maDate(r.dk))}</td><td>${maHijri(maDate(r.dk))}</td><td>${maGreg(maDate(r.dk))}</td><td>${mlFmtT(r.time)}</td><td><span class="b">${mlDur(+r.mins || 0)}</span></td><td>${ptEsc(r.reason)}${r.note ? " — " + ptEsc(r.note) : ""}</td></tr>`).join("") || `<tr><td colspan="7">لا توجد حالات تأخر 🌟</td></tr>`}</tbody></table>
-      <div class="sg"><div>وكيل شؤون الطلاب<br><span>............</span></div><div>ولي أمر الطالب (اطّلعت)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`;
+      <div class="sg"><div>وكيل شؤون الطلاب<br><span>............</span></div><div>ولي أمر الطالب (اطّلعت)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div></section>`;
   const printStu = () => stuInfo && open(stuHTML(stuInfo, rp.f, rp.t, kindL), "تقرير " + stuInfo.name);
   const saveRep = async (type) => {
     const id = "r" + Date.now().toString(36); setBusy(true);
@@ -36809,7 +36895,7 @@ h3{font-size:13px;margin:10px 0 6px;color:#9a3412}
         <div className="ml-hero">
           <div className="flex items-center justify-between gap-3 flex-wrap" style={{ position: "relative", zIndex: 1 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+              <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{SP.name}</div>
               <div style={{ fontSize: 24, fontWeight: 900 }}>🌅 سجل التأخر الصباحي اليومي</div>
               <div style={{ fontSize: 14, fontWeight: 800, marginTop: 2 }}>{maDay(D)} • {maHijri(D)} • {maGreg(D)}</div>
               <div className="ml-cfg" style={{ marginTop: 8 }}><span>🚩 الطابور {mlFmtT(cfg.lineup)}</span><span>🔔 الحصة الأولى {mlFmtT(cfg.p1)}</span><span>👤 {by}</span></div>
@@ -37278,8 +37364,8 @@ table.g{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}t
 .c b{display:block;font-size:9.5px}.c i{font-style:normal;display:block;font-size:8.5px;font-weight:900}
 table.n{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:8px}table.n th{background:#0369a1;color:#fff;padding:4px}table.n td{border-bottom:1px solid #e2e8f0;padding:4px;text-align:center}.r{text-align:right}
 .sg{display:flex;justify-content:space-around;margin-top:12px;font-weight:800;font-size:11.5px;text-align:center}.sg span{display:block;margin-top:10px;color:#94a3b8}.sg .pn{display:block;margin-top:3px;color:#0369a1}`;
-  const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
-  const sig = `<div class="sg"><div>مسجّل المتابعة<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`;
+  const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
+  const sig = `<div class="sg"><div>مسجّل المتابعة<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>وكيل الشؤون التعليمية<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div>`;
   const openP = (body, t) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${pcss}</style></head><body>${body}<script>setTimeout(()=>print(),800)</script></body></html>`);
   const printDay = () => {
     if (di < 0) { alert("لا يوجد دوام في هذا اليوم حسب الجدول"); return; }
@@ -37326,7 +37412,7 @@ table.n{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:8px}tabl
         <div className="tt-hero">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+              <div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{SP.name}</div>
               <div style={{ fontSize: 24, fontWeight: 900 }}>🗓️ متابعة الحصص اليومية</div>
               <div style={{ fontSize: 14, fontWeight: 800 }}>{maDay(D)} • {maHijri(D)} • {maGreg(D)}</div>
               <div className="flex gap-2 flex-wrap mt-2">{isToday ? <TtClock times={times} /> : null}</div>
@@ -37524,8 +37610,8 @@ function StudentDailyPage({ by = "الإدارة", legacy = null }) {
 .hd{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-size:12px;line-height:1.85;padding:8px 0 10px;border-bottom:2px solid #ccfbf1}.hd .l{text-align:left}.lg{width:64px;height:64px}.tt{text-align:center;margin:10px 0}.tt span{display:inline-block;background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;font-weight:900;font-size:16px;padding:8px 24px;border-radius:999px}
 table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;color:#fff;padding:6px;font-weight:900}td{border-bottom:1px solid #e2e8f0;padding:5px;text-align:center}tr:nth-child(even) td{background:#f8fafc}.nm{text-align:right;font-weight:800}.b{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:900;font-size:10px}
 .sg{display:flex;justify-content:space-around;margin-top:20px;font-weight:800;font-size:12.5px;text-align:center}.sg span{display:block;margin-top:14px;color:#94a3b8}.sg .pn{display:block;margin-top:4px;color:#0f766e}`;
-  const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
-  const sig = `<div class="sg"><div>المعلم / المسجّل<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>الموجه الطلابي<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`;
+  const hdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub}</div></div><div class="tt"><span>${title}</span></div>`;
+  const sig = `<div class="sg"><div>المعلم / المسجّل<br><b class="pn">${ptEsc(by)}</b><span>............</span></div><div>الموجه الطلابي<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div>`;
   const openP = (b, t) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${pcss}</style></head><body>${b}<script>setTimeout(()=>print(),800)</script></body></html>`);
   const printDay = () => { const st = studentsOf(ck); openP(`<section class="pg">${hdr("المتابعة اليومية للطلاب", `${maClassName(ck)} • ${ptEsc(subject)}<br>${pm === "week" ? sdPL(dk) : maDay(maDate(dateK)) + " " + maHijri(maDate(dateK)) + "<br>" + maGreg(maDate(dateK))}`)}<table><thead><tr><th>م</th><th>اسم الطالب</th>${SD_CR.map(c => `<th>${c.ic} ${c.t}</th>`).join("")}<th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => { const v = draft[s.id] || {}; return `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(s.name)}</td>${SD_CR.map(c => `<td>${pb(c.k, v[c.k])}</td>`).join("")}<td style="text-align:right;font-size:10px">${[...SD_CR.filter(c => v[c.k + "n"]).map(c => `<span style="color:${SD_COL[+v[c.k + "c"] || 0]}">${c.ic} ${ptEsc(v[c.k + "n"])}</span>`), v.n ? "📝 " + ptEsc(v.n) : ""].filter(Boolean).join("<br>")}</td></tr>`; }).join("")}</tbody></table>${sig}</section>`, "المتابعة اليومية"); };
   const printArc = () => { const kl = { day: "اليوم", week: "الأسبوع", month: "آخر ٣٠ يوماً", year: "العام الدراسي", custom: "فترة مخصصة" }[rp.kind];
@@ -37534,7 +37620,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
       <table><thead><tr><th>م</th><th>الطالب</th><th>الفصل</th><th>مرات المتابعة</th><th>🙋 مشاركة ممتازة/جيدة/ضعيفة</th><th>📚 الواجب منجز</th><th>🎒 أدوات ناقصة</th><th>🤝 يحتاج متابعة</th></tr></thead><tbody>${agg.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="nm">${ptEsc(x.name)}</td><td>${maClassName(x.ck)}</td><td>${maAr(x.n)}</td><td>${maAr(x.c.p[0])} / ${maAr(x.c.p[1])} / <b style="color:#c2410c">${maAr(x.c.p[2])}</b></td><td>${x.hwPct == null ? "—" : maAr(x.hwPct) + "٪"}</td><td style="color:#c2410c;font-weight:900">${maAr(x.c.t[1])}</td><td style="color:#b91c1c;font-weight:900">${maAr(x.c.b[2])}</td></tr>`).join("") || `<tr><td colspan="8">لا توجد بيانات</td></tr>`}</tbody></table>
       ${one && one.notes.length ? `<h3 style="font-size:13px;color:#0f766e">📝 ملاحظات المعلمين</h3><table><thead><tr><th>التاريخ</th><th>المادة</th><th>الملاحظة</th></tr></thead><tbody>${one.notes.map(n => `<tr><td>${maHijri(sdDate(n.dk))}</td><td>${ptEsc(n.subject)}</td><td class="nm">${[...SD_CR.filter(c => n.r[c.k + "n"]).map(c => c.ic + " " + ptEsc(n.r[c.k + "n"])), n.n ? "📝 " + ptEsc(n.n) : ""].filter(Boolean).join(" • ")}</td></tr>`).join("")}</tbody></table>` : ""}${sig}</section>`, "تقرير المتابعة"); };
   // ── طباعة الملاحظات (فردي / مجمّع)
-  const noteCard = (name, ck2, entries, solo) => `<div class="nc${solo ? " solo" : ""}"><div class="nch"><div class="nav">${ptEsc((name || "؟")[0])}</div><div><b>${ptEsc(name)}</b><small>${maClassName(ck2)}</small></div><span class="ncn">${maAr(entries.length)} ${entries.length > 2 && entries.length < 11 ? "ملاحظات" : "ملاحظة"}</span></div>${entries.map(e => `<div class="ne"><div class="ned">📅 ${sdPL(e.dk)} • 📚 ${ptEsc(e.subject || "")}${e.by ? " • 👤 " + ptEsc(e.by) : ""}</div><div class="neg">${SD_CR.map(c => { const lv = e.r[c.k] != null ? c.lv[e.r[c.k]] : null; const t = e.r[c.k + "n"]; if (!lv && !t) return ""; return `<div class="nb" style="--ac:${c.ac};--soft:${c.soft}"><div class="nbt">${c.ic} ${c.t}${lv ? `<span style="background:${lv[2]};color:${lv[1]}">${lv[3]} ${lv[0]}</span>` : ""}</div>${t ? `<div class="nbx" style="color:${SD_COL[+e.r[c.k + "c"] || 0]}">${ptEsc(t)}</div>` : ""}</div>`; }).join("")}</div>${e.r.n ? `<div class="nge">📝 ${ptEsc(e.r.n)}</div>` : ""}</div>`).join("")}${solo ? `<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(entries[0]?.by || by)}</b><span>............</span></div><div>ولي أمر الطالب (اطّلعت)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>` : ""}</div>`;
+  const noteCard = (name, ck2, entries, solo) => `<div class="nc${solo ? " solo" : ""}"><div class="nch"><div class="nav">${ptEsc((name || "؟")[0])}</div><div><b>${ptEsc(name)}</b><small>${maClassName(ck2)}</small></div><span class="ncn">${maAr(entries.length)} ${entries.length > 2 && entries.length < 11 ? "ملاحظات" : "ملاحظة"}</span></div>${entries.map(e => `<div class="ne"><div class="ned">📅 ${sdPL(e.dk)} • 📚 ${ptEsc(e.subject || "")}${e.by ? " • 👤 " + ptEsc(e.by) : ""}</div><div class="neg">${SD_CR.map(c => { const lv = e.r[c.k] != null ? c.lv[e.r[c.k]] : null; const t = e.r[c.k + "n"]; if (!lv && !t) return ""; return `<div class="nb" style="--ac:${c.ac};--soft:${c.soft}"><div class="nbt">${c.ic} ${c.t}${lv ? `<span style="background:${lv[2]};color:${lv[1]}">${lv[3]} ${lv[0]}</span>` : ""}</div>${t ? `<div class="nbx" style="color:${SD_COL[+e.r[c.k + "c"] || 0]}">${ptEsc(t)}</div>` : ""}</div>`; }).join("")}</div>${e.r.n ? `<div class="nge">📝 ${ptEsc(e.r.n)}</div>` : ""}</div>`).join("")}${solo ? `<div class="sg"><div>المعلم<br><b class="pn">${ptEsc(entries[0]?.by || by)}</b><span>............</span></div><div>ولي أمر الطالب (اطّلعت)<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div>` : ""}</div>`;
   const ncss = `.nc{border:1.5px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:10px;page-break-inside:avoid}.nch{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(90deg,#f0fdfa,#fff);border-bottom:1px solid #e2e8f0}.nch b{display:block;font-size:14px}.nch small{font-size:11px;color:#0f766e;font-weight:800}.nav{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#14b8a6,#0f766e);color:#fff;display:grid;place-items:center;font-weight:900}.ncn{margin-right:auto;background:#fef3c7;color:#92400e;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:900}.ne{padding:8px 12px;border-bottom:1px dashed #e2e8f0}.ne:last-child{border-bottom:0}.ned{font-size:10.5px;font-weight:800;color:#64748b;margin-bottom:6px}.neg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.nb{border-radius:10px;padding:6px 8px;background:var(--soft);border-top:3px solid var(--ac)}.nbt{font-size:10.5px;font-weight:900;color:var(--ac);display:flex;flex-wrap:wrap;gap:4px;align-items:center}.nbt span{border-radius:999px;padding:1px 7px;font-size:9.5px}.nbx{font-size:11.5px;font-weight:800;margin-top:4px;line-height:1.6}.nge{margin-top:6px;font-size:11.5px;font-weight:800;background:#fffbeb;border-radius:8px;padding:5px 8px}.nc.solo{border:0}`;
   const printNotes = (list, mode, sub) => {
     if (!list.length) { alert("لا توجد ملاحظات للطباعة"); return; }
@@ -37554,7 +37640,7 @@ table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f766e;c
       <style>{MA_CSS + (typeof PT_CSS !== "undefined" ? PT_CSS : "") + (typeof ML_CSS !== "undefined" ? ML_CSS : "") + SD_CSS}</style>
       <div className="grid gap-4" style={{ maxWidth: 1250, margin: "0 auto" }}>
         <div className="pt-hero" style={{ background: "linear-gradient(135deg,#134e4a,#0f766e 55%,#0d9488)" }}><div style={{ position: "relative", zIndex: 1 }} className="flex items-center justify-between gap-3 flex-wrap">
-          <div><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style={{ fontSize: 24, fontWeight: 900 }}>📒 المتابعة اليومية للطلاب</div><div style={{ fontSize: 13.5, fontWeight: 800 }}>{pm === "week" ? sdPL(dk) : `${maDay(maDate(dateK))} • ${maHijri(maDate(dateK))} • ${maGreg(maDate(dateK))}`}</div></div>
+          <div><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{SP.name}</div><div style={{ fontSize: 24, fontWeight: 900 }}>📒 المتابعة اليومية للطلاب</div><div style={{ fontSize: 13.5, fontWeight: 800 }}>{pm === "week" ? sdPL(dk) : `${maDay(maDate(dateK))} • ${maHijri(maDate(dateK))} • ${maGreg(maDate(dateK))}`}</div></div>
           <div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>👤 {by}</div>
         </div></div>
         <div className="ma-tabs">{[["rec", "📝 الرصد اليومي"], ["arc", "🗂️ الأرشيف والتقارير"], ["pc", `💬 ملاحظات أولياء الأمور${nPc ? ` (${maAr(nPc)})` : ""}`], ...(legacy ? [["old", "📁 التقييم السابق"]] : [])].map(([k, l]) => <button key={k} className={`ma-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}</button>)}</div>
@@ -37911,7 +37997,7 @@ function MorningAttendancePage({ mode = "admin", onBack, section = "take", initT
   // ── الطباعة
   const header = (title) => {
     const logo = typeof SCHOOL_LOGO !== "undefined" ? `<img src="${SCHOOL_LOGO}" class="lg">` : "";
-    return `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة</b></div><div class="c">${logo}</div><div class="l">اليوم: <b>${maDay(D)}</b><br>التاريخ: <b>${maHijri(D)}</b><br>الموافق: ${maGreg(D)}</div></div><div class="tt"><span>${title}</span></div>`;
+    return `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><div class="c">${logo}</div><div class="l">اليوم: <b>${maDay(D)}</b><br>التاريخ: <b>${maHijri(D)}</b><br>الموافق: ${maGreg(D)}</div></div><div class="tt"><span>${title}</span></div>`;
   };
   const css = `@page{size:A4;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#0f172a}
 .pg{page-break-after:always;border:2px solid #0f766e;border-radius:16px;padding:14px 16px;position:relative}.pg:last-child{page-break-after:auto}
@@ -37994,7 +38080,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
       <div style={{ maxWidth: 460, margin: "0 auto" }}>
         <div style={{ textAlign: "center", color: "#fff", marginBottom: 16 }}>
           <img src={SCHOOL_LOGO} alt="" style={{ width: 84, height: 84, borderRadius: "50%", background: "#fff", padding: 4, boxShadow: "0 0 0 3px #d4a017", margin: "0 auto" }} />
-          <div style={{ fontSize: 20, fontWeight: 900, marginTop: 8 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+          <div style={{ fontSize: 20, fontWeight: 900, marginTop: 8 }}>{SP.name}</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: "#fde68a" }}>📋 التحضير الصباحي — الحصة الثانية</div>
           <div style={{ fontSize: 13, fontWeight: 800, opacity: .9, marginTop: 4 }}>{maDay(new Date())} • {maHijri(new Date())} • {maGreg(new Date())}</div>
         </div>
@@ -38109,7 +38195,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}th{background:#0f766e
               <img src={SCHOOL_LOGO} alt="" style={{ width: 58, height: 58, borderRadius: "50%", background: "#fff", padding: 3, boxShadow: "0 0 0 3px #d4a017" }} />
               <div>
                 <div style={{ fontSize: 22, fontWeight: 900 }}>{isStats ? "📊 إحصائيات الغياب والتأخر الصباحي" : "📋 غياب الطلاب — تحضير الحصة الثانية"}</div>
-                <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة</div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .85 }}>{SP.name}</div>
               </div>
             </div>
             <div style={{ background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 18, padding: "10px 16px", textAlign: "center", minWidth: 220 }}>
@@ -38904,7 +38990,7 @@ function inBadges(s, nDays) {
 const inPortal = () => { try { return location.origin + location.pathname + "#parent"; } catch { return ""; } };
 function inWeekText(s, f, t, B) {
   const na = s.abs.length, nl = s.late.length;
-  const L = [`📊 *التقرير الأسبوعي* — مدرسة الأمير عبدالمجيد المتوسطة الأولى`, `👦 ${s.name} — ${maClassName(s.ck)}`, `🗓️ من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))}`, ``,
+  const L = [`📊 *التقرير الأسبوعي* — ${SP.name}`, `👦 ${s.name} — ${maClassName(s.ck)}`, `🗓️ من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))}`, ``,
     `🚫 الغياب: ${na ? maAr(na) + " يوم" + (maArr(s.absE).length ? ` (منها ${maAr(maArr(s.absE).length)} بعذر)` : "") : "لا يوجد ✅"}`, `⏰ التأخر الصباحي: ${nl ? maAr(nl) + " مرة" : "لا يوجد ✅"}`,
     s.sd.pos + s.sd.neg ? `📒 المتابعة اليومية: ${maAr(s.sd.pos)} إيجابية • ${maAr(s.sd.neg)} تحتاج اهتماماً` : "",
     s.bn && s.bn.filter(r => r.pv).length ? `🧭 السلوك: ${s.bn.filter(r => r.pv).map(r => bnCat(BN_DEF, r.cat).t + (r.note ? " (" + r.note + ")" : "")).join("، ")}` : ""];
@@ -38924,14 +39010,14 @@ table{width:100%;border-collapse:collapse;font-size:10.5px}th{background:#0f766e
 .bar{height:9px;border-radius:9px;background:#e2e8f0;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px}
 .sg{display:flex;justify-content:space-around;margin-top:16px;font-weight:800;font-size:11.5px;text-align:center}.sg span{display:block;margin-top:12px;color:#94a3b8}.sg .pn{display:block;margin-top:3px;color:#0f766e}.vs-r{margin-top:10px}.sg .pn{display:block}.vs-i{display:block;height:40px;max-width:150px;margin:2px auto 0;object-fit:contain}.vs-c{flex:1}
 .lv{display:inline-block;border-radius:999px;padding:2px 9px;font-weight:900;font-size:10px}`;
-const inHdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub || `${maDay(new Date())}<br>${maHijri(new Date())}<br>${maGreg(new Date())}`}</div></div><div class="tt"><span>${title}</span></div>`;
-const inSig = (by, mid = "الموجه الطلابي") => `<div class="sg"><div>المُعِد<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>${mid}<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`;
+const inHdr = (title, sub) => `<div class="hd"><div><b>المملكة العربية السعودية</b><br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><div><img src="${SCHOOL_LOGO}" class="lg"></div><div class="l">${sub || `${maDay(new Date())}<br>${maHijri(new Date())}<br>${maGreg(new Date())}`}</div></div><div class="tt"><span>${title}</span></div>`;
+const inSig = (by, mid = "الموجه الطلابي") => `<div class="sg"><div>المُعِد<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>${mid}<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div>`;
 const inOpen = (body, t, css = "") => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>${IN_PCSS}${css}</style></head><body>${body}<script>setTimeout(()=>print(),900)</script></body></html>`);
 const inPct = v => v == null ? "—" : maAr(Math.round(v * 1000) / 10) + "٪";
 // شهادة وسام
 function inCertHTML(name, ck, badges, f, t) {
   const css = `@page{size:A4 landscape;margin:0}.ct{width:297mm;height:209mm;padding:14mm;position:relative;background:radial-gradient(circle at 15% 20%,#fef3c7,transparent 40%),radial-gradient(circle at 85% 80%,#ccfbf1,transparent 45%),#fff;page-break-after:always}.ct:last-child{page-break-after:auto}.fr{position:absolute;inset:8mm;border:3px solid #0f766e;border-radius:18px;box-shadow:inset 0 0 0 6px #fff,inset 0 0 0 8px #fbbf24}.in{position:relative;z-index:1;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px}.big{font-size:74px;line-height:1}.ti{font-size:34px;font-weight:900;color:#0f766e}.nm{font-size:30px;font-weight:900;color:#b45309;border-bottom:2px dashed #fbbf24;padding:0 30px 4px}.tx{font-size:16px;font-weight:700;color:#334155;max-width:70%;line-height:2}.bd{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}.bd span{border-radius:999px;padding:6px 16px;color:#fff;font-weight:900;font-size:15px}.lg2{width:80px;height:80px}.sg2{display:flex;gap:120px;margin-top:16px;font-weight:800;font-size:14px}.sg2 b{display:block;color:#0f766e;margin-top:4px}`;
-  return { css, body: `<div class="ct"><div class="fr"></div><div class="in"><img src="${SCHOOL_LOGO}" class="lg2"><div style="font-size:13px;font-weight:800;color:#64748b">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div class="big">${badges[0] ? badges[0][0] : "🏅"}</div><div class="ti">شهادة تميّز</div><div class="tx">تُهدي إدارة المدرسة هذه الشهادة للطالب</div><div class="nm">${ptEsc(name)}</div><div class="tx">من الصف ${maClassName(ck)} تقديراً لتميّزه خلال الفترة من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))} وحصوله على الأوسمة:</div><div class="bd">${badges.map(b => `<span style="background:${b[3]}">${b[0]} ${b[1]}</span>`).join("")}</div><div class="sg2"><div>الموجه الطلابي<b>............</b></div><div>مدير المدرسة<b>فازع القرني</b></div></div></div></div>` };
+  return { css, body: `<div class="ct"><div class="fr"></div><div class="in"><img src="${SCHOOL_LOGO}" class="lg2"><div style="font-size:13px;font-weight:800;color:#64748b">${SP.name}</div><div class="big">${badges[0] ? badges[0][0] : "🏅"}</div><div class="ti">شهادة تميّز</div><div class="tx">تُهدي إدارة المدرسة هذه الشهادة للطالب</div><div class="nm">${ptEsc(name)}</div><div class="tx">من الصف ${maClassName(ck)} تقديراً لتميّزه خلال الفترة من ${maHijri(maDate(f))} إلى ${maHijri(maDate(t))} وحصوله على الأوسمة:</div><div class="bd">${badges.map(b => `<span style="background:${b[3]}">${b[0]} ${b[1]}</span>`).join("")}</div><div class="sg2"><div>الموجه الطلابي<b>............</b></div><div>مدير المدرسة<b>${SP.principalShort}</b></div></div></div></div>` };
 }
 const IN_CSS = `
 .in-per{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -39009,7 +39095,7 @@ function InWarn({ D, by, openStu }) {
   const L = Object.values(S).filter(s => (lv === "all" ? true : lv.includes(s.lvl)) && (!ck || s.ck === ck) && (!q || s.name.includes(q))).sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name, "ar"));
   const nR = Object.values(S).filter(s => s.lvl === "r").length, nY = Object.values(S).filter(s => s.lvl === "y").length;
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3000); };
-  const alertText = s => [`السلام عليكم ورحمة الله — ولي أمر الطالب ${s.name} (${maClassName(s.ck)})`, `نود إحاطتكم بالمؤشرات التالية خلال الفترة من ${maHijri(maDate(D.f))} إلى ${maHijri(maDate(D.t))}:`, ...s.flags.map(x => `${x[0]} ${x[1]}`), `نأمل التواصل مع الموجه الطلابي لمتابعة الطالب ودعمه، شاكرين تعاونكم.`, `إدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`].join("\n");
+  const alertText = s => [`السلام عليكم ورحمة الله — ولي أمر الطالب ${s.name} (${maClassName(s.ck)})`, `نود إحاطتكم بالمؤشرات التالية خلال الفترة من ${maHijri(maDate(D.f))} إلى ${maHijri(maDate(D.t))}:`, ...s.flags.map(x => `${x[0]} ${x[1]}`), `نأمل التواصل مع الموجه الطلابي لمتابعة الطالب ودعمه، شاكرين تعاونكم.`, `إدارة ${SP.name}`].join("\n");
   const send = async (s) => {
     if (!s.nh) { alert("الطالب غير مربوط برقم الهوية — أعد استيراد كشف نور الذي فيه رقم السجل المدني"); return; }
     const id = "w" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -39181,7 +39267,7 @@ function InRank({ D, by }) {
     inOpen(`<section class="pg">${inHdr("مقارنة الفصول — مؤشر الانضباط", `من ${maHijri(maDate(D.f))}<br>إلى ${maHijri(maDate(D.t))}`)}${top ? `<div style="text-align:center;margin:10px 0;padding:12px;border-radius:14px;background:linear-gradient(135deg,#fef3c7,#fff);border:2px solid #fbbf24"><div style="font-size:40px">🏆</div><div style="font-size:20px;font-weight:900;color:#b45309">الفصل المثالي: ${maClassName(top.ck)}</div><div style="font-size:12px;font-weight:700">مؤشر الانضباط ${maAr(top.score)} من ١٠٠</div></div>` : ""}<table><thead><tr><th>الترتيب</th><th>الفصل</th><th>الطلاب</th><th>نسبة الحضور</th><th>التأخر</th><th>المتابعة الإيجابية</th><th>🔴/🟡</th><th>المؤشر /١٠٠</th></tr></thead><tbody>${rows}</tbody></table><div style="font-size:10px;color:#64748b;margin-top:6px">المؤشر = الحضور ٥٠٪ + الانضباط في الموعد ٣٠٪ + المتابعة اليومية الإيجابية ٢٠٪</div>${inSig(by, "وكيل شؤون الطلاب")}</section>`, "مقارنة الفصول");
   };
   const honor = () => { const top = C[0]; if (!top) return; const css = `@page{size:A4 landscape;margin:0}.ct{width:297mm;height:209mm;padding:14mm;position:relative;background:radial-gradient(circle at 20% 20%,#fef3c7,transparent 45%),radial-gradient(circle at 80% 80%,#ccfbf1,transparent 45%),#fff}.fr{position:absolute;inset:8mm;border:4px double #b45309;border-radius:20px}.in{position:relative;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px}`;
-    inOpen(`<div class="ct"><div class="fr"></div><div class="in"><img src="${SCHOOL_LOGO}" style="width:86px"><div style="font-size:14px;font-weight:800;color:#64748b">مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style="font-size:80px">🏆</div><div style="font-size:36px;font-weight:900;color:#0f766e">لوحة الشرف — الفصل المثالي</div><div style="font-size:44px;font-weight:900;color:#b45309">${maClassName(top.ck)}</div><div style="font-size:16px;font-weight:700;color:#334155;line-height:2">تهنئ إدارة المدرسة طلاب الفصل ومعلميهم على تصدّر مؤشر الانضباط<br>للفترة من ${maHijri(maDate(D.f))} إلى ${maHijri(maDate(D.t))} بنسبة حضور ${inPct(top.attRate)}</div><div style="display:flex;gap:120px;margin-top:14px;font-weight:800">وكيل شؤون الطلاب<br>............<span>مدير المدرسة<br><b style="color:#0f766e">فازع القرني</b></span></div></div></div>`, "لوحة الشرف", css); };
+    inOpen(`<div class="ct"><div class="fr"></div><div class="in"><img src="${SCHOOL_LOGO}" style="width:86px"><div style="font-size:14px;font-weight:800;color:#64748b">${SP.name}</div><div style="font-size:80px">🏆</div><div style="font-size:36px;font-weight:900;color:#0f766e">لوحة الشرف — الفصل المثالي</div><div style="font-size:44px;font-weight:900;color:#b45309">${maClassName(top.ck)}</div><div style="font-size:16px;font-weight:700;color:#334155;line-height:2">تهنئ إدارة المدرسة طلاب الفصل ومعلميهم على تصدّر مؤشر الانضباط<br>للفترة من ${maHijri(maDate(D.f))} إلى ${maHijri(maDate(D.t))} بنسبة حضور ${inPct(top.attRate)}</div><div style="display:flex;gap:120px;margin-top:14px;font-weight:800">وكيل شؤون الطلاب<br>............<span>مدير المدرسة<br><b style="color:#0f766e">${SP.principalShort}</b></span></div></div></div>`, "لوحة الشرف", css); };
   const mx = Math.max(...C.map(c => c.score), 1);
   return (
     <div className="grid gap-3">
@@ -39277,7 +39363,7 @@ function InMorning({ go }) {
     <div ref={ref} className="grid gap-3" style={{ background: "#f8fafc", borderRadius: 24, padding: 4, overflow: "auto" }}>
       <div className="in-hero" style={{ background: "linear-gradient(135deg,#0c4a6e,#0f766e 60%,#f59e0b)" }}>
         <div style={{ position: "relative", zIndex: 1 }} className="flex items-center gap-3 flex-wrap">
-          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{maOff(maKey(new Date())) ? `🌙 اليوم ${maOffName(maKey(new Date()))} — البيانات المعروضة لآخر يوم دوام: ${maDay(maDate(maWorkDay()))} ${asmHij(maDate(maWorkDay()))}` : "🌅 صباح الخير — مدرسة الأمير عبدالمجيد المتوسطة الأولى"}</div><div style={{ fontSize: 44, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1 }}>{now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" })}</div><div style={{ fontSize: 14, fontWeight: 800 }}>{maDay(now)} • {maHijri(now)} • {maGreg(now)}{pNow >= 0 ? ` • الحصة ${TT_ORD[pNow]} الآن` : ""}</div></div>
+          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, opacity: .85 }}>{maOff(maKey(new Date())) ? `🌙 اليوم ${maOffName(maKey(new Date()))} — البيانات المعروضة لآخر يوم دوام: ${maDay(maDate(maWorkDay()))} ${asmHij(maDate(maWorkDay()))}` : `🌅 صباح الخير — ${SP.name}`}</div><div style={{ fontSize: 44, fontWeight: 900, letterSpacing: -1, lineHeight: 1.1 }}>{now.toLocaleTimeString("ar-SA-u-nu-arab", { hour: "2-digit", minute: "2-digit" })}</div><div style={{ fontSize: 14, fontWeight: 800 }}>{maDay(now)} • {maHijri(now)} • {maGreg(now)}{pNow >= 0 ? ` • الحصة ${TT_ORD[pNow]} الآن` : ""}</div></div>
           <div className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={load}>🔄 تحديث</button><button className="ma-btn" onClick={fs}>⛶ ملء الشاشة</button></div>
         </div>
       </div>
@@ -39358,7 +39444,7 @@ function InTools() {
   const saveCfg = async () => { const ok = await maPut(IN_CFG, { abs: +cfg.abs || 3, late: +cfg.late || 3, neg: +cfg.neg || 3, beh: +cfg.beh || 3 }); toast(ok ? "✅ حُفظت المعايير" : "⚠️ تعذّر الحفظ"); };
   const rebuild = async () => { setBusy("ix"); const n = await sidxRebuild(); setBusy(""); toast(n >= 0 ? `✅ بُني الفهرس لـ ${maAr(n)} طالب` : "⚠️ تعذّر البناء"); load(); };
   const backup = async () => { setBusy("bk"); const ok = await bk2Run(maKey(new Date())); setBusy(""); toast(ok ? "✅ تم أخذ نسخة احتياطية" : "⚠️ تعذّرت النسخة"); load(); };
-  const download = async () => { setBusy("dl"); const snap = {}; for (const n of BK2_NODES) { const v = await maGet(n); if (v != null) snap[n] = v; } const blob = new Blob([JSON.stringify({ at: new Date().toISOString(), school: "مدرسة الأمير عبدالمجيد المتوسطة الأولى", nodes: snap })], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `نسخة-احتياطية-${maKey(new Date())}.json`; document.body.appendChild(a); a.click(); a.remove(); setBusy(""); };
+  const download = async () => { setBusy("dl"); const snap = {}; for (const n of BK2_NODES) { const v = await maGet(n); if (v != null) snap[n] = v; } const blob = new Blob([JSON.stringify({ at: new Date().toISOString(), school: `${SP.name}`, nodes: snap })], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `نسخة-احتياطية-${maKey(new Date())}.json`; document.body.appendChild(a); a.click(); a.remove(); setBusy(""); };
   const restore = async () => {
     if (!rs.id || !rs.node) return;
     if (!window.confirm(`استرجاع «${BK2_LBL[rs.node] || rs.node}» من نسخة ${rs.id}؟ سيُستبدل المحتوى الحالي لهذا القسم.`)) return;
@@ -39820,7 +39906,7 @@ table{width:100%;border-collapse:collapse;margin-bottom:6px}th{background:${PX_I
 .sg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;margin-top:14px;text-align:center;font-weight:700;color:${PX_NV}}.sg div{border-top:1px dashed #94a3b8;padding-top:6px;line-height:2}.sg div:empty{border:none}.vs-r{margin-top:10px}.sg .pn{display:block}.vs-i{display:block;height:40px;max-width:150px;margin:2px auto 0;object-fit:contain}.vs-c{flex:1}
 .ft{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:8.5px;color:#64748b}
 .land{size:A4 landscape}`;
-const pxHead = (sub) => `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br>${HFX_SCHOOL}</div><img src="${SCHOOL_LOGO}"><div class="l">${sub || ""}</div></div>`;
+const pxHead = (sub) => `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region}<br>${HFX_SCHOOL}</div><img src="${SCHOOL_LOGO}"><div class="l">${sub || ""}</div></div>`;
 const pxOpen = (body, t, land) => printWindow(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${t}</title><link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet"><style>${PX_PCSS}${land ? "@page{size:A4 landscape;margin:8mm}" : ""}</style></head><body>${body}<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>setTimeout(()=>print(),700))</script></body></html>`);
 // ══════════ ✍️ المعتمدون في سجلات الزيارات (الوكيل • المشرف المقيم • مدير المدرسة) ══════════
 const VS_NODE = "school-vsig";
@@ -40185,7 +40271,7 @@ function ClassVisitsPage({ by = "الإدارة" }) {
   const evOf = r => ptObj(ptObj(D.ev[r.tk])[r.v]);
   const done = all.filter(r => cvTotal(evOf(r)) != null).length, late = all.filter(r => cvStatus(r, evOf(r))[0] === "late").length;
   const todayL = all.filter(r => r.date === k); const next = all.find(r => r.date > k); const reqs = all.filter(r => r.req && r.req.st === "new"); const nMsg = ptVals(D.msgs).filter(m => m.st !== "done").length;
-  const shareTxt = `🎯 الزيارات الصفية — مدرسة الأمير عبدالمجيد المتوسطة الأولى\nزملائي المعلمين: يمكنكم معرفة مواعيد زياراتكم الصفية وتقييمكم وعناصر التقييم، مع تنبيه قبل الزيارة، عبر الرابط التالي برقم الهوية:\n${cvLink()}`;
+  const shareTxt = `🎯 الزيارات الصفية — ${SP.name}\nزملائي المعلمين: يمكنكم معرفة مواعيد زياراتكم الصفية وتقييمكم وعناصر التقييم، مع تنبيه قبل الزيارة، عبر الرابط التالي برقم الهوية:\n${cvLink()}`;
   const T = tk && TS.find(x => x.tk === tk);
   return (
     <div className="ma pt px-2 md:px-4 py-4" dir="rtl">
@@ -40441,7 +40527,7 @@ const EA_CSS = `<style>.ea{font-family:Cairo,'Noto Kufi Arabic',Tahoma,sans-seri
 .ea .lv{display:inline-block;border-radius:9px;padding:0 7px;font-weight:900;font-size:8.8px;white-space:nowrap}
 .ea .ap{display:grid;grid-template-columns:1fr 1fr;border:.6pt solid #b9b9df}.ea .ap>div{padding:0}.ea .ap h5{margin:0;background:#dfe0f3;color:#3b3a7a;text-align:center;font-size:10px;padding:3px}.ea .ap p{margin:0;padding:4px 8px;border-top:.6pt solid #b9b9df;font-size:9.5px;min-height:20px}.ea .ap>div+div{border-right:.6pt solid #b9b9df}.ea .ap img{height:26px;vertical-align:middle}
 .ea-f{display:flex;justify-content:space-between;border-top:.5pt solid #d8d8ee;margin-top:6px;padding-top:3px;font-size:7.5px;color:#6b6d8f}.ea-f b{color:#3b3a7a}</style>`;
-const eaHead = (code, title, sub, by, ok) => `<div class="ea-h"><div class="cd"><b>${code}</b><span>الإصدار 01</span><span>نسخة المدرسة الإلكترونية</span></div><div class="ti"><small>الإدارة العامة للتعليم بمحافظة جدة · الشؤون التعليمية · إدارة أداء التعليم — قسم الإشراف التربوي</small><h2>${title}</h2><span>${sub}</span></div><div><table><tr><td>رمز النموذج</td><td dir="ltr">${code}</td></tr><tr><td>رقم الإصدار</td><td>01</td></tr><tr><td>تاريخ الإصدار</td><td dir="ltr">2026/10/24</td></tr><tr><td>المدرسة</td><td>${ptEsc(HFX_SCHOOL)}</td></tr></table></div></div><div class="ea-by"><b>يعبّئها:</b> ${by} &nbsp;&nbsp;&nbsp; <b>يعتمدها:</b> ${ok}</div>`;
+const eaHead = (code, title, sub, by, ok) => `<div class="ea-h"><div class="cd"><b>${code}</b><span>الإصدار 01</span><span>نسخة المدرسة الإلكترونية</span></div><div class="ti"><small>${SP.region} · الشؤون التعليمية · إدارة أداء التعليم — قسم الإشراف التربوي</small><h2>${title}</h2><span>${sub}</span></div><div><table><tr><td>رمز النموذج</td><td dir="ltr">${code}</td></tr><tr><td>رقم الإصدار</td><td>01</td></tr><tr><td>تاريخ الإصدار</td><td dir="ltr">2026/10/24</td></tr><tr><td>المدرسة</td><td>${ptEsc(HFX_SCHOOL)}</td></tr></table></div></div><div class="ea-by"><b>يعبّئها:</b> ${by} &nbsp;&nbsp;&nbsp; <b>يعتمدها:</b> ${ok}</div>`;
 const eaFoot = code => `<div class="ea-f"><span><b>${code}</b> · الإصدار 01 · نسخة مضبوطة — لا يُعدَّل النموذج إلا بإصدار جديد</span><span>${maHijri(new Date())}</span></div>`;
 const eaLv = l => l && OB_LV[l] ? `<span class="lv" style="background:${OB_LV[l][2]};color:${OB_LV[l][1]}">${OB_LV[l][0]}</span>` : "";
 function s3VisitHTML(T, r, e, imgs) {
@@ -40690,7 +40776,7 @@ async function obPrintTeacher(T, D, idx, opts = {}) {
   const fin = ptObj(E.final); const ovs = [1, 2, 3].map(v => obOverall(ptObj(E[v])));
   const itemBest = OB_ITEMS.concat(S3_ITEMS).map(it => { const ls = [1, 2, 3].map(v => +obIt(ptObj(E[v]), it.n).lv || 0); const last = [...ls].reverse().find(Boolean) || 0; return { it, ls, last }; }).filter(x => x.it.n < 100 || x.last);
   const strong = itemBest.filter(x => x.last >= 3), weak = itemBest.filter(x => x.last && x.last <= 2);
-  const cover = `<section class="pg"><div class="cv"><div class="row"><img src="${SCHOOL_LOGO}"><div style="flex:1"><small>المملكة العربية السعودية • وزارة التعليم • الإدارة العامة للتعليم بمحافظة جدة • مدرسة الأمير عبدالمجيد المتوسطة الأولى</small><h1>تقرير رصد الملاحظة الصفية</h1><div style="font-size:17px;font-weight:900;margin-top:2px">أ. ${ptEsc(T.name)}</div><small>${ptEsc(T.s)} • العام الدراسي ١٤٤٨هـ • الفصل الدراسي الأول</small></div></div>
+  const cover = `<section class="pg"><div class="cv"><div class="row"><img src="${SCHOOL_LOGO}"><div style="flex:1"><small>المملكة العربية السعودية • وزارة التعليم • ${SP.region} • ${SP.name}</small><h1>تقرير رصد الملاحظة الصفية</h1><div style="font-size:17px;font-weight:900;margin-top:2px">أ. ${ptEsc(T.name)}</div><small>${ptEsc(T.s)} • العام الدراسي ١٤٤٨هـ • الفصل الدراسي الأول</small></div></div>
       <div class="chips">${T.vis.map((r, i) => `<span>الزيارة ${CV_VN[i]}: ${ovs[i] ? `${ovs[i][3]} ${ovs[i][0]}` : ptObj(E[r.v]).fin ? "منفذة" : `${maDay(maDate(r.date))} ${cvHij(r.hij)}`}</span>`).join("")}</div></div>
     <div class="fin"><b style="font-size:14px;color:#6d28d9">🏁 التقييم النهائي</b>${fin.lv ? ` ${obLvHtml(+fin.lv)}` : ""}<div style="font-weight:700;line-height:2;margin-top:4px;white-space:pre-wrap">${ptEsc(fin.txt || "—")}</div></div>
     <div class="sec" style="margin-top:10px"><div class="band" style="background:#6d28d9">📈 مسار العناصر عبر الزيارات</div><table><thead><tr><th>العنصر</th>${CV_VN.map(v => `<th style="text-align:center">${v}</th>`).join("")}</tr></thead><tbody>${itemBest.map(x => `<tr><td>${maAr(obNo(x.it))}. ${ptEsc(x.it.t)}</td>${x.ls.map(l => `<td style="text-align:center">${l ? `<span class="pill" style="background:${OB_LV[l][2]};color:${OB_LV[l][1]};margin:0">${OB_LV[l][3]}</span>` : "—"}</td>`).join("")}</tr>`).join("")}</tbody></table><div style="padding:6px 10px;font-size:9.5px;color:#64748b">${Object.entries(OB_LV).reverse().map(([k, v]) => `${v[3]} ${v[0]}`).join(" • ")}</div></div>
@@ -40713,7 +40799,7 @@ function ObsInd({ D, setD, TS, by, openT, toast }) {
   const S = obSchool(D, TS); const [gen, setGen] = useState(ptObj(D.cfg.gen)); const [ft, setFt] = useState(null);
   const saveGen = async (g) => { setGen(g); const ok = await cvPatch({ [`${CV_CFG}/gen`]: { ...g, at: Date.now() } }); setD(d => ({ ...d, cfg: { ...d.cfg, gen: g } })); toast(ok ? "✅ حُفظت الملاحظات العامة" : "📱 حُفظت على الجهاز"); };
   const auto = [...S.best.map(x => `🌟 تميز واضح في: ${x.it.t}`), ...S.need.map(x => `🎯 يحتاج تركيزاً: ${x.it.t}`), ...S.lowEv.slice(0, 3).map(x => `▫️ مشاهدة قليلة الظهور: ${x.t}`)].join("\n");
-  const printSchool = () => obOpen(`<section class="pg"><div class="cv"><div class="row"><img src="${SCHOOL_LOGO}"><div><small>مدرسة الأمير عبدالمجيد المتوسطة الأولى • ١٤٤٨هـ</small><h1>أبرز ملاحظات رصد الملاحظة الصفية — للجميع</h1><small>${maAr(S.E.length)} زيارة معتمدة • ${maAr(TS.length)} معلماً</small></div></div></div>
+  const printSchool = () => obOpen(`<section class="pg"><div class="cv"><div class="row"><img src="${SCHOOL_LOGO}"><div><small>${SP.name} • ١٤٤٨هـ</small><h1>أبرز ملاحظات رصد الملاحظة الصفية — للجميع</h1><small>${maAr(S.E.length)} زيارة معتمدة • ${maAr(TS.length)} معلماً</small></div></div></div>
     ${gen.txt ? `<div class="fin"><b style="color:#6d28d9">📢 ملاحظات عامة للزملاء</b><div style="font-weight:700;line-height:2;white-space:pre-wrap">${ptEsc(gen.txt)}</div></div>` : ""}
     <div class="sec"><div class="band" style="background:#6d28d9">📊 مستوى تحقق العناصر على مستوى المدرسة</div><table>${S.items.map(x => { const l = obLvOfAvg(x.avg); return `<tr><td>${maAr(obNo(x.it))}. ${ptEsc(x.it.t)}</td><td style="width:26%"><div class="bar"><i style="width:${x.avg ? x.avg / 4 * 100 : 0}%;background:${l ? OB_LV[l][1] : "#cbd5e1"}"></i></div></td><td style="width:18%">${l ? obLvHtml(l) : "—"}</td></tr>`; }).join("")}</table></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="box" style="background:#f0fdf4;border-right:5px solid #15803d"><b style="color:#15803d">✅ الأكثر رصداً</b>${S.topEv.map(x => `• ${ptEsc(x.t)} <b>(${maAr(x.c)})</b>`).join("<br>")}</div><div class="box" style="background:#fffbeb;border-right:5px solid #b45309"><b style="color:#b45309">▫️ الأقل رصداً (فرص تطوير)</b>${S.lowEv.map(x => `• ${ptEsc(x.t)} <b>(${maAr(x.c)})</b>`).join("<br>")}</div></div>
@@ -41073,7 +41159,7 @@ function VisitsPublicPortal({ onBack }) {
     <div className="ma pt px-3 md:px-6 py-4" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#ecfdf5,#f8fafc)" }}>
       <style>{MA_CSS + PT_CSS}</style>
       <div style={{ maxWidth: 960, margin: "0 auto" }} className="grid gap-3">
-        <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b><span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span><button className="ma-btn" onClick={logout}>خروج</button></div>
+        <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>{SP.name}</b><span style={{ marginRight: "auto", fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span><button className="ma-btn" onClick={logout}>خروج</button></div>
         <TeacherVisitsView me={me} />
       </div>
     </div>
@@ -41274,7 +41360,7 @@ function TpPlanView({ p, pages, share }) {
       <div className="tp-hero">
         <div className="flex items-center gap-3 flex-wrap">
           <img src={SCHOOL_LOGO} alt="" style={{ width: 64, height: 64, borderRadius: "50%", background: "#fff", padding: 3, boxShadow: "0 0 0 3px rgba(255,255,255,.35)" }} />
-          <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى{p.term ? ` • ${p.term}` : ""}</div><div style={{ fontSize: "clamp(19px,5.2vw,25px)", fontWeight: 900, lineHeight: 1.4, overflowWrap: "anywhere" }}>📚 {p.title || "الخطة الفصلية"}</div>
+          <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>{SP.name}{p.term ? ` • ${p.term}` : ""}</div><div style={{ fontSize: "clamp(19px,5.2vw,25px)", fontWeight: 900, lineHeight: 1.4, overflowWrap: "anywhere" }}>📚 {p.title || "الخطة الفصلية"}</div>
             <div className="tp-date">🕒 نُشرت: {tpWhen(p.pubAt || p.at)}</div></div>
           {share}
         </div>
@@ -41287,7 +41373,7 @@ function TpPlanView({ p, pages, share }) {
     </div>
   );
 }
-const tpShare = (p, compact) => { const txt = `📚 ${p.title || "الخطة الفصلية"} — مدرسة الأمير عبدالمجيد المتوسطة الأولى\nأولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية، للاطلاع عليها:\n${tpLink(p.id)}`; return <div className="flex gap-2 flex-wrap"><a className="tp-btn" style={{ background: "#25d366", color: "#fff" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(txt)}`}>💬 {compact ? "واتساب" : "إرسال بالواتساب"}</a><button className="tp-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.35)" }} onClick={() => { try { navigator.clipboard.writeText(tpLink(p.id)); alert("📋 نُسخ الرابط"); } catch { window.prompt("انسخ الرابط:", tpLink(p.id)); } }}>🔗 نسخ الرابط</button></div>; };
+const tpShare = (p, compact) => { const txt = `📚 ${p.title || "الخطة الفصلية"} — ${SP.name}\nأولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية، للاطلاع عليها:\n${tpLink(p.id)}`; return <div className="flex gap-2 flex-wrap"><a className="tp-btn" style={{ background: "#25d366", color: "#fff" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(txt)}`}>💬 {compact ? "واتساب" : "إرسال بالواتساب"}</a><button className="tp-btn" style={{ background: "rgba(255,255,255,.18)", color: "#fff", border: "1px solid rgba(255,255,255,.35)" }} onClick={() => { try { navigator.clipboard.writeText(tpLink(p.id)); alert("📋 نُسخ الرابط"); } catch { window.prompt("انسخ الرابط:", tpLink(p.id)); } }}>🔗 نسخ الرابط</button></div>; };
 
 // ══════════ الصفحة العامة (رابط ولي الأمر) ══════════
 function TermPlanPublic({ onBack, id: id0 }) {
@@ -41364,7 +41450,7 @@ function TermPlanPage() {
           <div key={p.id} className="tp-desc grid gap-2" style={{ borderTop: `6px solid ${th[0]}` }}>
             <div className="flex items-center gap-2"><span style={{ fontSize: 30 }}>📚</span><div style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 15 }}>{p.title}</b><div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>🕒 {tpWhen(p.pubAt || p.at)}</div></div></div>
             <div className="flex gap-1 flex-wrap"><span className="pt-st" style={{ background: th[2], color: th[0] }}>📄 {maAr(p.pages || 0)} صفحة</span><span className="pt-st" style={{ background: p.show ? "#dcfce7" : "#f1f5f9", color: p.show ? "#15803d" : "#64748b" }}>{p.show ? "👁 منشورة" : "🔒 مخفية"}</span></div>
-            <div className="flex gap-1 flex-wrap"><button className="tp-btn" style={{ background: th[0], color: "#fff", padding: "7px 12px" }} onClick={async () => { setBusy("تحميل…"); const pages = maArr(await maGet(`${TP_PG}/${p.id}`)).filter(Boolean); setBusy(""); setView({ p, pages }); }}>👁 عرض</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "7px 12px" }} disabled={!!busy || !p.pages} onClick={async () => { try { setBusy("⏳ تجهيز ملف PDF…"); const pages = maArr(await maGet(`${TP_PG}/${p.id}`)).filter(Boolean); const nm = await tpDownloadPdf(p, pages, (i, n) => setBusy(`⏳ تجهيز PDF — صفحة ${maAr(i)} من ${maAr(n)}`)); setBusy(""); toast("⬇️ حُفظ الملف: " + nm); } catch (e) { setBusy(""); toast("⚠️ " + (e.message || "تعذّر التحميل")); } }}>⬇️ تحميل PDF</button><button className="tp-btn" style={{ background: "#f1f5f9", color: "#334155", padding: "7px 12px" }} onClick={() => edit(p)}>✏️ تعديل</button><a className="tp-btn" style={{ background: "#25d366", color: "#fff", padding: "7px 12px" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`📚 ${p.title} — مدرسة الأمير عبدالمجيد المتوسطة الأولى\nأولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية، للاطلاع عليها:\n${tpLink(p.id)}`)}`}>💬 واتساب</a><button className="tp-btn" style={{ background: "#f1f5f9", color: "#334155", padding: "7px 12px" }} onClick={() => { try { navigator.clipboard.writeText(tpLink(p.id)); toast("📋 نُسخ الرابط"); } catch { window.prompt("انسخ الرابط:", tpLink(p.id)); } }}>🔗</button><button className="tp-btn" style={{ background: "#fff1f2", color: "#be123c", padding: "7px 12px" }} onClick={() => del(p)}>🗑</button></div>
+            <div className="flex gap-1 flex-wrap"><button className="tp-btn" style={{ background: th[0], color: "#fff", padding: "7px 12px" }} onClick={async () => { setBusy("تحميل…"); const pages = maArr(await maGet(`${TP_PG}/${p.id}`)).filter(Boolean); setBusy(""); setView({ p, pages }); }}>👁 عرض</button><button className="tp-btn" style={{ background: "#1e293b", color: "#fff", padding: "7px 12px" }} disabled={!!busy || !p.pages} onClick={async () => { try { setBusy("⏳ تجهيز ملف PDF…"); const pages = maArr(await maGet(`${TP_PG}/${p.id}`)).filter(Boolean); const nm = await tpDownloadPdf(p, pages, (i, n) => setBusy(`⏳ تجهيز PDF — صفحة ${maAr(i)} من ${maAr(n)}`)); setBusy(""); toast("⬇️ حُفظ الملف: " + nm); } catch (e) { setBusy(""); toast("⚠️ " + (e.message || "تعذّر التحميل")); } }}>⬇️ تحميل PDF</button><button className="tp-btn" style={{ background: "#f1f5f9", color: "#334155", padding: "7px 12px" }} onClick={() => edit(p)}>✏️ تعديل</button><a className="tp-btn" style={{ background: "#25d366", color: "#fff", padding: "7px 12px" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`📚 ${p.title} — ${SP.name}\nأولياء الأمور الكرام: يسعدنا مشاركتكم الخطة الفصلية، للاطلاع عليها:\n${tpLink(p.id)}`)}`}>💬 واتساب</a><button className="tp-btn" style={{ background: "#f1f5f9", color: "#334155", padding: "7px 12px" }} onClick={() => { try { navigator.clipboard.writeText(tpLink(p.id)); toast("📋 نُسخ الرابط"); } catch { window.prompt("انسخ الرابط:", tpLink(p.id)); } }}>🔗</button><button className="tp-btn" style={{ background: "#fff1f2", color: "#be123c", padding: "7px 12px" }} onClick={() => del(p)}>🗑</button></div>
           </div>); })}</div>}
       <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>🔗 الرابط العام لأحدث خطة: <b dir="ltr">{tpLink()}</b></div>
       {msg && <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 800, background: "#0f172a", color: "#fff", padding: "12px 20px", borderRadius: 14, fontWeight: 800 }}>{msg}</div>}
@@ -41528,7 +41614,7 @@ function ttRepPage(T, rows, ti, F0, T0, subName, by, acks) {
     <div class="kk">${kk}</div>${S.own.length ? `<div class="sb">${sb}</div>` : ""}
     <div class="two"><div class="bx"><h4>📅 التأخر والخروج والغياب حسب أيام الأسبوع</h4>${wdh}</div><div class="bx"><h4>📌 أسباب التأخر</h4>${rs}${S.lateMin ? `<div style="font-size:10.5px;font-weight:800;margin-top:6px;color:#9a3412">⏱ متوسط التأخر: ${maAr(Math.round(S.lateMin / Math.max(1, S.c.late)))} دقيقة</div>` : ""}</div></div>
     <h3>📋 تفاصيل الملاحظات</h3><table class="tl"><thead><tr><th>م</th><th>اليوم والتاريخ</th><th>الحصة</th><th>الفصل</th><th>المادة</th><th>الحالة</th><th class="r">التفاصيل</th><th class="r">الملاحظة</th><th>اطّلع المعلم</th></tr></thead><tbody>${body}</tbody></table>${cov}
-    <div class="sg"><div>المعلم (اطّلعت)<br><b class="pn">${ptEsc(nm)}</b><span>............</span></div><div>وكيل الشؤون التعليمية<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`;
+    <div class="sg"><div>المعلم (اطّلعت)<br><b class="pn">${ptEsc(nm)}</b><span>............</span></div><div>وكيل الشؤون التعليمية<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div></section>`;
 }
 function ttPrintTeachers(T, rows, tis, F0, T0, subName, by, acksAll) {
   const ack = ti => ptObj(ptObj(acksAll)[ttTKey(T, ti)]);
@@ -41611,7 +41697,7 @@ const hfxPgs = fk => [].concat(HFX_IMG[fk] || []);
 // • رقم الهوية الكامل لا يُرفع للخادم: يبقى على جهاز الإدارة (hfx_ids)، والمعلم يُدخله بنفسه لفتح نموذجه
 // ═══════════════════════════════════════════════════════════════
 const HFX_NODE = "school-hfx", HFX_CFG = "school-hfx-cfg", HFX_TP = "school-hfx-t", HFX_DEL = "school-hfx-del"; // المحذوفة تُنقل للأرشيف ولا تُمسح
-const HFX_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة الأولى";
+const HFX_SCHOOL = `${SP.name}`;
 const HFX_INK = "#0f2a6b";
 const HFX_FONT = "'Cairo','Noto Naskh Arabic',Tahoma,sans-serif";
 // حدود خانات رقم الهوية (١٠ خانات) في كل نموذج
@@ -41890,7 +41976,7 @@ const hfx12 = t => { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); if (
 // يحوّل بيانات الحالة إلى عناصر مطلقة الموضع فوق صفحة النموذج
 function hfxItems(fk, c, x = {}) {
   const F = HFX_F[fk]; if (!F) return []; const cfg = ptObj(x.cfg); const out = [];
-  const V = k => k === "$school" ? HFX_SCHOOL : k === "$name" ? (c.n || "") : k === "$mgr" ? (cfg.mgr || "فازع القرني") : k === "$mgrT" ? (cfg.mgrT || "مدير المدرسة") : k === "$phone" ? maAr(cfg.phone || "") : k === "$nidtxt" ? maAr(x.nid || "") : hfxV(c, k);
+  const V = k => k === "$school" ? HFX_SCHOOL : k === "$name" ? (c.n || "") : k === "$mgr" ? (cfg.mgr || `${SP.principalShort}`) : k === "$mgrT" ? (cfg.mgrT || "مدير المدرسة") : k === "$phone" ? maAr(cfg.phone || "") : k === "$nidtxt" ? maAr(x.nid || "") : hfxV(c, k);
   const DY = ptObj(typeof HFX_DY !== "undefined" ? HFX_DY[fk] : null); let fi = -1, cdy = 0, cpg = 0;
   const push0 = out.push.bind(out); out.push = o => push0({ ...o, pg: cpg });
   const T = (s, x0, x1, y, fs, al = "c", dir = "rtl") => { s = maAr(String(s ?? "").trim()); if (!s) return; out.push({ kd: "t", s, x0, x1, y: y + (+DY[fi] || 0) + cdy, fs: hfxFit(s, fs, x1 - x0), al, dir, fi }); };
@@ -42098,7 +42184,7 @@ function HfxPage({ by = "الإدارة" }) {
     try { const o = localStorage.getItem("hfx-open"); if (o) { localStorage.removeItem("hfx-open"); const c = L.find(z => z.id === o); if (c) { setEd(JSON.parse(JSON.stringify(c))); setTab("ed"); } } } catch {} };
   const cmNew = id => hfxCmList(cmA[id]).filter(m => !m.seen);
   const loadT = async () => setT(await hfxLoadTeachers());
-  useEffect(() => { (async () => { setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
+  useEffect(() => { (async () => { setCfg({ mgr: `${SP.principalShort}`, mgrT: "مدير المدرسة", ...ptObj(await maGet(HFX_CFG)) }); })(); loadT(); loadCases(); const t = setInterval(loadCases, 45000); return () => clearInterval(t); }, []);
   // قادم من زر «📋 مساءلة» في سجل حضور المعلمين: يفتح النموذج المناسب للمعلم مباشرة
   useEffect(() => { if (!T || !cfg) return; let p = null; try { p = JSON.parse(localStorage.getItem("mosala_prefill") || "null"); } catch {} if (!p || !p.teacherName || Date.now() - (p.timestamp || 0) > 10 * 60000) return; localStorage.removeItem("mosala_prefill");
     const t = T.find(x => cvNorm(x.n) === cvNorm(p.teacherName)) || T.find(x => cvMatch(x.n, { e: { name: p.teacherName } }) === "e"); const fk = /absent|غائب|غياب/.test(String(p.status)) ? "gh" : "ta";
@@ -42273,7 +42359,7 @@ function HfxEditor({ init, cfg, saveCfg, T, by, toast, onSaved, onClose, onTeach
         <div className="grid gap-2 mt-2">{c.ts ? <div className="flex items-center gap-2"><img src={c.ts} alt="توقيع المعلم" style={{ height: 48, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8 }} /><span style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>توقيع المعلم{c.repAt ? ` • ${new Date(c.repAt).toLocaleString("ar-SA")}` : ""}</span></div> : null}
           <HfxInputs fk={c.f} v={ptObj(c.tv)} set={setT} who="t" ctx={{ ...c.v, ...ptObj(c.tv) }} /></div></details>}
       {F.in.some(f => f.who === "d") && <div className="hfx-pane" style={{ borderColor: "#99f6e4" }}><div className="hfx-sec">٣) رأي الرئيس المباشر — اختر القرار</div><HfxInputs fk={c.f} v={c.v} set={set} who="d" skip={["dd"]} />
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: c.v.dec ? "#0f766e" : "#b45309" }}>{c.v.dec ? `✓ يُكتب في خانة الرأي: الاسم (${cfg.mgr || "فازع القرني"}) و${cfg.sig ? "التوقيع" : "— بدون توقيع (أضفه بالأعلى) —"} والتاريخ ${hfxHijTxt(c.v.dd)}` : "اختر القرار ليُكتب الاسم والتوقيع والتاريخ في خانة الرأي"}</div>
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: c.v.dec ? "#0f766e" : "#b45309" }}>{c.v.dec ? `✓ يُكتب في خانة الرأي: الاسم (${cfg.mgr || `${SP.principalShort}`}) و${cfg.sig ? "التوقيع" : "— بدون توقيع (أضفه بالأعلى) —"} والتاريخ ${hfxHijTxt(c.v.dd)}` : "اختر القرار ليُكتب الاسم والتوقيع والتاريخ في خانة الرأي"}</div>
         {c.v.dec && <div className="hfx-f"><label>تاريخ الرأي</label><input className="hfx-in" type="date" value={c.v.dd || ""} onChange={e => set("dd", e.target.value)} /></div>}</div>}
       <div className="hfx-pane">
         <div className="flex gap-2 flex-wrap">
@@ -42326,7 +42412,7 @@ function HfxTeacherPortal({ onBack }) {
   const loadCm = async () => { if (id) setCmL(hfxCmList(await maGet(`${HFX_CM}/${id}`))); };
   const sendCm = async () => { const t = cmT.trim(); if (!t) return; setCmBusy(true); const at = Date.now(); const ok2 = await maPut(`${HFX_CM}/${c.id}/${at}`, { k: cmK, t: t.slice(0, 2000), at, n: c.n || "", f: c.f }); setCmBusy(false); if (ok2) { setCmL(L => [...L, { k: cmK, t, at, n: c.n }]); setCmT(""); setCmOk(cmK === "obj" ? "✅ أُرسل اعتراضك لمدير المدرسة" : "✅ أُرسل تعليقك لمدير المدرسة"); setTimeout(() => setCmOk(""), 5000); } else alert("تعذّر الإرسال — تحقق من الاتصال"); };
   useEffect(() => { loadCm(); }, []);
-  useEffect(() => { (async () => { const [x, g] = await Promise.all([id ? maGet(`${HFX_NODE}/${id}`) : null, maGet(HFX_CFG)]); setCfg({ mgr: "فازع القرني", mgrT: "مدير المدرسة", ...ptObj(g) }); setC(x && x.id && x.tok === tok ? hfxFix(x) : null); if (x) { setTv(ptObj(x.tv)); setTs(x.ts || ""); } })(); }, []);
+  useEffect(() => { (async () => { const [x, g] = await Promise.all([id ? maGet(`${HFX_NODE}/${id}`) : null, maGet(HFX_CFG)]); setCfg({ mgr: `${SP.principalShort}`, mgrT: "مدير المدرسة", ...ptObj(g) }); setC(x && x.id && x.tok === tok ? hfxFix(x) : null); if (x) { setTv(ptObj(x.tv)); setTs(x.ts || ""); } })(); }, []);
   const verify = async () => { setErr(""); const n = licNormId(nid); if (n.length !== 10) { setErr("أدخل رقم الهوية كاملاً (١٠ أرقام)"); return; } const h = await licHash(n); if (h !== c.h) { setErr("رقم الهوية لا يطابق صاحب النموذج"); return; } setOk(true);
     if (["sent", "draft"].includes(c.st)) { const p = { st: "opened", openAt: Date.now() }; setC(x => ({ ...x, ...p })); fbPatch({ [`${HFX_NODE}/${c.id}/st`]: "opened", [`${HFX_NODE}/${c.id}/openAt`]: p.openAt }); } };
   const wrap = ch => <div className="hfx" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(160deg,#ecfdf5,#f8fafc 50%)", padding: "14px 10px 40px" }}><style>{HFX_CSS}</style><div style={{ maxWidth: 760, margin: "0 auto" }} className="grid gap-3">
@@ -43032,7 +43118,7 @@ function trHtml(r, o = {}) {
   const kp = (l, v, sub, c) => `<div><i>${l}</i><b style="color:${c || "#0f172a"}">${v == null ? "—" : maAr(v) + "٪"}</b>${sub ? `<small style="color:${c || "#64748b"}">${sub}</small>` : ""}</div>`;
   const bar = (l, v) => { const c = trLv(v)[1]; return `<div class="bar"><b>${l}</b><span><i style="width:${v == null ? 0 : Math.max(2, Math.min(100, v))}%;background:${c}"></i></span><b style="color:${c}">${v == null ? "—" : maAr(v) + "٪"}</b></div>`; };
   const per = `من ${trHij(r.f)} إلى ${trHij(r.t)}`;
-  let h = `<section class="tr"><div class="trh"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b></div><img src="${SCHOOL_LOGO}"><div class="l">التقرير الدوري للأداء<br>${per}<br>تاريخ الإصدار: ${maHijri(new Date(o.at || Date.now()))}</div></div>
+  let h = `<section class="tr"><div class="trh"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region}<br><b>${SP.name}</b></div><img src="${SCHOOL_LOGO}"><div class="l">التقرير الدوري للأداء<br>${per}<br>تاريخ الإصدار: ${maHijri(new Date(o.at || Date.now()))}</div></div>
   <div class="ttl"><b>تقرير الأداء والإنجاز والمتابعة</b><small>${per} • يُستخرج آلياً من بيانات الموقع ومنصة مدرستي ويُعتمد من مدير المدرسة</small></div>
   <div class="who"><div><i>اسم المعلم</i><b>${ptEsc(r.n)}</b></div><div><i>المواد</i><b style="font-size:11px">${ptEsc(r.subj.join("، ") || "—")}</b></div><div><i>الفصول</i><b style="font-size:11px">${r.cls.map(c => maClassName(c)).join("، ") || "—"}</b></div><div><i>النصاب الأسبوعي</i><b>${maAr(r.wk)} حصة</b></div></div>
   <div class="kp"><div class="main"><i>مؤشر الأداء العام</i><b>${r.score == null ? "—" : maAr(r.score)}</b><small style="color:#fde68a">${L[0]}${o.rank && r.rank ? ` • الترتيب ${maAr(r.rank)}` : ""}</small></div>
@@ -43058,7 +43144,7 @@ function trHtml(r, o = {}) {
     ${r.notes.length ? `<table style="margin-top:4px"><thead><tr><th>التاريخ</th><th>الحصة</th><th>الفصل</th><th class="r">الملاحظة</th></tr></thead><tbody>${r.notes.slice(0, 8).map(x => `<tr><td>${trHij(x.k)}</td><td>${TT_ORD[x.p] || maAr(x.p + 1)}</td><td>${maClassName(x.ck)}</td><td class="r">${ptEsc(x.nt || (x.st === "late" ? "تأخر عن الحصة" : x.st === "early" ? "خروج مبكر" : x.kd === "absent" ? "عدم حضور الحصة" : x.st))}</td></tr>`).join("")}</tbody></table>` : ""}`;
   h += `<h3>⭐ نقاط القوة وفرص التحسين</h3><div class="two"><div class="box g"><b>نقاط القوة</b><ul>${A.S.length ? A.S.map(x => `<li>${ptEsc(x)}</li>`).join("") : "<li>—</li>"}</ul></div><div class="box y"><b>فرص التحسين</b><ul>${A.I.length ? A.I.map(x => `<li>${ptEsc(x)}</li>`).join("") : "<li>لا توجد ملاحظات جوهرية — استمر على هذا التميز</li>"}</ul></div></div>
     <div class="box b" style="margin-top:6px"><b>📝 ملاحظات وتوصيات مدير المدرسة</b><div style="min-height:36px;white-space:pre-wrap">${ptEsc(r.note || "")}</div></div>
-    <div class="sg"><div>المعلم<br><b>${ptEsc(r.n)}</b><span>.....................</span></div><div>وكيل الشؤون التعليمية<span>.....................</span></div><div>مدير المدرسة<br><b>فازع القرني</b><span>.....................</span></div></div>
+    <div class="sg"><div>المعلم<br><b>${ptEsc(r.n)}</b><span>.....................</span></div><div>وكيل الشؤون التعليمية<span>.....................</span></div><div>مدير المدرسة<br><b>${SP.principalShort}</b><span>.....................</span></div></div>
     <div class="ft"><span>مؤشر الأداء = الانضباط ٣٠٪ + الحصص ٣٠٪ + الطابور ٢٠٪ + التحضير ٢٠٪ (يُستبعد ما لا بيانات له)</span><span>منصة المدرسة الذكية</span></div></section>`;
   return h;
 }
@@ -43217,7 +43303,7 @@ h1{margin:0;font-family:'Amiri',serif;font-size:46pt;color:#0d4f3c;font-weight:7
 .sg{position:absolute;bottom:20mm;left:28mm;text-align:center;font-weight:700;color:#12305a;font-size:12pt;line-height:2}.dt{position:absolute;bottom:20mm;right:28mm;text-align:center;font-size:11pt;color:#475569;line-height:2}
 .seal{width:28mm;height:28mm;border-radius:50%;border:3px double #a8874a;display:grid;place-items:center;color:#a8874a;font-weight:800;font-size:10pt;margin:0 auto}
 </style></head><body><div class="c"><div class="f"></div><div class="f2"></div><i class="cr a"></i><i class="cr b"></i><i class="cr c"></i><i class="cr d"></i>
-<div class="hd">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br>${HFX_SCHOOL}</div><img class="lg" src="${L}">
+<div class="hd">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region}<br>${HFX_SCHOOL}</div><img class="lg" src="${L}">
 <div class="in"><h2>شهادة</h2><h1>شكر وتقدير</h1>
 <div class="t">تتقدم إدارة ${HFX_SCHOOL} بخالص الشكر والتقدير للأستاذ الفاضل</div><div class="n">${ptEsc(name)}</div>
 <div class="t">تقديراً لانضباطه المتميز في الحضور والطابور والحصص والتحضير خلال ${perLbl}<br>بنسبة انضباط عامة <b style="color:#0d4f3c">${maAr(score)}٪</b>، سائلين الله له دوام التوفيق والسداد</div></div>
@@ -43568,7 +43654,7 @@ const hdWeekLbl = ws => { const D = hdWeekDays(ws); return D.length ? `${asmHij(
 function HdStarsTab({ all, names, cfg }) {
   const W = hdWeeksIn(all); const [ws, setWs] = useState(W[0] || ""); if (!W.length) return <div className="hd-card" style={{ textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا توجد بيانات بعد</div>;
   const L = hdWeekStars(all, names, cfg, ws); const done = hdWeekDays(ws).filter(k => Object.values(ptObj(all)).some(r => ptObj(r)[k] && ptObj(r)[k].ph !== "m")).length;
-  const pr = () => inOpen(`<section class="pg">${inHdr("⭐ المعلمون المميزون في الانضباط", `الأسبوع: ${hdWeekLbl(ws)}`)}<div style="text-align:center;font-weight:900;margin:10px 0;color:#92400e">حضور كامل دون غياب ولا تأخر ولا انصراف مبكر ولا استئذان طوال أيام الأسبوع</div><table><thead><tr><th>م</th><th class="r">المعلم</th><th>أيام الدوام المحتسبة</th><th>التقدير</th></tr></thead><tbody>${L.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>⭐ ${ptEsc(x.n)}</b></td><td>${maAr(x.days)}</td><td style="color:#b45309;font-weight:900">متميز في الانضباط</td></tr>`).join("")}</tbody></table>${inSig("فازع القرني", "مدير المدرسة")}</section>`, "المعلمون المميزون");
+  const pr = () => inOpen(`<section class="pg">${inHdr("⭐ المعلمون المميزون في الانضباط", `الأسبوع: ${hdWeekLbl(ws)}`)}<div style="text-align:center;font-weight:900;margin:10px 0;color:#92400e">حضور كامل دون غياب ولا تأخر ولا انصراف مبكر ولا استئذان طوال أيام الأسبوع</div><table><thead><tr><th>م</th><th class="r">المعلم</th><th>أيام الدوام المحتسبة</th><th>التقدير</th></tr></thead><tbody>${L.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>⭐ ${ptEsc(x.n)}</b></td><td>${maAr(x.days)}</td><td style="color:#b45309;font-weight:900">متميز في الانضباط</td></tr>`).join("")}</tbody></table>${inSig(`${SP.principalShort}`, "مدير المدرسة")}</section>`, "المعلمون المميزون");
   return <div className="grid gap-3">
     <div className="flex gap-2 flex-wrap items-center"><select className="hd-in" value={ws} onChange={e => setWs(e.target.value)}>{W.map(w => <option key={w} value={w}>أسبوع {hdWeekLbl(w)}</option>)}</select><span className="hd-note" style={{ padding: "5px 10px" }}>رُفع نهاية الدوام لـ {maAr(done)} من {maAr(hdWeekDays(ws).length)} أيام</span><button className="hd-b gold" style={{ marginInlineStart: "auto" }} onClick={pr}>🖨 طباعة القائمة</button></div>
     {!L.length ? <div className="hd-card" style={{ textAlign: "center", fontWeight: 800, color: "#64748b" }}>لا يوجد معلم حقق الانضباط الكامل في هذا الأسبوع{done < 3 ? " (تحتاج ٣ أيام مرفوعة على الأقل)" : ""}</div> :
@@ -43629,7 +43715,7 @@ function HdAbsTab({ all, names, cfg, by, saveCfg }) {
 // ══════════════════════════════════════════════════════════
 const HDR_DEF = { line: "06:45", first: "07:00", end: "12:35", permLate: true, xd: [], xi: [], ex: [], f: "", t: "" };
 const hdrSame = (a, b) => ["line", "first", "end", "permLate", "f", "t"].every(k => String(a[k] ?? "") === String(b[k] ?? "")) && ["xd", "xi", "ex"].every(k => JSON.stringify([...(a[k] || [])].sort()) === JSON.stringify([...(b[k] || [])].sort()));
-const HDR_MGR = "فازع القرني"; // مدير المدرسة — لا يدخل في تقرير المعلمين
+const HDR_MGR = `${SP.principalShort}`; // مدير المدرسة — لا يدخل في تقرير المعلمين
 const hdRepOf = cfg => { const r = ptObj(ptObj(cfg).rep); const A = v => (Array.isArray(v) ? v : Object.values(ptObj(v))).filter(Boolean); return { ...HDR_DEF, ...r, xd: A(r.xd), xi: A(r.xi), ex: A(r.ex) }; };
 const hdrR1 = n => Math.round(n * 10) / 10;
 const hdrDays = n => n === 1 ? "يوم واحد" : n === 2 ? "يومان" : n <= 10 ? `${maAr(n)} أيام` : `${maAr(n)} يوماً`;
@@ -44078,7 +44164,7 @@ function HdAdminPage({ by = "الإدارة" }) {
         {dayRows.some(x => x.d.morning) && <div className="hd-note" style={{ background: "#fffbeb", borderColor: "#fde68a" }}>🌅 <b>بيانات رفع الصباح</b> — هي المقياس: من لم يسجّل حضوره حتى الرفع يُحسب <b>غائباً</b> في كل السجلات ويُطلب له الاحتياط، والمتأخر يُحسب تأخره. يكتمل حساب الاستئذان والانصراف بعد «🏁 رفع نهاية الدوام»، ومن حضر بعد الرفع يتحوّل تلقائياً من غائب إلى متأخر.</div>}
         {hdRem(cfg, dk) && dayRows.length > 0 && <HdBulkBar rows={dayRows} onApply={bulkFix} />}
         <div className="hd-card" style={{ padding: 0, overflow: "auto", maxHeight: "65vh" }}><table className="hd-tbl" style={{ minWidth: 820 }}><thead><tr><th>الاسم</th><th>الحالة</th><th>الحضور</th><th>الانصراف</th><th>التأخر</th><th>المبكر</th><th>الطابور</th><th>الحصص</th><th>النسبة</th><th>المعلم</th></tr></thead>
-          <tbody>{dayRows.map(x => { const K = HD_KIND[x.d.kind]; return <tr key={x.hk}><td className="n">{x.n}<div style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 700 }}>{x.job}{x.rec.pl && !/عبدالمجيد/.test(x.rec.pl) ? ` • سُجّل من: ${x.rec.pl}` : ""}</div></td><td><span className="hd-pill" style={{ background: K.bg, color: K.c }}>{K.l}</span>{(x.d.kind === "perm" || x.d.kind === "leave" || x.d.task) && x.d.st && <div style={{ fontSize: 10.5, color: x.d.kind === "leave" ? "#7c3aed" : "#0369a1" }}>{x.d.task && !x.rec.fx ? "🏛️ " : ""}{x.d.st}</div>}{x.rec.gen === "notlisted" && <div style={{ fontSize: 10.5, color: "#b91c1c" }}>لم يرد في تقرير الحضور</div>}{x.d.fl.map(f => <div key={f} style={{ fontSize: 10.5, color: "#b45309" }}>⚠️ {f}</div>)}
+          <tbody>{dayRows.map(x => { const K = HD_KIND[x.d.kind]; return <tr key={x.hk}><td className="n">{x.n}<div style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 700 }}>{x.job}{x.rec.pl && !String(x.rec.pl).includes(SP.short.replace(/^مدرسة\s+/, "")) ? ` • سُجّل من: ${x.rec.pl}` : ""}</div></td><td><span className="hd-pill" style={{ background: K.bg, color: K.c }}>{K.l}</span>{(x.d.kind === "perm" || x.d.kind === "leave" || x.d.task) && x.d.st && <div style={{ fontSize: 10.5, color: x.d.kind === "leave" ? "#7c3aed" : "#0369a1" }}>{x.d.task && !x.rec.fx ? "🏛️ " : ""}{x.d.st}</div>}{x.rec.gen === "notlisted" && <div style={{ fontSize: 10.5, color: "#b91c1c" }}>لم يرد في تقرير الحضور</div>}{x.d.fl.map(f => <div key={f} style={{ fontSize: 10.5, color: "#b45309" }}>⚠️ {f}</div>)}
             <select className="hd-in" style={{ marginTop: 4, padding: "2px 6px", fontSize: 11.5 }} value={x.rec.st0 != null ? (x.rec.fx || { "استئذان (تصحيح الإدارة)": "perm", "استئذان — مهمة رسمية": "task", "إجازة (تصحيح الإدارة)": "leave", "غياب": "abs" }[x.rec.st] || "") : ""} onChange={e => { const v = e.target.value; if (HD_FIXP[v]) { const E = hdEff(cfg); const r0 = x.rec; const a0 = r0.a0 !== undefined ? r0.a0 : r0.a, d0 = r0.d0 !== undefined ? r0.d0 : r0.d; setFixM({ x, v, a: (r0.fx === v && r0.a) || a0 || E.start || "", d: (r0.fx === v && r0.d) || d0 || E.end || "", n: (r0.fx === v && r0.fxn) || "" }); } else fixSt(x, v); }} title="تصحيح الحالة"><option value="">{x.rec.st0 != null ? "↩ حالة حضوري" : "✎ تصحيح…"}</option><optgroup label="حضر ولم يُسجَّل في «حضوري»">{Object.entries(HD_FIXP).map(([k, z]) => <option key={k} value={k}>{z.ic} {z.l}</option>)}</optgroup><optgroup label="تغيير الحالة">{hdRem(cfg, dk) && <option value="rmp">✅ حاضر (عن بعد)</option>}<option value="perm">مستأذن</option><option value="task">مهمة رسمية</option><option value="leave">إجازة</option><option value="abs">غياب</option></optgroup></select>{x.rec.fx && HD_FIXP[x.rec.fx] && <div style={{ fontSize: 10.5, fontWeight: 800, color: "#0369a1", marginTop: 2 }}>{HD_FIXP[x.rec.fx].ic} {HD_FIXP[x.rec.fx].l}{x.rec.fxn ? ` — ${x.rec.fxn}` : ""}</div>}</td><td>{hdHM(x.d.a)}</td><td>{hdHM(x.d.d)}</td><td style={{ color: x.d.late ? "#c2410c" : "#cbd5e1" }}>{x.d.late ? maAr(x.d.late) : "—"}</td><td style={{ color: x.d.early ? "#7c3aed" : "#cbd5e1" }}>{x.d.early ? maAr(x.d.early) : "—"}</td><td>{x.as && ASMS[x.as.st] ? ASMS[x.as.st] : "·"}</td><td style={{ color: x.cl.length ? "#4338ca" : "#cbd5e1" }}>{x.cl.length ? maAr(x.cl.length) : "—"}</td><td><b style={{ color: hdPctC(x.d.pct) }}>{x.d.pct == null ? "—" : `${maAr(x.d.pct)}٪`}</b></td><td>{x.ob ? <span className="hd-pill" style={{ background: "#fef3c7", color: "#92400e" }}>💬 اعتراض</span> : x.ack ? <span style={{ color: "#15803d" }}>✓ اطّلع</span> : <span style={{ color: "#cbd5e1" }}>—</span>}</td></tr>; })}</tbody></table></div>
       </div>)}
 
@@ -44296,7 +44382,7 @@ function CircViewer({ c, pages, logo, onRead, lazyId, me, admin, goto, onProgres
   const tx = useRef(0); const many = P.length > 20;
   const SecSel = () => secs.length ? <select className="cr-in" style={{ width: "auto", maxWidth: "100%", padding: "5px 10px", fontSize: 13 }} value={(secOf(pi) || {}).p ?? ""} onChange={e => { const p = +e.target.value; if (lay === "book") setPi(p); else { const el = document.getElementById(`crp-${c.id}-${p}`); el && el.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><option value="" disabled>📑 الأقسام ({maAr(secs.length)})</option>{secs.map((s, i) => <option key={i} value={s.p}>{s.t} — ص {maAr(s.p + 1)}</option>)}</select> : null;
   return <div className="cr-doc">
-    <div className="cr-doc-h"><div className="r">المملكة العربية السعودية<br />وزارة التعليم<br />الإدارة العامة للتعليم بمحافظة جدة<br /><b>{HFX_SCHOOL}</b></div><img src={logo || MOE_LOGO} alt="وزارة التعليم" /><div className="l">{c.no ? <>رقم التعميم: <b>{maAr(c.no)}</b><br /></> : null}التاريخ: {asmHij(D)}<br />{maDay(D)}</div></div>
+    <div className="cr-doc-h"><div className="r">المملكة العربية السعودية<br />وزارة التعليم<br />{SP.region}<br /><b>{HFX_SCHOOL}</b></div><img src={logo || MOE_LOGO} alt="وزارة التعليم" /><div className="l">{c.no ? <>رقم التعميم: <b>{maAr(c.no)}</b><br /></> : null}التاريخ: {asmHij(D)}<br />{maDay(D)}</div></div>
     <div className="cr-title">📜 {c.title}</div>
     <div className="cr-body">
       {c.html ? <div className="txt rich" style={{ whiteSpace: "normal", fontWeight: 500, fontSize: c.fs || 16.5, lineHeight: c.lh || 2 }} dangerouslySetInnerHTML={{ __html: crSan(c.html) }} /> : c.text && <div className="txt">{c.text}</div>}
@@ -44324,7 +44410,7 @@ function CircViewer({ c, pages, logo, onRead, lazyId, me, admin, goto, onProgres
 // ── الطباعة الاحترافية: الكليشة + العنوان + التعميم مكبّراً + سجل الاطلاع والتوقيع
 function circPrint(c, pages, sigs, rec, logo, ex = {}) {
   const D = maDate(c.date || maKey(new Date())); const P = Array.isArray(pages) ? pages : []; const W = (CR_SZ.find(x => x[0] === c.size) || CR_SZ[0])[2]; const lay = c.lay || (c.src === "pdf" ? "book" : "v");
-  const head = `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>الإدارة العامة للتعليم بمحافظة جدة<br><b>${ptEsc(HFX_SCHOOL)}</b></div><div class="c"><img src="${logo || MOE_LOGO}"></div><div class="l">${c.no ? `رقم التعميم: <b>${ptEsc(maAr(c.no))}</b><br>` : ""}التاريخ: ${ptEsc(asmHij(D))}<br>${ptEsc(maDay(D))}<br>الموافق: ${ptEsc(maGreg(D))}</div></div>`;
+  const head = `<div class="hd"><div class="r">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region}<br><b>${ptEsc(HFX_SCHOOL)}</b></div><div class="c"><img src="${logo || MOE_LOGO}"></div><div class="l">${c.no ? `رقم التعميم: <b>${ptEsc(maAr(c.no))}</b><br>` : ""}التاريخ: ${ptEsc(asmHij(D))}<br>${ptEsc(maDay(D))}<br>الموافق: ${ptEsc(maGreg(D))}</div></div>`;
   const title = `<div class="ti"><span>تعميم</span><b>${ptEsc(c.title)}</b></div>`;
   const imgs = lay === "h" ? `<div class="g2">${P.map(s => `<img src="${s}">`).join("")}</div>` : P.map((s, i) => `<div class="pgimg${i === 0 && !c.text ? " first" : ""}" style="width:${W}%"><img src="${s}">${P.length > 1 ? `<span>${maAr(i + 1)} / ${maAr(P.length)}</span>` : ""}</div>`).join("");
   const fmtT = ts => ptEsc(new Date(ts).toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-arab", { day: "numeric", month: "numeric" }) + " " + new Date(ts).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }));
@@ -44358,7 +44444,7 @@ tr{break-inside:avoid}tr:nth-child(even) td{background:#f8fffb}td.nt{text-align:
 <div class="sm"><div><b>${maAr(rec.length)}</b>المرسل إليهم</div><div><b style="color:#15803d">${maAr(done)}</b>${c.need ? "وقّعوا" : "اطّلعوا"}</div><div><b style="color:#0369a1">${maAr(rec.filter(t => !(ptObj(sigs)[t.hk] && ptObj(sigs)[t.hk].at) && ptObj(ex.seen)[t.hk]).length)}</b>فتحوه ولم يوقّعوا</div><div><b style="color:#b91c1c">${maAr(rec.filter(t => !(ptObj(sigs)[t.hk] && ptObj(sigs)[t.hk].at) && !ptObj(ex.seen)[t.hk]).length)}</b>لم يفتحوه</div></div>
 <table><thead><tr><th style="width:5%">م</th><th style="width:30%">الاسم</th><th style="width:16%">الاطلاع / التوقيع</th><th style="width:25%">ملاحظة المعلم</th><th>التوقيع</th></tr></thead><tbody>${S}</tbody></table>
 ${(() => { const L = Object.values(ptObj(ex.pn)).filter(x => x && x.t).sort((a, b) => a.p - b.p || a.at - b.at); if (!L.length) return ""; const sOf = p => { let r = null; maArr(c.sec).forEach(x => { if (x.p <= p) r = x; }); return r ? r.t : ""; }; return `<div class="st" style="margin-top:16px">💬 ملاحظات المعلمين على صفحات التعميم <small>(${maAr(L.length)})</small></div><table><thead><tr><th style="width:5%">م</th><th style="width:9%">الصفحة</th><th style="width:20%">القسم</th><th style="width:22%">المعلم</th><th>الملاحظة</th></tr></thead><tbody>${L.map((x, i) => `<tr><td>${maAr(i + 1)}</td><td>${maAr(x.p + 1)}</td><td>${ptEsc(sOf(x.p))}</td><td class="n">${ptEsc(x.n || "")}</td><td class="nt">${ptEsc(x.t)}</td></tr>`).join("")}</tbody></table>`; })()}
-<div class="ft"><div>وكيل المدرسة<b>..............................</b></div><div>مدير المدرسة<b>فازع القرني</b></div></div></div>
+<div class="ft"><div>وكيل المدرسة<b>..............................</b></div><div>مدير المدرسة<b>${SP.principalShort}</b></div></div></div>
 <script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},500)})</script></body></html>`);
 }
 
@@ -45074,7 +45160,7 @@ async function ttDayReport({ T, times, dk, di, log, absList, plan, by, subName }
     ${tcs || `<div style="text-align:center;padding:14px;font-weight:900;color:#15803d">🌟 لا توجد ملاحظات على المعلمين في هذا اليوم</div>`}
     ${good.length ? `<h3>🌟 معلمون بلا ملاحظات اليوم (${maAr(good.length)})</h3><div>${good.map(n => `<span class="ch">${ptEsc(n)}</span>`).join("")}</div>` : ""}
     <div class="dr"><b>✍️ توجيهات مدير المدرسة</b><i></i><i></i><i></i></div>
-    <div class="sg"><div>وكيل الشؤون التعليمية<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>تاريخ الاطلاع<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "التقرير اليومي لسير الحصص", DR_CSS);
+    <div class="sg"><div>وكيل الشؤون التعليمية<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>تاريخ الاطلاع<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div></section>`, "التقرير اليومي لسير الحصص", DR_CSS);
 }
 
 // ── التقرير الأسبوعي / الشهري الشامل: الحصص • المعلمون • الطابور • الفصول • غياب الطلاب وتأخرهم • السلوك
@@ -45138,7 +45224,7 @@ async function ttRangeReport({ T, times, f, t, by, subName, secs, fs = 1.15 }) {
     const li = (L, f) => L.length ? `<table><tbody>${L.map((x, i) => `<tr><td style="width:18px">${maAr(i + 1)}</td><td class="r">${ptEsc(x.name)}</td><td>${maClassName(x.ck).replace(" متوسط", "")}</td><td><b>${maAr(f(x))}</b></td></tr>`).join("")}</tbody></table>` : `<div class="ok">🌟 لا يوجد</div>`;
     H.push(`<h3>🎓 الطلاب الأكثر غياباً وتأخراً وملاحظات</h3><div class="g3"><div><b class="g3h" style="color:#b91c1c">🚫 الأكثر غياباً (أيام)</b>${li(tA, x => x.abs.length)}</div><div><b class="g3h" style="color:#c2410c">⏰ الأكثر تأخراً صباحياً</b>${li(tL, x => x.late.length)}</div><div><b class="g3h" style="color:#be123c">📝 الأكثر ملاحظات سلوكية</b>${li(tB, x => x.bnNeg)}</div></div>`); }
   if (has("good")) { const G = Object.values(TS).filter(o => o.sch && !tIss(o)).map(o => o.n).sort((a, b) => a.localeCompare(b, "ar")); if (G.length) H.push(`<h3>🌟 معلمون منضبطون بلا ملاحظات طوال الفترة (${maAr(G.length)})</h3><div>${G.map(n => `<span class="ch">${ptEsc(n)}</span>`).join("")}</div>`); }
-  if (has("dir")) H.push(`<div class="dr"><b>✍️ توجيهات مدير المدرسة</b><i></i><i></i><i></i></div><div class="sg"><div>وكيل الشؤون التعليمية<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>تاريخ الاطلاع<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div>`);
+  if (has("dir")) H.push(`<div class="dr"><b>✍️ توجيهات مدير المدرسة</b><i></i><i></i><i></i></div><div class="sg"><div>وكيل الشؤون التعليمية<br><b class="pn">${ptEsc(by || "")}</b><span>............</span></div><div>تاريخ الاطلاع<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div>`);
   const z = n => `${(n * fs).toFixed(1)}px`;
   inOpen(`<section class="pg">${inHdr(ttl, `${per.replace(" إلى ", "<br>إلى ")}`)}${H.join("")}</section>`, ttl, DR_CSS + `@page{size:A4;margin:7mm}table{font-size:${z(9.8)}}td,th{padding:${z(3)} ${z(4)}}.tc td{font-size:${z(9.5)}}h3{font-size:${z(13)};break-after:avoid;page-break-after:avoid}.dh p{font-size:${z(11)}}.kk div{font-size:${z(9.5)}}.kk b{font-size:${z(18)}}.ok{border:1.5px solid #86efac;background:#f0fdf4;border-radius:10px;padding:8px 12px;font-weight:800;font-size:${z(11)};text-align:center}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.g3h{display:block;font-size:${z(11)};margin-bottom:3px}.g3 td{font-size:${z(9.5)}}`);
 }
@@ -45805,7 +45891,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
         <div className="stt-hero">
           <div style={{ position: "relative", zIndex: 1 }} className="grid gap-2">
             <div className="flex items-start justify-between gap-2 flex-wrap">
-              <div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div>
+              <div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>{SP.name}</div>
                 <div style={{ fontSize: 23, fontWeight: 900 }}>🗓️ الجدول المدرسي</div>
                 <div style={{ fontSize: 13.5, fontWeight: 800, opacity: .95 }}>{maDay(D)} • {maHijri(D)}</div></div>
               <div className="flex gap-2 items-center"><input type="date" className="ma-inp" style={{ width: 150, height: 38, color: "#0f172a", background: "#fff", fontWeight: 800 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} />{!isToday && <button className="ma-btn" onClick={() => setDateK(maKey(new Date()))}>اليوم</button>}</div>
@@ -46198,7 +46284,7 @@ function prPrintHTML(C, o = {}) {
 <div class="two"><div class="cd"><div class="h">متى يضعف التحضير؟</div><div class="sb">عدد الأيام غير المكتملة لكل يوم، ومتوسط نسبة اليوم تحت اسمه.</div>${prSvgWd(C)}</div><div class="cd"><div class="h">أبرز الانخفاضات الحادة</div><div class="sb">كل أسبوع منتهٍ نزلت فيه نسبة معلم عن ٧٠٪.</div>${drops || '<p style="color:#15803d;font-weight:900">لا توجد انخفاضات حادة 🌟</p>'}</div></div></section>
 ${appx ? `<section class="pg"><div class="cd"><div class="h">ملحق: التحضير اليومي لمن يحتاج متابعة</div><div class="sb">تفاصيل يومية تساعد في اللقاء الفردي مع المعلم.</div><div class="axs">${appx}</div></div></section>` : ""}
 <section class="pg"><div class="cd tx"><div class="h">التحليل الشامل للتقرير</div>${T.html}</div>
-<div class="sg"><div>تاريخ إعداد التحليل<b>${asmHij(new Date())}</b><small>${ptEsc(HFX_SCHOOL)}</small></div><div>مدير المدرسة<b>فازع القرني</b><small>التوقيع: ......................</small></div></div></section>
+<div class="sg"><div>تاريخ إعداد التحليل<b>${asmHij(new Date())}</b><small>${ptEsc(HFX_SCHOOL)}</small></div><div>مدير المدرسة<b>${SP.principalShort}</b><small>التوقيع: ......................</small></div></div></section>
 <script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},600)})</script></body></html>`;
 }
 // ── النص التحليلي التلقائي
@@ -46233,7 +46319,7 @@ table{width:100%;border-collapse:separate;border-spacing:2px;font-size:11px}th{b
 <div class="cd"><div class="h">التحضير اليومي</div><table><thead><tr><th>الأسبوع</th>${PR_DN.map(d => `<th>${d}</th>`).join("")}<th>الأسبوع ٪</th></tr></thead><tbody>${r.wk.map(x => `<tr><td><b>${ptEsc(x.w.lb)}</b></td>${[0, 1, 2, 3, 4].map(i => { const v = x.d[i]; if (x.w.st === "upc") return `<td class="${typeof v === "number" && v >= 100 ? "st" : "up"}">${typeof v === "number" && v >= 100 ? "★" : "·"}</td>`; const c = prCell(v); return `<td style="background:${c.bg};color:${c.c}">${c.t}</td>`; }).join("")}<td><b>${x.w.st === "upc" ? (x.pre ? "حضّر مسبقًا" : "قادم") : x.v == null ? "—" : maAr(prR(x.v)) + "٪"}</b></td></tr>`).join("")}</tbody></table></div>
 ${r.zero.length || r.part.length ? `<div class="cd"><div class="h">مواطن التقصير</div>${r.zero.length ? `<p><b style="color:#b91c1c">أيام بلا تحضير (${maAr(r.zero.length)}):</b> ${r.zero.map(x => PR_DN[x.i] + " " + asmHij(maDate(x.k), false)).join("، ")}</p>` : ""}${r.part.length ? `<p><b style="color:#c2410c">تحضير جزئي (${maAr(r.part.length)}):</b> ${r.part.map(x => PR_DN[x.i] + " " + asmHij(maDate(x.k), false) + " (" + maAr(prR(x.v)) + "٪)").join("، ")}</p>` : ""}</div>` : ""}
 ${notes.length ? `<div class="cd"><div class="h">ملاحظات الإدارة</div>${notes.map(n => `<div class="nt">${ptEsc(n.t)} <small style="color:#94a3b8">— ${ptEsc(n.by || "")} ${asmHij(new Date(n.at))}</small></div>`).join("")}</div>` : ""}
-<div class="sg"><div>المعلم<br>..................</div><div>وكيل الشؤون التعليمية<br>..................</div><div>مدير المدرسة<br>فازع القرني</div></div>
+<div class="sg"><div>المعلم<br>..................</div><div>وكيل الشؤون التعليمية<br>..................</div><div>مدير المدرسة<br>${SP.principalShort}</div></div>
 <script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},500)})</script></body></html>`;
 }
 
@@ -46768,8 +46854,8 @@ function AsmReports({ cfg, L, single }) {
   const S = sel ? rows.find(r => r.t.k === sel) : null;
   const pcC = p => p >= 95 ? "#15803d" : p >= 85 ? "#0f766e" : p >= 70 ? "#b45309" : "#b91c1c";
   const lbl = `${asmHij(maDate(F0))} — ${asmHij(maDate(T0))}`;
-  const printAll = () => inOpen(`<section class="pg">${inHdr("تقرير حضور المعلمين اليومي (الطابور والدوام)", `الفترة<br>${lbl}<br>أيام الرصد: ${maAr(days.length)}`)}<table><thead><tr><th>م</th><th class="r">المعلم</th>${ASM_ORD.map(k => `<th>${ASM_ST[k].ic}<br>${ASM_ST[k].l}</th>`).join("")}<th>نسبة الحضور</th></tr></thead><tbody>${view.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(r.t.n)}</b></td>${ASM_ORD.map(k => `<td style="background:${r.c[k] && k !== "p" ? ASM_ST[k].bg : "#fff"};font-weight:900;color:${r.c[k] && k !== "p" ? ASM_ST[k].c : "#94a3b8"}">${r.c[k] ? maAr(r.c[k]) : "—"}</td>`).join("")}<td><b style="color:${pcC(r.pc)}">${maAr(r.pc)}٪</b></td></tr>`).join("")}</tbody></table>${inSig("فازع القرني", "مدير المدرسة")}</section>`, "تقرير حضور المعلمين");
-  const printOne = r => inOpen(`<section class="pg">${inHdr(`تقرير حضور المعلم: ${ptEsc(r.t.n)}`, `الفترة<br>${lbl}`)}<div class="kp">${ASM_ORD.map(k => `<div><b style="color:${ASM_ST[k].c}">${maAr(r.c[k])}</b>${ASM_ST[k].ic} ${ASM_ST[k].l}</div>`).join("")}</div><table><thead><tr><th>م</th><th>اليوم</th><th>التاريخ</th><th>الحالة</th><th>الوقت</th><th class="r">ملاحظة / خروج / عودة</th></tr></thead><tbody>${r.det.filter(x => x.st !== "p").map((x, i) => `<tr><td>${maAr(i + 1)}</td><td>${maDay(maDate(x.k))}</td><td>${asmHij(maDate(x.k))}</td><td style="background:${ASM_ST[x.st].bg};color:${ASM_ST[x.st].c};font-weight:900">${ASM_ST[x.st].ic} ${ASM_ST[x.st].l}${x.auto ? " (تلقائي)" : ""}</td><td>${x.r.t ? mlFmtT(x.r.t) : "—"}</td><td class="r">${ptEsc([x.r.note, x.r.out ? `خرج ${mlFmtT(x.r.out)}` : "", x.r.ret ? `عاد ${mlFmtT(x.r.ret)}` : ""].filter(Boolean).join(" • "))}</td></tr>`).join("") || `<tr><td colspan="6">🌟 لا ملاحظات — حضور منتظم</td></tr>`}</tbody></table>${inSig("فازع القرني", "مدير المدرسة")}</section>`, "تقرير المعلم");
+  const printAll = () => inOpen(`<section class="pg">${inHdr("تقرير حضور المعلمين اليومي (الطابور والدوام)", `الفترة<br>${lbl}<br>أيام الرصد: ${maAr(days.length)}`)}<table><thead><tr><th>م</th><th class="r">المعلم</th>${ASM_ORD.map(k => `<th>${ASM_ST[k].ic}<br>${ASM_ST[k].l}</th>`).join("")}<th>نسبة الحضور</th></tr></thead><tbody>${view.map((r, i) => `<tr><td>${maAr(i + 1)}</td><td class="r"><b>${ptEsc(r.t.n)}</b></td>${ASM_ORD.map(k => `<td style="background:${r.c[k] && k !== "p" ? ASM_ST[k].bg : "#fff"};font-weight:900;color:${r.c[k] && k !== "p" ? ASM_ST[k].c : "#94a3b8"}">${r.c[k] ? maAr(r.c[k]) : "—"}</td>`).join("")}<td><b style="color:${pcC(r.pc)}">${maAr(r.pc)}٪</b></td></tr>`).join("")}</tbody></table>${inSig(`${SP.principalShort}`, "مدير المدرسة")}</section>`, "تقرير حضور المعلمين");
+  const printOne = r => inOpen(`<section class="pg">${inHdr(`تقرير حضور المعلم: ${ptEsc(r.t.n)}`, `الفترة<br>${lbl}`)}<div class="kp">${ASM_ORD.map(k => `<div><b style="color:${ASM_ST[k].c}">${maAr(r.c[k])}</b>${ASM_ST[k].ic} ${ASM_ST[k].l}</div>`).join("")}</div><table><thead><tr><th>م</th><th>اليوم</th><th>التاريخ</th><th>الحالة</th><th>الوقت</th><th class="r">ملاحظة / خروج / عودة</th></tr></thead><tbody>${r.det.filter(x => x.st !== "p").map((x, i) => `<tr><td>${maAr(i + 1)}</td><td>${maDay(maDate(x.k))}</td><td>${asmHij(maDate(x.k))}</td><td style="background:${ASM_ST[x.st].bg};color:${ASM_ST[x.st].c};font-weight:900">${ASM_ST[x.st].ic} ${ASM_ST[x.st].l}${x.auto ? " (تلقائي)" : ""}</td><td>${x.r.t ? mlFmtT(x.r.t) : "—"}</td><td class="r">${ptEsc([x.r.note, x.r.out ? `خرج ${mlFmtT(x.r.out)}` : "", x.r.ret ? `عاد ${mlFmtT(x.r.ret)}` : ""].filter(Boolean).join(" • "))}</td></tr>`).join("") || `<tr><td colspan="6">🌟 لا ملاحظات — حضور منتظم</td></tr>`}</tbody></table>${inSig(`${SP.principalShort}`, "مدير المدرسة")}</section>`, "تقرير المعلم");
   return <div className="grid gap-3" dir="rtl"><style>{HD_CSS}</style>
     <div className="ma-card p-3 flex gap-2 flex-wrap items-center">
       <div className="ma-tabs" style={{ padding: 4 }}>{[["week", "هذا الأسبوع"], ["month", "آخر ٣٠ يوماً"], ["term", "منذ بداية الفصل"], ["custom", "فترة محددة"]].map(([k, l]) => <button key={k} className={`ma-tab ${rk === k ? "on" : ""}`} onClick={() => setRk(k)}>{l}</button>)}</div>
@@ -46954,7 +47040,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
       يُعدّ الطابور الصباحي بدايةً تربوية ليوم الطلاب، وحضور المعلمين له من صور القدوة والانضباط. وقد لوحظ عدم حضوركم الطابور الصباحي <b>${dates.length === 1 ? "مرة واحدة" : dates.length === 2 ? "مرتين" : `(${maAr(dates.length)}) ${dates.length <= 10 ? "مرات" : "مرة"}`}</b> في الأيام التالية:</div>
       <table><thead><tr><th>م</th><th>اليوم</th><th>التاريخ</th></tr></thead><tbody>${dates.map((k, i) => `<tr><td>${maAr(i + 1)}</td><td>${maDay(maDate(k))}</td><td>${asmHij(maDate(k))}</td></tr>`).join("")}</tbody></table>
       <div class="lt">نأمل منكم الحرص على الحضور قبل الساعة <b>${mlFmtT(cfg.cut || "07:05")}</b>، شاكرين لكم تعاونكم وحرصكم.</div>
-      <div class="sg"><div>المعلم (بالعلم والاطلاع)<br><b class="pn">${ptEsc(t.n)}</b><span>............</span></div><div>وكيل المدرسة<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "إشعار", ASM_PCSS);
+      <div class="sg"><div>المعلم (بالعلم والاطلاع)<br><b class="pn">${ptEsc(t.n)}</b><span>............</span></div><div>وكيل المدرسة<br><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div></section>`, "إشعار", ASM_PCSS);
   };
 
   // ── عرض المعلم (بالهوية)
@@ -46985,7 +47071,7 @@ function AssemblyPage({ by = "الإدارة", canEdit = true, ro = false, me = 
         <div className="asm-hero">
           <div className="grid gap-2" style={{ position: "relative", zIndex: 1 }}>
             <div className="flex items-start justify-between gap-2 flex-wrap">
-              <div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</div><div style={{ fontSize: 22, fontWeight: 900 }}>🎺 حضور المعلمين للطابور الصباحي</div><div style={{ fontSize: 13.5, fontWeight: 800 }}>{maDay(D)} • {asmHij(D)}</div></div>
+              <div><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>{SP.name}</div><div style={{ fontSize: 22, fontWeight: 900 }}>🎺 حضور المعلمين للطابور الصباحي</div><div style={{ fontSize: 13.5, fontWeight: 800 }}>{maDay(D)} • {asmHij(D)}</div></div>
               <div className="flex gap-2 items-center"><input type="date" className="ma-inp" style={{ width: 150, height: 38, color: "#0f172a", background: "#fff", fontWeight: 800 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} />{!isToday && <button className="ma-btn" onClick={() => setDateK(maKey(new Date()))}>اليوم</button>}</div>
             </div>
             <div className="flex gap-2 flex-wrap items-center">
@@ -47264,7 +47350,7 @@ function ReadWeakPublicPortal({ onBack }) {
   if (!me) return <PtLoginCard title="📖 حصر الضعف القرائي وقياسه" sub="أدخل رقم هويتك لحصر طلاب فصولك ذوي الضعف القرائي وقياس مستواهم" icon="📖" grad="linear-gradient(160deg,#7c2d12,#c2410c 50%,#b45309)" onLogin={login} onBack={onBack} />;
   return <div className="ma pt px-3 md:px-6 py-4" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#fff7ed,#f8fafc)" }}><style>{MA_CSS + PT_CSS}</style>
     <div style={{ maxWidth: 980, margin: "0 auto" }} className="grid gap-3">
-      <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span><button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setMe(null); try { localStorage.removeItem("pam-rwt"); } catch {} }}>خروج</button></div>
+      <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>{SP.name}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>👤 {me.name}</span><button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setMe(null); try { localStorage.removeItem("pam-rwt"); } catch {} }}>خروج</button></div>
       <ReadingWeakPage by={me.name} />
     </div></div>;
 }
@@ -47274,7 +47360,7 @@ function DutyPublicPortal({ onBack }) {
   if (!me) return <PtLoginCard title="🛡️ الإشراف اليومي والمناوبة" sub="أدخل رقم هويتك لمعرفة مهام الإشراف والمناوبة المسندة إليك" icon="🛡️" grad="linear-gradient(160deg,#0c4a6e,#0f766e 50%,#065f46)" onLogin={login} onBack={onBack} />;
   return <div className="ma pt px-3 md:px-6 py-4" dir="rtl" style={{ minHeight: "100vh", background: "linear-gradient(180deg,#ecfeff,#f8fafc)" }}><style>{MA_CSS + PT_CSS + STT_CSS}</style>
     <div style={{ maxWidth: 820, margin: "0 auto" }} className="grid gap-3">
-      <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>مدرسة الأمير عبدالمجيد المتوسطة الأولى</b><button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setMe(null); try { localStorage.removeItem("pam-duty"); } catch {} }}>خروج</button></div>
+      <div className="pt-bar"><img src={SCHOOL_LOGO} alt="" style={{ width: 36, height: 36, borderRadius: "50%" }} /><b style={{ fontSize: 14 }}>{SP.name}</b><button className="ma-btn" style={{ marginRight: "auto" }} onClick={() => { setMe(null); try { localStorage.removeItem("pam-duty"); } catch {} }}>خروج</button></div>
       <button type="button" onClick={() => { window.location.hash = "f9=" + maKey(new Date()); }} style={{ border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "right", borderRadius: 18, padding: "12px 16px", color: "#fff", background: "linear-gradient(135deg,#14532d,#166534 50%,#1e3a8a)", display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 26 }}>📄</span><span><b style={{ fontSize: 15 }}>تقرير المناوبة اليومي — نموذج ٩</b><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .9 }}>إن كنت مناوب اليوم: سجّل المتأخرين والمخالفين ووقّع</div></span></button>
       <DutyTeacherView me={me} />
     </div></div>;
@@ -47303,7 +47389,7 @@ function duPrintRegister(D, by, onlyName) {
   const cnt = {}; R.forEach(r => { if (r.n) cnt[r.n] = (cnt[r.n] || 0) + 1; });
   const body = Object.keys(wk).sort().map(w => wk[w].map((r, j) => `<tr>${j === 0 ? `<td rowspan="${wk[w].length}" class="wk">${asmHij(maDate(w))}</td>` : ""}<td>${r.i ? maAr(r.i) : "—"}</td><td><b>${maDay(maDate(r.k))}</b></td><td>${asmHij(maDate(r.k))}</td><td>${duG(r.k)}م</td>${r.hol ? `<td colspan="3" class="hol">${ptEsc(r.hol)}</td>` : `<td class="r"><b>${ptEsc(r.n)}</b></td><td style="width:70px"></td><td style="width:90px">${r.cy ? `<span class="cy">بداية الدورة ${maAr(r.cy)}</span>` : ""}</td>`}</tr>`).join("")).join("");
   const sum = onlyName ? "" : `<h3>قائمة المعلمين المناوبين وعدد مناوباتهم</h3><table><thead><tr><th>م</th><th class="r">المعلم</th><th>أول مناوبة</th><th>العدد</th></tr></thead><tbody>${Object.keys(cnt).sort((a, b) => R.find(r => r.n === a).k.localeCompare(R.find(r => r.n === b).k)).map((n, i) => { const f = R.find(r => r.n === n); return `<tr><td>${maAr(i + 1)}</td><td class="r">${ptEsc(n)}</td><td>${maDay(maDate(f.k))} ${asmHij(maDate(f.k))}</td><td><b>${maAr(cnt[n])}</b></td></tr>`; }).join("")}</tbody></table>`;
-  inOpen(`<section class="pg">${inHdr(onlyName ? `سجل مناوبات أ. ${ptEsc(onlyName)}` : "سجل المناوبة اليومية — ١٤٤٨هـ", `${maAr(R.filter(r => r.n).length)} مناوبة`)}<div style="font-size:10.5px;font-weight:700;line-height:1.9;margin:4px 0 8px;border:1.5px dashed #0f766e;border-radius:10px;padding:6px 10px">يناوب كل معلم مرة واحدة في كل دورة، ثم تتكرر الأسماء بالعدد نفسه حتى نهاية العام. يجوز تبادل المناوبة بالتنسيق مع وكيل المدرسة وتدوين ذلك في خانة الملاحظات.</div><table><thead><tr><th>الأسبوع</th><th>م</th><th>اليوم</th><th>التاريخ</th><th>الموافق</th><th class="r">المعلم المناوب</th><th>التوقيع</th><th>ملاحظات</th></tr></thead><tbody>${body}</tbody></table>${sum}<div class="sg"><div>وكيل المدرسة<br><b class="pn">عوض العماري</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>............</span></div></div></section>`, "سجل المناوبة اليومية", `.pg{border-color:#1e3a8a}.pg::before{background:linear-gradient(90deg,#1e3a8a,#0f766e,#f59e0b)}th{background:#1e3a8a}td.wk{background:#eff6ff;font-weight:900;font-size:9.5px;width:70px}td.hol{background:repeating-linear-gradient(135deg,#fef3c7,#fef3c7 6px,#fff 6px,#fff 12px);font-weight:900;color:#92400e}.cy{background:#f59e0b;color:#fff;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:900}`);
+  inOpen(`<section class="pg">${inHdr(onlyName ? `سجل مناوبات أ. ${ptEsc(onlyName)}` : "سجل المناوبة اليومية — ١٤٤٨هـ", `${maAr(R.filter(r => r.n).length)} مناوبة`)}<div style="font-size:10.5px;font-weight:700;line-height:1.9;margin:4px 0 8px;border:1.5px dashed #0f766e;border-radius:10px;padding:6px 10px">يناوب كل معلم مرة واحدة في كل دورة، ثم تتكرر الأسماء بالعدد نفسه حتى نهاية العام. يجوز تبادل المناوبة بالتنسيق مع وكيل المدرسة وتدوين ذلك في خانة الملاحظات.</div><table><thead><tr><th>الأسبوع</th><th>م</th><th>اليوم</th><th>التاريخ</th><th>الموافق</th><th class="r">المعلم المناوب</th><th>التوقيع</th><th>ملاحظات</th></tr></thead><tbody>${body}</tbody></table>${sum}<div class="sg"><div>وكيل المدرسة<br><b class="pn">عوض العماري</b><span>............</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>............</span></div></div></section>`, "سجل المناوبة اليومية", `.pg{border-color:#1e3a8a}.pg::before{background:linear-gradient(90deg,#1e3a8a,#0f766e,#f59e0b)}th{background:#1e3a8a}td.wk{background:#eff6ff;font-weight:900;font-size:9.5px;width:70px}td.hol{background:repeating-linear-gradient(135deg,#fef3c7,#fef3c7 6px,#fff 6px,#fff 12px);font-weight:900;color:#92400e}.cy{background:#f59e0b;color:#fff;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:900}`);
 }
 function DuRegister({ D, me, by }) {
   const t = maKey(new Date()); const [only, setOnly] = useState(false); const [st, setSt] = useState({}); const [showCnt, setShowCnt] = useState(false);
@@ -47750,7 +47836,7 @@ function DutyAdminPage({ by = "الإدارة" }) {
   };
   const printCards = () => {
     const by_t = {}; S.forEach(s => maArr(s.tn).forEach(n => (by_t[n] = by_t[n] || []).push(s)));
-    const cards = Object.keys(by_t).sort((a, b) => a.localeCompare(b, "ar")).map(n => `<div class="cd"><div class="h">🛡️ تكليف بالإشراف والمناوبة</div><div class="n">الأستاذ / ${ptEsc(n)}</div><table>${by_t[n].sort(duSort).map(s => `<tr><td style="color:${(DU_TY[s.ty] || DU_TY.oth).c};font-weight:900">${(DU_TY[s.ty] || DU_TY.oth).ic} ${s.ty === "oth" && s.lbl ? ptEsc(s.lbl) : (DU_TY[s.ty] || DU_TY.oth).l}</td><td>${duD(s.d).length === 5 ? "يومياً" : duD(s.d).map(i => DU_DAYS[i]).join("، ")}</td><td>${ptEsc(s.pl || "")}</td><td>${s.f ? mlFmtT(s.f) : ""}${s.t ? " - " + mlFmtT(s.t) : ""}</td></tr>`).join("")}</table><div class="sg2"><span>توقيع المعلم: ..........</span><span>مدير المدرسة: فازع القرني</span></div></div>`).join("");
+    const cards = Object.keys(by_t).sort((a, b) => a.localeCompare(b, "ar")).map(n => `<div class="cd"><div class="h">🛡️ تكليف بالإشراف والمناوبة</div><div class="n">الأستاذ / ${ptEsc(n)}</div><table>${by_t[n].sort(duSort).map(s => `<tr><td style="color:${(DU_TY[s.ty] || DU_TY.oth).c};font-weight:900">${(DU_TY[s.ty] || DU_TY.oth).ic} ${s.ty === "oth" && s.lbl ? ptEsc(s.lbl) : (DU_TY[s.ty] || DU_TY.oth).l}</td><td>${duD(s.d).length === 5 ? "يومياً" : duD(s.d).map(i => DU_DAYS[i]).join("، ")}</td><td>${ptEsc(s.pl || "")}</td><td>${s.f ? mlFmtT(s.f) : ""}${s.t ? " - " + mlFmtT(s.t) : ""}</td></tr>`).join("")}</table><div class="sg2"><span>توقيع المعلم: ..........</span><span>مدير المدرسة: ${SP.principalShort}</span></div></div>`).join("");
     inOpen(`<div class="wrap">${cards}</div>`, "بطاقات التكليف", `@page{size:A4;margin:8mm}.wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cd{border:2px solid #0f766e;border-radius:14px;padding:8px 10px;break-inside:avoid}.cd .h{font-weight:900;color:#0f766e;font-size:12px}.cd .n{font-weight:900;font-size:14px;margin:4px 0}.cd table td{font-size:10px;padding:3px;text-align:right}.sg2{display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-top:6px;color:#475569}`);
   };
   const ackL = Object.values(D.ack).filter(duAckOk); const ackN = ackL.length; const assigned = [...new Set([...S.flatMap(s => maArr(s.tn)), ...Object.values(ptObj(D.M))])];
@@ -47986,7 +48072,7 @@ function duAutoPlan(T) {
 }
 const duLead = s => maArr(s.tn)[0];
 const duMsg = (s, n, kind, dateK) => { const T = DU_TY[s.ty] || DU_TY.oth; const D = maDate(dateK); const team = maArr(s.tn).filter(x => x !== n); const lbl = s.ty === "oth" && s.lbl ? s.lbl : T.l;
-  if (kind === "abs") return `⚠️ الأستاذ الفاضل / ${n}\nلوحظ عدم تواجدكم في ${lbl} (${s.pl}) يوم ${maDay(D)} ${asmHij(D)} — ${s.f ? mlFmtT(s.f) : ""}.\nنأمل الحرص على التواجد في موقع الإشراف، شاكرين تعاونكم.\nإدارة مدرسة الأمير عبدالمجيد المتوسطة الأولى`;
+  if (kind === "abs") return `⚠️ الأستاذ الفاضل / ${n}\nلوحظ عدم تواجدكم في ${lbl} (${s.pl}) يوم ${maDay(D)} ${asmHij(D)} — ${s.f ? mlFmtT(s.f) : ""}.\nنأمل الحرص على التواجد في موقع الإشراف، شاكرين تعاونكم.\nإدارة ${SP.name}`;
   return `🛡️ تذكير — الأستاذ الفاضل / ${n}\nلديكم اليوم ${maDay(D)} ${asmHij(D)}:\n${T.ic} ${lbl}\n📍 ${s.pl}\n🕒 ${s.f ? mlFmtT(s.f) : ""}${s.t ? " إلى " + mlFmtT(s.t) : ""}${team.length ? `\n👥 فريقك: ${team.join("، ")}` : ""}${duLead(s) === n && maArr(s.tn).length > 1 ? "\n👑 أنت قائد الفريق" : ""}\nمهامك وتقرير المناوبة: ${duLink()}`; };
 
 // ── لوحة اليوم: الفرق والحضور والتنبيهات
@@ -48027,7 +48113,7 @@ function DutyBoard({ S, DD, names, by }) {
         <span style={{ marginRight: "auto" }} className="flex gap-2 flex-wrap"><button className="ma-btn" onClick={() => setPb(true)}>📱 الجوالات ({maAr(Object.keys(P).length)})</button>{due.length > 0 && <WaBtn txt={teamTxt()} label="إرسال الفرق للمجموعة" />}<button className="ma-btn gold" disabled={!due.length} onClick={printDay}>🖨 الكشف</button></span></div>
       {due.length > 0 && <div style={{ fontSize: 12.5, fontWeight: 800, color: "#166534", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 14, padding: "8px 12px" }}>✅ الجميع حاضر افتراضياً — ارصد فقط الحالات: ❌ غائب • 🚫 لم يحضر • 📝 أخرى، واختر البديل إن لزم</div>}
       {due.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>{[["#15803d", all.length - marked.length, "حاضرون"], ["#b91c1c", cnt("a"), "غائبون"], ["#c2410c", cnt("n") + cnt("o"), "لم يحضر/أخرى"], ["#0369a1", marked.filter(x => recOf(x.s, x.n).sub).length, "بدلاء"]].map(([c, v, l]) => <div key={l} className="ma-card" style={{ padding: "8px 4px", textAlign: "center", borderBottom: `4px solid ${c}` }}><b style={{ display: "block", fontSize: 21, color: c }}>{maAr(v)}</b><small style={{ fontWeight: 800, color: "#64748b" }}>{l}</small></div>)}</div>}
-      {logL.length > 0 && <div className="ma-card p-3" style={{ borderColor: "#fcd34d", background: "#fffbeb" }}><div className="flex items-center gap-2 flex-wrap"><b style={{ color: "#92400e" }}>🔔 تعديلات اليوم ({maAr(logL.length)})</b><span style={{ marginRight: "auto" }}><WaBtn small ph={phOf(P, "فازع القرني")} txt={toPrincipal} label="إبلاغ المدير" /></span></div><div className="grid gap-1 mt-2">{logL.slice(0, 8).map((x, i) => <div key={i} style={{ fontSize: 12.5, fontWeight: 700, color: "#78350f" }}>• {x.txt} <small style={{ color: "#a16207" }}>({x.by} — {ptWhen(x.at)})</small></div>)}</div></div>}
+      {logL.length > 0 && <div className="ma-card p-3" style={{ borderColor: "#fcd34d", background: "#fffbeb" }}><div className="flex items-center gap-2 flex-wrap"><b style={{ color: "#92400e" }}>🔔 تعديلات اليوم ({maAr(logL.length)})</b><span style={{ marginRight: "auto" }}><WaBtn small ph={phOf(P, `${SP.principalShort}`)} txt={toPrincipal} label="إبلاغ المدير" /></span></div><div className="grid gap-1 mt-2">{logL.slice(0, 8).map((x, i) => <div key={i} style={{ fontSize: 12.5, fontWeight: 700, color: "#78350f" }}>• {x.txt} <small style={{ color: "#a16207" }}>({x.by} — {ptWhen(x.at)})</small></div>)}</div></div>}
       {!due.length ? <div className="ma-card p-6 text-center font-bold" style={{ color: hdRemDay(dateK) ? "#3730a3" : "#94a3b8" }}>{hdRemDay(dateK) ? "🏠 دوام عن بعد — لا إشراف ولا مناوبة في هذا اليوم" : "لا توجد مهام إشراف في هذا اليوم"}</div> : due.map(s => { const T = DU_TY[s.ty] || DU_TY.oth; return (
         <div key={s.id} className="ma-card" style={{ padding: 0, overflow: "hidden", borderRight: `6px solid ${T.c}` }}>
           <div className="flex items-center gap-2 flex-wrap" style={{ padding: "10px 12px", background: T.bg }}><b style={{ color: T.c, fontSize: 14.5 }}>{T.ic} {s.ty === "oth" && s.lbl ? s.lbl : T.l}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: "#475569" }}>📍 {s.pl} • 🕒 {s.f ? mlFmtT(s.f) : ""}{s.t ? " – " + mlFmtT(s.t) : ""}</span><span className="du-tag" style={{ marginRight: "auto", background: "#fff", color: T.c }}>{maArr(s.tn).length > 1 ? `👥 فريق من ${maAr(maArr(s.tn).length)}` : "👤 مكلّف واحد"}</span></div>
@@ -48318,8 +48404,10 @@ function SttWaPanel({ T, rows, di, times, D, subName }) {
 // رابط الطلاب: #nafes
 // ══════════════════════════════════════════════════════════
 const NQ_EX = "school-nq-ex", NQ_RES = "school-nq-res";
+const NQ_MX_RULE = "طريقة كتابة الرموز الرياضية (مهم): اكتب الأرقام عربية (٠١٢٣٤٥٦٧٨٩) والفاصلة العشرية ٫ — والأس بعلامة ^ بعد الأساس مثل ١٠^٤ و س^٢ و (س + ٣)^٢ — والكسر بخط مائل مثل ٣/٤ — والجذر √٢٥ أو √(س + ١) — والمتغيرات بالحروف العربية س ، ص ، ع — والضرب × والقسمة ÷ — ولا تستعمل LaTeX ولا علامات $ ولا * إطلاقًا. الموقع يعرضها تلقائيًا بصيغة المنهج السعودي (الأس يسار الأساس والكسر رأسي).";
+const nqM = n => /رياض/.test(String(n || ""));  // مادة الرياضيات: تحويل المتغيرات x→س عند العرض
 const NQ_SUBJ = ["علوم", "رياضيات", "لغة عربية", "اجتماعيات"];
-const NQ_SCHOOL = "مدرسة الأمير عبدالمجيد المتوسطة";
+const NQ_SCHOOL = `${SP.name}`;
 const nqUid = () => Math.random().toString(36).slice(2, 11);
 const nqLink = () => { try { return location.origin + location.pathname + "#nafes"; } catch { return "#nafes"; } };
 const nqSubs = ex => maArr(ex && ex.subjects).map(s => ({ name: s.name || "", intro: maArr(s.intro), questions: maArr(s.questions).map(q => ({ ...q, options: [0, 1, 2, 3].map(i => (q.options && q.options[i]) || "") })) }));
@@ -48358,6 +48446,7 @@ const NQ_LV = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعي�
 const NQ_CSS = `
 .nq{font-family:Tajawal,Cairo,sans-serif;direction:rtl;color:#1e293b}
 .nq-card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 1px 12px rgba(0,0,0,.07)}
+.nq-mxp{margin:-4px 0 10px;padding:8px 12px;border:1.5px dashed #93c5fd;background:#eff6ff;border-radius:10px;font-weight:800;font-size:15.5px;line-height:2}.nq-mxp small{display:block;font-size:11.5px;color:#1d4ed8;font-weight:800;line-height:1.4}.nq-mxo{flex-shrink:0;max-width:40%;padding:4px 10px;border-radius:8px;background:#eff6ff;border:1px dashed #93c5fd;font-weight:800;color:#1e3a8a;line-height:1.9}
 .nq-inp{width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:15px;outline:none;background:#fff;color:#1e293b}
 .nq-inp:focus{border-color:#2563eb}
 .nq-b{font-family:inherit;cursor:pointer;transition:all .15s;border:none;border-radius:10px;padding:11px 20px;font-size:15px;font-weight:800}
@@ -48642,6 +48731,7 @@ function NqImport({ subjects, si, onAdd, onClose }) {
     try {
       if (mode === "extract") {
         const P = `استخرج كل أسئلة الاختيار من متعدد (وأسئلة صح وخطأ) الموجودة ${selPages.length ? "في صورة الصفحة المرفقة" : "في النص التالي"} كما هي بدقة دون تغيير صياغتها.
+${NQ_MX_RULE}
 أعد JSON فقط بدون أي نص آخر بهذا الشكل:
 [{"num":1,"subject":"اسم المادة كما في الصفحة","text":"نص السؤال كاملاً","options":["","","",""],"correct":0,"src":"page","explain":""${selPages.length ? ',"box":[0.05,0.1,0.95,0.3],"fig":null' : ""}}]
 القواعد:
@@ -48661,6 +48751,7 @@ ${selPages.length ? `- box: مستطيل يحيط بالسؤال كاملاً م
         const imgs = selPages.slice(0, 6);
         setBusy(`✨ تحليل ${imgs.length ? maAr(imgs.length) + " صفحة" : "النص"} وتوليد ${maAr(o.n)} سؤالاً…`);
         const P = `أنت معلم سعودي خبير في إعداد أسئلة اختبارات نافس الوطنية للمرحلة المتوسطة. حلّل محتوى ${imgs.length ? "الصفحات المرفقة" : "النص التالي"} بعناية، ثم أنشئ ${o.n} سؤالاً اختيار من متعدد في مادة «${subjects[tgt] || ""}»${o.grade ? " للصف " + o.grade : ""} بمستوى ${o.lv}${o.focus ? "، مع التركيز على: " + o.focus : ""}، تقيس الفهم والتطبيق والاستدلال وتعتمد على هذا المحتوى فقط.
+${NQ_MX_RULE}
 أعد JSON فقط بدون أي نص آخر بهذا الشكل:
 {"summary":"تحليل مختصر للمحتوى: الموضوع والأفكار الرئيسية في سطرين أو ثلاثة","skills":["مهارة 1","مهارة 2"],"questions":[{"text":"","options":["","","",""],"correct":0,"explain":"شرح مختصر للإجابة","skill":"المهارة المقيسة"${imgs.length ? ',"page":1,"fig":null' : ""}}]}
 - نوّع موضع الإجابة الصحيحة، وخيارات خاطئة معقولة (مشتتات جيدة).${imgs.length ? "\n- page: رقم الصفحة المرفقة التي يعتمد عليها السؤال (1 للأولى). fig: إذا احتاج السؤال إلى رؤية شكل أو رسم أو جدول من الصفحة فضع مستطيله [x1,y1,x2,y2] كنسب بين 0 و1 من عرض وارتفاع الصورة (x من اليسار وy من الأعلى)، وإلا null." : ""}${txt.trim() ? "\n\n" + (imgs.length ? "ملاحظات/نص إضافي:\n" : "النص:\n") + txt.slice(0, 30000) : ""}`;
@@ -48772,9 +48863,9 @@ function NqQuiz({ exam, answers, setAnswers, onSubmit, onBack }) {
     {cur.intro.length > 0 && <div className="nq-card" style={{ border: "2px solid #c4b5fd", background: "linear-gradient(180deg,#faf5ff,#fff)" }}><b style={{ color: "#6d28d9", fontSize: 15 }}>📖 اقرأ النص التالي ثم أجب عن أسئلة {cur.name}</b><small style={{ display: "block", color: "#94a3b8", fontWeight: 700, marginBottom: 8 }}>اضغط على الصورة لتكبيرها</small>{cur.intro.map((im, k) => <img key={k} src={im} alt="" onClick={() => setZoom(im)} style={{ width: "100%", borderRadius: 10, border: "1px solid #e9d5ff", marginBottom: 8, cursor: "zoom-in" }} />)}</div>}
     {zoom && <div className="nq-modal" style={{ alignItems: "flex-start", overflow: "auto", zIndex: 950 }} onClick={() => setZoom(null)}><div style={{ position: "relative", width: "100%", maxWidth: 1000, margin: "10px auto" }}><button className="nq-b" style={{ position: "sticky", top: 6, float: "left", background: "#0f172a", color: "#fff", zIndex: 2 }}>✕ إغلاق</button><img src={zoom} alt="" style={{ width: "100%", background: "#fff", borderRadius: 10 }} /></div></div>}
     {cur.questions.map((q, qi) => <div key={q.id} className="nq-card">
-      <div style={{ display: "flex", gap: 11, marginBottom: 10 }}><div style={{ minWidth: 30, height: 30, borderRadius: 8, background: answers[q.id] !== undefined ? "#166534" : "#1d4ed8", color: "#fff", display: "grid", placeItems: "center", fontSize: 14, fontWeight: 900 }}>{maAr(qi + 1)}</div><div style={{ flex: 1 }}>{q.text && <p style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.8, margin: 0 }}>{q.text}</p>}<span style={{ fontSize: 12, color: "#94a3b8" }}>({maAr(q.grade)} درجة)</span><NqSkill s={q.skill} /></div></div>
+      <div style={{ display: "flex", gap: 11, marginBottom: 10 }}><div style={{ minWidth: 30, height: 30, borderRadius: 8, background: answers[q.id] !== undefined ? "#166534" : "#1d4ed8", color: "#fff", display: "grid", placeItems: "center", fontSize: 14, fontWeight: 900 }}>{maAr(qi + 1)}</div><div style={{ flex: 1 }}>{q.text && <p style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.8, margin: 0 }}><Mth t={q.text} math={nqM(cur.name)} /></p>}<span style={{ fontSize: 12, color: "#94a3b8" }}>({maAr(q.grade)} درجة)</span><NqSkill s={q.skill} /></div></div>
       {q.image && <img src={q.image} alt="" onClick={() => setZoom(q.image)} style={{ width: "100%", maxHeight: 380, objectFit: "contain", borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 12, cursor: "zoom-in", background: "#fff" }} />}
-      <div className="grid gap-2">{q.options.map((o, oi) => o ? <button key={oi} className={`nq-opt ${+answers[q.id] === oi && answers[q.id] !== undefined ? "sel" : ""}`} onClick={() => setAnswers({ ...answers, [q.id]: oi })}><span style={{ minWidth: 28, height: 28, borderRadius: 7, background: +answers[q.id] === oi && answers[q.id] !== undefined ? "#1d4ed8" : "#f1f5f9", color: +answers[q.id] === oi && answers[q.id] !== undefined ? "#fff" : "#64748b", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 900 }}>{["أ", "ب", "ج", "د"][oi]}</span>{o}</button> : null)}</div>
+      <div className="grid gap-2">{q.options.map((o, oi) => o ? <button key={oi} className={`nq-opt ${+answers[q.id] === oi && answers[q.id] !== undefined ? "sel" : ""}`} onClick={() => setAnswers({ ...answers, [q.id]: oi })}><span style={{ minWidth: 28, height: 28, borderRadius: 7, background: +answers[q.id] === oi && answers[q.id] !== undefined ? "#1d4ed8" : "#f1f5f9", color: +answers[q.id] === oi && answers[q.id] !== undefined ? "#fff" : "#64748b", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 900 }}>{["أ", "ب", "ج", "د"][oi]}</span><Mth t={o} math={nqM(cur.name)} /></button> : null)}</div>
     </div>)}
     <div style={{ display: "flex", gap: 10 }}>{si > 0 && <button className="nq-b nq-ghost" style={{ flex: 1 }} onClick={() => setSi(si - 1)}>→ السابق</button>}{!last ? <button className="nq-b nq-blue" style={{ flex: 2 }} onClick={() => { setSi(si + 1); window.scrollTo(0, 0); }}>التالي ←</button> : <button className="nq-b nq-green" style={{ flex: 2 }} onClick={() => done < totalQ ? setCm(true) : onSubmit()}>إنهاء الاختبار ✓</button>}</div>
     <button className="nq-b nq-ghost" onClick={() => { if (window.confirm("الخروج من الاختبار؟ لن تُحفظ إجاباتك")) onBack(); }}>✕ خروج</button>
@@ -48788,9 +48879,9 @@ function NqResult({ rec, exam, onBack }) {
     <div className="flex items-center gap-2"><button className="nq-b nq-ghost" onClick={() => setFb(false)}>→ رجوع للنتيجة</button><b style={{ fontSize: 18, color: "#1e3a8a" }}>📖 التغذية الراجعة</b></div>
     {nqSubs(exam).filter(s => s.questions.length).map((sub, si) => <div key={si} className="grid gap-2"><div style={{ background: "linear-gradient(135deg,#1e3a8a,#2563eb)", borderRadius: 12, padding: "10px 16px", color: "#fff", fontWeight: 900 }}>📚 {sub.name}</div>
       {sub.questions.map((q, qi) => { const sa = ans[q.id]; const na = sa === undefined; const ok = !na && +sa === +q.correct; return <div key={q.id} className="nq-card" style={{ border: `2px solid ${na ? "#e2e8f0" : ok ? "#86efac" : "#fca5a5"}`, padding: "14px 16px" }}>
-        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}><div style={{ minWidth: 28, height: 28, borderRadius: 8, background: na ? "#94a3b8" : ok ? "#166534" : "#dc2626", color: "#fff", display: "grid", placeItems: "center", fontWeight: 900 }}>{maAr(qi + 1)}</div><div style={{ flex: 1, fontWeight: 700, lineHeight: 1.7 }}>{q.text}<NqSkill s={q.skill} /></div><span style={{ fontSize: 18 }}>{na ? "⬜" : ok ? "✅" : "❌"}</span></div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 10 }}><div style={{ minWidth: 28, height: 28, borderRadius: 8, background: na ? "#94a3b8" : ok ? "#166534" : "#dc2626", color: "#fff", display: "grid", placeItems: "center", fontWeight: 900 }}>{maAr(qi + 1)}</div><div style={{ flex: 1, fontWeight: 700, lineHeight: 1.7 }}><Mth t={q.text} math={nqM(sub.name)} /><NqSkill s={q.skill} /></div><span style={{ fontSize: 18 }}>{na ? "⬜" : ok ? "✅" : "❌"}</span></div>
         {q.image && <img src={q.image} alt="" style={{ width: "100%", maxHeight: 190, objectFit: "contain", borderRadius: 8, marginBottom: 10 }} />}
-        <div className="grid gap-1">{q.options.map((o, oi) => { if (!o) return null; const mine = !na && +sa === oi, corr = +q.correct === oi; return <div key={oi} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 12px", borderRadius: 9, background: corr ? "#dcfce7" : mine ? "#fee2e2" : "#fff", border: `2px solid ${corr ? "#86efac" : mine ? "#fca5a5" : "#e2e8f0"}`, fontSize: 13.5, fontWeight: corr || mine ? 800 : 500 }}><span style={{ minWidth: 24, height: 24, borderRadius: 6, background: corr ? "#166534" : mine ? "#dc2626" : "#f1f5f9", color: corr || mine ? "#fff" : "#94a3b8", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 900 }}>{["أ", "ب", "ج", "د"][oi]}</span>{o}{corr && <span style={{ marginRight: "auto", color: "#166534", fontSize: 12 }}>✓ الصحيحة</span>}{mine && !corr && <span style={{ marginRight: "auto", color: "#dc2626", fontSize: 12 }}>✗ اخترتها</span>}</div>; })}</div>
+        <div className="grid gap-1">{q.options.map((o, oi) => { if (!o) return null; const mine = !na && +sa === oi, corr = +q.correct === oi; return <div key={oi} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 12px", borderRadius: 9, background: corr ? "#dcfce7" : mine ? "#fee2e2" : "#fff", border: `2px solid ${corr ? "#86efac" : mine ? "#fca5a5" : "#e2e8f0"}`, fontSize: 13.5, fontWeight: corr || mine ? 800 : 500 }}><span style={{ minWidth: 24, height: 24, borderRadius: 6, background: corr ? "#166534" : mine ? "#dc2626" : "#f1f5f9", color: corr || mine ? "#fff" : "#94a3b8", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 900 }}>{["أ", "ب", "ج", "د"][oi]}</span><Mth t={o} math={nqM(sub.name)} />{corr && <span style={{ marginRight: "auto", color: "#166534", fontSize: 12 }}>✓ الصحيحة</span>}{mine && !corr && <span style={{ marginRight: "auto", color: "#dc2626", fontSize: 12 }}>✗ اخترتها</span>}</div>; })}</div>
       {nqFbHas(q.feedback) && <div style={{ marginTop: 10, padding: "11px 14px", background: "linear-gradient(135deg,#f5f3ff,#ede9fe)", borderRadius: 10, border: "2px solid #c4b5fd" }}><b style={{ fontSize: 12.5, color: "#7c3aed" }}>💡 شرح المعلم:</b><div className="nq-fbv" style={{ fontSize: 13.5, color: "#4c1d95", lineHeight: 1.8, marginTop: 4 }} dangerouslySetInnerHTML={{ __html: q.feedback }} /></div>}
       </div>; })}</div>)}
     <button className="nq-b nq-blue" onClick={onBack}>العودة للرئيسية 🏠</button>
@@ -49044,12 +49135,12 @@ function NqEditor({ exam, onSave, onBack, classes, ros }) {
     {pm && <div style={{ position: "fixed", bottom: 18, left: "50%", transform: "translateX(-50%)", background: "#1e293b", color: "#fff", padding: "10px 16px", borderRadius: 10, fontWeight: 800, fontSize: 13, zIndex: 99, maxWidth: "92vw" }}>{pm}</div>}
     {cur.questions.map((q, qi) => { const qb = nqQBad(q); return <div key={q.id} className="nq-card" style={qb ? { border: "2px solid #fbbf24" } : undefined} onPaste={e => { if (e.target.closest && e.target.closest("[contenteditable]")) return; const it = Array.from(e.clipboardData.items || []).find(i => i.type.startsWith("image/")); if (it) { e.preventDefault(); img(q.id, it.getAsFile()); } }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}><b style={{ color: "#1d4ed8" }}>سؤال {maAr(qi + 1)} — {cur.name}{qb && <span style={{ color: "#d97706", fontSize: 12, marginRight: 8 }}>⚠️ {qb}</span>}{q.aiAns ? <span style={{ color: "#7c3aed", fontSize: 12, marginRight: 8 }}>🤖 إجابة مقترحة — راجعها</span> : null}<NqSkill s={q.skill} /></b><button className="nq-b" style={{ background: "#fef2f2", color: "#ef4444", padding: "5px 11px", fontSize: 13 }} onClick={() => { if (window.confirm(`حذف السؤال ${maAr(qi + 1)}؟`)) upd(p => { p.subjects[si].questions = p.subjects[si].questions.filter(x => x.id !== q.id); return p; }); }}>حذف</button></div>
-      <textarea className="nq-inp" style={{ minHeight: 60, marginBottom: 10 }} placeholder="نص السؤال (اختياري إذا كان السؤال صورة)" value={q.text || ""} onChange={e => setQ(q.id, "text", e.target.value)} />
+      <textarea className="nq-inp" style={{ minHeight: 60, marginBottom: 10 }} placeholder="نص السؤال (اختياري إذا كان السؤال صورة)" value={q.text || ""} onChange={e => setQ(q.id, "text", e.target.value)} />{q.text && mthScan(q.text, nqM(cur.name)).length > 0 && <div className="nq-mxp"><small>👁️ كما يظهر للطالب بالرموز المعتمدة في المنهج:</small><div><Mth t={q.text} math={nqM(cur.name)} /></div></div>}
       {q.image ? <div style={{ position: "relative", marginBottom: 10 }}><img src={q.image} alt="" style={{ width: "100%", maxHeight: 220, objectFit: "contain", borderRadius: 10, border: "2px solid #e2e8f0" }} /><button className="nq-b" style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,.7)", color: "#fff", padding: "5px 12px", fontSize: 13 }} onClick={() => setQ(q.id, "image", null)}>✕ حذف الصورة</button></div>
         : <div style={{ marginBottom: 10 }}><input type="file" accept="image/*" hidden ref={el => fileRefs.current[q.id] = el} onChange={e => e.target.files[0] && img(q.id, e.target.files[0])} /><div onClick={() => fileRefs.current[q.id] && fileRefs.current[q.id].click()} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith("image/")) img(q.id, f); }} style={{ padding: "16px 12px", border: "2px dashed #cbd5e1", borderRadius: 12, background: "#f8fafc", textAlign: "center", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: "#475569" }}>📷 إضافة صورة للسؤال (اضغط أو اسحب الصورة هنا)</div><button type="button" className="nq-b" style={{ marginTop: 6, width: "100%", background: "#e0e7ff", color: "#3730a3", fontSize: 13 }} onClick={() => pasteImg(q.id)}>📋 لصق صورة من الحافظة (أداة القص)</button></div>}
       <p style={{ fontSize: 13, fontWeight: 800, color: "#475569", marginBottom: 8 }}>الخيارات — اضغط الدائرة لتحديد الإجابة الصحيحة ✓</p>
-      <div className="grid gap-2" style={{ marginBottom: 10 }}>{q.options.map((o, oi) => <div key={oi} style={{ display: "flex", alignItems: "center", gap: 9 }}><button onClick={() => upd(p => { const z = p.subjects[si].questions.find(x => x.id === q.id); z.correct = oi; delete z.aiAns; return p; })} style={{ width: 30, height: 30, borderRadius: "50%", border: `2.5px solid ${+q.correct === oi ? "#166534" : "#e2e8f0"}`, background: +q.correct === oi ? "#166534" : "#fff", color: "#fff", fontWeight: 900, cursor: "pointer", flexShrink: 0 }}>{+q.correct === oi ? "✓" : ""}</button><b style={{ minWidth: 18, color: +q.correct === oi ? "#166534" : "#94a3b8" }}>{["أ", "ب", "ج", "د"][oi]}</b><input className="nq-inp" style={{ flex: 1, padding: "9px 12px", borderColor: +q.correct === oi ? "#86efac" : "#e2e8f0" }} value={o} placeholder={`الخيار ${["أ", "ب", "ج", "د"][oi]}`} onChange={e => upd(p => { p.subjects[si].questions.find(x => x.id === q.id).options[oi] = e.target.value; return p; })} /></div>)}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><label style={{ fontSize: 13, fontWeight: 800 }}>درجة السؤال:</label><input className="nq-inp" type="number" min={1} max={20} style={{ width: 70, padding: "7px 10px" }} value={q.grade} onChange={e => setQ(q.id, "grade", +e.target.value)} />{q.options[+q.correct] && <span style={{ fontSize: 13, color: "#166534", fontWeight: 800 }}>✓ الصحيحة: {q.options[+q.correct]}</span>}</div>
+      <div className="grid gap-2" style={{ marginBottom: 10 }}>{q.options.map((o, oi) => <div key={oi} style={{ display: "flex", alignItems: "center", gap: 9 }}><button onClick={() => upd(p => { const z = p.subjects[si].questions.find(x => x.id === q.id); z.correct = oi; delete z.aiAns; return p; })} style={{ width: 30, height: 30, borderRadius: "50%", border: `2.5px solid ${+q.correct === oi ? "#166534" : "#e2e8f0"}`, background: +q.correct === oi ? "#166534" : "#fff", color: "#fff", fontWeight: 900, cursor: "pointer", flexShrink: 0 }}>{+q.correct === oi ? "✓" : ""}</button><b style={{ minWidth: 18, color: +q.correct === oi ? "#166534" : "#94a3b8" }}>{["أ", "ب", "ج", "د"][oi]}</b><input className="nq-inp" style={{ flex: 1, padding: "9px 12px", borderColor: +q.correct === oi ? "#86efac" : "#e2e8f0" }} value={o} placeholder={`الخيار ${["أ", "ب", "ج", "د"][oi]}`} onChange={e => upd(p => { p.subjects[si].questions.find(x => x.id === q.id).options[oi] = e.target.value; return p; })} />{o && mthScan(o, nqM(cur.name)).length > 0 && <span className="nq-mxo" title="كما يظهر للطالب"><Mth t={o} math={nqM(cur.name)} /></span>}</div>)}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><label style={{ fontSize: 13, fontWeight: 800 }}>درجة السؤال:</label><input className="nq-inp" type="number" min={1} max={20} style={{ width: 70, padding: "7px 10px" }} value={q.grade} onChange={e => setQ(q.id, "grade", +e.target.value)} />{q.options[+q.correct] && <span style={{ fontSize: 13, color: "#166534", fontWeight: 800 }}>✓ الصحيحة: <Mth t={q.options[+q.correct]} math={nqM(cur.name)} /></span>}</div>
       <NqFb html={q.feedback} onChange={h => setQ(q.id, "feedback", h)} />
     </div>; })}
     <button className="nq-b" style={{ background: "linear-gradient(135deg,#0f766e,#2563eb)", color: "#fff", fontSize: 15 }} onClick={() => setImp(true)}>📥 استيراد أسئلة من PDF / صورة / نص — أو تحليل صفحة وتوليد أسئلة منها</button>
@@ -49100,10 +49191,10 @@ function nqRepSec(ex, F, Rall, ros, cks, rep, S, by, ttl, o) {
   if (has("cls") && cks.length > 1) blk("مقارنة الفصول", `<table><thead><tr><th class="r">الفصل</th><th>المستهدفون</th><th>اختبر</th><th>التغطية</th><th>المتوسط</th><th>الأعلى</th><th>الأدنى</th><th>الناجحون</th><th>المستوى</th></tr></thead><tbody>${byCls.map(b => `<tr><td class="r"><b>${nqCls(b.k)}</b></td><td>${maAr(b.n)}</td><td>${maAr(b.d)}</td><td>${b.n ? maAr(Math.round(b.d / b.n * 100)) : "٠"}٪</td><td><b style="color:${nqGrade(b.a).color}">${b.d ? maAr(b.a.toFixed(1)) + "٪" : "—"}</b></td><td>${b.d ? maAr(b.top) + "٪" : "—"}</td><td>${b.d ? maAr(b.low) + "٪" : "—"}</td><td>${maAr(b.pass)}</td><td>${b.d ? `<span class="lv" style="background:${nqGrade(b.a).bg};color:${nqGrade(b.a).color}">${nqGrade(b.a).label}</span>` : "—"}</td></tr>`).join("")}</tbody></table>`);
   if (has("ai") && rep && rep.text) blk("التحليل والتوصيات", `<div class="ai">${ptEsc(rep.text)}</div>`);
   if (has("sk") && SKL.length && F.length) { const cs = byCls.filter(b => b.d && cks.length > 1); blk("نسبة الإتقان في المهارات", `<table><thead><tr><th class="r">المهارة</th><th>عدد الأسئلة</th><th>الإتقان</th>${cs.map(b => `<th>${nqCls(b.k)}</th>`).join("")}</tr></thead><tbody>${SKL.map(k => { const v = skP(k, F); return `<tr><td class="r"><b>${ptEsc(k)}</b></td><td>${maAr(skQ[k].length)}</td><td style="background:${pB(v)}"><b style="color:${pC(v)}">${v == null ? "—" : maAr(v) + "٪"}</b></td>${cs.map(b => { const w = skP(k, F.filter(r => r.ck === b.k)); return `<td style="background:${pB(w)};color:${pC(w)}">${w == null ? "—" : maAr(w) + "٪"}</td>`; }).join("")}</tr>`; }).join("")}</tbody></table>`); }
-  if (has("plan") && F.length) { const PL = qStats.filter(x => x.n && x.p < 80); if (PL.length) blk("خطة المعالجة: تحتاج إعادة شرح (أقل من ٥٠٪) ومتابعة (٥٠–٧٩٪)", `<table><thead><tr><th>السؤال</th><th>المهارة</th><th class="r">النص</th><th>الصحيحة</th><th>المشتت الأقوى</th><th>النسبة</th><th>الإجراء</th></tr></thead><tbody>${PL.map(x => { const tw = topWrong(x); return `<tr><td>${qLbl(x)}</td><td>${ptEsc(x.q.skill || "")}</td><td class="r">${ptEsc((x.q.text || "سؤال صورة").slice(0, 140))}</td><td>${L[+x.q.correct]}</td><td>${tw ? L[tw.o] + " (" + maAr(tw.p) + "٪)" : "—"}</td><td style="background:${pB(x.p)}"><b style="color:${pC(x.p)}">${maAr(x.p)}٪</b></td><td>${x.p < 50 ? "🔴 إعادة شرح" : "🟡 تدريب ومتابعة"}</td></tr>`; }).join("")}</tbody></table>`); }
-  if (has("hard") && F.length) { const H = qStats.filter(x => x.n).slice(0, 8); if (H.length) blk("الأسئلة الأصعب وتحليل المشتتات", `<table><thead><tr><th>السؤال</th><th class="r">النص</th><th>توزيع الإجابات</th><th>الصحيحة</th></tr></thead><tbody>${H.map(x => `<tr><td>${qLbl(x)}</td><td class="r">${ptEsc((x.q.text || "سؤال صورة").slice(0, 130))}</td><td>${x.dist.map((dd, k) => x.q.options[k] ? `<span style="${k === +x.q.correct ? "color:#166534;font-weight:900" : ""}">${L[k]}: ${maAr(x.n ? Math.round(dd / x.n * 100) : 0)}٪</span>` : "").filter(Boolean).join(" • ")}</td><td><b style="color:${pC(x.p)}">${maAr(x.p)}٪</b></td></tr>`).join("")}</tbody></table>`); }
+  if (has("plan") && F.length) { const PL = qStats.filter(x => x.n && x.p < 80); if (PL.length) blk("خطة المعالجة: تحتاج إعادة شرح (أقل من ٥٠٪) ومتابعة (٥٠–٧٩٪)", `<table><thead><tr><th>السؤال</th><th>المهارة</th><th class="r">النص</th><th>الصحيحة</th><th>المشتت الأقوى</th><th>النسبة</th><th>الإجراء</th></tr></thead><tbody>${PL.map(x => { const tw = topWrong(x); return `<tr><td>${qLbl(x)}</td><td>${ptEsc(x.q.skill || "")}</td><td class="r">${(x.q.text ? mthHtml(x.q.text.slice(0, 140), { math: nqM(x.s), inline: true }) : "سؤال صورة")}</td><td>${L[+x.q.correct]}</td><td>${tw ? L[tw.o] + " (" + maAr(tw.p) + "٪)" : "—"}</td><td style="background:${pB(x.p)}"><b style="color:${pC(x.p)}">${maAr(x.p)}٪</b></td><td>${x.p < 50 ? "🔴 إعادة شرح" : "🟡 تدريب ومتابعة"}</td></tr>`; }).join("")}</tbody></table>`); }
+  if (has("hard") && F.length) { const H = qStats.filter(x => x.n).slice(0, 8); if (H.length) blk("الأسئلة الأصعب وتحليل المشتتات", `<table><thead><tr><th>السؤال</th><th class="r">النص</th><th>توزيع الإجابات</th><th>الصحيحة</th></tr></thead><tbody>${H.map(x => `<tr><td>${qLbl(x)}</td><td class="r">${(x.q.text ? mthHtml(x.q.text.slice(0, 130), { math: nqM(x.s), inline: true }) : "سؤال صورة")}</td><td>${x.dist.map((dd, k) => x.q.options[k] ? `<span style="${k === +x.q.correct ? "color:#166534;font-weight:900" : ""}">${L[k]}: ${maAr(x.n ? Math.round(dd / x.n * 100) : 0)}٪</span>` : "").filter(Boolean).join(" • ")}</td><td><b style="color:${pC(x.p)}">${maAr(x.p)}٪</b></td></tr>`).join("")}</tbody></table>`); }
   if (has("qs")) { const out = subs.filter(sb => sb.questions.length).map(sb => { const X = qAll.filter(x => x.s === sb.name);
-      return `<div class="qsub">📚 ${ptEsc(sb.name)} <small>(${maAr(X.length)} سؤالاً)</small></div>${o.intro && sb.intro.length ? sb.intro.map(im => `<img class="qin" src="${im}">`).join("") : ""}${X.map(x => `<div class="qq"><div class="qh"><span class="qn">${maAr(x.i + 1)}</span>${x.q.skill ? `<span class="qsk" style="background:${nqSkC(x.q.skill)}">${ptEsc(x.q.skill)}</span>` : ""}<span class="qg">${maAr(+x.q.grade || 0)} درجة</span><span class="qr" style="background:${pB(x.n ? x.p : null)};color:${pC(x.n ? x.p : null)}">${x.n ? `✓ ${maAr(x.p)}٪ أجابوا صحيحاً` : "لم يُجب عنه أحد"}</span><small class="qc">${maAr(x.n)} أجاب${x.skip ? ` • ${maAr(x.skip)} لم يُجب` : ""}</small></div>${x.q.text ? `<div class="qt">${nqEscT(x.q.text)}</div>` : ""}${o.qImg && x.q.image ? `<img class="qi" src="${x.q.image}">` : ""}<div class="op">${x.q.options.map((op, k) => { if (!op) return ""; const pc = x.n ? Math.round(x.dist[k] / x.n * 100) : 0; const ok = k === +x.q.correct; return `<div class="o${ok ? " ok" : ""}"><span class="ol">${L[k]}</span><span class="ot">${ptEsc(op)}${ok ? ` <b class="okb">✓ الإجابة الصحيحة</b>` : ""}</span><span class="ob"><i style="width:${pc}%;background:${ok ? "#16a34a" : pc >= 25 ? "#ef4444" : "#94a3b8"}"></i></span><b class="opc">${maAr(pc)}٪ <small>(${maAr(x.dist[k])})</small></b></div>`; }).join("")}</div></div>`).join("")}`; }).join("");
+      return `<div class="qsub">📚 ${ptEsc(sb.name)} <small>(${maAr(X.length)} سؤالاً)</small></div>${o.intro && sb.intro.length ? sb.intro.map(im => `<img class="qin" src="${im}">`).join("") : ""}${X.map(x => `<div class="qq"><div class="qh"><span class="qn">${maAr(x.i + 1)}</span>${x.q.skill ? `<span class="qsk" style="background:${nqSkC(x.q.skill)}">${ptEsc(x.q.skill)}</span>` : ""}<span class="qg">${maAr(+x.q.grade || 0)} درجة</span><span class="qr" style="background:${pB(x.n ? x.p : null)};color:${pC(x.n ? x.p : null)}">${x.n ? `✓ ${maAr(x.p)}٪ أجابوا صحيحاً` : "لم يُجب عنه أحد"}</span><small class="qc">${maAr(x.n)} أجاب${x.skip ? ` • ${maAr(x.skip)} لم يُجب` : ""}</small></div>${x.q.text ? `<div class="qt">${mthHtml(x.q.text, { math: nqM(sb.name), inline: true })}</div>` : ""}${o.qImg && x.q.image ? `<img class="qi" src="${x.q.image}">` : ""}<div class="op">${x.q.options.map((op, k) => { if (!op) return ""; const pc = x.n ? Math.round(x.dist[k] / x.n * 100) : 0; const ok = k === +x.q.correct; return `<div class="o${ok ? " ok" : ""}"><span class="ol">${L[k]}</span><span class="ot">${mthHtml(op, { math: nqM(sb.name), inline: true })}${ok ? ` <b class="okb">✓ الإجابة الصحيحة</b>` : ""}</span><span class="ob"><i style="width:${pc}%;background:${ok ? "#16a34a" : pc >= 25 ? "#ef4444" : "#94a3b8"}"></i></span><b class="opc">${maAr(pc)}٪ <small>(${maAr(x.dist[k])})</small></b></div>`; }).join("")}</div></div>`).join("")}`; }).join("");
     blk("الأسئلة مع نتيجة كل سؤال وتوزيع الإجابات", out); }
   if (has("stu") && F.length) { const row = (r, i) => { const p = nqPct(r); const g = nqGrade(p); return `<tr><td>${maAr(i)}</td><td class="r"><b>${ptEsc(r.name)}</b></td><td>${nqCls(r.ck)}</td>${subjN.map(n => { const v = (r.res.subjectScores || {})[n]; return `<td>${v ? maAr(v.score) + "/" + maAr(v.maxScore) : "—"}</td>`; }).join("")}<td><b>${maAr(r.res.total)}/${maAr(r.res.maxTotal)}</b></td><td><b>${maAr(p)}٪</b></td><td><span class="lv" style="background:${g.bg};color:${g.color}">${g.label}</span></td></tr>`; };
     const head = `<thead><tr><th>${o.stuBy === "cls" ? "م" : "الترتيب"}</th><th class="r">الطالب</th><th>الفصل</th>${subjN.map(n => `<th>${ptEsc(n)}</th>`).join("")}<th>المجموع</th><th>النسبة</th><th>المستوى</th></tr></thead>`;
@@ -49128,7 +49219,7 @@ function nqRepSec(ex, F, Rall, ros, cks, rep, S, by, ttl, o) {
       ${low.length ? `<h3>الطلاب المحتاجون إلى دعم دون ٦٠٪ (${maAr(low.length)} طالب)</h3><div class="ms">${low.map(r => `${ptEsc(r.name)} <b style="color:#dc2626">(${maAr(sp(r))}٪)</b>${cks.length > 1 ? ` <small>${nqCls(r.ck)}</small>` : ""}`).join(" • ")}</div>` : ""}
       <h3>الخطة العلاجية (يعبئها المعلم)</h3><table class="pl"><thead><tr><th style="width:26%">المهارة / السؤال</th><th>الإجراء العلاجي والاستراتيجية</th><th style="width:13%">الطلاب المستهدفون</th><th style="width:12%">موعد التنفيذ</th><th style="width:12%">نتيجة إعادة القياس</th></tr></thead><tbody>${plan.map(t => `<tr><td class="r">${t}</td><td></td><td></td><td></td><td></td></tr>`).join("")}</tbody></table>
       <div class="pledge"><b>✍️ إقرار وتعهّد المعلم:</b> أقرّ بأنني استلمت نتائج طلابي في الاختبار التدريبي واطلعت على تحليلها، وأتعهّد بمعالجة جوانب الضعف الموضحة وفق الخطة أعلاه، ومتابعة الطلاب المحتاجين إلى دعم، وإعادة القياس ورفع النتيجة إلى إدارة المدرسة في الموعد المحدد.</div>
-      <div class="sg3"><div>المعلم المستلم<br><b class="pn">${tn ? ptEsc(tn) : ""}</b><span>الاسم: ............................</span><span>التوقيع: ..........................</span><span>التاريخ: ...... / ...... / ١٤٤٨هـ</span></div><div>رائد النشاط / المُسلِّم<br><b class="pn">${ptEsc(by || "")}</b><span>التوقيع: ..........................</span></div><div>وكيل الشؤون التعليمية<br><b class="pn"> </b><span>التوقيع: ..........................</span></div><div>مدير المدرسة<br><b class="pn">فازع القرني</b><span>التوقيع: ..........................</span></div></div>
+      <div class="sg3"><div>المعلم المستلم<br><b class="pn">${tn ? ptEsc(tn) : ""}</b><span>الاسم: ............................</span><span>التوقيع: ..........................</span><span>التاريخ: ...... / ...... / ١٤٤٨هـ</span></div><div>رائد النشاط / المُسلِّم<br><b class="pn">${ptEsc(by || "")}</b><span>التوقيع: ..........................</span></div><div>وكيل الشؤون التعليمية<br><b class="pn"> </b><span>التوقيع: ..........................</span></div><div>مدير المدرسة<br><b class="pn">${SP.principalShort}</b><span>التوقيع: ..........................</span></div></div>
     </section>`; }).join("");
   const main = B.length || has("sig") ? `<section class="pg">${inHdr(`تقرير نتائج ${ptEsc(ttl)}`, `${maDay(new Date())}<br>${asmHij(new Date())}`)}${B.join("")}${has("sig") ? inSig(by, "رائد النشاط") : ""}</section>` : "";
   return main + hands;
@@ -49261,8 +49352,8 @@ ${JSON.stringify(data)}
         {rep ? <><div style={{ whiteSpace: "pre-wrap", lineHeight: 2, fontSize: 14, background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 12, padding: "12px 16px" }}>{rep.text}</div><small style={{ color: "#94a3b8", fontWeight: 700 }}>آخر تحديث: {ptWhen(rep.at)} — يُضاف تلقائياً إلى التقرير المطبوع</small></> : !repBusy && <div style={{ color: "#64748b", fontSize: 13.5, lineHeight: 1.9 }}>يقرأ الذكاء الاصطناعي نتائج هذا الاختبار (المتوسطات، المستويات، الفصول، الأسئلة الأصعب وتوزيع الإجابات) ويكتب تقريراً بنقاط القوة والضعف والتوصيات العلاجية — ويُحفظ ويُطبع مع التقرير.</div>}
       </div>}
       {tab === "cls" && <div className="nq-card grid gap-2">{byCls.map(x => { const g = nqGrade(x.a); return <div key={x.k} style={{ display: "grid", gridTemplateColumns: "110px minmax(0,1fr) auto", gap: 10, alignItems: "center" }}><b>{nqCls(x.k)}</b><div className="nq-pbar" style={{ height: 12 }}><div className="nq-pfill" style={{ width: `${x.a}%`, background: g.color }} /></div><span style={{ fontSize: 12.5, fontWeight: 800 }}><b style={{ color: g.color }}>{x.d ? maAr(Math.round(x.a)) + "٪" : "—"}</b> • اختبر {maAr(x.d)} من {maAr(x.n)}{x.d ? ` • أعلى ${maAr(x.top)}٪` : ""}</span></div>; })}</div>}
-      {F.length > 0 && tab === "q" && <div className="grid gap-2"><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>مرتبة من الأصعب إلى الأسهل — مع توزيع إجابات الطلاب على كل خيار (تحليل المشتتات)</div>{qStats.map(x => { const g = nqGrade(x.p); return <div key={x.q.id} className="nq-card" style={{ padding: "10px 14px" }}><div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span className="nq-badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>{x.s} • س{maAr(x.i + 1)}</span><span style={{ flex: "1 1 200px", fontWeight: 700, fontSize: 13.5 }}>{x.q.text || "(سؤال صورة)"}</span><b style={{ color: g.color }}>{maAr(x.p)}٪</b><small style={{ color: "#94a3b8" }}>({maAr(x.n)} إجابة{x.skip ? ` • ${maAr(x.skip)} تركوه` : ""})</small></div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 5, marginTop: 7 }}>{x.q.options.map((o, oi) => o ? (() => { const pp = x.n ? Math.round(x.dist[oi] / x.n * 100) : 0; const cr = oi === +x.q.correct; return <div key={oi} style={{ fontSize: 12, fontWeight: 800, border: `1.5px solid ${cr ? "#86efac" : "#e2e8f0"}`, background: cr ? "#f0fdf4" : "#fff", borderRadius: 8, padding: "4px 8px" }}><div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{["أ", "ب", "ج", "د"][oi]}) {o}</span><b style={{ color: cr ? "#166534" : pp >= 30 ? "#dc2626" : "#64748b" }}>{maAr(pp)}٪</b></div><div className="nq-pbar" style={{ height: 5, marginTop: 3 }}><div className="nq-pfill" style={{ width: `${pp}%`, background: cr ? "#16a34a" : "#f87171" }} /></div></div>; })() : null)}</div></div>; })}</div>}
+      {F.length > 0 && tab === "q" && <div className="grid gap-2"><div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b" }}>مرتبة من الأصعب إلى الأسهل — مع توزيع إجابات الطلاب على كل خيار (تحليل المشتتات)</div>{qStats.map(x => { const g = nqGrade(x.p); return <div key={x.q.id} className="nq-card" style={{ padding: "10px 14px" }}><div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span className="nq-badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>{x.s} • س{maAr(x.i + 1)}</span><span style={{ flex: "1 1 200px", fontWeight: 700, fontSize: 13.5 }}>{x.q.text ? <Mth t={x.q.text} math={nqM(x.s)} /> : "(سؤال صورة)"}</span><b style={{ color: g.color }}>{maAr(x.p)}٪</b><small style={{ color: "#94a3b8" }}>({maAr(x.n)} إجابة{x.skip ? ` • ${maAr(x.skip)} تركوه` : ""})</small></div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 5, marginTop: 7 }}>{x.q.options.map((o, oi) => o ? (() => { const pp = x.n ? Math.round(x.dist[oi] / x.n * 100) : 0; const cr = oi === +x.q.correct; return <div key={oi} style={{ fontSize: 12, fontWeight: 800, border: `1.5px solid ${cr ? "#86efac" : "#e2e8f0"}`, background: cr ? "#f0fdf4" : "#fff", borderRadius: 8, padding: "4px 8px" }}><div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{["أ", "ب", "ج", "د"][oi]}) <Mth t={o} math={nqM(x.s)} /></span><b style={{ color: cr ? "#166534" : pp >= 30 ? "#dc2626" : "#64748b" }}>{maAr(pp)}٪</b></div><div className="nq-pbar" style={{ height: 5, marginTop: 3 }}><div className="nq-pfill" style={{ width: `${pp}%`, background: cr ? "#16a34a" : "#f87171" }} /></div></div>; })() : null)}</div></div>; })}</div>}
 
       {F.length > 0 && tab === "plan" && <div className="grid gap-3">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>{bucket.map(B => <div key={B.t} style={{ background: B.b, border: `2px solid ${B.c}`, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}><div style={{ fontSize: 26, fontWeight: 900, color: B.c }}>{maAr(B.L.length)}</div><div style={{ fontSize: 12.5, fontWeight: 900, color: B.c }}>{B.t}</div></div>)}</div>
@@ -49362,6 +49453,51 @@ function NqTrack({ exams, ros, by, onBack, lim }) {
   </div>;
 }
 
+// ══════════ 🔢 فحص الرموز الرياضية في النماذج (تقييم شامل — للعرض فقط، لا يغيّر الأسئلة ولا إجابات الطلاب) ══════════
+function NqMathAudit({ exams, onBack, onEdit }) {
+  const [fl, setFl] = useState(""); const [sub, setSub] = useState(""); const [n, setN] = useState(40);
+  const R = React.useMemo(() => { const rows = []; maArr(exams).forEach(e => nqSubs(e).forEach(s => s.questions.forEach((q, i) => {
+    const m = nqM(s.name); const T = [q.text, ...q.options].map(t => String(t || ""));
+    const f = [...new Set(T.flatMap(t => mthScan(t, m)))]; const opts = q.options.filter(o => String(o || "").trim());
+    const dup = new Set(opts.map(o => mthHtml(o, { math: m }).replace(/\s/g, ""))).size < opts.length;
+    rows.push({ e, s: s.name, i, q, m, f, dup, bad: nqQBad(q), img: !!q.image && !String(q.text || "").trim() }); }))); return rows; }, [exams]);
+  const subs = [...new Set(R.map(r => r.s))];
+  const base = R.filter(r => !sub || r.s === sub);
+  const cnt = k => base.filter(r => r.f.includes(k)).length;
+  const flagged = base.filter(r => r.f.length), list = base.filter(r => fl === "dup" ? r.dup : fl === "bad" ? r.bad : fl === "img" ? r.img : fl ? r.f.includes(fl) : (r.f.length || r.dup || r.bad));
+  const box = (ic, v, t, c) => <div style={{ background: "#fff", border: `2px solid ${c}33`, borderRadius: 14, padding: "10px 12px", textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: c }}>{maAr(v)}</div><div style={{ fontSize: 12, fontWeight: 800, color: "#475569" }}>{ic} {t}</div></div>;
+  const chip = (k, t, v, c = "#1d4ed8") => <button key={k} className="nq-b" onClick={() => { setFl(fl === k ? "" : k); setN(40); }} style={{ padding: "6px 12px", fontSize: 12.5, background: fl === k ? c : "#fff", color: fl === k ? "#fff" : c, border: `1.5px solid ${c}` }}>{t} <b>({maAr(v)})</b></button>;
+  return <div className="grid gap-3">
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}><button className="nq-b nq-ghost" onClick={onBack}>→ رجوع</button><b style={{ fontSize: 18, color: "#1e3a8a" }}>🔢 فحص الرموز الرياضية وتقييم النماذج</b></div>
+    <div className="nq-card" style={{ background: "linear-gradient(180deg,#eff6ff,#fff)", border: "2px solid #bfdbfe", fontSize: 13.5, fontWeight: 700, lineHeight: 1.9, color: "#1e293b" }}>
+      يعرض الموقع الآن كل الأسئلة بصيغة المنهج السعودي تلقائيًا: <b>الأرقام عربية</b>، و<b>الأس يسار الأساس</b>، والكسر رأسي، والجذر بخط علوي، والمتغيرات س ، ص في الرياضيات. هنا ترى ما كان مكتوبًا بخلاف ذلك وكيف يظهر الآن.
+      <div style={{ color: "#166534", marginTop: 4 }}>✓ التنسيق عند العرض فقط: لا تتغير الأسئلة المحفوظة، ولا إجابات الطلاب، ولا درجاتهم أو نتائجهم السابقة.</div></div>
+    {subs.length > 1 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{["", ...subs].map(x => <button key={x || "all"} className={`nq-tab ${sub === x ? "on" : ""}`} onClick={() => { setSub(x); setN(40); }}>{x || "كل المواد"}</button>)}</div>}
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 8 }}>
+      {box("📝", base.length, "سؤالاً في النماذج", "#1e3a8a")}{box("🔢", flagged.length, "سؤالاً صُحّحت رموزه تلقائيًا", "#2563eb")}{box("🖼️", base.filter(r => r.img).length, "سؤالاً مصوّرًا (لا يُعدَّل)", "#7c3aed")}{box("⚠️", base.filter(r => r.bad || r.dup).length, "سؤالاً يحتاج مراجعة المعلم", "#d97706")}
+    </div>
+    <div className="nq-card" style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}><b style={{ fontSize: 13, marginLeft: 4 }}>تصفية:</b>
+      {Object.keys(MX_FLAG).map(k => cnt(k) ? chip(k, MX_FLAG[k], cnt(k)) : null)}
+      {chip("dup", "خيارات متكررة", base.filter(r => r.dup).length, "#d97706")}{chip("bad", "سؤال غير مكتمل", base.filter(r => r.bad).length, "#dc2626")}{chip("img", "أسئلة مصوّرة", base.filter(r => r.img).length, "#7c3aed")}
+    </div>
+    {!list.length && <div className="nq-card" style={{ textAlign: "center", color: "#166534", fontWeight: 900, padding: 26 }}>✅ لا توجد أسئلة في هذا التصنيف</div>}
+    {list.slice(0, n).map((r, k) => <div key={k} className="nq-card" style={{ padding: "12px 14px" }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 8, fontSize: 12.5, fontWeight: 800, color: "#475569" }}>
+        <span>📄 {r.e.title}</span><span>•</span><span>{r.s}</span><span>•</span><span>سؤال {maAr(r.i + 1)}</span><span className="nb-sp" style={{ flex: 1 }} />
+        {r.f.map(x => <span key={x} style={{ background: "#dbeafe", color: "#1e40af", borderRadius: 99, padding: "2px 9px", fontSize: 11.5 }}>{MX_FLAG[x]}</span>)}
+        {r.dup && <span style={{ background: "#fef3c7", color: "#92400e", borderRadius: 99, padding: "2px 9px", fontSize: 11.5 }}>خياران متطابقان</span>}
+        {r.bad && <span style={{ background: "#fee2e2", color: "#991b1b", borderRadius: 99, padding: "2px 9px", fontSize: 11.5 }}>{r.bad}</span>}
+        {r.img && <span style={{ background: "#ede9fe", color: "#5b21b6", borderRadius: 99, padding: "2px 9px", fontSize: 11.5 }}>صورة: راجع رموزها بالنظر</span>}
+        <button className="nq-b nq-ghost" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => onEdit(r.e)}>✏️ فتح النموذج</button></div>
+      {r.img && <img src={r.q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 8, marginBottom: 8, background: "#fff" }} />}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10 }}>
+        <div style={{ background: "#fef2f2", borderRadius: 10, padding: "8px 12px" }}><small style={{ color: "#991b1b", fontWeight: 800 }}>كما كُتب في النموذج</small><div style={{ fontWeight: 700, lineHeight: 1.9, color: "#7f1d1d" }}>{r.q.text || "—"}</div><div style={{ fontSize: 13, color: "#7f1d1d", lineHeight: 1.9 }}>{r.q.options.map((o, j) => o ? <span key={j} style={{ marginLeft: 12, fontWeight: +r.q.correct === j ? 900 : 600 }}>{["أ", "ب", "ج", "د"][j]}) {o}{+r.q.correct === j ? " ✓" : ""}</span> : null)}</div></div>
+        <div style={{ background: "#eff6ff", borderRadius: 10, padding: "8px 12px" }}><small style={{ color: "#1d4ed8", fontWeight: 800 }}>كما يظهر الآن للطالب</small><div style={{ fontWeight: 800, lineHeight: 2, color: "#1e3a8a", fontSize: 15.5 }}>{r.q.text ? <Mth t={r.q.text} math={r.m} /> : "—"}</div><div style={{ fontSize: 14, color: "#1e3a8a", lineHeight: 2.1 }}>{r.q.options.map((o, j) => o ? <span key={j} style={{ marginLeft: 14, fontWeight: +r.q.correct === j ? 900 : 700 }}>{["أ", "ب", "ج", "د"][j]}) <Mth t={o} math={r.m} />{+r.q.correct === j ? " ✓" : ""}</span> : null)}</div></div>
+      </div></div>)}
+    {list.length > n && <button className="nq-b nq-ghost" onClick={() => setN(n + 60)}>عرض المزيد ({maAr(list.length - n)})</button>}
+  </div>;
+}
+
 function NafesAdminPage({ by = "الإدارة" }) {
   const [ex, setEx] = useState(null); const [ros, setRos] = useState({}); const [counts, setCounts] = useState([6, 4, 4]); const [ed, setEd] = useState(null); const [scr, setScr] = useState("list"); const [cnt, setCnt] = useState({}); const [nt, setNt] = useState(""); const [msg, setMsg] = useState(""); const [resId, setResId] = useState(""); const [G, setG] = useState([]); const [gOpen, setGOpen] = useState(false);
   const load = async () => { const [e, r, m, g] = await Promise.all([maGet(NQ_EX), maGet(MA_ROSTER), maGet(MA_META), maGet(NQ_STU)]); setG([...nqSetG(g)]); const L = ptVals(e).sort((a, b) => (b.at || 0) - (a.at || 0)); setEx(L); setRos(ptObj(r)); if (m && Array.isArray(m.counts)) setCounts(m.counts.map(n => +n || 0)); const sh = await fetch(`${FIREBASE_URL}/school/${NQ_RES}.json?shallow=true`).then(x => x.json()).catch(() => null); const c = {}; await Promise.all(L.map(async x => { if (sh && sh[x.id]) { const s2 = await fetch(`${FIREBASE_URL}/school/${NQ_RES}/${x.id}.json?shallow=true`).then(y => y.json()).catch(() => null); c[x.id] = s2 ? Object.keys(s2).length : 0; } })); setCnt(c); };
@@ -49376,10 +49512,11 @@ function NafesAdminPage({ by = "الإدارة" }) {
     {scr === "ed" && ed ? <NqEditor exam={ed} classes={classes} ros={ros} onSave={save} onBack={() => { setScr("list"); setEd(null); }} />
       : scr === "res" ? <NqResults exams={ex} ros={ros} by={by} first={resId} onBack={() => setScr("list")} />
       : scr === "track" ? <NqTrack exams={ex} ros={ros} by={by} onBack={() => setScr("list")} />
+      : scr === "mx" ? <NqMathAudit exams={ex} onBack={() => setScr("list")} onEdit={x => { setEd(x); setScr("ed"); }} />
         : <>
           <div style={{ background: "linear-gradient(135deg,#1e3a8a,#1d4ed8 60%,#d97706)", borderRadius: 20, padding: "18px 20px", color: "#fff" }}><div style={{ fontSize: 12.5, fontWeight: 800, opacity: .85 }}>{NQ_SCHOOL}</div><div style={{ fontSize: 22, fontWeight: 900 }}>🎯 منصة التدريب على اختبارات نافس والمركزية</div><div style={{ fontSize: 13, fontWeight: 700, opacity: .9 }}>اختبارات إلكترونية • طلاب المدرسة من كشوف الفصول • تحليل فوري للنتائج • توليد أسئلة بالذكاء الاصطناعي</div></div>
           <div className="nq-card" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", background: "#fffbeb", border: "2px solid #fde68a" }}><b style={{ fontSize: 13 }}>🔗 رابط الطلاب:</b><span dir="ltr" style={{ flex: "1 1 200px", minWidth: 0, fontSize: 12.5, background: "#fff", borderRadius: 8, padding: "5px 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nqLink()}</span><button className="nq-b nq-ghost" style={{ padding: "6px 12px", fontSize: 13 }} onClick={() => { try { navigator.clipboard.writeText(nqLink()); setMsg("✅ نُسخ الرابط"); } catch {} }}>📋 نسخ</button><a className="nq-b" style={{ background: "#25d366", color: "#fff", padding: "7px 12px", fontSize: 13, textDecoration: "none" }} target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(`🎯 أبنائي الطلاب — اختبار تدريبي على نافس\nاختر فصلك ثم اسمك وابدأ:\n${nqLink()}`)}`}>💬 واتساب</a><a className="nq-b nq-ghost" style={{ padding: "6px 12px", fontSize: 13, textDecoration: "none" }} href="#nafes" target="_blank" rel="noreferrer">👁 معاينة</a></div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="nq-b nq-ghost" style={{ flex: "1 1 200px" }} disabled={!ex.length} onClick={() => { setResId(""); setScr("res"); }}>📊 نتائج الطلاب والتحليل</button><button className="nq-b" style={{ flex: "1 1 200px", background: "#0f766e", color: "#fff" }} disabled={!ex.length} onClick={() => setScr("track")}>📋 متابعة الإنجاز: من اختبر ومن بقي</button></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><button className="nq-b nq-ghost" style={{ flex: "1 1 200px" }} disabled={!ex.length} onClick={() => { setResId(""); setScr("res"); }}>📊 نتائج الطلاب والتحليل</button><button className="nq-b" style={{ flex: "1 1 200px", background: "#0f766e", color: "#fff" }} disabled={!ex.length} onClick={() => setScr("track")}>📋 متابعة الإنجاز: من اختبر ومن بقي</button><button className="nq-b" style={{ flex: "1 1 200px", background: "#1e3a8a", color: "#fff" }} disabled={!ex.length} onClick={() => setScr("mx")}>🔢 فحص الرموز الرياضية</button></div>
           {ex.some(x => maArr(x.allow).length) && <div className="nq-card" style={{ border: "2px solid #f59e0b", background: "#fffbeb" }}><b style={{ color: "#92400e" }}>🔀 توحيد قوائم الطلاب</b><div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", lineHeight: 1.8, marginTop: 4 }}>يوجد {maAr(ex.filter(x => maArr(x.allow).length).length)} اختبار له قائمة طلاب خاصة قديمة. الأسماء المضافة يدوياً تُحفظ في القائمة المعتمدة، والموقع الآن يقبل القائمتين معاً. للتنظيم: ادمج القوائم القديمة في القائمة المعتمدة مرة واحدة — لا تُحذف أي نتيجة.</div>
             <button className="nq-b" style={{ background: "#d97706", color: "#fff", marginTop: 8 }} onClick={async () => { if (!window.confirm("دمج كل القوائم الخاصة بالاختبارات في القائمة المعتمدة؟\nتبقى النتائج المسجّلة كما هي.")) return; const M = new Map(); ex.forEach(x => maArr(x.allow).forEach(a => { if (a && a.nh && !M.has(a.nh)) M.set(a.nh, a); })); G.forEach(g => { const o = M.get(g.nh); M.set(g.nh, o ? { ...g, sid: o.sid || g.sid, ...(o.ck !== g.ck ? { ck0: g.ck0 || o.ck } : {}) } : g); }); const L = [...M.values()]; const ok = await maPut(NQ_STU, { list: L, at: Date.now() }); if (!ok) { setMsg("⚠️ تعذّر حفظ القائمة — تحقق من الاتصال"); return; } setG([...nqSetG(L)]); for (const x of ex.filter(y => maArr(y.allow).length)) { const v = { ...x, subjects: nqSubs(x), allowAll: 1 }; delete v.allow; await save(v); } setMsg(`✅ وُحّدت القوائم: ${maAr(L.length)} طالب في القائمة المعتمدة`); }}>🔀 دمج القوائم الآن</button></div>}
           {G.length > 0 && !gOpen ? <div className="nq-card" style={{ border: "2px solid #16a34a", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><b style={{ flex: "1 1 220px", color: "#166534" }}>🪪 طلاب نافس المعتمدون: {maAr(G.length)} طالب <small style={{ fontWeight: 700, color: "#475569" }}>({Object.entries(G.reduce((o, a) => (o[a.ck] = (o[a.ck] || 0) + 1, o), {})).sort((x, y) => x[0].localeCompare(y[0], "en", { numeric: true })).map(([k, n]) => `${nqCls(k)}: ${maAr(n)}`).join(" • ")})</small></b><button className="nq-b nq-ghost" onClick={() => setGOpen(true)}>⚙️ إدارة القائمة</button></div>
@@ -51173,7 +51310,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const cover = hidden["dp-cover"] && !edit ? null : <section className="dp-sh" id="dp-cover"><div className={"dp-pg dp-cv" + (hidden["dp-cover"] ? " hid" : "")}><div className="ph" /><div className="pn1" />
     <svg className="ch" viewBox="0 0 100 160" preserveAspectRatio="none"><path d="M44 0h30l26 80-26 80H44l26-80z" fill={GD} /><path d="M6 0h30l26 80-26 80H6l26-80z" fill={G1} /></svg>
     <img className="moe" src={DP_MOE} alt="وزارة التعليم" />
-    <div className="mi">المملكة العربية السعودية<br />وزارة التعليم<br />{cfg.office || "الإدارة العامة للتعليم بمحافظة جدة"}<br />{sch}</div>
+    <div className="mi">المملكة العربية السعودية<br />وزارة التعليم<br />{cfg.office || `${SP.region}`}<br />{sch}</div>
     <div className="ttl"><h1>الخطة الإجرائية لتعزيز</h1><h2>الانضباط المدرسي</h2><p>{ar(year)} هـ</p></div><div className="hz" />
     <div className="sch"><img src={A.SCHOOL_LOGO} alt="" />{sch} • لجنة الانضباط المدرسي<br /><span style={{ fontWeight: 600, color: "#64748b", fontSize: "0.8em" }}>سجل حيّ محدّث من بيانات الموقع — آخر تحليل {A.maDay(new Date())} {A.maHijri(new Date())}</span></div>
     <span className="dp-noprint" style={{ position: "absolute", bottom: 12, left: 12, zIndex: 3, display: "flex", gap: 6 }}>{edit && <button className="dp-pb" onClick={() => setHidden("dp-cover", !hidden["dp-cover"])}>{hidden["dp-cover"] ? "👁 إظهار" : "🚫 إخفاء"}</button>}<button className="dp-pb" onClick={() => doPrint("#dp-cover", "الغلاف")}>🖨 طباعة الغلاف</button></span>
@@ -51182,7 +51319,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const pIntro = <Page n={N("dp-intro")} id="dp-intro" title="مقدمة" rk={["intro"]}><div className="dp-g2" style={{ gridTemplateColumns: "1.6fr 1fr", alignItems: "center", marginTop: "2cqw" }}>
     <div style={{ fontSize: "max(14px,1.5cqw)", lineHeight: 2.1, textAlign: "justify", borderRight: `max(8px,1.1cqw) solid ${G1}`, background: `linear-gradient(270deg,${GD2} 0 max(6px,.7cqw),transparent max(6px,.7cqw))`, paddingRight: "2.4cqw" }}><F v={tx("intro")} on={v => setTx("intro", v)} ml /></div>
     <div className="dp-box"><b style={{ color: NV, fontSize: "max(14px,1.4cqw)", fontFamily: KUFI }}>بيانات المدرسة</b>
-      <table style={{ width: "100%", marginTop: 8, fontSize: "max(12px,1.12cqw)" }}><tbody>{[["المدرسة", sch], ["المرحلة", <F v={cfg.stage} on={v => setCfg("stage", v)} list={false} />], ["الجهة", <F v={cfg.office || "الإدارة العامة للتعليم بمحافظة جدة"} on={v => setCfg("office", v)} list={false} />], ["العام الدراسي", <F v={cfg.year || year} on={v => setCfg("year", v)} list={false} />], ["عدد الطلاب", ar(R.N)], ["عدد الفصول", ar(R.classes.length)], ["الفترة المحللة", T.first ? `${hij(T.first)} — ${hij(T.last)}` : "—"]].map(([k, v], i) => <tr key={i}><td style={{ fontWeight: 700, color: G1, padding: "3px 0", width: "38%" }}>{k}</td><td style={{ fontWeight: 600 }}>{v}</td></tr>)}</tbody></table>
+      <table style={{ width: "100%", marginTop: 8, fontSize: "max(12px,1.12cqw)" }}><tbody>{[["المدرسة", sch], ["المرحلة", <F v={cfg.stage} on={v => setCfg("stage", v)} list={false} />], ["الجهة", <F v={cfg.office || `${SP.region}`} on={v => setCfg("office", v)} list={false} />], ["العام الدراسي", <F v={cfg.year || year} on={v => setCfg("year", v)} list={false} />], ["عدد الطلاب", ar(R.N)], ["عدد الفصول", ar(R.classes.length)], ["الفترة المحللة", T.first ? `${hij(T.first)} — ${hij(T.last)}` : "—"]].map(([k, v], i) => <tr key={i}><td style={{ fontWeight: 700, color: G1, padding: "3px 0", width: "38%" }}>{k}</td><td style={{ fontWeight: 600 }}>{v}</td></tr>)}</tbody></table>
       {edit && <div className="dp-noprint" style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>بداية فترة التحليل: <input type="date" className="dp-in" style={{ width: 160 }} defaultValue={cfg.from} onBlur={e => e.target.value !== (cfg.from || "") && setCfg("from", e.target.value || null).then(load)} /></div>}</div>
   </div></Page>;
 
@@ -51426,7 +51563,7 @@ return DisciplinePlan;
 })();
 // 📘 سجل وخطة الانضباط المدرسي — يقرأ بيانات الموقع كاملة (الحضور، التأخر، الأعذار، الملاحظات) لتحليل الواقع
 const dpApi = () => ({ maGet, maPut, fbPatch, spxLoad, spxCompute, maClassName, maHijri, maDay, maDate, maKey, maAr, maOff, SCHOOL_LOGO, PT_EXC, PT_PREP, printWindow,
-  schoolName: "مدرسة الأمير عبدالمجيد المتوسطة الأولى",
+  schoolName: `${SP.name}`,
   loadStaff: async () => { const T = ttFresh(await maGet(TT_NODE)); return [...new Set((T.T || []).map(ttClean))].filter(Boolean).sort((a, b) => a.localeCompare(b, "ar")); } });
 function DPlanPage({ by }) { const api = React.useMemo(dpApi, []);
   return <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ فتح سجل الانضباط…</div>}><DisciplinePlan api={api} by={by} /></React.Suspense>; }
@@ -51850,7 +51987,7 @@ function GdAlerts({ reps, onResp }) {
 const UAL_NODE = "school-alerts";
 const UAL_COL = { red: ["#b91c1c", "#ef4444", "#fef2f2", "أحمر — عاجل"], orange: ["#c2410c", "#f97316", "#fff7ed", "برتقالي — مهم"], green: ["#15803d", "#22c55e", "#f0fdf4", "أخضر — بشرى"], blue: ["#1d4ed8", "#3b82f6", "#eff6ff", "أزرق — إعلامي"] };
 const UAL_AUD = [["parent", "👪 أولياء الأمور والطلاب (بوابة الطالب)"], ["home", "🏠 زوار الصفحة الرئيسية"], ["staff", "🧑‍🏫 المعلمون والإداريون"]];
-const UAL_TPL = { title: "تنبيه مهم لأولياء الأمور", text: "غدًا الخميس نستكمل الخطة الدراسية لهذا الأسبوع، ويستمتع أبناؤنا بعده بأسبوع من الراحة؛ فلنحرص على أن يُتمّوا أسبوعهم بجدٍّ وانضباط.\nولهذا نشدّد ونؤكد أهمية الحضور غدًا، كما عهدناكم شركاء وداعمين لنا؛ فلا نرضى أن تضيع ثمرة جهودنا وجهودكم بغياب غير مقبول ولا مبرر، والإجازة على الأبواب.\nننتظر طلابنا غدًا الخميس، وتقديرًا للمنضبطين، نعدهم بالتجاوز عن غياب يوم واحد من مجموع غياباتهم السابقة، وفق ما تسمح به الأنظمة.\n⚠️ سيُحتسب غياب غدٍ الخميس ويُرصد، ويمكنكم مراجعة سجل الطالب عبر موقع المدرسة.\n\nإدارة مدرسة الأمير عبدالمجيد المتوسطة" };
+const UAL_TPL = { title: "تنبيه مهم لأولياء الأمور", text: `غدًا الخميس نستكمل الخطة الدراسية لهذا الأسبوع، ويستمتع أبناؤنا بعده بأسبوع من الراحة؛ فلنحرص على أن يُتمّوا أسبوعهم بجدٍّ وانضباط.\nولهذا نشدّد ونؤكد أهمية الحضور غدًا، كما عهدناكم شركاء وداعمين لنا؛ فلا نرضى أن تضيع ثمرة جهودنا وجهودكم بغياب غير مقبول ولا مبرر، والإجازة على الأبواب.\nننتظر طلابنا غدًا الخميس، وتقديرًا للمنضبطين، نعدهم بالتجاوز عن غياب يوم واحد من مجموع غياباتهم السابقة، وفق ما تسمح به الأنظمة.\n⚠️ سيُحتسب غياب غدٍ الخميس ويُرصد، ويمكنكم مراجعة سجل الطالب عبر موقع المدرسة.\n\nإدارة ${SP.name}` };
 const ualLocal = d => { const p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
 const ualActive = (a, aud, now = ualLocal(new Date())) => a && a.on && a.text && (!aud || (a.aud && a.aud[aud])) && (!a.from || a.from <= now) && (!a.to || a.to >= now);
 // صوت صفارة إنذار / جرس — Web Audio (المتصفحات تمنع الصوت قبل أول لمسة، فيبدأ عند أول لمسة إن مُنع)
@@ -52429,6 +52566,7 @@ try { pamViewInit(); } catch {}
 
 export default function SchoolWebsite(props) {
   const [hok, setHok] = useState(false);
+  useEffect(() => { spSync(maGet); }, []);
   useEffect(() => { let d = false; const done = () => { if (!d) { d = true; setHok(true); } }; Promise.all([maHolXLoad(), hdRemLoad()]).finally(done); const t = setTimeout(done, 2500); return () => clearTimeout(t); }, []);
   if (!hok) return <div dir="rtl" style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#f0fdfa,#ecfdf5 50%,#f5f5f4)", fontFamily: "Cairo,Tahoma,sans-serif" }}><div style={{ textAlign: "center", fontWeight: 900, color: "#0f766e" }}><div style={{ fontSize: 54 }}>🏫</div>جارٍ التحميل…</div></div>;
   return <><PamSafe><PamGuard /></PamSafe><SiteErrorBoundary where="الموقع"><SchoolWebsiteInner {...props} /></SiteErrorBoundary></>;
@@ -52523,8 +52661,8 @@ function PamSplash({ name }) {
     <div className="bx" onClick={e => e.stopPropagation()}>
       <div className="lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div>
       <div className="gr">{pamGreet()}{first ? `، أ. ${first}` : ""} 👋</div>
-      <h1>أهلاً بك في <span>بوابة مدرسة الأمير عبدالمجيد</span></h1>
-      <div className="sc">المتوسطة الأولى • الإدارة العامة للتعليم بمحافظة جدة</div>
+      <h1>أهلاً بك في <span>بوابة {SP.short}</span></h1>
+      <div className="sc">{SP.sub ? `${SP.sub} • ` : ""}{SP.region}</div>
       <div className="qt">✨ {q.current}</div>
       <div className="dt">{maDay(D)} • {asmHij(D)} • {maGreg(D)}</div>
       <button className="go" onClick={close} autoFocus>ابدأ يومك ←</button>
@@ -52568,6 +52706,7 @@ const PS2_CSS = `
 .pside-it .cv{font-size:12px;opacity:.8;transition:transform .25s}.pside-it.open .cv{transform:rotate(-90deg)}
 .pside.mini .pside-it{justify-content:center;padding:8px 4px}.pside.mini .pside-it b,.pside.mini .pside-it small,.pside.mini .pside-it .cv{display:none}
 .pside-cmd{background:linear-gradient(135deg,rgba(201,162,39,.28),rgba(201,162,39,.08))!important;box-shadow:inset 0 0 0 1.5px rgba(201,162,39,.75);margin:4px 0}.pside-cmd b{color:#fde68a}.pside-new{background:#c9a227;color:#0b2545!important;border-radius:99px;padding:1px 8px;font-weight:900;font-size:10.5px;opacity:1!important}
+.pside-tl{position:relative}.pside-star{position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:15px;line-height:1;color:rgba(255,255,255,.55);padding:3px 5px;border-radius:8px;background:rgba(0,0,0,.18);opacity:0;transition:opacity .15s;cursor:pointer}.pside-tl:hover .pside-star,.pside-star.on{opacity:1}.pside-star.on{color:#fde68a}@media(hover:none){.pside-star{opacity:.7}}.pside-fav{margin:6px 0 8px;padding:6px;border-radius:14px;background:rgba(201,162,39,.12);box-shadow:inset 0 0 0 1px rgba(201,162,39,.4)}.pside-fav-h{font-size:12.5px;font-weight:900;color:#fde68a;padding:2px 6px 4px}
 .pside-sub{overflow:hidden;display:grid;gap:2px;padding:4px 6px 6px 0;margin-inline-start:24px;border-inline-start:2px solid rgba(255,255,255,.15);animation:psideDown .28s cubic-bezier(.2,1.2,.3,1)}
 @keyframes psideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .pside-tl{display:flex;align-items:center;gap:9px;border:none;background:transparent;color:#fff;cursor:pointer;font-family:inherit;text-align:right;padding:6px 10px;border-radius:13px;font-size:14px;font-weight:800;transition:background .15s,transform .15s;animation:psideIn .3s both}
@@ -52582,7 +52721,7 @@ const PS2_CSS = `
 @media (prefers-reduced-motion:reduce){.pside,.pside-sub,.pside-tl{animation:none!important;transition:none!important}}
 `;
 const PS2_COL = [["#0d9488", "#5eead4"], ["#2563eb", "#93c5fd"], ["#7c3aed", "#c4b5fd"], ["#db2777", "#f9a8d4"], ["#ea580c", "#fdba74"], ["#ca8a04", "#fde047"], ["#16a34a", "#86efac"], ["#0891b2", "#67e8f9"]];
-function PamSide({ groups, pageById, page, navigate, onLogout }) {
+function PamSide({ groups, pageById, page, navigate, onLogout, favs = [], isFav, onFav, onCustomize, cmdOff }) {
   const [mini, setMini] = useState(() => { try { return localStorage.getItem("pside-mini") === "1"; } catch { return false; } });
   const cur = groups.findIndex(g => g.ids.includes(page));
   const [open, setOpen] = useState(cur);
@@ -52591,13 +52730,14 @@ function PamSide({ groups, pageById, page, navigate, onLogout }) {
   const tgl = () => { const v = !mini; setMini(v); try { localStorage.setItem("pside-mini", v ? "1" : "0"); } catch {} };
   const ql = q.trim() ? groups.flatMap((g, gi) => g.ids.map(id => ({ id, gi, p: pageById[id] }))).filter(x => x.p && (cvNorm(x.p.label).includes(cvNorm(q)))).filter((x, i, A) => A.findIndex(y => y.id === x.id) === i) : null;
   const col = gi => { const g = groups[gi]; const c = g.color || PS2_COL[gi % PS2_COL.length][0]; const c2 = PS2_COL[gi % PS2_COL.length][1]; return { "--a": c, "--b": c2, "--d": hubShade(c, -0.35) }; };
-  const tool = (id, gi, k) => { const p = pageById[id]; if (!p) return null; const [mc, mc2] = hubMc(id); return <button key={id} className={`pside-tl ${page === id ? "on" : ""}`} style={{ "--a": mc, "--b": mc2, animationDelay: `${Math.min(k, 14) * 22}ms` }} onClick={() => navigate(id)} title={p.label}><span className="e">{p.icon}</span><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.label}</span></button>; };
+  const tool = (id, gi, k) => { const p = pageById[id]; if (!p) return null; const [mc, mc2] = hubMc(id); return <button key={id} className={`pside-tl ${page === id ? "on" : ""}`} style={{ "--a": mc, "--b": mc2, animationDelay: `${Math.min(k, 14) * 22}ms` }} onClick={() => navigate(id)} title={p.label}><span className="e">{p.icon}</span><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.label}</span>{onFav && <span role="button" tabIndex={0} className={"pside-star" + (isFav && isFav(id) ? " on" : "")} title={isFav && isFav(id) ? "إزالة من المفضلة" : "إضافة إلى المفضلة"} onClick={e => { e.stopPropagation(); onFav(id); }} onKeyDown={e => { if (e.key === "Enter") { e.stopPropagation(); onFav(id); } }}>{isFav && isFav(id) ? "★" : "☆"}</span>}</button>; };
   return <aside className={`pside ${mini ? "mini" : ""}`} dir="rtl" aria-label="أقسام الموقع">
-    <div className="pside-h"><div className="lg"><img src={SCHOOL_LOGO} alt="" /></div><b>إدارة المدرسة</b><small>مدرسة الأمير عبدالمجيد<br />المتوسطة الأولى</small></div>
+    <div className="pside-h"><div className="lg"><img src={SCHOOL_LOGO} alt="" /></div><b>إدارة المدرسة</b><small>{SP.name}</small></div>
     <label className="pside-q"><span>🔎</span><input value={q} onChange={e => setQ(e.target.value)} placeholder="ابحث عن أداة…" /></label>
     <div className="pside-b">
       <button className={`pside-it ${page === "home" ? "on" : ""}`} onClick={() => navigate("home")} title="لوحة القيادة"><span className="pside-eg" style={{ "--a": "#d97706", "--b": "#fde68a", "--d": "#92400e" }}><i>🏠</i></span><b>لوحة القيادة</b></button>
-      <button className={`pside-it pside-cmd ${page === "command" ? "on" : ""}`} onClick={() => navigate("command")} title="مركز القيادة والإنذار المبكر"><span className="pside-eg" style={{ "--a": "#c9a227", "--b": "#fde68a", "--d": "#0b2545" }}><i>🧭</i></span><b>مركز القيادة والإنذار المبكر</b><small className="pside-new">جديد</small></button>
+      {!cmdOff && <button className={`pside-it pside-cmd ${page === "command" ? "on" : ""}`} onClick={() => navigate("command")} title="مركز القيادة والإنذار المبكر"><span className="pside-eg" style={{ "--a": "#c9a227", "--b": "#fde68a", "--d": "#0b2545" }}><i>🧭</i></span><b>مركز القيادة والإنذار المبكر</b><small className="pside-new">جديد</small></button>}
+      {favs.length > 0 && !mini && !q.trim() && <div className="pside-fav"><div className="pside-fav-h">⭐ المفضلة</div>{favs.map(f => <button key={f.id} className={`pside-tl ${page === f.id ? "on" : ""}`} style={{ "--a": f.c, "--b": "#fde68a" }} onClick={() => navigate(f.id)} title={f.label}><span className="e">{f.ic}</span><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.label}</span></button>)}</div>}
       {ql ? <div className="pside-sub" style={{ marginInlineStart: 6 }}>{ql.length ? ql.map((x, k) => tool(x.id, x.gi, k)) : <div style={{ fontSize: 13, opacity: .75, padding: 8 }}>لا نتائج</div>}</div>
         : groups.map((g, gi) => { const on = open === gi; const has = g.ids.includes(page); return <div key={gi}>
           <button className={`pside-it ${on ? "open" : ""}`} style={has && !on ? { boxShadow: "inset 0 0 0 1.5px rgba(253,230,138,.6)" } : null} onClick={() => { if (mini) { setMini(false); try { localStorage.setItem("pside-mini", "0"); } catch {} setOpen(gi); return; } setOpen(on ? -1 : gi); }} aria-expanded={on} title={g.title}>
@@ -52605,7 +52745,7 @@ function PamSide({ groups, pageById, page, navigate, onLogout }) {
           {on && !mini && <div className="pside-sub">{g.ids.map((id, k) => tool(id, gi, k))}</div>}
         </div>; })}
     </div>
-    <div className="pside-f"><button onClick={tgl} title={mini ? "توسيع القائمة" : "تصغير القائمة"}>{mini ? "⟨⟨" : "⟩⟩"}<span className="lbl">{mini ? "" : " تصغير"}</span></button>{onLogout && <button onClick={onLogout} title="تسجيل الخروج">🚪<span className="lbl"> خروج</span></button>}</div>
+    <div className="pside-f">{onCustomize && <button onClick={onCustomize} title="تخصيص القائمة: إخفاء وإظهار الأدوات">✏️<span className="lbl"> تخصيص</span></button>}<button onClick={tgl} title={mini ? "توسيع القائمة" : "تصغير القائمة"}>{mini ? "⟨⟨" : "⟩⟩"}<span className="lbl">{mini ? "" : " تصغير"}</span></button>{onLogout && <button onClick={onLogout} title="تسجيل الخروج">🚪<span className="lbl"> خروج</span></button>}</div>
   </aside>;
 }
 
@@ -52711,7 +52851,7 @@ function LeadDash({ navigate, clock, dayName, hijri, greg, greet, attendRate, to
     <HdUpReminder onGo={() => { try { localStorage.setItem("hd-tab", "up"); } catch {} navigate("hdisc"); }} />
     <RetentionAlert />
     <div className="ld-hd">
-      <div className="ld-id"><div className="ld-lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div><div style={{ flex: "1 1 240px", minWidth: 0 }}><h2>مدرسة <span>الأمير عبدالمجيد</span> المتوسطة الأولى</h2><div className="sl">وزارة التعليم — الإدارة العامة للتعليم بمحافظة جدة</div><div className="ld-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 بناء جيل متميز لوطن طموح</b></div><PamQuote /></div></div>
+      <div className="ld-id"><div className="ld-lg"><img src={SCHOOL_LOGO} alt="شعار المدرسة" /></div><div style={{ flex: "1 1 240px", minWidth: 0 }}><h2>{/^مدرسة\s/.test(SP.name) ? <>مدرسة <span>{SP.name.replace(/^مدرسة\s+/, "")}</span></> : SP.name}</h2><div className="sl">وزارة التعليم — {SP.region}</div><div className="ld-tags"><b>📘 تعليم</b><b>🏆 تميّز</b><b>🤝 انتماء</b><b>🌱 بناء جيل متميز لوطن طموح</b></div><PamQuote /></div></div>
       <div className="ld-gl"><div className="ld-clk"><span className="ld-eg" style={ldEgg("#f59e0b", "#fde68a")}><i>🕰️</i></span><div><div className="t">{clock}</div><div className="d">{dayName} • {hijri}<br />الموافق {greg}</div></div></div></div>
       <div className="ld-st">{[["hdisc", tRate == null ? "—" : `${maAr(tRate)}٪`, "حضور المعلمين (حضوري)", "📈", "#10b981", "#6ee7b7"], ["attendstats", S ? maAr(S.total) : "—", "طالباً حسب الرصد اليومي", "🎓", "#3b82f6", "#93c5fd"], ["messages", maAr(unreadMsgs), "رسالة جديدة", "✉️", "#ec4899", "#f9a8d4"]].map(([id, v, l, ic, a, b]) => <button key={id} className="ld-sb" onClick={() => navigate(id)}><span className="ld-eg" style={ldEgg(a, b)}><i>{ic}</i></span><span><b>{v}</b><small>{l}</small></span></button>)}</div>
     </div>
@@ -52761,6 +52901,12 @@ function SchoolWebsiteInner() {
   const [excusePortal,        setExcusePortal]        = useState(false);
   const [absenceAdminPortal,  setAbsenceAdminPortal]  = useState(false);
   const [page, setPage] = useState("home");
+  // ⭐ تخصيص حساب الإدارة: صفحات مخفية للدور (إعدادات المدرسة) + مفضلة وإخفاء لكل حساب + دليل أول دخول
+  const admUi = usePrefs({ maGet, maPut }, user ? "adm_" + (user.username || user.name || "") : null);
+  const admOff = (user && SP.adminOff && SP.adminOff[user.role]) || {};
+  const [admCust, setAdmCust] = useState(false); const [admTour, setAdmTour] = useState(false);
+  useEffect(() => { if (user && admUi.ok && !admUi.tour) setAdmTour(true); }, [user && user.username, admUi.ok]);
+  useEffect(() => { if (user && admOff[page]) { setPage("home"); try { window.location.hash = "home"; } catch {} } }, [page, user]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("school-view-mode") || (typeof window !== "undefined" && window.innerWidth < 700 ? "mobile" : "desktop"));
@@ -52794,8 +52940,8 @@ function SchoolWebsiteInner() {
   const [clsPortal, setClsPortal] = useState(() => window.location.hash.replace("#", "") === "classify");
   // رابط مباشر لخدمة داخل البوابة (من الإشعارات): ‎#teacher:circd‎ أو ‎#staff:mytasks‎
   const [hubView, setHubView] = useState(() => { const h = window.location.hash.replace("#", ""); const m = h.match(/^(teacher|staff):(\w+)$/); return m ? m[2] : null; });
-  useEffect(() => { const f = () => { const h = window.location.hash.replace("#", ""); const m = h.match(/^(teacher|staff)(?::(\w+))?$/); if (m) { setHubPortal(m[1]); setHubView(m[2] || null); } else if (h === "marji" || h === "qiraa") setHubPortal(h); }; window.addEventListener("hashchange", f); return () => window.removeEventListener("hashchange", f); }, []);
-  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", "").replace(/^(teacher|staff):\w+$/, "$1"); return ["teacher", "staff", "parent", "weekly", "late", "visits", "duty", "nafes", "treasure", "rwt", "marji", "qiraa"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
+  useEffect(() => { const f = () => { const h = window.location.hash.replace("#", ""); const m = h.match(/^(teacher|staff)(?::(\w+))?$/); if (m) { setHubPortal(m[1]); setHubView(m[2] || null); } else if (h === "marji" || h === "qiraa" || h === "zyara") setHubPortal(h); }; window.addEventListener("hashchange", f); return () => window.removeEventListener("hashchange", f); }, []);
+  const [hubPortal, setHubPortal] = useState(() => { const h = window.location.hash.replace("#", "").replace(/^(teacher|staff):\w+$/, "$1"); return ["teacher", "staff", "parent", "weekly", "late", "visits", "duty", "nafes", "treasure", "rwt", "marji", "zyara", "qiraa"].includes(h) ? h : /^termplan(-[\w]+)?$/.test(h) ? h : ""; });
   const [directAnnId, setDirectAnnId] = useState(() => {
     const h = window.location.hash.replace("#","");
     return h.startsWith("ann-") ? h.replace("ann-","") : null;
@@ -52839,7 +52985,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","command","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -53113,7 +53259,7 @@ function SchoolWebsiteInner() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 50%, #f5f5f4 100%)" }}>
       <div className="text-center">
         <div className="text-6xl mb-4 animate-bounce">🏫</div>
-        <h2 className="text-xl font-black text-teal-800 mb-2">مدرسة الأمير عبدالمجيد المتوسطة الأولى</h2>
+        <h2 className="text-xl font-black text-teal-800 mb-2">{SP.name}</h2>
         <p className="text-gray-400 text-sm">جاري تحميل البيانات…</p>
       </div>
     </div>
@@ -53131,6 +53277,7 @@ function SchoolWebsiteInner() {
   if (hubPortal === "nafes") return <NafesPublic onBack={hubBack} />;
   if (hubPortal === "treasure") return <React.Suspense fallback={TR_WAIT}><TreasurePublic onBack={hubBack} api={trApi()} /></React.Suspense>;
   if (hubPortal === "marji") return <React.Suspense fallback={NB_WAIT}><NafsBooksStudent onBack={hubBack} api={trApi()} /></React.Suspense>;
+  if (hubPortal === "zyara") return <React.Suspense fallback={LF_WAIT}><LfZyStudent onBack={hubBack} api={lifeApi("")} /></React.Suspense>;
   if (hubPortal === "qiraa") return <React.Suspense fallback={RD_WAIT}><ReadingStudent onBack={hubBack} api={rdApi()} /></React.Suspense>;
   if (hubPortal.startsWith("termplan")) return <TermPlanPublic onBack={hubBack} id={hubPortal.slice(9)} />;
   if (hubPortal === "parent") return <><UrgentAlert aud="parent" /><GuardianPortal onBack={hubBack} /></>;
@@ -53162,6 +53309,11 @@ function SchoolWebsiteInner() {
     { id: "absaction",       label: "إجراءات معالجة الغياب", icon: "📂" },
     { id: "absref",          label: "الطلاب الغائبون والإحالة للموجه", icon: "🚫" },
     { id: "command",         label: "مركز القيادة والإنذار المبكر", icon: "🧭" },
+    { id: "datahealth",      label: "صحة البيانات", icon: "🩺" },
+    { id: "initiatives",     label: "مبادرات المدرسة", icon: "🚀" },
+    { id: "stumeet",         label: "اللقاءات الطلابية", icon: "🤝" },
+    { id: "stuvisits",       label: "زيارات الطلاب", icon: "👣" },
+    { id: "schoolsetup",     label: "إعدادات المدرسة", icon: "🏫" },
     { id: "pulse",           label: "مؤشر أداء المدرسة الأسبوعي", icon: "📈" },
     { id: "students",        label: "تقييم الطلاب",  icon: "🎓" },
     { id: "announcements", label: "الإعلانات",       icon: "📣" },
@@ -53268,18 +53420,30 @@ function SchoolWebsiteInner() {
   ];
   const extraPages = [...classToolPages, ...reportPages];
   const pageById = Object.fromEntries([...pages, ...classToolPages, ...reportPages].map(p => [p.id, p]));
-  const navGroups = [
+  const navGroupsAll = [
     { title:"الحضور والدوام", icon:"🗓️", color:"#0d9488", ids:["liveops","holidays","morningboard","morningattend","morninglate","asmfollow","admtasks","duty","periodfollow","periodnotes","attendance","staffdisc","student-absence","absaction","studentexcuses"] },
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["command","pulse","period","quran","stusearch","notices","ualerts","readlab","gradebook","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
-    { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","ttnow","trash","audit","settings"] },
+    { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["initiatives","stumeet","stuvisits","activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
   ];
+  const navGroups = navGroupsAll.map(g => ({ ...g, ids: g.ids.filter(id => !admOff[id] && !admUi.hide.includes(id)) }));
+  const admFavItems = admUi.fav.filter(id => pageById[id] && !admOff[id] && !admUi.hide.includes(id)).map(id => { const g = navGroupsAll.find(x => x.ids.includes(id)); return { id, ic: pageById[id].icon, label: pageById[id].label, c: g ? g.color : "#0b2545" }; });
+  const admGroupsC = navGroupsAll.map(g => ({ title: g.title, icon: g.icon, items: g.ids.filter(id => pageById[id] && !admOff[id]).map(id => ({ id, ic: pageById[id].icon, label: pageById[id].label, locked: id === "settings" || id === "schoolsetup" })) })).filter(g => g.items.length);
+  const ADM_PICK = { "مدير": ["command", "datahealth", "morningattend", "gradebook", "circulars", "schoolsetup"], "وكيل": ["morningattend", "morninglate", "absaction", "behavior", "command", "datahealth"] };
+  const admOverlays = <>{admTour && <Tour name={user && user.name} roleLbl={user && user.role} onDone={() => { setAdmTour(false); if (!admUi.tour) admUi.doneTour(); }} onPick={it => navigate(it.id)}
+      picks={(ADM_PICK[user && user.role] || ADM_PICK["مدير"]).filter(id => pageById[id] && !admOff[id]).map(id => ({ id, ic: pageById[id].icon, label: pageById[id].label }))}
+      steps={[{ ic: "🏫", t: "لوحة إدارة المدرسة", d: "القائمة الجانبية تجمع أقسام الموقع في ست مجموعات: الحضور، والطلاب، والمعلمون، والتواصل، والأنشطة، والتقارير. ابحث عن أي أداة باسمها من خانة البحث أعلاها." },
+        { ic: "⭐", t: "المفضلة", d: "اضغط النجمة ☆ بجانب أي أداة في القائمة لتظهر في «المفضلة» أعلى القائمة وفي الصفحة الرئيسية." },
+        { ic: "✏️", t: "قائمتك كما تريدها", d: "من «✏️ تخصيص القائمة» أخفِ الأدوات التي لا تستعملها. ومن «إعدادات المدرسة» يحدد المدير ما يظهر لكل دور، ويضبط هوية المدرسة وفصولها وحصصها." },
+        { ic: "🩺", t: "اطمئن على دقة البيانات", d: "«صحة البيانات» تكشف الفصول التي لم ترصد، والطلاب المكررين أو بلا هوية، والدرجات الخاطئة، والأقسام المتوقفة، فتبقى التقارير دقيقة." }]} />}
+    {admCust && <Customize title="تخصيص القائمة" prefs={admUi} groups={admGroupsC} onClose={() => setAdmCust(false)} note="أخفِ الأدوات التي لا تستعملها في حسابك لتبقى القائمة قصيرة، وميّز بالنجمة ما تستعمله كثيرًا. لا يُحذف شيء، والمخفي يبقى قابلًا للبحث." />}</>;
 
   return (
     <>
     {!user && <UrgentAlert aud="home" />}
+    {user && admOverlays}
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
       .nav-pill-main {
@@ -53480,7 +53644,7 @@ function SchoolWebsiteInner() {
         {/* اسم المدرسة مختصر */}
         <div style={{ color:"#94a3b8", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
           <span style={{ color:"#2dd4bf" }}>🏫</span>
-          <span>مدرسة الأمير عبدالمجيد — بوابة الإدارة</span>
+          <span>{SP.short} — بوابة الإدارة</span>
         </div>
         {/* مفتاح الوضع */}
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -53541,7 +53705,7 @@ function SchoolWebsiteInner() {
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:30, height:30, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🏫</div>
                 <div>
-                  <div style={{ color:"#fff", fontWeight:900, fontSize:12.5, lineHeight:1.1 }}>مدرسة الأمير عبدالمجيد</div>
+                  <div style={{ color:"#fff", fontWeight:900, fontSize:12.5, lineHeight:1.1 }}>{SP.short}</div>
                   <div style={{ color:"rgba(255,255,255,0.7)", fontSize:9, fontWeight:600 }}>المتوسطة • ١٤٤٧ هـ</div>
                 </div>
               </div>
@@ -53560,8 +53724,8 @@ function SchoolWebsiteInner() {
             <div ref={mScrollRef} style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", overscrollBehavior:"contain", background:"#f8fafc" }}>
               <div style={{ direction:"rtl", padding: narrow ? "6px 8px 14px" : 0 }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
                 <HolTodayStrip navigate={navigate} />
-                {page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
-                {page === "student-absence" && <StudentAbsencePage />}{page === "absaction" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: user?.name || "الإدارة" }} api={absApi()} /></React.Suspense></div>}{page === "pulse" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolPulse api={pulseApi()} /></React.Suspense></div>}{page === "command" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Command me={{ name: user?.name || "الإدارة" }} api={cmdApi("absaction")} /></React.Suspense></div>}
+                {page === "home" && <FavBar items={admFavItems} onOpen={it => navigate(it.id)} onEdit={() => setAdmCust(true)} onTour={() => setAdmTour(true)} />}{page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
+                {page === "student-absence" && <StudentAbsencePage />}{page === "absaction" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: user?.name || "الإدارة" }} api={absApi()} /></React.Suspense></div>}{page === "pulse" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolPulse api={pulseApi()} /></React.Suspense></div>}{page === "command" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Command me={{ name: user?.name || "الإدارة" }} api={cmdApi("absaction")} /></React.Suspense></div>}{page === "initiatives" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfInitiatives api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "stumeet" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfMeetings api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "stuvisits" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfZyStaff api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "datahealth" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><DataHealth me={{ name: user?.name || "الإدارة" }} api={dhApi(navigate)} /></React.Suspense></div>}{page === "schoolsetup" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolSetup me={{ name: user?.name || "الإدارة" }} api={ssApi()} tiles={PT_TILE_LIST} pages={pages} groups={navGroupsAll} PermsPanel={StaffPermsPanel} /></React.Suspense></div>}
                 {page === "admin-attendance"&& <AdminAttendancePage />}
                 {page === "attendance"     && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
                 {page === "formative"      && <FormativeGradebookPage classList={classList} />}
@@ -53698,8 +53862,8 @@ function SchoolWebsiteInner() {
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("home")}>
               <SchoolLogo size="sm" animate={false} />
               <div>
-                <h1 className="font-black" style={{fontSize:"19px",letterSpacing:"-0.3px",background:"linear-gradient(90deg,#0f766e,#1e3a8a)",WebkitBackgroundClip:"text",backgroundClip:"text",color:"transparent"}}>مدرسة الأمير عبدالمجيد</h1>
-                <p className="text-gray-500 font-bold" style={{fontSize:"12.5px"}}>المتوسطة الأولى — {(() => { try { return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", { year: "numeric" }).format(new Date()); } catch { return "١٤٤٨ هـ"; } })()}</p>
+                <h1 className="font-black" style={{fontSize:"19px",letterSpacing:"-0.3px",background:"linear-gradient(90deg,#0f766e,#1e3a8a)",WebkitBackgroundClip:"text",backgroundClip:"text",color:"transparent"}}>{SP.short}</h1>
+                <p className="text-gray-500 font-bold" style={{fontSize:"12.5px"}}>{SP.sub ? `${SP.sub} — ` : ""}{(() => { try { return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", { year: "numeric" }).format(new Date()); } catch { return "١٤٤٨ هـ"; } })()}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -53752,11 +53916,11 @@ function SchoolWebsiteInner() {
         </div>
       </nav>
       {page !== "parentinbox" && <div className="px-3 pt-3" style={{ maxWidth: 1400, margin: "0 auto" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /><TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} navigate("hdisc"); }} onHfx={() => navigate("hfx")} onCv={() => { try { localStorage.setItem("cv-tab", "tfile"); } catch {} navigate("classvisits"); }} /></div>}
-      <div className="pam-row"><PamSide groups={navGroups} pageById={pageById} page={page} navigate={navigate} onLogout={() => setUser(null)} />
+      <div className="pam-row"><PamSide groups={navGroups} pageById={pageById} page={page} navigate={navigate} onLogout={() => setUser(null)} favs={admFavItems} isFav={id => admUi.fav.includes(id)} onFav={admUi.togFav} onCustomize={() => setAdmCust(true)} cmdOff={!!admOff.command} />
       <main className="w-full py-3 pam-main"><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
         <HolTodayStrip navigate={navigate} />
-        {page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
-        {page === "student-absence" && <StudentAbsencePage />}{page === "absaction" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: user?.name || "الإدارة" }} api={absApi()} /></React.Suspense></div>}{page === "pulse" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolPulse api={pulseApi()} /></React.Suspense></div>}{page === "command" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Command me={{ name: user?.name || "الإدارة" }} api={cmdApi("absaction")} /></React.Suspense></div>}
+        {page === "home" && <FavBar items={admFavItems} onOpen={it => navigate(it.id)} onEdit={() => setAdmCust(true)} onTour={() => setAdmTour(true)} />}{page === "home"          && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
+        {page === "student-absence" && <StudentAbsencePage />}{page === "absaction" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: user?.name || "الإدارة" }} api={absApi()} /></React.Suspense></div>}{page === "pulse" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolPulse api={pulseApi()} /></React.Suspense></div>}{page === "command" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Command me={{ name: user?.name || "الإدارة" }} api={cmdApi("absaction")} /></React.Suspense></div>}{page === "initiatives" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfInitiatives api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "stumeet" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfMeetings api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "stuvisits" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfZyStaff api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "datahealth" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><DataHealth me={{ name: user?.name || "الإدارة" }} api={dhApi(navigate)} /></React.Suspense></div>}{page === "schoolsetup" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolSetup me={{ name: user?.name || "الإدارة" }} api={ssApi()} tiles={PT_TILE_LIST} pages={pages} groups={navGroupsAll} PermsPanel={StaffPermsPanel} /></React.Suspense></div>}
         {page === "admin-attendance" && <AdminAttendancePage />}
         {page === "attendance"    && <AttendancePage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} attendance={attendance} setAttendance={setAttendance} saveAttendance={saveAttendance} navigate={navigate} weekArchive={weekArchive} setWeekArchive={setWeekArchive} saveWeekArchive={saveWeekArchive} />}
         {page === "formative"     && <FormativeGradebookPage classList={classList} />}
@@ -53825,7 +53989,7 @@ function SchoolWebsiteInner() {
       </SiteErrorBoundary></main></div>
       <footer className="relative text-center py-6 text-xs border-t bg-white mt-8 overflow-hidden" style={{borderColor:"rgba(13,148,136,.15)"}}>
         <div className="absolute inset-0 opacity-5" style={{background:"linear-gradient(135deg,#0d9488,transparent)"}} />
-        <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">مدرسة الأمير عبدالمجيد المتوسطة الأولى — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
+        <div className="relative flex items-center justify-center gap-4 flex-wrap"><p className="text-teal-700 font-bold opacity-60">{SP.name} — بوابة الإدارة المدرسية الإلكترونية</p><VisitorCounter /></div>
         <p className="relative text-gray-400 mt-1">© ١٤٤٧ هـ — جميع الحقوق محفوظة</p>
       </footer>
       </>
