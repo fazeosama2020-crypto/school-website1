@@ -31,13 +31,34 @@ const ReadingStudent = React.lazy(() => import("./reading/ReadingLab.jsx").then(
 const ReadingTeacher = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingTeacher })));
 const ReadingAdmin = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingAdmin })));
 function SmartTimetableFrame() {
+  const ref = React.useRef(null);
+  const [msg, setMsg] = React.useState("");
+  React.useEffect(() => {
+    const reply = (ok, m) => { setMsg(m); try { ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-published", ok, msg: m }, window.location.origin); } catch (e) {} };
+    const h = async e => {
+      if (e.origin !== window.location.origin) return;
+      const d = e.data || {};
+      if (d.type !== "smarttt-publish" || !d.tt || !d.tt.C || !d.tt.RS) return;
+      if (!window.confirm("سيُعتمد هذا الجدول في الموقع: الشاشة الرئيسية والحصص الآن وجداول المعلمين والاحتياط، ويُحفظ الجدول الحالي نسخةً احتياطية. متابعة؟")) { reply(false, "أُلغي النشر."); return; }
+      try {
+        const [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]);
+        await maPut(TT_OLD, { tt: a || null, cfg: c || null, at: Date.now() });
+        const ok = await maPut(TT_NODE, { ...d.tt, at: Date.now(), by: "الجدول المدرسي الذكي" });
+        if (ok && d.tt.times) await maPut(TT_CFG, { ...(c && typeof c === "object" ? c : {}), times: d.tt.times });
+        reply(!!ok, ok ? "✅ نُشر الجدول في الموقع، والقديم محفوظ نسخةً احتياطية." : "⚠️ تعذّر حفظ الجدول في الموقع.");
+      } catch (er) { reply(false, "⚠️ تعذّر حفظ الجدول في الموقع."); }
+    };
+    window.addEventListener("message", h);
+    return () => window.removeEventListener("message", h);
+  }, []);
   return (
     <div className="px-2 md:px-6 py-4" dir="rtl">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
         <b style={{ fontSize: 18 }}>🧠 الجدول المدرسي الذكي</b>
+        {msg && <span style={{ fontWeight: 700 }}>{msg}</span>}
         <a href="/timetable.html" target="_blank" rel="noopener" style={{ padding: "8px 14px", borderRadius: 8, background: "#0d2547", color: "#fff", textDecoration: "none", fontWeight: 700 }}>فتح في صفحة كاملة</a>
       </div>
-      <iframe src="/timetable.html" title="الجدول المدرسي الذكي" style={{ width: "100%", height: "calc(100vh - 150px)", minHeight: 600, border: "1px solid #dfe3ea", borderRadius: 12, background: "#fff" }} />
+      <iframe ref={ref} src="/timetable.html" title="الجدول المدرسي الذكي" style={{ width: "100%", height: "calc(100vh - 150px)", minHeight: 600, border: "1px solid #dfe3ea", borderRadius: 12, background: "#fff" }} />
     </div>
   );
 }
