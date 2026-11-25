@@ -51,11 +51,11 @@ async function loadAll(api, cfg, onStep) {
   const t = dkey(new Date()); const f = cfg.per === "year" ? yearStart() : dkey(new Date(Date.now() - (+cfg.per || 30) * 864e5));
   onStep("الحضور والسلوك"); const D = await api.inLoad(f, t); const IR = api.inCompute(D);
   onStep("الدرجات والقراءة ونافس");
-  const [gr, rdT, rdR, nqE, nqR, pre, qr, aa, aaCfg, yr, iv, notes, snaps] = await Promise.all([
+  const [gr, rdT, rdR, nqE, nqR, pre, qr, aa, aaCfg, yr, iv, notes, snaps, grAll, pfIx] = await Promise.all([
     api.maGet("school-grades-stu"), api.maGet("school-rd-txt"), api.maGet("school-rd-res"), api.maGet("school-nq-ex"), api.maGet("school-nq-res"),
     api.maGet("school-nafsbook-pre"), api.maGet("school-nafsbook-qr"), api.maGet("school-absact"), api.maGet("school-absact-cfg"),
-    api.absData(yearStart(), t).catch(() => ({ list: [] })), api.maGet(N.IV), api.maGet(N.NOTE), api.maGet(N.SNAP)]);
-  return { f, t, D, IR, gr: obj(gr), rdT: arr(rdT), rdR: obj(rdR), nqE: arr(nqE), nqR: obj(nqR), pre: obj(pre), qr: obj(qr), aa: obj(aa), aaCfg: obj(aaCfg), yr: arr(yr && yr.list), iv: arr(iv).sort((a, b) => (b.at || 0) - (a.at || 0)), notes: obj(notes), snaps: obj(snaps) };
+    api.absData(yearStart(), t).catch(() => ({ list: [] })), api.maGet(N.IV), api.maGet(N.NOTE), api.maGet(N.SNAP), api.maGet("school-grades"), api.maGet("school-pf-ix")]);
+  return { grAll: obj(grAll), pfIx: obj(pfIx), f, t, D, IR, gr: obj(gr), rdT: arr(rdT), rdR: obj(rdR), nqE: arr(nqE), nqR: obj(nqR), pre: obj(pre), qr: obj(qr), aa: obj(aa), aaCfg: obj(aaCfg), yr: arr(yr && yr.list), iv: arr(iv).sort((a, b) => (b.at || 0) - (a.at || 0)), notes: obj(notes), snaps: obj(snaps) };
 }
 
 const AA = [["msg", "📩", "رسائل التنبيه", 3], ["call", "📞", "استدعاء ولي الأمر", 5], ["pledge", "✍️", "التعهد", 10], ["counsel", "🧭", "الإرشاد ودراسة الحالة", 10], ["raise", "🏛️", "الرفع لإدارة التعليم", 15], ["protect", "🛡️", "الحماية الأسرية", 20]];
@@ -234,7 +234,7 @@ export function Command({ api, me = {} }) {
       <div className="cm-dist" title="توزيع الطلاب">{["r", "y", "g"].map(k => <i key={k} style={{ flex: cnt[k] || 0.0001, background: LV[k].c }} />)}</div>
     </div>
 
-    <div className="cm-tabs" role="tablist">{[["ov", "🎯 الصورة العامة"], ["list", `🚨 قائمة الإنذار (${ar(cnt.r + cnt.y)})`], ["sk", "🧩 خريطة مهارات نافس"], ["iv", `🛠️ خطط التدخل (${ar(X.iv.length)})`]].map(([k, l]) =>
+    <div className="cm-tabs" role="tablist">{[["ov", "🎯 الصورة العامة"], ["list", `🚨 قائمة الإنذار (${ar(cnt.r + cnt.y)})`], ["sk", "🧩 خريطة مهارات نافس"], ["iv", `🛠️ خطط التدخل (${ar(X.iv.length)})`], ["tch", "👥 المعلمون والنتائج"]].map(([k, l]) =>
       <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
 
     {tab === "ov" && <>
@@ -285,6 +285,7 @@ export function Command({ api, me = {} }) {
 
     {tab === "sk" && <SkillMap R={R} classes={classes} name={name} subj={subj} setSubj={setSubj} sel={skSel} setSel={setSkSel} onStu={setStu} onIv={canEdit ? newIv : null} />}
 
+    {tab === "tch" && <TeachersTab X={X} name={name} api={api} />}
     {tab === "iv" && <div className="cm-card">
       <div className="cm-flt"><h3 style={{ margin: 0, flex: 1 }}>🛠️ خطط التدخل وقياس الأثر</h3>{canEdit && <button className="cm-b gold" onClick={() => newIv("", [])}>➕ خطة تدخل جديدة</button>}</div>
       <p className="cm-muted" style={{ margin: "4px 0 10px" }}>اختر مهارة ضعيفة من «خريطة المهارات» أو طلابًا من «قائمة الإنذار» ليُنشأ التدخل بهم. يقيس المركز الأثر تلقائيًا بمقارنة إتقان المهارة (أو مؤشر الخطر) عند البدء بالوضع الآن.</p>
@@ -305,6 +306,41 @@ export function Command({ api, me = {} }) {
 }
 
 const Portal = ({ children }) => createPortal(<div className="cm-pt" dir="rtl">{children}</div>, document.body);
+// ── تحليلات نتائج الطلاب (مشتركة بين لوحة المعلم ومركز القيادة)
+const nrmA = s => String(s || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s*\(.*?\)\s*/g, " ").replace(/^ال/, "").trim();
+const sameName = (a, b) => { const x = nrmA(a).split(/\s+/).filter(Boolean), y = nrmA(b).split(/\s+/).filter(Boolean); if (!x.length || !y.length) return false; if (x.join(" ") === y.join(" ")) return true; return x[0] === y[0] && (x[x.length - 1] === y[y.length - 1] || x.slice(1).some(w => y.slice(1).includes(w))); };
+const sameSub = (a, b) => { const x = nrmA(a).replace(/^ال/, ""), y = nrmA(b).replace(/^ال/, ""); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
+const isFirst = r => r.type === "اختبار فترة" && (!r.title || !/(ثاني|الثانيه|2|٢)/.test(r.title));
+const isDiag = r => r.type === "تشخيصي";
+const avgA = L => { const a = L.filter(x => x != null && isFinite(x)); return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null; };
+function stuAgg(recs) { const S = {}; recs.forEach(r => { const mx = +r.max || 0; if (!mx) return; Object.entries(obj(r.marks)).forEach(([sid, v]) => { if (v === "غ" || v === "" || v == null || !isFinite(+v)) return; const k = r.ck + "|" + sid; const s = S[k] || (S[k] = { sid, ck: r.ck, name: obj(r.names)[sid] || sid, L: [], subj: {} }); const p = +v / mx * 100; s.L.push({ p, r }); (s.subj[r.subj] = s.subj[r.subj] || []).push(p); }); });
+  return Object.values(S).map(s => ({ ...s, avg: avgA(s.L.map(x => x.p)), low: Object.entries(s.subj).map(([k, v]) => [k, avgA(v)]).sort((a, b) => a[1] - b[1]) })); }
+
+function TeachersTab({ X, name, api }) {
+  const [ty, setTy] = useState("first");
+  const all = Object.values(X.grAll).filter(r => r && r.ck && r.marks), recs = all.filter(r => ty === "first" ? isFirst(r) : ty === "diag" ? isDiag(r) : true);
+  const lim = ty === "diag" ? 50 : 60, S = stuAgg(recs).filter(s => s.avg != null);
+  const grp = key => { const m = {}; recs.forEach(r => { const k = key(r); if (!k) return; (m[k] = m[k] || []).push(r); }); return Object.entries(m).map(([k, L]) => { const A = stuAgg(L).filter(s => s.avg != null); return { k, n: A.length, avg: avgA(A.map(s => s.avg)), w: A.filter(s => s.avg < lim).length }; }).sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999)); };
+  const BS = grp(r => r.subj), BC = grp(r => r.ck), BT = grp(r => (r.teacher || "").trim());
+  const PF = Object.values(X.pfIx).map(v => ({ name: v.name, tot: +v.tot || 0, n: obj(v.n) })), PMAX = 66, pfAll = PF.reduce((a, r) => a + r.tot, 0);
+  const Tb = ({ L, h, nm }) => <div className="cm-tw"><table className="cm-tbl"><thead><tr><th className="r">{h}</th><th>الطلاب</th><th>المتوسط</th><th>دون {ar(lim)}٪</th></tr></thead><tbody>{L.map(x => <tr key={x.k}><td className="r"><b>{nm ? nm(x.k) : x.k}</b></td><td>{ar(x.n)}</td><td><b style={{ color: perfCol(x.avg) }}>{x.avg == null ? "—" : ar(Math.round(x.avg)) + "٪"}</b></td><td style={{ color: x.w ? "#dc2626" : "#15803d", fontWeight: 800 }}>{ar(x.w)}</td></tr>)}</tbody></table></div>;
+  return <>
+    <div className="cm-card"><div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}><h3 style={{ margin: 0, flex: 1 }}>📝 نتائج الطلاب للجميع</h3>{[["first", "الفترة الأولى"], ["diag", "التشخيصي"], ["all", "كل الاختبارات"]].map(([k, l]) => <button key={k} className={"cm-b" + (ty === k ? " on" : "")} onClick={() => setTy(k)}>{l}</button>)}</div>
+      {!recs.length ? <div className="cm-empty">لا توجد درجات {ty === "first" ? "لاختبار الفترة الأولى" : ty === "diag" ? "لاختبارات تشخيصية" : ""} في «رصد الدرجات» بعد.</div> : <>
+        <div className="cm-kpis" style={{ marginTop: 10 }}><div className="cm-kpi"><b>{ar(S.length)}</b><span>طالبًا مقيَّمًا</span></div><div className="cm-kpi"><b>{ar(Math.round(avgA(S.map(s => s.avg)) || 0))}٪</b><span>متوسط المدرسة</span></div><div className="cm-kpi r"><b>{ar(S.filter(s => s.avg < lim).length)}</b><span>دون {ar(lim)}٪ (برنامج علاجي)</span></div><div className="cm-kpi g"><b>{ar(S.filter(s => s.avg >= 90).length)}</b><span>متميزون ٩٠٪ فأكثر</span></div><div className="cm-kpi"><b>{ar(X.iv.filter(v => /برنامج علاجي/.test(v.title || "")).length)}</b><span>برامج علاجية من المعلمين</span></div></div>
+        <div className="cm-grid2"><div><h3>حسب المادة</h3><Tb L={BS} h="المادة" /></div><div><h3>حسب الفصل</h3><Tb L={BC} h="الفصل" nm={name} /></div></div>
+        <h3>حسب المعلم</h3><Tb L={BT.filter(x => x.k)} h="المعلم" /></>}
+    </div>
+    <div className="cm-card" style={{ marginTop: 14 }}><h3>🏅 ملفات الأداء الوظيفي للمعلمين</h3>
+      {!PF.length ? <div className="cm-empty">لم يبدأ المعلمون رفع شواهد الأداء الوظيفي بعد.</div> : <>
+        <div className="cm-kpis"><div className="cm-kpi"><b>{ar(PF.filter(r => r.tot).length)}</b><span>معلمًا بدأ</span></div><div className="cm-kpi g"><b>{ar(PF.filter(r => r.tot >= PMAX).length)}</b><span>ملفًا مكتملًا</span></div><div className="cm-kpi"><b>{ar(pfAll)}</b><span>شاهدًا مرفوعًا</span></div><div className="cm-kpi"><b>{ar(Math.round(pfAll / (PF.length * PMAX) * 100))}٪</b><span>نسبة الإنجاز</span></div></div>
+        <div className="cm-tw"><table className="cm-tbl"><thead><tr><th className="r">المعلم</th><th>الشواهد</th><th>الإنجاز</th><th>عناصر ناقصة</th></tr></thead><tbody>{PF.sort((a, b) => a.tot - b.tot).map(r => { const miss = 11 - Object.values(r.n).filter(c => c >= 6).length, p = Math.round(r.tot / PMAX * 100); return <tr key={r.name}><td className="r"><b>{r.name}</b></td><td>{ar(r.tot)}/{ar(PMAX)}</td><td><b style={{ color: perfCol(p) }}>{ar(p)}٪</b></td><td style={{ color: miss ? "#b45309" : "#15803d", fontWeight: 800 }}>{miss ? ar(miss) : "✓"}</td></tr>; })}</tbody></table></div></>}
+      {api.go && <button className="cm-b" style={{ marginTop: 8 }} onClick={() => api.go("pfadm")}>فتح ملفات الأداء ‹</button>}
+    </div>
+    <div className="cm-card" style={{ marginTop: 14 }}><h3>🧭 مع بقية المؤشرات</h3><p className="cm-mu" style={{ margin: 0 }}>الغياب والسلوك ونافس والقراءة في «الصورة العامة» و«قائمة الإنذار» و«خريطة مهارات نافس»، ونتائج الفترة الأولى والتشخيصي تدخل أيضًا في مؤشر خطر كل طالب عبر الدرجات.</p></div>
+  </>;
+}
+
 const Shell = ({ children }) => <div className="cm" dir="rtl"><style>{CSS}</style>{children}</div>;
 const Cell = ({ v }) => v == null ? <span className="cm-muted">—</span> : <span className="cm-cell" style={{ background: perfCol(v) }}>{ar(v)}</span>;
 const Dot = ({ v }) => v == null ? <span className="cm-muted" title="لا توجد بيانات">·</span> : <i className="cm-dot" style={{ background: riskCol(v), opacity: .35 + v / 160 }} title={ar(Math.round(v))} />;
