@@ -46,6 +46,9 @@ table.g th.d{width:72px;text-align:start;color:var(--ink);font-size:14px}
 .c.t-ok{background:var(--ok);border-color:var(--okb)}.c.t-warn{background:var(--warn)}.c.t-bad{background:var(--bad);border-color:var(--badb);cursor:not-allowed}
 .c.sb{background:var(--sb)}.c.ac{background:var(--act)}.c.x{background:repeating-linear-gradient(45deg,var(--card) 0 6px,var(--line) 6px 8px);color:var(--mut)}
 .c.mod{box-shadow:inset 0 0 0 3px var(--mod,#7c3aed)}.c.mod::after{content:'';position:absolute;bottom:4px;inset-inline-end:5px;width:8px;height:8px;border-radius:50%;background:var(--mod,#7c3aed)}
+.edm{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:11px;color:var(--mod);font-weight:800;line-height:1}.c small.pj{color:var(--mod);font-weight:700}
+.cmpg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}@media(max-width:800px){.cmpg{grid-template-columns:minmax(0,1fr)}}.cmpg h4{margin:6px 0;font-size:14px}
+.mg{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed}.mg th{font-size:11px;color:var(--mut);font-weight:700}.mg tr th:first-child{width:52px;text-align:start}.mg td{background:var(--card);border:1px solid var(--line);border-radius:5px;height:42px;text-align:center;position:relative;padding:3px 1px;line-height:1.2;font-size:11px}.mg td b{display:block;font-size:11px}.mg td small{display:block;font-size:10px;color:var(--mut)}.mg td.col{color:#13202f}.mg td.mv{outline:3px solid var(--gold);outline-offset:-2px}.mg td.mod{box-shadow:inset 0 0 0 2px var(--mod)}.mg td.sbc{background:var(--sb);font-weight:700}.mg td.x{background:repeating-linear-gradient(45deg,var(--card) 0 5px,var(--line) 5px 7px)}
 .studio{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}@media(max-width:980px){.studio{grid-template-columns:minmax(0,1fr)}}
 #info{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto;margin:0}#info h4{margin:12px 0 4px;font-size:15px}
 .why{margin:0;padding:0;list-style:none;font-size:14px}.why li{padding:3px 0 3px;padding-inline-start:22px;position:relative}.why li::before{position:absolute;inset-inline-start:0;font-weight:800}.why li.ok::before{content:'✓';color:var(--okb)}.why li.warn::before{content:'!';color:#b7791f}.why li.bad::before{content:'✗';color:var(--badb)}
@@ -202,6 +205,7 @@ details summary{cursor:pointer;min-height:40px;padding:8px 0;font-weight:700}
   <p class="note" id="sum2" style="margin:0 0 8px"></p>
   <div class="status" id="st2">اضغط على حصة للمعلم لعرض شرحها وخيارات تغييرها، ثم على المكان الجديد لنقلها، فتتبادل مكانها مع حصة الفصل في ذلك الوقت.</div>
   <div class="studio"><div><div class="scroll"><table class="g" id="gridT"></table></div></div><aside class="panel" id="info2" style="position:sticky;top:10px;margin:0"></aside></div>
+  <div id="cmp"></div>
   <div id="sugOut2"></div>
   <div class="leg"><span><i style="background:var(--sb)"></i>انتظار</span><span><i style="background:var(--act)"></i>نشاط</span><span><i style="background:repeating-linear-gradient(45deg,var(--card) 0 4px,var(--line) 4px 6px)"></i>بعد موعد الخروج المعتمد</span></div>
  </section>
@@ -511,7 +515,7 @@ function renderC(){const g=$('gridC');let h=headRow();const marks={};
  if(sel>=0)for(let x=0;x<35;x++){if(x===sel)continue;const r=evalSwap(sel,x,cls);marks[x]=r.e.length?'t-bad':r.w.length?'t-warn':'t-ok'}
  for(let d=0;d<5;d++){h+=`<tr><th class="d">${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,i=CI[cls][x],l=i>=0?S.lessons[i]:null;
   const k=x===sel?'sel':marks[x]||(l&&l.k?'ac':'');const col=S.style.screen&&l&&(k===''||k==='ac')?colOf(l):'';const md=l&&S.style.showMod&&isMod(i)?' mod':'';const cl=!l&&CLW[x]>=1000&&!k?' x':'';const inf=x===infoX&&!k?' sel':'';
-  h+=`<td class="c ${k}${col?' col':''}${md}${cl}${inf}" data-x="${x}" draggable="${!S.locked&&!pinMode}" tabindex="0" title="${esc(cellTitle(cls,x))}"${col?` style="background:${col}"`:''}>${sugMarks[x]?'<span class="star">★</span>':''}${isPinned(cls,x)?'<span class="lk">🔒</span>':''}${cellL(l,true)}</td>`+brkCell(d,p)}h+='</tr>'}
+  h+=`<td class="c ${k}${col?' col':''}${md}${cl}${inf}" data-x="${x}" draggable="${!S.locked&&!pinMode}" tabindex="0" title="${esc(cellTitle(cls,x))}"${col?` style="background:${col}"`:''}>${sugMarks[x]?'<span class="star">★</span>':''}${isPinned(cls,x)?'<span class="lk">🔒</span>':''}${md?'<span class="edm">✎</span>':''}${cellL(l,true)}</td>`+brkCell(d,p)}h+='</tr>'}
  g.innerHTML=h;renderHist();renderInfo(cls,infoX)}
 function setSt(el,cls2,html){el.className='status '+cls2;el.innerHTML=html}
 let infoX=-1;
@@ -540,17 +544,15 @@ let tch=0,selT=-1;
 function renderT(){let h=headRow();let n=0,sb=0;const marks={};let sc=-1;
  if(selT>=0){const si=TI[tch][selT];if(si>=0){sc=S.lessons[si].c;for(let x=0;x<35;x++){if(x===selT)continue;const r=evalSwap(selT,x,sc);marks[x]=r.e.length?'t-bad':r.w.length?'t-warn':'t-ok'}}else selT=-1}
  for(let d=0;d<5;d++){h+=`<tr><th class="d">${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,i=TI[tch][x],r=SB[tch][x],mk=x===selT?'sel':marks[x]||'';
-  if(i>=0){const l=S.lessons[i];n++;const col=S.style.screen&&!mk?colOf(l):'';const md=S.style.showMod&&isMod(i)?' mod':'';h+=`<td class="c ${mk||(l.k?'ac':'')}${col?' col':''}${md}" data-x="${x}" tabindex="0"${col?` style="background:${col}"`:''}>${cellL(l,false)}</td>`}
-  else if(r){sb++;h+=`<td class="c ${mk||'sb'}" data-x="${x}"><b>انتظار ${r}</b></td>`}
-  else h+=`<td class="c ${mk||(hardAt(tch,x)?'x':'')}" data-x="${x}" tabindex="0">${mk&&sc>=0&&CI[sc][x]>=0?`<small>${esc(subj(S.lessons[CI[sc][x]]))}</small>`:''}</td>`;h+=brkCell(d,p)}h+='</tr>'}
+  if(i>=0){const l=S.lessons[i];n++;const col=S.style.screen&&!mk?colOf(l):'';const md=S.style.showMod&&isMod(i)?' mod':'';const pj=mk&&sc>=0&&CI[sc][x]>=0&&x!==selT?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(l.k?'ac':'')}${col?' col':''}${md}" data-x="${x}" tabindex="0"${col?` style="background:${col}"`:''}${pj?` title="في هذا الوقت: ${esc(subj(pj))} مع أ/ ${esc(D.teachers[pj.t])}"`:''}>${md?'<span class="edm">✎</span>':''}${cellL(l,false)}${pj?`<small class="pj">↔ ${esc(shortN(pj.t))}</small>`:''}</td>`}
+  else if(r){sb++;const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||'sb'}" data-x="${x}"><b>انتظار ${r}</b>${pj?`<small>${esc(subj(pj))} · أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}
+  else{const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(hardAt(tch,x)?'x':'')}" data-x="${x}" tabindex="0">${pj?`<b>${esc(subj(pj))}</b><small>أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}h+=brkCell(d,p)}h+='</tr>'}
  $('gridT').innerHTML=h;const ex=exitText(tch);
  $('sum2').innerHTML=`<b>أ/ ${esc(D.teachers[tch])}</b>: ${n} حصة، و${sb} انتظار، والإجمالي ${n+sb}.${ex?' قيود الوقت: '+esc(ex)+'.':''} التكليف الفعلي بالانتظار: ${S.subCount[tch]||0}.`;renderHist()}
 function clickT(x){const st=$('st2');
- if(selT<0){const i=TI[tch][x];if(i<0)return;selT=x;const l=S.lessons[i];renderInfo(l.c,x,$('info2'));setSt(st,'',`حددت <b>${esc(subj(l))}</b> مع ${esc(D.classes[l.c])} (${slotName(x)}). اضغط على المكان الجديد. الخانات الفارغة الملونة تعرض حصة الفصل التي ستتبادل معها.`);renderT();return}
- if(x===selT){selT=-1;setSt(st,'','أُلغي التحديد.');renderT();teacherSum();return}
- const c=S.lessons[TI[tch][selT]].c,r=doSwap(selT,x,c);
- if(r.e.length)setSt(st,'bad','<b>لا يمكن النقل:</b> '+r.e.map(esc).join('، '));else{selT=-1;renderInfo(c,x,$('info2'));setSt(st,r.w.length?'warn':'ok',(r.w.length?'<b>تم النقل مع تنبيه:</b> '+r.w.map(esc).join('، '):'<b>تم النقل</b> بلا أي تعارض.'))}
- renderT()}
+ if(selT<0){const i=TI[tch][x];if(i<0)return;selT=x;const l=S.lessons[i];renderInfo(l.c,x,$('info2'));setSt(st,'',`حددت <b>${esc(subj(l))}</b> مع ${esc(D.classes[l.c])} (${slotName(x)}). كل خانة ملونة تعرض حصة الفصل في ذلك الوقت واسم معلمها. اضغط خانة لمعاينة التبديل قبل تنفيذه.`);renderT();return}
+ if(x===selT){selT=-1;TPV=null;setSt(st,'','أُلغي التحديد.');renderT();renderCmp();teacherSum();return}
+ openPreview(selT,x);setSt(st,'','راجع المعاينة أسفل الجدول: المشكلات عند المعلمين، وجدول كل منهما بعد التبديل، ثم نفّذ أو ألغِ.')}
 $('gridT').addEventListener('click',e=>{const td=e.target.closest('td[data-x]');if(td)clickT(+td.dataset.x)});
 $('gridT').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const td=e.target.closest('td[data-x]');if(td){e.preventDefault();clickT(+td.dataset.x)}}});
 $('tSel').innerHTML=D.teachers.map((t,i)=>`<option value="${i}">أ/ ${esc(t)}</option>`).join('');
@@ -947,7 +949,7 @@ function renderHist(){const H=S.hist||[];$('histN').textContent=H.length;$('undo
  const mc=modCount();$('modN').textContent=mc?`${mc===1?'حصة واحدة معدّلة':mc===2?'حصتان معدّلتان':mc+(mc<=10?' حصص معدّلة':' حصة معدّلة')} لم تُعتمد`:'لا توجد تعديلات غير معتمدة';
  $('histList').innerHTML=H.length?H.map((h,k)=>({h,k})).reverse().map(({h,k})=>`<div class="vl"><span><b>${k+1}.</b> ${esc(h.desc)} <span class="note">· ${fmT(h.at)}</span></span><button class="btn" data-back="${k}">العودة إلى ما قبلها</button></div>`).join(''):'<p class="note">لا توجد خطوات بعد.</p>'}
 $('histList').onclick=e=>{const b=e.target.closest('[data-back]');if(b)backTo(+b.dataset.back)};
-$('commit').onclick=()=>{setBase();save();render();flash('اعتُمدت التعديلات، وأصبح الجدول الحالي هو الأساس. السجل باقٍ للتراجع.')};
+$('commit').onclick=()=>{setBase();S.cmp=null;save();render();flash('اعتُمدت التعديلات، وأصبح الجدول الحالي هو الأساس. السجل باقٍ للتراجع.')};
 $('toBase').onclick=()=>{if(!S.base||!modCount())return;record('العودة إلى آخر جدول معتمد');restoreSnap({X:S.base.X,B:S.base.B||[],e:0});save();render();flash('عاد الجدول إلى آخر نسخة معتمدة.')};
 $('showMod').onchange=e=>{S.style.showMod=e.target.checked;save();render()};
 $('modCol').oninput=e=>{S.style.modCol=e.target.value;document.documentElement.style.setProperty('--mod',e.target.value);save()};
@@ -1183,7 +1185,7 @@ function renderInfo(c,x,el0){const el=el0||$('info');if(x==null||x<0){const M=me
  h+=`<h4>المتاحون في هذا الوقت (${fr.length})</h4>${fr.length?`<div class="chips">${fr.slice(0,14).map(t=>`<span class="chip" style="cursor:default">${esc(D.teachers[t].split(' ').slice(0,2).join(' '))} · ${dayLoad(t,d)}${SB[t][x]?' · ن'+SB[t][x]:''}</span>`).join('')}</div><p class="note">الرقم: حصص المعلم في ذلك اليوم، و«ن» مرتبة انتظاره في هذه الحصة.</p>`:'<p class="note">لا يوجد معلم متاح.</p>'}<h4>الاحتياط في هذه الحصة</h4><p>${sb.length?sb.join('<br>'):'<span class="note">لم يُبنَ الاحتياط لهذه الحصة.</span>'}</p>`;
  el.innerHTML=h}
 $('info').addEventListener('click',e=>{if(chgClick(e,$('st1')))return;const b=e.target.closest('[data-go]');if(!b)return;sel=+b.dataset.from;clickC(+b.dataset.go)});
-$('info2').addEventListener('click',e=>{if(chgClick(e,$('st2')))return;const b=e.target.closest('[data-go]');if(!b)return;const from=+b.dataset.from,to=+b.dataset.go,i=TI[tch][from];if(i<0)return;const r=doSwap(from,to,S.lessons[i].c);selT=-1;setSt($('st2'),r.e.length?'bad':'ok',r.e.length?esc(r.e.join('، ')):'تم النقل إلى '+slotName(to)+'.');renderT();if(!r.e.length)renderInfo(S.lessons[i].c,to,$('info2'))});
+$('info2').addEventListener('click',e=>{if(chgClick(e,$('st2')))return;const b=e.target.closest('[data-go]');if(!b)return;const from=+b.dataset.from,to=+b.dataset.go;if(TI[tch][from]<0)return;selT=from;renderT();openPreview(from,to)});
 function cellTitle(c,x){const i=CI[c][x];if(i<0)return'خانة فارغة';const l=S.lessons[i],T=bellTimes(),ws=whyHere(i).filter(w=>w[0]!=='ok');return`${subj(l)} — أ/ ${D.teachers[l.t]}\n${DAYS[l.d]} الحصة ${PN[l.p]} (${fm(T.per[l.p][0])})${isPinned(c,x)?'\n🔒 مثبتة':''}\n${ws.length?ws.map(w=>'⚠ '+w[1]).join('\n'):'✓ لا تعارض'}\nالمتاحون في هذا الوقت: ${freeAt(x,l.t).length}`}
 // النشر في الشاشة الرئيسية للموقع
 const hh=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
@@ -1284,6 +1286,39 @@ $('sugOut2').onclick=e=>{const ap=e.target.closest('[data-tap]');
 function renderHot(){const R=D.teachers.map((n,t)=>({t,n,s:stressOf(t)})).filter(r=>r.s.cost>0).sort((a,b)=>b.s.cost-a.s.cost).slice(0,10);
  $('hotT').innerHTML=R.length?R.map(r=>`<button type="button" class="chip${r.t===tch?' on':''}" data-ht="${r.t}" title="${esc(stressTxt(r.s))}">${esc(r.n.split(' ').slice(0,2).join(' '))} · ${r.s.cost}</button>`).join(''):'<span class="note">لا يوجد معلم بجدول مضغوط.</span>'}
 $('hotT').onclick=e=>{const b=e.target.closest('[data-ht]');if(!b)return;tch=+b.dataset.ht;$('tSel').value=tch;selT=-1;TS=[];$('sugOut2').innerHTML='';renderT();teacherSum();renderHot()};
+// ===== معاينة التبديل بين معلمين ومقارنة الجدولين
+let TPV=null;
+const shortN=t=>t>=0?D.teachers[t].split(' ').slice(0,2).join(' '):'';
+function miniGrid(t,sw){const pos=k=>{let x=S.lessons[k].d*7+S.lessons[k].p;if(sw){if(k===sw.i)x=sw.b;else if(k===sw.j)x=sw.a}return x};
+ const cell=Array(35).fill(null);S.lessons.forEach((l,k)=>{if(l.t===t)cell[pos(k)]={k,l}});const sbm={};S.standby.forEach(s=>{if(s.t===t)sbm[s.d*7+s.p]=s.r});
+ let h=`<table class="mg"><tr><th></th>${PN.map((_,p)=>`<th>${p+1}</th>`).join('')}</tr>`;
+ for(let d=0;d<5;d++){h+=`<tr><th>${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,z=cell[x];
+  if(z){const mv=sw&&(z.k===sw.i||z.k===sw.j),md=isMod(z.k),col=S.style.screen?colOf(z.l):'';h+=`<td class="${mv?'mv':''}${md?' mod':''}${col?' col':''}"${col?` style="background:${col}"`:''}>${mv||md?'<span class="edm">✎</span>':''}<b>${esc(subj(z.l))}</b><small>${esc(D.classes[z.l.c])}</small></td>`}
+  else if(sbm[x])h+=`<td class="sbc">ن${sbm[x]}</td>`;else h+=`<td class="${hardAt(t,x)?'x':''}"></td>`}h+='</tr>'}
+ return h+'</table>'}
+function openPreview(from,to){const i=TI[tch][from];if(i<0)return;const c=S.lessons[i].c,j=CI[c][to],tj=j>=0?S.lessons[j].t:-1;TPV={from,to,c,i,j,tj,r:evalSwap(from,to,c)};renderCmp();$('cmp').scrollIntoView({block:'nearest'})}
+function stressLine(t,sw){const a=stressOf(t),b=tStress(tGrid(t,sw)),dir=b.cost<a.cost?'يتحسن':b.cost>a.cost?'يزداد ضغطًا':'لا يتغير';return`<li class="${b.cost<a.cost?'ok':b.cost>a.cost?'warn':'ok'}">أ/ ${esc(shortN(t))}: جدوله ${dir} (${a.cost} ← ${b.cost}). ${esc(stressTxt(b))}</li>`}
+function renderCmp(){const el=$('cmp');
+ if(TPV){const P=TPV,A=tch,B=P.tj,sw={i:P.i,j:P.j,a:P.from,b:P.to},li=S.lessons[P.i],lj=P.j>=0?S.lessons[P.j]:null;
+  const prob=[...P.r.e.map(e=>`<li class="bad">${esc(e)}</li>`),...P.r.w.map(w=>`<li class="warn">${esc(w)}</li>`)];
+  el.innerHTML=`<div class="panel" style="margin-top:12px;border:2px solid var(--gold)"><h2 style="margin-top:0">معاينة التبديل قبل التنفيذ</h2>
+   <p><b>${esc(subj(li))}</b> ${esc(D.classes[li.c])} (${slotName(P.from)}) مع أ/ ${esc(shortN(A))} ⇄ ${lj?`<b>${esc(subj(lj))}</b> (${slotName(P.to)}) مع أ/ ${esc(shortN(B))}`:`خانة فارغة (${slotName(P.to)})`}</p>
+   <h4 style="margin:8px 0 4px">المشكلات والأثر</h4><ul class="why">${prob.join('')||'<li class="ok">لا يخالف أي قيد عند الطرفين</li>'}${stressLine(A,sw)}${B>=0&&B!==A?stressLine(B,sw):''}</ul>
+   <div class="cmpg"><div><h4>أ/ ${esc(D.teachers[A])} بعد التبديل</h4>${miniGrid(A,sw)}</div>${B>=0&&B!==A?`<div><h4>أ/ ${esc(D.teachers[B])} بعد التبديل</h4>${miniGrid(B,sw)}</div>`:''}</div>
+   <p class="note">الإطار الذهبي والعلامة ✎ للحصتين اللتين ستتبدلان.</p>
+   <div class="bar"><button class="btn p" id="tpvOk" ${P.r.e.length?'disabled':''}>تنفيذ التبديل</button><button class="btn" id="tpvNo">إلغاء</button></div></div>`;
+  $('tpvOk').onclick=()=>{const r=doSwap(P.from,P.to,P.c);TPV=null;selT=-1;if(r.e.length){setSt($('st2'),'bad',esc(r.e.join('، ')));renderT();renderCmp();return}
+   if(B>=0&&B!==A){S.cmp={a:A,b:B};save()}setSt($('st2'),r.w.length?'warn':'ok','<b>تم التبديل.</b> الحصتان مميزتان بعلامة ✎ عند المعلمين، وتبقيان كذلك حتى تعتمد التعديلات. يمكنك التراجع.');renderT();renderInfo(P.c,P.to,$('info2'));renderCmp();renderHot()};
+  $('tpvNo').onclick=()=>{TPV=null;selT=-1;setSt($('st2'),'','أُلغي التبديل.');renderT();renderCmp();teacherSum()};return}
+ const C=S.cmp;if(!C||C.a==null||C.b==null||C.a>=D.teachers.length||C.b>=D.teachers.length){el.innerHTML='';return}
+ const mc=modCount();
+ el.innerHTML=`<div class="panel" style="margin-top:12px"><h2 style="margin-top:0">مقارنة الجدولين بعد التعديل</h2><p class="note">${mc?`${nw(mc,'حصة واحدة معدّلة','حصتان معدّلتان','حصص معدّلة','حصة معدّلة')} لم تُعتمد، مميزة بالعلامة ✎ عند الطرفين.`:'لا توجد تعديلات غير معتمدة.'}</p>
+  <div class="cmpg"><div><h4>أ/ ${esc(D.teachers[C.a])} · ${esc(stressTxt(stressOf(C.a)))}</h4>${miniGrid(C.a)}</div><div><h4>أ/ ${esc(D.teachers[C.b])} · ${esc(stressTxt(stressOf(C.b)))}</h4>${miniGrid(C.b)}</div></div>
+  <div class="bar" style="margin-top:8px"><button class="btn p" id="cmpOk">اعتماد التعديلات</button><button class="btn" id="cmpUndo">↶ تراجع خطوة</button><button class="btn" id="cmpOther">فتح جدول أ/ ${esc(shortN(tch===C.a?C.b:C.a))}</button><button class="btn" id="cmpX">إغلاق المقارنة</button></div></div>`;
+ $('cmpOk').onclick=()=>{setBase();S.cmp=null;save();render();setSt($('st2'),'ok','اعتُمدت التعديلات. لنشرها في الموقع اضغط «تثبيت التعديلات في الموقع».')};
+ $('cmpUndo').onclick=()=>{doUndo();renderCmp()};
+ $('cmpOther').onclick=()=>{tch=tch===C.a?C.b:C.a;$('tSel').value=tch;selT=-1;renderT();teacherSum();renderCmp();renderHot()};
+ $('cmpX').onclick=()=>{S.cmp=null;save();renderCmp()}}
 // ===== الإعدادات والطباعة
 $('schoolIn').value=S.school;$('yearIn').value=S.year;
 $('schoolIn').oninput=e=>{S.school=e.target.value;$('schoolLbl').textContent=S.school;save()};
@@ -1415,7 +1450,7 @@ let resetArm=0;$('reset').onclick=()=>{const st=$('st5');st.hidden=false;if(!res
  resetArm=0;if(D.custom){try{localStorage.removeItem(KEY)}catch(e){}(window.__rl=1,location.reload());return}$('reset').textContent='استعادة الجدول الأصلي';const sc=S.school,yr=S.year;const vv=S.versions;S=fresh();S.school=sc;S.year=yr;S.versions=vv;recompile();idx();save();render();setSt(st,'ok','استُعيد الجدول الأصلي.')};
 // ===== التبويبات
 let view='classes';
-function render(){({classes:()=>{renderLock();renderStudioCfg();renderC()},teachers:()=>{renderT();renderHot();if(selT<0)teacherSum()},absence:renderAbsView,school:()=>{renderSchoolView();renderRA()},cons:()=>{renderConsView();renderVB()},gen:renderG,quality:renderQ,bell:renderBell,settings:renderSettingsView})[view]()}
+function render(){({classes:()=>{renderLock();renderStudioCfg();renderC()},teachers:()=>{renderT();renderHot();renderCmp();if(selT<0)teacherSum()},absence:renderAbsView,school:()=>{renderSchoolView();renderRA()},cons:()=>{renderConsView();renderVB()},gen:renderG,quality:renderQ,bell:renderBell,settings:renderSettingsView})[view]()}
 function go(v){if(window.__rl)return;if(!$('v-'+v))v='classes';view=v;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));document.querySelectorAll('main>section').forEach(s=>s.hidden=s.id!=='v-'+v);render()}
 $('tabs').onclick=e=>{const b=e.target.closest('button');if(b){location.hash=b.dataset.v;go(b.dataset.v)}};
 window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
