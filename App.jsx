@@ -141,18 +141,19 @@ function SmartTimetableFrame() {
   const ref = React.useRef(null);
   const [msg, setMsg] = React.useState("");
   React.useEffect(() => {
-    const reply = (ok, m) => { setMsg(m); try { ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-published", ok, msg: m }, window.location.origin); } catch (e) {} };
+    const reply = (ok, m, at) => { setMsg(m); try { ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-published", ok, msg: m, at }, window.location.origin); } catch (e) {} };
     const h = async e => {
       if (e.origin !== window.location.origin) return;
       const d = e.data || {};
+      if (d.type === "smarttt-load") { try { const [a0, c0] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]); const tt0 = ttFresh(a0); ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-site", tt: tt0, times: c0 && Array.isArray(c0.times) ? c0.times : tt0.times }, window.location.origin); } catch (er) {} return; }
       if (d.type !== "smarttt-publish" || !d.tt || !d.tt.C || !d.tt.RS) return;
       if (!window.confirm("سيُعتمد هذا الجدول في الموقع: الشاشة الرئيسية والحصص الآن وجداول المعلمين والاحتياط، ويُحفظ الجدول الحالي نسخةً احتياطية. متابعة؟")) { reply(false, "أُلغي النشر."); return; }
       try {
         const [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]);
         await maPut(TT_OLD, { tt: a || null, cfg: c || null, at: Date.now() });
-        const ok = await maPut(TT_NODE, { ...d.tt, at: Date.now(), by: "الجدول المدرسي الذكي" });
+        const at = Date.now(); const ok = await maPut(TT_NODE, { ...d.tt, at, by: "الجدول المدرسي الذكي" });
         if (ok && d.tt.times) await maPut(TT_CFG, { ...(c && typeof c === "object" ? c : {}), times: d.tt.times });
-        reply(!!ok, ok ? "✅ نُشر الجدول في الموقع، والقديم محفوظ نسخةً احتياطية." : "⚠️ تعذّر حفظ الجدول في الموقع.");
+        reply(!!ok, ok ? "✅ نُشر الجدول في الموقع، والقديم محفوظ نسخةً احتياطية." : "⚠️ تعذّر حفظ الجدول في الموقع.", at);
       } catch (er) { reply(false, "⚠️ تعذّر حفظ الجدول في الموقع."); }
     };
     window.addEventListener("message", h);
@@ -46152,7 +46153,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
           else if (mv) { const o = log[ttK(cell.d, cell.p, mv)]; if (o && o.st === "sub" && +o.sub === +v.sub) await putLog(cell.d, cell.p, mv, null); msg = `↪️ نُقل أ. ${ttClean(T.T[v.sub])} — وأُعيد اقتراح بديل لـ ${maClassName(mv)}، راجعه واعتمده`; }
           setCell(null); toast(msg); }} onClear={async () => { await putLog(cell.d, cell.p, cell.ck, null); setCell(null); }} />}
       {jEd && <TtEditor T0={T} times={times} by={by} onClose={() => setJEd(false)} onSaved={n => { setTt(n); setJEd(false); toast("✅ حُفظ الجدول المعدّل — والسابق محفوظ نسخةً احتياطية"); }} />}
-      {xImp && <TtExcelImport by={by} onClose={() => setXImp(false)} onSaved={(nt, tm) => { setTt(nt); if (tm) setTimes0(ttFixTimes(tm)); setXImp(false); toast("✅ اعتُمد الجدول المستورد من Excel، والقديم محفوظ نسخةً احتياطية"); }} />}
+      {xImp && <TtExcelImport by={by} onClose={() => setXImp(false)} onSaved={(nt, tm) => { setTt(nt); if (tm) setTimes0(ttFixTimes(tm)); setXImp(false); toast("✅ اعتُمد الجدول من Excel. للتعديل عليه بالنقل والتغيير افتح «الجدول المدرسي الذكي»"); }} />}
       {tEd && <SttTimesEditor times={times} P={T.P} by={by} onClose={() => setTEd(false)} onSaved={tm => { setTimes0(tm); setTEd(false); toast("✅ حُفظت أوقات الحصص"); }} />}
       {addA && <div className="stt-sheet" onClick={() => setAddA(false)}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ padding: 16 }}>
         <div style={{ width: 44, height: 5, borderRadius: 9, background: "#cbd5e1", margin: "0 auto 12px" }} />
