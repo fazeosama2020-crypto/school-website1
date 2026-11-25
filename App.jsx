@@ -30,6 +30,113 @@ const ImprovePlanAdmin = React.lazy(() => import("./smart/ImprovePlan.jsx").then
 const ReadingStudent = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingStudent })));
 const ReadingTeacher = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingTeacher })));
 const ReadingAdmin = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingAdmin })));
+function ttXlsxParse(XLSX, wb, fname) {
+  const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+  const nz = s => String(s == null ? "" : s).replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).trim();
+  const DN = DAYS.map(nz);
+  const dayOf = s => { const t = nz(s); for (let i = 0; i < 5; i++) if (t.includes(DN[i])) return i; return -1; };
+  let best = null;
+  for (const sn of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: "", raw: false });
+    for (let h = 0; h < Math.min(8, rows.length); h++) {
+      const r1 = rows[h] || [], r2 = rows[h + 1] || [];
+      const nameCol = r1.findIndex(v => /معلم|الاسم|اسم/.test(nz(v)));
+      if (nameCol < 0) continue;
+      const map = {}; let cur = -1, two = false;
+      const W = Math.max(r1.length, r2.length);
+      for (let j = 0; j < W; j++) {
+        if (j === nameCol) continue;
+        const d = dayOf(r1[j]); if (d >= 0) cur = d;
+        let p = NaN; const m1 = nz(r1[j]).match(/(\d)\s*$/);
+        if (d >= 0 && m1) p = +m1[1] - 1;
+        else if (/^\d$/.test(nz(r2[j]))) { p = +nz(r2[j]) - 1; two = true; }
+        if (cur >= 0 && p >= 0 && p < 7) map[j] = { d: cur, p };
+      }
+      const n = Object.keys(map).length;
+      if (n >= 25 && (!best || n > best.n)) best = { sn, rows, h, nameCol, map, n, start: h + (two ? 2 : 1) };
+    }
+  }
+  if (!best) return { err: "لم أجد ورقة فيها عمود «المعلم» وأعمدة الأيام والحصص (مثل: الأحد 1 … الخميس 7، أو صف للأيام وتحته أرقام الحصص)." };
+  const T = [], subs = [], C = {}, RS = {}, warn = [];
+  DAYS.forEach(d => { RS[d] = Array.from({ length: 7 }, () => [null, null, null]); });
+  const clsKey = s => {
+    const t = nz(s); let m = t.match(/(\d)\s*م\s*\/\s*(\d+)/) || t.match(/(\d)\s*\/\s*(\d+)/) || t.match(/(\d)\s*-\s*(\d+)/);
+    if (m) return m[1] + "-" + m[2];
+    m = t.match(/(اول|ثاني|ثالث)\s*(?:متوسط|م)?\s*(\d+)/); if (m) return (["اول", "ثاني", "ثالث"].indexOf(m[1]) + 1) + "-" + m[2];
+    return null;
+  };
+  let nL = 0, nS = 0;
+  for (let r = best.start; r < best.rows.length; r++) {
+    const row = best.rows[r] || [];
+    const name = String(row[best.nameCol] || "").replace(/^\s*(أ\/|أ\.|الأستاذ|الاستاذ)\s*/, "").replace(/\s+/g, " ").trim();
+    if (!name || /^\d+$/.test(name) || name.length < 3) continue;
+    const ti = T.length; T.push(name);
+    for (const [j, { d, p }] of Object.entries(best.map)) {
+      const v = String(row[j] || "").trim(); if (!v) continue;
+      const sb = nz(v).match(/(انتظار|احتياط)\s*(\d)/);
+      if (sb) { const k = +sb[2] - 1; if (k >= 0 && k < 3) { if (RS[DAYS[d]][p][k] != null) warn.push(`احتياط ${k + 1} مكرر: ${DAYS[d]} الحصة ${p + 1}`); RS[DAYS[d]][p][k] = ti; nS++; } continue; }
+      const ck = clsKey(v);
+      if (!ck) { warn.push(`لم أفهم الخانة «${v.replace(/\n/g, " ")}» للمعلم ${name}`); continue; }
+      let sub = v.split(/\n/).map(x => x.trim()).filter(x => x && !clsKey(x) && !/½/.test(x))[0] || v.replace(/\d\s*م?\s*[\/-]\s*\d+/, "").replace(/(أول|اول|ثاني|ثالث)\s*(متوسط)?\s*\d+/, "").replace(/[-–\n]/g, " ").trim();
+      sub = sub.replace(/\s+/g, " ").trim() || "مادة";
+      let si = subs.indexOf(sub); if (si < 0) { si = subs.length; subs.push(sub); }
+      if (!C[ck]) C[ck] = Array.from({ length: 5 }, () => Array.from({ length: 7 }, () => [-1, -1]));
+      if (C[ck][d][p][1] >= 0) warn.push(`تعارض: الفصل ${ck} ${DAYS[d]} الحصة ${p + 1} عند أكثر من معلم`);
+      C[ck][d][p] = [si, ti]; nL++;
+    }
+  }
+  if (!T.length || !nL) return { err: "قرأت الورقة لكن لم أجد حصصًا. اكتب في كل خانة المادة ثم الفصل، مثل: رياضيات 1م/1، أو «انتظار 1»." };
+  let times = null;
+  const tsn = wb.SheetNames.find(s => /وقات|توقيت/.test(s));
+  if (tsn) {
+    const tr = XLSX.utils.sheet_to_json(wb.Sheets[tsn], { header: 1, defval: "", raw: false });
+    const hm = v => { const m = String(v).match(/(\d{1,2}):(\d{2})/); if (!m) return null; let h = +m[1]; if (/م|PM/i.test(String(v)) && h < 12) h += 12; return String(h).padStart(2, "0") + ":" + m[2]; };
+    const tt = tr.map(r => [hm(r[1]), hm(r[2])]).filter(x => x[0] && x[1]);
+    if (tt.length >= 7) times = tt.slice(0, 7);
+  }
+  const S = [...subs, "احتياط 1", "احتياط 2", "احتياط 3"];
+  const last = T.map(n => n.split(" ").slice(-1)[0]);
+  const A = T.map((n, i) => last.filter(x => x === last[i]).length > 1 ? n[0] + "." + last[i] : last[i]);
+  const keys = Object.keys(C).sort((a, b) => { const [x1, y1] = a.split("-").map(Number), [x2, y2] = b.split("-").map(Number); return x1 - x2 || y1 - y2; });
+  const C2 = {}; keys.forEach(k => C2[k] = C[k]);
+  const tt = { ver: "xlsx-" + Date.now(), at: Date.now(), src: "استيراد Excel" + (fname ? " — " + fname : ""), D: DAYS.slice(), P: 7, T, A, S, SA: S.map(s => s.slice(0, 8)), C: C2, RS, R: RS };
+  if (times) tt.times = times;
+  const empty = []; keys.forEach(k => { let n = 0; C2[k].forEach(d => d.forEach(c => { if (c[1] < 0) n++; })); if (n) empty.push(`${k}: ${n}`); });
+  return { tt, times, sum: { sheet: best.sn, teachers: T.length, classes: keys.length, lessons: nL, standby: nS, subjects: subs.length, empty }, warn: [...new Set(warn)] };
+}
+function TtExcelImport({ by, onClose, onSaved }) {
+  const [res, setRes] = React.useState(null); const [err, setErr] = React.useState(""); const [busy, setBusy] = React.useState(false); const [fn, setFn] = React.useState("");
+  const onFile = async f => { setErr(""); setRes(null); if (!f) return; setFn(f.name); setBusy(true);
+    try { const XLSX = await loadXLSX(); const wb = XLSX.read(await f.arrayBuffer()); const r = ttXlsxParse(XLSX, wb, f.name); if (r.err) setErr(r.err); else setRes(r); } catch (e) { setErr("تعذّرت قراءة الملف. تأكد أنه ملف Excel (xlsx)."); }
+    setBusy(false); };
+  const save = async () => { if (!res) return; setBusy(true);
+    try { const [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]); await maPut(TT_OLD, { tt: a || null, cfg: c || null, at: Date.now() });
+      const nt = { ...res.tt, at: Date.now(), by }; const ok = await maPut(TT_NODE, nt);
+      if (ok && res.times) await maPut(TT_CFG, { ...(c && typeof c === "object" ? c : {}), times: res.times });
+      setBusy(false); if (!ok) { setErr("⚠️ تعذّر حفظ الجدول."); return; } onSaved(nt, res.times);
+    } catch (e) { setBusy(false); setErr("⚠️ تعذّر حفظ الجدول."); } };
+  const S = res && res.sum;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }} dir="rtl" onClick={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
+      <div style={{ background: "#fff", borderRadius: 16, width: "min(620px,100%)", maxHeight: "90vh", overflow: "auto", padding: 18, borderTop: "5px solid #c09a3b" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><b style={{ fontSize: 19, color: "#0d2547" }}>📥 استيراد جدول من Excel</b><button className="ma-btn" disabled={busy} onClick={onClose}>إغلاق</button></div>
+        <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.8, margin: "10px 0" }}>ورقة «جدول المعلمين»: عمود باسم المعلم، ثم أعمدة الأيام والحصص (صف للأيام وتحته أرقام الحصص ١–٧، أو عناوين مثل «الأحد 1»). في كل خانة: المادة ثم الفصل (مثل: رياضيات 1م/1)، أو «انتظار 1/2/3». ورقة «أوقات الحصص» اختيارية: الحصة، من، إلى.</p>
+        <label className="ma-btn" style={{ background: "#0d2547", color: "#fff", borderColor: "#0d2547", display: "inline-block", cursor: "pointer" }}>{busy && !res ? "⏳ جارٍ القراءة..." : "اختيار ملف Excel"}<input type="file" accept=".xlsx,.xls" hidden onChange={e => { onFile(e.target.files[0]); e.target.value = ""; }} /></label>
+        {fn && <span style={{ marginInlineStart: 8, fontSize: 13 }}>{fn}</span>}
+        {err && <div style={{ marginTop: 12, padding: 10, borderRadius: 10, background: "#fde0de", color: "#7f1d1d", fontWeight: 700 }}>{err}</div>}
+        {S && <div style={{ marginTop: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 8 }}>
+            {[["المعلمون", S.teachers], ["الفصول", S.classes], ["الحصص", S.lessons], ["الاحتياط", S.standby], ["المواد", S.subjects]].map(([a, b]) => <div key={a} style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "8px 10px" }}><div style={{ fontSize: 12, color: "#64748b" }}>{a}</div><b style={{ fontSize: 22, color: "#0d2547" }}>{b}</b></div>)}
+          </div>
+          <p style={{ fontSize: 13, color: "#475569" }}>الورقة: {S.sheet} • {res.times ? `أوقات الحصص من الملف (${res.times[0][0]} – ${res.times[6][1]})` : "أوقات الحصص الحالية تبقى كما هي"}{S.empty.length ? ` • خانات فارغة: ${S.empty.join("، ")}` : ""}</p>
+          {res.warn.length > 0 && <details style={{ fontSize: 13, color: "#92400e" }}><summary>تنبيهات ({res.warn.length})</summary><ul>{res.warn.slice(0, 40).map((w, i) => <li key={i}>{w}</li>)}</ul></details>}
+          <div style={{ marginTop: 12, padding: 10, borderRadius: 10, background: "#fff7e0", fontSize: 13 }}>سيحل هذا الجدول محل الجدول الحالي في كل الموقع (الشاشة الرئيسية، الحصص الآن، جداول المعلمين، الاحتياط)، ويُحفظ الحالي نسخةً احتياطية.</div>
+          <button className="ma-btn" style={{ marginTop: 10, background: "#16a34a", color: "#fff", borderColor: "#16a34a" }} disabled={busy} onClick={save}>{busy ? "⏳ جارٍ الحفظ..." : "✅ اعتماد الجدول في الموقع"}</button>
+        </div>}
+      </div>
+    </div>
+  );
+}
 function SmartTimetableFrame() {
   const ref = React.useRef(null);
   const [msg, setMsg] = React.useState("");
@@ -45781,7 +45888,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
   const [rr, setRr] = useState(null); const [cnt, setCnt] = useState(false);
   const toast = t => { setMsg(t); setTimeout(() => setMsg(""), 3200); };
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
-  const [tEd, setTEd] = useState(false); const [jEd, setJEd] = useState(false);
+  const [tEd, setTEd] = useState(false); const [jEd, setJEd] = useState(false); const [xImp, setXImp] = useState(false);
   useEffect(() => { (async () => {
     let [a, c] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]);
     const stale = ttFresh(a) === TT_PDF && a !== TT_PDF;
@@ -45962,7 +46069,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
               <div className="flex gap-2 items-center"><input type="date" className="ma-inp" style={{ width: 150, height: 38, color: "#0f172a", background: "#fff", fontWeight: 800 }} value={dateK} onChange={e => e.target.value && setDateK(e.target.value)} />{!isToday && <button className="ma-btn" onClick={() => setDateK(maKey(new Date()))}>اليوم</button>}</div>
             </div>
             {isToday && <TtClock times={times} />}
-            {!ro && <div className="flex gap-2 flex-wrap">{canEdit && <button className="ma-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => setTEd(true)}>⏱ أوقات الحصص</button>}{canEdit && <button className="ma-btn" style={{ background: "#fbbf24", color: "#1e1b4b", borderColor: "#fbbf24" }} onClick={() => setJEd(true)}>✏️ تعديل الجدول والاحتياط</button>}<button className="ma-btn gold" disabled={di < 0} onClick={() => ttDayReport({ T, times, dk: dateK, di, log, absList, plan, by, subName })}>🖨 التقرير اليومي للمدير</button><button className="ma-btn" style={{ background: "#e0e7ff", color: "#1e1b4b", borderColor: "#e0e7ff" }} onClick={() => setCnt(true)}>🧮 حصر الاحتياط والغياب</button><button className="ma-btn" style={{ background: "#fff", color: "#1e1b4b", borderColor: "#fff" }} onClick={() => { const [a, b] = rrRange("w"); let sv = null; try { sv = JSON.parse(localStorage.getItem("rr-secs") || "null"); } catch {} setRr({ k: "w", f: a, t: b, secs: Array.isArray(sv) ? sv : RR_SEC.map(x => x[0]), fs: 1.15, busy: false }); }}>📊 التقرير الأسبوعي والشهري</button></div>}
+            {!ro && <div className="flex gap-2 flex-wrap">{canEdit && <button className="ma-btn" style={{ background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "rgba(255,255,255,.35)" }} onClick={() => setTEd(true)}>⏱ أوقات الحصص</button>}{canEdit && <button className="ma-btn" style={{ background: "#fbbf24", color: "#1e1b4b", borderColor: "#fbbf24" }} onClick={() => setJEd(true)}>✏️ تعديل الجدول والاحتياط</button>}{canEdit && <button className="ma-btn" style={{ background: "#16a34a", color: "#fff", borderColor: "#16a34a" }} onClick={() => setXImp(true)}>📥 استيراد جدول من Excel</button>}<button className="ma-btn gold" disabled={di < 0} onClick={() => ttDayReport({ T, times, dk: dateK, di, log, absList, plan, by, subName })}>🖨 التقرير اليومي للمدير</button><button className="ma-btn" style={{ background: "#e0e7ff", color: "#1e1b4b", borderColor: "#e0e7ff" }} onClick={() => setCnt(true)}>🧮 حصر الاحتياط والغياب</button><button className="ma-btn" style={{ background: "#fff", color: "#1e1b4b", borderColor: "#fff" }} onClick={() => { const [a, b] = rrRange("w"); let sv = null; try { sv = JSON.parse(localStorage.getItem("rr-secs") || "null"); } catch {} setRr({ k: "w", f: a, t: b, secs: Array.isArray(sv) ? sv : RR_SEC.map(x => x[0]), fs: 1.15, busy: false }); }}>📊 التقرير الأسبوعي والشهري</button></div>}
             {rr && <div style={{ position: "fixed", inset: 0, zIndex: 800, background: "rgba(15,23,42,.6)", display: "grid", placeItems: "center", padding: 12 }} onClick={() => !rr.busy && setRr(null)}><div className="ma-card" dir="rtl" style={{ width: "min(600px,100%)", maxHeight: "92vh", overflow: "auto", padding: 16, color: "#0f172a", display: "grid", gap: 12 }} onClick={e => e.stopPropagation()}>
               <b style={{ fontSize: 17, color: "#1e1b4b" }}>📊 التقرير الشامل — أسبوعي / شهري / فترة</b>
               <div><b style={{ fontSize: 13 }}>الفترة</b><div className="flex gap-1 flex-wrap mt-1">{[["w", "هذا الأسبوع"], ["pw", "الأسبوع الماضي"], ["m", "هذا الشهر"], ["pm", "الشهر الماضي"], ["c", "فترة مخصصة"]].map(([k, l]) => <button key={k} className="ma-btn" style={rr.k === k ? { background: "#3730a3", color: "#fff", borderColor: "#3730a3" } : null} onClick={() => { if (k === "c") setRr({ ...rr, k }); else { const [a, b] = rrRange(k); setRr({ ...rr, k, f: a, t: b }); } }}>{l}</button>)}</div>
@@ -46045,6 +46152,7 @@ function SchoolTimetablePage({ by = "الإدارة", canEdit = true, ro = false
           else if (mv) { const o = log[ttK(cell.d, cell.p, mv)]; if (o && o.st === "sub" && +o.sub === +v.sub) await putLog(cell.d, cell.p, mv, null); msg = `↪️ نُقل أ. ${ttClean(T.T[v.sub])} — وأُعيد اقتراح بديل لـ ${maClassName(mv)}، راجعه واعتمده`; }
           setCell(null); toast(msg); }} onClear={async () => { await putLog(cell.d, cell.p, cell.ck, null); setCell(null); }} />}
       {jEd && <TtEditor T0={T} times={times} by={by} onClose={() => setJEd(false)} onSaved={n => { setTt(n); setJEd(false); toast("✅ حُفظ الجدول المعدّل — والسابق محفوظ نسخةً احتياطية"); }} />}
+      {xImp && <TtExcelImport by={by} onClose={() => setXImp(false)} onSaved={(nt, tm) => { setTt(nt); if (tm) setTimes0(ttFixTimes(tm)); setXImp(false); toast("✅ اعتُمد الجدول المستورد من Excel، والقديم محفوظ نسخةً احتياطية"); }} />}
       {tEd && <SttTimesEditor times={times} P={T.P} by={by} onClose={() => setTEd(false)} onSaved={tm => { setTimes0(tm); setTEd(false); toast("✅ حُفظت أوقات الحصص"); }} />}
       {addA && <div className="stt-sheet" onClick={() => setAddA(false)}><div onClick={e => e.stopPropagation()} dir="rtl" style={{ padding: 16 }}>
         <div style={{ width: 44, height: 5, borderRadius: 9, background: "#cbd5e1", margin: "0 auto 12px" }} />
