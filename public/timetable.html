@@ -569,10 +569,11 @@ function renderT(){let h=headRow();let n=0,sb=0;const marks={};let sc=-1;
  for(let d=0;d<5;d++){h+=`<tr><th class="d">${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,i=TI[tch][x],r=SB[tch][x],mk=x===selT?'sel':marks[x]||'';
   if(i>=0){const l=S.lessons[i];n++;const col=S.style.screen&&!mk?colOf(l):'';const md=S.style.showMod&&isMod(i)?' mod':'';const pj=mk&&sc>=0&&CI[sc][x]>=0&&x!==selT?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(l.k?'ac':'')}${col?' col':''}${md}${mkL(l.c,x)?' mk':''}" data-x="${x}" tabindex="0"${col?` style="background:${col}"`:''}${pj?` title="في هذا الوقت: ${esc(subj(pj))} مع أ/ ${esc(D.teachers[pj.t])}"`:''}>${md?'<span class="edm">✎</span>':''}${pbOf(x)}${mkTag(mkL(l.c,x))}${cellL(l,false)}${pj?`<small class="pj">↔ ${esc(shortN(pj.t))}</small>`:''}</td>`}
   else if(r){sb++;const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||'sb'}${mkR(tch,x)?' mk':''}${SBS&&SBS.x===x?' sbsel':''}" data-x="${x}" tabindex="0">${pbOf(x)}${mkTag(mkR(tch,x))}<b>انتظار ${r}</b>${pj?`<small>${esc(subj(pj))} · أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}
-  else{const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(hardAt(tch,x)?'x':'')}" data-x="${x}" tabindex="0">${pbOf(x)}${pj?`<b>${esc(subj(pj))}</b><small>أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}h+=brkCell(d,p)}h+='</tr>'}
+  else{const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(hardAt(tch,x)?'x':'')}${SBS&&SBS.x===x?' sbsel':''}" data-x="${x}" tabindex="0">${pbOf(x)}${pj?`<b>${esc(subj(pj))}</b><small>أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}h+=brkCell(d,p)}h+='</tr>'}
  $('gridT').innerHTML=h;renderPeer(-1);const ex=exitText(tch);
  $('sum2').innerHTML=`<b>أ/ ${esc(D.teachers[tch])}</b>: ${n} حصة، و${sb} انتظار، والإجمالي ${n+sb}.${ex?' قيود الوقت: '+esc(ex)+'.':''} التكليف الفعلي بالانتظار: ${S.subCount[tch]||0}.`;renderHist()}
 function clickT(x){const st=$('st2');
+ if(selT<0&&TI[tch][x]<0&&!SB[tch][x]){if(SBS&&SBS.x===x){SBS=null;renderT();setSt(st,'','أُلغي التحديد.');return}if(hardAt(tch,x)){setSt(st,'warn',`${slotName(x)} بعد موعد خروج أ/ ${esc(D.teachers[tch])} أو ممنوعة عليه بقيد، فلا يوضع له فيها انتظار.`);return}openFree(x);return}
  if(selT<0&&TI[tch][x]<0&&SB[tch][x]){if(SBS&&SBS.x===x){SBS=null;renderT();setSt(st,'','أُلغي تحديد الانتظار.');return}openSB(x);return}
  if(SBS){SBS=null}
  if(selT<0){const i=TI[tch][x];if(i<0)return;selT=x;const l=S.lessons[i];renderInfo(l.c,x,$('info2'));setSt(st,'',`حددت <b>${esc(subj(l))}</b> مع ${esc(D.classes[l.c])} (${slotName(x)}). كل خانة ملونة تعرض حصة الفصل في ذلك الوقت واسم معلمها. اضغط خانة لمعاينة التبديل قبل تنفيذه.`);renderT();return}
@@ -1304,7 +1305,7 @@ function chgClick(e,st){const b=e.target.closest('[data-cht]');if(b){const i=+b.
  if(e.target.closest('[data-fix]')){fixChange(st);return true}return false}
 $('st1').addEventListener('click',e=>{chgClick(e,$('st1'))});$('st2').addEventListener('click',e=>{chgClick(e,$('st2'))});
 // ===== تخفيف جدول المعلم المضغوط: اقتراحات لأي معلم
-function sbList(so){if(!so||!so.length)return S.standby;return S.standby.map(s=>{const o=so.find(q=>q.x===s.d*7+s.p&&q.r===s.r&&q.from===s.t);return o?{...s,t:o.to,_ch:1}:s})}
+function sbList(so){if(!so||!so.length)return S.standby;return S.standby.map(s=>{const o=so.find(q=>q.from!=null&&q.x===s.d*7+s.p&&q.r===s.r&&q.from===s.t);return o?{...s,t:o.to,_ch:1}:s}).concat(so.filter(q=>q.from==null).map(q=>({t:q.to,d:Math.floor(q.x/7),p:q.x%7,r:q.r,_ch:1})))}
 function tGrid(t,swap,so){const g=Array(35).fill(0);S.lessons.forEach((l,i)=>{if(l.k===2)return;let x=l.d*7+l.p;if(swap){if(i===swap.i)x=swap.b;else if(i===swap.j)x=swap.a}if(l.t===t)g[x]=1});sbList(so).forEach(s=>{if(s.t===t&&!g[s.d*7+s.p])g[s.d*7+s.p]=2});return g}
 function tStress(g){let cost=0;const days=[];for(let d=0;d<5;d++){let run=0,mx=0,n=0,les=0;for(let p=0;p<7;p++){const v=g[d*7+p];if(v){n++;if(v===1)les++;run++;mx=Math.max(mx,run)}else run=0}
   if(mx>2)cost+=(mx-2)*4+(mx>3?6:0);if(n>5)cost+=(n-5)*6;days.push({d,mx,n,les})}
@@ -1345,7 +1346,7 @@ function miniGrid(t,sw,so){const pos=k=>{let x=S.lessons[k].d*7+S.lessons[k].p;i
  let h=`<table class="mg"><tr><th></th>${PN.map((_,p)=>`<th>${p+1}</th>`).join('')}</tr>`;
  for(let d=0;d<5;d++){h+=`<tr><th>${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,z=cell[x];
   if(z){const mv=sw&&(z.k===sw.i||z.k===sw.j),md=isMod(z.k),col=S.style.screen?colOf(z.l):'';h+=`<td class="${mv?'mv':''}${md?' mod':''}${col?' col':''}${mkL(z.l.c,x)?' mk':''}"${col?` style="background:${col}"`:''}>${mv||md?'<span class="edm">✎</span>':''}${mkTag(mkL(z.l.c,x))}<b>${esc(subj(z.l))}</b><small>${esc(D.classes[z.l.c])}</small></td>`}
-  else if(sbm[x])h+=`<td class="sbc${sbc[x]?' mv':''}${mkR(t,x)?' mk':''}">${sbc[x]?'<span class="edm">✎</span>':''}${mkTag(mkR(t,x)&&!sbc[x])}ن${sbm[x]}</td>`;else h+=`<td class="${hardAt(t,x)?'x':''}"></td>`}h+='</tr>'}
+  else if(sbm[x])h+=`<td class="sbc${sbc[x]?' mv':''}${mkR(t,x)?' mk':''}">${sbc[x]?'<span class="edm">✎</span>':''}${mkTag(mkR(t,x)&&!sbc[x])}ن${sbm[x]}</td>`;else if(so&&so.some(q=>q.from===t&&q.x===x))h+=`<td class="mv" title="يُنقل منه الانتظار"><span class="edm">✎</span><small>يُخلى</small></td>`;else h+=`<td class="${hardAt(t,x)?'x':''}"></td>`}h+='</tr>'}
  return h+'</table>'}
 function openPreview(from,to){const i=TI[tch][from];if(i<0)return;const c=S.lessons[i].c,j=CI[c][to],tj=j>=0?S.lessons[j].t:-1;TPV={from,to,c,i,j,tj,r:evalSwap(from,to,c)};renderCmp();$('cmp').scrollIntoView({block:'nearest'})}
 function stressLine(t,sw){const a=stressOf(t),b=tStress(tGrid(t,sw)),dir=b.cost<a.cost?'يتحسن':b.cost>a.cost?'يزداد ضغطًا':'لا يتغير';return`<li class="${b.cost<a.cost?'ok':b.cost>a.cost?'warn':'ok'}">أ/ ${esc(shortN(t))}: جدوله ${dir} (${a.cost} ← ${b.cost}). ${esc(stressTxt(b))}</li>`}
@@ -1510,8 +1511,32 @@ function sbOpts(x){const r=SB[tch][x],A=tch,base=stressOf(A),aLoad=tLoad(A),out=
   let ex=null;for(let y=0;y<35;y++){const rb=SB[b][y];if(!rb||y===x||TI[A][y]>=0||SB[A][y]||hardAt(A,y))continue;const so=[{x,r,from:A,to:b},{x:y,r:rb,from:b,to:A}],sc=(tStress(tGrid(A,null,so)).cost-base.cost)+(tStress(tGrid(b,null,so)).cost-stressOf(b).cost);if(!ex||sc<ex.sc)ex={y,rb,so,sc,ad:tStress(tGrid(A,null,so)).cost-base.cost,bd:tStress(tGrid(b,null,so)).cost-stressOf(b).cost}}
   out.push({b,load:tLoad(b),give,bd,ad,ex})}
  return out.sort((p,q)=>p.load-q.load||p.bd-q.bd)}
+
+// ===== وضع انتظار في خانة فارغة: من عنده انتظار في هذا الوقت، ومعاينة الجدولين
+function openFree(x){selT=-1;TPV=null;const A=tch,bA=stressOf(A),O=[];
+ for(let b=0;b<D.teachers.length;b++){const r=SB[b][x];if(b===A||!r)continue;const give=[{x,r,from:b,to:A}],ad=tStress(tGrid(A,null,give)).cost-bA.cost,bd=tStress(tGrid(b,null,give)).cost-stressOf(b).cost;
+  let ex=null;for(let y=0;y<35;y++){const ry=SB[A][y];if(!ry||y===x||TI[b][y]>=0||SB[b][y]||hardAt(b,y))continue;const so=[{x,r,from:b,to:A},{x:y,r:ry,from:A,to:b}],a2=tStress(tGrid(A,null,so)).cost-bA.cost,b2=tStress(tGrid(b,null,so)).cost-stressOf(b).cost;if(!ex||a2+b2<ex.ad+ex.bd)ex={y,ry,so,ad:a2,bd:b2}}
+  O.push({b,r,load:tLoad(b),give,ad,bd,ex})}
+ O.sort((p,q)=>q.load-p.load||p.r-q.r);const used=new Set(O.map(o=>o.r)),nr=[1,2,3].find(r=>!used.has(r));
+ SBS={mode:'free',x,opts:O,nr,newSo:nr?[{x,r:nr,from:null,to:A}]:null,pv:null};renderT();
+ setSt($('st2'),'',`اخترت خانة فارغة لأ/ ${esc(D.teachers[A])} في ${slotName(x)}. بجانب الجدول من عنده انتظار في هذا الوقت: خذ انتظاره أو بادله، وسيظهر جدولاه بعد التعديل قبل التنفيذ.`)}
+function renderFree(){const el=$('peer'),Q=SBS,A=tch,eff=d=>d<0?'يتحسن':d>0?'يزداد ضغطًا':'لا يتغير',sm='min-height:34px;padding:4px 10px;font-size:12.5px';
+ const list=Q.opts.map((o,k)=>`<div style="border-top:1px solid var(--line);padding:5px 0"><div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><b>انتظار ${o.r}: أ/ ${esc(shortN(o.b))}</b><small>نصابه ${o.load}</small></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px"><button class="btn" style="${sm}" data-sbv="${k}|g">أخذ انتظاره</button>${o.ex?`<button class="btn" style="${sm}" data-sbv="${k}|x">تبادل: يأخذ انتظارك ${slotName(o.ex.y)}</button>`:''}</div></div>`).join('')
+  +(Q.nr?`<div style="border-top:1px solid var(--line);padding:5px 0"><button class="btn" style="${sm}" data-sbv="-1|n">إضافة انتظار ${Q.nr} جديد له (دون أخذه من أحد)</button></div>`:'');
+ let pvh='';const pv=Q.pv;if(pv){let so,lines,b=-1;
+  if(pv.m==='n'){so=Q.newSo;const ad=tStress(tGrid(A,null,so)).cost-stressOf(A).cost;lines=`<li class="${ad>0?'warn':'ok'}">أ/ ${esc(shortN(A))}: يزيد نصابه واحدًا (${tLoad(A)+1})، وجدوله ${eff(ad)}</li>`}
+  else{const o=Q.opts[pv.k];b=o.b;so=pv.m==='x'?o.ex.so:o.give;const ad=pv.m==='x'?o.ex.ad:o.ad,bd=pv.m==='x'?o.ex.bd:o.bd;
+   lines=`<li class="${ad>0?'warn':'ok'}">أ/ ${esc(shortN(A))}: ${pv.m==='x'?`يأخذ انتظار ${o.r} هنا ويعطي انتظاره ${slotName(o.ex.y)}، فنصابه لا يتغير`:`يزيد نصابه واحدًا (${tLoad(A)+1})`}، وجدوله ${eff(ad)}. ${esc(stressTxt(tStress(tGrid(A,null,so))))}</li><li class="${bd>0?'warn':'ok'}">أ/ ${esc(shortN(b))}: ${pv.m==='x'?'نصابه لا يتغير':`ينقص نصابه واحدًا (${o.load-1})`}، وجدوله ${eff(bd)}</li>`}
+  pvh=`<div style="margin-top:8px;border-top:2px solid var(--gold);padding-top:6px"><ul class="why">${lines}</ul>${b>=0?`<h4>أ/ ${esc(D.teachers[b])} بعد التعديل</h4>${miniGrid(b,null,so)}`:''}<h4 style="margin-top:6px">أ/ ${esc(D.teachers[A])} بعد التعديل</h4>${miniGrid(A,null,so)}
+   <div class="bar" style="margin-top:6px"><button class="btn p" data-sbgo="${pv.k}|${pv.m}">تنفيذ</button><button class="btn" data-sbno="1">رجوع</button></div></div>`}
+ el.innerHTML=`<div class="panel"><h4>وضع انتظار — ${slotName(Q.x)}</h4><p class="note" style="margin:0 0 4px">من عنده انتظار في هذا الوقت (الأعلى نصابًا أولًا). «أخذ انتظاره» يخفف عنه ويزيدك، و«تبادل» يبقي نصاب كل منكما كما هو.</p>${Q.opts.length?list:'<p class="note">لا أحد عنده انتظار في هذا الوقت.</p>'+list}${pvh}</div>`}
+function doFree(k,m){const Q=SBS,A=tch;let so,desc,b=-1;
+ if(m==='n'){so=Q.newSo;desc=`إضافة انتظار ${Q.nr} لأ/ ${D.teachers[A]} في ${slotName(Q.x)}`}
+ else{const o=Q.opts[k];if(!o)return;b=o.b;so=m==='x'?o.ex.so:o.give;desc=m==='x'?`تبادل انتظار: أ/ ${D.teachers[A]} يأخذ انتظار ${o.r} (${slotName(Q.x)}) من أ/ ${D.teachers[b]} ويعطيه انتظاره (${slotName(o.ex.y)})`:`نقل انتظار ${o.r} في ${slotName(Q.x)} من أ/ ${D.teachers[b]} إلى أ/ ${D.teachers[A]}`}
+ record(desc);S.standby=sbList(so).map(s=>{const z={...s};delete z._ch;return z});S.edited++;idx();SBS=null;if(b>=0)S.cmp={a:A,b};save();renderT();renderCmp();renderHot();teacherSum();setSt($('st2'),'ok','<b>تم:</b> '+esc(desc)+'. الخانات المتغيرة عليها «معدّل»، ويمكنك التراجع، وتظهر في «📋 التغييرات للمنصة».')}
 function openSB(x){selT=-1;TPV=null;SBS={x,r:SB[tch][x],opts:sbOpts(x),pv:null};renderT();setSt($('st2'),'',`حددت <b>انتظار ${SB[tch][x]}</b> لأ/ ${esc(D.teachers[tch])} في ${slotName(x)}. اختر من القائمة بجانب الجدول معلمًا يأخذه، أو تبادلًا يبقي النصاب متساويًا، وسيظهر جدوله بعد التعديل قبل التنفيذ.`)}
-function renderSB(){const el=$('peer'),Q=SBS;if(!Q)return;const pv=Q.pv,eff=d=>d<0?'يتحسن':d>0?'يزداد ضغطًا':'لا يتغير';
+function renderSB(){const el=$('peer'),Q=SBS;if(!Q)return;if(Q.mode==='free'){renderFree();return}const pv=Q.pv,eff=d=>d<0?'يتحسن':d>0?'يزداد ضغطًا':'لا يتغير';
  const list=Q.opts.slice(0,8).map((o,k)=>`<div class="bst" style="display:block;border-top:1px solid var(--line);padding:5px 0"><div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><b>أ/ ${esc(shortN(o.b))}</b><small>نصابه ${o.load}</small></div>
    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px"><button class="btn" style="min-height:34px;padding:4px 10px;font-size:12.5px" data-sbv="${k}|g">إسناد له (${eff(o.bd)} عنده)</button>${o.ex?`<button class="btn" style="min-height:34px;padding:4px 10px;font-size:12.5px" data-sbv="${k}|x">تبادل مع انتظاره ${slotName(o.ex.y)}</button>`:''}</div></div>`).join('');
  let pvh='';if(pv){const o=Q.opts[pv.k],so=pv.m==='x'?o.ex.so:o.give,bd=pv.m==='x'?o.ex.bd:o.bd,ad=pv.m==='x'?o.ex.ad:o.ad;
@@ -1519,7 +1544,7 @@ function renderSB(){const el=$('peer'),Q=SBS;if(!Q)return;const pv=Q.pv,eff=d=>d
    <div class="cmpg" style="grid-template-columns:1fr;margin-top:6px"><div><h4 style="font-size:12.5px">جدولك أ/ ${esc(shortN(tch))} بعد التعديل</h4>${miniGrid(tch,null,so)}</div></div>
    <div class="bar" style="margin-top:6px"><button class="btn p" data-sbgo="${pv.k}|${pv.m}">تنفيذ</button><button class="btn" data-sbno="1">رجوع</button></div></div>`}
  el.innerHTML=`<div class="panel"><h4>نقل انتظار ${Q.r} — ${slotName(Q.x)}</h4><p class="note" style="margin:0 0 4px">المعروضون فارغون في هذا الوقت، الأقل نصابًا أولًا. «تبادل» يعطيه انتظارك ويأخذ أحد انتظاراته في وقت فراغك، فيبقى نصاب كل منكما كما هو.</p>${Q.opts.length?list:'<p class="note">لا يوجد معلم فارغ في هذا الوقت.</p>'}${pvh}</div>`}
-function doSB(k,m){const Q=SBS,o=Q.opts[k];if(!o)return;const so=m==='x'?o.ex.so:o.give,a=tch,b=o.b;
+function doSB(k,m){if(SBS&&SBS.mode==='free'){doFree(k,m);return}const Q=SBS,o=Q.opts[k];if(!o)return;const so=m==='x'?o.ex.so:o.give,a=tch,b=o.b;
  const desc=m==='x'?`تبادل انتظار: أ/ ${D.teachers[a]} (${slotName(Q.x)}) مع أ/ ${D.teachers[b]} (${slotName(o.ex.y)})`:`نقل انتظار ${Q.r} في ${slotName(Q.x)} من أ/ ${D.teachers[a]} إلى أ/ ${D.teachers[b]}`;
  record(desc);S.standby=sbList(so).map(s=>{const z={...s};delete z._ch;return z});S.edited++;idx();SBS=null;S.cmp={a,b};save();renderT();renderCmp();renderHot();teacherSum();setSt($('st2'),'ok','<b>تم:</b> '+esc(desc)+'. الخانتان عليهما علامة «معدّل»، ويمكنك التراجع، وتظهر في «📋 التغييرات للمنصة».')}
 document.addEventListener('click',e=>{if(!SBS||!$('peer').contains(e.target))return;const v=e.target.closest('[data-sbv]'),g=e.target.closest('[data-sbgo]');
@@ -1563,7 +1588,7 @@ let chgF=-1;
 function renderChg(){const G=chgGroups(),A=S.applied||{};document.querySelectorAll('.chgB .cnt').forEach(e=>e.textContent=G.length||'');const dl=$('chgDlg');if(!dl||dl.hidden)return;
  const V=chgF<0?G:G.filter(g=>g.tch.includes(D.teachers[chgF])),nT=new Set(G.flatMap(g=>g.tch)).size,nC=new Set(G.filter(g=>!g.S).map(g=>g.c)).size,dn=G.filter(g=>A[g.sig]).length;
  const arc=(S.chgArc||[]).map((a,k)=>`<details class="panel" style="margin:6px 0"><summary><b>اعتُمدت ${new Date(a.at).toLocaleString('ar-SA-u-nu-latn',{dateStyle:'medium',timeStyle:'short'})}</b> — ${a.G.length} تغيير</summary>${a.G.map((g,n)=>`<div class="cg${g.done?' done':''}"><h4>${n+1}. ${esc(g.h)}${g.done?' ✓ نُفّذ في المنصة':''}</h4>${rowsTbl(g.rows)}</div>`).join('')}<button class="btn" data-arcp="${k}">طباعة هذه الدفعة</button></details>`).join('');
- $('chgBody').innerHTML=`<p class="note" style="margin:0 0 8px">${G.length?`<b>${G.length}</b> تغيير منذ آخر اعتماد، تمس <b>${nC}</b> فصول و<b>${nT}</b> معلمين${G.some(g=>g.S)?`، منها ${G.filter(g=>g.S).length} في الانتظار`:''}. نُفّذ منها في المنصة: <b>${dn}</b> من ${G.length}.`:'لا توجد تغييرات منذ آخر اعتماد. التغييرات المعتمدة سابقًا محفوظة أسفل.'}</p>
+ $('chgBody').innerHTML=`<p class="note" style="margin:0 0 8px">${G.length?`<b>${G.length}</b> تغيير منذ آخر اعتماد، تمس ${nC?`<b>${nC}</b> فصول و`:''}<b>${nT}</b> معلمين${G.some(g=>g.S)?`، منها ${G.filter(g=>g.S).length} في الانتظار`:''}. نُفّذ منها في المنصة: <b>${dn}</b> من ${G.length}.`:'لا توجد تغييرات منذ آخر اعتماد. التغييرات المعتمدة سابقًا محفوظة أسفل.'}</p>
   ${G.length?`<div class="bar" style="margin:0 0 6px"><select id="chgT"><option value="-1">كل المعلمين</option>${[...new Set(G.flatMap(g=>g.tch))].sort().map(n=>`<option value="${D.teachers.indexOf(n)}" ${D.teachers.indexOf(n)===chgF?'selected':''}>أ/ ${esc(n)}</option>`).join('')}</select><button class="btn" id="chgCopy">نسخ نصًا</button><button class="btn" id="chgCsv">تصدير Excel</button><button class="btn" id="chgPrint">طباعة</button><button class="btn" id="chgAll">↶ التراجع عن الكل</button></div>`:''}
   ${V.map((g,n)=>`<div class="cg${A[g.sig]?' done':''}"><h4>${n+1}. ${esc(g.h)}</h4>${rowsTbl(g.rows)}<div>المعلمون المتأثرون: ${g.tch.map(x=>`<span class="tch">أ/ ${esc(x)}</span>`).join('')}</div>
    <div class="ops"><label><input type="checkbox" data-done="${esc(g.sig)}" ${A[g.sig]?'checked':''}> نُفّذ في المنصة</label><button class="btn" ${g.S?`data-rvs="${g.S.join(',')}"`:`data-rv="${g.I.join(',')}"`}>↶ تراجع عن هذا التغيير</button></div></div>`).join('')}
