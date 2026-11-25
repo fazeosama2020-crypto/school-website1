@@ -30,17 +30,6 @@ const ImprovePlanAdmin = React.lazy(() => import("./smart/ImprovePlan.jsx").then
 const ReadingStudent = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingStudent })));
 const ReadingTeacher = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingTeacher })));
 const ReadingAdmin = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingAdmin })));
-function SmartTimetableFrame() {
-  return (
-    <div className="px-2 md:px-6 py-4" dir="rtl">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-        <b style={{ fontSize: 18 }}>🧠 الجدول المدرسي الذكي</b>
-        <a href="/timetable.html" target="_blank" rel="noopener" style={{ padding: "8px 14px", borderRadius: 8, background: "#0d2547", color: "#fff", textDecoration: "none", fontWeight: 700 }}>فتح في صفحة كاملة</a>
-      </div>
-      <iframe src="/timetable.html" title="الجدول المدرسي الذكي" style={{ width: "100%", height: "calc(100vh - 150px)", minHeight: 600, border: "1px solid #dfe3ea", borderRadius: 12, background: "#fff" }} />
-    </div>
-  );
-}
 const OpPlan = React.lazy(() => import("./OpPlan.jsx").then(m => ({ default: m.OpPlan })));
 const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ default: m.HealthPlan })));
 const AbsAction = React.lazy(() => import("./AbsAction.jsx").then(m => ({ default: m.AbsAction })));
@@ -2313,7 +2302,7 @@ const HUB_GROUPS = [
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"healthplan",label:"البرامج الصحية",icon:"🩺"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
-    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"circdaily",label:"التعاميم اليومية",icon:"📨"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"smarttt",label:"الجدول المدرسي الذكي",icon:"🧠"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"audit",label:"سجل التدقيق",icon:"🕵️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"circdaily",label:"التعاميم اليومية",icon:"📨"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"audit",label:"سجل التدقيق",icon:"🕵️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -2881,7 +2870,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         <div className="bg-white rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">⚡ روابط سريعة</b></div>
           <div className="grid grid-cols-2 gap-2">
-            {[["الجدول المدرسي","🗓️","timetable"],["الجدول الذكي","🧠","smarttt"],["انضباط المعلمين","🏅","staffdisc"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
+            {[["الجدول المدرسي","🗓️","timetable"],["انضباط المعلمين","🏅","staffdisc"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
               <button key={id} onClick={()=>navigate(id)} className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 flex items-center gap-2 text-xs font-bold text-gray-700 hover:bg-teal-50 hover:border-teal-200 transition">{ic} {l}</button>
             ))}
           </div>
@@ -31712,6 +31701,39 @@ function AdminMegaNav({ groups, pageById, page, onNavigate }) {
 }
 
 // ── درج التنقل للشاشات الصغيرة ووضع الجوال: تبويبات مجموعات + شبكة ملصقات
+// ══════════ 📱 الشريط الجانبي المصغّر للجوال: الأقسام على اليمين بأيقونات صغيرة • حجم العرض مضغوط/متوسط/عادي • بلا تمرير أفقي ══════════
+const M_LAY_KEY = "m-lay-v1";
+const M_ZOOMS = [[.86, "مضغوط"], [.93, "متوسط"], [1, "عادي"]];
+function mLayGet() { try { return { rail: true, z: .9, ...JSON.parse(localStorage.getItem(M_LAY_KEY) || "{}") }; } catch { return { rail: true, z: .9 }; } }
+function MRail({ groups, pageById, page, onNav, onAll, lay, setLay }) {
+  const [g, setG] = useState(null);
+  const short = t => { const w = String(t || "").replace(/^(ال)?/, "").split(/\s+/)[0]; return w.length > 7 ? w.slice(0, 6) + "…" : w; };
+  const G = groups.filter(x => x.ids && x.ids.length);
+  const actG = G.findIndex(x => x.ids.includes(page));
+  const z = M_ZOOMS.find(x => x[0] === lay.z) || M_ZOOMS[0];
+  const nextZ = () => { const i = M_ZOOMS.findIndex(x => x[0] === lay.z); setLay({ ...lay, z: M_ZOOMS[(i + 1) % M_ZOOMS.length][0] }); };
+  const B = ({ on, ic, t, onClick, title }) => <button onClick={onClick} title={title || t} style={{ width: 50, minHeight: 50, flexShrink: 0, border: "none", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: "5px 2px", fontFamily: "'Cairo',sans-serif",
+    background: on ? "#fff" : "transparent", color: on ? "#0f766e" : "rgba(255,255,255,.92)", boxShadow: on ? "0 4px 12px -4px rgba(0,0,0,.35)" : "none" }}><span style={{ fontSize: 19, lineHeight: 1 }}>{ic}</span><span style={{ fontSize: 8.5, fontWeight: 900, lineHeight: 1.2, maxWidth: 48, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t}</span></button>;
+  return <>
+    <div dir="rtl" style={{ width: 58, flexShrink: 0, background: "linear-gradient(180deg,#0f766e,#0b3f3c)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "6px 0", overflowY: "auto", overflowX: "hidden", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+      <B ic="☰" t="الكل" onClick={() => { setG(null); onAll(); }} title="كل الأقسام" />
+      <B ic="🏠" t="الرئيسية" on={page === "home"} onClick={() => { setG(null); onNav("home"); }} />
+      <i style={{ width: 30, height: 1, background: "rgba(255,255,255,.25)", margin: "2px 0", flexShrink: 0 }} />
+      {G.map((x, i) => <B key={x.title} ic={x.icon} t={short(x.title)} title={x.title} on={g === i || (g == null && actG === i)} onClick={() => setG(g === i ? null : i)} />)}
+      <span style={{ flex: 1 }} />
+      <B ic="🔍" t={z[1]} onClick={nextZ} title="حجم العرض" />
+      <B ic="⬇️" t="شريط سفلي" onClick={() => setLay({ ...lay, rail: false })} title="عرض الأقسام في شريط سفلي" />
+    </div>
+    {g != null && G[g] && <div onClick={() => setG(null)} style={{ position: "fixed", inset: 0, zIndex: 880, background: "rgba(15,23,42,.35)" }}>
+      <div onClick={e => e.stopPropagation()} dir="rtl" style={{ position: "absolute", top: 0, bottom: 0, right: 58, width: "min(270px,74vw)", background: "#fff", boxShadow: "-12px 0 30px -12px rgba(0,0,0,.4)", display: "flex", flexDirection: "column", animation: "mRailIn .16s ease-out", paddingTop: "env(safe-area-inset-top)" }}>
+        <style>{`@keyframes mRailIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}`}</style>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 12px 10px", borderBottom: `3px solid ${G[g].color || "#0f766e"}` }}><span style={{ fontSize: 22 }}>{G[g].icon}</span><b style={{ flex: 1, fontSize: 14.5, color: "#0f172a" }}>{G[g].title}</b><button onClick={() => setG(null)} style={{ border: "none", background: "#f1f5f9", borderRadius: 99, width: 30, height: 30, fontWeight: 900, cursor: "pointer" }}>✕</button></div>
+        <div style={{ overflowY: "auto", flex: 1, padding: 6, WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>{G[g].ids.map(id => { const pg = pageById[id]; if (!pg) return null; const on = page === id;
+          return <button key={id} onClick={() => { setG(null); onNav(id); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", marginBottom: 3, border: "none", borderRadius: 12, cursor: "pointer", textAlign: "right", fontFamily: "'Cairo',sans-serif", background: on ? "linear-gradient(135deg,#0d9488,#0f766e)" : "#f8fafc", color: on ? "#fff" : "#1e293b" }}><span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{pg.icon}</span><span style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.4 }}>{pg.label}</span></button>; })}</div>
+      </div></div>}
+  </>;
+}
+
 function StickerDrawerNav({ groups, pageById, page, onNavigate }) {
   const initial = (groups.find(g => g.ids.includes(page)) || groups[0]).title;
   const [sel, setSel] = useState(initial);
@@ -52924,6 +52946,7 @@ function SchoolWebsiteInner() {
   // 📱 الجوال الحقيقي: الواجهة بملء الشاشة + شريط سفلي + قائمة أقسام تُفتح عند الطلب
   const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 700);
   const [mNav, setMNav] = useState(false);
+  const [mLay, setMLayS] = useState(mLayGet); const setMLay = v => { setMLayS(v); try { localStorage.setItem(M_LAY_KEY, JSON.stringify(v)); } catch {} };
   const mScrollRef = useRef(null);
   useEffect(() => { const f = () => setNarrow(window.innerWidth < 700); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   useEffect(() => { setMNav(false); if (mScrollRef.current) mScrollRef.current.scrollTop = 0; }, [page]);
@@ -52996,7 +53019,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","smarttt","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -53378,7 +53401,6 @@ function SchoolWebsiteInner() {
     { id: "quiz",           label: "اختبارات الطلاب",    icon: "📝" },
     { id: "luckywheel",     label: "عجلة الحظ",            icon: "🎡" },
     { id: "timetable",      label: "الجدول المدرسي",       icon: "🗓️" },
-    { id: "smarttt",        label: "الجدول المدرسي الذكي",  icon: "🧠" },
     { id: "dailyquiz",      label: "الاختبار اليومي",      icon: "🎯" },
     { id: "raffle",         label: "سحب الطلاب",           icon: "🎰" },
     { id: "aiteacher",      label: "مساعد المعلم الذكي",   icon: "🤖" },
@@ -53438,7 +53460,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["initiatives","stumeet","stuvisits","activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","smarttt","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
   ];
   const navGroups = navGroupsAll.map(g => ({ ...g, ids: g.ids.filter(id => !admOff[id] && !admUi.hide.includes(id)) }));
   const admFavItems = admUi.fav.filter(id => pageById[id] && !admOff[id] && !admUi.hide.includes(id)).map(id => { const g = navGroupsAll.find(x => x.ids.includes(id)); return { id, ic: pageById[id].icon, label: pageById[id].label, c: g ? g.color : "#0b2545" }; });
@@ -53733,8 +53755,10 @@ function SchoolWebsiteInner() {
 
             {/* ── محتوى الصفحة (قابل للتمرير) ── */}
             {page !== "parentinbox" && <div style={{ flexShrink: 0, padding: "6px 8px 0", background: "#f8fafc" }}><PtInboxStrip onOpen={() => navigate("parentinbox")} /><TchMsgStrip onHd={() => { try { localStorage.setItem("hd-tab", "obj"); } catch {} navigate("hdisc"); }} onHfx={() => navigate("hfx")} onCv={() => { try { localStorage.setItem("cv-tab", "tfile"); } catch {} navigate("classvisits"); }} /></div>}
-            <div ref={mScrollRef} style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", overscrollBehavior:"contain", background:"#f8fafc" }}>
-              <div style={{ direction:"rtl", padding: narrow ? "6px 8px 14px" : 0 }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
+            <div style={{ flex:1, minHeight:0, display:"flex", flexDirection:"row", direction:"rtl" }}>
+            {narrow && mLay.rail && <MRail groups={navGroups} pageById={pageById} page={page} onNav={navigate} onAll={() => setMNav(true)} lay={mLay} setLay={setMLay} />}
+            <div ref={mScrollRef} style={{ flex:1, minWidth:0, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch", overscrollBehavior:"contain", background:"#f8fafc" }}>
+              <div style={{ direction:"rtl", padding: narrow ? (mLay.rail ? "6px 6px 14px" : "6px 8px 14px") : 0, zoom: narrow ? mLay.z : 1, maxWidth:"100%" }}><SiteErrorBoundary where="هذه الصفحة" resetKey={page}>
                 <HolTodayStrip navigate={navigate} />
                 {page === "home" && <FavBar items={admFavItems} onOpen={it => navigate(it.id)} onEdit={() => setAdmCust(true)} onTour={() => setAdmTour(true)} />}{page === "home"           && <HomePage teachers={teachers} announcements={announcements} activities={activities} navigate={navigate} attendance={attendance} week={week} messages={messages} classList={classList} weekArchive={weekArchive} agendaUser={user?.username || user?.name} />}
                 {page === "student-absence" && <StudentAbsencePage />}{page === "absaction" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AbsAction me={{ name: user?.name || "الإدارة" }} api={absApi()} /></React.Suspense></div>}{page === "pulse" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolPulse api={pulseApi()} /></React.Suspense></div>}{page === "command" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Command me={{ name: user?.name || "الإدارة" }} api={cmdApi("absaction")} /></React.Suspense></div>}{page === "initiatives" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfInitiatives api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "stumeet" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfMeetings api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "stuvisits" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={LF_WAIT}><LfZyStaff api={lifeApi(user?.hash)} me={{ name: user?.name || "الإدارة", role: "principal" }} canAll={true} /></React.Suspense></div>}{page === "datahealth" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><DataHealth me={{ name: user?.name || "الإدارة" }} api={dhApi(navigate)} /></React.Suspense></div>}{page === "schoolsetup" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><SchoolSetup me={{ name: user?.name || "الإدارة" }} api={ssApi()} tiles={PT_TILE_LIST} pages={pages} groups={navGroupsAll} PermsPanel={StaffPermsPanel} /></React.Suspense></div>}
@@ -53773,7 +53797,7 @@ function SchoolWebsiteInner() {
                 {page === "broadcast"      && <BroadcastPage />}
                 {page === "quiz"           && <QuizPage />}
                 {page === "luckywheel"     && <LuckyWheelPage />}
-                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}
+                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}
                 {page === "honorboard"     && <HonorBoardPage classList={classList} />}
                 {page === "absencestats"   && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
                 {page === "monthlyreport"  && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
@@ -53817,7 +53841,9 @@ function SchoolWebsiteInner() {
                 {page === "settings"       && <SettingsPage teachers={teachers} setTeachers={setTeachers} saveTeachers={saveTeachers} week={week} setWeek={setWeek} saveWeek={saveWeek} users={users} siteFont={siteFont} setSiteFont={setSiteFont} saveSiteFont={saveSiteFont} weekArchive={weekArchive} archiveCurrentWeek={archiveCurrentWeek} />}
               </SiteErrorBoundary></div>
             </div>
+            </div>
 
+            {!(narrow && mLay.rail) && <>{narrow && <button onClick={() => setMLay({ ...mLay, rail: true })} style={{ flexShrink:0, border:"none", background:"#f0fdfa", color:"#0f766e", fontFamily:"'Cairo',sans-serif", fontWeight:800, fontSize:11, padding:"3px 0", cursor:"pointer", borderTop:"1px solid #ccfbf1" }}>⇥ عرض الأقسام في شريط جانبي مصغّر</button>}
             {/* ══ شريط سفلي بأسلوب التطبيقات: الصفحات الأساسية + «الأقسام» (القائمة الكاملة تُفتح عند الطلب) ══ */}
             <div style={{ flexShrink:0, background:"#fff", borderTop:"1px solid #e2e8f0", boxShadow:"0 -6px 20px rgba(15,23,42,0.08)", paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
               <div style={{ display:"flex", alignItems:"stretch", overflowX:"auto", WebkitOverflowScrolling:"touch", scrollbarWidth:"none" }}>
@@ -53838,7 +53864,7 @@ function SchoolWebsiteInner() {
                   );
                 })}
               </div>
-            </div>
+            </div></>}
             {mNav && (
               <div onClick={() => setMNav(false)} style={{ position:"fixed", inset:0, zIndex:900, background:"rgba(15,23,42,0.5)", display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
                 <style>{`@keyframes pamSheetUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
@@ -53968,7 +53994,7 @@ function SchoolWebsiteInner() {
         {page === "broadcast"     && <BroadcastPage />}
         {page === "quiz"          && <QuizPage />}
         {page === "luckywheel"    && <LuckyWheelPage />}
-        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}
+        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}
         {page === "honorboard"    && <HonorBoardPage classList={classList} />}
         {page === "absencestats"  && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
         {page === "monthlyreport" && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
