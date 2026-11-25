@@ -145,7 +145,8 @@ function SmartTimetableFrame() {
     const h = async e => {
       if (e.origin !== window.location.origin) return;
       const d = e.data || {};
-      if (d.type === "smarttt-load") { try { const [a0, c0] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG)]); const tt0 = ttFresh(a0); ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-site", tt: tt0, times: c0 && Array.isArray(c0.times) ? c0.times : tt0.times }, window.location.origin); } catch (er) {} return; }
+      if (d.type === "smarttt-draft") { if (d.draft && typeof d.draft.s === "string") { try { await maPut("school-tt-draft", { at: +d.draft.at || Date.now(), s: d.draft.s }); } catch (er) {} } return; }
+      if (d.type === "smarttt-load") { try { const [a0, c0, dr0] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet("school-tt-draft").catch(() => null)]); const tt0 = ttFresh(a0); ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-site", tt: tt0, times: c0 && Array.isArray(c0.times) ? c0.times : tt0.times, draft: dr0 && typeof dr0.s === "string" ? dr0 : null }, window.location.origin); } catch (er) {} return; }
       if (d.type !== "smarttt-publish" || !d.tt || !d.tt.C || !d.tt.RS) return;
       if (!window.confirm("سيُعتمد هذا الجدول في الموقع: الشاشة الرئيسية والحصص الآن وجداول المعلمين والاحتياط، ويُحفظ الجدول الحالي نسخةً احتياطية. متابعة؟")) { reply(false, "أُلغي النشر."); return; }
       try {
