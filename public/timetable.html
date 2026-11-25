@@ -68,6 +68,7 @@ table.t td{padding:7px 8px;border-top:1px solid var(--line)}table.t td.n{text-al
 .chip.on{background:var(--badb);color:#fff;border-color:var(--badb)}
 h2{font-size:20px;margin:18px 0 8px}
 .note{color:var(--mut);font-size:13px}
+#chgDlg{position:fixed;inset:0;background:rgba(11,37,69,.55);z-index:90;display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}#chgDlg[hidden]{display:none}#chgDlg .box{background:var(--bg,#f6f7fb);border-radius:14px;max-width:980px;width:100%;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.3)}.chgB .cnt:not(:empty){background:var(--gold);color:#0b2545;border-radius:999px;padding:1px 8px;font-size:12px;margin-inline-start:4px}.cg{background:var(--card);border:1px solid var(--line);border-inline-start:5px solid var(--mod);border-radius:10px;padding:10px 12px;margin:8px 0}.cg.done{border-inline-start-color:#16a34a;opacity:.8}.cg h4{margin:0 0 6px;font-size:14.5px;line-height:1.6}.cg table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.cg th,.cg td{border:1px solid var(--line);padding:5px 6px;text-align:center}.cg th{background:#0b2545;color:#fff;font-weight:700}.cg td.bf{background:#fef2f2}.cg td.af{background:#f0fdf4;font-weight:700}.cg .tch{display:inline-block;background:#eef2ff;border-radius:999px;padding:2px 9px;margin:2px;font-size:12px}.cg .ops{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}.cg .ops label{display:flex;gap:6px;align-items:center;font-weight:700}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
 #printArea,.ph{display:none}
 .frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px;margin-bottom:12px}
@@ -157,7 +158,7 @@ details summary{cursor:pointer;min-height:40px;padding:8px 0;font-weight:700}
  <section id="v-classes">
   <div class="status warn" id="siteBar" hidden><span id="siteBarTx"></span> <button class="btn p" id="siteYes">فتح جدول الموقع</button> <button class="btn" id="siteNo">إبقاء ما هنا</button></div>
   <div class="status warn" id="lockBar" hidden>🔒 <b>الجدول مقفل ومعتمد.</b> <span id="lockInfo"></span> لا نقل ولا توليد حتى تفتح القفل. <button class="btn" id="unlock">فتح القفل</button></div>
-  <div class="bar"><select id="clsSel" aria-label="الفصل"></select><button class="btn" id="undo1" title="Ctrl+Z">↶ تراجع</button><button class="btn" id="redo1" title="Ctrl+Y">↷ إعادة</button><button class="btn g" id="sugAll">اقترح تحسينات</button><button class="btn" id="commit">اعتماد التعديلات</button></div>
+  <div class="bar"><select id="clsSel" aria-label="الفصل"></select><button class="btn" id="undo1" title="Ctrl+Z">↶ تراجع</button><button class="btn" id="redo1" title="Ctrl+Y">↷ إعادة</button><button class="btn g" id="sugAll">اقترح تحسينات</button><button class="btn" id="commit">اعتماد التعديلات</button><button class="btn chgB" data-chg="1">📋 التغييرات للمنصة <span class="cnt"></span></button></div>
   <div class="bar"><button class="btn" id="pinMode">📌 وضع التثبيت</button><button class="btn" id="pinCls">تثبيت حصص الفصل</button><button class="btn" id="unpinCls">فك تثبيت الفصل</button><button class="btn" id="lockAll">🔒 قفل الجدول كاملًا</button><button class="btn" id="siteLoad">⤓ تحميل الجدول المعتمد من الموقع</button><button class="btn p" id="publish">نشر في الشاشة الرئيسية للموقع</button></div>
   <div class="bar"><label class="ck" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="showMod" style="width:20px;height:20px">تمييز الحصص المعدّلة بلون</label><input type="color" id="modCol" aria-label="لون التعديل" style="width:44px;height:36px;border:1px solid var(--line);border-radius:6px;padding:0"><span class="note" id="modN"></span><button class="btn" id="toBase">العودة إلى آخر جدول معتمد</button></div>
   <details class="panel" style="padding:4px 14px"><summary>سجل التعديلات خطوة خطوة (<span id="histN">0</span>)</summary><div id="histList"></div></details>
@@ -200,7 +201,7 @@ details summary{cursor:pointer;min-height:40px;padding:8px 0;font-weight:700}
   </details>
  </section>
  <section id="v-teachers" hidden>
-  <div class="bar"><select id="tSel" aria-label="المعلم"></select><button class="btn" id="undo2">↶ تراجع</button><button class="btn" id="redo2">↷ إعادة</button><button class="btn g" id="tSug">اقترح تخفيف جدول المعلم</button><button class="btn p" id="tPub">تثبيت التعديلات في الموقع</button></div>
+  <div class="bar"><select id="tSel" aria-label="المعلم"></select><button class="btn" id="undo2">↶ تراجع</button><button class="btn" id="redo2">↷ إعادة</button><button class="btn g" id="tSug">اقترح تخفيف جدول المعلم</button><button class="btn p" id="tPub">تثبيت التعديلات في الموقع</button><button class="btn chgB" data-chg="1">📋 التغييرات للمنصة <span class="cnt"></span></button></div>
   <div class="note">أكثر المعلمين ضغطًا (الرقم درجة الضغط):</div><div class="chips" id="hotT"></div>
   <p class="note" id="sum2" style="margin:0 0 8px"></p>
   <div class="status" id="st2">اضغط على حصة للمعلم لعرض شرحها وخيارات تغييرها، ثم على المكان الجديد لنقلها، فتتبادل مكانها مع حصة الفصل في ذلك الوقت.</div>
@@ -961,13 +962,14 @@ function doUndo(){const h=(S.hist||[]).pop();if(!h)return;S.redo=S.redo||[];S.re
 function doRedo(){const r=(S.redo||[]).pop();if(!r)return;S.hist.push({desc:r.desc,at:r.at,...curSnap()});restoreSnap(r);sel=-1;selT=-1;sugMarks={};save();render();flash(`أعدت: ${r.desc}`)}
 function backTo(k){let n=0;while((S.hist||[]).length>k){const h=S.hist.pop();S.redo.push({desc:h.desc,at:h.at,...curSnap()});restoreSnap(h);n++}sel=-1;selT=-1;sugMarks={};save();render();flash(`تراجعت ${n===1?'خطوة واحدة':n===2?'خطوتين':n+(n<=10?' خطوات':' خطوة')}.`)}
 function flash(m){const el=view==='teachers'?$('st2'):$('st1');if(el)setSt(el,'ok',esc(m))}
-const isMod=i=>S.base&&S.base.X&&S.base.X.length===S.lessons.length&&S.base.X[i]!==S.lessons[i].d*7+S.lessons[i].p;
+const isMod=i=>!!(S.base&&S.base.X&&S.base.X.length===S.lessons.length&&(S.base.X[i]!==S.lessons[i].d*7+S.lessons[i].p||(S.base.T&&S.base.T.length===S.lessons.length&&S.base.T[i]!==S.lessons[i].t)));
+const baseOk=()=>S.base&&S.base.X&&S.base.X.length===S.lessons.length;const bX=i=>baseOk()?S.base.X[i]:S.lessons[i].d*7+S.lessons[i].p,bT=i=>baseOk()&&S.base.T&&S.base.T.length===S.lessons.length?S.base.T[i]:S.lessons[i].t;
 const modCount=()=>S.lessons.reduce((a,_,i)=>a+(isMod(i)?1:0),0);
-function setBase(){S.base={X:curX(),B:S.standby.map(s=>[s.t,s.d,s.p,s.r])}}
+function setBase(){try{const G=chgGroups();if(G.length){S.chgArc=S.chgArc||[];S.chgArc.unshift({at:Date.now(),G:G.map(g=>({h:g.h,rows:g.rows,tch:g.tch,done:!!(S.applied||{})[g.sig]}))});S.chgArc=S.chgArc.slice(0,30)}}catch(e){}S.applied={};S.base={X:curX(),T:S.lessons.map(l=>l.t),B:S.standby.map(s=>[s.t,s.d,s.p,s.r])}}
 const slotName=x=>`${DAYS[Math.floor(x/7)]} ${PN[x%7]}`;
 function descSwap(a,b,c){const i=CI[c][a],j=CI[c][b],nm=k=>k>=0?subj(S.lessons[k]):'خانة فارغة';return`${D.classes[c]}: ${nm(i)} (${slotName(a)}) ⇄ ${nm(j)} (${slotName(b)})`}
 const fmT=t=>new Date(t).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
-function renderHist(){const H=S.hist||[];$('histN').textContent=H.length;$('undo1').disabled=$('undo2').disabled=!H.length;$('redo1').disabled=$('redo2').disabled=!(S.redo||[]).length;
+function renderHist(){try{renderChg()}catch(e){}const H=S.hist||[];$('histN').textContent=H.length;$('undo1').disabled=$('undo2').disabled=!H.length;$('redo1').disabled=$('redo2').disabled=!(S.redo||[]).length;
  const mc=modCount();$('modN').textContent=mc?`${mc===1?'حصة واحدة معدّلة':mc===2?'حصتان معدّلتان':mc+(mc<=10?' حصص معدّلة':' حصة معدّلة')} لم تُعتمد`:'لا توجد تعديلات غير معتمدة';
  $('histList').innerHTML=H.length?H.map((h,k)=>({h,k})).reverse().map(({h,k})=>`<div class="vl"><span><b>${k+1}.</b> ${esc(h.desc)} <span class="note">· ${fmT(h.at)}</span></span><button class="btn" data-back="${k}">العودة إلى ما قبلها</button></div>`).join(''):'<p class="note">لا توجد خطوات بعد.</p>'}
 $('histList').onclick=e=>{const b=e.target.closest('[data-back]');if(b)backTo(+b.dataset.back)};
@@ -1472,7 +1474,56 @@ let resetArm=0;$('reset').onclick=()=>{const st=$('st5');st.hidden=false;if(!res
  resetArm=0;if(D.custom){try{localStorage.removeItem(KEY)}catch(e){}(window.__rl=1,location.reload());return}$('reset').textContent='استعادة الجدول الأصلي';const sc=S.school,yr=S.year;const vv=S.versions;S=fresh();S.school=sc;S.year=yr;S.versions=vv;recompile();idx();save();render();setSt(st,'ok','استُعيد الجدول الأصلي.')};
 // ===== التبويبات
 let view='classes';
-function render(){({classes:()=>{renderLock();renderStudioCfg();renderC()},teachers:()=>{renderT();renderHot();renderCmp();if(selT<0)teacherSum()},absence:renderAbsView,school:()=>{renderSchoolView();renderRA()},cons:()=>{renderConsView();renderVB()},gen:renderG,quality:renderQ,bell:renderBell,settings:renderSettingsView})[view]()}
+
+// ===== التغييرات للمنصة: ماذا تبدل، ومع من، وفي أي فصل ويوم، والتراجع عن كل تغيير وحده
+function chgGroups(){if(!baseOk())return[];const L=S.lessons,ch=[];L.forEach((l,i)=>{if(bX(i)!==l.d*7+l.p||bT(i)!==l.t)ch.push(i)});if(!ch.length)return[];
+ const par={};ch.forEach(i=>par[i]=i);const f=i=>par[i]===i?i:(par[i]=f(par[i]));const at={};ch.forEach(i=>{const k=L[i].c+'|';[bX(i),L[i].d*7+L[i].p].forEach(x=>{const kk=k+x;if(at[kk]!=null)par[f(i)]=f(at[kk]);else at[kk]=i})});
+ const G={};ch.forEach(i=>(G[f(i)]=G[f(i)]||[]).push(i));
+ const bCell={},cCell={};L.forEach((l,i)=>{if(l.k===2)return;(bCell[l.c+'|'+bX(i)]=bCell[l.c+'|'+bX(i)]||[]).push(i);(cCell[l.c+'|'+(l.d*7+l.p)]=cCell[l.c+'|'+(l.d*7+l.p)]||[]).push(i)});
+ const tn=t=>t>=0&&D.teachers[t]?D.teachers[t]:'—',cellTx=(arr,useBase)=>(arr||[]).map(i=>`${subj(L[i])} — أ/ ${tn(useBase?bT(i):L[i].t)}`).join(' + ')||'فارغة';
+ return Object.values(G).map(I=>{I.sort((a,b)=>a-b);const c=L[I[0]].c,cells=[...new Set(I.flatMap(i=>[L[i].c+'|'+bX(i),L[i].c+'|'+(L[i].d*7+L[i].p)]))].sort((a,b)=>+a.split('|')[1]-+b.split('|')[1]);
+  const rows=cells.map(k=>{const [cc,x]=k.split('|').map(Number);return{cls:D.classes[cc],slot:slotName(x),bf:cellTx(bCell[k],true),af:cellTx(cCell[k],false)}});
+  const tch=[...new Set(I.flatMap(i=>[bT(i),L[i].t]).filter(t=>t>=0))].map(tn);
+  const mv=I.filter(i=>bX(i)!==L[i].d*7+L[i].p),tc=I.filter(i=>bT(i)!==L[i].t);let h;
+  if(mv.length===2&&!tc.length){const [a,b]=mv;h=`الفصل ${D.classes[c]}: تبادل ${subj(L[a])} (أ/ ${tn(L[a].t)}) مع ${subj(L[b])} (أ/ ${tn(L[b].t)}) بين ${slotName(bX(a))} و${slotName(bX(b))}`}
+  else if(mv.length===1&&!tc.length){const a=mv[0];h=`الفصل ${D.classes[c]}: نقل ${subj(L[a])} (أ/ ${tn(L[a].t)}) من ${slotName(bX(a))} إلى ${slotName(L[a].d*7+L[a].p)} (كانت فارغة)`}
+  else if(!mv.length&&tc.length){const a=tc[0];h=`الفصل ${D.classes[c]}: تغيير معلم ${subj(L[a])}${tc.length>1?` (${tc.length} حصص)`:` في ${slotName(L[a].d*7+L[a].p)}`} من أ/ ${tn(bT(a))} إلى أ/ ${tn(L[a].t)}`}
+  else h=`الفصل ${D.classes[c]}: ${mv.length?`نقل ${mv.length} حصص`:''}${mv.length&&tc.length?' و':''}${tc.length?`تغيير معلم ${tc.length} حصص`:''} (تعديلات مترابطة)`;
+  const noop=rows.every(r=>r.bf===r.af);if(noop)h+=' — لا يغيّر شيئًا في المنصة (نفس المادة والمعلم)';else if(mv.length===2&&!tc.length&&L[mv[0]].t===L[mv[1]].t)h+=' — للمعلم نفسه';
+  const sig=I.map(i=>i+':'+(L[i].d*7+L[i].p)+':'+L[i].t).join(',');return{I,h,rows,tch,sig,c,noop}}).sort((a,b)=>a.c-b.c)}
+function chgRevert(I){const L=S.lessons,old=I.map(i=>[L[i].d,L[i].p,L[i].t]);record('تراجع عن تغيير: '+(chgGroups().find(g=>g.I.join()===I.join())||{h:''}).h);
+ I.forEach(i=>{const x=bX(i);L[i].d=Math.floor(x/7);L[i].p=x%7;L[i].t=bT(i)});
+ const seenT={},seenC={};let bad='';for(let i=0;i<L.length&&!bad;i++){const l=L[i];if(l.k===2)continue;const x=l.d*7+l.p,kt=l.t+'|'+x,kc=l.c+'|'+x;if(l.t>=0&&seenT[kt]!=null&&seenT[kt]!==i)bad=`أ/ ${D.teachers[l.t]} لديه حصة أخرى في ${slotName(x)}`;else if(seenC[kc]!=null)bad=`الفصل ${D.classes[l.c]} لديه حصة أخرى في ${slotName(x)}`;seenT[kt]=i;seenC[kc]=i}
+ if(bad){I.forEach((i,k)=>{L[i].d=old[k][0];L[i].p=old[k][1];L[i].t=old[k][2]});S.hist.pop();return bad}
+ I.forEach(i=>{const l=L[i];S.standby=S.standby.filter(s=>!(s.t===l.t&&s.d===l.d&&s.p===l.p))});S.edited++;idx();save();return''}
+const chgTxt=G=>G.map((g,n)=>`${n+1}) ${g.h}\n`+g.rows.map(r=>`   • ${r.cls} — ${r.slot}: قبل [${r.bf}] ← بعد [${r.af}]`).join('\n')).join('\n\n');
+let chgF=-1;
+function renderChg(){const G=chgGroups(),A=S.applied||{};document.querySelectorAll('.chgB .cnt').forEach(e=>e.textContent=G.length||'');const dl=$('chgDlg');if(!dl||dl.hidden)return;
+ const V=chgF<0?G:G.filter(g=>g.tch.includes(D.teachers[chgF])),nT=new Set(G.flatMap(g=>g.tch)).size,nC=new Set(G.map(g=>g.c)).size,dn=G.filter(g=>A[g.sig]).length;
+ const arc=(S.chgArc||[]).map((a,k)=>`<details class="panel" style="margin:6px 0"><summary><b>اعتُمدت ${new Date(a.at).toLocaleString('ar-SA-u-nu-latn',{dateStyle:'medium',timeStyle:'short'})}</b> — ${a.G.length} تغيير</summary>${a.G.map((g,n)=>`<div class="cg${g.done?' done':''}"><h4>${n+1}. ${esc(g.h)}${g.done?' ✓ نُفّذ في المنصة':''}</h4>${rowsTbl(g.rows)}</div>`).join('')}<button class="btn" data-arcp="${k}">طباعة هذه الدفعة</button></details>`).join('');
+ $('chgBody').innerHTML=`<p class="note" style="margin:0 0 8px">${G.length?`<b>${G.length}</b> تغيير منذ آخر اعتماد، تمس <b>${nC}</b> فصول و<b>${nT}</b> معلمين. نُفّذ منها في المنصة: <b>${dn}</b> من ${G.length}.`:'لا توجد تغييرات منذ آخر اعتماد. التغييرات المعتمدة سابقًا محفوظة أسفل.'}</p>
+  ${G.length?`<div class="bar" style="margin:0 0 6px"><select id="chgT"><option value="-1">كل المعلمين</option>${[...new Set(G.flatMap(g=>g.tch))].sort().map(n=>`<option value="${D.teachers.indexOf(n)}" ${D.teachers.indexOf(n)===chgF?'selected':''}>أ/ ${esc(n)}</option>`).join('')}</select><button class="btn" id="chgCopy">نسخ نصًا</button><button class="btn" id="chgCsv">تصدير Excel</button><button class="btn" id="chgPrint">طباعة</button><button class="btn" id="chgAll">↶ التراجع عن الكل</button></div>`:''}
+  ${V.map((g,n)=>`<div class="cg${A[g.sig]?' done':''}"><h4>${n+1}. ${esc(g.h)}</h4>${rowsTbl(g.rows)}<div>المعلمون المتأثرون: ${g.tch.map(x=>`<span class="tch">أ/ ${esc(x)}</span>`).join('')}</div>
+   <div class="ops"><label><input type="checkbox" data-done="${esc(g.sig)}" ${A[g.sig]?'checked':''}> نُفّذ في المنصة</label><button class="btn" data-rv="${g.I.join(',')}">↶ تراجع عن هذا التغيير</button></div></div>`).join('')}
+  ${arc?`<h3 style="margin:16px 0 4px">التغييرات المعتمدة سابقًا</h3>${arc}`:''}`}
+function rowsTbl(R){return`<table><tr><th>الفصل</th><th>اليوم والحصة</th><th>قبل التعديل</th><th>بعد التعديل</th></tr>${R.map(r=>`<tr><td>${esc(r.cls)}</td><td>${esc(r.slot)}</td><td class="bf">${esc(r.bf)}</td><td class="af">${esc(r.af)}</td></tr>`).join('')}</table>`}
+function chgPrint(G,title){const w=window.open('','_blank');if(!w){flash('اسمح بالنوافذ المنبثقة للطباعة');return}
+ w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Tajawal,Arial,sans-serif;color:#0b2545;margin:18px}h1{font-size:18px;border-bottom:3px solid #c9a227;padding-bottom:6px}h4{margin:12px 0 4px}table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{border:1px solid #94a3b8;padding:4px;text-align:center}th{background:#0b2545;color:#fff}td.bf{background:#fef2f2}td.af{background:#f0fdf4;font-weight:700}.ok{margin-inline-start:8px;font-size:12px}.sg{margin-top:28px;display:flex;justify-content:space-between}</style></head><body><h1>${esc(S.school||'')} — ${esc(title)}</h1>${G.map((g,n)=>`<h4>${n+1}. ${esc(g.h)} <span class="ok">☐ نُفّذ في المنصة</span></h4>${rowsTbl(g.rows)}`).join('')}<div class="sg"><span>المنفّذ: ..................</span><span>مدير المدرسة: ..................</span></div><script>onload=()=>print()<\/script></body></html>`);w.document.close()}
+document.body.insertAdjacentHTML('beforeend',`<div id="chgDlg" hidden role="dialog" aria-label="التغييرات للمنصة"><div class="box"><div class="bar" style="justify-content:space-between;margin:0 0 6px"><h2 style="margin:0">📋 التغييرات لنقلها إلى المنصة</h2><button class="btn" id="chgX">إغلاق ✕</button></div><p class="note" style="margin:0 0 6px">كل بطاقة تغيير واحد: الفصل واليوم والحصة، وما كان قبل وما صار بعد، والمعلمون الذين تبادلوا. علّم «نُفّذ في المنصة» بعد إدخاله، أو تراجع عن أي تغيير وحده.</p><div id="chgBody"></div></div></div>`);
+document.addEventListener('click',e=>{if(e.target.closest('[data-chg]')){$('chgDlg').hidden=false;renderChg();return}
+ const dl=$('chgDlg');if(dl.hidden||!dl.contains(e.target))return;const G=chgGroups(),V=chgF<0?G:G.filter(g=>g.tch.includes(D.teachers[chgF]));
+ if(e.target===dl||e.target.id==='chgX'){dl.hidden=true;return}
+ const rv=e.target.closest('[data-rv]');if(rv){const bad=chgRevert(rv.dataset.rv.split(',').map(Number));if(bad)alertChg('لا يمكن التراجع عن هذا التغيير وحده: '+bad+'. تراجع أولًا عن التغيير المرتبط به، أو استخدم «↶ تراجع» خطوة بخطوة.');else{render();renderChg();alertChg('تم التراجع عن التغيير، ويمكنك إعادته بزر «↷ إعادة».')}return}
+ if(e.target.id==='chgAll'){$('toBase').click();renderChg();return}
+ if(e.target.id==='chgCopy'){const tx=chgTxt(V);(navigator.clipboard?navigator.clipboard.writeText(tx):Promise.reject()).then(()=>alertChg('نُسخت التغييرات، الصقها في واتساب أو ملاحظة.')).catch(()=>{prompt('انسخ النص:',tx)});return}
+ if(e.target.id==='chgCsv'){const q=s=>'"'+String(s).replace(/"/g,'""')+'"',rows=[['م','التغيير','الفصل','اليوم والحصة','قبل','بعد','المعلمون','نُفّذ في المنصة']];V.forEach((g,n)=>g.rows.forEach(r=>rows.push([n+1,g.h,r.cls,r.slot,r.bf,r.af,g.tch.join('، '),(S.applied||{})[g.sig]?'نعم':''])));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));a.download='تغييرات-الجدول.csv';a.click();return}
+ if(e.target.id==='chgPrint'){chgPrint(V,'تغييرات الجدول المدرسي'+(chgF>=0?' — أ/ '+D.teachers[chgF]:''));return}
+ const ap=e.target.closest('[data-arcp]');if(ap){const a=S.chgArc[+ap.dataset.arcp];chgPrint(a.G,'تغييرات الجدول المعتمدة '+new Date(a.at).toLocaleDateString('ar-SA-u-nu-latn'));return}});
+document.addEventListener('change',e=>{if(e.target.id==='chgT'){chgF=+e.target.value;renderChg();return}const d=e.target.closest('[data-done]');if(d){S.applied=S.applied||{};if(d.checked)S.applied[d.dataset.done]=1;else delete S.applied[d.dataset.done];save();renderChg()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('chgDlg').hidden)$('chgDlg').hidden=true});
+function alertChg(m){const b=$('chgBody');renderChg();b.insertAdjacentHTML('afterbegin',`<div class="status ok" style="margin-bottom:8px">${esc(m)}</div>`)}
+function render(){({classes:()=>{renderLock();renderStudioCfg();renderC()},teachers:()=>{renderT();renderHot();renderCmp();if(selT<0)teacherSum()},absence:renderAbsView,school:()=>{renderSchoolView();renderRA()},cons:()=>{renderConsView();renderVB()},gen:renderG,quality:renderQ,bell:renderBell,settings:renderSettingsView})[view]();try{renderChg()}catch(e){}}
 function go(v){if(window.__rl)return;if(!$('v-'+v))v='classes';view=v;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));document.querySelectorAll('main>section').forEach(s=>s.hidden=s.id!=='v-'+v);render()}
 $('tabs').onclick=e=>{const b=e.target.closest('button');if(b){location.hash=b.dataset.v;go(b.dataset.v)}};
 window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
