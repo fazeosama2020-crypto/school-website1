@@ -46,7 +46,7 @@ table.g th.d{width:72px;text-align:start;color:var(--ink);font-size:14px}
 .c.t-ok{background:var(--ok);border-color:var(--okb)}.c.t-warn{background:var(--warn)}.c.t-bad{background:var(--bad);border-color:var(--badb);cursor:not-allowed}
 .c.sb{background:var(--sb)}.c.ac{background:var(--act)}.c.x{background:repeating-linear-gradient(45deg,var(--card) 0 6px,var(--line) 6px 8px);color:var(--mut)}
 .c.mod{box-shadow:inset 0 0 0 3px var(--mod,#7c3aed)}.c.mod::after{content:'';position:absolute;bottom:4px;inset-inline-end:5px;width:8px;height:8px;border-radius:50%;background:var(--mod,#7c3aed)}
-.edm{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:11px;color:var(--mod);font-weight:800;line-height:1}.c small.pj{color:var(--mod);font-weight:700}
+.edm{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:11px;color:var(--mod);font-weight:800;line-height:1}.c small.pj{color:var(--mod);font-weight:700}.pb{position:absolute;bottom:1px;left:3px;font-style:normal;font-size:10px;font-weight:800;line-height:1}.pb.up{color:#15803d}.pb.dn{color:#b91c1c}.pb.eq{color:var(--mut)}#peer .panel{margin:0;border:2px solid var(--gold);padding:10px}#peer h4{margin:2px 0 6px;font-size:14px}#peer .why{margin:4px 0 8px;padding-inline-start:18px;font-size:12.5px}#peer .bst{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;text-align:start;margin:3px 0;font-size:12.5px}td.c.hv{outline:3px solid var(--gold);outline-offset:-3px}
 .cmpg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}@media(max-width:800px){.cmpg{grid-template-columns:minmax(0,1fr)}}.cmpg h4{margin:6px 0;font-size:14px}
 .mg{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed}.mg th{font-size:11px;color:var(--mut);font-weight:700}.mg tr th:first-child{width:52px;text-align:start}.mg td{background:var(--card);border:1px solid var(--line);border-radius:5px;height:42px;text-align:center;position:relative;padding:3px 1px;line-height:1.2;font-size:11px}.mg td b{display:block;font-size:11px}.mg td small{display:block;font-size:10px;color:var(--mut)}.mg td.col{color:#13202f}.mg td.mv{outline:3px solid var(--gold);outline-offset:-2px}.mg td.mod{box-shadow:inset 0 0 0 2px var(--mod)}.mg td.sbc{background:var(--sb);font-weight:700}.mg td.x{background:repeating-linear-gradient(45deg,var(--card) 0 5px,var(--line) 5px 7px)}
 .studio{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}@media(max-width:980px){.studio{grid-template-columns:minmax(0,1fr)}}
@@ -204,7 +204,7 @@ details summary{cursor:pointer;min-height:40px;padding:8px 0;font-weight:700}
   <div class="note">أكثر المعلمين ضغطًا (الرقم درجة الضغط):</div><div class="chips" id="hotT"></div>
   <p class="note" id="sum2" style="margin:0 0 8px"></p>
   <div class="status" id="st2">اضغط على حصة للمعلم لعرض شرحها وخيارات تغييرها، ثم على المكان الجديد لنقلها، فتتبادل مكانها مع حصة الفصل في ذلك الوقت.</div>
-  <div class="studio"><div><div class="scroll"><table class="g" id="gridT"></table></div></div><aside class="panel" id="info2" style="position:sticky;top:10px;margin:0"></aside></div>
+  <div class="studio"><div><div class="scroll"><table class="g" id="gridT"></table></div></div><aside style="position:sticky;top:10px;margin:0;display:grid;gap:10px"><div id="peer"></div><div class="panel" id="info2" style="margin:0"></div></aside></div>
   <div id="cmp"></div>
   <div id="sugOut2"></div>
   <div class="leg"><span><i style="background:var(--sb)"></i>انتظار</span><span><i style="background:var(--act)"></i>نشاط</span><span><i style="background:repeating-linear-gradient(45deg,var(--card) 0 4px,var(--line) 4px 6px)"></i>بعد موعد الخروج المعتمد</span></div>
@@ -542,18 +542,40 @@ $('clsSel').onchange=e=>{cls=+e.target.value;sel=-1;sugMarks={};infoX=-1;renderC
 // ===== جدول المعلمين
 let tch=0,selT=-1;
 function renderT(){let h=headRow();let n=0,sb=0;const marks={};let sc=-1;
- if(selT>=0){const si=TI[tch][selT];if(si>=0){sc=S.lessons[si].c;for(let x=0;x<35;x++){if(x===selT)continue;const r=evalSwap(selT,x,sc);marks[x]=r.e.length?'t-bad':r.w.length?'t-warn':'t-ok'}}else selT=-1}
+ if(selT>=0){const si=TI[tch][selT];if(si>=0){sc=S.lessons[si].c;for(let x=0;x<35;x++){if(x===selT)continue;const r=evalSwap(selT,x,sc);marks[x]=r.e.length?'t-bad':r.w.length?'t-warn':'t-ok'}PE=peerAll()}else selT=-1}if(selT<0)PE=null;
  for(let d=0;d<5;d++){h+=`<tr><th class="d">${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,i=TI[tch][x],r=SB[tch][x],mk=x===selT?'sel':marks[x]||'';
-  if(i>=0){const l=S.lessons[i];n++;const col=S.style.screen&&!mk?colOf(l):'';const md=S.style.showMod&&isMod(i)?' mod':'';const pj=mk&&sc>=0&&CI[sc][x]>=0&&x!==selT?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(l.k?'ac':'')}${col?' col':''}${md}" data-x="${x}" tabindex="0"${col?` style="background:${col}"`:''}${pj?` title="في هذا الوقت: ${esc(subj(pj))} مع أ/ ${esc(D.teachers[pj.t])}"`:''}>${md?'<span class="edm">✎</span>':''}${cellL(l,false)}${pj?`<small class="pj">↔ ${esc(shortN(pj.t))}</small>`:''}</td>`}
-  else if(r){sb++;const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||'sb'}" data-x="${x}"><b>انتظار ${r}</b>${pj?`<small>${esc(subj(pj))} · أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}
-  else{const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(hardAt(tch,x)?'x':'')}" data-x="${x}" tabindex="0">${pj?`<b>${esc(subj(pj))}</b><small>أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}h+=brkCell(d,p)}h+='</tr>'}
- $('gridT').innerHTML=h;const ex=exitText(tch);
+  if(i>=0){const l=S.lessons[i];n++;const col=S.style.screen&&!mk?colOf(l):'';const md=S.style.showMod&&isMod(i)?' mod':'';const pj=mk&&sc>=0&&CI[sc][x]>=0&&x!==selT?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(l.k?'ac':'')}${col?' col':''}${md}" data-x="${x}" tabindex="0"${col?` style="background:${col}"`:''}${pj?` title="في هذا الوقت: ${esc(subj(pj))} مع أ/ ${esc(D.teachers[pj.t])}"`:''}>${md?'<span class="edm">✎</span>':''}${pbOf(x)}${cellL(l,false)}${pj?`<small class="pj">↔ ${esc(shortN(pj.t))}</small>`:''}</td>`}
+  else if(r){sb++;const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||'sb'}" data-x="${x}">${pbOf(x)}<b>انتظار ${r}</b>${pj?`<small>${esc(subj(pj))} · أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}
+  else{const pj=mk&&sc>=0&&CI[sc][x]>=0?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(hardAt(tch,x)?'x':'')}" data-x="${x}" tabindex="0">${pbOf(x)}${pj?`<b>${esc(subj(pj))}</b><small>أ/ ${esc(shortN(pj.t))}</small>`:''}</td>`}h+=brkCell(d,p)}h+='</tr>'}
+ $('gridT').innerHTML=h;renderPeer(-1);const ex=exitText(tch);
  $('sum2').innerHTML=`<b>أ/ ${esc(D.teachers[tch])}</b>: ${n} حصة، و${sb} انتظار، والإجمالي ${n+sb}.${ex?' قيود الوقت: '+esc(ex)+'.':''} التكليف الفعلي بالانتظار: ${S.subCount[tch]||0}.`;renderHist()}
 function clickT(x){const st=$('st2');
  if(selT<0){const i=TI[tch][x];if(i<0)return;selT=x;const l=S.lessons[i];renderInfo(l.c,x,$('info2'));setSt(st,'',`حددت <b>${esc(subj(l))}</b> مع ${esc(D.classes[l.c])} (${slotName(x)}). كل خانة ملونة تعرض حصة الفصل في ذلك الوقت واسم معلمها. اضغط خانة لمعاينة التبديل قبل تنفيذه.`);renderT();return}
  if(x===selT){selT=-1;TPV=null;setSt(st,'','أُلغي التحديد.');renderT();renderCmp();teacherSum();return}
  openPreview(selT,x);setSt(st,'','راجع المعاينة أسفل الجدول: المشكلات عند المعلمين، وجدول كل منهما بعد التبديل، ثم نفّذ أو ألغِ.')}
 $('gridT').addEventListener('click',e=>{const td=e.target.closest('td[data-x]');if(td)clickT(+td.dataset.x)});
+// ===== جدول المعلم الآخر بجانب جدول المعلم المعدَّل له
+let PE=null,PVX=-1;
+function peerOf(x){const si=TI[tch][selT];if(si<0||x===selT)return null;const c=S.lessons[si].c,j=CI[c][x],tj=j>=0?S.lessons[j].t:-1,sw={i:si,j,a:selT,b:x},r=evalSwap(selT,x,c);
+ const own=tStress(tGrid(tch,sw)).cost-stressOf(tch).cost,pd=tj>=0&&tj!==tch?tStress(tGrid(tj,sw)).cost-stressOf(tj).cost:null;return{x,c,j,tj:tj!==tch?tj:-1,sw,r,own,pd}}
+function peerAll(){const o={};for(let x=0;x<35;x++){if(x===selT)continue;const q=peerOf(x);if(q)o[x]=q}return o}
+function pbOf(x){const q=PE&&PE[x];if(!q||q.r.e.length||q.pd==null)return'';const k=q.pd<0?'up':q.pd>0?'dn':'eq';return`<i class="pb ${k}" title="أثره على أ/ ${esc(shortN(q.tj))}: ${q.pd<0?'يخفف جدوله':q.pd>0?'يزيد ضغط جدوله':'لا يغير جدوله'}">${q.pd<0?'▲':q.pd>0?'▼':'='}</i>`}
+const effTxt=d=>d<0?'يتحسن':d>0?'يزداد ضغطًا':'لا يتغير';
+function renderPeer(x){const el=$('peer');if(!el)return;if(selT<0||!PE){el.innerHTML='';PVX=-1;return}PVX=x;
+ document.querySelectorAll('#gridT td.hv').forEach(td=>td.classList.remove('hv'));
+ if(x<0||!PE[x]){const L=Object.values(PE).filter(q=>!q.r.e.length).map(q=>({...q,sc:q.own+(q.pd||0)+q.r.w.length*3})).sort((a,b)=>a.sc-b.sc).slice(0,6);
+  el.innerHTML=`<div class="panel"><h4>أفضل التبديلات للطرفين</h4><p class="note" style="margin:0 0 6px">مرّر المؤشر على أي خانة (أو اضغطها في الجوال) ليظهر هنا جدول المعلم الآخر بعد التبديل. ▲ يخفف جدوله، ▼ يضغطه.</p>${L.length?L.map(q=>`<button class="btn bst" data-pgo="${q.x}"><span>${slotName(q.x)}${q.tj>=0?` · أ/ ${esc(shortN(q.tj))}`:' · خانة فارغة'}</span><small>أنت: ${effTxt(q.own)}${q.pd!=null?` · هو: ${effTxt(q.pd)}`:''}</small></button>`).join(''):'<p class="note">لا يوجد تبديل خالٍ من المخالفات لهذه الحصة.</p>'}</div>`;return}
+ const q=PE[x],td=document.querySelector(`#gridT td[data-x="${x}"]`);if(td)td.classList.add('hv');const lj=q.j>=0?S.lessons[q.j]:null;
+ const prob=[...q.r.e.map(e=>`<li class="bad">${esc(e)}</li>`),...q.r.w.map(w=>`<li class="warn">${esc(w)}</li>`)].join('');
+ el.innerHTML=`<div class="panel"><h4>${q.tj>=0?`أ/ ${esc(D.teachers[q.tj])} بعد التبديل`:'خانة فارغة في الفصل'}</h4>
+  <p class="note" style="margin:0 0 4px">${slotName(selT)} ⇄ ${slotName(x)}${lj?` · حصته: <b>${esc(subj(lj))}</b> ${esc(D.classes[lj.c])}`:''}</p>
+  <ul class="why">${prob||'<li class="ok">لا يخالف أي قيد عند الطرفين</li>'}<li class="${q.own>0?'warn':'ok'}">أ/ ${esc(shortN(tch))}: جدوله ${effTxt(q.own)}</li>${q.tj>=0?`<li class="${q.pd>0?'warn':'ok'}">أ/ ${esc(shortN(q.tj))}: جدوله ${effTxt(q.pd)}. ${esc(stressTxt(tStress(tGrid(q.tj,q.sw))))}</li>`:''}</ul>
+  ${q.tj>=0?miniGrid(q.tj,q.sw):'<p class="note">لن يتأثر أي معلم آخر.</p>'}
+  <div class="bar" style="margin-top:6px"><button class="btn p" data-pgo="${x}" ${q.r.e.length?'disabled':''}>معاينة وتنفيذ</button></div></div>`}
+$('gridT').addEventListener('mouseover',e=>{if(selT<0)return;const td=e.target.closest('td[data-x]');if(!td)return;const x=+td.dataset.x;if(x!==PVX&&x!==selT)renderPeer(x)});
+$('gridT').addEventListener('focusin',e=>{if(selT<0)return;const td=e.target.closest('td[data-x]');if(td&&+td.dataset.x!==selT)renderPeer(+td.dataset.x)});
+$('gridT').addEventListener('mouseleave',()=>{if(selT>=0&&!TPV)renderPeer(-1)});
+$('peer').addEventListener('click',e=>{const b=e.target.closest('[data-pgo]');if(!b||selT<0)return;const x=+b.dataset.pgo;openPreview(selT,x);setSt($('st2'),'','راجع المعاينة أسفل الجدول: جدول المعلمين بعد التبديل جنبًا إلى جنب، ثم نفّذ أو ألغِ.')});
 $('gridT').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const td=e.target.closest('td[data-x]');if(td){e.preventDefault();clickT(+td.dataset.x)}}});
 $('tSel').innerHTML=D.teachers.map((t,i)=>`<option value="${i}">أ/ ${esc(t)}</option>`).join('');
 $('tSel').onchange=e=>{tch=+e.target.value;selT=-1;TS=[];$('sugOut2').innerHTML='';renderT();teacherSum();renderHot()};
