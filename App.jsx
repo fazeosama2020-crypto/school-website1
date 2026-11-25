@@ -173,6 +173,7 @@ function SmartTimetableFrame() {
 }
 const OpPlan = React.lazy(() => import("./OpPlan.jsx").then(m => ({ default: m.OpPlan })));
 const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ default: m.HealthPlan })));
+const MyTT = React.lazy(() => import("./MyTT.jsx").then(m => ({ default: m.MyTT })));
 const Portfolio = React.lazy(() => import("./Portfolio.jsx").then(m => ({ default: m.Portfolio })));
 const AbsAction = React.lazy(() => import("./AbsAction.jsx").then(m => ({ default: m.AbsAction })));
 const Command = React.lazy(() => import("./Command.jsx").then(m => ({ default: m.Command })));
@@ -216,6 +217,7 @@ const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}`, 
   return { list, classes: classes.map(c => ({ ck: c.ck, name: maClassName(c.ck) })) };
 } });
 const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}` });
+const myttApi = () => ({ maGet, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL });
 const pfApi = () => ({ maGet, maPut, D: PERFORMANCE_DOMAINS, print: printWindow, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, school: NQ_SCHOOL, className: ck => maClassName(ck), tt: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), teachers: async () => { try { const T = ttFresh(await maGet(TT_NODE)); return T && Array.isArray(T.T) ? T.T : []; } catch (e) { return []; } } });
 // 🧭 مركز القيادة والإنذار المبكر: يقرأ الحضور والسلوك (inLoad/inCompute) والغياب السنوي وبقية البيانات من قاعدة الموقع
 const SchoolPulse = React.lazy(() => import("./Pulse.jsx").then(m => ({ default: m.SchoolPulse })));
@@ -35334,7 +35336,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "mytasks") return wrap("📌 مهامي اليومية", <AtMyTasks me={me} />);
   if (view === "sb") return wrap("🛡️ حصص الاحتياط المسندة إليك", <SbTeacherCard me={me} full />);
   if (view === "asm" && allowed) return wrap("🎺 الطابور الصباحي", isStaff ? <AssemblyPage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} /> : <AssemblyPage by={me.name} canEdit={false} ro me={me} />);
-  if (view === "sched" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("🗓️ الجدول المدرسي", isStaff ? <SchoolTimetablePage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} /> : <SchoolTimetablePage by={me.name} canEdit={false} ro me={me} />);
+  if (view === "sched" && allowed && (!isStaff || ptCan(me, "tt"))) return wrap("🗓️ الجدول المدرسي", isStaff ? <SchoolTimetablePage by={me.name} canEdit={["principal", "deputy"].includes(me.role)} /> : <div className="grid gap-4"><React.Suspense fallback={RD_WAIT}><MyTT me={{ name: me.name }} api={myttApi()} /></React.Suspense><details className="ma-card p-3"><summary style={{ cursor: "pointer", fontWeight: 800 }}>📋 الحصص اليومية والبدلاء (العرض التفصيلي)</summary><div style={{ marginTop: 10 }}><SchoolTimetablePage by={me.name} canEdit={false} ro me={me} /></div></details></div>);
   if (view === "cvadm" && isStaff && ["principal", "deputy"].includes(me.role)) return wrap("🎯 الزيارات الصفية", <ClassVisitsPage by={me.name} />);
   if (view === "beh" && (!isStaff || allowed)) return wrap("📝 الملاحظات السلوكية اليومية", <BehaviorNotesPage by={me.name} admin={["principal", "deputy"].includes(me.role)} />);
   if (view === "conduct" && (!isStaff || allowed)) return wrap("🚸 متابعة السلوك اليومي", <DailyConductPage by={me.name} me={me} staff={isStaff && allowed} admin={isStaff && ["principal", "deputy"].includes(me.role)} />);
