@@ -485,7 +485,17 @@ const fresh=()=>({lessons:D.lessons.map(a=>({t:a[0],c:a[1],s:a[2],d:a[3],p:a[4],
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||!S.lessons)S=fresh();
 const fixS=()=>{ensureLayout();if(!Array.isArray(S.cons))S.cons=importCons();['run','daily'].forEach(k=>{if(!S.cons.some(c=>c.type===k))S.cons.unshift(importCons().find(c=>c.type===k))});const f=fresh();S.versions=S.versions||[];S.cfg=Object.assign(f.cfg,S.cfg||{});S.subCount=S.subCount||{};S.log=S.log||[]};fixS();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}$('dirty').textContent=S.edited?`${S.edited} تعديل على الجدول الأصلي`:'الجدول الأصلي'};
+// الحفظ: في المتصفح، ونسخة عمل في قاعدة بيانات الموقع حتى لا تضيع التعديلات بين الأجهزة أو عند امتلاء ذاكرة المتصفح
+const DRX=['hist','redo','versions','log','draft','pendingGen','flash','dAt'];let lastDraft=null,draftReady=false,draftT=0,saveErr='';
+const draftStr=()=>{const o={};for(const k in S)if(!DRX.includes(k))o[k]=S[k];return JSON.stringify(o)};
+const save=()=>{let ds='';try{ds=draftStr()}catch(e){}
+ if(draftReady&&ds&&ds!==lastDraft){S.dAt=Date.now();lastDraft=ds;clearTimeout(draftT);draftT=setTimeout(pushDraft,2500)}else if(!draftReady)lastDraft=ds;
+ saveErr='';try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){try{S.hist=(S.hist||[]).slice(-12);S.redo=[];S.versions=(S.versions||[]).slice(-2);S.log=(S.log||[]).slice(-50);localStorage.setItem(KEY,JSON.stringify(S))}catch(e2){let ins=false;try{ins=inSite()}catch(e3){}saveErr=ins?' • ذاكرة المتصفح ممتلئة، والحفظ في الموقع يعمل':' • تعذّر الحفظ: ذاكرة المتصفح ممتلئة'}}
+ $('dirty').textContent=(S.edited?`${S.edited} تعديل على الجدول الأصلي`:'الجدول الأصلي')+saveErr};
+function pushDraft(){if(!inSite())return;try{window.parent.postMessage({type:'smarttt-draft',draft:{at:S.dAt||Date.now(),s:lastDraft||draftStr()}},location.origin)}catch(e){}}
+function useDraft(dr){if(!dr||!dr.s||!(+dr.at>(S.dAt||0)+1500))return false;let o;try{o=JSON.parse(dr.s)}catch(e){return false}if(!o||!Array.isArray(o.lessons)||!o.lessons.length)return false;if(!!o.data!==!!S.data&&!o.data)return false;
+ const same=S.lessons&&S.lessons.length===o.lessons.length;Object.assign(S,o);S.dAt=+dr.at;if(!same){S.hist=[];S.redo=[]}lastDraft=dr.s;S.flash='حُمّلت آخر تعديلاتك المحفوظة في الموقع (من جهاز آخر أو جلسة سابقة).';
+ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}try{location.hash=view||'classes';(window.__rl=1,location.reload())}catch(e){}return true}
 let CI,TI,SB;
 function idx(){CI=D.classes.map(()=>Array(35).fill(-1));TI=D.teachers.map(()=>Array(35).fill(-1));SB=D.teachers.map(()=>Array(35).fill(0));
  S.lessons.forEach((l,i)=>{CI[l.c][l.d*7+l.p]=i;TI[l.t][l.d*7+l.p]=i});S.standby.forEach(s=>SB[s.t][s.d*7+s.p]=s.r)}
@@ -973,7 +983,8 @@ function renderHist(){try{renderChg()}catch(e){}const H=S.hist||[];$('histN').te
  const mc=modCount();$('modN').textContent=mc?`${mc===1?'حصة واحدة معدّلة':mc===2?'حصتان معدّلتان':mc+(mc<=10?' حصص معدّلة':' حصة معدّلة')} لم تُعتمد`:'لا توجد تعديلات غير معتمدة';
  $('histList').innerHTML=H.length?H.map((h,k)=>({h,k})).reverse().map(({h,k})=>`<div class="vl"><span><b>${k+1}.</b> ${esc(h.desc)} <span class="note">· ${fmT(h.at)}</span></span><button class="btn" data-back="${k}">العودة إلى ما قبلها</button></div>`).join(''):'<p class="note">لا توجد خطوات بعد.</p>'}
 $('histList').onclick=e=>{const b=e.target.closest('[data-back]');if(b)backTo(+b.dataset.back)};
-$('commit').onclick=()=>{setBase();S.cmp=null;save();render();flash('اعتُمدت التعديلات، وأصبح الجدول الحالي هو الأساس. السجل باقٍ للتراجع.')};
+const pubHint=()=>inSite()&&S.touched>(S.siteAt||0)?' ملاحظة: الاعتماد يحفظها هنا فقط؛ لتظهر في جدول المدرسة وجداول المعلمين والشاشة الرئيسية اضغط «تثبيت التعديلات في الموقع».':'';
+$('commit').onclick=()=>{setBase();S.cmp=null;save();render();flash('اعتُمدت التعديلات، وأصبح الجدول الحالي هو الأساس، والتغييرات محفوظة في «📋 التغييرات للمنصة».'+pubHint())};
 $('toBase').onclick=()=>{if(!S.base||!modCount())return;record('العودة إلى آخر جدول معتمد');restoreSnap({X:S.base.X,B:S.base.B||[],e:0});save();render();flash('عاد الجدول إلى آخر نسخة معتمدة.')};
 $('showMod').onchange=e=>{S.style.showMod=e.target.checked;save();render()};
 $('modCol').oninput=e=>{S.style.modCol=e.target.value;document.documentElement.style.setProperty('--mod',e.target.value);save()};
@@ -1250,7 +1261,7 @@ function loadSiteTT(tt,times){const R=siteToS(tt,times);if(!R.lessons.length)ret
  save();try{location.hash='classes';(window.__rl=1,location.reload())}catch(e){}return true}
 let siteWant=false;
 function askSite(force){if(!inSite())return false;siteWant=force?'force':'auto';try{window.parent.postMessage({type:'smarttt-load'},location.origin)}catch(e){}return true}
-window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const d=e.data||{};if(d.type!=='smarttt-site'||!d.tt||!d.tt.C)return;const mode=siteWant;siteWant=false;
+window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const d=e.data||{};if(d.type!=='smarttt-site')return;if(siteWant!=='force'&&useDraft(d.draft))return;if(!d.tt||!d.tt.C)return;const mode=siteWant;siteWant=false;
  const newer=!S.siteAt||(+d.tt.at||0)>S.siteAt,dirty=S.touched&&S.touched>(S.siteAt||0);
  if(mode==='force'||(newer&&!dirty)){loadSiteTT(d.tt,d.times);return}
  if(newer&&dirty){$('siteBar').hidden=false;$('siteBarTx').textContent=`في الموقع جدول معتمد أحدث${d.tt.src?' («'+d.tt.src+'»)':''}، وعندك هنا تعديلات لم تُنشر.`;window.__siteTT=d}});
@@ -1339,7 +1350,7 @@ function renderCmp(){const el=$('cmp');
  el.innerHTML=`<div class="panel" style="margin-top:12px"><h2 style="margin-top:0">مقارنة الجدولين بعد التعديل</h2><p class="note">${mc?`${nw(mc,'حصة واحدة معدّلة','حصتان معدّلتان','حصص معدّلة','حصة معدّلة')} لم تُعتمد، مميزة بالعلامة ✎ عند الطرفين.`:'لا توجد تعديلات غير معتمدة.'}</p>
   <div class="cmpg"><div><h4>أ/ ${esc(D.teachers[C.a])} · ${esc(stressTxt(stressOf(C.a)))}</h4>${miniGrid(C.a)}</div><div><h4>أ/ ${esc(D.teachers[C.b])} · ${esc(stressTxt(stressOf(C.b)))}</h4>${miniGrid(C.b)}</div></div>
   <div class="bar" style="margin-top:8px"><button class="btn p" id="cmpOk">اعتماد التعديلات</button><button class="btn" id="cmpUndo">↶ تراجع خطوة</button><button class="btn" id="cmpOther">فتح جدول أ/ ${esc(shortN(tch===C.a?C.b:C.a))}</button><button class="btn" id="cmpX">إغلاق المقارنة</button></div></div>`;
- $('cmpOk').onclick=()=>{setBase();S.cmp=null;save();render();setSt($('st2'),'ok','اعتُمدت التعديلات. لنشرها في الموقع اضغط «تثبيت التعديلات في الموقع».')};
+ $('cmpOk').onclick=()=>{setBase();S.cmp=null;save();render();setSt($('st2'),'ok','اعتُمدت التعديلات، وهي محفوظة. لتظهر في جدول المدرسة وجداول المعلمين اضغط «تثبيت التعديلات في الموقع».')};
  $('cmpUndo').onclick=()=>{doUndo();renderCmp()};
  $('cmpOther').onclick=()=>{tch=tch===C.a?C.b:C.a;$('tSel').value=tch;selT=-1;renderT();teacherSum();renderCmp();renderHot()};
  $('cmpX').onclick=()=>{S.cmp=null;save();renderCmp()}}
@@ -1531,6 +1542,7 @@ $('undo1').onclick=$('undo2').onclick=doUndo;
 $('schoolLbl').textContent=S.school;
 recompile();idx();if(!S.base)setBase();$('showMod').checked=S.style.showMod;$('modCol').value=S.style.modCol;document.documentElement.style.setProperty('--mod',S.style.modCol);save();go(location.hash.slice(1)||'classes');
 if(S.flash){setSt($('st1'),'ok',esc(S.flash));delete S.flash;save()}
+draftReady=true;try{lastDraft=draftStr()}catch(e){}
 if(!S.pendingGen)setTimeout(()=>askSite(false),300);
 if(S.pendingGen){S.pendingGen=false;save();go('gen');$('gMode').value='1';$('gN').value='3';setTimeout(generate,300)}
 }
