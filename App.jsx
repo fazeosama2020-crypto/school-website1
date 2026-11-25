@@ -30,6 +30,17 @@ const ImprovePlanAdmin = React.lazy(() => import("./smart/ImprovePlan.jsx").then
 const ReadingStudent = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingStudent })));
 const ReadingTeacher = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingTeacher })));
 const ReadingAdmin = React.lazy(() => import("./reading/ReadingLab.jsx").then(m => ({ default: m.ReadingAdmin })));
+function SmartTimetableFrame() {
+  return (
+    <div className="px-2 md:px-6 py-4" dir="rtl">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+        <b style={{ fontSize: 18 }}>🧠 الجدول المدرسي الذكي</b>
+        <a href="/timetable.html" target="_blank" rel="noopener" style={{ padding: "8px 14px", borderRadius: 8, background: "#0d2547", color: "#fff", textDecoration: "none", fontWeight: 700 }}>فتح في صفحة كاملة</a>
+      </div>
+      <iframe src="/timetable.html" title="الجدول المدرسي الذكي" style={{ width: "100%", height: "calc(100vh - 150px)", minHeight: 600, border: "1px solid #dfe3ea", borderRadius: 12, background: "#fff" }} />
+    </div>
+  );
+}
 const OpPlan = React.lazy(() => import("./OpPlan.jsx").then(m => ({ default: m.OpPlan })));
 const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ default: m.HealthPlan })));
 const AbsAction = React.lazy(() => import("./AbsAction.jsx").then(m => ({ default: m.AbsAction })));
@@ -2302,7 +2313,7 @@ const HUB_GROUPS = [
   { title:"الأنشطة والفعاليات", desc:"إدارة الأنشطة والبرامج والفعاليات", icon:"🎉", c:"#e11d48", tint:"#ffe4ea",
     tools:[{id:"activities",label:"الأنشطة",icon:"🎯"},{id:"healthplan",label:"البرامج الصحية",icon:"🩺"},{id:"gallery",label:"معرض الأنشطة",icon:"🖼️"},{id:"meetings",label:"الاجتماعات",icon:"🤝"},{id:"committeemeeting",label:"اجتماعات اللجان",icon:"👔"}] },
   { title:"التقارير والأدوات العامة", desc:"التقارير والإحصائيات والأدوات العامة", icon:"📊", c:"#6366f1", tint:"#e7e9ff",
-    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"circdaily",label:"التعاميم اليومية",icon:"📨"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"audit",label:"سجل التدقيق",icon:"🕵️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
+    tools:[{id:"monthlyreport",label:"التقرير الشهري",icon:"📑"},{id:"report",label:"تقرير برنامج",icon:"📋"},{id:"qiyas",label:"قياس الأثر",icon:"📏"},{id:"surveys",label:"الاستبيانات",icon:"📊"},{id:"hfx",label:"نماذج متابعة الدوام (حضوري)",icon:"📑"},{id:"hdisc",label:"سجل الانضباط اليومي (حضوري)",icon:"📈"},{id:"circulars",label:"التعاميم",icon:"📜"},{id:"circdaily",label:"التعاميم اليومية",icon:"📨"},{id:"timetable",label:"الجدول المدرسي",icon:"🗓️"},{id:"smarttt",label:"الجدول المدرسي الذكي",icon:"🧠"},{id:"trash",label:"سلة المحذوفات والاسترجاع",icon:"🗃️"},{id:"audit",label:"سجل التدقيق",icon:"🕵️"},{id:"settings",label:"الإعدادات",icon:"🛠️"}] },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -2870,7 +2881,7 @@ function HomePage({ teachers, announcements, activities, navigate, attendance, w
         <div className="bg-white rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2"><b className="text-sm font-black text-gray-800">⚡ روابط سريعة</b></div>
           <div className="grid grid-cols-2 gap-2">
-            {[["الجدول المدرسي","🗓️","timetable"],["انضباط المعلمين","🏅","staffdisc"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
+            {[["الجدول المدرسي","🗓️","timetable"],["الجدول الذكي","🧠","smarttt"],["انضباط المعلمين","🏅","staffdisc"],["التقرير الشهري","📑","monthlyreport"],["الإعدادات","🛠️","settings"]].map(([l,ic,id])=>(
               <button key={id} onClick={()=>navigate(id)} className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-3 flex items-center gap-2 text-xs font-bold text-gray-700 hover:bg-teal-50 hover:border-teal-200 transition">{ic} {l}</button>
             ))}
           </div>
@@ -53019,7 +53030,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","smarttt","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -53401,6 +53412,7 @@ function SchoolWebsiteInner() {
     { id: "quiz",           label: "اختبارات الطلاب",    icon: "📝" },
     { id: "luckywheel",     label: "عجلة الحظ",            icon: "🎡" },
     { id: "timetable",      label: "الجدول المدرسي",       icon: "🗓️" },
+    { id: "smarttt",        label: "الجدول المدرسي الذكي",  icon: "🧠" },
     { id: "dailyquiz",      label: "الاختبار اليومي",      icon: "🎯" },
     { id: "raffle",         label: "سحب الطلاب",           icon: "🎰" },
     { id: "aiteacher",      label: "مساعد المعلم الذكي",   icon: "🤖" },
@@ -53460,7 +53472,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["initiatives","stumeet","stuvisits","activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","smarttt","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
   ];
   const navGroups = navGroupsAll.map(g => ({ ...g, ids: g.ids.filter(id => !admOff[id] && !admUi.hide.includes(id)) }));
   const admFavItems = admUi.fav.filter(id => pageById[id] && !admOff[id] && !admUi.hide.includes(id)).map(id => { const g = navGroupsAll.find(x => x.ids.includes(id)); return { id, ic: pageById[id].icon, label: pageById[id].label, c: g ? g.color : "#0b2545" }; });
@@ -53797,7 +53809,7 @@ function SchoolWebsiteInner() {
                 {page === "broadcast"      && <BroadcastPage />}
                 {page === "quiz"           && <QuizPage />}
                 {page === "luckywheel"     && <LuckyWheelPage />}
-                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}
+                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}
                 {page === "honorboard"     && <HonorBoardPage classList={classList} />}
                 {page === "absencestats"   && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
                 {page === "monthlyreport"  && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
@@ -53994,7 +54006,7 @@ function SchoolWebsiteInner() {
         {page === "broadcast"     && <BroadcastPage />}
         {page === "quiz"          && <QuizPage />}
         {page === "luckywheel"    && <LuckyWheelPage />}
-        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}
+        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}
         {page === "honorboard"    && <HonorBoardPage classList={classList} />}
         {page === "absencestats"  && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
         {page === "monthlyreport" && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
