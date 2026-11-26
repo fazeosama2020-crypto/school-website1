@@ -2254,14 +2254,20 @@ function CcLow({ api, D, M, X, cks, books, onStu }) {
 
 // ── 🖨️ مولّد الاختبار الورقي
 function CcTest({ api, D, M, cks, books, by }) {
-  const [mode, setMode] = useState("common"); const [man, setMan] = useState({});   // man: {book:{w:true|false}}
+  const [mode, setMode] = useState("seq"); const [man, setMan] = useState({});   // man: {book:{w:true|false}}
   const [n, setN] = useState(10); const [mins, setMins] = useState(30); const [les, setLes] = useState(false); const [two, setTwo] = useState(false); const [perW, setPerW] = useState(true); const [nv, setNv] = useState(1); const [names, setNames] = useState(false); const [off, setOff] = useState({}); const [nB, setNB] = useState({});
   const BK = books.filter(b => !off[b]); const nOf = b => nB[b] != null ? nB[b] : n;
   const [sheet, setSheet] = useState(true); const [key, setKey] = useState(true); const [ttl, setTtl] = useState("اختبار نافس التجريبي"); const [busy, setBusy] = useState(""); const [saved, setSaved] = useState(null);
   useEffect(() => { api.maGet(NB_PT).then(d => setSaved(Object.values(obj(d)).filter(x => x && x.id).sort((a, b) => (b.at || 0) - (a.at || 0)))); }, []);
   const CW = useMemo(() => { const o = {}; books.forEach(b => { o[b] = {}; cks.forEach(ck => { o[b][ck] = ckWeeks(D, M.rows, ck, b); }); }); return o; }, [books.join(), cks.join()]);
-  const weeksOf = b => { const sets = cks.map(ck => CW[b][ck]); let W = [];
-    for (let w = 0; w < 15; w++) { const all = sets.every(s => s.has(w)), any = sets.some(s => s.has(w)); const auto = mode === "any" ? any : all; const m = obj(man[b])[w]; if (m === true ? true : m === false ? false : auto) W.push(w); }
+  // التتابعي: يبدأ من أول نموذج (أسبوع)، وكل اختبار جديد يأخذ الأسابيع التالية لآخر اختبار محفوظ لهذه المادة
+  const [seqK, setSeqK] = useState(1);
+  const nextW = b => { const used = arr(saved).filter(R => arr(R.books).includes(b) && arr(obj(R.weeks)[b]).length).sort((a, c) => (c.at || 0) - (a.at || 0)); if (!used.length) return 0; const last = Math.max(...arr(used[0].weeks[b])); return last >= 14 ? 0 : last + 1; };
+  const seqW = b => { const s = nextW(b); return Array.from({ length: seqK }, (_, i) => s + i).filter(w => w <= 14); };
+  const autoW = b => { const sets = cks.map(ck => CW[b][ck]); const W = []; for (let w = 0; w < 15; w++) { const all = sets.every(s => s.has(w)), any = sets.some(s => s.has(w)); if (mode === "any" ? any : all) W.push(w); } return W; };
+  const isSeq = b => mode === "seq" || !autoW(b).length;
+  const weeksOf = b => { const base = new Set(isSeq(b) ? seqW(b) : autoW(b)); const W = [];
+    for (let w = 0; w < 15; w++) { const m = obj(man[b])[w]; if (m === true ? true : m === false ? false : base.has(w)) W.push(w); }
     return W; };
   const setM = (b, w, v) => setMan(m => ({ ...m, [b]: { ...obj(m[b]), [w]: v } }));
   const plan = BK.map(b => { const W = weeksOf(b); const pool = cPool(b, W, les); const late = cks.map(ck => ({ ck, n: CW[b][ck].size })).sort((a, c) => a.n - c.n); const nn = nOf(b); const per = perW ? W.reduce((a, w) => a + Math.min(nn, pool.filter(q => q.w === w).length), 0) : Math.min(nn, pool.length); const nd = W.filter(w => cks.some(ck => !CW[b][ck].has(w))); return { b, W, pool, late, per, nd, nn }; });
@@ -2331,8 +2337,10 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
   return <>
     <div className="nb-book" style={{ "--c": "#1e3a8a", display: "grid", gap: 10 }}>
       <b>١) الأسابيع التي يشملها الاختبار</b>
-      <div className="cc-row">{[["common", "المكتملة في كل الفصول المختارة (عادل للجميع)"], ["any", "كل أسبوع اكتمل في أي فصل"]].map(([k, l]) => <label key={k}><input type="radio" checked={mode === k} onChange={() => { setMode(k); setMan({}); }} />{l}</label>)}</div>
-      <small style={{ color: "#64748b", fontWeight: 700 }}>✓ = اكتمل شرح الأسبوع لهذا الفصل • اضغط رقم الأسبوع لإضافته أو استبعاده يدويًا</small>
+      <div className="cc-row">{[["seq", "تتابعي من أول النماذج: كل اختبار يأخذ الأسبوع التالي"], ["common", "المكتملة في كل الفصول المختارة (عادل للجميع)"], ["any", "كل أسبوع اكتمل في أي فصل"]].map(([k, l]) => <label key={k}><input type="radio" checked={mode === k} onChange={() => { setMode(k); setMan({}); }} />{l}</label>)}</div>
+      <div className="cc-row" style={{ alignItems: "center" }}><label>عدد الأسابيع (النماذج) في كل اختبار تتابعي <input className="cc-in" type="number" min={1} max={15} style={{ width: 60 }} value={seqK} onChange={e => { setSeqK(Math.max(1, Math.min(15, +e.target.value || 1))); setMan({}); }} /></label>
+        {books.filter(b => !off[b]).map(b => isSeq(b) ? <span key={b} className="nb-st" style={{ background: "#ecfdf5", color: "#065f46" }}>{BOOKS[b].name}: الاختبار القادم من الأسبوع {wkList(seqW(b))}{mode !== "seq" ? " (لم يكتمل شرح أي أسبوع فاعتُمد التتابع)" : ""}</span> : null)}</div>
+      <small style={{ color: "#64748b", fontWeight: 700 }}>✓ = اكتمل شرح الأسبوع لهذا الفصل • اضغط رقم الأسبوع لإضافته أو استبعاده يدويًا • يتقدم التتابع تلقائيًا بعد كل اختبار يُحفظ</small>
       {plan.map(P => { const B = BOOKS[P.b]; const lag = P.late[0]; const lead = P.late[P.late.length - 1];
         return <div key={P.b} style={{ display: "grid", gap: 6 }}>
           <div className="nb-h" style={{ gap: 8 }}><span className="nb-tag" style={{ "--c": B.c }}>{B.name}</span><b style={{ fontSize: 13.5 }}>الأسابيع المشمولة: {wkList(P.W)}</b><span className="nb-st" style={{ background: P.pool.length ? "#dbeafe" : "#fee2e2", color: P.pool.length ? "#1e40af" : "#991b1b" }}>{ar(P.pool.length)} سؤال متاح</span></div>
