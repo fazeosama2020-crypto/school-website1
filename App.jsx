@@ -174,6 +174,7 @@ function SmartTimetableFrame() {
 const OpPlan = React.lazy(() => import("./OpPlan.jsx").then(m => ({ default: m.OpPlan })));
 const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ default: m.HealthPlan })));
 const MyTT = React.lazy(() => import("./MyTT.jsx").then(m => ({ default: m.MyTT })));
+const Interviews = React.lazy(() => import("./Interviews.jsx").then(m => ({ default: m.Interviews })));
 const Portfolio = React.lazy(() => import("./Portfolio.jsx").then(m => ({ default: m.Portfolio })));
 const AbsAction = React.lazy(() => import("./AbsAction.jsx").then(m => ({ default: m.AbsAction })));
 const Command = React.lazy(() => import("./Command.jsx").then(m => ({ default: m.Command })));
@@ -218,6 +219,7 @@ const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}`, 
 } });
 const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}` });
 const myttApi = () => ({ maGet, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL });
+const tintApi = () => ({ maGet, maPut, school: NQ_SCHOOL, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, className: ck => maClassName(ck), tt: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), staff: async () => Object.values(ptObj(await maGet(PT_STAFF))).filter(x => x && x.name) });
 const pfApi = () => ({ maGet, maPut, D: PERFORMANCE_DOMAINS, print: printWindow, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, school: NQ_SCHOOL, className: ck => maClassName(ck), tt: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), teachers: async () => { try { const T = ttFresh(await maGet(TT_NODE)); return T && Array.isArray(T.T) ? T.T : []; } catch (e) { return []; } } });
 // 🧭 مركز القيادة والإنذار المبكر: يقرأ الحضور والسلوك (inLoad/inCompute) والغياب السنوي وبقية البيانات من قاعدة الموقع
 const SchoolPulse = React.lazy(() => import("./Pulse.jsx").then(m => ({ default: m.SchoolPulse })));
@@ -35272,6 +35274,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "ini") return wrap("🚀 مبادرات المدرسة", <React.Suspense fallback={LF_WAIT}><LfInitiatives api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "meet" && isStaff) return wrap("🤝 اللقاءات الطلابية", <React.Suspense fallback={LF_WAIT}><LfMeetings api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "zy") return wrap("👣 زيارات الطلاب", <React.Suspense fallback={LF_WAIT}>{isStaff ? <LfZyStaff api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /> : <LfZyMine api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} />}</React.Suspense>);
+  if (view === "tint") return wrap("🤝 مقابلاتي", <React.Suspense fallback={RD_WAIT}><Interviews me={{ name: me.name, role: me.role }} api={tintApi()} /></React.Suspense>);
   if (view === "pf") return wrap("🏅 ملف الأداء الوظيفي", <React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: me.name, role: me.role }} api={pfApi()} start="mine" /></React.Suspense>);
   if (view === "pfr") return wrap("📈 لوحتي ونتائج طلابي", <React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: me.name, role: me.role }} api={pfApi()} start="insight" /></React.Suspense>);
   if (view === "zyt") return wrap("🗣️ رأيي في طلابي", <React.Suspense fallback={LF_WAIT}><LfZyTeacher api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} /></React.Suspense>);
@@ -35478,6 +35481,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("students", "📒", "المتابعة اليومية للطلاب", "المشاركة والواجب والأدوات والسلوك يومياً — يراها ولي الأمر", "#d97706", "#f59e0b", () => setView("students"))}
             {qrnOn && ptTile("quran", "📖", "حلقة القرآن الكريم", "افتح حصتك من الجدول ← 🟢 تسميع • 🔵 مراجعة لكل طالب • ملاحظات يومية • إحصاء الأسبوع للطالب وولي أمره والإدارة", "#0b3d2e", "#c9a227", () => setView("quran"))}
             {ptTile("pfr", "📈", "لوحتي ونتائج طلابي", "نتائج طلابك في الفترة الأولى والاختبارات التشخيصية: الأضعف والأفضل واقتراح برنامج علاجي، ومدى تقدم ملف أدائك", "#0b2545", "#c9a227", () => setView("pfr"))}
+            {ptTile("tint", "🤝", "مقابلاتي", "موعد مقابلتك مع إدارة المدرسة وأهدافها ومتطلباتها، والمحاور المفوضة إليك، والتوقيع والتغذية الراجعة", "#0b2545", "#7a5c12", () => setView("tint"))}
             {ptTile("pf", "🏅", "ملف الأداء الوظيفي", "عناصر الأداء الـ11: ست صور شواهد لكل عنصر مع تعليقك، وتغذية راجعة من زملائك، وطباعة ملف إنجاز مميز", "#0b2545", "#1e3a8a", () => setView("pf"))}
             {ptTile("zyt", "🗣️", "رأيي في طلابي (زيارات الطلاب)", "اكتب رأيك في مستوى طلاب فصولك الذين يزورهم أعضاء الإدارة واطّلع على زياراتهم", "#0369a1", "#38bdf8", () => setView("zyt"))}
             {ptTile("zy", "👣", "زياراتي للطلاب", "إن كنت عضوًا في دورة زيارات: طلابك المسندون إليك وتسجيل زياراتهم", "#6d28d9", "#a78bfa", () => setView("zy"))}
@@ -53238,7 +53242,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","smarttt","pfadm","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","smarttt","pfadm","tint","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -53622,6 +53626,7 @@ function SchoolWebsiteInner() {
     { id: "timetable",      label: "الجدول المدرسي",       icon: "🗓️" },
     { id: "smarttt",        label: "الجدول المدرسي الذكي",  icon: "🧠" },
     { id: "pfadm",          label: "ملفات الأداء الوظيفي للمعلمين", icon: "🏅" },
+    { id: "tint",           label: "مقابلات المعلمين", icon: "🤝" },
     { id: "dailyquiz",      label: "الاختبار اليومي",      icon: "🎯" },
     { id: "raffle",         label: "سحب الطلاب",           icon: "🎰" },
     { id: "aiteacher",      label: "مساعد المعلم الذكي",   icon: "🤖" },
@@ -53681,7 +53686,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["initiatives","stumeet","stuvisits","activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","smarttt","pfadm","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","smarttt","pfadm","tint","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
   ];
   const navGroups = navGroupsAll.map(g => ({ ...g, ids: g.ids.filter(id => !admOff[id] && !admUi.hide.includes(id)) }));
   const admFavItems = admUi.fav.filter(id => pageById[id] && !admOff[id] && !admUi.hide.includes(id)).map(id => { const g = navGroupsAll.find(x => x.ids.includes(id)); return { id, ic: pageById[id].icon, label: pageById[id].label, c: g ? g.color : "#0b2545" }; });
@@ -54018,7 +54023,7 @@ function SchoolWebsiteInner() {
                 {page === "broadcast"      && <BroadcastPage />}
                 {page === "quiz"           && <QuizPage />}
                 {page === "luckywheel"     && <LuckyWheelPage />}
-                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}
+                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}
                 {page === "honorboard"     && <HonorBoardPage classList={classList} />}
                 {page === "absencestats"   && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
                 {page === "monthlyreport"  && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
@@ -54215,7 +54220,7 @@ function SchoolWebsiteInner() {
         {page === "broadcast"     && <BroadcastPage />}
         {page === "quiz"          && <QuizPage />}
         {page === "luckywheel"    && <LuckyWheelPage />}
-        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}
+        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}
         {page === "honorboard"    && <HonorBoardPage classList={classList} />}
         {page === "absencestats"  && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
         {page === "monthlyreport" && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
