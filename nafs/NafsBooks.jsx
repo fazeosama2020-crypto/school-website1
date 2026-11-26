@@ -2136,7 +2136,7 @@ const cPick = (pool, n, r) => { const by = {}; pool.forEach(q => (by[q.w] = by[q
   const out = []; let k = 0; while (out.length < n && W.some(w => by[w].length)) { const w = W[k++ % W.length]; if (by[w].length) out.push(by[w].shift()); }
   return out.sort((a, b) => a.w - b.w || a.p - b.p || a.i - b.i); };
 // قصّ الأسئلة من صفحات PDF (صفحة صفحة لتوفير الذاكرة)
-async function cPageCanvas(b, p, W = 1400) { const doc = await openDoc(b); const pg = await doc.getPage(p); const v = pg.getViewport({ scale: 1 }); const vp = pg.getViewport({ scale: W / v.width }); const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); await pg.render({ canvasContext: g, viewport: vp }).promise; return c; }
+async function cPageCanvas(b, p, W = 1400) { const doc = await openDoc(b); const pg = await doc.getPage(p); const v = pg.getViewport({ scale: 1 }); const vp = pg.getViewport({ scale: W / v.width }); const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); const task = pg.render({ canvasContext: g, viewport: vp, intent: "print" }); let tm; await Promise.race([task.promise, new Promise((_, rj) => { tm = setTimeout(() => { try { task.cancel(); } catch {} rj(new Error(`انتهت مهلة قصّ الصفحة ${p}`)); }, 45000); })]).finally(() => clearTimeout(tm)); try { pg.cleanup(); } catch {} return c; }
 function cCrop(c, y0, y1, x0 = .03, x1 = .908, mask = 0) { const W = c.width, H = c.height; const sx = Math.round(x0 * W), sw = Math.round((x1 - x0) * W), sy = Math.round(y0 * H), sh = Math.max(4, Math.round((y1 - y0) * H)); const o = document.createElement("canvas"); o.width = sw; o.height = sh; const g = o.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, sw, sh); g.drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh); if (mask) { g.fillStyle = "#fff"; g.fillRect(sw - Math.round(.013 * W), 0, Math.round(.013 * W) + 2, Math.round(mask * H)); } return o.toDataURL("image/jpeg", .9); }
 const C_CSS = `
 .cc-sub{display:flex;gap:6px;flex-wrap:wrap}.cc-sub button{flex:1 1 180px;border:2px solid #e2e8f0;background:#fff;border-radius:14px;padding:10px 12px;font:inherit;font-weight:900;font-size:14px;cursor:pointer;color:#334155;text-align:right;display:flex;gap:8px;align-items:center}
@@ -2260,7 +2260,7 @@ function CcTest({ api, D, M, cks, books, by }) {
   const make = async (rec) => {
     const w = window.open("", "_blank"); if (!w) { alert("اسمح بالنوافذ المنبثقة لطباعة الاختبار"); return; }
     w.document.write(`<html dir="rtl"><body style="font-family:Tahoma;display:grid;place-items:center;height:90vh;font-weight:bold;color:#1e3a8a">⏳ جارٍ تجهيز الاختبار وقصّ الأسئلة من المراجع…</body></html>`);
-    setBusy("⏳ تحميل مفاتيح الإجابات…");
+    setBusy("⏳ تحميل مفاتيح الإجابات…"); try { w.document.body.innerHTML = "⏳ تحميل مفاتيح الإجابات والمراجع…"; } catch {}
     try {
       const K = await loadKeys(); const SP = (typeof window !== "undefined" && window.__SP) || {};
       const R = rec || (() => { const seed = Date.now() % 1e9; const r = cRnd(seed); const items = {}, weeks = {}; plan.forEach(P => { const sel = cPick(P.pool, Math.min(n, P.pool.length), r); items[P.b] = sel.map(q => [q.p, q.i]); weeks[P.b] = P.W; });
@@ -2268,7 +2268,7 @@ function CcTest({ api, D, M, cks, books, by }) {
       // قصّ الصور
       const img = {}; const need = []; R.books.forEach(b => { arr(R.items[b]).forEach(([p, i]) => need.push([b, p, i])); if (b === "ar") arr(R.weeks[b]).forEach(wk => { const st = obj(QST.ar)[wk]; if (st && arr(R.items[b]).some(([p]) => testPages(b, wk).includes(p))) need.push([b, st[0], "st" + wk]); }); });
       const byPage = {}; need.forEach(([b, p, i]) => (byPage[b + ":" + p] = byPage[b + ":" + p] || []).push(i));
-      const PG = Object.keys(byPage); for (let k = 0; k < PG.length; k++) { const [b, p] = PG[k].split(":"); setBusy(`⏳ قصّ الأسئلة: صفحة ${ar(k + 1)} من ${ar(PG.length)}`);
+      const PG = Object.keys(byPage); for (let k = 0; k < PG.length; k++) { const [b, p] = PG[k].split(":"); setBusy(`⏳ قصّ الأسئلة: صفحة ${ar(k + 1)} من ${ar(PG.length)}`); try { w.document.body.innerHTML = `<div style="text-align:center">⏳ جارٍ قصّ الأسئلة من المراجع<br><span style="font-size:30px">${ar(k + 1)} / ${ar(PG.length)}</span><div style="width:280px;height:10px;background:#e2e8f0;border-radius:9px;margin:10px auto;overflow:hidden"><div style="width:${Math.round((k + 1) / PG.length * 100)}%;height:100%;background:#1e3a8a"></div></div></div>`; } catch {}
         const c = await cPageCanvas(b, +p); byPage[PG[k]].forEach(i => { if (String(i).startsWith("st")) { const st = QST.ar[+String(i).slice(2)]; img[`${b}:st${String(i).slice(2)}`] = cCrop(c, st[1], st[2], .04, .962); } else { const bx = arr(obj(QB[b])[p]).find(x => x[0] === i); if (bx) img[`${b}:${p}:${i}`] = cCrop(c, bx[1], bx[2], .03, .908, .03); } }); c.width = c.height = 1; }
       setBusy("⏳ تجهيز ملف الطباعة…");
       const keyOf = (b, p, i) => { const k = (arr(obj(K[b])[p])[i] || [])[2]; return keyLet(k) || String(k || "").slice(0, 3); };
