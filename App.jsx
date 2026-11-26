@@ -51245,6 +51245,7 @@ const CSS = `
 .dp-bars small{font-size:max(10.5px,.95cqw);font-weight:700;color:#475569;white-space:nowrap}
 .dp-tag{display:inline-block;border-radius:99px;padding:0 .9cqw;font-weight:700;font-size:max(10.5px,.92cqw)}
 .dp-g2{display:grid;grid-template-columns:1fr 1fr;gap:1.6cqw}.dp-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2cqw}
+.dp-per{display:flex;flex-wrap:wrap;gap:.4cqw 1.2cqw;align-items:center;margin:-.6cqw 0 1cqw;padding:.45cqw 1.1cqw;border-radius:.8cqw;background:linear-gradient(90deg,#f4ead2,#fff);border:1px solid #e7dcc2;font-family:'Noto Kufi Arabic',sans-serif;font-size:max(11px,1.02cqw);font-weight:700;color:var(--nv)}.dp-per b{color:var(--g1)}.dp-dl{font-size:.55em;font-weight:800;margin-inline-start:.3em;vertical-align:middle}.dp-sev{display:inline-block;min-width:4.6em;text-align:center;border-radius:99px;padding:1px 8px;font-family:'Noto Kufi Arabic',sans-serif;font-weight:800;font-size:.85em}.dp-rng{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:7px 10px;border-radius:12px;background:#fff;border:1px solid #e2e8f0}.dp-rng select,.dp-rng input{font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;font-size:12.5px;border:1.5px solid #cbd5e1;border-radius:9px;padding:4px 8px;background:#fff;color:#12305a}.dp-rng .lb{font-family:'Noto Kufi Arabic',sans-serif;font-weight:800;font-size:12.5px;color:#12305a}.dp-rng .pv{font-size:12px;font-weight:700;color:#64748b}
 .dp-ins{border-right:.45cqw solid var(--c,var(--g1));background:#fbfcfd;border-radius:.8cqw;padding:.6cqw 1.1cqw;margin:.4cqw 0}
 .dp-ins b{color:var(--c,var(--g1));font-family:'Noto Kufi Arabic',sans-serif;font-size:.95em}
 .dp-sig{display:grid;grid-template-columns:1fr 1fr;gap:4cqw;margin-top:2cqw;text-align:center;font-weight:700}
@@ -51425,6 +51426,35 @@ function recsFor(R, A, sn) {
   return r;
 }
 
+// المشكلات الأبرز في الفترة مرتبة بالأولوية، ولكل مشكلة إجراء مقترح من واقع الأرقام
+function problems(R, A, P, LADN) {
+  const ar = A.maAr, T = R.T, out = []; if (!T || !T.days) return out;
+  const add = (sev, k, t, ev, act, who, when, kpi, ax) => out.push({ sev, k, t, ev, act, who, when, kpi, ax });
+  if (T.attPct != null && T.attPct < 95) add(T.attPct < 90 ? 3 : 2, "att", `انخفاض نسبة الحضور إلى ${ar(T.attPct)}٪`, `${ar(T.abs)} يوم غياب لـ ${ar(T.absStu)} طالباً خلال ${dayW(T.days, ar)}`, T.attPct < 90 ? "خطة علاجية تصحيحية عاجلة: متابعة يومية للغائبين برسالة فورية لولي الأمر، ولجنة انضباط أسبوعية لمراجعة الأرقام، وحوافز حضور للفصول." : "خفض الغياب المتكرر: رسالة لولي الأمر عند ثاني غياب، وتكريم أسبوعي للفصل الأعلى حضوراً.", "وكيل شؤون الطلاب", "فوري ولمدة ٤ أسابيع", "رفع الحضور إلى ٩٥٪ فأكثر", "المتابعة والتقييم");
+  if (P && P.T && P.T.days && T.attPct != null && P.T.attPct != null && T.attPct < P.T.attPct - .5) add(2, "drop", `تراجع الحضور عن الفترة السابقة بـ ${ar(Math.round((P.T.attPct - T.attPct) * 10) / 10)} نقطة`, `من ${ar(P.T.attPct)}٪ إلى ${ar(T.attPct)}٪`, "دراسة أسباب التراجع في اجتماع اللجنة القادم، ومقارنة الفصول والأيام التي ارتفع فيها الغياب، وتكثيف التواصل مع أولياء أمور الغائبين حديثاً.", "لجنة الانضباط", "الاجتماع القادم", "عودة الحضور إلى مستوى الفترة السابقة", "المتابعة والتقييم");
+  const hol = R.defs.filter(d => /إجازة/.test(d.tag));
+  if (R.defs.length) add(R.defs.length >= 3 ? 3 : 2, hol.length ? "hol" : "def", `${ar(R.defs.length)} ${R.defs.length > 2 && R.defs.length < 11 ? "أيام" : "يوماً"} فيها خلل واضح في الانضباط`, R.defs.slice(0, 3).map(d => defTxt(A, d)).join("، "), hol.length ? `${ar(hol.length)} منها ملاصقة للإجازات: إعلان فعاليات وتقويمات في آخر يوم قبل الإجازة وأول يوم بعدها، ورسائل لأولياء الأمور قبلها بيومين.` : "تحليل كل يوم خلل في اللجنة، وجدولة أنشطة جاذبة في الأيام المشابهة، ورسالة تذكير لأولياء الأمور مساء اليوم السابق.", "وكيل شؤون الطلاب / رائد النشاط", "قبل كل إجازة وأسبوعياً", "تقارب الغياب في هذه الأيام مع المعدل", "المتابعة والتقييم");
+  if (R.wdPeak >= 0 && R.wdShare >= 24) add(2, "wd", `تركّز الغياب يوم ${WD[R.wdPeak]}`, `${ar(R.wdShare)}٪ من غياب الفترة يقع في هذا اليوم`, `برنامج أسبوعي ليوم ${WD[R.wdPeak]}: أنشطة وتقويمات قصيرة جاذبة، وتكريم الفصل الأعلى حضوراً فيه، ورسالة تذكير مساء اليوم السابق.`, "رائد النشاط / الموجه الطلابي", "أسبوعياً", `خفض نصيب يوم ${WD[R.wdPeak]} إلى ٢٠٪`, "التحفيز والتشجيع");
+  if (R.cls.length >= 2 && T.attPct - R.cls[0].attPct > 1) { const c = R.cls[0]; add(T.attPct - c.attPct > 3 ? 3 : 2, "cls", `انخفاض الحضور في الفصل ${A.maClassName(c.ck)}`, `${ar(c.attPct)}٪ مقابل ${ar(T.attPct)}٪ للمدرسة • ${ar(c.absStu)} طالباً غائبون`, "تكليف رائد الفصل بمتابعة يومية، ولوحة «الفصل المنضبط» بنقاط أسبوعية، ولقاء بأولياء أمور الفصل.", "رائد الفصل / الموجه الطلابي", "٤ أسابيع ثم تقييم", "وصول الفصل إلى متوسط المدرسة", "المتابعة والتقييم"); }
+  const totA = R.totUn + R.totEx; if (R.totUn >= 5 && totA && R.totUn / totA >= .6) add(2, "un", `ارتفاع الغياب بدون عذر`, `${ar(Math.round(R.totUn / totA * 100))}٪ من أيام الغياب بلا عذر (${ar(R.totUn)} يوماً)`, "تفعيل رفع الأعذار إلكترونياً من بوابة ولي الأمر، والاتصال بولي الأمر في يوم الغياب نفسه، وتطبيق سلم الإجراءات لمن تجاوز الحد.", "الموجه الطلابي", "فوري ومستمر", "خفض نسبة الغياب بلا عذر", "تعزيز التواصل بين المدرسة والأسرة");
+  if (LADN) add(LADN >= 5 ? 3 : 2, "lad", `${ar(LADN)} طالباً على سلم إجراءات الغياب بدون عذر`, "تراكمي منذ بداية العام حتى اليوم", "دراسة حالة لكل طالب وعقد سلوكي بأهداف أسبوعية، وتطبيق الإجراء النظامي المقابل لكل مستوى وتوثيقه في ملفه.", "الموجه الطلابي / وكيل شؤون الطلاب", "فوري", "خروج الطلاب من سلم الغياب", "المتابعة والتقييم");
+  if (T.late) { const r0 = R.reasons[0]; add(T.lateRep >= 10 ? 3 : T.lateRep ? 2 : 1, "late", "التأخر الصباحي" + (T.lateRep ? " المتكرر" : ""), `${ar(T.late)} حالة لـ ${ar(T.lateStu)} طالباً • المتكررون ${ar(T.lateRep || 0)}${r0 ? ` • أبرز سبب: ${r0.t}` : ""}`, `استقبال صباحي محفز، وتكريم أسبوعي للأوائل حضوراً، واستدعاء أولياء أمور المتكررين وأخذ التعهد${r0 && /نوم|سهر/.test(r0.t) ? "، ولقاء توعوي عن تنظيم النوم" : ""}${r0 && /نقل|مواصل|باص|حافل|سائق/.test(r0.t) ? "، والتنسيق مع الأسر حول النقل" : ""}.`, "وكيل شؤون الطلاب", "يومياً", "خفض المتكررين إلى النصف", "تعزيز القيم والسلوك الإيجابي"); }
+  if (T.neg > 0) add(T.neg >= 20 ? 2 : 1, "beh", "ملاحظات سلوكية متكررة", `${ar(T.neg)} ملاحظة${T.behTop && T.behTop[0] ? ` • أكثرها: ${T.behTop[0].t}` : ""}`, "برامج توعوية وقائية مركزة على السلوك الأكثر تكراراً، ومجلس حوار طلابي، وتعزيز فوري للسلوك الإيجابي داخل الفصول.", "الموجه الطلابي", "خلال الفصل", "انخفاض الملاحظات المتكررة", "تعزيز القيم والسلوك الإيجابي");
+  return out.sort((a, b) => b.sev - a.sev);
+}
+const dayW = (n, ar) => n === 1 ? "يوم دراسي واحد" : n === 2 ? "يومان دراسيان" : `${ar(n)} ${n >= 3 && n <= 10 ? "أيام دراسية" : "يوماً دراسياً"}`;
+const DP_RNG = [["all", "منذ بداية العام"], ["hm", "هذا الشهر الهجري"], ["week", "هذا الأسبوع"], ["lweek", "الأسبوع الماضي"], ["d30", "آخر ٣٠ يوماً"], ["day", "يوم محدد"], ["btw", "بين تاريخين"]];
+function rngFT(r, A, from0) {
+  const now = new Date(), K = d => A.maKey(d), td = K(now), back = n => { const d = new Date(now); d.setDate(d.getDate() - n); return d; };
+  if (r.k === "day") return [r.f || td, r.f || td];
+  if (r.k === "btw") { const a = r.f || td, b = r.t || td; return a <= b ? [a, b] : [b, a]; }
+  if (r.k === "week") return [K(back(now.getDay())), td];
+  if (r.k === "lweek") return [K(back(now.getDay() + 7)), K(back(now.getDay() + 3))];
+  if (r.k === "d30") return [K(back(30)), td];
+  if (r.k === "hm") { let d = new Date(now); for (let i = 0; i < 31; i++) { let hd = 1; try { hd = +new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { day: "numeric" }).format(d); } catch (e) {} if (hd === 1) break; d.setDate(d.getDate() - 1); } return [K(d), td]; }
+  return [from0 || "2000-01-01", td];
+}
+
 // ══════════ المكوّن الرئيسي ══════════
 function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const [db, setDb] = useState(null); const [X, setX] = useState(null); const [exc, setExc] = useState({}); const [extra, setExtra] = useState({}); const [EV, setEV] = useState({});
@@ -51432,6 +51462,9 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const [caseQ, setCaseQ] = useState(""); const [caseLv, setCaseLv] = useState(0); const [evf, setEvf] = useState({ t: "", kind: "برنامج", ref: "", d: "", note: "" }); const [evBusy, setEvBusy] = useState(0);
   const root = useRef(null);
   const today = A.maKey(new Date());
+  const [rng, setRng] = useState(() => { try { return JSON.parse(localStorage.getItem("dp-rng")) || { k: "all" }; } catch (e) { return { k: "all" }; } });
+  const [XR, setXR] = useState(null), [XP, setXP] = useState(null), [upAt, setUpAt] = useState(0);
+  const rngRef = useRef(rng); rngRef.current = rng;
   const cfg = { year: "", from: "", lateT: [3, 5, 10], stage: "المتوسطة", office: "", ...obj(db && db.cfg) };
   const year = cfg.year || (String(A.maHijri(new Date())).match(/[١1][٤4][٠-٩0-9]{2}/) || ["١٤٤٨"])[0];
   const txt = useMemo(() => norm(obj(db && db.txt)), [db]);
@@ -51445,12 +51478,25 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
     setExc(E); setExtra({ excN: vals(ex).length, excOk: vals(ex).filter(x => x.status === "ok").length, reps: vals(pr).length, warn: vals(pr).filter(r => r.type === "warn").length, inv: vals(pr).filter(r => r.type === "invite").length });
     try { const X0 = A.spxCompute(await A.spxLoad(obj(d && d.cfg).from || "2000-01-01", today)); const E2 = { ...E }; X0.list.forEach(st => { if (!st.sid) return; const S0 = new Set(E2[st.sid] || []); (st.absED || []).forEach(k => S0.add(k)); (st.absXU || []).forEach(k => S0.delete(k)); E2[st.sid] = S0; }); setExc(E2); setX(X0); } catch (e) { setX({ list: [], classes: [], T: { days: 0 } }); }
     try { setStaff(await A.loadStaff()); } catch {}
-    setBusy("");
+    await loadR(rngRef.current, obj(d && d.cfg).from);
+    setBusy(""); setUpAt(Date.now());
   };
+  // تحليل الفترة المختارة (يوم أو بين تاريخين) مع الفترة السابقة المماثلة للمقارنة
+  const loadR = async (r, from0) => { if (!r || r.k === "all") { setXR(null); setXP(null); return; }
+    const [f, t] = rngFT(r, A, from0); const n = Math.max(1, Math.round((A.maDate(t) - A.maDate(f)) / 864e5) + 1); const pe = new Date(A.maDate(f)); pe.setDate(pe.getDate() - 1); const ps = new Date(pe); ps.setDate(ps.getDate() - n + 1);
+    try { const [a, b] = await Promise.all([A.spxLoad(f, t), A.spxLoad(A.maKey(ps), A.maKey(pe)).catch(() => null)]); setXR({ ...A.spxCompute(a), _f: f, _t: t }); setXP(b ? A.spxCompute(b) : null); } catch (e) { setXR({ list: [], classes: [], T: { days: 0 }, _f: f, _t: t }); setXP(null); } };
+  const pickRng = async r => { setRng(r); try { localStorage.setItem("dp-rng", JSON.stringify(r)); } catch (e) {} if ((r.k === "day" && !r.f) || (r.k === "btw" && (!r.f || !r.t))) return; setBusy("rng"); await loadR(r, cfg.from); setBusy(""); setUpAt(Date.now()); };
   useEffect(() => { load(); }, []);
+  // تحديث مستمر: كل عشر دقائق أثناء فتح الصفحة، وعند العودة إليها
+  const upRef = useRef(0); upRef.current = upAt;
+  useEffect(() => { const tick = () => { if (document.visibilityState === "visible" && Date.now() - upRef.current > 9 * 60e3) load(); }; const iv = setInterval(tick, 60e3); const vis = () => { if (document.visibilityState === "visible" && Date.now() - upRef.current > 3 * 60e3) load(); }; document.addEventListener("visibilitychange", vis); return () => { clearInterval(iv); document.removeEventListener("visibilitychange", vis); }; }, []);
   const R = useMemo(() => X && X.T ? analyze(X, exc, cfg, A, LAD) : null, [X, exc, db]);
-  const INS = useMemo(() => R ? insights(R, A) : [], [R]);
-  const SUG = useMemo(() => R ? suggest(R, A) : [], [R]);
+  // RS: تحليل الإحصائيات للفترة المختارة (سلم الغياب يبقى تراكمياً من بداية العام)
+  const RS = useMemo(() => { if (!R) return null; if (!XR) return R; const a = analyze(XR, exc, cfg, A, LAD); return { ...a, lad: R.lad }; }, [R, XR]);
+  const RP = useMemo(() => XP && XP.T ? analyze(XP, exc, cfg, A, LAD) : null, [XP]);
+  const INS = useMemo(() => RS ? insights(RS, A) : [], [RS]);
+  const SUG = useMemo(() => RS ? suggest(RS, A) : [], [RS]);
+  const PRB = useMemo(() => RS ? problems(RS, A, RP, R ? R.lad.reduce((a, l) => a + l.L.length, 0) : 0) : [], [RS, RP]);
   const save = async (path, v) => { const ok = await A.maPut(`${DP}/${path}`, v); if (!ok) { alert("تعذّر الحفظ — تحقق من الاتصال"); return false; } setDb(p => { const n = { ...obj(p) }; const ks = path.split("/"); let o = n; ks.slice(0, -1).forEach(k => { o[k] = Array.isArray(o[k]) ? [...o[k]] : { ...obj(o[k]) }; o = o[k]; }); if (v == null) delete o[ks[ks.length - 1]]; else o[ks[ks.length - 1]] = v; return n; }); return true; };
   const setTx = (k, v) => save(`txt/${k}`, v);
   const setCfg = (k, v) => save(`cfg/${k}`, v);
@@ -51484,7 +51530,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   // صفوف الإجراءات (قابلة للإضافة) مقسمة على صفحات الطباعة
   const axes = tx("axes"); const rows = axes.flatMap((a, ai) => (a[1] || []).map((r, ri) => ({ ai, ri, ax: a[0], id: r[0], t: r[1], who: r[2], fol: r[3] })));
   const procChunks = []; { let cur = [], cnt = 0; axes.forEach((a, ai) => { const rs = rows.filter(r => r.ai === ai); const L = rs.length ? rs : [{ ai, ri: -1, ax: a[0] }]; L.forEach(r => { if (cnt >= 9) { procChunks.push(cur); cur = []; cnt = 0; } cur.push(r); cnt++; }); }); if (cur.length) procChunks.push(cur); }
-  const ORDER = ["dp-cover", "dp-intro", "dp-goals", "dp-com", "dp-coms0", "dp-coms1", "dp-office", "dp-an1", "dp-an2", "dp-an3", ...procChunks.map((_, i) => `dp-proc${i}`), "dp-prog", "dp-ladder", "dp-rules", "dp-meets", ...meets.map(m => `dp-m-${m.id}`), ...evPages.map((_, i) => `dp-ev${i}`), ...pagesX.map(p => `dp-x-${p.id}`), "dp-docs"].filter(id => !hidden[id]);
+  const ORDER = ["dp-cover", "dp-intro", "dp-goals", "dp-com", "dp-coms0", "dp-coms1", "dp-office", "dp-an1", "dp-an2", "dp-an3", "dp-prob", ...procChunks.map((_, i) => `dp-proc${i}`), "dp-prog", "dp-ladder", "dp-rules", "dp-meets", ...meets.map(m => `dp-m-${m.id}`), ...evPages.map((_, i) => `dp-ev${i}`), ...pagesX.map(p => `dp-x-${p.id}`), "dp-docs"].filter(id => !hidden[id]);
   const N = id => ORDER.indexOf(id) + 1;
   const setAxes = v => setTx("axes", v);
   const KUFI = "'Noto Kufi Arabic',sans-serif";
@@ -51495,7 +51541,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
     <img className="moe" src={DP_MOE} alt="وزارة التعليم" />
     <div className="mi">المملكة العربية السعودية<br />وزارة التعليم<br />{cfg.office || `${SP.region}`}<br />{sch}</div>
     <div className="ttl"><h1>الخطة الإجرائية لتعزيز</h1><h2>الانضباط المدرسي</h2><p>{ar(year)} هـ</p></div><div className="hz" />
-    <div className="sch"><img src={A.SCHOOL_LOGO} alt="" />{sch} • لجنة الانضباط المدرسي<br /><span style={{ fontWeight: 600, color: "#64748b", fontSize: "0.8em" }}>سجل حيّ محدّث من بيانات الموقع — آخر تحليل {A.maDay(new Date())} {A.maHijri(new Date())}</span></div>
+    <div className="sch"><img src={A.SCHOOL_LOGO} alt="" />{sch} • لجنة الانضباط المدرسي</div>
     <span className="dp-noprint" style={{ position: "absolute", bottom: 12, left: 12, zIndex: 3, display: "flex", gap: 6 }}>{edit && <button className="dp-pb" onClick={() => setHidden("dp-cover", !hidden["dp-cover"])}>{hidden["dp-cover"] ? "👁 إظهار" : "🚫 إخفاء"}</button>}<button className="dp-pb" onClick={() => doPrint("#dp-cover", "الغلاف")}>🖨 طباعة الغلاف</button></span>
   </div></section>;
 
@@ -51533,13 +51579,18 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
     {edit && <button className="dp-add dp-noprint" onClick={() => setTx("office", [...office, ["إجراء جديد", "الجهة"]])}>＋ إضافة إجراء</button>}</Page>;
 
   // ── تحليل الواقع (١)
-  const kpis = [[`${ar(T.attPct ?? "—")}٪`, "نسبة الحضور", T.attPct >= 95 ? "#15803d" : T.attPct >= 90 ? G1 : "#b91c1c"], [ar(T.abs || 0), "أيام الغياب", "#b91c1c"], [ar(R.totUn), "غياب بدون عذر", "#9f1239"], [ar(T.late || 0), "حالات التأخر", "#c2410c"], [ar(R.defs.length), "أيام فيها خلل", "#9a3412"], [ar(ladAll.length), "طلاب على سلم الغياب", "#7f1d1d"]];
-  const W = R.weeks.slice(-12); const wMax = Math.max(1, ...W.map(w => w.p)); const wdMax = Math.max(1, ...R.wd), lwdMax = Math.max(1, ...R.lwd);
+  const S0 = RS, TS = RS.T, PT = RP && RP.T && RP.T.days ? RP.T : null;
+  const dl = (a, b, good, unit = "") => a == null || b == null || !PT ? null : (() => { const d = Math.round((a - b) * 10) / 10; if (!d) return <span className="dp-dl" style={{ color: "#64748b" }}>= كالسابقة</span>; return <span className="dp-dl" style={{ color: (d > 0) === good ? "#15803d" : "#b91c1c" }}>{d > 0 ? "▲" : "▼"}{ar(Math.abs(d))}{unit}</span>; })();
+  const rngLbl = (DP_RNG.find(x => x[0] === rng.k) || DP_RNG[0])[1];
+  const perBar = <div className="dp-per"><span>📅 فترة الإحصائيات: <b>{XR ? (XR._f === XR._t ? `${A.maDay(A.maDate(XR._f))} ${hij(XR._f)}` : `${hij(XR._f)} — ${hij(XR._t)}`) : (TS.first ? `${hij(TS.first)} — ${hij(TS.last)}` : "—")}</b> ({rngLbl})</span><span>الأيام الدراسية المرصودة: <b>{ar(TS.days || 0)}</b></span>{PT && <span>مقارنة بالفترة السابقة المماثلة: حضور <b>{ar(PT.attPct)}٪</b></span>}</div>;
+  const kpis = [[`${ar(TS.attPct ?? "—")}٪`, "نسبة الحضور", TS.attPct >= 95 ? "#15803d" : TS.attPct >= 90 ? G1 : "#b91c1c", dl(TS.attPct, PT && PT.attPct, true)], [ar(TS.abs || 0), "أيام الغياب", "#b91c1c", dl(TS.abs, PT && PT.abs, false)], [ar(S0.totUn), "غياب بدون عذر", "#9f1239", RP ? dl(S0.totUn, RP.totUn, false) : null], [ar(TS.late || 0), "حالات التأخر", "#c2410c", dl(TS.late || 0, PT && (PT.late || 0), false)], [ar(S0.defs.length), "أيام فيها خلل", "#9a3412", RP ? dl(S0.defs.length, RP.defs.length, false) : null], [ar(ladAll.length), "طلاب على سلم الغياب", "#7f1d1d", null]];
+  const W = S0.weeks.slice(-12); const wMax = Math.max(1, ...W.map(w => w.p)); const wdMax = Math.max(1, ...S0.wd), lwdMax = Math.max(1, ...S0.lwd);
   const pAn1 = <Page n={N("dp-an1")} id="dp-an1" title="تحليل واقع الانضباط في المدرسة (١) — المؤشرات">
-    <div className="dp-kpis">{kpis.map(([v, l, c]) => <div key={l} className="dp-kpi" style={{ "--c": c }}><b>{v}</b><span>{l}</span></div>)}</div>
+    {perBar}
+    <div className="dp-kpis">{kpis.map(([v, l, c, d]) => <div key={l} className="dp-kpi" style={{ "--c": c }}><b>{v}{d}</b><span>{l}</span></div>)}</div>
     <div className="dp-g3" style={{ marginTop: "1.2cqw" }}>
-      <div className="dp-box"><b style={{ color: NV }}>توزيع الغياب على أيام الأسبوع</b><div className="dp-bars">{R.wd.map((n, i) => <div key={i}><small style={{ color: NV }}>{ar(R.wdT ? pct(n, R.wdT) : 0)}٪</small><i className={i === R.wdPeak && R.wdShare >= 24 ? "hot" : ""} style={{ height: `${Math.max(3, n / wdMax * 100)}%` }} /><small>{WD[i]}</small></div>)}</div></div>
-      <div className="dp-box"><b style={{ color: NV }}>توزيع التأخر على أيام الأسبوع</b><div className="dp-bars">{R.lwd.map((n, i) => <div key={i}><small style={{ color: "#9a3412" }}>{ar(n)}</small><i className="hot" style={{ height: `${Math.max(3, n / lwdMax * 100)}%`, opacity: i === R.lwdPeak ? 1 : .5 }} /><small>{WD[i]}</small></div>)}</div></div>
+      <div className="dp-box"><b style={{ color: NV }}>توزيع الغياب على أيام الأسبوع</b><div className="dp-bars">{S0.wd.map((n, i) => <div key={i}><small style={{ color: NV }}>{ar(S0.wdT ? pct(n, S0.wdT) : 0)}٪</small><i className={i === S0.wdPeak && S0.wdShare >= 24 ? "hot" : ""} style={{ height: `${Math.max(3, n / wdMax * 100)}%` }} /><small>{WD[i]}</small></div>)}</div></div>
+      <div className="dp-box"><b style={{ color: NV }}>توزيع التأخر على أيام الأسبوع</b><div className="dp-bars">{S0.lwd.map((n, i) => <div key={i}><small style={{ color: "#9a3412" }}>{ar(n)}</small><i className="hot" style={{ height: `${Math.max(3, n / lwdMax * 100)}%`, opacity: i === S0.lwdPeak ? 1 : .5 }} /><small>{WD[i]}</small></div>)}</div></div>
       <div className="dp-box"><b style={{ color: NV }}>نسبة الغياب اليومي أسبوعياً</b><div className="dp-bars">{W.length ? W.map(w => <div key={w.k}><small style={{ color: NV }}>{ar(w.p)}</small><i style={{ height: `${Math.max(3, w.p / wMax * 100)}%` }} /><small>{ar(A.maDate(w.k).getDate())}/{ar(A.maDate(w.k).getMonth() + 1)}</small></div>) : <small>لا بيانات</small>}</div></div>
     </div>
     <div className="dp-sec">قراءة المساعد لواقع المدرسة</div>
@@ -51547,36 +51598,49 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
     {(cfg.note1 || edit) && <div className="dp-box" style={{ marginTop: ".6cqw" }}><b style={{ color: NV }}>قراءة اللجنة للواقع: </b><F v={cfg.note1} ml ph="أضف قراءة اللجنة…" on={v => setCfg("note1", v)} /></div>}
   </Page>;
   const pAn2 = <Page n={N("dp-an2")} id="dp-an2" title="تحليل واقع الانضباط في المدرسة (٢) — الفصول والأسباب">
+    {perBar}
     <div className="dp-g2" style={{ gridTemplateColumns: "1.5fr 1fr" }}>
       <table className="dp-tbl"><thead><tr><th>الفصل</th><th>الطلاب</th><th>نسبة الحضور</th><th>أيام الغياب</th><th>طلاب غائبون</th><th>التأخر</th><th>حضور كامل</th></tr></thead>
-        <tbody>{R.classes.filter(c => c.n).slice().sort((a, b) => (a.attPct ?? 101) - (b.attPct ?? 101)).map(c => { const lo = c.attPct != null && T.attPct != null && c.attPct < T.attPct - 1; return <tr key={c.ck}><td className="l" style={{ fontWeight: 700 }}>{A.maClassName(c.ck)}</td><td className="g">{ar(c.n)}</td><td className="g" style={{ fontWeight: 800, color: lo ? "#b91c1c" : c.attPct >= 95 ? "#15803d" : NV }}>{c.attPct == null ? "—" : `${ar(c.attPct)}٪`}</td><td className="g">{ar(c.abs)}</td><td className="g">{ar(c.absStu)}</td><td className="g">{ar(c.late)}</td><td className="l">{ar(c.perfect)}</td></tr>; })}</tbody></table>
+        <tbody>{S0.classes.filter(c => c.n).slice().sort((a, b) => (a.attPct ?? 101) - (b.attPct ?? 101)).map(c => { const lo = c.attPct != null && TS.attPct != null && c.attPct < TS.attPct - 1; return <tr key={c.ck}><td className="l" style={{ fontWeight: 700 }}>{A.maClassName(c.ck)}</td><td className="g">{ar(c.n)}</td><td className="g" style={{ fontWeight: 800, color: lo ? "#b91c1c" : c.attPct >= 95 ? "#15803d" : NV }}>{c.attPct == null ? "—" : `${ar(c.attPct)}٪`}</td><td className="g">{ar(c.abs)}</td><td className="g">{ar(c.absStu)}</td><td className="g">{ar(c.late)}</td><td className="l">{ar(c.perfect)}</td></tr>; })}</tbody></table>
       <div>
-        <div className="dp-box"><b style={{ color: NV }}>أسباب التأخر الصباحي</b>{R.reasons.length ? R.reasons.map(r => { const p = pct(r.n, R.reasonsT); return <div key={r.t} style={{ marginTop: ".5cqw" }}><div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}><span>{r.t}</span><span style={{ color: "#9a3412" }}>{ar(r.n)} ({ar(p)}٪)</span></div><div style={{ height: 7, borderRadius: 9, background: "#f1f5f9" }}><div style={{ width: `${p}%`, height: "100%", borderRadius: 9, background: `linear-gradient(90deg,${GD},#9a3412)` }} /></div></div>; }) : <div style={{ color: "#64748b" }}>لا توجد أسباب مسجلة</div>}</div>
-        <div className="dp-box" style={{ marginTop: "1cqw" }}><b style={{ color: NV }}>متكررو التأخر الصباحي</b><div className="dp-g3" style={{ marginTop: ".5cqw", textAlign: "center" }}>{R.lateLad.map((l, i) => <div key={i} style={{ borderRadius: 8, background: ["#fef3c7", "#ffedd5", "#fee2e2"][i] || "#fee2e2", padding: ".5cqw" }}><b style={{ fontSize: "max(18px,2cqw)", color: ["#b45309", "#c2410c", "#b91c1c"][i], fontFamily: KUFI }}>{ar(l.L.length)}</b><div style={{ fontSize: "0.85em", fontWeight: 700 }}>{i === R.lateLad.length - 1 ? `${ar(l.d)} مرات فأكثر` : `${ar(l.d)}–${ar(R.lateT[i + 1] - 1)} مرات`}</div></div>)}</div></div>
-        <div className="dp-box" style={{ marginTop: "1cqw" }}><b style={{ color: NV }}>الأعذار</b><div style={{ fontWeight: 600 }}>أيام غياب بعذر مقبول: <b style={{ color: "#15803d" }}>{ar(R.totEx)}</b> • بدون عذر: <b style={{ color: "#b91c1c" }}>{ar(R.totUn)}</b><br />أعذار مرفوعة إلكترونياً من أولياء الأمور: <b>{ar(extra.excN || 0)}</b> (المقبول {ar(extra.excOk || 0)})</div></div>
+        <div className="dp-box"><b style={{ color: NV }}>أسباب التأخر الصباحي</b>{S0.reasons.length ? S0.reasons.map(r => { const p = pct(r.n, S0.reasonsT); return <div key={r.t} style={{ marginTop: ".5cqw" }}><div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}><span>{r.t}</span><span style={{ color: "#9a3412" }}>{ar(r.n)} ({ar(p)}٪)</span></div><div style={{ height: 7, borderRadius: 9, background: "#f1f5f9" }}><div style={{ width: `${p}%`, height: "100%", borderRadius: 9, background: `linear-gradient(90deg,${GD},#9a3412)` }} /></div></div>; }) : <div style={{ color: "#64748b" }}>لا توجد أسباب مسجلة</div>}</div>
+        <div className="dp-box" style={{ marginTop: "1cqw" }}><b style={{ color: NV }}>متكررو التأخر الصباحي</b><div className="dp-g3" style={{ marginTop: ".5cqw", textAlign: "center" }}>{S0.lateLad.map((l, i) => <div key={i} style={{ borderRadius: 8, background: ["#fef3c7", "#ffedd5", "#fee2e2"][i] || "#fee2e2", padding: ".5cqw" }}><b style={{ fontSize: "max(18px,2cqw)", color: ["#b45309", "#c2410c", "#b91c1c"][i], fontFamily: KUFI }}>{ar(l.L.length)}</b><div style={{ fontSize: "0.85em", fontWeight: 700 }}>{i === S0.lateLad.length - 1 ? `${ar(l.d)} مرات فأكثر` : `${ar(l.d)}–${ar(R.lateT[i + 1] - 1)} مرات`}</div></div>)}</div></div>
+        <div className="dp-box" style={{ marginTop: "1cqw" }}><b style={{ color: NV }}>الأعذار</b><div style={{ fontWeight: 600 }}>أيام غياب بعذر مقبول: <b style={{ color: "#15803d" }}>{ar(S0.totEx)}</b> • بدون عذر: <b style={{ color: "#b91c1c" }}>{ar(S0.totUn)}</b><br />أعذار مرفوعة إلكترونياً من أولياء الأمور: <b>{ar(extra.excN || 0)}</b> (المقبول {ar(extra.excOk || 0)})</div></div>
       </div>
     </div>
   </Page>;
   // ── تحليل الواقع (٣): أيام الخلل
-  const heatW = {}; R.days.forEach(d => { const dt = A.maDate(d.dk); const s0 = new Date(dt); s0.setDate(dt.getDate() - dt.getDay()); const k = A.maKey(s0); (heatW[k] = heatW[k] || [null, null, null, null, null])[dt.getDay()] = d; });
-  const heatK = Object.keys(heatW).sort().slice(-14); const pMax = Math.max(1, ...R.days.map(d => d.p));
+  const heatW = {}; S0.days.forEach(d => { const dt = A.maDate(d.dk); const s0 = new Date(dt); s0.setDate(dt.getDate() - dt.getDay()); const k = A.maKey(s0); (heatW[k] = heatW[k] || [null, null, null, null, null])[dt.getDay()] = d; });
+  const heatK = Object.keys(heatW).sort().slice(-14); const pMax = Math.max(1, ...S0.days.map(d => d.p));
   const heatC = p => { const x = Math.min(1, p / Math.max(pMax, 1)); return `rgba(153,27,27,${0.06 + x * 0.84})`; };
-  const defWd = [0, 0, 0, 0, 0]; R.defs.forEach(d => { const w = A.maDate(d.dk).getDay(); if (w < 5) defWd[w]++; });
+  const defWd = [0, 0, 0, 0, 0]; S0.defs.forEach(d => { const w = A.maDate(d.dk).getDay(); if (w < 5) defWd[w]++; });
   const pAn3 = <Page n={N("dp-an3")} id="dp-an3" title="تحليل واقع الانضباط (٣) — أبرز الأيام التي فيها خلل">
+    {perBar}
     <div className="dp-g2" style={{ gridTemplateColumns: "1fr 1.25fr" }}>
       <div><div className="dp-box"><b style={{ color: NV }}>خريطة الغياب اليومي (آخر {ar(heatK.length)} أسبوعاً)</b>
         <div className="dp-heat" style={{ marginTop: ".6cqw" }}><span></span>{WD.map(w => <span key={w} style={{ color: "#475569" }}>{w.replace("ال", "")}</span>)}
           {heatK.map(k => <React.Fragment key={k}><span style={{ color: "#64748b", paddingInline: 4, fontSize: ".9em" }}>{shortH(A, k).split(" ").slice(0, 2).join(" ")}</span>{heatW[k].map((d, i) => d ? <span key={i} className={"d" + (d.def ? " x" : "")} title={defTxt(A, d)} style={{ background: heatC(d.p), color: d.p > pMax * .45 ? "#fff" : "#1e293b" }}>{ar(Math.round(d.p))}</span> : <span key={i} style={{ background: "#f8fafc" }} />)}</React.Fragment>)}</div>
-        <div style={{ fontSize: ".82em", color: "#64748b", fontWeight: 600, marginTop: 4 }}>الرقم = نسبة الغياب ٪ • الإطار الداكن = يوم خلل • متوسط الغياب اليومي {ar(R.avgP)}٪ والتأخر {ar(R.avgL)} حالة</div></div>
+        <div style={{ fontSize: ".82em", color: "#64748b", fontWeight: 600, marginTop: 4 }}>الرقم = نسبة الغياب ٪ • الإطار الداكن = يوم خلل • متوسط الغياب اليومي {ar(S0.avgP)}٪ والتأخر {ar(S0.avgL)} حالة</div></div>
         <div className="dp-box" style={{ marginTop: ".9cqw" }}><b style={{ color: NV }}>أيام الخلل حسب أيام الأسبوع</b><div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{WD.map((w, i) => <span key={w} className="dp-tag" style={{ background: defWd[i] ? "#fee2e2" : "#f1f5f9", color: defWd[i] ? "#991b1b" : "#64748b", fontSize: ".9em" }}>{w}: {ar(defWd[i])}</span>)}</div>
-          <div style={{ marginTop: 6, fontWeight: 600 }}>ملاصقة للإجازات: <b style={{ color: "#9a3412" }}>{ar(R.defs.filter(d => /إجازة/.test(d.tag)).length)}</b> • غياب مرتفع: <b>{ar(R.defs.filter(d => d.hiA).length)}</b> • تأخر مرتفع: <b>{ar(R.defs.filter(d => d.hiL).length)}</b></div></div></div>
+          <div style={{ marginTop: 6, fontWeight: 600 }}>ملاصقة للإجازات: <b style={{ color: "#9a3412" }}>{ar(S0.defs.filter(d => /إجازة/.test(d.tag)).length)}</b> • غياب مرتفع: <b>{ar(S0.defs.filter(d => d.hiA).length)}</b> • تأخر مرتفع: <b>{ar(S0.defs.filter(d => d.hiL).length)}</b></div></div></div>
       <div><table className="dp-tbl"><thead><tr><th style={{ width: "5%" }}>م</th><th>اليوم والتاريخ</th><th style={{ width: "12%" }}>الغائبون</th><th style={{ width: "13%" }}>نسبة الغياب</th><th style={{ width: "10%" }}>التأخر</th><th style={{ width: "20%" }}>القرينة</th></tr></thead>
-        <tbody>{R.defs.length ? R.defs.slice(0, 12).map((d, i) => <tr key={d.dk}><td className="n">{ar(i + 1)}</td><td className="g r" style={{ fontWeight: 700 }}>{A.maDay(A.maDate(d.dk))} {hij(d.dk)}</td><td className="g">{ar(d.n)}</td><td className="g" style={{ fontWeight: 800, color: d.hiA ? "#b91c1c" : NV }}>{ar(d.p)}٪</td><td className="g" style={{ fontWeight: 800, color: d.hiL ? "#c2410c" : "#334155" }}>{ar(d.l)}</td><td className="l">{d.tag || "—"}</td></tr>) : <tr><td className="g" colSpan={6} style={{ padding: "2cqw", color: "#15803d", fontWeight: 700 }}>لا توجد أيام خلل واضحة — الانضباط منتظم</td></tr>}</tbody></table>
+        <tbody>{S0.defs.length ? S0.defs.slice(0, 12).map((d, i) => <tr key={d.dk}><td className="n">{ar(i + 1)}</td><td className="g r" style={{ fontWeight: 700 }}>{A.maDay(A.maDate(d.dk))} {hij(d.dk)}</td><td className="g">{ar(d.n)}</td><td className="g" style={{ fontWeight: 800, color: d.hiA ? "#b91c1c" : NV }}>{ar(d.p)}٪</td><td className="g" style={{ fontWeight: 800, color: d.hiL ? "#c2410c" : "#334155" }}>{ar(d.l)}</td><td className="l">{d.tag || "—"}</td></tr>) : <tr><td className="g" colSpan={6} style={{ padding: "2cqw", color: "#15803d", fontWeight: 700 }}>لا توجد أيام خلل واضحة — الانضباط منتظم</td></tr>}</tbody></table>
         {(cfg.note3 || edit) && <div className="dp-box" style={{ marginTop: ".8cqw" }}><b style={{ color: NV }}>معالجة أيام الخلل: </b><F v={cfg.note3} ml ph="الإجراءات المتخذة تجاه أيام الخلل…" on={v => setCfg("note3", v)} /></div>}</div>
     </div>
   </Page>;
 
-  // ── إجراءات المدرسة (قابلة للإضافة والتعديل)
+    // ── المشكلات الأبرز والإجراءات المقترحة (تتحدث مع كل تحليل)
+  const sevC = { 3: ["أولوية عالية", "#b91c1c", "#fee2e2"], 2: ["متوسطة", "#b45309", "#fef3c7"], 1: ["منخفضة", "#1d4ed8", "#dbeafe"] };
+  const pProb = <Page n={N("dp-prob")} id="dp-prob" title="المشكلات الأبرز في الفترة والإجراءات المقترحة">
+    {perBar}
+    {PRB.length ? <table className="dp-tbl"><thead><tr><th style={{ width: "4%" }}>م</th><th style={{ width: "17%" }}>المشكلة</th><th style={{ width: "19%" }}>المؤشر من البيانات</th><th style={{ width: "9%" }}>الأولوية</th><th>الإجراء المقترح</th><th style={{ width: "12%" }}>المسؤول</th><th style={{ width: "10%" }}>المدة</th><th className="dp-noprint" style={{ width: "8%" }}></th></tr></thead>
+      <tbody>{PRB.map((x, i) => { const sv = sevC[x.sev]; const done = prog.some(p => p.k === "pr-" + x.k || p.k === x.k); return <tr key={x.k}><td className="n">{ar(i + 1)}</td><td className="l" style={{ fontWeight: 800, color: NV }}>{x.t}</td><td className="g r" style={{ fontSize: ".92em" }}>{x.ev}</td><td className="w"><span className="dp-sev" style={{ background: sv[2], color: sv[1] }}>{sv[0]}</span></td><td className="g r">{x.act}</td><td className="l" style={{ fontSize: ".9em" }}>{x.who}</td><td className="l" style={{ fontSize: ".9em" }}>{x.when}</td>
+        <td className="w dp-noprint">{done ? <span style={{ color: "#15803d", fontWeight: 800, fontSize: 12 }}>✓ في الخطة</span> : <button className="dp-pb" style={{ background: G1, color: "#fff", border: "none" }} onClick={() => adopt({ t: "معالجة: " + x.t, why: x.ev, how: x.act, who: x.who, when: x.when, kpi: x.kpi, ax: x.ax, k: "pr-" + x.k })}>✓ اعتماد</button>}</td></tr>; })}</tbody></table>
+      : <div className="dp-box" style={{ textAlign: "center", fontWeight: 700, color: "#15803d" }}>🌟 لا توجد مشكلات بارزة في هذه الفترة — مستوى الانضباط ضمن المستهدف.</div>}
+    <div style={{ marginTop: ".6cqw", fontSize: ".85em", color: "#475569", fontWeight: 600 }}>تُحسب المشكلات والإجراءات تلقائياً من آخر بيانات الحضور والتأخر والأعذار والسلوك في الفترة المحددة، وتتحدث مع كل تحليل. سلم الغياب تراكمي من بداية العام.</div>
+  </Page>;
+
+// ── إجراءات المدرسة (قابلة للإضافة والتعديل)
   const pProc = procChunks.map((ch, gi) => { const groups = []; ch.forEach(r => { const g = groups[groups.length - 1]; if (g && g.ai === r.ai) g.L.push(r); else groups.push({ ai: r.ai, ax: r.ax, L: [r] }); });
     return <Page key={gi} n={N(`dp-proc${gi}`)} id={`dp-proc${gi}`} title="إجراءات تعزيز الانضباط المدرسي على مستوى المدرسة" rk={gi === 0 ? ["axes"] : null}>
       <table className="dp-tbl"><thead><tr><th style={{ width: "11%" }}>المحاور</th><th>الإجراءات</th><th style={{ width: "13%" }}>مسؤولية التنفيذ</th><th style={{ width: "10%" }}>مسؤول المتابعة</th><th style={{ width: "9%" }}>مستوى التنفيذ</th><th style={{ width: "21%" }}>الشاهد / التوصيات</th></tr></thead>
@@ -51597,7 +51661,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const pProg = <Page n={N("dp-prog")} id="dp-prog" title="البرامج والإجراءات المعتمدة والمقترحة من واقع البيانات">
     <div className="dp-sec">البرامج المعتمدة في الخطة ({ar(prog.length)})</div>
     {prog.length ? <table className="dp-tbl" style={{ marginBottom: ".8cqw" }}><thead><tr><th style={{ width: "4%" }}>م</th><th style={{ width: "20%" }}>البرنامج</th><th>الإجراءات</th><th style={{ width: "12%" }}>المسؤول</th><th style={{ width: "10%" }}>التوقيت</th><th style={{ width: "13%" }}>مؤشر النجاح</th><th style={{ width: "10%" }}>الحالة / الشواهد</th></tr></thead>
-      <tbody>{prog.map((p, i) => { const k = pid(p); const u = (f, v) => save(`prog/${k}/${f}`, v); return <tr key={k}><td className="n">{ar(i + 1)}</td><td className="l" style={{ fontWeight: 700 }}><F v={p.t} on={v => u("t", v)} ml /></td><td className="g r"><F v={p.how} ml on={v => u("how", v)} /></td><td className="l"><F v={p.who} on={v => u("who", v)} list={false} /></td><td className="g"><F v={p.when} on={v => u("when", v)} list={false} /></td><td className="g"><F v={p.kpi} ml on={v => u("kpi", v)} /></td>
+      <tbody>{prog.map((p, i) => { const k = pid(p); const u = (f, v) => save(`prog/${k}/${f}`, v); return <tr key={k}><td className="n">{ar(i + 1)}</td><td className="l" style={{ fontWeight: 700 }}><F v={p.t} on={v => u("t", v)} ml />{(() => { const s = SUG.find(x => x.k === p.k) || PRB.find(x => "pr-" + x.k === p.k); return s ? <div style={{ fontSize: ".78em", color: "#9a3412", fontWeight: 600 }}>📊 الآن: {s.why || s.ev}</div> : null; })()}</td><td className="g r"><F v={p.how} ml on={v => u("how", v)} /></td><td className="l"><F v={p.who} on={v => u("who", v)} list={false} /></td><td className="g"><F v={p.when} on={v => u("when", v)} list={false} /></td><td className="g"><F v={p.kpi} ml on={v => u("kpi", v)} /></td>
         <td className="w">{edit ? <select className="dp-in" value={p.st} onChange={e => u("st", e.target.value)}><option value="plan">مخطط</option><option value="run">قيد التنفيذ</option><option value="done">منفذ</option></select> : <span className="dp-tag" style={{ background: p.st === "done" ? "#dcfce7" : p.st === "run" ? "#dbeafe" : "#f1f5f9", color: p.st === "done" ? "#15803d" : p.st === "run" ? "#1d4ed8" : "#475569" }}>{p.st === "done" ? "منفذ" : p.st === "run" ? "قيد التنفيذ" : "مخطط"}</span>}
           {evOf(k).length > 0 && <div style={{ fontSize: ".85em", color: G1, fontWeight: 700 }}>📷 {ar(evOf(k).length)} شاهد</div>}
           {edit && <button className="dp-x dp-noprint" onClick={() => confirm("حذف البرنامج من الخطة؟") && save(`prog/${k}`, null)}>✕</button>}</td></tr>; })}</tbody></table> : <div style={{ color: "#64748b", fontWeight: 600 }}>لم يُعتمد برنامج بعد — اعتمد من المقترحات أو أضف برنامجاً خاصاً.</div>}
@@ -51715,7 +51779,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   </Page>; };
 
   const caseList = ladAll.filter(x => (!caseLv || x.l.d === caseLv) && (!caseQ || String(x.s.name).includes(caseQ) || A.maClassName(x.s.ck).includes(caseQ))).sort((a, b) => b.un - a.un);
-  const NAV = [["dp-cover", "الغلاف"], ["dp-intro", "المقدمة"], ["dp-goals", "الأهداف"], ["dp-com", "تشكيل اللجنة"], ["dp-coms0", "أدوار اللجان"], ["dp-office", "الإدارة والمكتب"], ["dp-an1", "المؤشرات"], ["dp-an2", "الفصول والأسباب"], ["dp-an3", "أيام الخلل"], ["dp-proc0", "إجراءات المدرسة"], ["dp-prog", "البرامج"], ["dp-ladder", "سلم الغياب"], ["dp-rules", "الأعذار"], ["dp-meets", "الاجتماعات"], ...meets.map(m => [`dp-m-${m.id}`, `محضر ${ar(m.no)}`]), ["dp-ev0", `الشواهد (${ar(evL.length)})`], ...pagesX.map(p => [`dp-x-${p.id}`, p.title || "صفحة"]), ["dp-docs", "الاعتماد"]].filter(([id]) => edit || !hidden[id]);
+  const NAV = [["dp-cover", "الغلاف"], ["dp-intro", "المقدمة"], ["dp-goals", "الأهداف"], ["dp-com", "تشكيل اللجنة"], ["dp-coms0", "أدوار اللجان"], ["dp-office", "الإدارة والمكتب"], ["dp-an1", "المؤشرات"], ["dp-an2", "الفصول والأسباب"], ["dp-an3", "أيام الخلل"], ["dp-prob", `المشكلات (${ar(PRB.length)})`], ["dp-proc0", "إجراءات المدرسة"], ["dp-prog", "البرامج"], ["dp-ladder", "سلم الغياب"], ["dp-rules", "الأعذار"], ["dp-meets", "الاجتماعات"], ...meets.map(m => [`dp-m-${m.id}`, `محضر ${ar(m.no)}`]), ["dp-ev0", `الشواهد (${ar(evL.length)})`], ...pagesX.map(p => [`dp-x-${p.id}`, p.title || "صفحة"]), ["dp-docs", "الاعتماد"]].filter(([id]) => edit || !hidden[id]);
   const go = id => { const el = document.getElementById(id); el && el.scrollIntoView({ behavior: "smooth", block: "start" }); };
   const btn = (on, bg = "#fff", c = NV) => ({ border: on ? "none" : "1.5px solid #cbd5e1", background: on ? `linear-gradient(135deg,${G1},${NV})` : bg, color: on ? "#fff" : c, borderRadius: 10, padding: "7px 14px", fontFamily: KUFI, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flex: "none" });
   const ctx = { edit, doPrint, ar, year, hidden, setHidden, resetTx };
@@ -51727,17 +51791,22 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
         <button style={btn(view === "plan")} onClick={() => setView("plan")}>📘 الخطة والسجل</button>
         <button style={btn(view === "cases")} onClick={() => setView("cases")}>🗂 ملفات الطلاب ({ar(ladAll.length)})</button>
         <button style={btn(edit, "#fff", "#92400e")} onClick={() => setEdit(!edit)}>{edit ? "✓ إنهاء التعديل" : "✎ تعديل وإضافة"}</button>
-        <button style={btn(false)} onClick={load}>🔄 تحديث التحليل</button>
+        <button style={btn(false)} onClick={load}>🔄 تحديث الآن</button>
         <button style={btn(false, "#fff7ed", "#9a3412")} onClick={newMeet}>＋ اجتماع</button>
         <button style={btn(false, "#f0fdf4", G1)} onClick={() => { setView("plan"); setTimeout(() => go("dp-ev0"), 80); }}>📷 الشواهد</button>
         {edit && <button style={btn(false, "#eff6ff", NV)} onClick={() => setTx("pages", [...pagesX, { id: uid(), title: "صفحة جديدة", body: "", items: [] }])}>＋ صفحة إضافية</button>}
         <button style={{ ...btn(true), background: "linear-gradient(135deg,#0f172a,#334155)" }} onClick={() => view === "cases" ? doPrint(null, "ملفات إجراءات الطلاب") : doPrint(null, "الخطة الإجرائية لتعزيز الانضباط المدرسي")}>🖨 {view === "cases" ? "طباعة الملفات" : "طباعة السجل كاملاً"}</button>
       </div>
+      {view === "plan" && <div className="dp-rng"><span className="lb">📅 فترة الإحصائيات:</span><select value={rng.k} onChange={e => pickRng({ k: e.target.value, f: rng.f, t: rng.t })}>{DP_RNG.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+        {rng.k === "day" && <input type="date" value={rng.f || ""} max={today} onChange={e => pickRng({ ...rng, f: e.target.value })} />}
+        {rng.k === "btw" && <><span className="pv">من</span><input type="date" value={rng.f || ""} max={today} onChange={e => pickRng({ ...rng, f: e.target.value })} /><span className="pv">إلى</span><input type="date" value={rng.t || ""} max={today} onChange={e => pickRng({ ...rng, t: e.target.value })} /></>}
+        <span className="pv">{busy === "rng" ? "⏳ جارٍ التحليل…" : XR ? `${hij(XR._f)}${XR._f !== XR._t ? ` — ${hij(XR._t)}` : ""} • ${dayW(RS.T.days || 0, ar)}` : dayW(T.days || 0, ar)}</span>
+        <span className="pv" style={{ marginInlineStart: "auto" }}>🔄 يتحدث تلقائياً{upAt ? ` • آخر تحديث ${new Date(upAt).toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" })}` : ""}</span></div>}
       {view === "plan" ? <div style={{ display: "flex", gap: 6, overflowX: "auto", marginTop: 8, paddingBottom: 2, scrollbarWidth: "thin" }}>{NAV.map(([id, t]) => <button key={id} onClick={() => go(id)} style={{ flex: "none", border: "1px solid #e2e8f0", background: hidden[id] ? "#f1f5f9" : "#fff", borderRadius: 99, padding: "3px 11px", fontFamily: KUFI, fontWeight: 600, fontSize: 12, color: hidden[id] ? "#94a3b8" : "#334155", cursor: "pointer" }}>{t}</button>)}</div>
         : <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}><input value={caseQ} onChange={e => setCaseQ(e.target.value)} placeholder="بحث باسم الطالب أو الفصل…" style={{ flex: "1 1 200px", border: "1.5px solid #cbd5e1", borderRadius: 10, padding: "5px 10px", fontFamily: "inherit", fontWeight: 600 }} />{[0, ...R.lad.map(l => l.d)].map(d => <button key={d} onClick={() => setCaseLv(d)} style={{ ...btn(caseLv === d), padding: "4px 11px", fontSize: 12 }}>{d ? `${ar(d)}+ ${dW(d)} (${ar(R.lad.find(l => l.d === d).L.length)})` : `الكل (${ar(ladAll.length)})`}</button>)}</div>}
       {edit && <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: "#92400e" }}>✎ وضع التعديل: كل نص وجدول قابل للتعديل (يُحفظ عند الخروج من الحقل) • أضف أو احذف البنود والإجراءات واللجان والمحاور • «🚫 إخفاء» يستبعد الصفحة من السجل والطباعة • «↺ الأصل» يعيد نص الوزارة.</div>}
     </div>
-    {view === "plan" ? <>{cover}{pIntro}{pGoals}{pCom}{pComs}{pOffice}{pAn1}{pAn2}{pAn3}{pProc}{pProg}{pLadder}{pRules}{pMeetPlan}{meets.map(m => <React.Fragment key={m.id}>{meetPage(m)}</React.Fragment>)}{pEv}{pX}{pDocs}</>
+    {view === "plan" ? <>{cover}{pIntro}{pGoals}{pCom}{pComs}{pOffice}{pAn1}{pAn2}{pAn3}{pProb}{pProc}{pProg}{pLadder}{pRules}{pMeetPlan}{meets.map(m => <React.Fragment key={m.id}>{meetPage(m)}</React.Fragment>)}{pEv}{pX}{pDocs}</>
       : caseList.length ? caseList.map(x => <React.Fragment key={x.s.sid}>{casePage(x)}</React.Fragment>) : <div style={{ padding: 40, textAlign: "center", fontWeight: 700, color: "#15803d" }}>🌟 لا يوجد طلاب بلغوا سلم إجراءات الغياب بدون عذر</div>}
   </div></Ctx.Provider>;
 }
