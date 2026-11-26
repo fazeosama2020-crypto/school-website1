@@ -64,6 +64,9 @@ table.t{border-collapse:collapse;width:100%;background:var(--card);border-radius
 table.t th{background:var(--navy);color:#fff;padding:8px;font-weight:700;text-align:start}
 table.t td{padding:7px 8px;border-top:1px solid var(--line)}table.t td.n{text-align:center;font-variant-numeric:tabular-nums}
 .flag{color:var(--badb);font-weight:700}
+.rlg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin:8px 0}.rlc{display:grid;gap:6px;text-align:start;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:10px;cursor:pointer;font:inherit;color:var(--ink);min-height:44px}.rlc:hover,.rlc.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,162,39,.25)}.rlc b{font-size:14px;line-height:1.5}.rlc small{color:var(--mut);font-size:12px;line-height:1.5}.rlc .tg{font-size:11px;font-weight:800;color:var(--navy);background:#eef2ff;border-radius:99px;padding:1px 8px;justify-self:start}
+.mv7{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;direction:rtl}.mv7 i{height:11px;border-radius:3px;background:#eef1f5;display:block}.mv7 i.a{background:var(--navy)}.mv7 i.b{background:var(--gold)}.mv7 i.f{background:#94a3b8}.mv7 i.g{background:repeating-linear-gradient(135deg,#fecaca,#fecaca 3px,#fff 3px,#fff 6px)}
+.rlb{border:2px solid var(--gold);border-radius:14px;padding:12px;margin-top:8px;background:linear-gradient(180deg,#fffdf5,var(--card))}.rls{font-weight:800;font-size:15px;color:var(--navy);background:#f4ead2;border-radius:10px;padding:8px 12px;margin:8px 0}.rlk{padding:8px 12px;border-radius:10px;font-weight:700;margin:6px 0}.rlk.ok{background:#f0fdf4;color:#166534}.rlk.bad{background:#fef2f2;color:#991b1b}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px}
 .chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:7px 12px;min-height:40px;font:inherit;font-size:14px;cursor:pointer;color:var(--ink)}
 .chip.on{background:var(--badb);color:#fff;border-color:var(--badb)}
@@ -291,6 +294,13 @@ details summary{cursor:pointer;min-height:40px;padding:8px 0;font-weight:700}
    <div class="chips" id="nlEx"></div>
    <div id="nlOut"></div>
   </div>
+  <div class="panel" id="relP">
+   <h2 style="margin-top:0">علاقات المواد وقواعد المعلم</h2>
+   <p class="note">كل ما في «العلاقات» و«الإعداد المتقدم» في البرامج الأخرى، لكن بجملة واضحة وصورة صغيرة. اختر بطاقة، ثم حدد المواد أو المعلمين، فيفحص البرنامج جدولك الحالي فورًا ويخبرك كم مخالفة فيه قبل الإضافة.</p>
+   <div id="relMsg"></div><div id="relSug"></div>
+   <div class="rlg" id="relCards"></div>
+   <div id="relB"></div>
+  </div>
   <div class="panel">
    <h2 style="margin-top:0">منع أوقات محددة لمعلم أو أكثر</h2>
    <p class="note">اختر المعلمين، ثم اضغط على خانات الجدول التي لا تريد أن توضع فيها حصصهم. ويمكنك أيضًا تحديد أقصى عدد لحصصهم في اليوم.</p>
@@ -459,9 +469,13 @@ function describe(c){switch(c.type){
  case'meet':return`فراغ مشترك ${c.label?'لقسم '+(c.label==='لغتي'?c.label:'ال'+c.label):'لـ'+tName(c)} ${c.days&&c.days.length&&c.days.length<5?dName(c):'خلال الأسبوع'}`;
  case'slots':{const by={};c.xs.forEach(x=>{const d=Math.floor(x/7);(by[d]=by[d]||[]).push(x%7+1)});return`لا يُسند إلى ${tName(c)}: ${Object.entries(by).map(([d,ps])=>DAYS[d]+' ('+ps.join('، ')+')').join('، ')}`}
  case'dlen':return`اليوم الدراسي ${dName(c)}: ${c.n} حصص فقط`;
+ case'rel':return relSentence(c);
+ case'tgap':return`${tName(c)}: لا يزيد الفراغ بين الحصص على ${c.n===0?'صفر (حصص متصلة)':c.n===1?'حصة واحدة':c.n===2?'حصتين':c.n+' حصص'} ${c.mode==='w'?'في الأسبوع':'في اليوم'}`;
+ case'tdays':return`${tName(c)}: الدوام ${c.n===4?'أربعة أيام':c.n===3?'ثلاثة أيام':c.n+' أيام'} في الأسبوع على الأكثر`;
+ case'tminp':return`${tName(c)}: لا يقل يوم الدوام عن ${c.n===2?'حصتين':c.n+' حصص'}`;
  case'pin':return`تثبيت حصة الفصل ${D.classes[c.c]} ${DAYS[c.d]} الحصة ${PN[c.p]}`}return''}
 let CC,TB,TBsrc,CLW=new Float64Array(35),CLsrc=Array(35).fill(null);
-function compile(opts){const C={eday:[],closed:[],blocks:[],pmax:[],dmax:[],sp:[],dbl:[],cap:[],meet:[],pins:[],run:{max:7,w:0},daily:{max:7,w:0}};
+function compile(opts){const C={rel:[],tadv:[],eday:[],closed:[],blocks:[],pmax:[],dmax:[],sp:[],dbl:[],cap:[],meet:[],pins:[],run:{max:7,w:0},daily:{max:7,w:0}};
  for(const c of S.cons){if(!c.on)continue;if(opts&&opts.skipAuto&&c.src==='eday')continue;const w=W[c.level]||20;
   if(c.type==='eday'){C.eday.push({id:c.id,ts:tsOf(c),K:c.n,w});continue}
   if(c.type==='run')C.run={max:c.n,w:Math.min(w,60)};else if(c.type==='daily')C.daily={max:c.n,w};
@@ -474,7 +488,11 @@ function compile(opts){const C={eday:[],closed:[],blocks:[],pmax:[],dmax:[],sp:[
   else if(c.type==='dbl')C.dbl.push({id:c.id,subs:c.subs,w});
   else if(c.type==='cap')C.cap.push({id:c.id,subs:c.subs,max:c.n,w});
   else if(c.type==='meet')C.meet.push({id:c.id,ts:tsOf(c),days:dOf(c),w});
-  else if(c.type==='pin')C.pins.push([c.c,c.d*7+c.p])}
+  else if(c.type==='pin')C.pins.push([c.c,c.d*7+c.p]);
+  else if(c.type==='rel')C.rel.push({id:c.id,k:c.k,a:c.a,b:c.b==null?-1:c.b,cls:c.cls||[],w});
+  else if(c.type==='tgap')C.tadv.push({id:c.id,k:c.mode==='w'?'gapw':'gapd',ts:tsOf(c),max:c.n,w});
+  else if(c.type==='tdays')C.tadv.push({id:c.id,k:'days',ts:tsOf(c),max:c.n,w});
+  else if(c.type==='tminp')C.tadv.push({id:c.id,k:'minp',ts:tsOf(c),max:c.n,w})}
  return C}
 function recompile(){CC=compile();TB=new Float64Array(D.teachers.length*35);TBsrc=Array(TB.length).fill(null);
  for(const b of CC.blocks)for(const t of b.ts)for(const x of b.xs)if(b.w>TB[t*35+x]){TB[t*35+x]=b.w;TBsrc[t*35+x]=b.id}
@@ -668,6 +686,8 @@ function solve(inp,progress){
  const dblW=new Float64Array(nS);for(const r of C.dbl)for(const s of r.subs)dblW[s]=Math.max(dblW[s],r.w);
  const caps=[];for(const r of C.cap)for(const s of r.subs)caps.push({s,max:r.max,w:r.w});
  const pins=new Set(C.pins.map(a=>a[0]*35+a[1]));const clw=new Float64Array(35);for(const r of (C.closed||[]))for(const x of r.xs)clw[x]=Math.max(clw[x],r.w);
+ const REL=C.rel||[],TAD=C.tadv||[],relC=[],relW=[],taT=[];for(let c=0;c<nC;c++){relC.push([]);relW.push([])}for(let t=0;t<nT;t++)taT.push([]);
+ REL.forEach(r=>{const cs=r.cls&&r.cls.length?r.cls:[...Array(nC).keys()];for(const c of cs)if(c<nC)(r.k==='samep'?relW:relC)[c].push(r)});TAD.forEach(q=>q.ts.forEach(t=>{if(t<nT)taT[t].push(q)}));
  const STAY=inp.stay||0,RM=C.run.max,RW=C.run.w,DM=C.daily.max,DW=C.daily.w,DUP=6,HALF=3;
  let L,cg,tc,op,pc,sc;
  function build(X){L=base.map((a,i)=>({t:a[0],c:a[1],s:a[2],h:a[3],k:a[4],x:X?X[i]:a[5],x0:a[5],f:a[4]>0||pins.has(a[1]*35+a[5])}));
@@ -680,17 +700,28 @@ function solve(inp,progress){
  function tdc(t,d){let c=0,run=0,n=0;const T=tc[t],O=op[t];for(let p=0;p<7;p++){const x=d*7+p,v=T[x],r=v-O[x];if(v>1)c+=1000*(v-1);if(r>0){n++;c+=tb[t*35+x];run++;if(run>RM)c+=RW;if(run>RM+1)c+=RW*3}else run=0}
   if(n>DM)c+=DW*(n-DM);for(const qi of dmT[t]){const q=C.dmax[qi];if(q.days.includes(d)&&n>q.max)c+=q.w*(n-q.max)}return c}
  const edm=(t,K)=>{let m=99;for(let d=0;d<5;d++){let n=0;for(let p=K;p<7;p++){const x=d*7+p;if(tc[t][x]-op[t][x]>0)n++}if(n<m)m=n;if(!m)break}return m};
- function twc(t){let c=0;for(const q of edT[t]){const m=edm(t,q.K);if(m)c+=q.w*m}for(const qi of pmT[t]){const q=C.pmax[qi],o=pc[t][q.p]-q.max;if(o>0)c+=q.w*o}return c}
+ function twc(t){let c=taT[t].length?tac(t):0;for(const q of edT[t]){const m=edm(t,q.K);if(m)c+=q.w*m}for(const qi of pmT[t]){const q=C.pmax[qi],o=pc[t][q.p]-q.max;if(o>0)c+=q.w*o}return c}
  function cdc(c,d){let cost=0,h=0,seen=0;const G=cg[c],cnt=[];for(let p=0;p<7;p++){const i=G[d*7+p];if(i<0)continue;const l=L[i];if(l.h)h++;if(l.k===0){const b=1<<l.s;if(seen&b&&!dblW[l.s])cost+=DUP;seen|=b;cost+=spw[l.s][p]+clw[d*7+p]}}
   if(h>1)cost+=HALF*(h-1);
+  if(relC[c].length)cost+=rdc(c,d);
   for(let s=0;s<nS;s++){if(!dblW[s]||!(seen&(1<<s)))continue;let ps=[];for(let p=0;p<7;p++){const i=G[d*7+p];if(i>=0&&L[i].s===s&&L[i].k===0)ps.push(p)}
    if(ps.length===1)cost+=dblW[s]/2;else{let adj=false;for(let k=1;k<ps.length;k++)if(ps[k]-ps[k-1]===1)adj=true;if(!adj)cost+=dblW[s]}}
   return cost}
+ function rdPos(G,d,s){const o=[];for(let p=0;p<7;p++){const i=G[d*7+p];if(i>=0&&L[i].s===s&&L[i].k===0)o.push(p)}return o}
+ function rdc(c,d){const G=cg[c];let cost=0,f=-1,l=-1;for(let p=0;p<7;p++)if(G[d*7+p]>=0){if(f<0)f=p;l=p}
+  for(const r of relC[c]){const pa=rdPos(G,d,r.a);if(r.k==='edge'||r.k==='noedge'){for(const p of pa){const e=p===f||p===l;if(r.k==='edge'?!e:e)cost+=r.w}continue}
+   const pb=rdPos(G,d,r.b);if(r.k==='sd'){if(!pa.length!==!pb.length)cost+=r.w;continue}if(!pa.length||!pb.length)continue;
+   if(r.k==='nsd')cost+=r.w;else if(r.k==='ncons'){for(const p of pa)for(const q of pb)if(Math.abs(p-q)===1)cost+=r.w}
+   else if(r.k==='cons'||r.k==='consab'){let ok=false;for(const p of pa)for(const q of pb)if(r.k==='cons'?Math.abs(p-q)===1:q-p===1)ok=true;if(!ok)cost+=r.w}}return cost}
+ function cwc(c){let cost=0;for(const r of relW[c]){const ps=new Set();for(let x=0;x<35;x++){const i=cg[c][x];if(i>=0&&L[i].s===r.a&&L[i].k===0)ps.add(x%7)}if(ps.size>1)cost+=r.w*(ps.size-1)}return cost}
+ function tgaps(t,d){let f=-1,l=-1,n=0;for(let p=0;p<7;p++){const x=d*7+p;if(tc[t][x]-op[t][x]>0){if(f<0)f=p;l=p;n++}}return f<0?0:l-f+1-n}
+ function tac(t){let c=0;if(!taT[t].length)return 0;for(const q of taT[t]){if(q.k==='gapd'){for(let d=0;d<5;d++){const g=tgaps(t,d);if(g>q.max)c+=q.w*(g-q.max)}}else if(q.k==='gapw'){let g=0;for(let d=0;d<5;d++)g+=tgaps(t,d);if(g>q.max)c+=q.w*(g-q.max)}
+   else{let days=0,low=0;for(let d=0;d<5;d++){let n=0;for(let p=0;p<7;p++){const x=d*7+p;if(tc[t][x]-op[t][x]>0)n++}if(n)days++;if(n&&n<q.max)low+=q.max-n}if(q.k==='days'&&days>q.max)c+=q.w*(days-q.max);if(q.k==='minp')c+=q.w*low}}return c}
  const mvp=i=>i>=0&&STAY&&L[i].x!==L[i].x0?STAY:0;
  function slc(x){let c=0;for(const q of caps){const o=sc[q.s][x]-q.max;if(o>0)c+=q.w*o}return c}
  function gc(gi){const g=C.meet[gi];for(const d of g.days)for(let p=0;p<7;p++){const x=d*7+p;let ok=true;for(const t of g.ts)if(tc[t][x]-op[t][x]>0||tb[t*35+x]>=1000){ok=false;break}if(ok)return 0}return g.w}
- function totalCost(){let s=0;for(let t=0;t<nT;t++){s+=twc(t);for(let d=0;d<5;d++)s+=tdc(t,d)}for(let c=0;c<nC;c++)for(let d=0;d<5;d++)s+=cdc(c,d);for(let x=0;x<35;x++)s+=slc(x);for(let g=0;g<C.meet.length;g++)s+=gc(g);if(STAY)L.forEach((_,i)=>s+=mvp(i));return s}
- function local(c,a,b,ti,tj){const da=Math.floor(a/7),db=Math.floor(b/7);let s=cdc(c,da);if(db!==da)s+=cdc(c,db);
+ function totalCost(){let s=0;for(let t=0;t<nT;t++){s+=twc(t);for(let d=0;d<5;d++)s+=tdc(t,d)}for(let c=0;c<nC;c++){for(let d=0;d<5;d++)s+=cdc(c,d);if(relW[c].length)s+=cwc(c)}for(let x=0;x<35;x++)s+=slc(x);for(let g=0;g<C.meet.length;g++)s+=gc(g);if(STAY)L.forEach((_,i)=>s+=mvp(i));return s}
+ function local(c,a,b,ti,tj){const da=Math.floor(a/7),db=Math.floor(b/7);let s=cdc(c,da);if(db!==da)s+=cdc(c,db);if(relW[c].length)s+=cwc(c);
   s+=tdc(ti,da)+twc(ti);if(db!==da)s+=tdc(ti,db);if(tj>=0&&tj!==ti){s+=tdc(tj,da)+twc(tj);if(db!==da)s+=tdc(tj,db)}
   if(caps.length)s+=slc(a)+slc(b);
   if(STAY)s+=mvp(cg[c][a])+mvp(cg[c][b]);
@@ -722,6 +753,8 @@ function solve(inp,progress){
  C.dbl.forEach(r=>{let n=0;for(let c=0;c<nC;c++)for(let d=0;d<5;d++)for(const s of r.subs){const ps=[];for(let p=0;p<7;p++){const i=cg[c][d*7+p];if(i>=0&&L[i].s===s&&L[i].k===0)ps.push(p)}if(ps.length===1)n+=.5;else if(ps.length>1){let adj=false;for(let k=1;k<ps.length;k++)if(ps[k]-ps[k-1]===1)adj=true;if(!adj)n++}}n=Math.ceil(n);if(n)by[r.id]=n});
  C.cap.forEach(r=>{let n=0;for(let x=0;x<35;x++)for(const s of r.subs)n+=Math.max(0,sc[s][x]-r.max);if(n)by[r.id]=n});
  C.meet.forEach((g,i)=>{if(gc(i))by[g.id]=1});
+ REL.forEach(r=>{let v=0;const cs=r.cls&&r.cls.length?r.cls:[...Array(nC).keys()];for(const c of cs){if(c>=nC)continue;if(r.k==='samep'){const ps=new Set();for(let x=0;x<35;x++){const i=cg[c][x];if(i>=0&&L[i].s===r.a&&L[i].k===0)ps.add(x%7)}if(ps.size>1)v+=ps.size-1}else{const keep=relC[c];relC[c]=[{...r,w:1}];for(let d=0;d<5;d++)v+=rdc(c,d);relC[c]=keep}}if(v)by[r.id]=v});
+ TAD.forEach(q=>{let v=0;for(const t of q.ts){if(t>=nT)continue;const keep=taT[t];taT[t]=[{...q,w:1}];v+=tac(t);taT[t]=keep}if(v)by[q.id]=v});
  (C.eday||[]).forEach(q=>{let n=0;for(const t of q.ts)if(t<nT&&edm(t,q.K))n++;if(n)by[q.id]=n});
  (C.closed||[]).forEach(r=>{let n=0;for(const x of r.xs)for(let c=0;c<nC;c++){const i=cg[c][x];if(i>=0&&L[i].k===0)n++}if(n)by[r.id]=n});
  best.rep={clash,run,daily,by};return best}
@@ -752,7 +785,7 @@ $('vList').onclick=e=>{const o=e.target.closest('[data-o]'),d=e.target.closest('
 function renderG(){$('sR').value=S.cfg.ranks;$('sCap').value=S.cfg.cap;$('sDay').value=S.cfg.daily;$('s7').checked=S.cfg.seventh;$('sRun').checked=S.cfg.strict;
  $('sBars').innerHTML=barsHtml(S.lessons,S.standby,S.cfg.cap);renderV()}
 // ===== شاشة القيود
-const DEF={eday:'hard',slots:'hard',dlen:'hard',block:'hard',exit:'hard',late:'hard',pmax:'hard',dmax:'high',sp:'mid',dbl:'mid',cap:'high',meet:'high',pin:'hard'};
+const DEF={rel:'mid',tgap:'mid',tdays:'high',tminp:'mid',eday:'hard',slots:'hard',dlen:'hard',block:'hard',exit:'hard',late:'hard',pmax:'hard',dmax:'high',sp:'mid',dbl:'mid',cap:'high',meet:'high',pin:'hard'};
 const subTeachers=s=>[...new Set(S.lessons.filter(l=>l.s===s&&l.k===0).map(l=>l.t))];
 function consChanged(){recompile();save();renderCons()}
 function addCons(c){c.id=c.id||nid();c.on=true;S.cons.push(c);consChanged()}
@@ -791,9 +824,71 @@ $('fAdd').onclick=()=>{const ty=$('fType').value,st=$('fMsg');st.hidden=false;co
   if(ty==='dmax'||ty==='cap')c.n=+$('fN').value;if(ty==='meet'&&F.label)c.label=F.label;
   if(ty==='pin'){c.c=+$('fC').value;c.d=+$('fD').value;c.p=+$('fP').value}return c})();
  if(!v)return;addCons(v);setSt(st,'ok','أُضيف القيد: '+esc(describe(v)));F={ts:[],days:[],ps:[],subs:[]};renderForm()};
+
+// ===== علاقات المواد وقواعد المعلم (أسهل من «العلاقات» و«الإعداد المتقدم»)
+const REL_K={
+ nsd:{t:'مادتان لا تجتمعان في يوم واحد',ex:'مثل الرياضيات والعلوم: يتوزع الجهد على الأسبوع',pair:1,v:[[2,'a'],[9,'b']]},
+ ncons:{t:'مادتان لا تأتيان متتاليتين',ex:'تجتمعان في اليوم لكن بينهما فاصل',pair:1,v:[[1,'a'],[3,'b'],[9,'a'],[12,'b']]},
+ cons:{t:'مادتان متتاليتان إذا اجتمعتا',ex:'مثل القرآن والتجويد، أو الحاسب والمهارات الرقمية',pair:1,v:[[2,'a'],[3,'b'],[10,'b'],[11,'a']]},
+ consab:{t:'مادة تأتي مباشرة قبل أخرى',ex:'مثل شرح نظري قبل تطبيق عملي',pair:1,v:[[2,'a'],[3,'b'],[9,'a'],[10,'b']]},
+ sd:{t:'مادتان متلازمتان في اليوم',ex:'حيث توجد إحداهما توجد الأخرى في اليوم نفسه',pair:1,v:[[1,'a'],[5,'b'],[8,'b'],[12,'a']]},
+ edge:{t:'مادة في أول اليوم أو آخره',ex:'مثل التربية البدنية أو النشاط',pair:0,v:[[0,'a'],[1,'f'],[2,'f'],[7,'f'],[8,'f'],[13,'a']]},
+ noedge:{t:'مادة لا تكون أول اليوم ولا آخره',ex:'مثل المواد التي تحتاج تركيزًا',pair:0,v:[[0,'f'],[2,'a'],[6,'f'],[7,'f'],[10,'a'],[13,'f']]},
+ samep:{t:'مادة في الحصة نفسها كل يوم',ex:'مثل القرآن الكريم في الحصة الأولى يوميًا',pair:0,v:[[1,'a'],[8,'a']]},
+ gapd:{t:'فراغات المعلم في اليوم',ex:'لا يبقى المعلم بين حصصه أكثر من فراغ محدد',tch:1,n:2,v:[[0,'f'],[1,'f'],[2,'g'],[3,'g'],[4,'f']]},
+ gapw:{t:'فراغات المعلم في الأسبوع',ex:'مجموع الفراغات بين الحصص خلال الأسبوع',tch:1,n:5,v:[[0,'f'],[2,'g'],[3,'f'],[7,'f'],[8,'g'],[9,'f']]},
+ days:{t:'عدد أيام دوام المعلم',ex:'للمعلم قليل النصاب: يوم كامل بلا حصص',tch:1,n:4,v:[[0,'f'],[1,'f'],[2,'f'],[7,'i'],[8,'i']]},
+ minp:{t:'لا يوم بحصة واحدة',ex:'لا يحضر المعلم يومًا كاملًا من أجل حصة',tch:1,n:2,v:[[3,'g'],[7,'f'],[8,'f']]}};
+const mv7=v=>{const c=Array(14).fill('');v.forEach(([i,k])=>c[i]=k);return`<div class="mv7">${c.map(k=>`<i class="${k}"></i>`).join('')}</div>`};
+const sN=s=>s>=0&&D.subjects[s]!=null?D.subjects[s]:'…';
+const cN=c=>c.cls&&c.cls.length&&c.cls.length<D.classes.length?'فصول '+c.cls.map(i=>D.classes[i]).join('، '):'جميع الفصول';
+function relSentence(c){const a=sN(c.a),b=sN(c.b),w=cN(c)+': ';switch(c.k){case'nsd':return w+`${a} و${b} لا تجتمعان في يوم واحد`;case'ncons':return w+`${a} و${b} لا تأتيان متتاليتين`;case'cons':return w+`${a} و${b} متتاليتان إذا اجتمعتا في يوم`;case'consab':return w+`${a} تأتي مباشرة قبل ${b}`;case'sd':return w+`${a} و${b} في اليوم نفسه دائمًا`;case'edge':return w+`${a} في أول اليوم أو آخره`;case'noedge':return w+`${a} ليست أول اليوم ولا آخره`;case'samep':return w+`${a} في الحصة نفسها كل يوم`}return''}
+const RTYPE={gapd:'tgap',gapw:'tgap',days:'tdays',minp:'tminp'};
+let RB=null;
+function relDraft(k){const K=REL_K[k];if(K.tch)return{k,type:RTYPE[k],mode:k==='gapw'?'w':'d',ts:'all',n:K.n,level:DEF[RTYPE[k]]};return{k,type:'rel',a:-1,b:-1,cls:[],level:'mid'}}
+function relCons(r){return r.type==='rel'?{id:'__tmp',type:'rel',k:r.k,a:r.a,b:REL_K[r.k].pair?r.b:-1,cls:r.cls,level:r.level,on:true}:{id:'__tmp',type:r.type,mode:r.mode,ts:r.ts,n:r.n,level:r.level,on:true}}
+function relReady(r){if(r.type!=='rel')return r.ts==='all'||r.ts.length;return r.a>=0&&(!REL_K[r.k].pair||(r.b>=0&&r.b!==r.a))}
+function relCheck(c){S.cons.push(c);let C;try{C=compile()}finally{S.cons.pop()}return(solve({L:packIn(S.lessons),C,nT,nC,nS,iters:0}).rep.by.__tmp)||0}
+function renderRelCards(){$('relCards').innerHTML=Object.entries(REL_K).map(([k,K])=>`<button type="button" class="rlc${RB&&RB.k===k?' on':''}" data-rk="${k}"><span class="tg">${K.tch?'قاعدة معلم':K.pair?'علاقة مادتين':'موضع مادة'}</span>${mv7(K.v)}<b>${K.t}</b><small>${K.ex}</small></button>`).join('')}
+function renderRelB(){const el=$('relB');if(!RB){el.innerHTML='';return}const K=REL_K[RB.k],r=RB,sbs=D.subjects.map((s,i)=>[i,s]).filter(x=>!/نشاط|احتياط|انتظار|اجتماع/.test(x[1]));let h=`<div class="rlb"><div class="bar" style="justify-content:space-between;margin:0"><b style="color:var(--navy)">${K.t}</b><button class="btn" data-rx="1">إغلاق</button></div>`;
+ if(r.type==='rel'){h+=`<div class="note">${K.pair?'المادة الأولى':'المادة'}</div><div class="chips" data-rf="a">${sbs.map(([i,s])=>`<button type="button" class="chip ${r.a===i?'on':''}" data-v="${i}">${esc(s)}</button>`).join('')}</div>`;
+  if(K.pair)h+=`<div class="note">المادة الثانية</div><div class="chips" data-rf="b">${sbs.filter(([i])=>i!==r.a).map(([i,s])=>`<button type="button" class="chip ${r.b===i?'on':''}" data-v="${i}">${esc(s)}</button>`).join('')}</div>`;
+  h+=`<div class="note">الفصول (لا تحدد شيئًا لتشمل كل الفصول)</div><div class="chips" data-rf="cls">${D.classes.map((c,i)=>`<button type="button" class="chip ${r.cls.includes(i)?'on':''}" data-v="${i}">${esc(c)}</button>`).join('')}</div>`}
+ else{h+=`<div class="note">المعلمون</div><div class="chips" data-rf="ts"><button type="button" class="chip ${r.ts==='all'?'on':''}" data-v="all">الجميع</button>${D.teachers.map((n,i)=>[i,n]).sort((x,y)=>x[1].localeCompare(y[1],'ar')).map(([i,n])=>`<button type="button" class="chip ${r.ts!=='all'&&r.ts.includes(i)?'on':''}" data-v="${i}">${esc(shortN(i))} <small class="note">${tLoad(i)}</small></button>`).join('')}</div>
+  <div class="frm"><label>${RB.k==='days'?'أقصى أيام الدوام':RB.k==='minp'?'أقل عدد حصص في يوم الدوام':'أقصى عدد فراغات'}<input type="number" id="rlN" min="0" max="${RB.k==='days'?5:RB.k==='gapw'?20:6}" value="${r.n}"></label></div>`}
+ h+=`<div class="frm"><label>الأهمية<select id="rlL">${lvOpts(r.level)}</select></label></div>`;
+ if(relReady(r)){const c=relCons(r),n=relCheck(c);h+=`<div class="rls">«${esc(describe(c))}»</div><div class="rlk ${n?'bad':'ok'}">${n?`جدولك الحالي فيه <b>${nw(n,'مخالفة واحدة','مخالفتان','مخالفات','مخالفة')}</b> لهذه القاعدة. بعد إضافتها يعالجها المحرك عند التوليد، أو بزر «إضافة وتحسين جدولي الآن» بأقل تحريك ممكن.`:'جدولك الحالي يحقق هذه القاعدة ✓ وإضافتها تحميها في كل توليد قادم.'}</div>
+  <div class="bar"><button class="btn p" data-radd="1">إضافة القاعدة</button>${n?'<button class="btn g" data-radd="2">إضافة وتحسين جدولي الآن</button>':''}</div>`}
+ else h+=`<p class="note">${r.type==='rel'?(K.pair?'اختر المادتين لتظهر الجملة وفحص جدولك.':'اختر المادة لتظهر الجملة وفحص جدولك.'):'اختر المعلمين.'}</p>`;
+ el.innerHTML=h+'<div class="status" id="rlMsg" hidden></div></div>'}
+function renderRelSug(){const L=S.lessons.filter(l=>l.k===0&&!/احتياط|انتظار|اجتماع|نشاط/.test(D.subjects[l.s]||'')),tot={};L.forEach(l=>tot[l.s]=(tot[l.s]||0)+1);const top=Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(x=>+x[0]);const out=[];
+ const has=f=>S.cons.some(c=>c.on&&f(c));
+ if(top.length>=2&&!has(c=>c.type==='rel'&&[c.a,c.b].includes(top[0])&&[c.a,c.b].includes(top[1])))out.push({type:'rel',k:'ncons',a:top[0],b:top[1],cls:[],level:'mid'});
+ if(!has(c=>c.type==='tgap'))out.push({type:'tgap',k:'gapd',mode:'d',ts:'all',n:2,level:'mid'});
+ if(!has(c=>c.type==='tminp'))out.push({type:'tminp',k:'minp',ts:'all',n:2,level:'mid'});
+ const low=D.teachers.map((_,i)=>i).filter(i=>{const n=S.lessons.filter(l=>l.t===i&&l.k!==2).length;return n>0&&n<=12});if(low.length&&!has(c=>c.type==='tdays'))out.push({type:'tdays',k:'days',ts:low,n:4,level:'high'});
+ const rows=out.map((r,i)=>{const c=relCons(r),n=relCheck(c);return{r,c,n,i}}).filter(x=>x.n>0);RSG=rows;
+ $('relSug').innerHTML=rows.length?`<div class="note" style="font-weight:800;color:var(--navy)">💡 مقترحات لجدولك من بياناته (اضغط لفتحها):</div><div class="chips">${rows.map(x=>`<button type="button" class="chip" data-rsg="${x.i}">${esc(describe(x.c))}${x.r.type==='tdays'&&x.r.ts.length>1?` (${nw(x.r.ts.length,'','معلمان','معلمين','معلمًا')} نصابهم ١٢ فأقل)`:x.r.type==='tdays'?' (نصابه ١٢ فأقل)':''} <b style="color:#b91c1c">· ${nw(x.n,'مخالفة واحدة','مخالفتان','مخالفات','مخالفة')} الآن</b></button>`).join('')}</div>`:''}
+let RSG=[];
+function renderRel(){renderRelCards();renderRelB();renderRelSug()}
+$('relP').addEventListener('click',async e=>{const ck=e.target.closest('[data-rk]');if(ck){RB=RB&&RB.k===ck.dataset.rk?null:relDraft(ck.dataset.rk);renderRelCards();renderRelB();if(RB)$('relB').scrollIntoView({behavior:'smooth',block:'nearest'});return}
+ const sg=e.target.closest('[data-rsg]');if(sg){const x=RSG.find(q=>q.i===+sg.dataset.rsg);if(x){RB={...x.r,ts:Array.isArray(x.r.ts)?[...x.r.ts]:x.r.ts};renderRelCards();renderRelB();$('relB').scrollIntoView({behavior:'smooth',block:'nearest'})}return}
+ if(e.target.closest('[data-rx]')){RB=null;renderRelCards();renderRelB();return}
+ const ch=e.target.closest('[data-rf] .chip');if(ch&&RB){const f=ch.parentElement.dataset.rf,v=ch.dataset.v;
+  if(f==='a'){RB.a=+v;if(RB.b===RB.a)RB.b=-1}else if(f==='b')RB.b=+v;else if(f==='cls'){const i=+v;RB.cls=RB.cls.includes(i)?RB.cls.filter(x=>x!==i):[...RB.cls,i].sort((a,b)=>a-b)}
+  else if(f==='ts'){if(v==='all')RB.ts=RB.ts==='all'?[]:'all';else{const i=+v;if(RB.ts==='all')RB.ts=[];RB.ts=RB.ts.includes(i)?RB.ts.filter(x=>x!==i):[...RB.ts,i]}}renderRelB();return}
+ const ad=e.target.closest('[data-radd]');if(ad&&RB&&relReady(RB)){const c=relCons(RB);const before0=relCheck(c);delete c.id;const txt=describe(c);addCons(c);const improve=ad.dataset.radd==='2';RB=null;renderRel();
+  const st=$('relMsg');st.innerHTML='';if(!improve){st.insertAdjacentHTML('afterbegin',`<div class="status ok">أُضيفت القاعدة: ${esc(txt)}</div>`);return}
+  st.insertAdjacentHTML('afterbegin',`<div class="status" id="rlImp">يحسّن المحرك جدولك وفق القاعدة بأقل تحريك ممكن...</div>`);
+  const L2=S.lessons.map(m=>({...m}));const r=await runSolve({L:packIn(L2),C:CC,nT,nC,nS,scratch:false,iters:300000,restarts:2,T0:2,stay:8,seed:Date.now()>>>0},()=>{});
+  const L3=L2.map((m,k)=>({...m,d:Math.floor(r.X[k]/7),p:r.X[k]%7})),moved=L3.filter((m,k)=>m.d!==L2[k].d||m.p!==L2[k].p).length;const after=r.rep.by[c.id]||0;
+  if(!moved){$('rlImp').outerHTML=`<div class="status warn">لم يجد المحرك تحريكًا يحسّن الجدول دون الإخلال بقيود أهم. ستُراعى القاعدة في التوليد القادم.</div>`;return}
+  record('تحسين الجدول وفق قاعدة: '+txt);S.lessons=L3;const busy=new Set(L3.filter(m=>m.k!==2).map(m=>m.t*35+m.d*7+m.p));S.standby=S.standby.filter(s=>!busy.has(s.t*35+s.d*7+s.p));S.edited++;idx();save();render();
+  const el=$('rlImp');if(el)el.outerHTML=`<div class="status ${r.rep.clash?'warn':'ok'}">حُرّكت ${nw(moved,'حصة واحدة','حصتان','حصص','حصة')}، ${after===0?'وتحققت القاعدة كاملة ✓':'وبقي لهذه القاعدة '+nw(after,'مخالفة واحدة','مخالفتان','مخالفات','مخالفة')+' (كانت '+nw(before0,'مخالفة واحدة','مخالفتان','مخالفات','مخالفة')+')'}. الحصص المحركة عليها «معدّل»، ويمكنك التراجع من السجل أو من «📋 التغييرات للمنصة».</div>`;return}});
+$('relP').addEventListener('change',e=>{if(!RB)return;if(e.target.id==='rlN'){RB.n=Math.max(0,+e.target.value||0);renderRelB()}if(e.target.id==='rlL'){RB.level=e.target.value;renderRelB()}});
 function renderCons(){const g=S.cons.filter(c=>c.type==='run'||c.type==='daily'),imp=S.cons.filter(c=>c.src==='import'),aut=S.cons.filter(c=>c.src==='eday'),usr=S.cons.filter(c=>!g.includes(c)&&c.src!=='import'&&c.src!=='eday'&&c.type!=='pin'),pins=S.cons.filter(c=>c.type==='pin');
  const row=c=>`<div class="vl"><label class="ck" style="display:flex;gap:8px;align-items:center;flex:1 1 260px"><input type="checkbox" data-on="${c.id}" ${c.on?'checked':''} style="width:20px;height:20px;accent-color:var(--navy)"><span>${esc(describe(c))}</span></label><span class="bar" style="margin:0"><select data-lv="${c.id}" aria-label="الأهمية">${lvOpts(c.level)}</select><button class="btn" data-rm="${c.id}">حذف</button></span></div>`;
- $('cCount').textContent=S.cons.filter(c=>c.on).length;
+ $('cCount').textContent=S.cons.filter(c=>c.on).length;try{renderRel()}catch(e){console.error(e)}
  $('cList').innerHTML=`<div class="frm">${g.map(c=>`<label>${c.type==='run'?'أقصى حصص متتالية للمعلم':'أقصى حصص للمعلم في اليوم'}<input type="number" data-n="${c.id}" min="1" max="7" value="${c.n}"></label>`).join('')}</div>`+
   (usr.length?usr.map(row).join(''):'<p class="note">لم تُضف قيودًا بعد.</p>')+
   (aut.length?`<details style="margin-top:8px"><summary class="note">أيام الخروج المبكر الموزعة تلقائيًا (${aut.length})</summary>${aut.map(row).join('')}</details>`:'')+(pins.length?`<details style="margin-top:8px"><summary class="note">الحصص المثبتة (${pins.length})</summary>${pins.map(row).join('')}</details>`:'')+(imp.length?`<details style="margin-top:8px"><summary class="note">مواعيد الخروج المستوردة من جدولك (${imp.length})</summary>${imp.map(row).join('')}</details>`:'')}
