@@ -2255,7 +2255,8 @@ function CcLow({ api, D, M, X, cks, books, onStu }) {
 // ── 🖨️ مولّد الاختبار الورقي
 function CcTest({ api, D, M, cks, books, by }) {
   const [mode, setMode] = useState("common"); const [man, setMan] = useState({});   // man: {book:{w:true|false}}
-  const [n, setN] = useState(10); const [mins, setMins] = useState(30); const [les, setLes] = useState(false); const [two, setTwo] = useState(false); const [perW, setPerW] = useState(true); const [nv, setNv] = useState(1); const [names, setNames] = useState(false);
+  const [n, setN] = useState(10); const [mins, setMins] = useState(30); const [les, setLes] = useState(false); const [two, setTwo] = useState(false); const [perW, setPerW] = useState(true); const [nv, setNv] = useState(1); const [names, setNames] = useState(false); const [off, setOff] = useState({}); const [nB, setNB] = useState({});
+  const BK = books.filter(b => !off[b]); const nOf = b => nB[b] != null ? nB[b] : n;
   const [sheet, setSheet] = useState(true); const [key, setKey] = useState(true); const [ttl, setTtl] = useState("اختبار نافس التجريبي"); const [busy, setBusy] = useState(""); const [saved, setSaved] = useState(null);
   useEffect(() => { api.maGet(NB_PT).then(d => setSaved(Object.values(obj(d)).filter(x => x && x.id).sort((a, b) => (b.at || 0) - (a.at || 0)))); }, []);
   const CW = useMemo(() => { const o = {}; books.forEach(b => { o[b] = {}; cks.forEach(ck => { o[b][ck] = ckWeeks(D, M.rows, ck, b); }); }); return o; }, [books.join(), cks.join()]);
@@ -2263,7 +2264,7 @@ function CcTest({ api, D, M, cks, books, by }) {
     for (let w = 0; w < 15; w++) { const all = sets.every(s => s.has(w)), any = sets.some(s => s.has(w)); const auto = mode === "any" ? any : all; const m = obj(man[b])[w]; if (m === true ? true : m === false ? false : auto) W.push(w); }
     return W; };
   const setM = (b, w, v) => setMan(m => ({ ...m, [b]: { ...obj(m[b]), [w]: v } }));
-  const plan = books.map(b => { const W = weeksOf(b); const pool = cPool(b, W, les); const late = cks.map(ck => ({ ck, n: CW[b][ck].size })).sort((a, c) => a.n - c.n); const per = perW ? W.reduce((a, w) => a + Math.min(n, pool.filter(q => q.w === w).length), 0) : Math.min(n, pool.length); const nd = W.filter(w => cks.some(ck => !CW[b][ck].has(w))); return { b, W, pool, late, per, nd }; });
+  const plan = BK.map(b => { const W = weeksOf(b); const pool = cPool(b, W, les); const late = cks.map(ck => ({ ck, n: CW[b][ck].size })).sort((a, c) => a.n - c.n); const nn = nOf(b); const per = perW ? W.reduce((a, w) => a + Math.min(nn, pool.filter(q => q.w === w).length), 0) : Math.min(nn, pool.length); const nd = W.filter(w => cks.some(ck => !CW[b][ck].has(w))); return { b, W, pool, late, per, nd, nn }; });
   const studsOf = ck => arr(obj(D.ros)[ck] && D.ros[ck].students).filter(s => s && s.id && s.name).sort((a, c) => String(a.name).localeCompare(String(c.name), "ar"));
   const nStu = cks.reduce((a, ck) => a + studsOf(ck).length, 0);
   const make = async (rec) => {
@@ -2273,8 +2274,8 @@ function CcTest({ api, D, M, cks, books, by }) {
     try {
       const K = await loadKeys(); const SP = (typeof window !== "undefined" && window.__SP) || {};
       const R = rec || (() => { const seed = Date.now() % 1e9; const r = cRnd(seed); const weeks = {}, used = {}, vitems = [];
-        for (let v = 0; v < nv; v++) { const it = {}; plan.forEach(P => { const U = used[P.b] = used[P.b] || new Set(); const sel = perW ? P.W.flatMap(w => pickU(P.pool.filter(q => q.w === w), n, U, r)) : pickBal(P.pool, n, U, r); sel.forEach(q => U.add(qk(q))); it[P.b] = sel.sort((a, c) => a.w - c.w || a.p - c.p || a.i - c.i).map(q => [q.p, q.i]); weeks[P.b] = P.W; }); vitems.push(it); }
-        return { id: "pt" + Date.now().toString(36), t: ttl.trim() || "اختبار نافس التجريبي", at: Date.now(), by, books: plan.filter(P => P.pool.length).map(P => P.b), cks, weeks, items: vitems[0], vitems, nv, perW, n, names, min: mins, two: two && nv === 1, sheet, key, seed, mode, les }; })();
+        for (let v = 0; v < nv; v++) { const it = {}; plan.forEach(P => { const U = used[P.b] = used[P.b] || new Set(); const sel = perW ? P.W.flatMap(w => pickU(P.pool.filter(q => q.w === w), P.nn, U, r)) : pickBal(P.pool, P.nn, U, r); sel.forEach(q => U.add(qk(q))); it[P.b] = sel.sort((a, c) => a.w - c.w || a.p - c.p || a.i - c.i).map(q => [q.p, q.i]); weeks[P.b] = P.W; }); vitems.push(it); }
+        return { id: "pt" + Date.now().toString(36), t: ttl.trim() || "اختبار نافس التجريبي", at: Date.now(), by, books: plan.filter(P => P.pool.length).map(P => P.b), cks, weeks, items: vitems[0], vitems, nv, perW, n, nB: Object.fromEntries(plan.map(P => [P.b, P.nn])), names, min: mins, two: two && nv === 1, sheet, key, seed, mode, les }; })();
       const VI = arr(R.vitems).length ? R.vitems : [R.items], NV = VI.length;
       // النسخ: لكل طالب باسمه (يتناوب الطلاب المتجاورون على النماذج) أو نسخة لكل نموذج
       let copies = [];
@@ -2293,10 +2294,11 @@ function CcTest({ api, D, M, cks, books, by }) {
       const keyOf = (b, p, i) => { const k = (arr(obj(K[b])[p])[i] || [])[2]; return keyLet(k) || String(k || "").slice(0, 3); };
       const srcOf = (b, p) => { const u = testPages(b, weekOfPage(b, p)).includes(p) ? `اختبار الأسبوع ${ar(weekOfPage(b, p) + 1)}` : (BOOKS[b].titles[unitOfPage(b, p)] || ""); return u; };
       const inf = (c, N) => `<div class="inf"><span>اسم الطالب: ${c.nm ? `<b class="nm">${c.nm}</b>` : ""}</span><span>الفصل: ${c.ck ? `<b class="nm">${cls(c.ck)}</b>` : ""}</span><span>الدرجة: &nbsp;&nbsp;&nbsp; / ${ar(N)}</span></div>`;
-      const head = (b, c, N) => `<div class="cv"><div class="hd"><div class="rt">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region || ""}<br>${SP.name || ""}</div><div class="t"><h2>${R.t}</h2><div class="sb">${BOOKS[b].name} — الصف الثالث المتوسط${c.md ? ` • <b class="md">نموذج (${c.md})</b>` : ""}</div><small>الأسابيع: ${wkList(arr(R.weeks[b]))} • عدد الأسئلة: ${ar(N)} • الزمن: ${ar(R.min)} دقيقة</small></div>${api.logo ? `<img src="${api.logo}">` : `<div style="width:60px"></div>`}</div>
+      const head = (b, c, N) => `<div class="cv"><div class="hd"><div class="rt">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region || ""}<br>${SP.name || ""}</div><div class="t"><h2>${R.t}</h2><div class="subj" style="background:${BOOKS[b].c}">مادة ${BOOKS[b].name}</div><div class="sb">الصف الثالث المتوسط${c.md ? ` • <b class="md">نموذج (${c.md})</b>` : ""}</div></div>${api.logo ? `<img src="${api.logo}">` : `<div style="width:60px"></div>`}</div>
+        <div class="mt"><span><i>المادة</i><b style="color:${BOOKS[b].c}">${BOOKS[b].name}</b></span><span><i>عدد الأسئلة</i><b>${ar(N)}</b></span><span><i>الزمن</i><b>${ar(R.min)} دقيقة</b></span><span><i>الأسابيع</i><b>${wkList(arr(R.weeks[b]))}</b></span>${c.md ? `<span><i>النموذج</i><b>${c.md}</b></span>` : ""}</div>
         ${inf(c, N)}</div>
         <div class="ins">اقرأ كل سؤال بعناية واختر إجابة صحيحة واحدة${R.sheet ? "، ثم ظلّل رمزها في ورقة الإجابة المرفقة" : " بوضع دائرة حول رمزها"}.</div>`;
-      const sheetH = (b, c, N) => { const cols = Math.ceil(N / 10); let rows = ""; for (let r = 0; r < Math.min(10, N); r++) { rows += "<tr>"; for (let cc = 0; cc < cols; cc++) { const q = cc * 10 + r; rows += q < N ? `<td class="qn">${ar(q + 1)}</td>${LETS.map(l => `<td><span class="bb">${l}</span></td>`).join("")}<td class="gap"></td>` : `<td colspan="6"></td>`; } rows += "</tr>"; } return `<div class="pb"></div><div class="cv"><div class="t" style="text-align:center"><h2>ورقة الإجابة — ${BOOKS[b].name}${c.md ? ` • نموذج (${c.md})` : ""}</h2><small>${R.t}</small></div>${inf(c, N)}</div><div class="ins">ظلّل دائرة واحدة فقط لكل سؤال تظليلًا كاملًا.</div><table class="sh">${rows}</table>`; };
+      const sheetH = (b, c, N) => { const cols = Math.ceil(N / 10); let rows = ""; for (let r = 0; r < Math.min(10, N); r++) { rows += "<tr>"; for (let cc = 0; cc < cols; cc++) { const q = cc * 10 + r; rows += q < N ? `<td class="qn">${ar(q + 1)}</td>${LETS.map(l => `<td><span class="bb">${l}</span></td>`).join("")}<td class="gap"></td>` : `<td colspan="6"></td>`; } rows += "</tr>"; } return `<div class="pb"></div><div class="cv"><div class="t" style="text-align:center"><h2>ورقة الإجابة</h2><div class="subj" style="background:${BOOKS[b].c}">مادة ${BOOKS[b].name}${c.md ? ` • نموذج (${c.md})` : ""}</div><br><small>${R.t} • عدد الأسئلة: ${ar(N)}</small></div>${inf(c, N)}</div><div class="ins">ظلّل دائرة واحدة فقط لكل سؤال تظليلًا كاملًا.</div><table class="sh">${rows}</table>`; };
       const listOf = (b, c) => { const base = arr(VI[c.v][b]).map(([p, i]) => ({ p, i, w: weekOfPage(b, p) })); if (!c.shuf) return base; const r = cRnd((R.seed || 7) + 991); const gW = [...new Set(base.map(x => x.w))]; return cShuf(gW, r).flatMap(w => cShuf(base.filter(x => x.w === w), r)); };
       let body = ""; const keys = []; let first = true;
       copies.forEach(c => R.books.forEach(b => { const L = listOf(b, c); if (!L.length) return;
@@ -2316,7 +2318,7 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
 .ins{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:5px 10px;font-size:11.5px;font-weight:800;margin:5px 0 4px}
 .q{display:flex;gap:6px;align-items:flex-start;break-inside:avoid;page-break-inside:avoid;border-bottom:1px solid #e2e8f0;padding:5px 0}.q .n{flex:none;width:28px;height:28px;border-radius:50%;background:#1e3a8a;color:#fff;display:grid;place-items:center;font-weight:900;font-size:14px;margin-top:3px}.q img{flex:1;min-width:0;width:100%;display:block}
 .ps{break-inside:avoid;page-break-inside:avoid;border:1.5px solid #94a3b8;border-radius:10px;padding:4px 6px;margin:6px 0}.ps img{width:100%;display:block}.pst{font-weight:900;font-size:12.5px;color:#7f1d1d;margin:2px 4px}
-.pb{page-break-before:always;break-before:page}.nm{color:#1e3a8a;font-size:13.5px}
+.pb{page-break-before:always;break-before:page}.nm{color:#1e3a8a;font-size:13.5px}.subj{display:inline-block;color:#fff;border-radius:99px;padding:2px 18px;font-weight:900;font-size:16px;margin:4px 0 2px}.mt{display:flex;gap:6px;margin-top:6px}.mt span{flex:1;border:1.5px solid #cbd5e1;border-radius:10px;padding:3px 6px;text-align:center}.mt i{display:block;font-style:normal;font-size:10px;font-weight:800;color:#64748b}.mt b{font-size:13.5px;color:#0f172a}
 .sh{border-collapse:separate;border-spacing:0 7px;margin:8px auto}.sh td{text-align:center;font-weight:900;font-size:13px;padding:0 3px}.sh .qn{width:30px;color:#1e3a8a}.sh .gap{width:26px}.bb{display:inline-grid;place-items:center;width:25px;height:25px;border:1.6px solid #334155;border-radius:50%;font-size:12px}
 .kh{color:#1e3a8a;margin:10px 0 4px;font-size:15px}.kg{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:6px}.kg div{border:1.5px solid #cbd5e1;border-radius:8px;text-align:center;font-weight:900;padding:2px}.kg b{display:block;font-size:11px;color:#64748b}.kg span{font-size:17px;color:#15803d}
 .kt{width:100%;border-collapse:collapse;font-size:11px}.kt th{background:#1e3a8a;color:#fff;padding:4px}.kt td{border:1px solid #cbd5e1;padding:3px;text-align:center}`;
@@ -2343,10 +2345,18 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
         </div>; })}
     </div>
     <div className="nb-book" style={{ "--c": "#1e3a8a", display: "grid", gap: 10 }}>
-      <b>٢) إعدادات الاختبار</b>
+      <b>٢) المواد وعدد الأسئلة</b>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 8 }}>{books.map(b => { const P = plan.find(x => x.b === b), on = !off[b]; return <div key={b} style={{ border: `2px solid ${on ? BOOKS[b].c : "#e2e8f0"}`, borderRadius: 14, padding: 10, background: on ? "#fff" : "#f8fafc", opacity: on ? 1 : .65 }}>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 900, color: BOOKS[b].c, fontSize: 15 }}><input type="checkbox" checked={on} onChange={e => setOff(o => ({ ...o, [b]: !e.target.checked }))} />{BOOKS[b].name}</label>
+        {on && P && <><label style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6, fontWeight: 800, fontSize: 13 }}>عدد الأسئلة {perW ? "لكل أسبوع" : "للمادة"} <input className="cc-in" type="number" min={1} max={40} style={{ width: 64 }} value={nOf(b)} onChange={e => setNB(o => ({ ...o, [b]: Math.max(1, Math.min(40, +e.target.value || 1)) }))} /></label>
+          <small style={{ display: "block", marginTop: 4, fontWeight: 800, color: "#475569" }}>المجموع في الاختبار: <b style={{ color: BOOKS[b].c, fontSize: 15 }}>{ar(P.per)}</b> سؤالًا • المتاح {ar(P.pool.length)} • {ar(P.W.length)} أسبوع</small></>}
+      </div>; })}</div>
+    </div>
+    <div className="nb-book" style={{ "--c": "#1e3a8a", display: "grid", gap: 10 }}>
+      <b>٣) إعدادات الاختبار</b>
       <div className="cc-row">
         <label>العنوان <input className="cc-in" style={{ width: 230, textAlign: "right" }} value={ttl} onChange={e => setTtl(e.target.value)} /></label>
-        <label>عدد الأسئلة <input className="cc-in" type="number" min={1} max={40} value={n} onChange={e => setN(Math.max(1, Math.min(40, +e.target.value || 10)))} /></label>
+        <label>العدد الافتراضي لكل المواد <input className="cc-in" type="number" min={1} max={40} value={n} onChange={e => { setN(Math.max(1, Math.min(40, +e.target.value || 10))); setNB({}); }} /></label>
         <label><input type="radio" checked={perW} onChange={() => setPerW(true)} /> لكل أسبوع</label><label><input type="radio" checked={!perW} onChange={() => setPerW(false)} /> لكل مادة (موزعة على الأسابيع)</label>
         <label>الزمن (دقيقة) <input className="cc-in" type="number" min={10} max={120} value={mins} onChange={e => setMins(+e.target.value || 30)} /></label>
       </div>
@@ -2360,7 +2370,7 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
       </div>
       <div className="nb-info" style={{ margin: 0 }}>تُقصّ الأسئلة من صفحات المرجع نفسها بالصور والأشكال كما درسها الطلاب، وتُختار موزّعة بالتساوي على الأسابيع. في لغتي يُطبع نص الاختبار قبل أسئلته. يُحفظ كل اختبار لإعادة طباعته بالأسئلة نفسها.</div>
       <div className="nb-h" style={{ gap: 8 }}><button className="nb-b on" style={{ fontSize: 15, padding: "10px 20px" }} disabled={!!busy || !total} onClick={() => make(null)}>{busy || `🖨️ إنشاء الاختبار وطباعته (${ar(total)} سؤال${nv > 1 ? ` × ${ar(nv)} نماذج` : ""}${names ? ` • ${ar(nStu)} نسخة بالأسماء` : ""})`}</button>
-        {plan.map(P => <small key={P.b} style={{ fontWeight: 800, color: "#475569" }}>{BOOKS[P.b].name}: {ar(P.per)} سؤال{perW ? ` (${ar(n)} × ${ar(P.W.length)} أسبوع)` : ""}{nv > 1 && P.pool.length < P.per * nv ? ` • المتاح ${ar(P.pool.length)} فقط فتتكرر بعض الأسئلة بين النماذج` : ""}</small>)}</div>
+        {plan.map(P => <small key={P.b} style={{ fontWeight: 800, color: "#475569" }}>{BOOKS[P.b].name}: {ar(P.per)} سؤال{perW ? ` (${ar(P.nn)} × ${ar(P.W.length)} أسبوع)` : ""}{nv > 1 && P.pool.length < P.per * nv ? ` • المتاح ${ar(P.pool.length)} فقط فتتكرر بعض الأسئلة بين النماذج` : ""}</small>)}</div>
     </div>
     {saved && saved.length > 0 && <div className="nb-book" style={{ "--c": "#334155" }}><b>🗂️ الاختبارات الورقية السابقة</b>
       <div className="nb-tbl-w" style={{ marginTop: 6 }}><table className="nb-tbl"><thead><tr><th className="r">الاختبار</th><th>المواد</th><th>الفصول</th><th>الأسابيع</th><th>التاريخ</th><th></th></tr></thead>
