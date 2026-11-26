@@ -2135,9 +2135,16 @@ const cPick = (pool, n, r) => { const by = {}; pool.forEach(q => (by[q.w] = by[q
   W.forEach(w => { by[w] = [...cShuf(by[w].filter(q => q.t), r), ...cShuf(by[w].filter(q => !q.t), r)]; });
   const out = []; let k = 0; while (out.length < n && W.some(w => by[w].length)) { const w = W[k++ % W.length]; if (by[w].length) out.push(by[w].shift()); }
   return out.sort((a, b) => a.w - b.w || a.p - b.p || a.i - b.i); };
+// اختيار يفضّل الأسئلة غير المستخدمة في نماذج سابقة (حتى تختلف أسئلة كل نموذج)
+const qk = q => q.p + ":" + q.i;
+const pickU = (list, k, U, r) => { const f = list.filter(q => !U.has(qk(q))), o = list.filter(q => U.has(qk(q))); return [...cShuf(f.filter(q => q.t), r), ...cShuf(f.filter(q => !q.t), r), ...cShuf(o, r)].slice(0, k); };
+const pickBal = (pool, k, U, r) => { const by = {}; pool.forEach(q => (by[q.w] = by[q.w] || []).push(q)); const W = Object.keys(by).map(Number).sort((a, b) => a - b); W.forEach(w => { by[w] = pickU(by[w], by[w].length, U, r); });
+  const out = []; let i = 0; while (out.length < k && W.some(w => by[w].length)) { const w = W[i++ % W.length]; if (by[w].length) out.push(by[w].shift()); } return out; };
+const MDL = ["أ", "ب", "ج", "د", "هـ", "و"];
 // قصّ الأسئلة من صفحات PDF (صفحة صفحة لتوفير الذاكرة)
 async function cPageCanvas(b, p, W = 1400) { const doc = await openDoc(b); const pg = await doc.getPage(p); const v = pg.getViewport({ scale: 1 }); const vp = pg.getViewport({ scale: W / v.width }); const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); const task = pg.render({ canvasContext: g, viewport: vp, intent: "print" }); let tm; await Promise.race([task.promise, new Promise((_, rj) => { tm = setTimeout(() => { try { task.cancel(); } catch {} rj(new Error(`انتهت مهلة قصّ الصفحة ${p}`)); }, 45000); })]).finally(() => clearTimeout(tm)); try { pg.cleanup(); } catch {} return c; }
-function cCrop(c, y0, y1, x0 = .03, x1 = .908, mask = 0) { const W = c.width, H = c.height; const sx = Math.round(x0 * W), sw = Math.round((x1 - x0) * W), sy = Math.round(y0 * H), sh = Math.max(4, Math.round((y1 - y0) * H)); const o = document.createElement("canvas"); o.width = sw; o.height = sh; const g = o.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, sw, sh); g.drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh); if (mask) { g.fillStyle = "#fff"; g.fillRect(sw - Math.round(.013 * W), 0, Math.round(.013 * W) + 2, Math.round(mask * H)); } return o.toDataURL("image/jpeg", .9); }
+function cCrop(c, y0, y1, x0 = .03, x1 = .908, mask = 0) { const W = c.width, H = c.height; const sx = Math.round(x0 * W), sw = Math.round((x1 - x0) * W), sy = Math.round(y0 * H), sh = Math.max(4, Math.round((y1 - y0) * H)); const o = document.createElement("canvas"); o.width = sw; o.height = sh; const g = o.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, sw, sh); g.drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh); if (mask) { g.fillStyle = "#fff"; g.fillRect(sw - Math.round(.013 * W), 0, Math.round(.013 * W) + 2, Math.round(mask * H)); } return o; }
+const cImg = (o, blob) => blob ? new Promise(res => o.toBlob(b => res(b ? URL.createObjectURL(b) : o.toDataURL("image/jpeg", .88)), "image/jpeg", .88)) : Promise.resolve(o.toDataURL("image/jpeg", .9));
 const C_CSS = `
 .cc-sub{display:flex;gap:6px;flex-wrap:wrap}.cc-sub button{flex:1 1 180px;border:2px solid #e2e8f0;background:#fff;border-radius:14px;padding:10px 12px;font:inherit;font-weight:900;font-size:14px;cursor:pointer;color:#334155;text-align:right;display:flex;gap:8px;align-items:center}
 .cc-sub button small{display:block;font-weight:700;font-size:11.5px;color:#64748b}.cc-sub button.on{border-color:#1e3a8a;background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff}.cc-sub button.on small{color:#dbeafe}
@@ -2248,43 +2255,57 @@ function CcLow({ api, D, M, X, cks, books, onStu }) {
 // ── 🖨️ مولّد الاختبار الورقي
 function CcTest({ api, D, M, cks, books, by }) {
   const [mode, setMode] = useState("common"); const [man, setMan] = useState({});   // man: {book:{w:true|false}}
-  const [n, setN] = useState(10); const [mins, setMins] = useState(30); const [les, setLes] = useState(false); const [two, setTwo] = useState(false);
+  const [n, setN] = useState(10); const [mins, setMins] = useState(30); const [les, setLes] = useState(false); const [two, setTwo] = useState(false); const [perW, setPerW] = useState(true); const [nv, setNv] = useState(1); const [names, setNames] = useState(false);
   const [sheet, setSheet] = useState(true); const [key, setKey] = useState(true); const [ttl, setTtl] = useState("اختبار نافس التجريبي"); const [busy, setBusy] = useState(""); const [saved, setSaved] = useState(null);
   useEffect(() => { api.maGet(NB_PT).then(d => setSaved(Object.values(obj(d)).filter(x => x && x.id).sort((a, b) => (b.at || 0) - (a.at || 0)))); }, []);
   const CW = useMemo(() => { const o = {}; books.forEach(b => { o[b] = {}; cks.forEach(ck => { o[b][ck] = ckWeeks(D, M.rows, ck, b); }); }); return o; }, [books.join(), cks.join()]);
   const weeksOf = b => { const sets = cks.map(ck => CW[b][ck]); let W = [];
-    for (let w = 0; w < 15; w++) { const all = sets.every(s => s.has(w)), any = sets.some(s => s.has(w)); const auto = mode === "any" ? any : all; const m = obj(man[b])[w]; if (m === true ? any || all : m === false ? false : auto) W.push(w); }
+    for (let w = 0; w < 15; w++) { const all = sets.every(s => s.has(w)), any = sets.some(s => s.has(w)); const auto = mode === "any" ? any : all; const m = obj(man[b])[w]; if (m === true ? true : m === false ? false : auto) W.push(w); }
     return W; };
   const setM = (b, w, v) => setMan(m => ({ ...m, [b]: { ...obj(m[b]), [w]: v } }));
-  const plan = books.map(b => { const W = weeksOf(b); const pool = cPool(b, W, les); const late = cks.map(ck => ({ ck, n: CW[b][ck].size })).sort((a, c) => a.n - c.n); return { b, W, pool, late }; });
+  const plan = books.map(b => { const W = weeksOf(b); const pool = cPool(b, W, les); const late = cks.map(ck => ({ ck, n: CW[b][ck].size })).sort((a, c) => a.n - c.n); const per = perW ? W.reduce((a, w) => a + Math.min(n, pool.filter(q => q.w === w).length), 0) : Math.min(n, pool.length); const nd = W.filter(w => cks.some(ck => !CW[b][ck].has(w))); return { b, W, pool, late, per, nd }; });
+  const studsOf = ck => arr(obj(D.ros)[ck] && D.ros[ck].students).filter(s => s && s.id && s.name).sort((a, c) => String(a.name).localeCompare(String(c.name), "ar"));
+  const nStu = cks.reduce((a, ck) => a + studsOf(ck).length, 0);
   const make = async (rec) => {
     const w = window.open("", "_blank"); if (!w) { alert("اسمح بالنوافذ المنبثقة لطباعة الاختبار"); return; }
     w.document.write(`<html dir="rtl"><body style="font-family:Tahoma;display:grid;place-items:center;height:90vh;font-weight:bold;color:#1e3a8a">⏳ جارٍ تجهيز الاختبار وقصّ الأسئلة من المراجع…</body></html>`);
     setBusy("⏳ تحميل مفاتيح الإجابات…"); try { w.document.body.innerHTML = "⏳ تحميل مفاتيح الإجابات والمراجع…"; } catch {}
     try {
       const K = await loadKeys(); const SP = (typeof window !== "undefined" && window.__SP) || {};
-      const R = rec || (() => { const seed = Date.now() % 1e9; const r = cRnd(seed); const items = {}, weeks = {}; plan.forEach(P => { const sel = cPick(P.pool, Math.min(n, P.pool.length), r); items[P.b] = sel.map(q => [q.p, q.i]); weeks[P.b] = P.W; });
-        return { id: "pt" + Date.now().toString(36), t: ttl.trim() || "اختبار نافس التجريبي", at: Date.now(), by, books: plan.filter(P => P.pool.length).map(P => P.b), cks, weeks, items, min: mins, two, sheet, key, seed, mode, les }; })();
-      // قصّ الصور
-      const img = {}; const need = []; R.books.forEach(b => { arr(R.items[b]).forEach(([p, i]) => need.push([b, p, i])); if (b === "ar") arr(R.weeks[b]).forEach(wk => { const st = obj(QST.ar)[wk]; if (st && arr(R.items[b]).some(([p]) => testPages(b, wk).includes(p))) need.push([b, st[0], "st" + wk]); }); });
+      const R = rec || (() => { const seed = Date.now() % 1e9; const r = cRnd(seed); const weeks = {}, used = {}, vitems = [];
+        for (let v = 0; v < nv; v++) { const it = {}; plan.forEach(P => { const U = used[P.b] = used[P.b] || new Set(); const sel = perW ? P.W.flatMap(w => pickU(P.pool.filter(q => q.w === w), n, U, r)) : pickBal(P.pool, n, U, r); sel.forEach(q => U.add(qk(q))); it[P.b] = sel.sort((a, c) => a.w - c.w || a.p - c.p || a.i - c.i).map(q => [q.p, q.i]); weeks[P.b] = P.W; }); vitems.push(it); }
+        return { id: "pt" + Date.now().toString(36), t: ttl.trim() || "اختبار نافس التجريبي", at: Date.now(), by, books: plan.filter(P => P.pool.length).map(P => P.b), cks, weeks, items: vitems[0], vitems, nv, perW, n, names, min: mins, two: two && nv === 1, sheet, key, seed, mode, les }; })();
+      const VI = arr(R.vitems).length ? R.vitems : [R.items], NV = VI.length;
+      // النسخ: لكل طالب باسمه (يتناوب الطلاب المتجاورون على النماذج) أو نسخة لكل نموذج
+      let copies = [];
+      if (R.names) arr(R.cks).forEach(ck => studsOf(ck).forEach((s, i) => copies.push({ v: i % NV, nm: s.name, ck })));
+      else if (R.two && NV === 1) copies = [{ v: 0, md: "أ" }, { v: 0, md: "ب", shuf: 1 }];
+      else copies = VI.map((_, v) => ({ v }));
+      copies.forEach(c => { if (!c.md && NV > 1) c.md = MDL[c.v] || ar(c.v + 1); });
+      if (!copies.length) throw new Error("لا يوجد طلاب في الفصول المختارة لطباعة أسمائهم");
+      // قصّ الصور (مرة واحدة لكل سؤال مهما تكررت النسخ)
+      const blob = copies.length * R.books.reduce((a, b) => a + Math.max(...VI.map(it => arr(it[b]).length)), 0) > 250;
+      const img = {}; const need = []; const seen = new Set(); R.books.forEach(b => { VI.forEach(it => arr(it[b]).forEach(([p, i]) => { const k = b + p + ":" + i; if (!seen.has(k)) { seen.add(k); need.push([b, p, i]); } })); if (b === "ar") arr(R.weeks[b]).forEach(wk => { const st = obj(QST.ar)[wk]; if (st && VI.some(it => arr(it[b]).some(([p]) => testPages(b, wk).includes(p)))) need.push([b, st[0], "st" + wk]); }); });
       const byPage = {}; need.forEach(([b, p, i]) => (byPage[b + ":" + p] = byPage[b + ":" + p] || []).push(i));
-      const PG = Object.keys(byPage); for (let k = 0; k < PG.length; k++) { const [b, p] = PG[k].split(":"); setBusy(`⏳ قصّ الأسئلة: صفحة ${ar(k + 1)} من ${ar(PG.length)}`); try { w.document.body.innerHTML = `<div style="text-align:center">⏳ جارٍ قصّ الأسئلة من المراجع<br><span style="font-size:30px">${ar(k + 1)} / ${ar(PG.length)}</span><div style="width:280px;height:10px;background:#e2e8f0;border-radius:9px;margin:10px auto;overflow:hidden"><div style="width:${Math.round((k + 1) / PG.length * 100)}%;height:100%;background:#1e3a8a"></div></div></div>`; } catch {}
-        const c = await cPageCanvas(b, +p); byPage[PG[k]].forEach(i => { if (String(i).startsWith("st")) { const st = QST.ar[+String(i).slice(2)]; img[`${b}:st${String(i).slice(2)}`] = cCrop(c, st[1], st[2], .04, .962); } else { const bx = arr(obj(QB[b])[p]).find(x => x[0] === i); if (bx) img[`${b}:${p}:${i}`] = cCrop(c, bx[1], bx[2], .03, .908, .03); } }); c.width = c.height = 1; }
+      const PG = Object.keys(byPage); for (let k = 0; k < PG.length; k++) { const [b, p] = PG[k].split(":"); setBusy(`⏳ قصّ الأسئلة: صفحة ${ar(k + 1)} من ${ar(PG.length)}`); try { w.document.body.innerHTML = `<div style="text-align:center">⏳ جارٍ قصّ الأسئلة من المراجع<br><span style="font-size:30px">${ar(k + 1)} / ${ar(PG.length)}</span><div style="width:280px;height:10px;background:#e2e8f0;border-radius:9px;margin:10px auto;overflow:hidden"><div style="width:${Math.round((k + 1) / PG.length * 100)}%;height:100%;background:#1e3a8a"></div></div>${copies.length > 2 ? `<small>${ar(copies.length)} نسخة</small>` : ""}</div>`; } catch {}
+        const c = await cPageCanvas(b, +p); for (const i of byPage[PG[k]]) { if (String(i).startsWith("st")) { const st = QST.ar[+String(i).slice(2)]; img[`${b}:st${String(i).slice(2)}`] = await cImg(cCrop(c, st[1], st[2], .04, .962), blob); } else { const bx = arr(obj(QB[b])[p]).find(x => x[0] === i); if (bx) img[`${b}:${p}:${i}`] = await cImg(cCrop(c, bx[1], bx[2], .03, .908, .03), blob); } } c.width = c.height = 1; }
       setBusy("⏳ تجهيز ملف الطباعة…");
       const keyOf = (b, p, i) => { const k = (arr(obj(K[b])[p])[i] || [])[2]; return keyLet(k) || String(k || "").slice(0, 3); };
       const srcOf = (b, p) => { const u = testPages(b, weekOfPage(b, p)).includes(p) ? `اختبار الأسبوع ${ar(weekOfPage(b, p) + 1)}` : (BOOKS[b].titles[unitOfPage(b, p)] || ""); return u; };
-      const head = (b, model, N) => `<div class="cv"><div class="hd"><div class="rt">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region || ""}<br>${SP.name || ""}</div><div class="t"><h2>${R.t}</h2><div class="sb">${BOOKS[b].name} — الصف الثالث المتوسط${model ? ` • <b class="md">نموذج (${model})</b>` : ""}</div><small>الأسابيع: ${wkList(arr(R.weeks[b]))} • عدد الأسئلة: ${ar(N)} • الزمن: ${ar(R.min)} دقيقة</small></div>${api.logo ? `<img src="${api.logo}">` : `<div style="width:60px"></div>`}</div>
-        <div class="inf"><span>اسم الطالب: </span><span>الفصل: </span><span>الدرجة: &nbsp;&nbsp;&nbsp; / ${ar(N)}</span></div></div>
+      const inf = (c, N) => `<div class="inf"><span>اسم الطالب: ${c.nm ? `<b class="nm">${c.nm}</b>` : ""}</span><span>الفصل: ${c.ck ? `<b class="nm">${cls(c.ck)}</b>` : ""}</span><span>الدرجة: &nbsp;&nbsp;&nbsp; / ${ar(N)}</span></div>`;
+      const head = (b, c, N) => `<div class="cv"><div class="hd"><div class="rt">المملكة العربية السعودية<br>وزارة التعليم<br>${SP.region || ""}<br>${SP.name || ""}</div><div class="t"><h2>${R.t}</h2><div class="sb">${BOOKS[b].name} — الصف الثالث المتوسط${c.md ? ` • <b class="md">نموذج (${c.md})</b>` : ""}</div><small>الأسابيع: ${wkList(arr(R.weeks[b]))} • عدد الأسئلة: ${ar(N)} • الزمن: ${ar(R.min)} دقيقة</small></div>${api.logo ? `<img src="${api.logo}">` : `<div style="width:60px"></div>`}</div>
+        ${inf(c, N)}</div>
         <div class="ins">اقرأ كل سؤال بعناية واختر إجابة صحيحة واحدة${R.sheet ? "، ثم ظلّل رمزها في ورقة الإجابة المرفقة" : " بوضع دائرة حول رمزها"}.</div>`;
-      const sheetH = (b, model, N) => { const cols = Math.ceil(N / 10); let rows = ""; for (let r = 0; r < Math.min(10, N); r++) { rows += "<tr>"; for (let c = 0; c < cols; c++) { const q = c * 10 + r; rows += q < N ? `<td class="qn">${ar(q + 1)}</td>${LETS.map(l => `<td><span class="bb">${l}</span></td>`).join("")}<td class="gap"></td>` : `<td colspan="6"></td>`; } rows += "</tr>"; } return `<div class="pb"></div><div class="cv"><div class="t" style="text-align:center"><h2>ورقة الإجابة — ${BOOKS[b].name}${model ? ` • نموذج (${model})` : ""}</h2><small>${R.t}</small></div><div class="inf"><span>اسم الطالب: </span><span>الفصل: </span><span>الدرجة: &nbsp;&nbsp;&nbsp; / ${ar(N)}</span></div></div><div class="ins">ظلّل دائرة واحدة فقط لكل سؤال تظليلًا كاملًا.</div><table class="sh">${rows}</table>`; };
-      let body = ""; const keys = [];
-      R.books.forEach((b, bi) => { const base = arr(R.items[b]).map(([p, i]) => ({ p, i, w: weekOfPage(b, p) })); const models = R.two ? ["أ", "ب"] : [""];
-        models.forEach((md, mi) => { let L = base; if (mi === 1) { const r = cRnd((R.seed || 7) + 991); const gW = [...new Set(base.map(x => x.w))]; L = cShuf(gW, r).flatMap(w => cShuf(base.filter(x => x.w === w), r)); }
-          if (bi || mi) body += `<div class="pb"></div>`; body += head(b, md, L.length);
-          let lastW = -1; L.forEach((x, k) => { if (b === "ar" && x.w !== lastW && img[`ar:st${x.w}`] && testPages(b, x.w).includes(x.p)) body += `<div class="ps"><div class="pst">اقرأ النص الآتي ثم أجب عن الأسئلة التي تليه:</div><img src="${img[`ar:st${x.w}`]}"></div>`; lastW = x.w;
-            body += `<div class="q"><div class="n">${ar(k + 1)}</div>${img[`${b}:${x.p}:${x.i}`] ? `<img src="${img[`${b}:${x.p}:${x.i}`]}">` : `<div style="flex:1;color:#b91c1c">تعذّر قصّ السؤال (ص ${ar(x.p)})</div>`}</div>`; });
-          if (R.sheet) body += sheetH(b, md, L.length);
-          keys.push({ b, md, L: L.map((x, k) => ({ k: k + 1, a: keyOf(b, x.p, x.i), w: x.w, p: x.p, n: (arr(obj(QM[b])[x.p])[x.i] || [])[0], s: srcOf(b, x.p) })) }); }); });
+      const sheetH = (b, c, N) => { const cols = Math.ceil(N / 10); let rows = ""; for (let r = 0; r < Math.min(10, N); r++) { rows += "<tr>"; for (let cc = 0; cc < cols; cc++) { const q = cc * 10 + r; rows += q < N ? `<td class="qn">${ar(q + 1)}</td>${LETS.map(l => `<td><span class="bb">${l}</span></td>`).join("")}<td class="gap"></td>` : `<td colspan="6"></td>`; } rows += "</tr>"; } return `<div class="pb"></div><div class="cv"><div class="t" style="text-align:center"><h2>ورقة الإجابة — ${BOOKS[b].name}${c.md ? ` • نموذج (${c.md})` : ""}</h2><small>${R.t}</small></div>${inf(c, N)}</div><div class="ins">ظلّل دائرة واحدة فقط لكل سؤال تظليلًا كاملًا.</div><table class="sh">${rows}</table>`; };
+      const listOf = (b, c) => { const base = arr(VI[c.v][b]).map(([p, i]) => ({ p, i, w: weekOfPage(b, p) })); if (!c.shuf) return base; const r = cRnd((R.seed || 7) + 991); const gW = [...new Set(base.map(x => x.w))]; return cShuf(gW, r).flatMap(w => cShuf(base.filter(x => x.w === w), r)); };
+      let body = ""; const keys = []; let first = true;
+      copies.forEach(c => R.books.forEach(b => { const L = listOf(b, c); if (!L.length) return;
+        if (!first) body += `<div class="pb"></div>`; first = false; body += head(b, c, L.length);
+        let lastW = -1; L.forEach((x, k) => { if (b === "ar" && x.w !== lastW && img[`ar:st${x.w}`] && testPages(b, x.w).includes(x.p)) body += `<div class="ps"><div class="pst">اقرأ النص الآتي ثم أجب عن الأسئلة التي تليه:</div><img src="${img[`ar:st${x.w}`]}"></div>`; lastW = x.w;
+          body += `<div class="q"><div class="n">${ar(k + 1)}</div>${img[`${b}:${x.p}:${x.i}`] ? `<img src="${img[`${b}:${x.p}:${x.i}`]}">` : `<div style="flex:1;color:#b91c1c">تعذّر قصّ السؤال (ص ${ar(x.p)})</div>`}</div>`; });
+        if (R.sheet) body += sheetH(b, c, L.length);
+        const kk = b + "|" + (c.md || ""); if (!keys.some(z => z.kk === kk)) keys.push({ kk, b, md: c.md || "", L: L.map((x, k) => ({ k: k + 1, a: keyOf(b, x.p, x.i), w: x.w, p: x.p, n: (arr(obj(QM[b])[x.p])[x.i] || [])[0], s: srcOf(b, x.p) })) }); }));
+      keys.sort((a, c) => R.books.indexOf(a.b) - R.books.indexOf(c.b) || a.md.localeCompare(c.md, "ar"));
       if (R.key) { body += `<div class="pb"></div><div class="cv"><div class="t" style="text-align:center"><h2>🔑 مفتاح الإجابة — للمعلم فقط</h2><small>${R.t} • ${new Date(R.at).toLocaleDateString("ar-SA")} • الفصول: ${R.cks.map(cls).join("، ")}</small></div></div>`;
         keys.forEach(Kx => { body += `<h3 class="kh">${BOOKS[Kx.b].name}${Kx.md ? ` — نموذج (${Kx.md})` : ""}</h3><div class="kg">${Kx.L.map(x => `<div><b>${ar(x.k)}</b><span>${x.a || "؟"}</span></div>`).join("")}</div>
           <table class="kt"><thead><tr><th>السؤال</th><th>الإجابة</th><th>الأسبوع</th><th>المصدر في المرجع</th><th>الصفحة</th><th>رقمه في المرجع</th></tr></thead><tbody>${Kx.L.map(x => `<tr><td>${ar(x.k)}</td><td><b>${x.a || "؟"}</b></td><td>${ar(x.w + 1)}</td><td style="text-align:right">${x.s}</td><td>${ar(x.p)}</td><td>${x.n || ""}</td></tr>`).join("")}</tbody></table>`; }); }
@@ -2295,7 +2316,7 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
 .ins{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:5px 10px;font-size:11.5px;font-weight:800;margin:5px 0 4px}
 .q{display:flex;gap:6px;align-items:flex-start;break-inside:avoid;page-break-inside:avoid;border-bottom:1px solid #e2e8f0;padding:5px 0}.q .n{flex:none;width:28px;height:28px;border-radius:50%;background:#1e3a8a;color:#fff;display:grid;place-items:center;font-weight:900;font-size:14px;margin-top:3px}.q img{flex:1;min-width:0;width:100%;display:block}
 .ps{break-inside:avoid;page-break-inside:avoid;border:1.5px solid #94a3b8;border-radius:10px;padding:4px 6px;margin:6px 0}.ps img{width:100%;display:block}.pst{font-weight:900;font-size:12.5px;color:#7f1d1d;margin:2px 4px}
-.pb{page-break-before:always;break-before:page}
+.pb{page-break-before:always;break-before:page}.nm{color:#1e3a8a;font-size:13.5px}
 .sh{border-collapse:separate;border-spacing:0 7px;margin:8px auto}.sh td{text-align:center;font-weight:900;font-size:13px;padding:0 3px}.sh .qn{width:30px;color:#1e3a8a}.sh .gap{width:26px}.bb{display:inline-grid;place-items:center;width:25px;height:25px;border:1.6px solid #334155;border-radius:50%;font-size:12px}
 .kh{color:#1e3a8a;margin:10px 0 4px;font-size:15px}.kg{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:6px}.kg div{border:1.5px solid #cbd5e1;border-radius:8px;text-align:center;font-weight:900;padding:2px}.kg b{display:block;font-size:11px;color:#64748b}.kg span{font-size:17px;color:#15803d}
 .kt{width:100%;border-collapse:collapse;font-size:11px}.kt th{background:#1e3a8a;color:#fff;padding:4px}.kt td{border:1px solid #cbd5e1;padding:3px;text-align:center}`;
@@ -2304,7 +2325,7 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
     } catch (e) { try { w.document.body.innerHTML = `<p style="color:#b91c1c;font-family:Tahoma">تعذّر تجهيز الاختبار: ${e.message || e}</p>`; } catch {} alert("تعذّر تجهيز الاختبار — تحقق من الاتصال ثم أعد المحاولة"); }
     setBusy("");
   };
-  const total = plan.reduce((a, P) => a + Math.min(n, P.pool.length), 0);
+  const total = plan.reduce((a, P) => a + P.per, 0);
   return <>
     <div className="nb-book" style={{ "--c": "#1e3a8a", display: "grid", gap: 10 }}>
       <b>١) الأسابيع التي يشملها الاختبار</b>
@@ -2313,9 +2334,11 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
       {plan.map(P => { const B = BOOKS[P.b]; const lag = P.late[0]; const lead = P.late[P.late.length - 1];
         return <div key={P.b} style={{ display: "grid", gap: 6 }}>
           <div className="nb-h" style={{ gap: 8 }}><span className="nb-tag" style={{ "--c": B.c }}>{B.name}</span><b style={{ fontSize: 13.5 }}>الأسابيع المشمولة: {wkList(P.W)}</b><span className="nb-st" style={{ background: P.pool.length ? "#dbeafe" : "#fee2e2", color: P.pool.length ? "#1e40af" : "#991b1b" }}>{ar(P.pool.length)} سؤال متاح</span></div>
-          <div className="nb-tbl-w"><table className="cc-wk"><thead><tr><th className="r">الفصل</th>{Array.from({ length: 15 }, (_, w) => { const on = P.W.includes(w); const any = cks.some(ck => CW[P.b][ck].has(w)); return <th key={w} className={on ? "sel" : any ? "can" : "off"} title={on ? "مشمول — اضغط للاستبعاد" : any ? "اضغط للإضافة" : "لم يكتمل شرحه في أي فصل"} onClick={() => any && setM(P.b, w, !on)}>{ar(w + 1)}</th>; })}<th>المكتمل</th></tr></thead>
+          <div className="nb-tbl-w"><table className="cc-wk"><thead><tr><th className="r">الفصل</th>{Array.from({ length: 15 }, (_, w) => { const on = P.W.includes(w); const any = cks.some(ck => CW[P.b][ck].has(w)); return <th key={w} className={on ? "sel" : any ? "can" : "off"} title={on ? "مشمول — اضغط للاستبعاد" : any ? "اضغط للإضافة" : "لم يكتمل شرحه — اضغط لإضافته رغم ذلك"} onClick={() => setM(P.b, w, !on)} style={{ cursor: "pointer" }}>{ar(w + 1)}</th>; })}<th>المكتمل</th></tr></thead>
             <tbody>{cks.map(ck => <tr key={ck}><td className="r">فصل {cls(ck)}{!ckRow(M.rows, ck, P.b) && <small style={{ color: "#94a3b8" }}> (بلا معلم)</small>}</td>{Array.from({ length: 15 }, (_, w) => <td key={w} className={CW[P.b][ck].has(w) ? "y" : "n"}>{CW[P.b][ck].has(w) ? "✓" : "·"}</td>)}<td><b>{ar(CW[P.b][ck].size)}</b></td></tr>)}</tbody></table></div>
           {cks.length > 1 && lag && lead && lag.n < lead.n && <div className="nb-info" style={{ margin: 0 }}>⏳ الفصل {cls(lag.ck)} متأخر ({ar(lag.n)} أسبوع مقابل {ar(lead.n)} لفصل {cls(lead.ck)}){mode === "common" ? " — لذلك يقتصر الاختبار على الأسابيع المشتركة حتى لا يُختبر طالب فيما لم يُشرح له." : " — انتبه: سيتضمن الاختبار أسابيع لم تُشرح لهذا الفصل."}</div>}
+          <div className="nb-h" style={{ gap: 6 }}><button className="nb-b" onClick={() => setMan(m => ({ ...m, [P.b]: Object.fromEntries(Array.from({ length: 15 }, (_, w) => [w, true])) }))}>تحديد كل الأسابيع</button><button className="nb-b" onClick={() => setMan(m => ({ ...m, [P.b]: Object.fromEntries(Array.from({ length: 15 }, (_, w) => [w, false])) }))}>مسح الكل</button><button className="nb-b" onClick={() => setMan(m => ({ ...m, [P.b]: {} }))}>حسب الشرح</button></div>
+          {P.nd.length > 0 && <div className="nb-info" style={{ margin: 0, background: "#fffbeb", color: "#92400e" }}>⚠️ يشمل الاختبار أسابيع لم يكتمل شرحها في كل الفصول: {wkList(P.nd)} — مناسب للاختبار التشخيصي أو التدريب المسبق.</div>}
           {!P.W.length && <div className="nb-info" style={{ margin: 0, background: "#fef2f2", color: "#991b1b" }}>لا يوجد أسبوع اكتمل شرحه في كل الفصول المختارة لهذه المادة — استبعد الفصل المتأخر أو اختر «كل أسبوع اكتمل في أي فصل» أو أضف أسبوعًا يدويًا.</div>}
         </div>; })}
     </div>
@@ -2323,22 +2346,25 @@ h2{margin:0;font-size:18px;color:#1e3a8a;font-weight:900}.sb{font-weight:900;fon
       <b>٢) إعدادات الاختبار</b>
       <div className="cc-row">
         <label>العنوان <input className="cc-in" style={{ width: 230, textAlign: "right" }} value={ttl} onChange={e => setTtl(e.target.value)} /></label>
-        <label>عدد الأسئلة لكل مادة <input className="cc-in" type="number" min={3} max={40} value={n} onChange={e => setN(Math.max(1, Math.min(40, +e.target.value || 10)))} /></label>
+        <label>عدد الأسئلة <input className="cc-in" type="number" min={1} max={40} value={n} onChange={e => setN(Math.max(1, Math.min(40, +e.target.value || 10)))} /></label>
+        <label><input type="radio" checked={perW} onChange={() => setPerW(true)} /> لكل أسبوع</label><label><input type="radio" checked={!perW} onChange={() => setPerW(false)} /> لكل مادة (موزعة على الأسابيع)</label>
         <label>الزمن (دقيقة) <input className="cc-in" type="number" min={10} max={120} value={mins} onChange={e => setMins(+e.target.value || 30)} /></label>
       </div>
       <div className="cc-row">
         <label><input type="checkbox" checked={les} onChange={e => setLes(e.target.checked)} /> أضف أسئلة الاختيار من متعدد من دروس الأسابيع (لا من اختبار الأسبوع فقط)</label>
-        <label><input type="checkbox" checked={two} onChange={e => setTwo(e.target.checked)} /> نموذجان (أ ، ب) بترتيب مختلف</label>
+        <label>نماذج بأسئلة مختلفة <select className="cc-in" value={nv} onChange={e => setNv(+e.target.value)}>{[1, 2, 3, 4, 5, 6].map(k => <option key={k} value={k}>{k === 1 ? "نموذج واحد" : `${ar(k)} نماذج (${MDL.slice(0, k).join("، ")})`}</option>)}</select></label>
+        {nv === 1 && <label><input type="checkbox" checked={two} onChange={e => setTwo(e.target.checked)} /> نموذجان (أ ، ب) بالأسئلة نفسها وترتيب مختلف</label>}
+        <label><input type="checkbox" checked={names} onChange={e => setNames(e.target.checked)} /> طباعة اسم كل طالب وفصله آليًا ({ar(nStu)} طالبًا){nv > 1 ? " — يتناوب المتجاورون على النماذج" : ""}</label>
         <label><input type="checkbox" checked={sheet} onChange={e => setSheet(e.target.checked)} /> ورقة إجابة للتظليل</label>
         <label><input type="checkbox" checked={key} onChange={e => setKey(e.target.checked)} /> مفتاح الإجابة للمعلم</label>
       </div>
       <div className="nb-info" style={{ margin: 0 }}>تُقصّ الأسئلة من صفحات المرجع نفسها بالصور والأشكال كما درسها الطلاب، وتُختار موزّعة بالتساوي على الأسابيع. في لغتي يُطبع نص الاختبار قبل أسئلته. يُحفظ كل اختبار لإعادة طباعته بالأسئلة نفسها.</div>
-      <div className="nb-h" style={{ gap: 8 }}><button className="nb-b on" style={{ fontSize: 15, padding: "10px 20px" }} disabled={!!busy || !total} onClick={() => make(null)}>{busy || `🖨️ إنشاء الاختبار وطباعته (${ar(total)} سؤال)`}</button>
-        {plan.map(P => <small key={P.b} style={{ fontWeight: 800, color: "#475569" }}>{BOOKS[P.b].name}: {ar(Math.min(n, P.pool.length))}{P.pool.length < n ? ` (المتاح ${ar(P.pool.length)} فقط)` : ""}</small>)}</div>
+      <div className="nb-h" style={{ gap: 8 }}><button className="nb-b on" style={{ fontSize: 15, padding: "10px 20px" }} disabled={!!busy || !total} onClick={() => make(null)}>{busy || `🖨️ إنشاء الاختبار وطباعته (${ar(total)} سؤال${nv > 1 ? ` × ${ar(nv)} نماذج` : ""}${names ? ` • ${ar(nStu)} نسخة بالأسماء` : ""})`}</button>
+        {plan.map(P => <small key={P.b} style={{ fontWeight: 800, color: "#475569" }}>{BOOKS[P.b].name}: {ar(P.per)} سؤال{perW ? ` (${ar(n)} × ${ar(P.W.length)} أسبوع)` : ""}{nv > 1 && P.pool.length < P.per * nv ? ` • المتاح ${ar(P.pool.length)} فقط فتتكرر بعض الأسئلة بين النماذج` : ""}</small>)}</div>
     </div>
     {saved && saved.length > 0 && <div className="nb-book" style={{ "--c": "#334155" }}><b>🗂️ الاختبارات الورقية السابقة</b>
       <div className="nb-tbl-w" style={{ marginTop: 6 }}><table className="nb-tbl"><thead><tr><th className="r">الاختبار</th><th>المواد</th><th>الفصول</th><th>الأسابيع</th><th>التاريخ</th><th></th></tr></thead>
-        <tbody>{saved.slice(0, 12).map(R => <tr key={R.id}><td className="r">{R.t}{R.two ? " (أ، ب)" : ""}<br /><small style={{ color: "#64748b" }}>{R.by}</small></td><td>{arr(R.books).map(b => BOOKS[b] ? BOOKS[b].name : b).join("، ")}</td><td>{arr(R.cks).map(cls).join("، ")}</td><td style={{ fontSize: 12 }}>{arr(R.books).map(b => `${BOOKS[b] ? BOOKS[b].name : b}: ${wkList(arr(obj(R.weeks)[b]))}`).join(" • ")}</td><td>{when(R.at)}</td>
+        <tbody>{saved.slice(0, 12).map(R => <tr key={R.id}><td className="r">{R.t}{R.two ? " (أ، ب)" : ""}{R.nv > 1 ? ` (${ar(R.nv)} نماذج)` : ""}{R.names ? " • بالأسماء" : ""}<br /><small style={{ color: "#64748b" }}>{R.by}</small></td><td>{arr(R.books).map(b => BOOKS[b] ? BOOKS[b].name : b).join("، ")}</td><td>{arr(R.cks).map(cls).join("، ")}</td><td style={{ fontSize: 12 }}>{arr(R.books).map(b => `${BOOKS[b] ? BOOKS[b].name : b}: ${wkList(arr(obj(R.weeks)[b]))}`).join(" • ")}</td><td>{when(R.at)}</td>
           <td><button className="nb-b" disabled={!!busy} onClick={() => make(R)}>🖨️ إعادة الطباعة</button> <button className="nb-b" onClick={async () => { if (!window.confirm("حذف هذا الاختبار من القائمة؟")) return; await api.maPut(`${NB_PT}/${R.id}`, null); setSaved(L => L.filter(x => x.id !== R.id)); }}>🗑️</button></td></tr>)}</tbody></table></div></div>}
   </>;
 }
