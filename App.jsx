@@ -137,14 +137,27 @@ function TtExcelImport({ by, onClose, onSaved }) {
     </div>
   );
 }
-function SmartTimetableFrame() {
+function SmartTimetableFrame({ hash }) {
   const ref = React.useRef(null);
+  const hashRef = React.useRef(hash); hashRef.current = hash;
   const [msg, setMsg] = React.useState("");
   React.useEffect(() => {
     const reply = (ok, m, at) => { setMsg(m); try { ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-published", ok, msg: m, at }, window.location.origin); } catch (e) {} };
     const h = async e => {
       if (e.origin !== window.location.origin) return;
       const d = e.data || {};
+      if (d.type === "smarttt-ai") {
+        const back = o => { try { ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-ai-res", id: d.id, ...o }, window.location.origin); } catch (er) {} };
+        if (!hashRef.current) { back({ ok: false, msg: "سجّل الدخول بحسابك في الموقع (بالسجل المدني) لاستخدام الذكاء الاصطناعي في الجدول." }); return; }
+        try {
+          const r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hash: hashRef.current, prompt: String(d.prompt || ""), schema: d.schema || null, max: +d.max || 5000, kind: "tt", tag: "timetable" }) });
+          const ct = r.headers.get("content-type") || "";
+          if (ct.includes("json") || !r.ok) { let j = {}; try { j = await r.json(); } catch (er) {} back({ ok: false, msg: j.msg || "خدمة الذكاء الاصطناعي غير متاحة الآن" }); return; }
+          const rd = r.body.getReader(), dec = new TextDecoder(); let out = ""; for (;;) { const { done, value } = await rd.read(); if (done) break; out += dec.decode(value, { stream: true }); }
+          back({ ok: true, text: out });
+        } catch (er) { back({ ok: false, msg: "تعذّر الاتصال بالذكاء الاصطناعي — تحقق من الإنترنت" }); }
+        return;
+      }
       if (d.type === "smarttt-draft") { if (d.draft && typeof d.draft.s === "string") { try { await maPut("school-tt-draft", { at: +d.draft.at || Date.now(), s: d.draft.s }); } catch (er) {} } return; }
       if (d.type === "smarttt-load") { try { const [a0, c0, dr0] = await Promise.all([maGet(TT_NODE), maGet(TT_CFG), maGet("school-tt-draft").catch(() => null)]); const tt0 = ttFresh(a0); ref.current && ref.current.contentWindow.postMessage({ type: "smarttt-site", tt: tt0, times: c0 && Array.isArray(c0.times) ? c0.times : tt0.times, draft: dr0 && typeof dr0.s === "string" ? dr0 : null }, window.location.origin); } catch (er) {} return; }
       if (d.type !== "smarttt-publish" || !d.tt || !d.tt.C || !d.tt.RS) return;
@@ -54082,7 +54095,7 @@ function SchoolWebsiteInner() {
                 {page === "broadcast"      && <BroadcastPage />}
                 {page === "quiz"           && <QuizPage />}
                 {page === "luckywheel"     && <LuckyWheelPage />}
-                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
+                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame hash={user?.hash} />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
                 {page === "honorboard"     && <HonorBoardPage classList={classList} />}
                 {page === "absencestats"   && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
                 {page === "monthlyreport"  && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
@@ -54279,7 +54292,7 @@ function SchoolWebsiteInner() {
         {page === "broadcast"     && <BroadcastPage />}
         {page === "quiz"          && <QuizPage />}
         {page === "luckywheel"    && <LuckyWheelPage />}
-        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
+        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame hash={user?.hash} />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
         {page === "honorboard"    && <HonorBoardPage classList={classList} />}
         {page === "absencestats"  && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
         {page === "monthlyreport" && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
