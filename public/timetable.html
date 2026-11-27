@@ -234,7 +234,7 @@ details summary{cursor:pointer;min-height:40px;padding:8px 0;font-weight:700}
    <h4 style="margin:6px 0">الاحتياط</h4>
    <div class="frm">
     <label>مراتب الاحتياط لكل حصة<select id="stR"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
-    <label class="ck"><input type="checkbox" id="stFill">ملء كل الخانات (٣٥ لكل مرتبة)</label>
+    <label class="ck"><input type="checkbox" id="stFill">ملء كل الخانات (٣٥ لكل مرتبة)</label><label class="ck"><input type="checkbox" id="stHard">عدم تجاوز الحد الأعلى للنصاب أبدًا</label>
     <label>الحد الأعلى للنصاب<input type="number" id="stCap" min="10" max="35"></label>
     <label>الحد اليومي<input type="number" id="stDay" min="3" max="7"></label>
     <label class="ck"><input type="checkbox" id="st7">انتظار السابعة لمن لديه السادسة</label>
@@ -706,7 +706,7 @@ function buildStandby(L,cfg){const occ=D.teachers.map(()=>Array(35).fill(0)),sbm
  const B=[];let unf=0,rel=0;const miss=[];
  for(let r=1;r<=cfg.ranks;r++){let U=[...Array(35).keys()].filter(x=>CLW[x]<1000);
   while(U.length){const cs=U.map(x=>{const c=[];for(let t=0;t<nT;t++)if(ok(t,x))c.push(t);return[x,c]});
-   const dead=cs.filter(z=>!z[1].length);if(dead.length){dead.forEach(z=>{const x=z[0],d=Math.floor(x/7);let pk=-1;if(cfg.fill){for(const lv of [1,2,3]){const cc=[];for(let t=0;t<nT;t++){if(occ[t][x]||sbm[t][x]||hardAt(t,x)||reserve.has(t*35+x))continue;if(lv<3&&runIf(t,x)>3)continue;if(lv>=2&&dl(t,d)>=cfg.daily+(lv>=3?2:1))continue;if(lv<2&&dl(t,d)>=cfg.daily)continue;if(lv<3&&tot[t]>=cfg.cap)continue;if(tot[t]>=cfg.cap+3)continue;cc.push(t)}if(cc.length){cc.sort((a,b)=>(tot[a]+(runIf(a,x)>2?2:0))-(tot[b]+(runIf(b,x)>2?2:0))||dl(a,d)-dl(b,d)||a-b);pk=cc[0];break}}}if(pk>=0){sbm[pk][x]=r;tot[pk]++;pc[pk][x%7]++;B.push({t:pk,d,p:x%7,r,x:1});rel++}else{unf++;miss.push(x)}});const ds=new Set(dead.map(z=>z[0]));U=U.filter(x=>!ds.has(x));continue}
+   const dead=cs.filter(z=>!z[1].length);if(dead.length){dead.forEach(z=>{const x=z[0],d=Math.floor(x/7);let pk=-1;if(cfg.fill){for(const lv of [1,2,3]){const cc=[];for(let t=0;t<nT;t++){if(occ[t][x]||sbm[t][x]||hardAt(t,x)||reserve.has(t*35+x))continue;if(lv<3&&runIf(t,x)>3)continue;if(lv>=2&&dl(t,d)>=cfg.daily+(lv>=3?2:1))continue;if(lv<2&&dl(t,d)>=cfg.daily)continue;if((lv<3||cfg.hardCap!==false)&&tot[t]>=cfg.cap)continue;if(tot[t]>=cfg.cap+3)continue;cc.push(t)}if(cc.length){cc.sort((a,b)=>(tot[a]+(runIf(a,x)>2?2:0))-(tot[b]+(runIf(b,x)>2?2:0))||dl(a,d)-dl(b,d)||a-b);pk=cc[0];break}}}if(pk>=0){sbm[pk][x]=r;tot[pk]++;pc[pk][x%7]++;B.push({t:pk,d,p:x%7,r,x:1});rel++}else{unf++;miss.push(x)}});const ds=new Set(dead.map(z=>z[0]));U=U.filter(x=>!ds.has(x));continue}
    let best=null;for(const[x,c]of cs)for(const t of c){const v=[key(t,x),c.length,dl(t,Math.floor(x/7)),x];if(!best||v[0]<best.v[0]||(v[0]===best.v[0]&&(v[1]<best.v[1]||(v[1]===best.v[1]&&(v[2]<best.v[2]||(v[2]===best.v[2]&&v[3]<best.v[3]))))))best={t,x,v}}
    sbm[best.t][best.x]=r;tot[best.t]++;pc[best.t][best.x%7]++;B.push({t:best.t,d:Math.floor(best.x/7),p:best.x%7,r});U=U.filter(x=>x!==best.x)}}
  return{B,unf,miss,meets,rel}}
@@ -1333,13 +1333,14 @@ $('gOut').onclick=e=>{const b=e.target.closest('[data-g]');if(!b)return;adoptG(g
 $('stRes').onclick=e=>{const b=e.target.closest('[data-g]');if(!b)return;adoptG(gRes[+b.dataset.g],$('stMsg'));b.textContent='اعتُمد ✓'};
 // إعدادات الاستوديو
 function renderStudioCfg(){const ed=S.cons.find(c=>c.type==='eday');$('stEd').checked=!!(ed&&ed.on);$('stEdP').value=ed?ed.n-1:4;$('stEdL').innerHTML=lvOpts(ed?ed.level:'hard');
- $('stR').value=S.cfg.ranks;$('stFill').checked=S.cfg.fill!==false;$('stCap').value=S.cfg.cap;$('stDay').value=S.cfg.daily;$('st7').checked=S.cfg.seventh;
+ $('stR').value=S.cfg.ranks;$('stFill').checked=S.cfg.fill!==false;$('stHard').checked=S.cfg.hardCap!==false;$('stCap').value=S.cfg.cap;$('stDay').value=S.cfg.daily;$('st7').checked=S.cfg.seventh;
  const auto=S.cons.filter(c=>c.src==='eday');$('stEdInfo').textContent=auto.length?`موزعة حاليًا على ${auto.length} معلمًا: `+[0,1,2,3,4].map(d=>`${DAYS[d]} ${auto.filter(c=>c.days[0]===d).length}`).join('، '):'لم تُوزع أيام الخروج بعد. توزَّع تلقائيًا عند اعتماد جدول مولّد.'}
 $('stCfg').addEventListener('change',e=>{const id=e.target.id;
  if(['stEd','stEdP','stEdL'].includes(id)){S.cons=S.cons.filter(c=>c.type!=='eday');if($('stEd').checked)S.cons.push({id:nid(),type:'eday',ts:'all',n:+$('stEdP').value+1,level:$('stEdL').value,on:true});else S.cons=S.cons.filter(c=>c.src!=='eday');recompile();save();renderStudioCfg();renderC()}
- else if(['stR','stFill','stCap','stDay','st7'].includes(id)){S.cfg={...S.cfg,ranks:+$('stR').value,fill:$('stFill').checked,cap:+$('stCap').value||24,daily:+$('stDay').value||5,seventh:$('st7').checked};save()}});
+ else if(['stR','stFill','stHard','stCap','stDay','st7'].includes(id)){S.cfg={...S.cfg,ranks:+$('stR').value,fill:$('stFill').checked,hardCap:$('stHard').checked,cap:+$('stCap').value||24,daily:+$('stDay').value||5,seventh:$('st7').checked};save()}});
 $('stSbGo').onclick=()=>{if(S.locked){setSt($('st1'),'warn','الجدول مقفل. افتح القفل أولًا.');return}recompile();record(`بناء الاحتياط (${S.cfg.ranks} مراتب)`);const r=buildStandby(S.lessons,S.cfg);S.standby=r.B;S.edited++;idx();save();renderC();
- setSt($('st1'),r.unf?'warn':'ok',`بُني ${r.B.length} انتظار من ${35*S.cfg.ranks} (${S.cfg.ranks} مراتب لكل حصة)`+(r.rel?`، منها ${r.rel} بتخفيف الحد اليومي أو الأسبوعي لعدم وجود متاح ضمن الشروط`:'')+(r.unf?`، ولم تُملأ ${r.unf} خانة لأن كل المعلمين مشغولون أو انتهى دوامهم فيها`:'')+'.')};
+ setSt($('st1'),r.unf?'warn':'ok',`بُني ${r.B.length} انتظار من ${35*S.cfg.ranks} (${S.cfg.ranks} مراتب لكل حصة)`+(r.rel?`، منها ${r.rel} بتخفيف الحد اليومي أو الأسبوعي لعدم وجود متاح ضمن الشروط`:'')+(r.unf?`، ولم تُملأ ${r.unf} خانة لأن كل المعلمين مشغولون أو بلغوا الحد الأعلى للنصاب أو انتهى دوامهم فيها`:'')+'.'+sbRankSum())};
+function sbRankSum(){const cnt=[1,2,3,4,5].slice(0,S.cfg.ranks).map(r=>S.standby.filter(s=>s.r===r).length),tot=D.teachers.map((_,t)=>S.lessons.filter(l=>l.t===t).length+S.standby.filter(s=>s.t===t).length),mx=Math.max(...tot),under=tot.filter(v=>v<S.cfg.cap).length;return `<br>حسب المرتبة: ${cnt.map((n,i)=>`الانتظار ${i+1}: <b>${n}</b> من 35`).join('، ')}. أعلى نصاب بعد البناء ${mx}، و${under} معلمًا دون ${S.cfg.cap}.`+(S.cfg.ranks>=4?' الانتظار الرابع والخامس يظهران باللون الفيروزي.':'')}
 $('stEdGo').onclick=()=>{if(!S.cons.some(c=>c.on&&c.type==='eday')){setSt($('st1'),'warn','فعّل «يوم خروج مبكر لكل معلم» أولًا.');return}const P=edayPick(S.lessons);applyEday(P);renderStudioCfg();renderC();const bad=P.filter(e=>!e.ok);
  setSt($('st1'),bad.length?'warn':'ok',`وُزعت أيام الخروج على ${P.length} معلمًا.`+(bad.length?` ${bad.length} منهم لديهم حصص بعد الحصة ${PN[P[0].n-1]} في كل الأيام: ${bad.slice(0,5).map(e=>D.teachers[e.t].split(' ').slice(0,2).join(' ')).join('، ')}. ولّد جدولًا جديدًا أو حسّن الجدول الحالي ليتحقق القيد.`:' كل معلم له يوم بلا حصص بعدها.'))};
 // التثبيت والقفل
