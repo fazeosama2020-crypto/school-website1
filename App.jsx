@@ -35276,6 +35276,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "ini") return wrap("🚀 مبادرات المدرسة", <React.Suspense fallback={LF_WAIT}><LfInitiatives api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={isStaff && ["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "meet" && isStaff) return wrap("🤝 اللقاءات الطلابية", <React.Suspense fallback={LF_WAIT}><LfMeetings api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "zy") return wrap("👣 زيارات الطلاب", <React.Suspense fallback={LF_WAIT}>{isStaff ? <LfZyStaff api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /> : <LfZyMine api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} />}</React.Suspense>);
+  if (view === "sigreq") return wrap("✍️ طلبات التوقيع", <SigReqs me={me} />);
   if (view === "achrec") return wrap("📚 سجل التحصيل الدراسي", <React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: me.name }} admin={isStaff && ["principal", "deputy"].includes(me.role)} api={achApi()} /></React.Suspense>);
   if (view === "tint") return wrap("🤝 مقابلاتي", <React.Suspense fallback={RD_WAIT}><Interviews me={{ name: me.name, role: me.role }} api={tintApi()} /></React.Suspense>);
   if (view === "pf") return wrap("🏅 ملف الأداء الوظيفي", <React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: me.name, role: me.role }} api={pfApi()} start="mine" /></React.Suspense>);
@@ -35461,6 +35462,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {!hdRemDay(maKey(new Date())) && <div className="pt-bn"><PxHomeBanner me={me} onOpen={() => setView("px")} /></div>}
           </div>
           <PtFavBar edit={ptEdit} onEdit={() => ptEdit ? setPtEdit(false) : setPtCust(true)} onTour={() => setPtTour(true)} />
+          <SigReqBanner me={me} onOpen={() => setView("sigreq")} />
           <div className="pt-sec"><h3>⏱️ دوامي وانضباطي</h3><div className="pt-tiles">
             {ptTile("score", "🏆", "بطاقتي الشاملة وترتيبي", "نسبة انضباطي في الحضور والطابور والحصص والتحضير، وتفاصيل حضوري وملاحظاتي، وترتيبي بين زملائي", "#0f1e3d", "#d4a017", () => setView("score"))}
             {ptTile("hd", "📈", "انضباطي اليومي", "نسبة انضباطك ودقائق التأخر والانصراف المبكر والاستئذان من «حضوري» مع الطابور وملاحظات الحصص", "#0f1e3d", "#0f766e", () => setView("hd"))}
@@ -51256,7 +51258,7 @@ const CSS = `
 .dp-per{display:flex;flex-wrap:wrap;gap:.4cqw 1.2cqw;align-items:center;margin:-.6cqw 0 1cqw;padding:.45cqw 1.1cqw;border-radius:.8cqw;background:linear-gradient(90deg,#f4ead2,#fff);border:1px solid #e7dcc2;font-family:'Noto Kufi Arabic',sans-serif;font-size:max(11px,1.02cqw);font-weight:700;color:var(--nv)}.dp-per b{color:var(--g1)}.dp-dl{font-size:.55em;font-weight:800;margin-inline-start:.3em;vertical-align:middle}.dp-sev{display:inline-block;min-width:4.6em;text-align:center;border-radius:99px;padding:1px 8px;font-family:'Noto Kufi Arabic',sans-serif;font-weight:800;font-size:.85em}.dp-rng{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:7px 10px;border-radius:12px;background:#fff;border:1px solid #e2e8f0}.dp-rng select,.dp-rng input{font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;font-size:12.5px;border:1.5px solid #cbd5e1;border-radius:9px;padding:4px 8px;background:#fff;color:#12305a}.dp-rng .lb{font-family:'Noto Kufi Arabic',sans-serif;font-weight:800;font-size:12.5px;color:#12305a}.dp-rng .pv{font-size:12px;font-weight:700;color:#64748b}
 .dp-ins{border-right:.45cqw solid var(--c,var(--g1));background:#fbfcfd;border-radius:.8cqw;padding:.6cqw 1.1cqw;margin:.4cqw 0}
 .dp-ins b{color:var(--c,var(--g1));font-family:'Noto Kufi Arabic',sans-serif;font-size:.95em}
-.dp-sig{display:grid;grid-template-columns:1fr 1fr;gap:4cqw;margin-top:2cqw;text-align:center;font-weight:700}
+.dp-printonly{display:none}.dp-sig{display:grid;grid-template-columns:1fr 1fr;gap:4cqw;margin-top:2cqw;text-align:center;font-weight:700}
 .dp-sig div{display:grid;gap:.8cqw}
 .dp-in{font:inherit;color:inherit;width:100%;border:1.5px dashed #9fb7c9;background:#f5f9fc;border-radius:6px;padding:2px 6px}
 textarea.dp-in{min-height:3.4em;resize:vertical;line-height:1.7}
@@ -51305,7 +51307,7 @@ textarea.dp-in{min-height:3.4em;resize:vertical;line-height:1.7}
 }`;
 const PCSS = `@page{size:A4 landscape;margin:0}html,body{margin:0;background:#fff}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .dp-sh{width:297mm;max-width:none;margin:0;break-after:page;page-break-after:always}.dp-sh:last-child{break-after:auto;page-break-after:auto}
-.dp-pg{border-radius:0;box-shadow:none;min-height:210mm;font-size:1.12cqw;line-height:1.65;padding:6.8cqw 4cqw 4.8cqw}.dp-noprint{display:none!important}
+.dp-pg{border-radius:0;box-shadow:none;min-height:210mm;font-size:1.12cqw;line-height:1.65;padding:6.8cqw 4cqw 4.8cqw}.dp-noprint{display:none!important}.dp-printonly{display:inline!important}
 .dp-tbl tr{break-inside:avoid}.dp-tbl{font-size:1cqw}.dp-tbl th{font-size:1.05cqw;padding:.5cqw}.dp-tbl td{padding:.4cqw .7cqw}.dp-kpi b{font-size:2.1cqw}.dp-bars{height:10cqw}
 .dp-pg.dp-cmp{font-size:.95cqw;line-height:1.45}.dp-cmp .dp-tbl{font-size:.9cqw}.dp-pg.dp-meet{font-size:.9cqw;line-height:1.4}.dp-meet .dp-tbl{font-size:.86cqw}.dp-meet .dp-tbl td{padding:.25cqw .5cqw}.dp-meet .dp-li>b{min-width:1.7cqw;height:1.7cqw;font-size:.8cqw}.dp-evc{break-inside:avoid}`;
 
@@ -51470,7 +51472,7 @@ function rngFT(r, A, from0) {
 // ══════════ المكوّن الرئيسي ══════════
 function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const [db, setDb] = useState(null); const [X, setX] = useState(null); const [exc, setExc] = useState({}); const [extra, setExtra] = useState({}); const [EV, setEV] = useState({});
-  const [edit, setEdit] = useState(false); const [view, setView] = useState("plan"); const [busy, setBusy] = useState(""); const [staff, setStaff] = useState([]);
+  const [edit, setEdit] = useState(false); const [view, setView] = useState("plan"); const [busy, setBusy] = useState(""); const [staff, setStaff] = useState([]); const [csig, setCsig] = useState({}); const [creq, setCreq] = useState({}); const [cmsg, setCmsg] = useState("");
   const [caseQ, setCaseQ] = useState(""); const [caseLv, setCaseLv] = useState(0); const [evf, setEvf] = useState({ t: "", kind: "برنامج", ref: "", d: "", note: "" }); const [evBusy, setEvBusy] = useState(0);
   const root = useRef(null);
   const today = A.maKey(new Date());
@@ -51490,6 +51492,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
     setExc(E); setExtra({ excN: vals(ex).length, excOk: vals(ex).filter(x => x.status === "ok").length, reps: vals(pr).length, warn: vals(pr).filter(r => r.type === "warn").length, inv: vals(pr).filter(r => r.type === "invite").length });
     try { const X0 = A.spxCompute(await A.spxLoad(obj(d && d.cfg).from || "2000-01-01", today)); const E2 = { ...E }; X0.list.forEach(st => { if (!st.sid) return; const S0 = new Set(E2[st.sid] || []); (st.absED || []).forEach(k => S0.add(k)); (st.absXU || []).forEach(k => S0.delete(k)); E2[st.sid] = S0; }); setExc(E2); setX(X0); } catch (e) { setX({ list: [], classes: [], T: { days: 0 } }); }
     try { setStaff(await A.loadStaff()); } catch {}
+    try { const [sg, rq] = await Promise.all([A.maGet("school-dplan-sig"), A.maGet("school-sigreq")]); setCsig(obj(sg)); const o = {}; Object.entries(obj(rq)).forEach(([tk, m]) => { const x = obj(m)["dplan_com"]; if (x) o[tk] = x; }); setCreq(o); } catch {}
     await loadR(rngRef.current, obj(d && d.cfg).from);
     setBusy(""); setUpAt(Date.now());
   };
@@ -51514,6 +51517,7 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const setCfg = (k, v) => save(`cfg/${k}`, v);
   const com = Array.isArray(norm(obj(db && db.com).m)) ? norm(db.com.m) : C0.COM_DEF;
   const setCom = m => save("com/m", m);
+  const sendSig = async L => { const L2 = L.filter(m => m && m.n); if (!L2.length) { setCmsg("حدّد أسماء الأعضاء أولاً"); return; } let n = 0; for (const m of L2) { const tk = A.sigTk(m.n); if (await A.sigReqSend(m.n, { src: "dplan", key: "com", title: "خطة وسجل الانضباط المدرسي — توقيع أعضاء لجنة الانضباط", role: m.r, note0: `بصفتك ${m.r} في لجنة الانضباط المدرسي، نأمل الاطلاع على خطة الانضباط المدرسي وأدوار اللجنة، ثم التوقيع بالعلم والالتزام، وإضافة أي ملاحظة لديك.`, by: by || "مدير المدرسة", sigPath: `school-dplan-sig/${tk}` })) { n++; setCreq(o => ({ ...o, [tk]: { st: "pend" } })); } } setCmsg(`✓ أُرسل ${ar(n)} طلب توقيع، ويظهر لكل عضو في حسابه.`); setTimeout(() => setCmsg(""), 5000); };
   const proc = obj(db && db.proc); const prog = vals(db && db.prog).sort((a, b) => (a.at || 0) - (b.at || 0)); const meets = vals(db && db.meet).map(norm).sort((a, b) => (a.no || 0) - (b.no || 0)); const cases = obj(db && db.cases);
   const evL = vals(EV).sort((a, b) => (b.d || "").localeCompare(a.d || "") || (b.at || 0) - (a.at || 0));
   const evOf = ref => evL.filter(e => e.ref === ref);
@@ -51576,8 +51580,10 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
   const pCom = <Page n={N("dp-com")} id="dp-com" title="تشكيل لجنة الانضباط المدرسي" rk={["comNote", "roles"]}>
     <div className="dp-box" style={{ marginBottom: "1cqw", fontWeight: 600 }}><F v={tx("comNote")} on={v => setTx("comNote", v)} ml /></div>
     <table className="dp-tbl"><thead><tr><th style={{ width: "4%" }}>م</th><th>الاسم</th><th style={{ width: "18%" }}>العمل</th><th style={{ width: "16%" }}>الصفة في اللجنة</th><th style={{ width: "22%" }}>التوقيع</th>{edit && <th className="dp-noprint" style={{ width: "5%" }}></th>}</tr></thead>
-      <tbody>{com.map((m, i) => <tr key={i}><td className="n">{ar(i + 1)}</td><td className="g r"><F v={m.n} ph="اسم العضو" on={v => setCom(com.map((x, j) => j === i ? { ...x, n: v } : x))} /></td><td className="l"><F v={m.j} on={v => setCom(com.map((x, j) => j === i ? { ...x, j: v } : x))} list={false} /></td><td className="l" style={{ fontWeight: 700, color: NV }}><F v={m.r} on={v => setCom(com.map((x, j) => j === i ? { ...x, r: v } : x))} list={false} /></td><td className="w"></td>{edit && <td className="w dp-noprint"><button className="dp-x" onClick={() => setCom(com.filter((_, j) => j !== i))}>✕</button></td>}</tr>)}</tbody></table>
+      <tbody>{com.map((m, i) => <tr key={i}><td className="n">{ar(i + 1)}</td><td className="g r">{edit ? <select className="dp-in dp-noprint" value={staff.includes(m.n) ? m.n : ""} onChange={e => setCom(com.map((x, j) => j === i ? { ...x, n: e.target.value } : x))} style={{ width: "100%" }}><option value="">{m.n && !staff.includes(m.n) ? m.n : "— اختر من أسماء الموقع —"}</option>{staff.map(n => <option key={n} value={n}>{n}</option>)}</select> : null}<span className={edit ? "dp-printonly" : ""}>{m.n || (edit ? "" : "................")}</span></td><td className="l"><F v={m.j} on={v => setCom(com.map((x, j) => j === i ? { ...x, j: v } : x))} list={false} /></td><td className="l" style={{ fontWeight: 700, color: NV }}><F v={m.r} on={v => setCom(com.map((x, j) => j === i ? { ...x, r: v } : x))} list={false} /></td><td className="w">{(() => { const tk = A.sigTk(m.n), s = csig[tk], q = creq[tk]; if (s && s.img) return <img src={s.img} alt="" style={{ height: "3.2cqw", maxHeight: 46, maxWidth: "100%", objectFit: "contain" }} title={`وقّع ${new Date(s.at).toLocaleDateString("ar-SA")}`} />; if (!m.n) return null; return <span className="dp-noprint" style={{ fontSize: ".8em", fontWeight: 700, color: q ? "#b45309" : "#94a3b8" }}>{q ? "⏳ أُرسل للتوقيع" : <button className="dp-pb" onClick={async () => { await sendSig([m]); }}>📨 طلب توقيع</button>}</span>; })()}</td>{edit && <td className="w dp-noprint"><button className="dp-x" onClick={() => setCom(com.filter((_, j) => j !== i))}>✕</button></td>}</tr>)}</tbody></table>
     {edit && <button className="dp-add dp-noprint" onClick={() => setCom([...com, { r: "عضواً", j: "معلم", n: "" }])}>＋ إضافة عضو</button>}
+    <div className="dp-noprint" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: ".6cqw 0", fontSize: 13, fontWeight: 800 }}><button className="dp-pb" style={{ background: G1, color: "#fff", border: "none" }} onClick={() => sendSig(com.filter(m => m.n && !(csig[A.sigTk(m.n)] || {}).img))}>📨 إرسال طلبات التوقيع لكل من لم يوقّع</button><span style={{ color: NV }}>وقّع {ar(com.filter(m => m.n && (csig[A.sigTk(m.n)] || {}).img).length)} من {ar(com.filter(m => m.n).length)}</span>{cmsg && <span style={{ color: "#15803d" }}>{cmsg}</span>}</div>
+    {com.some(m => m.n && (csig[A.sigTk(m.n)] || {}).note) && <div className="dp-box" style={{ marginTop: ".6cqw" }}><b style={{ color: NV }}>ملاحظات أعضاء اللجنة عند التوقيع:</b>{com.filter(m => m.n && (csig[A.sigTk(m.n)] || {}).note).map((m, i) => <div key={i} style={{ fontSize: ".92em", marginTop: ".3cqw" }}>◂ <b>{m.n}</b> ({m.r}): {csig[A.sigTk(m.n)].note}</div>)}</div>}
     <div className="dp-g2" style={{ marginTop: "1.2cqw" }}>{roles.map(([h, L], ri) => <div key={ri} className="dp-box" style={{ padding: ".7cqw 1.2cqw" }}><b style={{ color: NV, fontFamily: KUFI, fontSize: ".95em" }}><F v={h} on={v => setTx("roles", roles.map((x, j) => j === ri ? [v, x[1]] : x))} list={false} /></b><EList items={L} num={false} mark="◂" on={v => setTx("roles", roles.map((x, j) => j === ri ? [x[0], v] : x))} />{edit && <button className="dp-x dp-noprint" onClick={() => setTx("roles", roles.filter((_, j) => j !== ri))}>✕ حذف الدور</button>}</div>)}</div>
     {edit && <button className="dp-add dp-noprint" onClick={() => setTx("roles", [...roles, ["دور جديد", ["مهمة…"]]])}>＋ إضافة دور</button>}
   </Page>;
@@ -51830,9 +51836,49 @@ function DisciplinePlan({ api: A, by = "الإدارة" }) {
 return DisciplinePlan;
 })();
 // 📘 سجل وخطة الانضباط المدرسي — يقرأ بيانات الموقع كاملة (الحضور، التأخر، الأعذار، الملاحظات) لتحليل الواقع
+// ══════════ ✍️ طلبات التوقيع الإلكتروني (عامة لأي سجل) ══════════
+// school-sigreq/{tk}/{id} = { src, title, role, note0, at, by, st:"pend"|"done", sigPath }
+// التوقيع يُكتب في sigPath = { img, at, note, n, r }
+const SIGREQ = "school-sigreq";
+const sigTk = n => String(n || "").trim().replace(/\s+/g, "_").replace(/[.#$\[\]\/]/g, "");
+function SigPadMini({ onSave, onCancel, busy }) {
+  const c = React.useRef(null), dr = React.useRef(false), last = React.useRef(null); const [has, setHas] = React.useState(false);
+  React.useEffect(() => { const cv = c.current, r = cv.getBoundingClientRect(), k = window.devicePixelRatio || 1; cv.width = r.width * k; cv.height = r.height * k; const x = cv.getContext("2d"); x.scale(k, k); x.lineWidth = 2.4; x.lineCap = "round"; x.strokeStyle = "#0b2545"; }, []);
+  const pt = e => { const r = c.current.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  return <div><canvas ref={c} style={{ touchAction: "none", width: "100%", height: 150, background: "#fff", border: "1.5px solid #94a3b8", borderRadius: 12 }} onPointerDown={e => { e.preventDefault(); c.current.setPointerCapture(e.pointerId); dr.current = true; last.current = pt(e); }} onPointerMove={e => { if (!dr.current) return; const p = pt(e), x = c.current.getContext("2d"); x.beginPath(); x.moveTo(...last.current); x.lineTo(...p); x.stroke(); last.current = p; setHas(true); }} onPointerUp={() => { dr.current = false; }} onPointerLeave={() => { dr.current = false; }} />
+    <div style={{ display: "flex", gap: 6, marginTop: 6 }}><button className="ma-btn ma-btn-primary" disabled={!has || busy} onClick={() => { const cv = c.current, o = document.createElement("canvas"); o.width = 320; o.height = Math.round(320 * cv.height / cv.width); o.getContext("2d").drawImage(cv, 0, 0, o.width, o.height); onSave(o.toDataURL("image/png")); }}>{busy ? "⏳" : "اعتماد التوقيع"}</button><button className="ma-btn" onClick={() => { const cv = c.current; cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); setHas(false); }}>مسح</button>{onCancel && <button className="ma-btn" onClick={onCancel}>إلغاء</button>}</div></div>;
+}
+async function sigReqSend(name, req) { const tk = sigTk(name); if (!tk) return false; const id = (req.src || "x") + "_" + (req.key || ""); return maPut(`${SIGREQ}/${tk}/${id}`, { ...req, n: name, at: Date.now(), st: "pend" }); }
+function SigReqBanner({ me, onOpen }) {
+  const [n, setN] = React.useState(0);
+  React.useEffect(() => { maGet(`${SIGREQ}/${sigTk(me.name)}`).then(d => setN(Object.values(ptObj(d)).filter(x => x && x.st === "pend").length)).catch(() => {}); }, []);
+  if (!n) return null;
+  return <button onClick={onOpen} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg,#fffbeb,#fef3c7)", border: "2px solid #c9a227", borderRadius: 16, padding: "12px 14px", margin: "0 0 12px", cursor: "pointer", fontFamily: "inherit", textAlign: "right" }}><span style={{ fontSize: 26 }}>✍️</span><span style={{ flex: 1 }}><b style={{ color: "#0b2545", fontSize: 15 }}>لديك {maAr(n)} {n === 1 ? "طلب توقيع" : "طلبات توقيع"}</b><br /><small style={{ color: "#92400e", fontWeight: 700 }}>اضغط للاطلاع والتوقيع وإضافة ملاحظاتك</small></span><span style={{ color: "#c9a227", fontWeight: 900 }}>‹</span></button>;
+}
+function SigReqs({ me }) {
+  const tk = sigTk(me.name); const [L, setL] = React.useState(null), [open, setOpen] = React.useState(null), [note, setNote] = React.useState(""), [busy, setBusy] = React.useState(false), [msg, setMsg] = React.useState("");
+  const load = async () => setL(Object.entries(ptObj(await maGet(`${SIGREQ}/${tk}`))).map(([id, x]) => ({ ...x, id })).filter(x => x && x.title).sort((a, b) => (a.st === "pend" ? 0 : 1) - (b.st === "pend" ? 0 : 1) || (b.at || 0) - (a.at || 0)));
+  React.useEffect(() => { load(); }, []);
+  const sign = async (r, img) => { setBusy(true); const nt = note.trim(); const ok = await maPut(r.sigPath, { img, at: Date.now(), note: nt, n: me.name, r: r.role || "" }); if (ok) { const { id, ...rest } = r; await maPut(`${SIGREQ}/${tk}/${id}`, { ...rest, st: "done", done: Date.now(), note: nt }); setMsg("✓ سُجّل توقيعك وملاحظاتك، ويظهران الآن في السجل لدى الإدارة."); setOpen(null); setNote(""); load(); } else setMsg("تعذّر الحفظ — تحقق من الاتصال"); setBusy(false); };
+  if (!L) return <div style={{ padding: 20 }}>⏳</div>;
+  return <div style={{ direction: "rtl", display: "grid", gap: 10 }}>
+    {msg && <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", borderRadius: 12, padding: "8px 12px", fontWeight: 800 }}>{msg}</div>}
+    {!L.length && <div className="ma-card p-4" style={{ color: "#64748b" }}>لا توجد طلبات توقيع لك.</div>}
+    {L.map(r => <div key={r.id} className="ma-card p-4" style={{ borderInlineStart: `5px solid ${r.st === "pend" ? "#c9a227" : "#16a34a"}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}><div><b style={{ color: "#0b2545", fontSize: 16 }}>{r.title}</b><div style={{ fontSize: 13, color: "#475569", fontWeight: 700 }}>صفتك: {r.role || "عضو"} • من: {r.by || "الإدارة"} • {new Date(r.at).toLocaleDateString("ar-SA-u-ca-islamic-umalqura")}</div></div>
+        <span style={{ borderRadius: 999, padding: "3px 12px", fontWeight: 800, fontSize: 12.5, background: r.st === "pend" ? "#fef3c7" : "#dcfce7", color: r.st === "pend" ? "#92400e" : "#15803d" }}>{r.st === "pend" ? "⏳ بانتظار توقيعك" : "✓ وقّعت"}</span></div>
+      {r.note0 && <div style={{ marginTop: 8, background: "#f8fafc", borderRadius: 10, padding: "8px 10px", fontSize: 13.5, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{r.note0}</div>}
+      {r.st === "done" && r.note && <div style={{ marginTop: 6, fontSize: 13, color: "#334155" }}>ملاحظتك: {r.note}</div>}
+      {r.st === "pend" && (open === r.id ? <div style={{ marginTop: 10, display: "grid", gap: 8 }}><label style={{ fontWeight: 800, fontSize: 13 }}>ملاحظاتك (اختياري)<textarea className="ma-inp" rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="أي ملاحظة أو مقترح قبل التوقيع" style={{ width: "100%", marginTop: 4 }} /></label><div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569" }}>وقّع في المربع:</div><SigPadMini busy={busy} onSave={img => sign(r, img)} onCancel={() => setOpen(null)} /></div>
+        : <button className="ma-btn ma-btn-primary" style={{ marginTop: 10 }} onClick={() => { setOpen(r.id); setNote(""); }}>✍️ اطّلعت — أوقّع الآن</button>)}
+    </div>)}
+  </div>;
+}
+
 const dpApi = () => ({ maGet, maPut, fbPatch, spxLoad, spxCompute, maClassName, maHijri, maDay, maDate, maKey, maAr, maOff, SCHOOL_LOGO, PT_EXC, PT_PREP, printWindow,
   schoolName: `${SP.name}`,
-  loadStaff: async () => { const T = ttFresh(await maGet(TT_NODE)); return [...new Set((T.T || []).map(ttClean))].filter(Boolean).sort((a, b) => a.localeCompare(b, "ar")); } });
+  sigReqSend: (n, r) => sigReqSend(n, r), sigTk,
+  loadStaff: async () => { const T = ttFresh(await maGet(TT_NODE)); const st = Object.values(ptObj(await maGet(PT_STAFF))).map(x => x && x.name).filter(Boolean); return [...new Set([...(T.T || []).map(ttClean), ...st])].filter(Boolean).sort((a, b) => a.localeCompare(b, "ar")); } });
 function DPlanPage({ by }) { const api = React.useMemo(dpApi, []);
   return <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ فتح سجل الانضباط…</div>}><DisciplinePlan api={api} by={by} /></React.Suspense>; }
 // شريط حيّ أعلى صفحات الإدارة: عدد الأعذار والملاحظات التي تنتظر الرد، وأحدث الطلاب وفصولهم
