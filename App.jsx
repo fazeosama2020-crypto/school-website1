@@ -189,6 +189,7 @@ const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ defa
 const MyTT = React.lazy(() => import("./MyTT.jsx").then(m => ({ default: m.MyTT })));
 const CoverTeacher = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverTeacher })));
 const CoverAdmin = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverAdmin })));
+const StudentActivity = React.lazy(() => import("./StudentActivity.jsx").then(m => ({ default: m.StudentActivity })));
 const Committees = React.lazy(() => import("./Committees.jsx").then(m => ({ default: m.Committees })));
 const CoverBanner = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverBanner })));
 const AchRecord = React.lazy(() => import("./AchRecord.jsx").then(m => ({ default: m.AchRecord })));
@@ -236,6 +237,22 @@ const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}`, 
   return { list, classes: classes.map(c => ({ ck: c.ck, name: maClassName(c.ck) })) };
 } });
 const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}` });
+const saApi = () => ({ maGet, maPut, school: NQ_SCHOOL, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, loadStaff: () => dpApi().loadStaff() });
+const SAH_TABS = [["follow", "📋", "بطاقة متابعة النشاط", "استمارة المشرف • التنفيذ والشواهد"], ["cards", "🏆", "بطاقات تنفيذ المسابقات والبرامج", "النموذج الوزاري • طباعة"], ["acts", "🎯", "الأنشطة المدرسية", "سجل الأنشطة والفعاليات"]];
+function StuActHub({ tab0, user, activities, setActivities, saveActivities }) {
+  const [tab, setTab] = useState(tab0 || "follow");
+  useEffect(() => { if (tab0) setTab(tab0); }, [tab0]);
+  const W = <div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>;
+  return <div dir="rtl" style={{ fontFamily: "Tajawal,system-ui,sans-serif" }}>
+    <div style={{ margin: "10px 10px 0", borderRadius: 22, padding: "16px 18px", color: "#fff", background: "radial-gradient(circle at 10% 10%,rgba(201,162,39,.38),transparent 40%),linear-gradient(135deg,#0b2d5c,#1e3a8a 60%,#0b3d36)", borderBottom: "4px solid #c9a227" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 34 }}>🏅</span><div><b style={{ fontSize: 22, display: "block" }}>النشاط الطلابي</b><small style={{ fontWeight: 700, opacity: .9 }}>متابعة ملاحظات المشرف وتنفيذها • بطاقات تنفيذ المسابقات والبرامج • الأنشطة المدرسية</small></div></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8, marginTop: 12 }}>{SAH_TABS.map(([k, ic, t, d]) => <button key={k} type="button" onClick={() => setTab(k)} style={{ fontFamily: "inherit", cursor: "pointer", textAlign: "right", borderRadius: 14, padding: "9px 12px", border: tab === k ? "2px solid #c9a227" : "1px solid rgba(255,255,255,.28)", background: tab === k ? "#fff" : "rgba(255,255,255,.1)", color: tab === k ? "#0b2d5c" : "#fff", display: "flex", gap: 8, alignItems: "center" }}><span style={{ fontSize: 22 }}>{ic}</span><span><b style={{ display: "block", fontSize: 14.5 }}>{t}</b><small style={{ fontWeight: 700, opacity: .8 }}>{d}</small></span></button>)}</div>
+    </div>
+    {tab === "follow" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={W}><StudentActivity api={saApi()} by={user?.name || "مدير المدرسة"} /></React.Suspense></div>}
+    {tab === "cards" && <React.Suspense fallback={W}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}
+    {tab === "acts" && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
+  </div>;
+}
 const comApi = () => ({ maGet, maPut, school: NQ_SCHOOL, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, sigReqSend: (n, r) => sigReqSend(n, r), loadStaff: () => dpApi().loadStaff() });
 const lcApi = () => ({ maGet, maPut, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL, SigPad: SigPadMini });
 const myttApi = () => ({ maGet, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL });
@@ -53656,8 +53673,7 @@ function SchoolWebsiteInner() {
     { id: "pulse",           label: "مؤشر أداء المدرسة الأسبوعي", icon: "📈" },
     { id: "students",        label: "تقييم الطلاب",  icon: "🎓" },
     { id: "announcements", label: "الإعلانات",       icon: "📣" },
-    { id: "activities",    label: "الأنشطة",         icon: "🎯" },
-    { id: "actcards",      label: "بطاقات تنفيذ المسابقات والبرامج", icon: "🏆" },
+    { id: "activities",    label: "النشاط الطلابي",   icon: "🏅" },
     { id: "healthplan",    label: "البرامج الصحية المدرسية", icon: "🩺" },
     { id: "messages",      label: "رسائل الأهالي",  icon: "💌" },
     { id: "sms",           label: "رسائل SMS",       icon: "📲" },
@@ -53770,7 +53786,7 @@ function SchoolWebsiteInner() {
     { title:"الطلاب", icon:"🎓", color:"#2563eb", ids:["command","pulse","period","quran","stusearch","notices","ualerts","readlab","gradebook","diag","dplan","studentperf","nafes","treasureadm","nafsbooks","behavior","conduct","students","formative","studentclassify","stulevels","stlogins","readweak","weeklyplan","termplan","gradeanalysis","assessment","lessonrecommend","quiz","dailyquiz","honorboard","certificates","raffle","luckywheel"] },
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
-    { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["initiatives","stumeet","stuvisits","activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
+    { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["initiatives","stumeet","stuvisits","activities","healthplan","gallery","meetings","committeemeeting"] },
     { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","smarttt","lcover","comreg","pfadm","tint","achrec","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
   ];
   const navGroups = navGroupsAll.map(g => ({ ...g, ids: g.ids.filter(id => !admOff[id] && !admUi.hide.includes(id)) }));
@@ -54092,8 +54108,8 @@ function SchoolWebsiteInner() {
                 {page === "attendstats"    && <MorningAttendancePage section="stats" />}
                 {page === "students"       && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
                 {page === "announcements"  && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} viewMode="mobile" />}
-                {page === "activities"     && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
-                {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "ualerts" && <div className="px-2 md:px-6 py-4"><UrgentAlertAdmin by={user?.name || "الإدارة"} /></div>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
+                {(page === "activities" || page === "actcards" || page === "stuact") && <StuActHub tab0={page === "actcards" ? "cards" : page === "stuact" ? "follow" : null} user={user} activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
+                {page === "ualerts" && <div className="px-2 md:px-6 py-4"><UrgentAlertAdmin by={user?.name || "الإدارة"} /></div>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
                 {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
                 {page === "messages"       && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
                 {page === "surveys"        && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
@@ -54289,8 +54305,8 @@ function SchoolWebsiteInner() {
         {page === "attendstats"   && <MorningAttendancePage key="ma-stats" section="stats" />}
         {page === "students"      && <StudentDailyPage by={user?.name || "الإدارة"} legacy={<StudentsPage classList={classList} setClassList={setClassList} saveClass={saveClass} deleteClass={deleteClass} onSendNote={handleSendNote} messages={messages} />} />}
         {page === "announcements" && <AnnouncementsPage announcements={announcements} setAnnouncements={setAnnouncements} saveAnnouncements={saveAnnouncements} />}
-        {page === "activities"    && <ActivitiesPage activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
-        {page === "actcards" && <React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><ActCards api={actApi()} me={{ name: user?.name || "الإدارة", role: "principal" }} admin /></React.Suspense>}{page === "ualerts" && <div className="px-2 md:px-6 py-4"><UrgentAlertAdmin by={user?.name || "الإدارة"} /></div>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
+        {(page === "activities" || page === "actcards" || page === "stuact") && <StuActHub tab0={page === "actcards" ? "cards" : page === "stuact" ? "follow" : null} user={user} activities={activities} setActivities={setActivities} saveActivities={saveActivities} />}
+        {page === "ualerts" && <div className="px-2 md:px-6 py-4"><UrgentAlertAdmin by={user?.name || "الإدارة"} /></div>}{page === "quran" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={<div style={{ padding: 30, textAlign: "center", fontWeight: 800, color: "#64748b" }}>⏳ جارٍ التحميل…</div>}><QuranAdmin api={qrnApi()} me={{ name: user?.name || "الإدارة" }} /></React.Suspense></div>}
         {page === "healthplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><HealthPlan me={{ name: user?.name || "الإدارة" }} api={hpApi()} canEdit={true} /></React.Suspense></div>}
         {page === "messages"      && <MessagesPage messages={messages} setMessages={setMessages} saveMessages={saveMessages} isParent={false} />}
         {page === "surveys"       && <SurveyStudio legacy={<SurveysPage surveys={surveys} setSurveys={setSurveys} saveSurveys={saveSurveys} />} />}
