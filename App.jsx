@@ -187,6 +187,9 @@ function SmartTimetableFrame({ hash }) {
 const OpPlan = React.lazy(() => import("./OpPlan.jsx").then(m => ({ default: m.OpPlan })));
 const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ default: m.HealthPlan })));
 const MyTT = React.lazy(() => import("./MyTT.jsx").then(m => ({ default: m.MyTT })));
+const CoverTeacher = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverTeacher })));
+const CoverAdmin = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverAdmin })));
+const CoverBanner = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverBanner })));
 const AchRecord = React.lazy(() => import("./AchRecord.jsx").then(m => ({ default: m.AchRecord })));
 const Interviews = React.lazy(() => import("./Interviews.jsx").then(m => ({ default: m.Interviews })));
 const Portfolio = React.lazy(() => import("./Portfolio.jsx").then(m => ({ default: m.Portfolio })));
@@ -232,6 +235,7 @@ const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}`, 
   return { list, classes: classes.map(c => ({ ck: c.ck, name: maClassName(c.ck) })) };
 } });
 const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}` });
+const lcApi = () => ({ maGet, maPut, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL, SigPad: SigPadMini });
 const myttApi = () => ({ maGet, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL });
 const achApi = () => ({ ...cmdApi(""), names: async () => { const T = ttFresh(await maGet(TT_NODE)); const st = Object.values(ptObj(await maGet(PT_STAFF))).map(x => x && x.name).filter(Boolean); return [...new Set([...(T.T || []).map(ttClean), ...st].filter(Boolean))].sort((a, b) => a.localeCompare(b, "ar")); } });
 const tintApi = () => ({ maGet, maPut, school: NQ_SCHOOL, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, className: ck => maClassName(ck), tt: async () => ttFresh(await maGet(TT_NODE)), ttFind: (T, n) => sttFindMe(T, n), staff: async () => Object.values(ptObj(await maGet(PT_STAFF))).filter(x => x && x.name) });
@@ -35290,6 +35294,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "meet" && isStaff) return wrap("🤝 اللقاءات الطلابية", <React.Suspense fallback={LF_WAIT}><LfMeetings api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /></React.Suspense>);
   if (view === "zy") return wrap("👣 زيارات الطلاب", <React.Suspense fallback={LF_WAIT}>{isStaff ? <LfZyStaff api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /> : <LfZyMine api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} />}</React.Suspense>);
   if (view === "sigreq") return wrap("✍️ طلبات التوقيع", <SigReqs me={me} />);
+  if (view === "lcover" || view === "lcoverin") return wrap("🛡️ تأمين الحصص", <React.Suspense fallback={RD_WAIT}><CoverTeacher me={{ name: me.name }} api={lcApi()} start={view === "lcoverin" ? "in" : "req"} /></React.Suspense>);
   if (view === "achrec") return wrap("📚 سجل التحصيل الدراسي", <React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: me.name }} admin={isStaff && ["principal", "deputy"].includes(me.role)} api={achApi()} /></React.Suspense>);
   if (view === "tint") return wrap("🤝 مقابلاتي", <React.Suspense fallback={RD_WAIT}><Interviews me={{ name: me.name, role: me.role }} api={tintApi()} /></React.Suspense>);
   if (view === "pf") return wrap("🏅 ملف الأداء الوظيفي", <React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: me.name, role: me.role }} api={pfApi()} start="mine" /></React.Suspense>);
@@ -35475,6 +35480,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {!hdRemDay(maKey(new Date())) && <div className="pt-bn"><PxHomeBanner me={me} onOpen={() => setView("px")} /></div>}
           </div>
           <PtFavBar edit={ptEdit} onEdit={() => ptEdit ? setPtEdit(false) : setPtCust(true)} onTour={() => setPtTour(true)} />
+          <React.Suspense fallback={null}><CoverBanner me={{ name: me.name }} api={lcApi()} onOpen={() => setView("lcoverin")} /></React.Suspense>
           <SigReqBanner me={me} onOpen={() => setView("sigreq")} />
           <div className="pt-sec"><h3>⏱️ دوامي وانضباطي</h3><div className="pt-tiles">
             {ptTile("score", "🏆", "بطاقتي الشاملة وترتيبي", "نسبة انضباطي في الحضور والطابور والحصص والتحضير، وتفاصيل حضوري وملاحظاتي، وترتيبي بين زملائي", "#0f1e3d", "#d4a017", () => setView("score"))}
@@ -35500,6 +35506,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {qrnOn && ptTile("quran", "📖", "حلقة القرآن الكريم", "افتح حصتك من الجدول ← 🟢 تسميع • 🔵 مراجعة لكل طالب • ملاحظات يومية • إحصاء الأسبوع للطالب وولي أمره والإدارة", "#0b3d2e", "#c9a227", () => setView("quran"))}
             {ptTile("pfr", "📈", "لوحتي ونتائج طلابي", "نتائج طلابك في الفترة الأولى والاختبارات التشخيصية: الأضعف والأفضل واقتراح برنامج علاجي، ومدى تقدم ملف أدائك", "#0b2545", "#c9a227", () => setView("pfr"))}
             {ptTile("achrec", "📚", "سجل التحصيل الدراسي", "خطة تحسين التحصيل وحصر الواقع الدراسي بالأرقام؛ للاطلاع والتوقيع إن كنت عضوًا في لجنة التحصيل", "#0b2545", "#0d9488", () => setView("achrec"))}
+            {ptTile("lcover", "🛡️", "تأمين حصة", "اضغط الحصة التي تريد تأمينها من جدولك واختر زميلًا متاحًا ليوافق ويوقّع، واطّلع على الطلبات الواردة إليك", "#0b2545", "#1e3a8a", () => setView("lcover"))}
             {ptTile("tint", "🤝", "مقابلاتي", "موعد مقابلتك مع إدارة المدرسة وأهدافها ومتطلباتها، والمحاور المفوضة إليك، والتوقيع والتغذية الراجعة", "#0b2545", "#7a5c12", () => setView("tint"))}
             {ptTile("pf", "🏅", "ملف الأداء الوظيفي", "عناصر الأداء الـ11: ست صور شواهد لكل عنصر مع تعليقك، وتغذية راجعة من زملائك، وطباعة ملف إنجاز مميز", "#0b2545", "#1e3a8a", () => setView("pf"))}
             {ptTile("zyt", "🗣️", "رأيي في طلابي (زيارات الطلاب)", "اكتب رأيك في مستوى طلاب فصولك الذين يزورهم أعضاء الإدارة واطّلع على زياراتهم", "#0369a1", "#38bdf8", () => setView("zyt"))}
@@ -53313,7 +53320,7 @@ function SchoolWebsiteInner() {
       setDirectAnnId(null);
       if (["attend", "absence", "ghiab"].includes(hash)) { setAttPortal(true); return; }
       if (hash === "teacherportal") { setTeacherProfilePortal(true); return; }
-      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","smarttt","pfadm","tint","achrec","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
+      if (["home","command","schoolsetup","datahealth","initiatives","stumeet","stuvisits","pulse","attendance","announcements","activities","healthplan","absaction","settings","students","messages","surveys","qiyas","sms","report","gradeanalysis","monthlyreport","absencestats","attendancereport","student-absence","strategies","gallery","certificates","poll","raffle","broadcast","quiz","luckywheel","timetable","smarttt","lcover","pfadm","tint","achrec","honorboard","dailyquiz","aiteacher","lessonprep","lessonrecommend","meetings","committeemeeting","teachereval","assessment","studentexcuses","perfresults","teacherreports","suggestions","dailyattend","teacherperfeval","staffdisc","studentperf","periodnotes"].concat(["readlab","gradebook","nafes","treasureadm","nafsbooks","liveops","audit","stlogins","duty","asmfollow","termplan","classvisits","insights","behavior","conduct","alreport","trash","ttnow","morningboard","periodfollow","admtasks","prepadm","morninglate","weeklyplan","portals","parentinbox","dplan","peerx","holidays","diag","pgrec","plcr","studentclassify","stulevels","stlogins","readweak","morningattend","attendstats","formative","prolicense","perfresults","suggestions","dailyattend","teacherreports","admin-attendance","hfx","hdisc","circulars","circdaily","trepadm","absxadm","exteval","opplan","ipadmin","stusearch","notices","period","absref","actcards","quran","ualerts"]).includes(hash)) { setTeacherProfilePortal(false); setPage(hash); }
     };
     window.addEventListener("hashchange", h); h();
     return () => window.removeEventListener("hashchange", h);
@@ -53698,6 +53705,7 @@ function SchoolWebsiteInner() {
     { id: "smarttt",        label: "الجدول المدرسي الذكي",  icon: "🧠" },
     { id: "pfadm",          label: "ملفات الأداء الوظيفي للمعلمين", icon: "🏅" },
     { id: "tint",           label: "مقابلات المعلمين", icon: "🤝" },
+    { id: "lcover",         label: "تأمين الحصص اليومية", icon: "🛡️" },
     { id: "achrec",         label: "سجل التحصيل الدراسي", icon: "📚" },
     { id: "dailyquiz",      label: "الاختبار اليومي",      icon: "🎯" },
     { id: "raffle",         label: "سحب الطلاب",           icon: "🎰" },
@@ -53758,7 +53766,7 @@ function SchoolWebsiteInner() {
     { title:"المعلمون", icon:"👨‍🏫", color:"#7c3aed", ids:["plcr","pgrec","classvisits","peerx","prepadm","teacherperfeval","perfresults","teachereval","poll","teacherreports","prolicense","aiteacher","lessonprep","strategies"] },
     { title:"التواصل والإعلام", icon:"📣", color:"#db2777", ids:["parentinbox","portals","announcements","messages","sms","broadcast","suggestions"] },
     { title:"الأنشطة والفعاليات", icon:"🎉", color:"#d97706", ids:["initiatives","stumeet","stuvisits","activities","actcards","healthplan","gallery","meetings","committeemeeting"] },
-    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","smarttt","pfadm","tint","achrec","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
+    { title:"التقارير والأدوات العامة", icon:"📊", color:"#475569", ids:["absref","monthlyreport","report","qiyas","surveys","circulars","circdaily","hfx","hdisc","exteval","opplan","ipadmin","trepadm","absxadm","timetable","smarttt","lcover","pfadm","tint","achrec","ttnow","datahealth","trash","audit","schoolsetup","settings"] },
   ];
   const navGroups = navGroupsAll.map(g => ({ ...g, ids: g.ids.filter(id => !admOff[id] && !admUi.hide.includes(id)) }));
   const admFavItems = admUi.fav.filter(id => pageById[id] && !admOff[id] && !admUi.hide.includes(id)).map(id => { const g = navGroupsAll.find(x => x.ids.includes(id)); return { id, ic: pageById[id].icon, label: pageById[id].label, c: g ? g.color : "#0b2545" }; });
@@ -54095,7 +54103,7 @@ function SchoolWebsiteInner() {
                 {page === "broadcast"      && <BroadcastPage />}
                 {page === "quiz"           && <QuizPage />}
                 {page === "luckywheel"     && <LuckyWheelPage />}
-                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame hash={user?.hash} />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
+                {page === "timetable"      && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame hash={user?.hash} />}{page === "lcover" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><CoverAdmin api={lcApi()} by={user?.name || "الإدارة"} /></React.Suspense></div>}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
                 {page === "honorboard"     && <HonorBoardPage classList={classList} />}
                 {page === "absencestats"   && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
                 {page === "monthlyreport"  && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
@@ -54292,7 +54300,7 @@ function SchoolWebsiteInner() {
         {page === "broadcast"     && <BroadcastPage />}
         {page === "quiz"          && <QuizPage />}
         {page === "luckywheel"    && <LuckyWheelPage />}
-        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame hash={user?.hash} />}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
+        {page === "timetable"     && <SchoolTimetablePage by={user?.name || "الإدارة"} />}{page === "smarttt" && <SmartTimetableFrame hash={user?.hash} />}{page === "lcover" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><CoverAdmin api={lcApi()} by={user?.name || "الإدارة"} /></React.Suspense></div>}{page === "pfadm" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Portfolio me={{ name: user?.name || "الإدارة", role: "principal" }} admin api={pfApi()} /></React.Suspense></div>}{page === "tint" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><Interviews me={{ name: user?.name || "مدير المدرسة", role: "principal" }} admin api={tintApi()} /></React.Suspense></div>}{page === "achrec" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: user?.name || "مدير المدرسة" }} admin api={achApi()} /></React.Suspense></div>}
         {page === "honorboard"    && <HonorBoardPage classList={classList} />}
         {page === "absencestats"  && <AbsenceStatsPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} />}
         {page === "monthlyreport" && <MonthlyReportPage teachers={teachers} attendance={attendance} week={week} weekArchive={weekArchive} classList={classList} announcements={announcements} activities={activities} />}
