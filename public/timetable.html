@@ -104,7 +104,11 @@ body.in-trial #dirty::before{content:'🧪 ';}
 .tca{display:flex;gap:3px;justify-content:center}.tca button{font:inherit;font-size:11px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;padding:1px 6px;cursor:pointer}.tca button[disabled]{opacity:.35;cursor:not-allowed}.tca button[data-tcd]{color:#991b1b;border-color:#fca5a5}
 .tcp{opacity:0;font-size:20px;line-height:1;border:1.5px dashed #94a3b8;background:#fff;border-radius:8px;width:34px;height:30px;cursor:pointer;color:#0b2545}.tcg td.fr:hover .tcp{opacity:1}@media(hover:none){.tcp{opacity:.6}}
 .tcg td.hv{outline:3px solid #0b2545;outline-offset:-2px}.tcg td.hvt.ok{outline:3px solid #16a34a;outline-offset:-2px;box-shadow:0 0 0 3px rgba(22,163,74,.2)}.tcg td.hvt.no{outline:3px solid #dc2626;outline-offset:-2px}
-@media print{#expDlg,#chgDlg,#labDlg,#trialBar,#sbxDlg,#tcDlg{display:none!important}}
+body.tBelow #v-teachers .studio{grid-template-columns:minmax(0,1fr)}body.tBelow #v-teachers .tAside{position:static!important;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))!important}
+.swp{margin-top:12px;border-top:4px solid #c9a227}.swh{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}.swf{display:flex;gap:6px;flex-wrap:wrap}.swf .chip.on{background:#0b2545;color:#fff;border-color:#0b2545}
+.swl{display:flex;flex-direction:column;gap:6px}.swr{display:grid;grid-template-columns:130px 80px minmax(140px,1fr) minmax(200px,2fr) auto;gap:8px;align-items:center;background:#fff;border:1px solid #e2e8f0;border-inline-start:5px solid #16a34a;border-radius:10px;padding:7px 10px}.swr.off{border-inline-start-color:#fca5a5;opacity:.75}.swk{background:#fff3c4;color:#854d0e;border-radius:8px;padding:2px 8px;font-weight:700;text-align:center;font-size:12px}.swt{font-weight:700;color:#0b2545}.swe{font-size:12.5px;color:#475569}.swb{display:flex;gap:6px}.swb .btn{min-height:34px;padding:4px 10px;font-size:12.5px}
+@media(max-width:900px){.swr{grid-template-columns:1fr 1fr}.swe,.swb{grid-column:1/-1}}
+@media print{#expDlg,#chgDlg,#labDlg,#trialBar,#sbxDlg,#tcDlg,#sbSw{display:none!important}}
 .btn.exb{background:#0b2545;color:#f4ead2;border-color:#c9a227}
 #chgDlg{position:fixed;inset:0;background:rgba(11,37,69,.55);z-index:90;display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}#chgDlg[hidden]{display:none}#chgDlg .box{background:var(--bg,#f6f7fb);border-radius:14px;max-width:980px;width:100%;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.3)}.chgB .cnt:not(:empty){background:var(--gold);color:#0b2545;border-radius:999px;padding:1px 8px;font-size:12px;margin-inline-start:4px}.cg{background:var(--card);border:1px solid var(--line);border-inline-start:5px solid var(--mod);border-radius:10px;padding:10px 12px;margin:8px 0}.cg.done{border-inline-start-color:#16a34a;opacity:.8}.cg h4{margin:0 0 6px;font-size:14.5px;line-height:1.6}.cg table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.cg th,.cg td{border:1px solid var(--line);padding:5px 6px;text-align:center}.cg th{background:#0b2545;color:#fff;font-weight:700}.cg td.bf{background:#fef2f2}.cg td.af{background:#f0fdf4;font-weight:700}.cg .tch{display:inline-block;background:#eef2ff;border-radius:999px;padding:2px 9px;margin:2px;font-size:12px}.cg .ops{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}.cg .ops label{display:flex;gap:6px;align-items:center;font-weight:700}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
@@ -257,11 +261,11 @@ details summary{cursor:pointer;min-height:40px;padding:8px 0;font-weight:700}
   </details>
  </section>
  <section id="v-teachers" hidden>
-  <div class="bar"><select id="tSel" aria-label="المعلم"></select><button class="btn" id="undo2">↶ تراجع</button><button class="btn" id="redo2">↷ إعادة</button><button class="btn sbxb" data-sbx>➕ احتياط إضافي</button><button class="btn tcb" data-tcopen="">⚖️ مقارنة معلمين</button><button class="btn exb" data-exp title="تصدير Excel و PDF">📤 تصدير</button><button class="btn g" id="tSug">اقترح تخفيف جدول المعلم</button><button class="btn p" id="tPub">تثبيت التعديلات في الموقع</button><button class="btn chgB" data-chg="1">📋 التغييرات للمنصة <span class="cnt"></span></button></div>
+  <div class="bar"><select id="tSel" aria-label="المعلم"></select><button class="btn" id="undo2">↶ تراجع</button><button class="btn" id="redo2">↷ إعادة</button><button class="btn sbxb" data-sbx>➕ احتياط إضافي</button><button class="btn tcb" data-tcopen="">⚖️ مقارنة معلمين</button><button class="btn" id="tBelowB" title="عرض لوحة الخيارات أسفل الجدول بدل جانبه">📋 الخيارات أسفل الجدول</button><button class="btn exb" data-exp title="تصدير Excel و PDF">📤 تصدير</button><button class="btn g" id="tSug">اقترح تخفيف جدول المعلم</button><button class="btn p" id="tPub">تثبيت التعديلات في الموقع</button><button class="btn chgB" data-chg="1">📋 التغييرات للمنصة <span class="cnt"></span></button></div>
   <div class="note">أكثر المعلمين ضغطًا (الرقم درجة الضغط):</div><div class="chips" id="hotT"></div>
   <p class="note" id="sum2" style="margin:0 0 8px"></p>
   <div class="status" id="st2">اضغط على حصة للمعلم لعرض شرحها وخيارات تغييرها، ثم على المكان الجديد لنقلها، فتتبادل مكانها مع حصة الفصل في ذلك الوقت.</div>
-  <div class="studio"><div><div class="scroll"><table class="g" id="gridT"></table></div></div><aside style="position:sticky;top:10px;margin:0;display:grid;gap:10px"><div id="peer"></div><div class="panel" id="info2" style="margin:0"></div></aside></div>
+  <div class="studio"><div><div class="scroll"><table class="g" id="gridT"></table></div></div><aside class="tAside" style="position:sticky;top:10px;margin:0;display:grid;gap:10px"><div id="peer"></div><div class="panel" id="info2" style="margin:0"></div></aside></div><div id="sbSw"></div>
   <div id="cmp"></div>
   <div id="sugOut2"></div>
   <div class="leg"><span><i style="background:var(--sb)"></i>انتظار</span><span><i style="background:repeating-linear-gradient(135deg,#cffafe 0 4px,#67e8f9 4px 6px)"></i>احتياط إضافي</span><span><i style="background:var(--act)"></i>نشاط</span><span><i style="background:repeating-linear-gradient(45deg,var(--card) 0 4px,var(--line) 4px 6px)"></i>بعد موعد الخروج المعتمد</span></div>
@@ -634,7 +638,7 @@ $('clsSel').innerHTML=D.classes.map((c,i)=>`<option value="${i}">الفصل ${es
 $('clsSel').onchange=e=>{cls=+e.target.value;sel=-1;sugMarks={};infoX=-1;renderC()};
 // ===== جدول المعلمين
 let tch=0,selT=-1,SBS=null;
-function renderT(){let h=headRow();let n=0,sb=0;const marks={};let sc=-1;
+function renderT(){try{if(!SBS)renderSw()}catch(e){}let h=headRow();let n=0,sb=0;const marks={};let sc=-1;
  if(selT>=0){const si=TI[tch][selT];if(si>=0){sc=S.lessons[si].c;for(let x=0;x<35;x++){if(x===selT)continue;const r=evalSwap(selT,x,sc);marks[x]=r.e.length?'t-bad':r.w.length?'t-warn':'t-ok'}PE=peerAll()}else selT=-1}if(selT<0)PE=null;
  for(let d=0;d<5;d++){h+=`<tr><th class="d">${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,i=TI[tch][x],r=SB[tch][x],mk=x===selT?'sel':marks[x]||'';
   if(i>=0){const l=S.lessons[i];n++;const col=S.style.screen&&!mk?colOf(l):'';const md=S.style.showMod&&isMod(i)?' mod':'';const pj=mk&&sc>=0&&CI[sc][x]>=0&&x!==selT?S.lessons[CI[sc][x]]:null;h+=`<td class="c ${mk||(l.k?'ac':'')}${col?' col':''}${md}${mkL(l.c,x)?' mk':''}" data-x="${x}" tabindex="0"${col?` style="background:${col}"`:''}${pj?` title="في هذا الوقت: ${esc(subj(pj))} مع أ/ ${esc(D.teachers[pj.t])}"`:''}>${md?'<span class="edm">✎</span>':''}${pbOf(x)}${mkTag(mkL(l.c,x))}${cellL(l,false)}${pj?`<small class="pj">↔ ${esc(shortN(pj.t))}</small>`:''}</td>`}
@@ -1713,7 +1717,7 @@ function doFree(k,m){const Q=SBS,A=tch;let so,desc,b=-1;
  else{const o=Q.opts[k];if(!o)return;b=o.b;so=m==='x'?o.ex.so:o.give;desc=m==='x'?`تبادل انتظار: أ/ ${D.teachers[A]} يأخذ انتظار ${o.r} (${slotName(Q.x)}) من أ/ ${D.teachers[b]} ويعطيه انتظاره (${slotName(o.ex.y)})`:`نقل انتظار ${o.r} في ${slotName(Q.x)} من أ/ ${D.teachers[b]} إلى أ/ ${D.teachers[A]}`}
  record(desc);S.standby=sbList(so).map(s=>{const z={...s};delete z._ch;return z});S.edited++;idx();SBS=null;if(b>=0)S.cmp={a:A,b};save();renderT();renderCmp();renderHot();teacherSum();setSt($('st2'),'ok','<b>تم:</b> '+esc(desc)+'. الخانات المتغيرة عليها «معدّل»، ويمكنك التراجع، وتظهر في «📋 التغييرات للمنصة».')}
 function openSB(x){selT=-1;TPV=null;SBS={x,r:SB[tch][x],opts:sbOpts(x),pv:null};renderT();setSt($('st2'),'',`حددت <b>انتظار ${SB[tch][x]}</b> لأ/ ${esc(D.teachers[tch])} في ${slotName(x)}. اختر من القائمة بجانب الجدول معلمًا يأخذه، أو تبادلًا يبقي النصاب متساويًا، وسيظهر جدوله بعد التعديل قبل التنفيذ.`)}
-function renderSB(){const el=$('peer'),Q=SBS;if(!Q)return;if(Q.mode==='free'){renderFree();return}const pv=Q.pv,eff=d=>d<0?'يتحسن':d>0?'يزداد ضغطًا':'لا يتغير';
+function renderSB(){const el=$('peer'),Q=SBS;try{renderSw()}catch(e){}if(!Q)return;if(Q.mode==='free'){renderFree();return}const pv=Q.pv,eff=d=>d<0?'يتحسن':d>0?'يزداد ضغطًا':'لا يتغير';
  const list=Q.opts.slice(0,8).map((o,k)=>`<div class="bst" style="display:block;border-top:1px solid var(--line);padding:5px 0"><div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><b>أ/ ${esc(shortN(o.b))}</b><small>نصابه ${o.load}</small></div>
    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px"><button class="btn" style="min-height:34px;padding:4px 10px;font-size:12.5px" data-sbv="${k}|g">إسناد له (${eff(o.bd)} عنده)</button>${o.ex?`<button class="btn" style="min-height:34px;padding:4px 10px;font-size:12.5px" data-sbv="${k}|x">تبادل مع انتظاره ${slotName(o.ex.y)}</button>`:''}</div></div>`).join('');
  let pvh='';if(pv){const o=Q.opts[pv.k],so=pv.m==='x'?o.ex.so:o.give,bd=pv.m==='x'?o.ex.bd:o.bd,ad=pv.m==='x'?o.ex.ad:o.ad;
@@ -2115,6 +2119,33 @@ window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const
  if(d.type==='smarttt-site'&&d.draft&&(S.dAt||0)>(+d.draft.at||0)+1500){try{pushDraft()}catch(x){}}});
 const flushDraft=()=>{try{if(draftT){clearTimeout(draftT);draftT=0;pushDraft()}}catch(e){}};
 window.addEventListener('pagehide',flushDraft);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushDraft()});
+
+
+// ===== 🔁 تبديل الانتظار بين الحصص (أسفل الجدول): انتظار المعلم في حصة ⇄ انتظار معلم آخر في حصة أخرى، بالرتبة نفسها
+const SW={day:true,rank:true};
+function swOpts(){if(!SBS||SBS.mode==='free')return[];const x=SBS.x,d=Math.floor(x/7),p=x%7,me=S.standby.find(s=>s.t===tch&&s.d===d&&s.p===p);if(!me)return[];
+ const busy=(t,dd,pp)=>S.lessons.some(l=>l.t===t&&l.d===dd&&l.p===pp)||S.standby.some(s=>s.t===t&&s.d===dd&&s.p===pp);const out=[];
+ S.standby.forEach(b=>{if(b.t===tch||(b.d===d&&b.p===p))return;if(SW.day&&b.d!==d)return;if(SW.rank&&b.r!==me.r)return;const y=b.d*7+b.p;
+  const why=[];if(busy(tch,b.d,b.p))why.push(`أ/ ${shortN(tch)} مشغول في ${slotName(y)}`);else if(hardAt(tch,y))why.push(`${slotName(y)} بعد خروج أ/ ${shortN(tch)}`);
+  if(busy(b.t,d,p))why.push(`أ/ ${shortN(b.t)} مشغول في ${slotName(x)}`);else if(hardAt(b.t,x))why.push(`${slotName(x)} بعد خروج أ/ ${shortN(b.t)}`);
+  out.push({b,y,ok:!why.length,why})});
+ return out.sort((u,v)=>(v.ok-u.ok)||(u.b.d!==d)-(v.b.d!==d)||Math.abs(u.b.p-p)-Math.abs(v.b.p-p)||u.b.r-v.b.r)}
+function renderSw(){const el=$('sbSw');if(!el)return;if(!SBS||SBS.mode==='free'||view!=='teachers'){el.innerHTML='';return}const x=SBS.x,me=S.standby.find(s=>s.t===tch&&s.d*7+s.p===x);if(!me){el.innerHTML='';return}
+ const O=swOpts(),ok=O.filter(o=>o.ok),no=O.filter(o=>!o.ok);
+ const row=o=>`<div class="swr${o.ok?'':' off'}"><span class="sws">${DAYS[o.b.d]} <b>${PN[o.b.p]}</b></span><span class="swk">انتظار ${o.b.r}</span><span class="swt">أ/ ${esc(D.teachers[o.b.t])}</span><span class="swe">${o.ok?`أ/ ${esc(shortN(tch))} ← ${PN[o.b.p]} • أ/ ${esc(shortN(o.b.t))} ← ${PN[x%7]}`:esc(o.why.join('، '))}</span>${o.ok?`<span class="swb"><button class="btn tcb" data-tcopen="${o.b.t}">⚖️ جنبًا إلى جنب</button><button class="btn p" data-swgo="${o.b.t}|${o.y}">⇄ بدّل</button></span>`:''}</div>`;
+ el.innerHTML=`<div class="panel swp"><div class="swh"><h3 style="margin:0">🔁 تبديل «انتظار ${me.r}» لأ/ ${esc(D.teachers[tch])} — ${slotName(x)}</h3><div class="swf"><button class="chip${SW.day?' on':''}" data-swf="day">نفس اليوم فقط</button><button class="chip${!SW.day?' on':''}" data-swf="week">كل الأسبوع</button><button class="chip${SW.rank?' on':''}" data-swf="rank">نفس الرتبة (${me.r})</button><button class="chip${!SW.rank?' on':''}" data-swf="any">كل الرتب</button></div></div>
+ <p class="note" style="margin:4px 0 8px">يأخذ أ/ ${esc(shortN(tch))} انتظار المعلم الآخر في حصته، ويأخذ الآخر انتظاره هنا. يبقى نصاب كل منهما كما هو، ويبقى ترتيب الانتظار في كل حصة كما هو.</p>
+ ${ok.length?`<div class="swl">${ok.map(row).join('')}</div>`:'<p class="note warn">لا يوجد تبديل متاح بهذه الشروط. جرّب «كل الأسبوع» أو «كل الرتب».</p>'}
+ ${no.length?`<details style="margin-top:8px"><summary class="note">غير متاح (${no.length}) — مع السبب</summary><div class="swl">${no.slice(0,40).map(row).join('')}</div></details>`:''}</div>`}
+function doSw(b0,y){const x=SBS.x,d=Math.floor(x/7),p=x%7,me=S.standby.find(s=>s.t===tch&&s.d===d&&s.p===p),ot=S.standby.find(s=>s.t===b0&&s.d*7+s.p===y);if(!me||!ot)return;if(S.locked){setSt($('st2'),'warn','الجدول مقفل.');return}
+ const desc=`تبديل انتظار: أ/ ${D.teachers[tch]} من ${slotName(x)} إلى ${slotName(y)} (انتظار ${ot.r})، وأ/ ${D.teachers[b0]} من ${slotName(y)} إلى ${slotName(x)} (انتظار ${me.r})`;
+ record(desc);const A=tch;me.t=b0;ot.t=A;S.edited++;idx();SBS=null;save();renderT();renderHot();teacherSum();renderSw();setSt($('st2'),'ok','<b>تم:</b> '+esc(desc)+'. ويمكنك التراجع.')}
+document.addEventListener('click',e=>{const f=e.target.closest('[data-swf]');if(f){const k=f.dataset.swf;if(k==='day')SW.day=true;else if(k==='week')SW.day=false;else if(k==='rank')SW.rank=true;else SW.rank=false;renderSw();return}
+ const g=e.target.closest('[data-swgo]');if(g){const[b,y]=g.dataset.swgo.split('|');doSw(+b,+y)}});
+
+
+const tBelowApply=()=>{document.body.classList.toggle('tBelow',!!S.style.below);const b=$('tBelowB');if(b)b.textContent=S.style.below?'📋 الخيارات بجانب الجدول':'📋 الخيارات أسفل الجدول'};
+$('tBelowB').onclick=()=>{S.style.below=!S.style.below;save();tBelowApply()};tBelowApply();
 
 }
 </script>
