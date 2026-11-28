@@ -372,3 +372,4 @@ const ar=n=>String(n).replace(/[0-9]/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]);[...documen
 document.body.dataset.ready=1;setTimeout(()=>print(),300);})();
 </script></body></html>`);
 }
+export { EXT_IND, codeOf };
