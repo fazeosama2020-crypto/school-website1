@@ -574,7 +574,7 @@ const save=()=>{try{autoMark()}catch(e){}let ds='';try{ds=draftStr()}catch(e){}
  if(draftReady&&ds&&ds!==lastDraft){S.dAt=Date.now();lastDraft=ds;clearTimeout(draftT);draftT=setTimeout(pushDraft,2500)}else if(!draftReady)lastDraft=ds;
  if(S.trial&&typeof renderTrial==='function'){clearTimeout(window.__trT);window.__trT=setTimeout(()=>{try{if(!$('trialCmp')||!$('trialCmp').innerHTML)renderTrial()}catch(e){}},500)}saveErr='';try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){try{S.hist=(S.hist||[]).slice(-12);S.redo=[];S.versions=(S.versions||[]).slice(-2);S.log=(S.log||[]).slice(-50);localStorage.setItem(KEY,JSON.stringify(S))}catch(e2){let ins=false;try{ins=inSite()}catch(e3){}saveErr=ins?' • ذاكرة المتصفح ممتلئة، والحفظ في الموقع يعمل':' • تعذّر الحفظ: ذاكرة المتصفح ممتلئة'}}
  $('dirty').textContent=(S.edited?`${S.edited} تعديل على الجدول الأصلي`:'الجدول الأصلي')+saveErr};
-function pushDraft(){if(!inSite())return;try{window.parent.postMessage({type:'smarttt-draft',draft:{at:S.dAt||Date.now(),s:lastDraft||draftStr()}},location.origin)}catch(e){}}
+function pushDraft(){draftT=0;if(!inSite())return;try{window.parent.postMessage({type:'smarttt-draft',draft:{at:S.dAt||Date.now(),s:lastDraft||draftStr()}},location.origin)}catch(e){}}
 function useDraft(dr){if(!dr||!dr.s||!(+dr.at>(S.dAt||0)+1500))return false;let o;try{o=JSON.parse(dr.s)}catch(e){return false}if(!o||!Array.isArray(o.lessons)||!o.lessons.length)return false;if(!!o.data!==!!S.data&&!o.data)return false;
  const same=S.lessons&&S.lessons.length===o.lessons.length;Object.assign(S,o);S.dAt=+dr.at;if(!same){S.hist=[];S.redo=[]}lastDraft=dr.s;S.flash='حُمّلت آخر تعديلاتك المحفوظة في الموقع (من جهاز آخر أو جلسة سابقة).';
  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}try{location.hash=view||'classes';(window.__rl=1,location.reload())}catch(e){}return true}
@@ -2107,6 +2107,14 @@ document.addEventListener('mouseover',e=>{const dl=$('tcDlg');if(!dl||dl.hidden)
  document.querySelectorAll('#tcDlg .tcg td').forEach(td=>td.classList.remove('hv','hvt','ok','no'));if(!nh)return;
  document.querySelectorAll('#tcDlg .tcw > .tcc').forEach((card,ci)=>{const side=ci===0?'a':'b',rows=card.querySelectorAll('.tcg tbody tr'),td=rows[Math.floor(nh.x/7)]&&rows[Math.floor(nh.x/7)].children[nh.x%7+1];if(!td)return;if(side===nh.side)td.classList.add('hv');else td.classList.add('hvt',nh.ok?'ok':'no')})});
 document.body.insertAdjacentHTML('beforeend',`<div id="tcDlg" hidden role="dialog" aria-label="مقارنة معلمين"><div class="box"><div class="bar" style="justify-content:space-between;margin:0 0 8px"><h2 style="margin:0">⚖️ مقارنة معلمين — الانتظار جنبًا إلى جنب</h2><button class="btn" id="tcX">إغلاق ✕</button></div><div id="tcBody"></div></div></div>`);
+
+
+// ☁️ الحفظ في الموقع: تأكيد مرئي، ودفع فوري عند الخروج، ورفع النسخة المحلية الأحدث عند الفتح
+window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const d=e.data||{};
+ if(d.type==='smarttt-draft-ok'){S.cloudOk=d.ok?{at:d.at,t:Date.now()}:null;const el=$('dirty');if(el){const tm=new Date().toLocaleTimeString('ar-SA',{hour:'numeric',minute:'2-digit'});el.textContent=(S.edited?`${S.edited} تعديل على الجدول الأصلي`:'الجدول الأصلي')+(d.ok?` • ☁️ حُفظ في الموقع ${tm}`:' • ⚠️ تعذّر الحفظ في الموقع، والتعديلات محفوظة في هذا الجهاز');}return}
+ if(d.type==='smarttt-site'&&d.draft&&(S.dAt||0)>(+d.draft.at||0)+1500){try{pushDraft()}catch(x){}}});
+const flushDraft=()=>{try{if(draftT){clearTimeout(draftT);draftT=0;pushDraft()}}catch(e){}};
+window.addEventListener('pagehide',flushDraft);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushDraft()});
 
 }
 </script>
