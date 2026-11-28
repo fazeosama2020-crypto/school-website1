@@ -105,6 +105,7 @@ body.in-trial #dirty::before{content:'🧪 ';}
 .tcp{opacity:0;font-size:20px;line-height:1;border:1.5px dashed #94a3b8;background:#fff;border-radius:8px;width:34px;height:30px;cursor:pointer;color:#0b2545}.tcg td.fr:hover .tcp{opacity:1}@media(hover:none){.tcp{opacity:.6}}
 .tcg td.hv{outline:3px solid #0b2545;outline-offset:-2px}.tcg td.hvt.ok{outline:3px solid #16a34a;outline-offset:-2px;box-shadow:0 0 0 3px rgba(22,163,74,.2)}.tcg td.hvt.no{outline:3px solid #dc2626;outline-offset:-2px}
 body.tBelow #v-teachers .studio{grid-template-columns:minmax(0,1fr)}body.tBelow #v-teachers .tAside{position:static!important;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))!important}
+#vbG td.x{cursor:pointer}#vbG .vbr{display:block;font-size:10px;color:#64748b}
 .swp{margin-top:12px;border-top:4px solid #c9a227}.swh{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}.swf{display:flex;gap:6px;flex-wrap:wrap}.swf .chip.on{background:#0b2545;color:#fff;border-color:#0b2545}
 .swl{display:flex;flex-direction:column;gap:6px}.swr{display:grid;grid-template-columns:130px 80px minmax(140px,1fr) minmax(200px,2fr) auto;gap:8px;align-items:center;background:#fff;border:1px solid #e2e8f0;border-inline-start:5px solid #16a34a;border-radius:10px;padding:7px 10px}.swr.off{border-inline-start-color:#fca5a5;opacity:.75}.swk{background:#fff3c4;color:#854d0e;border-radius:8px;padding:2px 8px;font-weight:700;text-align:center;font-size:12px}.swt{font-weight:700;color:#0b2545}.swe{font-size:12.5px;color:#475569}.swb{display:flex;gap:6px}.swb .btn{min-height:34px;padding:4px 10px;font-size:12.5px}
 @media(max-width:900px){.swr{grid-template-columns:1fr 1fr}.swe,.swb{grid-column:1/-1}}
@@ -1182,12 +1183,22 @@ $('sugOut').onclick=e=>{const ap=e.target.closest('[data-ap]'),sh=e.target.close
 const VB={ts:[],xs:new Set()};
 function renderVB(){$('vbT').innerHTML=[['all','الجميع'],...D.teachers.map((t,i)=>[i,t.split(' ').slice(0,2).join(' ')])].map(([v,t])=>`<button type="button" class="chip ${(v==='all'&&VB.ts==='all')||(Array.isArray(VB.ts)&&VB.ts.includes(v))?'on':''}" data-v="${v}">${esc(t)}</button>`).join('');
  const one=Array.isArray(VB.ts)&&VB.ts.length===1?VB.ts[0]:-1;let h=`<tr><th class="d"></th>${PN.map((p,i)=>`<th>${i+1}</th>`).join('')}</tr>`;
- for(let d=0;d<5;d++){h+=`<tr><th class="d">${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,on=VB.xs.has(x),ex=one>=0&&hardAt(one,x);h+=`<td class="c ${on?'t-bad':ex?'x':''}" data-x="${x}" tabindex="0">${on?'<b>ممنوع</b>':ex?'<small>ممنوع حاليًا</small>':''}</td>`}h+='</tr>'}
+ for(let d=0;d<5;d++){h+=`<tr><th class="d">${DAYS[d]}</th>`;for(let p=0;p<7;p++){const x=d*7+p,on=VB.xs.has(x),ex=one>=0&&hardAt(one,x);const src=ex?consById(TBsrc[one*35+x]):null;h+=`<td class="c ${on?'t-bad':ex?'x':''}" data-x="${x}" tabindex="0"${ex?` title="${esc(src?describe(src):'قيد')} — اضغط لإزالته"`:''}>${on?'<b>ممنوع</b>':ex?`<small>ممنوع حاليًا</small><small class="vbr">${esc(src?(src.type==='eday'||src.src==='eday'?'خروج مبكر':LV[src.level]||''):'')}</small>`:''}</td>`}h+='</tr>'}
  $('vbG').innerHTML=h;$('vbL').innerHTML=lvOpts('hard');
  const dl=[0,1,2,3,4].map(d=>{const c=S.cons.find(c=>c.type==='dlen'&&c.on&&c.days.length===1&&c.days[0]===d);return c?c.n:7});
  $('dlenF').innerHTML=DAYS.map((d,i)=>`<label>${d}<input type="number" data-dl="${i}" value="${dl[i]}" min="3" max="7"></label>`).join('')}
 $('vbT').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const v=b.dataset.v==='all'?'all':+b.dataset.v;if(v==='all')VB.ts=VB.ts==='all'?[]:'all';else{if(VB.ts==='all')VB.ts=[];VB.ts=VB.ts.includes(v)?VB.ts.filter(x=>x!==v):[...VB.ts,v]}renderVB()};
-$('vbG').onclick=e=>{const td=e.target.closest('td[data-x]');if(!td)return;const x=+td.dataset.x;VB.xs.has(x)?VB.xs.delete(x):VB.xs.add(x);renderVB()};
+$('vbG').onclick=e=>{const td=e.target.closest('td[data-x]');if(!td)return;const x=+td.dataset.x;const one=Array.isArray(VB.ts)&&VB.ts.length===1?VB.ts[0]:-1;
+ if(td.classList.contains('x')&&one>=0&&!VB.xs.has(x)){vbWhy(one,x);return}VB.xs.has(x)?VB.xs.delete(x):VB.xs.add(x);renderVB()};
+function vbWhy(t,x){const id=TBsrc[t*35+x],c=consById(id),m=$('vbMsg');m.hidden=false;if(!c){m.className='status warn';m.innerHTML='هذا المنع من إعدادات الدوام العامة (التوقيت). عدّلها من تبويب «التوقيت والفسحة».';return}
+ const cnt=(()=>{let n=0;for(let y=0;y<35;y++)if(TBsrc[t*35+y]===id&&TB[t*35+y]>=1000)n++;return n})();
+ m.className='status warn';m.innerHTML=`<b>${slotName(x)} ممنوعة على أ/ ${esc(D.teachers[t])}</b> بسبب القيد: «${esc(describe(c))}» [${LV[c.level]||''}]، ويمنع ${cnt} ${cnt>2&&cnt<11?'خانات':'خانة'} في جدوله.${c.type==='eday'||c.src==='eday'?' (هذا موعد خروجه المبكر؛ إزالته تعني أنه يبقى حتى آخر اليوم.)':''}
+ <div class="bar" style="margin-top:6px"><button class="btn" data-vbc="off|${c.id}">⏸️ إيقاف القيد مؤقتًا</button><button class="btn tno" data-vbc="del|${c.id}">🗑️ حذف القيد</button>${Array.isArray(c.ts)&&c.ts.length>1?`<button class="btn" data-vbc="me|${c.id}|${t}">✂️ إزالته عن هذا المعلم فقط</button>`:''}</div>`}
+$('vbMsg').addEventListener('click',e=>{const b=e.target.closest('[data-vbc]');if(!b)return;const[k,id,t]=b.dataset.vbc.split('|'),c=consById(id);if(!c)return;
+ if(k==='del'&&b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='اضغط للتأكيد: حذف القيد';return}
+ record((k==='off'?'إيقاف':k==='del'?'حذف':'تعديل')+' قيد: '+describe(c));if(k==='off')c.on=false;else if(k==='del')S.cons=S.cons.filter(q=>q!==c);else c.ts=c.ts.filter(q=>q!==+t);
+ recompile();save();renderVB();try{renderCons()}catch(x){}const m=$('vbMsg');m.className='status ok';m.innerHTML=k==='off'?'⏸️ أُوقف القيد. يمكنك إعادة تفعيله من قائمة القيود في هذا التبويب.':k==='del'?'🗑️ حُذف القيد. ويمكنك التراجع.':'✂️ أُزيل القيد عن هذا المعلم وبقي لغيره.'});
+
 $('vbG').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){const td=e.target.closest('td[data-x]');if(td){e.preventDefault();td.click()}}};
 $('vbClr').onclick=()=>{VB.xs.clear();renderVB()};
 $('vbAdd').onclick=()=>{const st=$('vbMsg');st.hidden=false;const n=+$('vbN').value||0;if(VB.ts!=='all'&&!VB.ts.length){setSt(st,'bad','اختر معلمًا واحدًا على الأقل أو «الجميع».');return}if(!VB.xs.size&&!n){setSt(st,'bad','اضغط على الخانات الممنوعة، أو حدد عدد الحصص في اليوم.');return}
