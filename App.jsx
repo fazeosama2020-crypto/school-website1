@@ -236,7 +236,7 @@ const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}`, 
   return { list, classes: classes.map(c => ({ ck: c.ck, name: maClassName(c.ck) })) };
 } });
 const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}` });
-const comApi = () => ({ maGet, maPut, school: NQ_SCHOOL, logo: SCHOOL_LOGO, sigReqSend: (n, r) => sigReqSend(n, r), loadStaff: () => dpApi().loadStaff() });
+const comApi = () => ({ maGet, maPut, school: NQ_SCHOOL, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, sigReqSend: (n, r) => sigReqSend(n, r), loadStaff: () => dpApi().loadStaff() });
 const lcApi = () => ({ maGet, maPut, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL, SigPad: SigPadMini });
 const myttApi = () => ({ maGet, TT_NODE, TT_CFG, ttFresh: a => ttFresh(a), sttFindMe: (T, n) => sttFindMe(T, n), logo: SCHOOL_LOGO, school: NQ_SCHOOL });
 const achApi = () => ({ ...cmdApi(""), names: async () => { const T = ttFresh(await maGet(TT_NODE)); const st = Object.values(ptObj(await maGet(PT_STAFF))).map(x => x && x.name).filter(Boolean); return [...new Set([...(T.T || []).map(ttClean), ...st].filter(Boolean))].sort((a, b) => a.localeCompare(b, "ar")); } });
