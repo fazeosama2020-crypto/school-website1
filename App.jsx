@@ -189,6 +189,9 @@ const HealthPlan = React.lazy(() => import("./HealthPlan.jsx").then(m => ({ defa
 const MyTT = React.lazy(() => import("./MyTT.jsx").then(m => ({ default: m.MyTT })));
 const CoverTeacher = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverTeacher })));
 const CoverAdmin = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverAdmin })));
+const TaskBoard = React.lazy(() => import("./Tasks.jsx").then(m => ({ default: m.TaskBoard })));
+const MyTasks = React.lazy(() => import("./Tasks.jsx").then(m => ({ default: m.MyTasks })));
+const TaskBanner = React.lazy(() => import("./Tasks.jsx").then(m => ({ default: m.TaskBanner })));
 const StudentActivity = React.lazy(() => import("./StudentActivity.jsx").then(m => ({ default: m.StudentActivity })));
 const Committees = React.lazy(() => import("./Committees.jsx").then(m => ({ default: m.Committees })));
 const CoverBanner = React.lazy(() => import("./LessonCover.jsx").then(m => ({ default: m.CoverBanner })));
@@ -237,6 +240,13 @@ const absApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}`, 
   return { list, classes: classes.map(c => ({ ck: c.ck, name: maClassName(c.ck) })) };
 } });
 const hpApi = () => ({ ...extApi(), school: NQ_SCHOOL, region: `${SP.region}` });
+const tkApi = () => ({ maGet, maPut, school: NQ_SCHOOL, moeLogo: MOE_LOGO, staff: async () => ptVals(await maGet(PT_STAFF)), loadStaff: () => dpApi().loadStaff() });
+function WithTasks({ src, user, children }) {
+  const [m, setM] = useState("main");
+  const T = [["main", src === "opp" ? "🗂️ برامج الخطة ومتابعتها" : "📋 المؤشرات والشواهد"], ["tasks", "👥 توزيع المهام على الإداريين ومتابعتها"]];
+  return <div dir="rtl"><div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "0 0 10px", padding: 5, borderRadius: 16, background: "#0b2545", width: "fit-content", maxWidth: "100%" }}>{T.map(([k, l]) => <button key={k} type="button" onClick={() => setM(k)} style={{ fontFamily: "Tajawal,inherit", fontWeight: 800, fontSize: 14, cursor: "pointer", border: "none", borderRadius: 12, padding: "8px 16px", background: m === k ? "#c9a227" : "transparent", color: m === k ? "#0b2545" : "#fff" }}>{l}</button>)}</div>
+    {m === "main" ? children : <React.Suspense fallback={RD_WAIT}><TaskBoard api={tkApi()} me={{ name: user?.name || "مدير المدرسة" }} src={src} /></React.Suspense>}</div>;
+}
 const saApi = () => ({ maGet, maPut, school: NQ_SCHOOL, logo: SCHOOL_LOGO, moeLogo: MOE_LOGO, loadStaff: () => dpApi().loadStaff() });
 const SAH_TABS = [["follow", "📋", "بطاقة متابعة النشاط", "استمارة المشرف • التنفيذ والشواهد"], ["cards", "🏆", "بطاقات تنفيذ المسابقات والبرامج", "النموذج الوزاري • طباعة"], ["acts", "🎯", "الأنشطة المدرسية", "سجل الأنشطة والفعاليات"]];
 function StuActHub({ tab0, user, activities, setActivities, saveActivities }) {
@@ -35314,6 +35324,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
   if (view === "zy") return wrap("👣 زيارات الطلاب", <React.Suspense fallback={LF_WAIT}>{isStaff ? <LfZyStaff api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} canAll={["principal", "deputy"].includes(me.role)} /> : <LfZyMine api={lifeApi(me.hash)} me={{ name: me.name, role: me.role }} />}</React.Suspense>);
   if (view === "sigreq") return wrap("✍️ طلبات التوقيع", <SigReqs me={me} />);
   if (view === "comreg") return wrap("📁 لجاني وفرقي", <React.Suspense fallback={RD_WAIT}><Committees api={comApi()} ro meName={me.name} /></React.Suspense>);
+  if (view === "mytasks") return wrap("📌 مهامي في الخطة والتقويم", <React.Suspense fallback={RD_WAIT}><MyTasks api={tkApi()} me={{ name: me.name }} /></React.Suspense>);
   if (view === "lcover" || view === "lcoverin") return wrap("🛡️ تأمين الحصص", <React.Suspense fallback={RD_WAIT}><CoverTeacher me={{ name: me.name }} api={lcApi()} start={view === "lcoverin" ? "in" : "req"} /></React.Suspense>);
   if (view === "achrec") return wrap("📚 سجل التحصيل الدراسي", <React.Suspense fallback={RD_WAIT}><AchRecord me={{ name: me.name }} admin={isStaff && ["principal", "deputy"].includes(me.role)} api={achApi()} /></React.Suspense>);
   if (view === "tint") return wrap("🤝 مقابلاتي", <React.Suspense fallback={RD_WAIT}><Interviews me={{ name: me.name, role: me.role }} api={tintApi()} /></React.Suspense>);
@@ -35501,6 +35512,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
           </div>
           <PtFavBar edit={ptEdit} onEdit={() => ptEdit ? setPtEdit(false) : setPtCust(true)} onTour={() => setPtTour(true)} />
           <React.Suspense fallback={null}><CoverBanner me={{ name: me.name }} api={lcApi()} onOpen={() => setView("lcoverin")} /></React.Suspense>
+          <React.Suspense fallback={null}><TaskBanner me={{ name: me.name }} api={tkApi()} onOpen={() => setView("mytasks")} /></React.Suspense>
           <SigReqBanner me={me} onOpen={() => setView("sigreq")} />
           <div className="pt-sec"><h3>⏱️ دوامي وانضباطي</h3><div className="pt-tiles">
             {ptTile("score", "🏆", "بطاقتي الشاملة وترتيبي", "نسبة انضباطي في الحضور والطابور والحصص والتحضير، وتفاصيل حضوري وملاحظاتي، وترتيبي بين زملائي", "#0f1e3d", "#d4a017", () => setView("score"))}
@@ -35528,6 +35540,7 @@ function StaffHub({ kind = "teacher", initView = null, onBack, classList = [], s
             {ptTile("achrec", "📚", "سجل التحصيل الدراسي", "خطة تحسين التحصيل وحصر الواقع الدراسي بالأرقام؛ للاطلاع والتوقيع إن كنت عضوًا في لجنة التحصيل", "#0b2545", "#0d9488", () => setView("achrec"))}
             {ptTile("comreg", "📁", "لجاني وفرقي", "اللجان والفرق المدرسية التي أنت عضو فيها: الأهداف والمهام وقرار التشكيل والاجتماعات، والتوقيع الإلكتروني", "#0b2545", "#7a5c12", () => setView("comreg"))}
             {ptTile("lcover", "🛡️", "تأمين حصة", "اضغط الحصة التي تريد تأمينها من جدولك واختر زميلًا متاحًا ليوافق ويوقّع، واطّلع على الطلبات الواردة إليك", "#0b2545", "#1e3a8a", () => setView("lcover"))}
+            {ptTile("mytasks", "📌", "مهامي في الخطة والتقويم", "مهام تنفيذ برامج الخطة التشغيلية وشواهد التقويم الخارجي المسندة إليك: حدّث الإنجاز وارفع الشواهد واطّلع على تغذية المدير الراجعة", "#0b2545", "#c9a227", () => setView("mytasks"))}
             {ptTile("tint", "🤝", "مقابلاتي", "موعد مقابلتك مع إدارة المدرسة وأهدافها ومتطلباتها، والمحاور المفوضة إليك، والتوقيع والتغذية الراجعة", "#0b2545", "#7a5c12", () => setView("tint"))}
             {ptTile("pf", "🏅", "ملف الأداء الوظيفي", "عناصر الأداء الـ11: ست صور شواهد لكل عنصر مع تعليقك، وتغذية راجعة من زملائك، وطباعة ملف إنجاز مميز", "#0b2545", "#1e3a8a", () => setView("pf"))}
             {ptTile("zyt", "🗣️", "رأيي في طلابي (زيارات الطلاب)", "اكتب رأيك في مستوى طلاب فصولك الذين يزورهم أعضاء الإدارة واطّلع على زياراتهم", "#0369a1", "#38bdf8", () => setView("zyt"))}
@@ -54135,9 +54148,9 @@ function SchoolWebsiteInner() {
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
                 {page === "trepadm" && <div className="px-2 md:px-6 py-4"><TrepAdmin me={{ name: user?.name || "الإدارة", role: "principal" }} /></div>}
-                {page === "opplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><OpPlan me={{ name: user?.name || "الإدارة" }} api={opApi()} /></React.Suspense></div>}{page === "readlab" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><ReadingAdmin by={user?.name || "الإدارة"} api={rdApi()} /></React.Suspense></div>}{page === "gradebook" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><GradeBook me={{ name: user?.name || "الإدارة" }} api={rdApi()} admin /></React.Suspense></div>}
+                {page === "opplan" && <div className="px-2 md:px-6 py-4"><WithTasks src="opp" user={user}><React.Suspense fallback={RD_WAIT}><OpPlan me={{ name: user?.name || "الإدارة" }} api={opApi()} /></React.Suspense></WithTasks></div>}{page === "readlab" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><ReadingAdmin by={user?.name || "الإدارة"} api={rdApi()} /></React.Suspense></div>}{page === "gradebook" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><GradeBook me={{ name: user?.name || "الإدارة" }} api={rdApi()} admin /></React.Suspense></div>}
                 {page === "ipadmin" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ImprovePlanAdmin by={user?.name || "الإدارة"} me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={ipApi()} /></React.Suspense></div>}
-                {page === "exteval" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ExtEvalPage me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={extApi()} /></React.Suspense></div>}
+                {page === "exteval" && <div className="px-2 md:px-6 py-4"><WithTasks src="ext" user={user}><React.Suspense fallback={SL_WAIT}><ExtEvalPage me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={extApi()} /></React.Suspense></WithTasks></div>}
                 {page === "absxadm" && <div className="px-2 md:px-6 py-4"><AbsExcPage by={user?.name || "الإدارة"} /></div>}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}{page === "circdaily" && <div className="px-2 md:px-6 py-4"><CircDailyAdmin by={user?.name || "الإدارة"} /></div>}
                 {page === "meetings"       && <MeetingsPage teachers={teachers} />}
@@ -54332,9 +54345,9 @@ function SchoolWebsiteInner() {
                 {page === "hfx" && <HfxPage by={user?.name || "الإدارة"} />}
                 {page === "hdisc" && <HdAdminPage by={user?.name || "الإدارة"} />}
                 {page === "trepadm" && <div className="px-2 md:px-6 py-4"><TrepAdmin me={{ name: user?.name || "الإدارة", role: "principal" }} /></div>}
-                {page === "opplan" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><OpPlan me={{ name: user?.name || "الإدارة" }} api={opApi()} /></React.Suspense></div>}{page === "readlab" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><ReadingAdmin by={user?.name || "الإدارة"} api={rdApi()} /></React.Suspense></div>}{page === "gradebook" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><GradeBook me={{ name: user?.name || "الإدارة" }} api={rdApi()} admin /></React.Suspense></div>}
+                {page === "opplan" && <div className="px-2 md:px-6 py-4"><WithTasks src="opp" user={user}><React.Suspense fallback={RD_WAIT}><OpPlan me={{ name: user?.name || "الإدارة" }} api={opApi()} /></React.Suspense></WithTasks></div>}{page === "readlab" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><ReadingAdmin by={user?.name || "الإدارة"} api={rdApi()} /></React.Suspense></div>}{page === "gradebook" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={RD_WAIT}><GradeBook me={{ name: user?.name || "الإدارة" }} api={rdApi()} admin /></React.Suspense></div>}
                 {page === "ipadmin" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ImprovePlanAdmin by={user?.name || "الإدارة"} me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={ipApi()} /></React.Suspense></div>}
-                {page === "exteval" && <div className="px-2 md:px-6 py-4"><React.Suspense fallback={SL_WAIT}><ExtEvalPage me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={extApi()} /></React.Suspense></div>}
+                {page === "exteval" && <div className="px-2 md:px-6 py-4"><WithTasks src="ext" user={user}><React.Suspense fallback={SL_WAIT}><ExtEvalPage me={{ name: user?.name || "الإدارة", hash: user?.hash }} api={extApi()} /></React.Suspense></WithTasks></div>}
                 {page === "absxadm" && <div className="px-2 md:px-6 py-4"><AbsExcPage by={user?.name || "الإدارة"} /></div>}
                 {page === "circulars" && <CircAdminPage by={user?.name || "الإدارة"} />}{page === "circdaily" && <div className="px-2 md:px-6 py-4"><CircDailyAdmin by={user?.name || "الإدارة"} /></div>}
         {page === "meetings"       && <MeetingsPage teachers={teachers} />}
